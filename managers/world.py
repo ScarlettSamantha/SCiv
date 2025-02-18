@@ -1,7 +1,8 @@
 from math import sqrt
-from typing import Any, Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict
 from panda3d.core import BitMask32
 from mixins.singleton import Singleton
+from data.tiles.tile import Tile
 
 class World(Singleton):
     
@@ -13,12 +14,12 @@ class World(Singleton):
         self.rows: int = 5
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
-        self.map: Dict[Tuple[int, int], Any] = {}
+        self.map: Dict[str, Tile] = {}
+        self.grid: Dict[Tuple[int, int], Tile] = {}
         
     def __init__(self, base):
-        self.base
-    
-    
+        self.base = base
+
     def generate(self, cols: int, rows: int, radius: float, spacing: float = 1.5):
         self.hex_radius = radius  
         self.col_spacing = spacing * self.hex_radius
@@ -48,15 +49,19 @@ class World(Singleton):
                     y = row * self.row_spacing
                 
                 new_hex = hex_model.copyTo(self.base.render)
+              
                 new_hex.setPos(x, y, 0)
 
                 # Give the render-geometry a collide mask so ray/solid can detect it
                 new_hex.setCollideMask(BitMask32.bit(1))
-
+                tag = f"tile_{col}_{row}"
                 # Optionally, tag the tile for identification
-                new_hex.setTag("tile_id", f"hex_{col}_{row}")
+                new_hex.setTag("tile_id", tag)
                 
-                self.map[(col, row)] = new_hex
+                obj_instance = Tile(tag, col, row, new_hex)
                 
-    def lookup(self, x, y):
-        return self.map[(x, y)]
+                self.map[tag] = obj_instance
+                self.grid[(col, row)] = obj_instance
+                
+    def lookup(self, tag):
+        return self.map[tag]

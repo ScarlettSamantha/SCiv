@@ -32,7 +32,7 @@ class FlatHexExample(ShowBase):
         
         world = World.get_instance({"base": self})
         world.__setup__(self)
-        world.generate(5, 5, 0.5, 1.5)
+        world.generate(50, 50, 0.5, 1.5)
         
         if world.middle_x is None or world.middle_y is None:
             raise ValueError("Something very weird has happend.")

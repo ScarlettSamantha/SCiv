@@ -11,7 +11,7 @@ from mixins.singleton import Singleton
 class Input(Singleton):
     
     def __init__(self):
-        self.base
+        self.base: Any = None
         self.active: bool = True
         
     def de_activate(self):
@@ -21,7 +21,11 @@ class Input(Singleton):
         self.active = True
         
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
+        from managers.world import World
+        
         self.base = base
+        self.map = World.get_instance(self.base)
+        
         return super().__setup__(*args, **kwargs)
         
     def inject_into_camera(self):
@@ -67,6 +71,7 @@ class Input(Singleton):
             picked_obj = entry.getIntoNodePath()
             # If you stored a tag (like tile_id), you can retrieve it:
             tile_id = picked_obj.getNetTag("tile_id")
+            print(self.map.map[tile_id])
             if tile_id:
                 print(f"You picked tile: {tile_id}")
             else:
