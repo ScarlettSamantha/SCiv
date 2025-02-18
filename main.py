@@ -22,8 +22,9 @@ class FlatHexExample(ShowBase):
 
         # ---------------------------------------------------------------------
         # In-game initialization (your existing code)
-        ui_manager = ui.get_instance({"base": self})
-        ui_manager.__setup__(self)
+        ui.base = self
+        ui_manager = ui.get_instance()
+        ui_manager.__setup__()
 
         input_manager = Input.get_instance({"base": self})
         input_manager.__setup__(self)
@@ -44,6 +45,7 @@ class FlatHexExample(ShowBase):
         setup_lights(self)
         world.setup_hex_tiles()
         ui_manager.get_main_menu()
+        ui_manager.map = world
 
         # ---------------------------------------------------------------------
         # Optionally: an example of toggling window modes at runtime
@@ -87,7 +89,7 @@ class FlatHexExample(ShowBase):
         # ShowBase.processMessages(0) might sometimes be used if changes aren't immediate
 
         # 3) Re-open the window
-        self.win = self.openDefaultWindow(props=props, keepCamera=True)
+        self.win = self.openDefaultWindow(props=props, keepCamera=True) # noqa
     
 config_mgr = ConfigManager("config.json")
 config_mgr.apply_config_to_prc()

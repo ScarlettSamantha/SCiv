@@ -7,6 +7,7 @@ from panda3d.core import (
 )
 from typing import Any
 from mixins.singleton import Singleton
+from direct.showbase.MessengerGlobal import messenger
 
 class Input(Singleton):
     
@@ -71,11 +72,8 @@ class Input(Singleton):
             picked_obj = entry.getIntoNodePath()
             # If you stored a tag (like tile_id), you can retrieve it:
             tile_id = picked_obj.getNetTag("tile_id")
-            print(self.map.map[tile_id].node)
-            if tile_id:
-                print(f"You picked tile: {tile_id}")
-            else:
-                print("You picked (no tile_id tag):", picked_obj)
+            messenger.send("tile-clicked", [tile_id])
+
             return picked_obj
         else:
             print("No object picked.")
