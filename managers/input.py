@@ -71,7 +71,7 @@ class Input(Singleton):
             picked_obj = entry.getIntoNodePath()
             # If you stored a tag (like tile_id), you can retrieve it:
             tile_id = picked_obj.getNetTag("tile_id")
-            print(self.map.map[tile_id])
+            print(self.map.map[tile_id].node)
             if tile_id:
                 print(f"You picked tile: {tile_id}")
             else:
@@ -83,4 +83,4 @@ class Input(Singleton):
         
     def register(self):
         # Example key to test picking (when 'p' is pressed)
-        self.base.accept("p", self.pick_object)
+        self.base.accept("mouse1", self.pick_object)

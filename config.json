@@ -1,0 +1,18 @@
+{
+  "render": {
+    "clock-mode": "limited",
+    "clock-frame-rate": 60
+  },
+  "window": {
+    "screen-mode": "windowed",
+    "win-origin": [
+      296,
+      181
+    ],
+    "win-size": [
+      3006,
+      1800
+    ],
+    "window-title": "My Panda3D App"
+  }
+}
