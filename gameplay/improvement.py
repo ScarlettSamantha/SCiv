@@ -1,14 +1,18 @@
 from __future__ import annotations
+
 from gameplay.tile_yield import TileYield
 from gameplay.effect import Effects
 from gameplay.conditions import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
 from mixins.callbacks import CallbacksMixin
 from system.saving import SaveAble
-from managers.i18n import T_TranslationOrStr
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.tags import Taggable
 
-from typing import Tuple, ForwardRef
+from typing import Tuple, TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from data.tiles.tile import Tile
 
 
 class Improvement(CallbacksMixin, SaveAble, Taggable):
@@ -23,6 +27,7 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
         self,
         key: str,
         name: str,
+        tile: Tile,
         health: int = 100,
         max_health: int = 100,
         *args,
@@ -53,9 +58,10 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
         self.player_enabled: bool = True
 
         self.name: T_TranslationOrStr = name
-        self.description: T_TranslationOrStr = None
+        self.description: T_TranslationOrStrOrNone = None
 
         self.multi_turn_mode = self.SINGLE_TURN
+        self.tile: Tile = tile
 
         # Following 3 are not needed in single turn mode.
         self.production_needed = None
@@ -111,9 +117,6 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
     def tile_ref(self, value):
         self._tile_ref = value
 
-    def tile(self) -> ForwardRef("Tile"):
-        return self.tile
-
     @property
     def tile_yield(self) -> TileYield:
         return self._tile_yield_improvement
@@ -127,19 +130,19 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
     def set_price_free(self):
         self.cost = TileYield.nullYield()
 
-    def on_construct(self, callback: callable):
+    def on_construct(self, callback: Callable):
         self.register_callback("on_construct", callback)
 
     def trigger_on_construct(self):
         self.trigger_callback("on_construct")
 
-    def on_destroy(self, callback: callable):
+    def on_destroy(self, callback: Callable):
         self.register_callback("on_destory", callback)
 
     def trigger_on_destory(self):
         self.trigger_callback("on_destroy")
 
-    def on_remove(self, callback: callable):
+    def on_remove(self, callback: Callable):
         self.register_callback("on_remove", callback)
 
     def trigger_on_remove(self):
@@ -152,19 +155,19 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
             )
         self.replace(self.upgrade_into)
 
-    def replace(self, _with: ForwardRef("Improvement")):
+    def replace(self, _with: Improvement):
         pass
 
     @staticmethod
     def basic_resource_improvement(
         name: str,
-        tile: ForwardRef("Tile"),
+        tile: Tile,
         property: str,
         delta: float,
         mode: int = TileYield.ADDITIVE,
         health: int = 100,
-    ) -> ForwardRef("Improvement"):
-        ref = Improvement(name, tile, health)
+    ) -> Improvement:
+        ref = Improvement(key=name, name=name, tile=tile, health=health)
         _yield = TileYield(f"{name} yield")
         _yield.mode = mode
         _yield.set_prop(property, delta)

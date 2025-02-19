@@ -1,13 +1,19 @@
+from data.tiles.tile import Tile
 from gameplay.improvements import Improvements
 from gameplay.improvement import Improvement
 from gameplay.citizens import Citizens
+from typing import TYPE_CHECKING, Optional
+
+
+if TYPE_CHECKING:
+    from gameplay.player import Player
 
 
 class City:
-    def __init__(self, name: str, tile: "BaseTile"):
+    def __init__(self, name: str, tile: Tile):
         self.name: str = name
-        self.player: "Player" = tile.player
-        self.tile: "BaseTile" = tile
+        self.player: Optional[Player] = None
+        self.tile: Tile = tile
         self.is_capital: bool = False
 
         self.active: bool = True
@@ -40,9 +46,10 @@ class City:
         self.is_capital = True
 
     def _register_object(self):
-        self.player.cities.add(self)
-        if self.is_capital:
-            self.player.capital = self
+        if self.player is not None:
+            self.player.cities.add(self)
+            if self.is_capital:
+                self.player.capital = self
 
     def birth(self, population: int = 1, *args, **kwargs):
         for i in range(population):
@@ -56,10 +63,9 @@ class City:
 
     @classmethod
     def found_new(
-        cls, name: str, tile: "BaseTile", population: int = 1, is_capital: bool = False
+        cls, name: str, tile: Tile, population: int = 1, is_capital: bool = False
     ) -> "City":
-        instance = City(name=name, owner=tile.player)
-        instance.tile = tile
+        instance = City(name=name, tile=tile)
         instance.population = population
         instance.is_capital = is_capital
         return instance
