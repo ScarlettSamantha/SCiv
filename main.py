@@ -7,7 +7,7 @@ from managers.ui import ui
 from managers.input import Input
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import WindowProperties
-from managers.config import ConfigManager
+from managers.config import ConfigManager   
 # 1) Limit FPS to 60
 class FlatHexExample(ShowBase):
     def __init__(self, config_mgr):

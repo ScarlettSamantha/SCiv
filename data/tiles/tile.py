@@ -8,7 +8,8 @@ class Tile:
         self.x: int = x
         self.y: int = y
         self.node: NodePath = node
-
+        
+        self.terrain: Terrain
         
     def __repr__(self) -> str:
         return f"{str(self.id)}@{str(self.x)},{str(self.y)}"
