@@ -64,7 +64,10 @@ class CivCamera(Singleton):
 
         # Set up controls & add update task
         self.setup_controls()
+
+    def register(self):
         self.base.taskMgr.add(self.update, "updateCivCameraTask")
+        return True
 
     def __setup__(self, *args, **kwargs):
         return super().__setup__(*args, **kwargs)
