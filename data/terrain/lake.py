@@ -1,11 +1,10 @@
-from __future__ import annotations
 from ._base_terrain import BaseTerrain
 from ._base_terrain import rgb
 
-from world.terrain.traits.water import open_water_lake
+from data.terrain.traits.water import open_water_lake
 
 
-class lake(BaseTerrain):
+class Lake(BaseTerrain):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

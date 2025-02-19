@@ -1,10 +1,9 @@
-from __future__ import annotations
-from world.tiles._base_tile import BaseTile
-from world.terrain.coast import Coast as CoastTerrain
+from data.terrain.coast import Coast as CoastTerrain
+from data.tiles.tile import Tile
 
 
-class Coast(BaseTile):
+class Coast(Tile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(CoastTerrain)
+        self.setTerrain(CoastTerrain())

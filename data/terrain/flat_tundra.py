@@ -1,7 +1,6 @@
-from __future__ import annotations
 from ._base_terrain import BaseTerrain
 
-from world.terrain.traits.land import buildable_flat_land
+from data.terrain.traits.land import buildable_flat_land
 
 
 class FlatTundra(BaseTerrain):

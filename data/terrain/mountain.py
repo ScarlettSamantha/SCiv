@@ -2,7 +2,7 @@ from __future__ import annotations
 from ._base_terrain import BaseTerrain
 from ._base_terrain import rgb
 
-from world.terrain.traits.land import mountain
+from data.terrain.traits.land import mountain
 
 
 class Mountain(BaseTerrain):

@@ -5,7 +5,7 @@ from ._base_terrain import BaseTerrain
 from ._base_terrain import rgb
 
 
-from world.terrain.traits.water import open_water_sea
+from data.terrain.traits.water import open_water_sea
 
 
 class Sea(BaseTerrain):

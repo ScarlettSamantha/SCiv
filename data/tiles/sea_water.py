@@ -1,4 +1,3 @@
-from __future__ import annotations
 from data.tiles.tile import Tile
 from data.terrain.sea import Sea
 

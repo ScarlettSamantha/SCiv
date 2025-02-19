@@ -1,9 +1,8 @@
-from __future__ import annotations
-from world.tiles._base_tile import BaseTile
-from world.terrain.flat_grass import FlatGrass
+from data.tiles.tile import Tile
+from data.terrain.flat_grass import FlatGrass
 
 
-class LandGrass(BaseTile):
+class LandGrass(Tile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
