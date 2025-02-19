@@ -1,8 +1,9 @@
 from math import pi, cos, sin
 from panda3d.core import NodePath
+from mixins.singleton import Singleton
 
 
-class CivCamera:
+class CivCamera(Singleton):
     """
     Modified camera controller:
       - Left-drag => rotate around pivot (slower)
@@ -64,6 +65,9 @@ class CivCamera:
         # Set up controls & add update task
         self.setup_controls()
         self.base.taskMgr.add(self.update, "updateCivCameraTask")
+
+    def __setup__(self, *args, **kwargs):
+        return super().__setup__(*args, **kwargs)
 
     # -------------------------------------------------------------------------
     #  Setup Controls
@@ -221,10 +225,10 @@ class CivCamera:
 
         # Q/E-based rotation
         if self.keys["rotate_left"]:
-            self.yaw -= self.rotate_speed * dt
+            self.yaw += self.rotate_speed * dt
             self.update_camera_position()
         if self.keys["rotate_right"]:
-            self.yaw += self.rotate_speed * dt
+            self.yaw -= self.rotate_speed * dt
             self.update_camera_position()
 
         # Mouse dragging
