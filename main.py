@@ -43,6 +43,13 @@ class FlatHexExample(ShowBase):
 
         self.civ_camera = CivCamera(self, target=self.middle_target)
         setup_lights(self)
+        
+        # I18n system
+        
+        
+        
+        
+        
         world.setup_hex_tiles()
         ui_manager.get_main_menu()
         ui_manager.map = world
