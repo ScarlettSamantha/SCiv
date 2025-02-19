@@ -33,26 +33,17 @@ class Input(Singleton):
         self.picker = CollisionTraverser()
         self.pq = CollisionHandlerQueue()
 
-        # 2) Create a collision node containing a ray solid
         picker_node = CollisionNode("mouseRay")
         self.pickerRay = CollisionRay()
         picker_node.addSolid(self.pickerRay)
 
-        # Set the "from" collide mask to match whatever geometry we want to pick
         picker_node.setFromCollideMask(BitMask32.bit(1))
 
-        # 3) Attach the collision node to the camera
         self.pickerNP = self.base.camera.attachNewNode(picker_node)
-
-        # 4) Add the collider to the traverser
         self.picker.addCollider(self.pickerNP, self.pq)
-        self.register()
+        self.register()  # Ensures key bindings are set
 
     def pick_object(self):
-        """
-        Cast a ray from the camera using the current mouse position
-        and return (print) whichever object is hit first (closest).
-        """
         if not self.active:
             return  # Input is disabled
 
@@ -60,29 +51,35 @@ class Input(Singleton):
             print("No mouse in window, cannot pick.")
             return
 
-        # 1) Get the mouse position in normalized -1..1 range
         mpos = self.base.mouseWatcherNode.getMouse()
-
-        # 2) Position the collision ray to match the lens
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())
-        # 3) Traverse the scene for collisions
         self.picker.traverse(self.base.render)
 
-        # 4) If any hits, sort them and pick the closest
         if self.pq.getNumEntries() > 0:
             self.pq.sortEntries()
             entry = self.pq.getEntry(0)  # closest collision
             picked_obj = entry.getIntoNodePath()
-            # If you stored a tag (like tile_id), you can retrieve it:
             tile_id = picked_obj.getNetTag("tile_id")
             messenger.send("system.input.user.tile_clicked", [tile_id])
-
             return picked_obj
         else:
-            print(
-                "No object picked. This might the be margin between tiles or outside the game field."
-            )  # This is probibly the margin between the tiles or between the tiles and the camera
+            print("No object picked. Possibly between tiles or outside the game field.")
             return None
 
     def register(self):
+        """
+        Bind relevant mouse or keyboard events here.
+        """
+        # Left-click
         self.base.accept("mouse1", self.pick_object)
+
+        # Escape key
+        self.base.accept("escape", self.on_escape)
+
+    def on_escape(self):
+        """
+        This method fires a message when the user presses the Escape key.
+        You can handle this in your code by listening for
+        'system.input.user.escaped' with an appropriate handler.
+        """
+        messenger.send("game.input.user.escape_pressed")
