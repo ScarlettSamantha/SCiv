@@ -24,6 +24,7 @@ class ui(Singleton):
         self.registered = False if not self.registered else self.register
 
     def __setup__(self, base, *args, **kwargs):
+        super().__setup__(*args, **kwargs)
         self._base = base
         self.registered = False
         if not self.registered:
