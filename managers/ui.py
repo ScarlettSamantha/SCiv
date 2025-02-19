@@ -1,5 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 from direct.showbase.MessengerGlobal import messenger
+from regex import P
 from data.tiles.tile import Tile
 from menus.game import Game
 from menus.game_escape import PauseMenu
@@ -32,7 +33,7 @@ class ui(Singleton):
         # Only destroy if it's not the Game object.
         # For the game, we simply hide it instead, preserving state.
         if self.current_menu:
-            if isinstance(self.current_menu, Game):
+            if isinstance(self.current_menu, PauseMenu):
                 # Hide the game menu instead of destroying it, so state is preserved
                 self.current_menu.hide()
             else:
@@ -76,7 +77,6 @@ class ui(Singleton):
     def get_escape_menu(self):
         from menus.game_escape import PauseMenu
 
-        print(self.game_pause_state)
         if self.game_pause_state is None:
             self.game_pause_state = PauseMenu(self._base)
             self.game_pause_state.show()
