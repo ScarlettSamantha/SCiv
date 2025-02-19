@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Union, List, Dict, Any, Self, Type
 
-from saving import SaveAble
+from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr, t_
 from exceptions.resource_exception import ResourceTypeException
 
