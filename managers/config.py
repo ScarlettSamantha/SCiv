@@ -1,6 +1,8 @@
 import json
 import os
 from panda3d.core import loadPrcFileData
+from panda3d.core import ClockObject
+
 
 class ConfigManager:
     def __init__(self, config_file="config.json"):
@@ -18,16 +20,13 @@ class ConfigManager:
 
         # If not found or failed, return a reasonable default:
         return {
-            "render": {
-                "clock-mode": "limited",
-                "clock-frame-rate": 60
-            },
+            "render": {"clock-mode": "limited", "clock-frame-rate": 60},
             "window": {
                 "screen-mode": "windowed",  # "windowed", "fullscreen", or "borderless"
                 "win-origin": [100, 100],
                 "win-size": [1280, 720],
-                "window-title": "My Panda3D App"
-            }
+                "window-title": "My Panda3D App",
+            },
         }
 
     def save_config(self):
@@ -47,6 +46,9 @@ class ConfigManager:
         render_settings = self.config_data.get("render", {})
         for key, val in render_settings.items():
             loadPrcFileData("", f"{key} {val}")
+
+        if self.config_data.get("render", {}).get("clock-mode") == "unlimited":
+            ClockObject.getGlobalClock().syncFrameTime()
 
         # 2) Window settings
         window_settings = self.config_data.get("window", {})
@@ -80,6 +82,14 @@ class ConfigManager:
         if "win-size" in window_settings:
             w, h = window_settings["win-size"]
             loadPrcFileData("", f"win-size {w} {h}")
+
+        if "sync-video" in window_settings:
+            loadPrcFileData("", f"sync-video {bool(window_settings['sync-video'])}")
+
+        if "show-frame-rate-meter" in window_settings:
+            loadPrcFileData(
+                "", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}"
+            )
 
     def set_screen_mode(self, mode):
         """
