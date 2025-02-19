@@ -1,6 +1,5 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional
 from direct.showbase.MessengerGlobal import messenger
-from regex import P
 from data.tiles.tile import Tile
 from menus.game import Game
 from menus.game_escape import PauseMenu

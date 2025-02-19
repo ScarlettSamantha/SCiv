@@ -48,6 +48,7 @@ class Game(Singleton):
         if isinstance(tiles, str):
             tiles = [tiles]
         messenger.send("ui.update.user.tile_clicked", tiles)
+        self.ui.select_tile(tiles)
 
     def on_game_start(self):
         if not self.properties:
