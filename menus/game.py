@@ -129,13 +129,15 @@ class Game(BaseMenu):
         """Task to update the FPS label and rotate the arrow."""
         # 1) Update FPS
         fps = self.base.clock.getAverageFrameRate()
-        self.fps_label["text"] = f"FPS: {fps:.2f}"
+        if self.fps_label is not None:
+            self.fps_label["text"] = f"FPS: {fps:.2f}"
 
         # 2) Rotate the arrow so it remains pointing 'north' as the camera spins.
         heading = self._camera.yaw % 360
         # For geometry that goes "up" in aspect2d, rotate around the Y-axis with setR(...)
         # Instead of using negative, we subtract heading from 360 to inverse the rotation direction.
-        self.compass_arrow.setR(-heading)
+        if self.compass_arrow is not None:
+            self.compass_arrow.setR(-heading)
 
         return task.cont
 
