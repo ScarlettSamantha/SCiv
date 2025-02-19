@@ -37,6 +37,8 @@ class FlatHexExample(ShowBase):
         set_i18n(_i18n("i18n", "en", True))
 
         self.civ_camera = CivCamera(self)
+        CivCamera._set_instance(self.civ_camera)
+
         setup_lights(self)
 
         # Init game base system
