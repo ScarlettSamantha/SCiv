@@ -3,9 +3,9 @@ from __future__ import annotations
 from enum import Enum
 from typing import Union, List, Dict, Any, Self, Type
 
-from openciv.engine.saving import SaveAble
+from saving import SaveAble
 from managers.i18n import T_TranslationOrStr, t_
-from openciv.engine.exceptions.resource_exception import ResourceTypeException
+from exceptions.resource_exception import ResourceTypeException
 
 
 class ResourceType(Enum):
@@ -22,7 +22,12 @@ class ResourceValueType(Enum):
 
 
 class ResourceTypeBase:
-    def __init__(self, name: T_TranslationOrStr, description: T_TranslationOrStr, type_: ResourceType):
+    def __init__(
+        self,
+        name: T_TranslationOrStr,
+        description: T_TranslationOrStr,
+        type_: ResourceType,
+    ):
         self.type_name: T_TranslationOrStr = name
         self.type_description: T_TranslationOrStr = description
         self.type_num: ResourceType = type_
@@ -231,11 +236,19 @@ class Resources:
                 self.resources[item] = {}
 
     def flatten(self) -> Dict[str, Resource]:
-        return {key: resource for sub_dict in self.resources.values() for key, resource in sub_dict.items()}
+        return {
+            key: resource
+            for sub_dict in self.resources.values()
+            for key, resource in sub_dict.items()
+        }
 
     def get(
         self, _type: Type[ResourceTypeBase] | None = None, key: str | None = None
-    ) -> Dict[Type[ResourceTypeBase], Dict[str, Resource]] | Resource | Dict[str, Resource]:
+    ) -> (
+        Dict[Type[ResourceTypeBase], Dict[str, Resource]]
+        | Resource
+        | Dict[str, Resource]
+    ):
         if _type is None:
             for sub_dict in self.resources.values():
                 for resource in sub_dict.values():
@@ -253,7 +266,9 @@ class Resources:
     def toDict(self) -> Dict[Type[ResourceTypeBase], Dict[str, Resource]]:
         return self.resources
 
-    def add(self, resource: Union[Resource, List[Resource]], auto_instance: bool = True) -> None:
+    def add(
+        self, resource: Union[Resource, List[Resource]], auto_instance: bool = True
+    ) -> None:
         def _add(self: Self, tmp_resource: Resource) -> None:
             resource_type: Type[ResourceTypeBase] = tmp_resource.type
             if resource_type not in self.resources:
@@ -266,7 +281,9 @@ class Resources:
             for r in resource:
                 _add(self=self, tmp_resource=r)
         else:
-            raise ResourceTypeException(f"Resource must be of type Resource, not {type(resource)}")  # noqa: F821
+            raise ResourceTypeException(
+                f"Resource must be of type Resource, not {type(resource)}"
+            )  # noqa: F821
 
     def __add__(self, b: Resource) -> None:
         self.add(b)
