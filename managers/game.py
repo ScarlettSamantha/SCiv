@@ -20,7 +20,7 @@ class GameSettings:
         self.width: int = width
         self.height: int = height
         self.player: Any = player
-        self.enemies: List[Any] = enemies
+        self.enemies: Optional[List[Any]] = enemies
         self.generator: Any = generator
 
 
