@@ -34,6 +34,7 @@ class ui(Singleton):
     def register(self) -> bool:
         self._base.accept("ui.update.user.tile_clicked", self.select_tile)
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
+        self._base.accept("f7", self.trigger_render_analyze)
         return True
 
     def cleanup_menu(self):
@@ -104,3 +105,6 @@ class ui(Singleton):
         if tile is not None:
             tile.set_color((0, 1, 0, 1))
             self.current_tile = tile
+
+    def trigger_render_analyze(self):
+        self._base.render.analyze()
