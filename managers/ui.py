@@ -1,13 +1,11 @@
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 from direct.showbase.MessengerGlobal import messenger
 from regex import P
 from data.tiles.tile import Tile
 from menus.game import Game
 from menus.game_escape import PauseMenu
 from mixins.singleton import Singleton
-
-if TYPE_CHECKING:
-    from managers.world import World
+from managers.world import World
 
 
 class ui(Singleton):
@@ -18,16 +16,25 @@ class ui(Singleton):
         self._base = base
         self.current_menu = None
         self.game: Optional[Game] = None
-        self.map: Optional[World] = None
+        self.map: World = World.get_instance()
         self.current_tile: Optional[Tile] = None
         self.previous_tile: Optional[Tile] = None
 
         self.game_menu_state: Optional[Game] = None
         self.game_pause_state: Optional[PauseMenu] = None
+        self.registered = False if not self.registered else self.register
 
     def __setup__(self, base, *args, **kwargs):
         self._base = base
+        self.registered = False
+        if not self.registered:
+            self.register()
+            self.registered = True
+
+    def register(self) -> bool:
+        self._base.accept("ui.update.user.tile_clicked", self.select_tile)
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
+        return True
 
     def cleanup_menu(self):
         # Only destroy if it's not the Game object.
@@ -89,10 +96,11 @@ class ui(Singleton):
         if self.game_pause_state:
             self.game_pause_state.hide()
 
-    def select_tile(self, tile: Tile):
-        self.previous_tile = self.current_tile
-        self.current_tile = tile
-
-        if self.previous_tile is not None:
-            self.previous_tile.node.setColor(1, 1, 1, 1)
-        self.current_tile.node.setColor(1, 1, 0, 1)
+    def select_tile(self, tile_coords: List[str]):
+        tile = self.map.map.get(tile_coords[0])
+        if self.current_tile is not None:
+            self.previous_tile = self.current_tile
+            self.previous_tile.set_color((1, 1, 1, 1))
+        if tile is not None:
+            tile.set_color((0, 1, 0, 1))
+            self.current_tile = tile
