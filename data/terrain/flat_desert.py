@@ -1,8 +1,6 @@
 from __future__ import annotations
 from ._base_terrain import BaseTerrain
-
-from ursina import Texture
-from openciv.world.terrain.traits.land import buildable_flat_land
+from world.terrain.traits.land import buildable_flat_land
 
 
 class FlatDessert(BaseTerrain):
@@ -14,7 +12,7 @@ class FlatDessert(BaseTerrain):
         self.movement_modifier = 0.5
         self.water_availability = 0
 
-        self._model = "openciv/assets/models/tiles/dessert2.obj"
-        self._texture = Texture("openciv/assets/models/tiles/dessert2.png")
+        self._model = "assets/models/tiles/dessert2.obj"
+        self._texture = "assets/models/tiles/dessert2.png"
 
         self.add_modifiers(buildable_flat_land)

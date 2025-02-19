@@ -1,6 +1,6 @@
 from __future__ import annotations
-from openciv.world.tiles._base_tile import BaseTile
-from openciv.world.terrain.flat_desert import FlatDessert
+from world.tiles._base_tile import BaseTile
+from world.terrain.flat_desert import FlatDessert
 
 
 class LandDesert(BaseTile):

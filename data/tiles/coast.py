@@ -1,6 +1,6 @@
 from __future__ import annotations
-from openciv.world.tiles._base_tile import BaseTile
-from openciv.world.terrain.coast import Coast as CoastTerrain
+from world.tiles._base_tile import BaseTile
+from world.terrain.coast import Coast as CoastTerrain
 
 
 class Coast(BaseTile):
