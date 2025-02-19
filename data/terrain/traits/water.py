@@ -1,6 +1,6 @@
 from __future__ import annotations
 from gameplay.tile_modifiers import TileModifier
-from world.terrain.traits.land import buildable
+from data.terrain.traits.land import buildable
 
 sailable = (TileModifier("sailable", True),)
 
