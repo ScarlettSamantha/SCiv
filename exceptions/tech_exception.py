@@ -1,5 +1,5 @@
 from __future__ import annotations
-from openciv.engine.exceptions.manager_exception import ManagerException
+from exceptions.manager_exception import ManagerException
 
 
 class TechException(ManagerException):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from openciv.engine.exceptions._base_exception import BaseException
+from exceptions._base_exception import BaseException
 
 
 class ArgumentException(BaseException):
