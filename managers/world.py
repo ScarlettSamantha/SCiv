@@ -31,6 +31,9 @@ class World(Singleton):
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
     
+
+    def lookup_on_tag(self, tag: str) -> Optional[Tile]:
+        return self.map.get(tag, None)
     
     def setup_hex_tiles(self):
         """Set up a grid of hexagon tiles with geometry-based collisions."""
