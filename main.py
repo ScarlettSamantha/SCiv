@@ -23,12 +23,7 @@ class FlatHexExample(ShowBase):
         # Listen for window events (including moves / resizes)
         self.accept("window-event", self.on_window_event)
 
-        # ---------------------------------------------------------------------
-        # In-game initialization (your existing code)
-        ui_manager = ui(self)
-        ui._set_instance(ui_manager)
-        ui_manager.__setup__(self)
-
+        # Manager load order is very important DO NOT CHANGE.
         input_manager = Input(self)
         Input._set_instance(input_manager)
         input_manager.inject_into_camera()
@@ -38,18 +33,22 @@ class FlatHexExample(ShowBase):
 
         self.civ_camera = CivCamera(self)
         CivCamera._set_instance(self.civ_camera)
+        self.civ_camera.register()
 
         setup_lights(self)
 
         # Init game base system
-        game_manager_instance = Game(self, self.civ_camera)
-        Game._set_instance(game_manager_instance)
 
         world = World.get_instance()
         world.__setup__(self)
 
+        ui_manager = ui(self)
+        ui._set_instance(ui_manager)
         ui_manager.get_main_menu()
         ui_manager.map = world
+
+        game_manager_instance = Game(self, self.civ_camera)
+        Game._set_instance(game_manager_instance)
         # ---------------------------------------------------------------------
         # Optionally: an example of toggling window modes at runtime
         # E.g., press F11 to toggle fullscreen
