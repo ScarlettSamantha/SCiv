@@ -1,11 +1,10 @@
-from __future__ import annotations
 from gameplay.player import Player
-from typing import Type
+from typing import Type, Dict
 
 
 class Players:
     def __init__(self):
-        self._data = {}
+        self._data: Dict[int, Player] = {}
 
     def addPlayer(self, player: Player):
         self._data[player.turn_order] = player
@@ -20,9 +19,9 @@ class Players:
 
     def __delitem__(self, _, key: Type[int | Player]):
         if isinstance(key, int):
-            self.removePlayer(key)
+            self.removePlayer(self._data[key])
         elif isinstance(key, Player):
-            self.removePlayer(key.turn_order)
+            self.removePlayer(key)
 
     def reorderTurnOrder(self):
         sorted_items = sorted(self._data.items(), key=lambda item: item.turn_order)

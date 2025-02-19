@@ -3,6 +3,10 @@ from data.tiles.tile import Tile
 
 
 class HillsForest(Tile):
+    _terrain = HillsForestTerrain
+    _model = _terrain.model
+    _cache_name = "HillsForest"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

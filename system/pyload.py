@@ -7,6 +7,12 @@ import inspect
 import fnmatch
 from typing import Dict, Type, List, Union, Tuple, Callable, Optional, Any
 from managers.log import LogManager
+import importlib
+
+def load_class(module_name: str, class_name: str):
+    """Dynamically loads a class from a given module."""
+    module = importlib.import_module(module_name)
+    return getattr(module, class_name)
 
 
 class GenericClassVisitor(ast.NodeVisitor):

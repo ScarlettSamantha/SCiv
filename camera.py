@@ -20,7 +20,7 @@ class CivCamera(Singleton):
 
         # Zoom parameters
         self.zoom = 20.0
-        self.min_zoom = 10.0
+        self.min_zoom = 2.0
         self.max_zoom = 50.0
         self.zoom_speed = 2.0
 

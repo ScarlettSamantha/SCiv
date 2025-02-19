@@ -14,14 +14,19 @@ class GameSettings:
         width: int,
         height: int,
         player: Any,
-        enemies: Optional[List[Any]],
+        num_enemies: int,
         generator: Any,
+        victory_conditions: Optional[List[Any]] = None,
+        enemies: Optional[List[Any]] = None,
+        difficulty: int = 0,
     ):
         self.width: int = width
         self.height: int = height
         self.player: Any = player
         self.enemies: Optional[List[Any]] = enemies
         self.generator: Any = generator
+        self.difficulty: int = difficulty
+        self.num_enemies: int = num_enemies
 
 
 class Game(Singleton):
@@ -56,7 +61,8 @@ class Game(Singleton):
         self.game_active = True
 
         # Generate the world
-        self.world.generate(self.properties.width, self.properties.height, 0.5, 1.5)
+        # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
+        self.world.generate(self.properties.width, self.properties.height, 0.482, 1.5)
         self.world.delegate_to_generator()
 
         # Start the game ui

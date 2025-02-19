@@ -20,7 +20,7 @@ class Second(BaseMenu):
         # Create the main frame
         self.frame = DirectFrame(
             frameColor=(0.2, 0.5, 0.2, 1),
-            frameSize=(-0.7, 0.7, -0.4, 0.4),
+            frameSize=(-0.7, 0.7, -0.5, 0.5),
             pos=(0, 0, 0),
         )
 
@@ -28,10 +28,10 @@ class Second(BaseMenu):
         self.size_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
-            items=["50x50", "75x75", "100x100", "125x125", "150x150"],
-            initialitem=0,  # Which item is selected by default
+            items=["5x5", "50x50", "75x75", "100x100", "125x125", "150x150"],
+            initialitem=0,
             highlightColor=(0.65, 0.65, 0.65, 1),
-            pos=(-0.4, 0, 0.2),
+            pos=(-0.4, 0, 0.3),
             command=self.on_size_selected,
         )
 
@@ -42,8 +42,30 @@ class Second(BaseMenu):
             items=["Romans", "Egyptians"],
             initialitem=0,
             highlightColor=(0.65, 0.65, 0.65, 1),
-            pos=(0.0, 0, 0.2),
+            pos=(0.0, 0, 0.3),
             command=self.on_empire_selected,
+        )
+
+        # Drop-down for number of enemies
+        self.enemies_option = DirectOptionMenu(
+            parent=self.frame,
+            scale=0.05,
+            items=["1", "2", "3", "4", "5"],
+            initialitem=0,
+            highlightColor=(0.65, 0.65, 0.65, 1),
+            pos=(-0.4, 0, 0.1),
+            command=self.on_enemies_selected,
+        )
+
+        # Drop-down for difficulty level
+        self.difficulty_option = DirectOptionMenu(
+            parent=self.frame,
+            scale=0.05,
+            items=["Easy", "Normal", "Hard", "Insane"],
+            initialitem=1,  # Default to Normal
+            highlightColor=(0.65, 0.65, 0.65, 1),
+            pos=(0.0, 0, 0.1),
+            command=self.on_difficulty_selected,
         )
 
         # Start button
@@ -51,7 +73,7 @@ class Second(BaseMenu):
             text="Start",
             scale=0.07,
             command=game_ui,
-            pos=(0, 0, 0.1),
+            pos=(0, 0, -0.1),
             parent=self.frame,
         )
 
@@ -60,7 +82,7 @@ class Second(BaseMenu):
             text="Back to Main Menu",
             scale=0.07,
             command=primary,
-            pos=(-0.4, 0, -0.3),
+            pos=(-0.4, 0, -0.4),
             parent=self.frame,
         )
 
@@ -73,4 +95,11 @@ class Second(BaseMenu):
     def on_empire_selected(self, selected_empire):
         self.settings.player = selected_empire
         print("Selected empire:", selected_empire)
-        # Handle the empire selection logic here
+
+    def on_enemies_selected(self, selected_enemies):
+        self.settings.num_enemies = int(selected_enemies)
+        print("Selected number of enemies:", self.settings.enemies)
+
+    def on_difficulty_selected(self, selected_difficulty):
+        self.settings.difficulty = selected_difficulty
+        print("Selected difficulty:", selected_difficulty)

@@ -1,18 +1,20 @@
-from ._base_terrain import BaseTerrain
+# Lake class
+from managers.i18n import T_TranslationOrStr
+from ._base_terrain import BaseTerrain, rgb
+from data.terrain.traits.water import open_water_lake
 
-from data.terrain.traits.land import hilly, buildable
 
+class Lake(BaseTerrain):
+    _name: T_TranslationOrStr = "world.terrain.sea_water"
+    _model: str = "assets/models/tiles/sea.obj"
+    _texture: T_TranslationOrStr = "assets/models/tiles/sea_water.png"
+    _fallback_color = rgb(0, 119, 255)
 
-class HillsWasteland(BaseTerrain):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.name = "world.terrain.hills_wasteland"
-
+        self.name = self._name
+        self.fallback_color = self._fallback_color
         self.movement_modifier = 0.5
-        self.water_availability = 0.25
 
-        self._model = "assets/models/tiles/hills_wasteland.obj"
-        self._texture = "assets/models/tiles/hills_wasteland.png"
-
-        self.add_modifiers(hilly + buildable)
+        self.add_modifiers(open_water_lake)

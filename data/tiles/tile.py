@@ -1,4 +1,4 @@
-from panda3d.core import NodePath, LRGBColor
+from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List
 from data.terrain._base_terrain import BaseTerrain
 from gameplay.combat.damage import DamageMode
@@ -14,15 +14,21 @@ from managers.player import PlayerManager, Player
 
 
 class Tile:
-    def __init__(self, id: Any, x: int, y: int, node: NodePath):
+    def __init__(
+        self, base, x: int = 0, y: int = 0, pos_x: float = 0.0, pos_y: float = 0.0
+    ):
         self.id = id
         self.x: int = x
+        self.base = base
         self.y: int = y
-        self.node: NodePath = node
+        self.pos_x: float = pos_x
+        self.pos_y: float = pos_y
+
         self.tile_terrain: Optional[BaseTerrain] = None
         self.destroyed = False
         self.grid_position = None
         self.raw_position = None
+        self.tag = None
 
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height = 0
@@ -111,6 +117,21 @@ class Tile:
 
     def __repr__(self) -> str:
         return f"{str(self.id)}@{str(self.x)},{str(self.y)}"
+
+    def render(self):
+        hex_model = self.base.loader.loadModel(self.tile_terrain.model())
+        hex_model.setScale(0.48)
+        # Rotate the model so it lies flat.
+        hex_model.setHpr(90, 0, 0)
+        new_hex = hex_model.copyTo(self.base.render)
+
+        new_hex.setPos(self.pos_x, self.pos_y, 0)
+
+        # Give the render-geometry a collide mask so ray/solid can detect it
+        new_hex.setCollideMask(BitMask32.bit(1))
+        tag = f"tile_{self.x}_{self.y}"
+        # Optionally, tag the tile for identification
+        self.render = new_hex.setTag("tile_id", tag)
 
     def set_color(self, color: tuple[float, float, float, float]):
         self.node.setColor(*color)

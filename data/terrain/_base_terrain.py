@@ -17,7 +17,7 @@ class BaseTerrain:
         self.name: T_TranslationOrStr = ""
         self.user_title: T_TranslationOrStr = ""
         self._texture: T_TranslationOrStr = ""
-        self._model = "assets/models/tiles/base_testing.obj"
+        self._model = "assets/models/tiles/town.glb"
 
         self.movement_modifier: float = 0.0
         self.water_availability: float = 1.0
@@ -26,10 +26,10 @@ class BaseTerrain:
         self.tile_modifiers: TileModifiers = TileModifiers()
         self.tile_yield_modifiers: List[TileYieldModifier] = []
 
-    def model(self):
-        return self.model
+    def model(self) -> str:
+        return self._model
 
-    def texture(self):
+    def texture(self) -> str:
         return self._texture
 
     def add_modifiers(self, modifiers: List[TileModifier] | Tuple[TileModifier, ...]):

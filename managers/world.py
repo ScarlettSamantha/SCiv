@@ -10,7 +10,7 @@ class World(Singleton):
     def __setup__(self, base):
         self.base = base
         self.hex_radius: float = 0.5
-        self.col_spacing: float = 1.5
+        self.col_spacing: float = 1.4
         self.cols: int = 5
         self.rows: int = 5
         self.middle_x: Optional[float] = None

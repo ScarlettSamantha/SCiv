@@ -2,12 +2,11 @@ from ._base_terrain import BaseTerrain
 
 
 class Coast(BaseTerrain):
+    _name = "world.terrain.coast"
+    fallback_color = (0, 119, 255)
+    movement_modifier = 0.5
+    _model = None  # Final assignment: _model is set to None.
+    _texture = "assets/models/tiles/water2.png"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.name = "world.terrain.coast"
-        self.fallback_color = (0, 119, 255)
-        self.movement_modifier = 0.5
-        self._model = "assets/models/tiles/water2.obj"
-        self._texture = "assets/models/tiles/water2.png"
-        self._model = None

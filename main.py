@@ -11,12 +11,14 @@ from managers.config import ConfigManager
 from managers.i18n import _i18n, set_i18n
 from managers.game import Game
 
+import simplepbr
+
 
 class FlatHexExample(ShowBase):
     def __init__(self, config_mgr):
         # config_mgr must be applied BEFORE ShowBase to set up prc data
         ShowBase.__init__(self)
-
+        simplepbr.init()
         self.config_mgr = config_mgr
         self.disableMouse()
 
