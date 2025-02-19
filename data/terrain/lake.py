@@ -11,7 +11,7 @@ class Lake(BaseTerrain):
         self.name = "world.terrain.sea_water"
         self.fallback_color = rgb(0, 119, 255)
         self.movement_modifier = 0.5
-        self._model = "assets/models/tiles/lake.obj"
-        self._texture = "assets/models/tiles/lake.png"
+        self._model = "assets/models/tiles/sea.obj"
+        self._texture = "assets/models/tiles/sea_water.png"
 
         self.add_modifiers(open_water_lake)
