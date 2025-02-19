@@ -28,7 +28,7 @@ class Second(BaseMenu):
         self.size_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
-            items=["50x50", "100x100", "150x150", "250x250", "350x350", "500x500"],
+            items=["50x50", "75x75", "100x100", "125x125", "150x150"],
             initialitem=0,  # Which item is selected by default
             highlightColor=(0.65, 0.65, 0.65, 1),
             pos=(-0.4, 0, 0.2),
