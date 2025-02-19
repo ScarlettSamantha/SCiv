@@ -14,7 +14,6 @@ class LogManager(Singleton):
         self.testing_mode: bool = testing_mode
         self.loggers: Dict[str, logging.Logger] = {}
         self.setup_loggers()
-        self.redirect_output_to_debug()
 
     def setup_loggers(self) -> None:
         log_types: Dict[str, int] = {
@@ -61,60 +60,6 @@ class LogManager(Singleton):
 
             self.loggers[log_type] = logger
 
-    def redirect_output_to_debug(self):
-        """
-        Redirects the stdout and stderr to the engine logger.
-        """
-
-        class RedirectOutput:
-            """
-            A class to redirect stdout to a logger instance with a specified log level.
-
-            Attributes:
-                logger (logging.Logger): The logger instance where the messages are redirected.
-                method (Union[Callable, str]): The logging method to use for output.
-                buffer (str): Buffer to store messages before logging.
-            """
-
-            def __init__(
-                self,
-                logger: logging.Logger,
-                method: Union[Callable[..., Any], str] = "debug",
-                testing_mode: bool = False,
-            ) -> None:
-                self.logger: logging.Logger = logger
-                self.buffer = ""
-                self.testing_mode: bool = testing_mode
-
-                # Set the logging method based on the provided method argument
-                if isinstance(method, str):
-                    self.log_method: Callable[..., Any] = getattr(logger, method)
-                else:
-                    self.log_method: Callable[..., Any] = method
-
-            def write(self, message: str) -> None:
-                """
-                Write the message to the buffer. Logs each line when a newline is encountered.
-
-                Args:
-                    message (str): The message to write to the buffer.
-                """
-                if not self.testing_mode:
-                    self.buffer += message
-                    while "\n" in self.buffer:
-                        line, self.buffer = self.buffer.split(sep="\n", maxsplit=1)
-                        self.log_method(line)
-
-            def flush(self) -> None:
-                """
-                Flush the buffer, logging any remaining messages.
-                """
-                if not self.testing_mode and self.buffer:
-                    self.log_method(self.buffer)
-                    self.buffer = ""
-
-        sys.stdout = RedirectOutput(logger=self.ursina, method="debug", testing_mode=self.testing_mode)
-        sys.stderr = RedirectOutput(logger=self.ursina, method="error", testing_mode=self.testing_mode)
 
     def log(self, log_type: str, message: str):
         if log_type in self.loggers:
@@ -140,7 +85,6 @@ class LogManager(Singleton):
         """
         self.testing_mode = testing_mode
         self.setup_loggers()
-        self.redirect_output_to_debug()
 
     @property
     def gameplay(self) -> logging.Logger:
@@ -161,7 +105,3 @@ class LogManager(Singleton):
     @property
     def debug(self) -> logging.Logger:
         return self.loggers["debug"]
-
-    @property
-    def ursina(self) -> logging.Logger:
-        return self.loggers["ursina"]

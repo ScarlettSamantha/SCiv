@@ -1,0 +1,2333 @@
+{
+  "en_EN": {
+    "world": {
+      "terrain": {
+        "mountain": "Mountain",
+        "ocean": "Ocean",
+        "coast": "Coast",
+
+        "flat_desert": "Flat desert",
+        "flat_forest": "Flat forest",
+        "flat_snow": "Flat now",
+        "flat_tundra": "Flat tundra",
+        "flat_wasteland": "Flat wasteland",
+
+        "hills_desert": "Hilly Dessert",
+        "hills_forest": "Hilly Forest",
+        "hills_grass": "Hilly Grass",
+        "hills_snow": "Hilly Snow",
+        "hills_tundra": "Hilly Tundra",
+        "hills_wasteland": "Hilly Wasteland"
+      }
+    },
+    "tiles": {
+      "resources": {
+        "food_farm_tier_1_name": "Farm (tier 1)",
+        "food_farm_tier_1_description": "A basic farm"
+      }
+    },
+    "civilization": {
+      "rome": {
+        "name": "Rome",
+        "description": "The Great Roman Empire",
+        "leaders": {
+          "ceasar": {
+            "name": "Julius Caesar",
+            "description": "Roman general and statesman"
+          },
+          "augustus": {
+            "name": "Augustus",
+            "description": "First Roman emperor"
+          }
+        }
+      },
+      "american_empire": {
+        "name": "American Empire",
+        "description": "The Great American Empire",
+        "leaders": {
+          "abraham_lincoln": {
+            "name": "Abraham Lincoln",
+            "description": "16th U.S. president, Civil War leader"
+          },
+          "fdr": {
+            "name": "Franklin D. Roosevelt",
+            "description": "32nd U.S. president, New Deal architect"
+          },
+          "kamehameha": {
+            "name": "Kamehameha",
+            "description": "Unifier of the Hawaiian Islands"
+          },
+          "sitting_bull": {
+            "name": "Sitting Bull",
+            "description": "Lakota leader, Battle of Little Bighorn"
+          }
+        }
+      },
+      "greece": {
+        "name": "Greece",
+        "description": "The Great Greek Empire",
+        "leaders": {
+          "alexander": {
+            "name": "Alexander the Great",
+            "description": "Conqueror of the known world"
+          },
+          "leonidas": {
+            "name": "Leonidas",
+            "description": "Spartan king, Battle of Thermopylae"
+          }
+        }
+      },
+      "low_countries": {
+        "name": "Low Countries",
+        "description": "The Great Low Countries",
+        "leaders": {
+          "william": {
+            "name": "William of Orange",
+            "description": "Leader of Dutch revolt"
+          },
+          "ambiorix": {
+            "name": "Ambiorix",
+            "description": "Eburonean chieftain, anti-Roman resistance"
+          },
+          "joan_van_oldenbarnevelt": {
+            "name": "Joan van Oldenbarnevelt",
+            "description": "Dutch statesman, VoC founder"
+          }
+        }
+      },
+      "ottoman": {
+        "name": "Ottoman Empire",
+        "description": "The Great Ottoman Empire",
+        "leaders": {
+          "suleiman": {
+            "name": "Suleiman the Magnificent",
+            "description": "Sultan during the Ottoman golden age"
+          },
+          "attaturk": {
+            "name": "Atatürk",
+            "description": "Founder of modern Turkey"
+          }
+        }
+      },
+      "akkadian": {
+        "name": "Akkadian Empire",
+        "description": "The Great Akkadian Empire",
+        "leaders": {
+          "sargon": {
+            "name": "Sargon of Akkad",
+            "description": "Founder of Akkadian Empire"
+          },
+          "naram_sin": {
+            "name": "Naram-Sin",
+            "description": "Akkadian emperor, Sargon's grandson"
+          }
+        }
+      },
+      "spain": {
+        "name": "Spain",
+        "description": "The Great Spanish Empire",
+        "leaders": {
+          "isabella": {
+            "name": "Isabella",
+            "description": "Queen, Columbus' sponsor"
+          },
+          "philip": {
+            "name": "Philip II",
+            "description": "King during Spanish golden age"
+          },
+          "charles_v": {
+            "name": "Charles V",
+            "description": "Holy Roman Emperor, Spanish king"
+          },
+          "charles_iii": {
+            "name": "Charles III",
+            "description": "Reforming Spanish monarch"
+          },
+          "james": {
+            "name": "James I",
+            "description": "Union of the Crowns initiator"
+          }
+        }
+      },
+      "france": {
+        "name": "France",
+        "description": "The Great French Empire",
+        "leaders": {
+          "charlemange": {
+            "name": "Charlemagne",
+            "description": "First Holy Roman Emperor"
+          },
+          "de_gaulle": {
+            "name": "Charles De Gaulle",
+            "description": "Leader of Free France"
+          },
+          "louis": {
+            "name": "Louis XIV",
+            "description": "The Sun King, absolute monarch"
+          },
+          "napoleon": {
+            "name": "Napoleon",
+            "description": "Military genius, French emperor"
+          }
+        }
+      },
+      "egypt": {
+        "name": "Egypt",
+        "description": "The Great Egyptian Empire",
+        "leaders": {
+          "cleopatra": {
+            "name": "Cleopatra",
+            "description": "Last Pharaoh of Egypt"
+          },
+          "ramesses": {
+            "name": "Ramesses II",
+            "description": "Great builder Pharaoh"
+          }
+        }
+      },
+      "vikings": {
+        "name": "Vikings",
+        "description": "The great Vikings",
+        "leaders": {
+          "ragnar": {
+            "name": "Ragnar Lothbrok",
+            "description": "Legendary Norse hero"
+          },
+          "cnut": {
+            "name": "Cnut the Great",
+            "description": "King of Denmark, England, Norway"
+          },
+          "herald": {
+            "name": "Harald Fairhair",
+            "description": "First King of Norway"
+          }
+        }
+      },
+      "byzantine": {
+        "name": "Byzantine Empire",
+        "description": "The great Byzantine Empire",
+        "leaders": {
+          "justinian": {
+            "name": "Justinian",
+            "description": "Emperor, Codified Roman law"
+          },
+          "constantine": {
+            "name": "Constantine",
+            "description": "First Christian emperor"
+          }
+        }
+      },
+      "persia": {
+        "name": "Persia",
+        "description": "The great Persian Empire",
+        "leaders": {
+          "darius": {
+            "name": "Darius the Great",
+            "description": "Expanded Persian Empire"
+          },
+          "xerxes": {
+            "name": "Xerxes",
+            "description": "Led Persian invasion of Greece"
+          },
+          "nebuchadnezzar": {
+            "name": "Nebuchadnezzar",
+            "description": "King of Neo-Babylonian Empire"
+          }
+        }
+      },
+      "china": {
+        "name": "China",
+        "description": "The great Chinese Empire",
+        "leaders": {
+          "qin_shi_huang": {
+            "name": "Qin Shi Huang",
+            "description": "First Emperor of unified China"
+          },
+          "kublai": {
+            "name": "Kublai Khan",
+            "description": "Founder of Yuan Dynasty"
+          }
+        }
+      },
+      "japan": {
+        "name": "Japan",
+        "description": "The great Japanese Empire",
+        "leaders": {
+          "tokugawa": {
+            "name": "Tokugawa Ieyasu",
+            "description": "Shogun, unified Japan"
+          },
+          "meiji": {
+            "name": "Meiji",
+            "description": "Emperor, modernized Japan"
+          },
+          "taisho": {
+            "name": "Taisho",
+            "description": "Emperor during Taisho Democracy"
+          }
+        }
+      },
+      "england": {
+        "name": "England",
+        "description": "The great English Empire",
+        "leaders": {
+          "elizabeth": {
+            "name": "Elizabeth I",
+            "description": "Virgin Queen, Spanish Armada defiance"
+          },
+          "victoria": {
+            "name": "Victoria",
+            "description": "Longest-reigning British monarch"
+          }
+        }
+      },
+      "korea": {
+        "name": "Korea",
+        "description": "The great Korean Empire",
+        "leaders": {
+          "sejong": {
+            "name": "Sejong the Great",
+            "description": "Inventor of Hangul script"
+          },
+          "goi": {
+            "name": "Gojong",
+            "description": "Last Emperor of Korea"
+          }
+        }
+      },
+      "ussr": {
+        "name": "USSR",
+        "description": "The great USSR",
+        "leaders": {
+          "lenin": {
+            "name": "Lenin",
+            "description": "Founder of Soviet Union"
+          },
+          "gorbachev": {
+            "name": "Gorbachev",
+            "description": "Reformer, ended Cold War"
+          },
+          "peter": {
+            "name": "Peter the Great",
+            "description": "Modernizer of Russia"
+          }
+        }
+      },
+      "germany": {
+        "name": "Germany",
+        "description": "The great German Empire",
+        "leaders": {
+          "otto": {
+            "name": "Otto von Bismarck",
+            "description": "Unified German states"
+          },
+          "wilhelm": {
+            "name": "Wilhelm I",
+            "description": "First German Emperor"
+          }
+        }
+      }
+    },
+    "tech": {
+      "advanced_ballistics": {
+        "name": "Advanced Ballistics",
+        "description": "High-precision projectile technology and science."
+      },
+      "advanced_flight": {
+        "name": "Advanced Flight",
+        "description": "Modern aviation technologies and advancements."
+      },
+      "agriculture": {
+        "name": "Agriculture",
+        "description": "Cultivation of crops and animals."
+      },
+      "animal_husbandry": {
+        "name": "Animal Husbandry",
+        "description": "Breeding and raising livestock animals."
+      },
+      "apprenticeship": {
+        "name": "Apprenticeship",
+        "description": "Learning a trade through practical experience."
+      },
+      "archery": {
+        "name": "Archery",
+        "description": "Use of bows in hunting and warfare."
+      },
+      "artificial_intelligence": {
+        "name": "Artificial Intelligence",
+        "description": "Machines simulating human intelligence and learning."
+      },
+      "banking": {
+        "name": "Banking",
+        "description": "Management of financial transactions and institutions."
+      },
+      "biology": {
+        "name": "Biology",
+        "description": "Study of living organisms and life."
+      },
+      "bronze_working": {
+        "name": "Bronze Working",
+        "description": "Crafting tools and weapons from bronze."
+      },
+      "buttress": {
+        "name": "Buttress",
+        "description": "Support structures for large buildings."
+      },
+      "calendar": {
+        "name": "Calendar",
+        "description": "System for organizing days and time."
+      },
+      "cartography": {
+        "name": "Cartography",
+        "description": "Map-making and geographic studies."
+      },
+      "castles": {
+        "name": "Castles",
+        "description": "Fortified residences and defensive structures."
+      },
+      "celestial_navigation": {
+        "name": "Celestial Navigation",
+        "description": "Navigating by stars and celestial bodies."
+      },
+      "chemistry": {
+        "name": "Chemistry",
+        "description": "Study of substances and their reactions."
+      },
+      "clay_tablets": {
+        "name": "Clay Tablets",
+        "description": "Early medium for recording writing."
+      },
+      "combined_arms": {
+        "name": "Combined Arms",
+        "description": "Coordinated military strategies using multiple forces."
+      },
+      "combustion": {
+        "name": "Combustion",
+        "description": "Burning fuels for energy production."
+      },
+      "composites": {
+        "name": "Composites",
+        "description": "Materials made from multiple combined substances."
+      },
+      "computers": {
+        "name": "Computers",
+        "description": "Programmable electronic devices for computation."
+      },
+      "construction": {
+        "name": "Construction",
+        "description": "Building infrastructure and large buildings."
+      },
+      "currency": {
+        "name": "Currency",
+        "description": "Standardized money for trade and economy."
+      },
+      "economics": {
+        "name": "Economics",
+        "description": "Study of production, trade, and consumption."
+      },
+      "education": {
+        "name": "Education",
+        "description": "System of learning and teaching knowledge."
+      },
+      "electricity": {
+        "name": "Electricity",
+        "description": "Harnessing electrical power for use."
+      },
+      "electronics": {
+        "name": "Electronics",
+        "description": "Devices using electrical circuits and components."
+      },
+      "engineering": {
+        "name": "Engineering",
+        "description": "Design and construction of structures and machines."
+      },
+      "flight": {
+        "name": "Flight",
+        "description": "Human technology for powered flight."
+      },
+      "genetics": {
+        "name": "Genetics",
+        "description": "Study of genes, heredity, and DNA."
+      },
+      "guidance_systems": {
+        "name": "Guidance Systems",
+        "description": "Navigation aids for vehicles and missiles."
+      },
+      "gunpowder": {
+        "name": "Gunpowder",
+        "description": "Explosive substance for firearms and explosives."
+      },
+      "hunting_gathering": {
+        "name": "Hunting & Gathering",
+        "description": "Primitive methods for food sourcing."
+      },
+      "horseback_riding": {
+        "name": "Horseback Riding",
+        "description": "Riding horses for travel and warfare."
+      },
+      "industrialization": {
+        "name": "Industrialization",
+        "description": "Mass production and growth of industries."
+      },
+      "irrigation": {
+        "name": "Irrigation",
+        "description": "Artificial watering systems for crops."
+      },
+      "iron_working": {
+        "name": "Iron Working",
+        "description": "Creating tools and weapons from iron."
+      },
+      "machinery": {
+        "name": "Machinery",
+        "description": "Complex devices and engines for work."
+      },
+      "mass_production": {
+        "name": "Mass Production",
+        "description": "Large-scale manufacturing processes and techniques."
+      },
+      "mathematics": {
+        "name": "Mathematics",
+        "description": "The study of numbers and patterns."
+      },
+      "masonry": {
+        "name": "Masonry",
+        "description": "Building with stone and bricks."
+      },
+      "metal_casting": {
+        "name": "Metal Casting",
+        "description": "Forming metal objects by melting and molding."
+      },
+      "military_engineering": {
+        "name": "Military Engineering",
+        "description": "Construction of military structures and fortifications."
+      },
+      "military_science": {
+        "name": "Military Science",
+        "description": "Study of military operations and strategy."
+      },
+      "military_tactics": {
+        "name": "Military Tactics",
+        "description": "Strategic planning of military battles."
+      },
+      "mining": {
+        "name": "Mining",
+        "description": "Extraction of minerals and resources."
+      },
+      "nanotechnology": {
+        "name": "Nanotechnology",
+        "description": "Manipulating matter at the atomic scale."
+      },
+      "nuclear_fission": {
+        "name": "Nuclear Fission",
+        "description": "Splitting atomic nuclei for energy."
+      },
+      "nuclear_fusion": {
+        "name": "Nuclear Fusion",
+        "description": "Fusing atomic nuclei for immense energy."
+      },
+      "philosophy": {
+        "name": "Philosophy",
+        "description": "Study of fundamental existential questions."
+      },
+      "physics": {
+        "name": "Physics",
+        "description": "Study of matter, energy, and forces."
+      },
+      "plastics": {
+        "name": "Plastics",
+        "description": "Synthetic materials for manufacturing and use."
+      },
+      "printing": {
+        "name": "Printing",
+        "description": "Reproduction of text and images on paper."
+      },
+      "radio": {
+        "name": "Radio",
+        "description": "Wireless communication technology using radio waves."
+      },
+      "refining": {
+        "name": "Refining",
+        "description": "Purifying raw materials for use."
+      },
+      "replaceable_parts": {
+        "name": "Replaceable Parts",
+        "description": "Interchangeable components for machines and devices."
+      },
+      "rifling": {
+        "name": "Rifling",
+        "description": "Grooves in gun barrels for improved accuracy."
+      },
+      "robotics": {
+        "name": "Robotics",
+        "description": "Automated machines and robotic technology."
+      },
+      "rocketry": {
+        "name": "Rocketry",
+        "description": "Building rockets for propulsion and space."
+      },
+      "sanitation": {
+        "name": "Sanitation",
+        "description": "Clean water and waste management systems."
+      },
+      "satellites": {
+        "name": "Satellites",
+        "description": "Artificial objects orbiting in space."
+      },
+      "scientific_theory": {
+        "name": "Scientific Theory",
+        "description": "Foundations of scientific principles and theories."
+      },
+      "ship_building": {
+        "name": "Ship Building",
+        "description": "Constructing vessels for water travel."
+      },
+      "siege_tactics": {
+        "name": "Siege Tactics",
+        "description": "Methods of besieging and capturing fortifications."
+      },
+      "space_travel": {
+        "name": "Space Travel",
+        "description": "Travel beyond Earth's atmosphere and into space."
+      },
+      "square_rigging": {
+        "name": "Square Rigging",
+        "description": "Sailing ship rigging technology for wind navigation."
+      },
+      "stealth_technology": {
+        "name": "Stealth Technology",
+        "description": "Camouflage and invisibility technologies."
+      },
+      "steam_power": {
+        "name": "Steam Power",
+        "description": "Energy generation using steam engines."
+      },
+      "steel": {
+        "name": "Steel",
+        "description": "Strong alloy used in construction and tools."
+      },
+      "stirrups": {
+        "name": "Stirrups",
+        "description": "Supports for feet while riding horses."
+      },
+      "synthetic_materials": {
+        "name": "Synthetic Materials",
+        "description": "Man-made materials with advanced properties."
+      },
+      "telecommunications": {
+        "name": "Telecommunications",
+        "description": "Transmission of information over long distances."
+      },
+      "wheel": {
+        "name": "Wheel",
+        "description": "Invention of the wheel for transportation."
+      },
+      "writing": {
+        "name": "Writing",
+        "description": "Systematic recording of information and ideas."
+      }
+    },
+    "content": {
+      "planes": {
+        "core": {
+          "air": {
+            "name": "Air",
+            "description": "Air plane"
+          },
+          "naval": {
+            "name": "Naval",
+            "description": "Naval plane"
+          },
+          "land": {
+            "name": "Land",
+            "description": "Land plane"
+          },
+          "space": {
+            "name": "Space",
+            "description": "Space plane"
+          }
+        }
+      },
+      "resources": {
+        "science": {
+          "name": "Science",
+          "description": "A science resource"
+        },
+        "production": {
+          "name": "Production",
+          "description": "A production resource"
+        },
+        "food": {
+          "name": "Food",
+          "description": "A food resource"
+        },
+        "gold": {
+          "name": "Gold",
+          "description": "A gold resource"
+        },
+        "culture": {
+          "name": "Culture",
+          "description": "A culture resource"
+        },
+        "faith": {
+          "name": "Faith",
+          "description": "A faith resource"
+        },
+        "happiness": {
+          "name": "Happiness",
+          "description": "A happiness resource"
+        },
+        "contentment": {
+          "name": "Contentment",
+          "description": "A contentment resource"
+        },
+        "angre": {
+          "name": "Angre",
+          "description": "An anger resource"
+        },
+        "revolt": {
+          "name": "Revolt",
+          "description": "A revolt resource"
+        },
+        "stability": {
+          "name": "Stability",
+          "description": "A stability resource"
+        },
+        "great_person_science": {
+          "name": "Great Person Science",
+          "description": "A great person science resource"
+        },
+        "great_person_production": {
+          "name": "Great Person Production",
+          "description": "A great person production resource"
+        },
+        "great_person_commerece": {
+          "name": "Great Person Commerece",
+          "description": "A great person gold resource"
+        },
+        "great_person_culture": {
+          "name": "Great Person Culture",
+          "description": "A great person culture resource"
+        },
+        "great_person_faith": {
+          "name": "Great Person Faith",
+          "description": "A great person faith resource"
+        },
+        "great_person_military": {
+          "name": "Great Person Military",
+          "description": "A great person military resource"
+        },
+        "great_person_hero": {
+          "name": "Great Person Hero",
+          "description": "A great person Hero resource"
+        },
+        "great_person_explorer": {
+          "name": "Great Person Explorer",
+          "description": "A great person explorer resource"
+        },
+        "great_person_diplomat": {
+          "name": "Great Person Diplomat",
+          "description": "A great person diplomat resource"
+        },
+        "core": {
+          "types": {
+            "basic": {
+              "name": "Basic",
+              "description": "A basic game resource"
+            },
+            "bonus": {
+              "name": "Bonus",
+              "description": "A bonus resource"
+            },
+            "strategic": {
+              "name": "Strategic",
+              "description": "A strategic resource"
+            },
+            "luxury": {
+              "name": "Luxury",
+              "description": "A luxury resource"
+            },
+            "mechanic": {
+              "name": "Mechanic",
+              "description": "Internal game mechanics resource"
+            }
+          },
+
+          "bison": {
+            "name": "Bison",
+            "description": "A large wild animal of the bovine family, important for food and raw materials."
+          },
+          "cheese": {
+            "name": "Cheese",
+            "description": "A dairy product derived from milk, used as food."
+          },
+          "copper": {
+            "name": "Copper",
+            "description": "A reddish-brown metal used as a conductor of heat and electricity."
+          },
+          "cows": {
+            "name": "Cows",
+            "description": "Domesticated bovines, essential for dairy and meat production."
+          },
+          "deer": {
+            "name": "Deer",
+            "description": "Wild animals known for their antlers and valued for their meat and hide."
+          },
+          "ember": {
+            "name": "Ember",
+            "description": "A small piece of burning or glowing coal or wood in a dying fire."
+          },
+          "fish": {
+            "name": "Fish",
+            "description": "Aquatic animals that are caught for food."
+          },
+          "furs": {
+            "name": "Furs",
+            "description": "The hairy coat of certain animals, valued for warmth and clothing."
+          },
+          "glass": {
+            "name": "Glass",
+            "description": "A hard, brittle substance typically made from sand, used in windows and bottles."
+          },
+          "hardwood": {
+            "name": "Hardwood",
+            "description": "Wood from broad-leaved trees, used for furniture and flooring."
+          },
+          "murcury": {
+            "name": "Murcury",
+            "description": "A heavy silvery metal that is liquid at room temperature, used in thermometers."
+          },
+          "obsidian": {
+            "name": "Obsidian",
+            "description": "A hard, dark, glass-like volcanic rock used for tools and weapons."
+          },
+          "pigs": {
+            "name": "Pigs",
+            "description": "Domesticated animals kept for their meat and other products."
+          },
+          "potato": {
+            "name": "Potato",
+            "description": "A starchy tuberous crop that is a staple food in many countries."
+          },
+          "rice": {
+            "name": "Rice",
+            "description": "A cereal grain that is a staple food for a large part of the world's population."
+          },
+          "salt": {
+            "name": "Salt",
+            "description": "A mineral composed primarily of sodium chloride, used for seasoning and preservation."
+          },
+          "tin": {
+            "name": "Tin",
+            "description": "A soft, silvery-white metal used in alloys and for coating iron to prevent rust."
+          },
+          "whales": {
+            "name": "Whales",
+            "description": "Large marine mammals hunted for their oil and meat."
+          },
+          "wheat": {
+            "name": "Wheat",
+            "description": "A cereal grain that is a staple food used to make flour for bread."
+          },
+          "cats": {
+            "name": "Cats",
+            "description": "Domesticated felines valued for companionship and pest control."
+          },
+          "diamonds": {
+            "name": "Diamonds",
+            "description": "Precious gemstones made of carbon, valued for their hardness and sparkle."
+          },
+          "dogs": {
+            "name": "Dogs",
+            "description": "Domesticated canines valued for companionship, work, and protection."
+          },
+          "gold": {
+            "name": "Gold",
+            "description": "A yellow precious metal highly valued for use in jewelry and as currency."
+          },
+          "ivory": {
+            "name": "Ivory",
+            "description": "A hard white material from the tusks of elephants, valued for carving and ornaments."
+          },
+          "jade": {
+            "name": "Jade",
+            "description": "A green gemstone used in ornaments and jewelry."
+          },
+          "marble": {
+            "name": "Marble",
+            "description": "A metamorphic rock used in sculpture and building materials."
+          },
+          "silver": {
+            "name": "Silver",
+            "description": "A precious metal valued for its use in jewelry, currency, and as an industrial metal."
+          },
+          "aluminium": {
+            "name": "Aluminium",
+            "description": "A lightweight, silvery metal used in a wide variety of applications."
+          },
+          "coal": {
+            "name": "Coal",
+            "description": "A black or brownish-black sedimentary rock used as a fuel source."
+          },
+          "gas": {
+            "name": "Gas",
+            "description": "Natural gas, a fossil fuel used as an energy source."
+          },
+          "graphite": {
+            "name": "Graphite",
+            "description": "A form of carbon used in pencils and as a lubricant."
+          },
+          "horses": {
+            "name": "Horses",
+            "description": "Domesticated animals used for riding, work, and companionship."
+          },
+          "oil": {
+            "name": "Oil",
+            "description": "A viscous liquid derived from petroleum, used as a fuel and in various products."
+          },
+          "rare_earth_metals": {
+            "name": "Rare Earth Metals",
+            "description": "A group of 17 chemically similar elements crucial in high-tech devices."
+          },
+          "uranium": {
+            "name": "Uranium",
+            "description": "A heavy metal used as a fuel in nuclear reactors."
+          },
+          "food": {
+            "name": "Food",
+            "description": "A food resource"
+          },
+          "production": {
+            "name": "Production",
+            "description": "A production resource"
+          }
+        }
+      },
+      "tech": {
+        "trees": {
+          "core": {
+            "name": "Core",
+            "description": "The core technologies"
+          }
+        }
+      },
+      "culture": {
+        "tree": {
+          "core": {
+            "name": "Core",
+            "description": "The core cultural advancements"
+          }
+        },
+        "subtrees": {
+          "core": {
+            "liberalism": {
+              "name": "Liberalism",
+              "description": "Political philosophy focused on individual freedoms and equality."
+            },
+            "nationalism": {
+              "name": "Nationalism",
+              "description": "Ideology emphasizing loyalty and devotion to a nation."
+            },
+            "socialism": {
+              "name": "Socialism",
+              "description": "System advocating for collective or governmental ownership of production."
+            },
+            "fascism": {
+              "name": "Fascism",
+              "description": "Authoritarian ideology centered on nationalism and dictatorial power."
+            },
+            "communism": {
+              "name": "Communism",
+              "description": "Ideology for a classless system where resources are shared equally."
+            },
+            "capitalism": {
+              "name": "Capitalism",
+              "description": "Economic system based on private ownership and free markets."
+            },
+            "democracy": {
+              "name": "Democracy",
+              "description": "System of government by the whole population, usually through elected representatives."
+            },
+            "monarchy": {
+              "name": "Monarchy",
+              "description": "Government system with a hereditary ruler, such as a king or queen."
+            },
+            "theocracy": {
+              "name": "Theocracy",
+              "description": "Government system in which priests rule in the name of a deity."
+            },
+            "dictatorship": {
+              "name": "Dictatorship",
+              "description": "Authoritarian government where power is concentrated in one leader."
+            },
+            "oligarchy": {
+              "name": "Oligarchy",
+              "description": "Power structure where a small number of people control the country."
+            },
+            "anarchy": {
+              "name": "Anarchy",
+              "description": "Absence of government and absolute freedom of individuals."
+            },
+            "corporatocracy": {
+              "name": "Corporatocracy",
+              "description": "Control of a state or organization by large corporations."
+            },
+            "slavery": {
+              "name": "Slavery",
+              "description": "System where individuals are owned and forced to work by others."
+            },
+            "puritanism": {
+              "name": "Puritanism",
+              "description": "Movement advocating for strict religious discipline and moral purity."
+            },
+            "technocracy": {
+              "name": "Technocracy",
+              "description": "Government or control by technical experts and professionals."
+            },
+            "rationalism": {
+              "name": "Rationalism",
+              "description": "Philosophical belief in reason as the primary source of knowledge."
+            },
+            "unionism": {
+              "name": "Unionism",
+              "description": "Ideology focused on unifying diverse states or cultures through democratic processes."
+            },
+            "federalism": {
+              "name": "Federalism",
+              "description": "System of government where power is divided between a central authority and constituent units."
+            }
+          }
+        },
+        "civics": {
+          "core": {
+            "individual_rights": {
+              "name": "Individual Rights",
+              "description": "Guarantees personal freedoms and protections under the law."
+            },
+            "free_market": {
+              "name": "Free Market",
+              "description": "Encourages economic growth through unrestricted trade and competition."
+            },
+            "representative_democracy": {
+              "name": "Representative Democracy",
+              "description": "Citizens elect representatives to make decisions on their behalf."
+            },
+            "social_welfare": {
+              "name": "Social Welfare",
+              "description": "Provides support and services to ensure the well-being of all citizens."
+            },
+            "civil_liberties": {
+              "name": "Civil Liberties",
+              "description": "Freedom of thought and expression equality for all."
+            },
+            "global_cooperation": {
+              "name": "Global Cooperation",
+              "description": "Fosters international alliances and collaborative efforts."
+            },
+            "patriotic_education": {
+              "name": "Patriotic Education",
+              "description": "Promotes national pride and loyalty through education."
+            },
+            "cultural_preservation": {
+              "name": "Cultural Preservation",
+              "description": "Protects and promotes the unique heritage and traditions of the nation."
+            },
+            "economic_nationalism": {
+              "name": "Economic Nationalism",
+              "description": "Prioritizes national economic interests and self-sufficiency."
+            },
+            "military_strength": {
+              "name": "Military Strength",
+              "description": "Builds a powerful and well-equipped military force."
+            },
+            "national_sovereignty": {
+              "name": "National Sovereignty",
+              "description": "Asserts the nation's independence and control over its affairs."
+            },
+            "national_unity": {
+              "name": "National Unity",
+              "description": "Promotes a strong, cohesive national identity and solidarity."
+            },
+            "collective_ownership": {
+              "name": "Collective Ownership",
+              "description": "Resources and means of production are owned and managed by the community."
+            },
+            "workers_rights": {
+              "name": "Workers' Rights",
+              "description": "Ensures fair labor practices and protections for workers."
+            },
+            "universal_healthcare": {
+              "name": "Universal Healthcare",
+              "description": "Provides healthcare services to all citizens free of charge."
+            },
+            "free_education": {
+              "name": "Free Education",
+              "description": "Guarantees access to education for all citizens."
+            },
+            "social_equality": {
+              "name": "Social Equality",
+              "description": "Strives to eliminate social disparities and promote equal opportunities."
+            },
+            "state_planning": {
+              "name": "State Planning",
+              "description": "Centralized management of the economy and resources."
+            },
+            "totalitarian_control": {
+              "name": "Totalitarian Control",
+              "description": "Centralized authority with strict control over all aspects of life."
+            },
+            "state_propaganda": {
+              "name": "State Propaganda",
+              "description": "Uses media to influence public perception and promote state policies."
+            },
+            "militarization": {
+              "name": "Militarization",
+              "description": "Focuses on military expansion and readiness."
+            },
+            "corporate_state": {
+              "name": "Corporate State",
+              "description": "Government closely collaborates with large corporations."
+            },
+            "national_purity": {
+              "name": "National Purity",
+              "description": "Promotes cultural homogeneity and traditional values."
+            },
+            "leader_worship": {
+              "name": "Leader Worship",
+              "description": "Cultivates reverence and loyalty towards the nation's leader."
+            },
+            "class_abolition": {
+              "name": "Class Abolition",
+              "description": "Eliminates class distinctions to create a classless society."
+            },
+            "communal_living": {
+              "name": "Communal Living",
+              "description": "Promotes shared living and communal resource management."
+            },
+            "centralized_economy": {
+              "name": "Centralized Economy",
+              "description": "Economic decisions and planning are managed by the state."
+            },
+            "proletarian_dictatorship": {
+              "name": "Proletarian Dictatorship",
+              "description": "Working class holds political power and governs the state."
+            },
+            "collectivized_agriculture": {
+              "name": "Collectivized Agriculture",
+              "description": "Farmland and resources are collectively managed by the community."
+            },
+            "international_solidarity": {
+              "name": "International Solidarity",
+              "description": "Promotes unity and cooperation among workers worldwide."
+            },
+            "private_property": {
+              "name": "Private Property",
+              "description": "Emphasizes individual ownership and control of property."
+            },
+            "entrepreneurship": {
+              "name": "Entrepreneurship",
+              "description": "Encourages innovation and business creation."
+            },
+            "free_trade": {
+              "name": "Free Trade",
+              "description": "Eliminates trade barriers to promote global commerce."
+            },
+            "minimal_regulation": {
+              "name": "Minimal Regulation",
+              "description": "Reduces government intervention in economic activities."
+            },
+            "capital_accumulation": {
+              "name": "Capital Accumulation",
+              "description": "Focuses on generating wealth and investment opportunities."
+            },
+            "market_competition": {
+              "name": "Market Competition",
+              "description": "Encourages competition to drive innovation and efficiency."
+            },
+            "electoral_process": {
+              "name": "Electoral Process",
+              "description": "Ensures free and fair elections for governmental positions."
+            },
+            "rule_of_law": {
+              "name": "Rule of Law",
+              "description": "All citizens and institutions are subject to the law."
+            },
+            "separation_of_powers": {
+              "name": "Separation of Powers",
+              "description": "Divides government responsibilities among independent branches."
+            },
+            "human_rights": {
+              "name": "Human Rights",
+              "description": "Protects fundamental rights and freedoms for all individuals."
+            },
+            "participatory_governance": {
+              "name": "Participatory Governance",
+              "description": "Encourages direct citizen involvement in decision-making."
+            },
+            "transparent_government": {
+              "name": "Transparent Government",
+              "description": "Promotes openness and accountability in government operations."
+            },
+            "hereditary_rule": {
+              "name": "Hereditary Rule",
+              "description": "Leadership is passed down through familial lines."
+            },
+            "divine_right": {
+              "name": "Divine Right",
+              "description": "Rulers claim their authority is granted by a divine power."
+            },
+            "nobility_system": {
+              "name": "Nobility System",
+              "description": "A hierarchical system with noble titles and privileges."
+            },
+            "feudal_obligations": {
+              "name": "Feudal Obligations",
+              "description": "Lords and vassals have mutual duties and responsibilities."
+            },
+            "centralized_authority": {
+              "name": "Centralized Authority",
+              "description": "Consolidates power within a central governing body."
+            },
+            "royal_patronage": {
+              "name": "Royal Patronage",
+              "description": "The monarchy supports and sponsors cultural and scientific endeavors."
+            },
+            "religious_law": {
+              "name": "Religious Law",
+              "description": "Governs the state based on religious doctrines."
+            },
+            "clerical_rule": {
+              "name": "Clerical Rule",
+              "description": "Religious leaders hold significant political power."
+            },
+            "moral_policing": {
+              "name": "Moral Policing",
+              "description": "Enforces strict moral codes and societal norms."
+            },
+            "faith_based_education": {
+              "name": "Faith-Based Education",
+              "description": "Education system rooted in religious teachings."
+            },
+            "divine_governance": {
+              "name": "Divine Governance",
+              "description": "The state is ruled by divine guidance and religious laws."
+            },
+            "religious_unity": {
+              "name": "Religious Unity",
+              "description": "Promotes harmony and uniformity in religious beliefs and practices."
+            },
+            "autocratic_rule": {
+              "name": "Autocratic Rule",
+              "description": "A single ruler holds absolute power and authority."
+            },
+            "state_surveillance": {
+              "name": "State Surveillance",
+              "description": "Monitors citizens to maintain control and security."
+            },
+            "censorship": {
+              "name": "Censorship",
+              "description": "Restricts information and media to control public perception."
+            },
+            "repression": {
+              "name": "Repression",
+              "description": "Suppresses dissent and opposition through force."
+            },
+            "propaganda": {
+              "name": "Propaganda",
+              "description": "Disseminates biased information to shape public opinion."
+            },
+            "centralized_power": {
+              "name": "Centralized Power",
+              "description": "Consolidates political power within a single authority."
+            },
+            "elite_rule": {
+              "name": "Elite Rule",
+              "description": "A small group of elites governs and makes decisions."
+            },
+            "economic_control": {
+              "name": "Economic Control",
+              "description": "Elites manage and control economic activities and resources."
+            },
+            "limited_participation": {
+              "name": "Limited Participation",
+              "description": "Restricts political participation to a select few."
+            },
+            "wealth_accumulation": {
+              "name": "Wealth Accumulation",
+              "description": "Focuses on gathering and consolidating wealth among elites."
+            },
+            "exclusive_networks": {
+              "name": "Exclusive Networks",
+              "description": "Maintains power through privileged social and economic connections."
+            },
+            "political_manipulation": {
+              "name": "Political Manipulation",
+              "description": "Uses influence and power to control political outcomes."
+            },
+            "self_governance": {
+              "name": "Self-Governance",
+              "description": "Communities manage their own affairs independently."
+            },
+            "mutual_aid": {
+              "name": "Mutual Aid",
+              "description": "Encourages mutual support and cooperation among citizens."
+            },
+            "direct_action": {
+              "name": "Direct Action",
+              "description": "Citizens take direct, collective action to achieve goals."
+            },
+            "decentralization": {
+              "name": "Decentralization",
+              "description": "Distributes power and decision-making across multiple entities."
+            },
+            "voluntary_associations": {
+              "name": "Voluntary Associations",
+              "description": "Citizens form independent groups to address common interests."
+            },
+            "autonomy": {
+              "name": "Autonomy",
+              "description": "Empowers communities and individuals with self-rule."
+            },
+            "corporate_influence": {
+              "name": "Corporate Influence",
+              "description": "Corporations hold significant sway over government policies."
+            },
+            "lobbying_power": {
+              "name": "Lobbying Power",
+              "description": "Corporations use lobbying to influence legislative decisions."
+            },
+            "business_privileges": {
+              "name": "Business Privileges",
+              "description": "Grants special rights and benefits to businesses."
+            },
+            "economic_focus": {
+              "name": "Economic Focus",
+              "description": "Prioritizes economic growth and corporate interests."
+            },
+            "regulatory_capture": {
+              "name": "Regulatory Capture",
+              "description": "Corporations control regulatory agencies for their benefit."
+            },
+            "corporate_governance": {
+              "name": "Corporate Governance",
+              "description": "Businesses play a major role in governance and policy-making."
+            },
+            "forced_labor": {
+              "name": "Forced Labor",
+              "description": "Uses compulsory labor to achieve economic goals."
+            },
+            "ownership_rights": {
+              "name": "Ownership Rights",
+              "description": "Defines the ownership of individuals as property."
+            },
+            "labor_exploitation": {
+              "name": "Labor Exploitation",
+              "description": "Maximizes output through the exploitation of labor."
+            },
+            "social_hierarchy": {
+              "name": "Social Hierarchy",
+              "description": "Enforces a rigid class system with limited mobility."
+            },
+            "oppression": {
+              "name": "Oppression",
+              "description": "Maintains control through systemic and institutionalized oppression."
+            },
+            "economic_dependence": {
+              "name": "Economic Dependence",
+              "description": "Creates dependency on the ruling class for economic survival."
+            },
+            "religious_discipline": {
+              "name": "Religious Discipline",
+              "description": "Imposes strict religious observance and practices."
+            },
+            "moral_purity": {
+              "name": "Moral Purity",
+              "description": "Promotes a strict moral code based on religious teachings."
+            },
+            "community_surveillance": {
+              "name": "Community Surveillance",
+              "description": "Monitors community behavior to enforce moral standards."
+            },
+            "simplified_living": {
+              "name": "Simplified Living",
+              "description": "Advocates for a simple lifestyle free of excess and indulgence."
+            },
+            "religious_governance": {
+              "name": "Religious Governance",
+              "description": "State governance is deeply intertwined with religious doctrine."
+            },
+            "moral_legislation": {
+              "name": "Moral Legislation",
+              "description": "Laws are based on and enforce religious morality."
+            },
+            "expert_governance": {
+              "name": "Expert Governance",
+              "description": "Relies on experts and technocrats to make informed decisions."
+            },
+            "scientific_management": {
+              "name": "Scientific Management",
+              "description": "Applies scientific principles to manage society and resources."
+            },
+            "innovation_focus": {
+              "name": "Innovation Focus",
+              "description": "Encourages technological advancements and innovation."
+            },
+            "data_driven_policy": {
+              "name": "Data-Driven Policy",
+              "description": "Utilizes data and evidence to shape policy decisions."
+            },
+            "efficient_administration": {
+              "name": "Efficient Administration",
+              "description": "Optimizes government operations for maximum efficiency."
+            },
+            "meritocracy": {
+              "name": "Meritocracy",
+              "description": "Advancement is based on individual merit and achievement."
+            },
+            "reason_and_logic": {
+              "name": "Reason and Logic",
+              "description": "Values rational thought and logical decision-making."
+            },
+            "scientific_inquiry": {
+              "name": "Scientific Inquiry",
+              "description": "Promotes research and exploration in scientific fields."
+            },
+            "secular_governance": {
+              "name": "Secular Governance",
+              "description": "Separates religious influence from state affairs."
+            },
+            "education_reform": {
+              "name": "Education Reform",
+              "description": "Reforms the education system to promote critical thinking."
+            },
+            "evidence_based_policy": {
+              "name": "Evidence-Based Policy",
+              "description": "Policies are formulated based on scientific evidence and research."
+            },
+            "philosophical_discourse": {
+              "name": "Philosophical Discourse",
+              "description": "Encourages open discussion and debate on philosophical ideas."
+            },
+            "cooperative_governance": {
+              "name": "Cooperative Governance",
+              "description": "Promotes collaborative decision-making and shared governance."
+            },
+            "shared_sovereignty": {
+              "name": "Shared Sovereignty",
+              "description": "Multiple entities share sovereignty and governance responsibilities."
+            },
+            "economic_integration": {
+              "name": "Economic Integration",
+              "description": "Integrates economies to promote mutual growth and stability."
+            },
+            "cultural_exchange": {
+              "name": "Cultural Exchange",
+              "description": "Encourages the exchange of cultural ideas and practices."
+            },
+            "collective_security": {
+              "name": "Collective Security",
+              "description": "Nations collaborate to ensure mutual security and defense."
+            },
+            "unified_policy": {
+              "name": "Unified Policy",
+              "description": "Aligns policies across multiple entities for cohesive governance."
+            }
+          }
+        }
+      },
+      "ages": {
+        "core": {
+          "ancient": {
+            "name": "Ancient",
+            "description": "Early human civilization period"
+          },
+          "classical": {
+            "name": "Classical",
+            "description": "Era of classical antiquity"
+          },
+          "medieval": {
+            "name": "Medieval",
+            "description": "Time of the Middle Ages"
+          },
+          "renaissance": {
+            "name": "Renaissance",
+            "description": "Cultural and artistic rebirth period"
+          },
+          "industrial": {
+            "name": "Industrial",
+            "description": "Industrial revolution and progress"
+          },
+          "modern": {
+            "name": "Modern",
+            "description": "Contemporary and recent history"
+          },
+          "atomic": {
+            "name": "Atomic",
+            "description": "Nuclear age and beyond"
+          },
+          "information": {
+            "name": "Information",
+            "description": "Digital and technological advancements"
+          },
+          "future": {
+            "name": "Future",
+            "description": "Upcoming technological advancements"
+          }
+        }
+      },
+      "improvements": {
+        "core": {
+          "general": {
+            "beach_resort": {
+              "name": "Beach Resort",
+              "description": "Tourist destination on the beach"
+            },
+            "water_park": {
+              "name": "Water Park",
+              "description": "Recreational water facility"
+            },
+            "attraction_park": {
+              "name": "Attraction Park",
+              "description": "Amusement park for entertainment"
+            },
+            "bridge": {
+              "name": "Bridge",
+              "description": "Structure for crossing obstacles"
+            },
+            "corporation": {
+              "name": "Corporation",
+              "description": "Business organization for resources"
+            },
+            "desalination_plant": {
+              "name": "Desalination Plant",
+              "description": "Facility to produce fresh water"
+            },
+            "industry": {
+              "name": "Industry",
+              "description": "Manufacturing and production facilities"
+            },
+            "mountain_tunnel": {
+              "name": "Mountain Tunnel",
+              "description": "Passageway through a mountain"
+            },
+            "national_park": {
+              "name": "National Park",
+              "description": "Protected natural area"
+            },
+            "research_center": {
+              "name": "Research Center",
+              "description": "Facility for scientific research"
+            },
+            "seastead": {
+              "name": "Seastead",
+              "description": "Floating habitat on the sea"
+            }
+          },
+          "military": {
+            "castle": {
+              "name": "Castle",
+              "description": "Fortified defensive structure"
+            },
+            "fortress": {
+              "name": "Fortress",
+              "description": "Stronghold for defense and security"
+            },
+            "military_base": {
+              "name": "Military Base",
+              "description": "Military installation and operations"
+            },
+            "missile_silo": {
+              "name": "Missile Silo",
+              "description": "Underground missile launch facility"
+            }
+          },
+          "resources": {
+            "dam": {
+              "name": "Dam",
+              "description": "Barrier for water storage"
+            },
+            "farm": {
+              "name": "Farm",
+              "description": "Agricultural improvement"
+            },
+            "fishing_boats": {
+              "name": "Fishing Boats",
+              "description": "Boats for fishing activities"
+            },
+            "foundry": {
+              "name": "Foundry",
+              "description": "Factory for metal casting"
+            },
+            "geothermal": {
+              "name": "Geothermal Plant",
+              "description": "Facility for geothermal energy"
+            },
+            "hunting_camp": {
+              "name": "Hunting Camp",
+              "description": "Camp for hunting expeditions"
+            },
+            "logging_camp": {
+              "name": "Logging Camp",
+              "description": "Camp for logging operations"
+            },
+            "mine": {
+              "name": "Mine",
+              "description": "Site for mineral extraction"
+            },
+            "offshore_oil_rig": {
+              "name": "Offshore Oil Rig",
+              "description": "Platform for offshore drilling"
+            },
+            "oil_field": {
+              "name": "Oil Field",
+              "description": "Area for oil extraction"
+            },
+            "pasture": {
+              "name": "Pasture",
+              "description": "Land for grazing livestock"
+            },
+            "solar_farm": {
+              "name": "Photovoltaics",
+              "description": "Solar energy production facility"
+            },
+            "plantation": {
+              "name": "Plantation",
+              "description": "Large-scale farm for crops"
+            },
+            "power_plant_coal": {
+              "name": "Coal Power Plant",
+              "description": "Facility for coal energy production"
+            },
+            "power_plant_gas": {
+              "name": "Gas Power Plant",
+              "description": "Facility for gas energy production"
+            },
+            "power_plant_nuclear": {
+              "name": "Nuclear Power Plant",
+              "description": "Facility for nuclear energy production"
+            },
+            "power_plant_oil": {
+              "name": "Oil Power Plant",
+              "description": "Facility for oil energy production"
+            },
+            "power_pylon": {
+              "name": "Power Pylon",
+              "description": "Structure for electricity transmission"
+            },
+            "quarry": {
+              "name": "Quarry",
+              "description": "Site for extracting stones"
+            },
+            "tidal_generators": {
+              "name": "Tidal Generators",
+              "description": "Facility for tidal energy production"
+            },
+            "vineyard": {
+              "name": "Vineyard",
+              "description": "Field for growing grapes"
+            },
+            "wind_farm": {
+              "name": "Wind Farm",
+              "description": "Facility for wind energy production"
+            }
+          }
+        }
+      },
+      "greats": {
+        "core": {
+          "trees": {
+            "culture": {
+              "name": "Culture",
+              "description": "Great cultural figures"
+            },
+            "diplomacy": {
+              "name": "Diplomacy",
+              "description": "Great diplomatic figures"
+            },
+            "engineers": {
+              "name": "Engineers",
+              "description": "Great engineering figures"
+            },
+            "explorers": {
+              "name": "Explorers",
+              "description": "Great explorers and navigators"
+            },
+            "heros": {
+              "name": "Heros",
+              "description": "Great folk heroes"
+            },
+            "holy": {
+              "name": "Holy",
+              "description": "Great religious figures"
+            },
+            "military": {
+              "name": "Military",
+              "description": "Great military figures"
+            },
+            "scientists": {
+              "name": "Scientists",
+              "description": "Great scientific figures"
+            }
+          },
+          "people": {
+            "guido_van_rossem": {
+              "name": "Guido van Rossem",
+              "description": "Guido van Rossem was a Dutch computer programmer who founded the Python programming language."
+            },
+            "curie": {
+              "name": "Marie Curie",
+              "description": "Marie Curie was a Polish/France physicist and chemist who conducted pioneering research on radioactivity."
+            },
+            "einstein": {
+              "name": "Albert Einstein",
+              "description": "Albert Einstein was a German-born theoretical physicist who developed the theory of relativity."
+            },
+            "newton": {
+              "name": "Isaac Newton",
+              "description": "Isaac Newton was an English mathematician, physicist, and astronomer who formulated the laws of motion and universal gravitation."
+            },
+            "tesla": {
+              "name": "Nikola Tesla",
+              "description": "Nikola Tesla was a Serbian-American inventor, electrical engineer, mechanical engineer, and futurist best known for his contributions to the design of the modern alternating current electricity supply system."
+            },
+            "vint_bob": {
+              "name": "Vint Cerf and Bob Kahn",
+              "description": "Vint Cerf and Bob Kahn are American computer scientists who co-invented the TCP/IP protocol, the foundation of the modern internet."
+            }
+          }
+        }
+      },
+      "units": {
+        "core": {
+          "classes": {
+            "core": {
+              "civilian": {
+                "name": "Civilian",
+                "description": "Non-combat unit"
+              },
+              "engineer": {
+                "name": "Engineer",
+                "description": "Unit that constructs improvements"
+              },
+              "combat_engineer": {
+                "name": "Combat Engineer",
+                "description": "Unit that constructs and repairs military improvements"
+              },
+              "light_calvary": {
+                "name": "Light Calvary",
+                "description": "Fast-moving mounted unit"
+              },
+              "heavy_calvary": {
+                "name": "Heavy Calvary",
+                "description": "Armored mounted unit"
+              },
+              "mele": {
+                "name": "Mele",
+                "description": "Close combat unit"
+              },
+              "police": {
+                "name": "Police",
+                "description": "Unit that maintains order"
+              },
+              "combat": {
+                "name": "Combat",
+                "description": "Military unit"
+              },
+              "bomber": {
+                "name": "Bomber",
+                "description": "Aircraft that attacks ground targets"
+              },
+              "commando": {
+                "name": "Commando",
+                "description": "Special forces unit"
+              },
+              "corvete": {
+                "name": "Corvete",
+                "description": "Small naval vessel"
+              },
+              "frigate": {
+                "name": "Frigate",
+                "description": "Medium naval vessel"
+              },
+              "destroyer": {
+                "name": "Destroyer",
+                "description": "Large naval vessel"
+              },
+              "cruiser": {
+                "name": "Cruiser",
+                "description": "Heavy naval vessel"
+              },
+              "fighter": {
+                "name": "Fighter",
+                "description": "Aircraft that engages other aircraft"
+              },
+              "support": {
+                "name": "Support",
+                "description": "Unit that provides assistance"
+              },
+              "siege": {
+                "name": "Siege",
+                "description": "Unit that specializes in attacking cities"
+              },
+              "ranged": {
+                "name": "Ranged",
+                "description": "Unit that attacks from a distance"
+              },
+              "naval": {
+                "name": "Naval",
+                "description": "Unit that operates on water"
+              },
+              "air": {
+                "name": "Air",
+                "description": "Unit that operates in the air"
+              }
+            }
+          },
+          "units": {
+            "civilian": {
+              "settler": {
+                "name": "Settler",
+                "description": "Unit that founds new cities"
+              },
+              "worker": {
+                "name": "Worker",
+                "description": "Unit that constructs improvements"
+              },
+              "trader": {
+                "name": "Trader",
+                "description": "Unit that establishes trade routes"
+              },
+              "scout": {
+                "name": "Scout",
+                "description": "Unit that explores the map"
+              },
+              "spy": {
+                "name": "Spy",
+                "description": "Unit that conducts espionage"
+              },
+              "diplomat": {
+                "name": "Diplomat",
+                "description": "Unit that conducts diplomacy"
+              },
+              "great_person": {
+                "name": "Great Person",
+                "description": "Unit that provides unique abilities"
+              }
+            },
+            "military": {
+              "warrior": {
+                "name": "Warrior",
+                "description": "Basic melee unit"
+              },
+              "spearman": {
+                "name": "Spearman",
+                "description": "Anti-cavalry unit"
+              },
+              "archer": {
+                "name": "Archer",
+                "description": "Ranged unit"
+              },
+              "horseman": {
+                "name": "Horseman",
+                "description": "Fast-moving melee unit"
+              },
+              "crossbowman": {
+                "name": "Crossbowman",
+                "description": "Ranged unit"
+              },
+              "knight": {
+                "name": "Knight",
+                "description": "Heavy cavalry unit"
+              },
+              "musketman": {
+                "name": "Musketman",
+                "description": "Renaissance era melee unit"
+              },
+              "cavalry": {
+                "name": "Cavalry",
+                "description": "Industrial era melee unit"
+              },
+              "infantry": {
+                "name": "Infantry",
+                "description": "Modern era melee unit"
+              },
+              "tank": {
+                "name": "Tank",
+                "description": "Modern era armored unit"
+              }
+            }
+          },
+          "promotions": {
+            "corvette": {
+              "coast_raider": {
+                "name": "Costal Raider",
+                "description": "Increases gold from naval combat"
+              },
+              "sea_raider": {
+                "name": "Sea Raider",
+                "description": "Increases damage to enemy ships"
+              },
+              "mines": {
+                "name": "Mines",
+                "description": "Allows the unit to lay mines"
+              },
+              "escort_duty": {
+                "name": "Escort Duty",
+                "description": "Increases defense of nearby friendly units"
+              },
+              "agile_manoeuvring": {
+                "name": "Agile Manoeuvring",
+                "description": "Can evade mines."
+              }
+            },
+            "combat_engineer": {
+              "fortifications": {
+                "name": "Fortifications",
+                "description": "Builds defensive structures faster"
+              },
+              "repair": {
+                "name": "Repair",
+                "description": "Repairs units and structures faster"
+              },
+              "demolitions": {
+                "name": "Demolitions",
+                "description": "Increases effectiveness against enemy structures"
+              },
+              "construction_speed": {
+                "name": "Construction Speed",
+                "description": "Reduces time to build structures"
+              },
+              "bridge_building": {
+                "name": "Bridge Building",
+                "description": "Enables rapid bridge construction"
+              },
+              "field_hospitals": {
+                "name": "Field Hospitals",
+                "description": "Increases healing rate of nearby units"
+              }
+            },
+            "frigate": {
+              "long_range_bombardment": {
+                "name": "Long Range Bombardment",
+                "description": "Increases attack range"
+              },
+              "anti_aircraft": {
+                "name": "Anti-Aircraft",
+                "description": "Increases damage to air units"
+              },
+              "armor_piercing_shells": {
+                "name": "Armor Piercing Shells",
+                "description": "Increases damage to heavily armored units"
+              },
+              "radar_guidance": {
+                "name": "Radar Guidance",
+                "description": "Increases accuracy"
+              },
+              "torpedoes": {
+                "name": "Torpedoes",
+                "description": "Increases damage to naval units"
+              },
+              "fire_supression": {
+                "name": "Fire Supression",
+                "description": "Reduces damage taken"
+              }
+            },
+            "heavy_cavalry": {
+              "heavy_raiders": {
+                "name": "Heavy Raiders",
+                "description": "Increases civilian causalties during raids but increases gold"
+              },
+              "armored": {
+                "name": "Armored",
+                "description": "Increases defense"
+              },
+              "defensive_tactics": {
+                "name": "Lance",
+                "description": "Incrases units defences when attacked while stationary"
+              },
+              "shield_wall": {
+                "name": "Shield Wall",
+                "description": "Increases defense against ranged attacks"
+              },
+              "mounted_archery": {
+                "name": "Mounted Archery",
+                "description": "Allows ranged attacks while mounted"
+              },
+              "war_horses": {
+                "name": "War Horses",
+                "description": "Increases speed and stamina"
+              }
+            },
+            "light_cavalry": {
+              "skirmisher": {
+                "name": "Skirmisher",
+                "description": "Increases hit and run tactics"
+              },
+              "scout": {
+                "name": "Scout",
+                "description": "Increases vision range"
+              },
+              "flanking": {
+                "name": "Flanking",
+                "description": "Increases damage when attacking from the sides"
+              },
+              "harassment": {
+                "name": "Harassment",
+                "description": "Reduces enemy movement speed and logistics"
+              },
+              "mounted_archer": {
+                "name": "Mounted Archer",
+                "description": "Allows ranged attacks while mounted"
+              },
+              "mobility": {
+                "name": "Mobility",
+                "description": "Increases movement speed"
+              }
+            },
+            "logistics": {
+              "supply_chain": {
+                "name": "Supply Chain",
+                "description": "Increases supply efficiency"
+              },
+              "quick_repair": {
+                "name": "Quick Repair",
+                "description": "Reduces repair time"
+              },
+              "ammunition_transport": {
+                "name": "Ammunition Transport",
+                "description": "Increases ammo delivery speed"
+              },
+              "fuel_efficiency": {
+                "name": "Fuel Efficiency",
+                "description": "Reduces fuel consumption"
+              },
+              "medical_supplies": {
+                "name": "Medical Supplies",
+                "description": "Increases availability of medical supplies"
+              },
+              "communication_network": {
+                "name": "Communication Network",
+                "description": "Enhances communication efficiency"
+              }
+            },
+            "medic": {
+              "field_medic": {
+                "name": "Field Medic",
+                "description": "Increases healing rate in the field"
+              },
+              "triage": {
+                "name": "Triage",
+                "description": "Heals multiple units at once"
+              },
+              "first_aid": {
+                "name": "First Aid",
+                "description": "Increases effectiveness of first aid kits"
+              },
+              "mobile_hospital": {
+                "name": "Mobile Hospital",
+                "description": "Sets up mobile hospitals for faster healing"
+              },
+              "combat_medic": {
+                "name": "Combat Medic",
+                "description": "Increases effectiveness in combat situations"
+              },
+              "evacuation": {
+                "name": "Evacuation",
+                "description": "Speeds up the evacuation of wounded"
+              }
+            },
+            "melee": {
+              "berserk": {
+                "name": "Berserk",
+                "description": "Increases damage while reducing defense"
+              },
+              "shield_wall": {
+                "name": "Shield Wall",
+                "description": "Increases defense"
+              },
+              "dual_wielding": {
+                "name": "Dual Wielding",
+                "description": "Increases attack speed"
+              },
+              "battle_hardened": {
+                "name": "Battle Hardened",
+                "description": "Increases overall combat effectiveness"
+              },
+              "cleave": {
+                "name": "Cleave",
+                "description": "Deals damage to multiple enemies at once"
+              },
+              "defensive_stance": {
+                "name": "Defensive Stance",
+                "description": "Reduces damage taken"
+              }
+            },
+            "police": {
+              "riot_control": {
+                "name": "Riot Control",
+                "description": "Increases effectiveness against crowds"
+              },
+              "investigation": {
+                "name": "Investigation",
+                "description": "Increases crime solving speed"
+              },
+              "patrol": {
+                "name": "Patrol",
+                "description": "Increases visibility and area coverage"
+              },
+              "SWAT_training": {
+                "name": "SWAT Training",
+                "description": "Enhances tactical response capabilities"
+              },
+              "community_outreach": {
+                "name": "Community Outreach",
+                "description": "Improves relations with the community"
+              },
+              "rapid_response": {
+                "name": "Rapid Response",
+                "description": "Decreases response time to incidents"
+              }
+            },
+            "range": {
+              "sharpshooter": {
+                "name": "Sharpshooter",
+                "description": "Increases range and accuracy"
+              },
+              "volley_fire": {
+                "name": "Volley Fire",
+                "description": "Increases damage to groups"
+              },
+              "rapid_reload": {
+                "name": "Rapid Reload",
+                "description": "Decreases reload time"
+              },
+              "longbow": {
+                "name": "Longbow",
+                "description": "Increases range"
+              },
+              "fire_arrows": {
+                "name": "Fire Arrows",
+                "description": "Increases damage over time"
+              },
+              "camouflage": {
+                "name": "Camouflage",
+                "description": "Makes the unit harder to detect"
+              }
+            },
+            "scout": {
+              "pathfinder": {
+                "name": "Pathfinder",
+                "description": "Increases movement through rough terrain"
+              },
+              "tracker": {
+                "name": "Tracker",
+                "description": "Increases ability to track enemy units"
+              },
+              "stealth": {
+                "name": "Stealth",
+                "description": "Increases ability to remain undetected"
+              },
+              "survivalist": {
+                "name": "Survivalist",
+                "description": "Increases survival skills in hostile environments"
+              },
+              "reconnaissance": {
+                "name": "Reconnaissance",
+                "description": "Enhances scouting abilities"
+              },
+              "signal_flare": {
+                "name": "Signal Flare",
+                "description": "Allows the unit to call for reinforcements"
+              }
+            },
+            "siege": {
+              "battering_ram": {
+                "name": "Battering Ram",
+                "description": "Increases damage to walls and structures"
+              },
+              "artillery_barrage": {
+                "name": "Artillery Barrage",
+                "description": "Increases damage to clustered units"
+              },
+              "siege_tower": {
+                "name": "Siege Tower",
+                "description": "Increases effectiveness against fortified positions"
+              },
+              "catapult": {
+                "name": "Catapult",
+                "description": "Increases range and damage"
+              },
+              "engineer_support": {
+                "name": "Engineer Support",
+                "description": "Enhances siege equipment effectiveness"
+              },
+              "demolition_expert": {
+                "name": "Demolition Expert",
+                "description": "Increases damage to enemy fortifications"
+              }
+            },
+            "commando": {
+              "guerilla_warfare": {
+                "name": "Guerilla Warfare",
+                "description": "Ignores enemy zone of control"
+              },
+              "camouflage": {
+                "name": "Camouflage",
+                "description": "Invisible to enemy units"
+              },
+              "sabotage": {
+                "name": "Sabotage",
+                "description": "Damages enemy improvements"
+              },
+              "paratrooper": {
+                "name": "Paratrooper",
+                "description": "Can paradrop into enemy territory"
+              },
+              "special_forces": {
+                "name": "Special Forces",
+                "description": "Ignores terrain movement penalties"
+              }
+            },
+            "fighter": {
+              "dogfighting": {
+                "name": "Dogfighting",
+                "description": "Increases air unit's combat strength against other air units"
+              },
+              "flares": {
+                "name": "Flares",
+                "description": "Reduces damage taken from air defenses"
+              },
+              "multirole": {
+                "name": "Multirole",
+                "description": "Reduces air unit's combat strength against other air units"
+              },
+              "air_repair": {
+                "name": "Air Repair",
+                "description": "Heals every turn, even if it performs an action"
+              },
+              "navy_modifications": {
+                "name": "Navy Modifications",
+                "description": "Allows the unit to take off from carriers"
+              }
+            },
+            "bomber": {
+              "air_repair": {
+                "name": "Air Repair",
+                "description": "Heals every turn, even if it performs an action"
+              },
+              "jet_engine": {
+                "name": "Jet Engine",
+                "description": "Increases air unit's range"
+              },
+              "upgraded_bombbays": {
+                "name": "Upgraded Bombbays",
+                "description": "Allows the unit to attack twice"
+              },
+              "flares": {
+                "name": "Flares",
+                "description": "Reduces damage taken from air defenses"
+              },
+              "active_radar_jamming": {
+                "name": "Active Radar Jamming",
+                "description": "Reduces enemy air interception chance"
+              },
+              "glide_bombing": {
+                "name": "Glide Bombing",
+                "description": "Ignores interception"
+              }
+            },
+            "engineer": {
+              "fortifications": {
+                "name": "Fortifications",
+                "description": "Builds defensive structures faster"
+              },
+              "repair": {
+                "name": "Repair",
+                "description": "Repairs units and structures faster"
+              },
+              "bridge_building": {
+                "name": "Bridge Building",
+                "description": "Enables rapid bridge construction"
+              },
+              "power_lines": {
+                "name": "Power Lines",
+                "description": "Increases power grid efficiency"
+              },
+              "renewable_energy": {
+                "name": "Renewable Energy",
+                "description": "Increases energy production from renewable sources"
+              },
+              "civil_engineering": {
+                "name": "Civil Engineering",
+                "description": "Improves infrastructure and city planning"
+              }
+            },
+            "builder": {
+              "farmer": {
+                "name": "Farmer",
+                "description": "Allows construction of farms/plantations/pastures"
+              },
+              "miner": {
+                "name": "Miner",
+                "description": "Allows construction of mines/quarries"
+              },
+              "lumberjack": {
+                "name": "Lumberjack",
+                "description": "Allows construction of lumber camps"
+              },
+              "fisherman": {
+                "name": "Fisherman",
+                "description": "Allows construction of (fishing) boats"
+              },
+              "hunter": {
+                "name": "Hunter",
+                "description": "Allows construction of hunting camps"
+              },
+              "electrician": {
+                "name": "Electrician",
+                "description": "Allows construction of power improvements"
+              },
+              "renewable_energy": {
+                "name": "Renewable Energy",
+                "description": "Allows construction of renewable energy improvements"
+              }
+            },
+            "trader": {
+              "caravan": {
+                "name": "Caravan",
+                "description": "Increases trade route range"
+              },
+              "cargo_ship": {
+                "name": "Cargo Ship",
+                "description": "Increases trade route yield"
+              },
+              "tycoon": {
+                "name": "Tycoon",
+                "description": "Increases trade route gold"
+              },
+              "rail_tycoon": {
+                "name": "Rail Tycoon",
+                "description": "Increases trade route production"
+              },
+              "oil_tycoon": {
+                "name": "Oil Tycoon",
+                "description": "Increases trade route oil"
+              },
+              "industrialist": {
+                "name": "Industrialist",
+                "description": "Increases trade route production"
+              },
+              "corporate_tycoon": {
+                "name": "Corporate Tycoon",
+                "description": "Increases trade route gold"
+              },
+              "entrepreneur": {
+                "name": "Entrepreneur",
+                "description": "Increases trade route science"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

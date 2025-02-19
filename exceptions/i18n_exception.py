@@ -1,5 +1,5 @@
 from __future__ import annotations
-from openciv.engine.exceptions.resource_exception import ResourceException
+from exceptions.resource_exception import ResourceException
 
 
 class I18NException(ResourceException):

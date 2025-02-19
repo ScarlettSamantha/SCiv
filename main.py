@@ -1,13 +1,16 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import loadPrcFileData
+from panda3d.core import WindowProperties
+
 from lights import setup_lights
 from camera import CivCamera
+
 from managers.world import World
 from managers.ui import ui
 from managers.input import Input
-from direct.showbase.ShowBase import ShowBase
-from panda3d.core import WindowProperties
 from managers.config import ConfigManager   
+from managers.i18n import _i18n, set_i18n
+
 # 1) Limit FPS to 60
 class FlatHexExample(ShowBase):
     def __init__(self, config_mgr):
@@ -45,10 +48,7 @@ class FlatHexExample(ShowBase):
         setup_lights(self)
         
         # I18n system
-        
-        
-        
-        
+        set_i18n(_i18n("i18n", "en", True))  
         
         world.setup_hex_tiles()
         ui_manager.get_main_menu()
