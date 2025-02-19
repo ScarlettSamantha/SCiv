@@ -1,4 +1,3 @@
-from data.tiles.tile import Tile
 from gameplay.improvements import Improvements
 from gameplay.improvement import Improvement
 from gameplay.citizens import Citizens
@@ -7,10 +6,11 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from gameplay.player import Player
+    from data.tiles.tile import Tile
 
 
 class City:
-    def __init__(self, name: str, tile: Tile):
+    def __init__(self, name: str, tile: "Tile"):
         self.name: str = name
         self.player: Optional[Player] = None
         self.tile: Tile = tile
@@ -63,7 +63,7 @@ class City:
 
     @classmethod
     def found_new(
-        cls, name: str, tile: Tile, population: int = 1, is_capital: bool = False
+        cls, name: str, tile: "Tile", population: int = 1, is_capital: bool = False
     ) -> "City":
         instance = City(name=name, tile=tile)
         instance.population = population
