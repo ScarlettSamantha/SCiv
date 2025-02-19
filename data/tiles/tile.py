@@ -45,6 +45,9 @@ class Tile:
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height = 0
 
+        # None is nature.
+        self.player: Optional[Player] = None
+
         # Base health and if damagable declarations
         self.damagable = False
         self.health = 100
@@ -150,7 +153,7 @@ class Tile:
     def improvements(self) -> Improvements:
         return self._improvements
 
-    def build(self, improvement: Improvement) -> None:  # noqa: F821
+    def build(self, improvement: Improvement) -> None:
         self._improvements.add(improvement)
 
     def found(

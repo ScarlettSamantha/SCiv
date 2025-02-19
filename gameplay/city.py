@@ -4,10 +4,10 @@ from gameplay.citizens import Citizens
 
 
 class City:
-    def __init__(self, name: str, tile: "BaseTile"):  # noqa: F821
+    def __init__(self, name: str, tile: "BaseTile"):
         self.name: str = name
-        self.player: "Player" = tile.player  # noqa: F821
-        self.tile: "BaseTile" = tile  # noqa: F821
+        self.player: "Player" = tile.player
+        self.tile: "BaseTile" = tile
         self.is_capital: bool = False
 
         self.active: bool = True
@@ -57,7 +57,7 @@ class City:
     @classmethod
     def found_new(
         cls, name: str, tile: "BaseTile", population: int = 1, is_capital: bool = False
-    ) -> "City":  # noqa: F821
+    ) -> "City":
         instance = City(name=name, owner=tile.player)
         instance.tile = tile
         instance.population = population

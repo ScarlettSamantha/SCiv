@@ -283,7 +283,7 @@ class Resources:
         else:
             raise ResourceTypeException(
                 f"Resource must be of type Resource, not {type(resource)}"
-            )  # noqa: F821
+            )
 
     def __add__(self, b: Resource) -> None:
         self.add(b)
