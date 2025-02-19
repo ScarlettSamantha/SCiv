@@ -3,8 +3,8 @@ from gameplay.tile_yield import TileYield
 from gameplay.effect import Effects
 from gameplay.conditions import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
-from openciv.engine.mixins.callbacks import CallbacksMixin
-from openciv.engine.saving import SaveAble
+from mixins.callbacks import CallbacksMixin
+from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr
 from managers.tags import Taggable
 
@@ -19,7 +19,15 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
     # Will finish when an certain production resource is used.
     MULTI_TURN_PRODUCTION = 2
 
-    def __init__(self, key: str, name: str, health: int = 100, max_health: int = 100, *args, **kwargs):
+    def __init__(
+        self,
+        key: str,
+        name: str,
+        health: int = 100,
+        max_health: int = 100,
+        *args,
+        **kwargs,
+    ):
         CallbacksMixin.__init__(self, *args, **kwargs)
         Taggable.__init__(self, *args, **kwargs)
         SaveAble.__init__(self, *args, **kwargs)
@@ -139,7 +147,9 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
 
     def upgrade(self):
         if self.upgrade_into is None:
-            raise ImprovementUpgradeException("Cant upgrade into a null object. needs to be an improvement effect")
+            raise ImprovementUpgradeException(
+                "Cant upgrade into a null object. needs to be an improvement effect"
+            )
         self.replace(self.upgrade_into)
 
     def replace(self, _with: ForwardRef("Improvement")):

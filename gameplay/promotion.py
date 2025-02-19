@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from managers.i18n import T_TranslationOrStr
-from openciv.engine.saving import SaveAble
+from system.saving import SaveAble
 from gameplay.effect import Effects
 from gameplay.combat.stats import Stats
 from openciv.engine.requires import Requires, RequiresMultiple, T_Requires
-from openciv.engine.mixins.callbacks import CallbacksMixin
+from mixins.callbacks import CallbacksMixin
 
 from typing import List, Any, Iterable, Self
 from abc import abstractmethod
@@ -118,30 +118,46 @@ class PromotionTree(SaveAble, CallbacksMixin):
         pass
 
     def _on_promotion_aquire(
-        self, promotion: Promotion, sub_trigger_aquire: bool = True, sub_trigger_completion_check: bool = True
+        self,
+        promotion: Promotion,
+        sub_trigger_aquire: bool = True,
+        sub_trigger_completion_check: bool = True,
     ) -> None:
         self.calculate_effects()
         if sub_trigger_aquire:
-            self.trigger_callback(category="on_promotion_aquire", promotion=promotion, promotion_tree=self)
+            self.trigger_callback(
+                category="on_promotion_aquire", promotion=promotion, promotion_tree=self
+            )
         if sub_trigger_completion_check and self.completed():
             self.trigger_callback(category="on_complete", promotion_tree=self)
 
     def _on_promotion_unaquire(
-        self, promotion: Promotion, sub_trigger_unaquire: bool = True, sub_trigger_completion_check: bool = True
+        self,
+        promotion: Promotion,
+        sub_trigger_unaquire: bool = True,
+        sub_trigger_completion_check: bool = True,
     ) -> None:
         self.calculate_effects()
         if sub_trigger_unaquire:
-            self.trigger_callback(category="on_promotion_unaquire", promotion=promotion, promotion_tree=self)
+            self.trigger_callback(
+                category="on_promotion_unaquire",
+                promotion=promotion,
+                promotion_tree=self,
+            )
         if sub_trigger_completion_check and not self.completed():
             self.trigger_callback(category="on_unaquire", promotion_tree=self)
 
     def add_promotion(self, promotion: Promotion) -> PromotionTree:
-        promotion.register_callback(event="on_aquire", callback=self._on_promotion_aquire)
+        promotion.register_callback(
+            event="on_aquire", callback=self._on_promotion_aquire
+        )
         self.promotions.append(promotion)
         return self
 
     def remove_promotion(self, promotion: Promotion) -> PromotionTree:
-        promotion.unregister_callback(event="on_un_aquire", callback=self._on_promotion_unaquire)
+        promotion.unregister_callback(
+            event="on_un_aquire", callback=self._on_promotion_unaquire
+        )
         self.promotions.remove(promotion)
         return self
 
@@ -200,5 +216,7 @@ class PromotionTree(SaveAble, CallbacksMixin):
         return {
             "unlocked": self.unlocked,
             "num_promotions": len(self.promotions),
-            "num_aquired": len([promotion for promotion in self.promotions if promotion.aquired]),
+            "num_aquired": len(
+                [promotion for promotion in self.promotions if promotion.aquired]
+            ),
         }

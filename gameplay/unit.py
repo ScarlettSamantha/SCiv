@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from openciv.engine.saving import SaveAble
+from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr
 from openciv.engine.requires import Requires
 from gameplay.planes.plane import Plane
@@ -64,7 +64,9 @@ class Unit(SaveAble):
         # Movement Stats
         self.base_movement: int = base_movement
         self.movement_modifier: int | float = movement_modifier
-        self.movement_left: float = base_movement if movement_left is None else movement_left
+        self.movement_left: float = (
+            base_movement if movement_left is None else movement_left
+        )
         self.is_fortified: bool = False
 
         self.can_raid: bool = False
@@ -79,18 +81,24 @@ class Unit(SaveAble):
         self.defense: int = defense
         self.armor_piercing: int = armor_piercing
         self.ammunition: int = ammunition
-        self.seige_damage: int = seige_damage  # How much damage this unit does to cities and fortifications.
+        self.seige_damage: int = (
+            seige_damage  # How much damage this unit does to cities and fortifications.
+        )
         self.range: int = attack_range  # How far this unit can attack.
         self.vision_range: int = vision_range  # How far this unit can see.
         self.retaliation_bonus: int = retaliation_modifier
 
-        self.indirect_fire: bool = False  # If this unit can fire over other units and terrain.
+        self.indirect_fire: bool = (
+            False  # If this unit can fire over other units and terrain.
+        )
 
         self.calculated_attack: int = attack
         self.calculated_defense: int = defense
         self.calculated_armor_piercing: int = armor_piercing
 
-        self.attacks_left: int = attacks  # How many attacks this unit has left in a turn.
+        self.attacks_left: int = (
+            attacks  # How many attacks this unit has left in a turn.
+        )
 
         # Equipment
         self.weapons: Items = Items()
@@ -101,7 +109,9 @@ class Unit(SaveAble):
         # Promotion
         self.unit_class: Type[UnitBaseClass] | None = unit_class
         self.promotion_tree_ref: Type[PromotionTree] | None = promotion_tree
-        self.promotions: PromotionTree | None = None if promotion_tree is None else promotion_tree()  # type: ignore # noqa # We do this because we implement the arguments in a sub object so we dont have to pass them in every time.
+        self.promotions: PromotionTree | None = (
+            None if promotion_tree is None else promotion_tree()
+        )  # type: ignore # noqa # We do this because we implement the arguments in a sub object so we dont have to pass them in every time.
         self.auto_instance_promotions: bool = auto_instance_promotions
 
         # Effects
@@ -125,10 +135,14 @@ class Unit(SaveAble):
 
     def __repr__(self) -> str:
         stats: dict[str, bool | int] = (
-            self.promotions.stats() if self.promotions is not None else {"num_aquired": 0, "num_promotions": 0}
+            self.promotions.stats()
+            if self.promotions is not None
+            else {"num_aquired": 0, "num_promotions": 0}
         )
-        promotion_tree_name: T_TranslationOrStr = self.promotions.name if self.promotions is not None else "None"
-        return f"{self.name}[{promotion_tree_name}|{stats['num_aquired']/stats['num_promotions']}]<{self.health}/{self.max_health}>[@{self.movement_remaining()}/{self.calculate_movement()}]"
+        promotion_tree_name: T_TranslationOrStr = (
+            self.promotions.name if self.promotions is not None else "None"
+        )
+        return f"{self.name}[{promotion_tree_name}|{stats['num_aquired'] / stats['num_promotions']}]<{self.health}/{self.max_health}>[@{self.movement_remaining()}/{self.calculate_movement()}]"
 
     def plane(self) -> Plane | None:
         return self.current_plane
@@ -145,7 +159,9 @@ class Unit(SaveAble):
             return self.upgrades_to
         return None
 
-    def calculate_effects(self, calculate_promotions: bool = True, calculate_items: bool = True) -> None:
+    def calculate_effects(
+        self, calculate_promotions: bool = True, calculate_items: bool = True
+    ) -> None:
         self._effects = self.base_effects
         if calculate_promotions and self.promotions is not None:
             self._effects += self.promotions.effects
@@ -158,7 +174,9 @@ class Unit(SaveAble):
     def calculate_combat_stats(self):
         # Helper function to aggregate modifiers from items, promotions, and effects
         def aggregate_modifiers() -> Stats:
-            base_stats: Stats = Stats(attack_modifier=0.0, defense_modifier=0.0, armor_piercing=0.0)
+            base_stats: Stats = Stats(
+                attack_modifier=0.0, defense_modifier=0.0, armor_piercing=0.0
+            )
 
             # Aggregate item modifiers
             for item in self.items:
@@ -179,9 +197,15 @@ class Unit(SaveAble):
         modifiers: Stats = aggregate_modifiers()
 
         # Calculate final combat stats
-        self.calculated_attack = round(float(self.attack) * float(modifiers.attack_modifier or 0.0))
-        self.calculated_defense = round(float(self.defense) * float(modifiers.defense_modifier or 0.0))
-        self.calculated_armor_piercing = round(float(self.armor_piercing) * float(modifiers.armor_piercing or 0.0))
+        self.calculated_attack = round(
+            float(self.attack) * float(modifiers.attack_modifier or 0.0)
+        )
+        self.calculated_defense = round(
+            float(self.defense) * float(modifiers.defense_modifier or 0.0)
+        )
+        self.calculated_armor_piercing = round(
+            float(self.armor_piercing) * float(modifiers.armor_piercing or 0.0)
+        )
 
     @property
     def effects(self) -> None | Effects:

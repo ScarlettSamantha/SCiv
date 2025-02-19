@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.improvements import Improvements
 from gameplay.improvement import Improvement
 from gameplay.citizens import Citizens
@@ -56,7 +55,9 @@ class City:
         self.population += 1
 
     @classmethod
-    def found_new(cls, name: str, tile: "BaseTile", population: int = 1, is_capital: bool = False) -> "City":  # noqa: F821
+    def found_new(
+        cls, name: str, tile: "BaseTile", population: int = 1, is_capital: bool = False
+    ) -> "City":  # noqa: F821
         instance = City(name=name, owner=tile.player)
         instance.tile = tile
         instance.population = population

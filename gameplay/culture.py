@@ -1,15 +1,23 @@
-from __future__ import annotations
-from openciv.engine.saving import SaveAble
+from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr
-from openciv.engine.mixins.callbacks import CallbacksMixin
-from typing import ForwardRef, NoReturn, List
-from openciv.engine.requires import Requires
+from mixins.callbacks import CallbacksMixin
+from typing import List, TYPE_CHECKING
+from system.requires import Requires
 from abc import abstractmethod
+
+if TYPE_CHECKING:
+    from gameplay.culture import Civic
 
 
 class Civic(SaveAble, CallbacksMixin):
     def __init__(
-        self, key: str, name: T_TranslationOrStr, description: T_TranslationOrStr, _cost: int = 0, *args, **kwargs
+        self,
+        key: str,
+        name: T_TranslationOrStr,
+        description: T_TranslationOrStr,
+        _cost: int = 0,
+        *args,
+        **kwargs,
     ) -> None:
         SaveAble.__init__(self, *args, **kwargs)
         CallbacksMixin.__init__(self, *args, **kwargs)
@@ -18,7 +26,7 @@ class Civic(SaveAble, CallbacksMixin):
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
 
-        self.requires: List[ForwardRef("Civic")] = []
+        self.requires_civics: List["Civic"] = []
         self._cost: int = _cost
         self._progress: int = 0
         self._completed: bool = False
@@ -36,7 +44,7 @@ class Civic(SaveAble, CallbacksMixin):
         return self._completed
 
     @completed.setter
-    def completed(self, value: bool) -> NoReturn:
+    def completed(self, value: bool):
         self._completed = value
         self.trigger_callback("on_complete")
 
@@ -45,7 +53,7 @@ class Civic(SaveAble, CallbacksMixin):
         return self._cost
 
     @cost.setter
-    def cost(self, value: int | float) -> NoReturn:
+    def cost(self, value: int | float):
         if isinstance(value, float):
             self._cost = round(value)
         else:
@@ -56,7 +64,7 @@ class Civic(SaveAble, CallbacksMixin):
         return self._progress
 
     @progress.setter
-    def progress(self, value: int | float) -> NoReturn:
+    def progress(self, value: int | float):
         if isinstance(value, float):
             self._progress = round(value)
         else:
@@ -83,15 +91,22 @@ class Civic(SaveAble, CallbacksMixin):
         return self
 
     def __truediv__(self, other: int):
-        self.progress = round(self.clost / other)
+        self.progress = round(self.cost / other)
         return self
 
-    def add_requirement(self, culture: ForwardRef("Culture")) -> NoReturn:
-        self.requires.append(culture)
+    def add_requirement(self, culture: "Civic"):
+        self.requires_civics.append(culture)
 
 
 class CultureSubtree:
-    def __init__(self, key: str, name: T_TranslationOrStr, description: T_TranslationOrStr, *args, **kwargs):
+    def __init__(
+        self,
+        key: str,
+        name: T_TranslationOrStr,
+        description: T_TranslationOrStr,
+        *args,
+        **kwargs,
+    ):
         self.key: str = key
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
@@ -99,18 +114,25 @@ class CultureSubtree:
         self.civics: List[Civic] = []
 
     @abstractmethod
-    def register_civics(self) -> NoReturn:
+    def register_civics(self):
         pass
 
-    def add_civic(self, civic: Civic) -> NoReturn:
+    def add_civic(self, civic: Civic):
         self.civics.append(civic)
 
     def is_completed(self) -> bool:
-        return all(civic.completed for civic in self.cultures)
+        return all(civic.completed for civic in self.civics)
 
 
 class CultureTree:
-    def __init__(self, key: str, name: T_TranslationOrStr, description: T_TranslationOrStr, *args, **kwargs):
+    def __init__(
+        self,
+        key: str,
+        name: T_TranslationOrStr,
+        description: T_TranslationOrStr,
+        *args,
+        **kwargs,
+    ):
         self.key: str = key
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
@@ -119,8 +141,8 @@ class CultureTree:
         self.register_subtrees()
 
     @abstractmethod
-    def register_subtrees(self) -> NoReturn:
+    def register_subtrees(self):
         pass
 
-    def add_subtree(self, subtree: CultureSubtree) -> NoReturn:
+    def add_subtree(self, subtree: CultureSubtree):
         self.subtrees.append(subtree)

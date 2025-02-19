@@ -1,5 +1,5 @@
 from __future__ import annotations
-from openciv.engine.saving import SaveAble
+from system.saving import SaveAble
 
 
 class Conditions(SaveAble):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from gameplay.tech import TechTree, Tech
 from managers.i18n import _t
-from openciv.engine.exceptions.tech_exception import TechNotFoundException
+from exceptions.tech_exception import TechNotFoundException
 
 
 class Core(TechTree):
@@ -75,92 +75,242 @@ class Core(TechTree):
         hunting_gethering: Tech = add_to_space(
             self, classes, "HuntingGethering", add_age_to_space(self, ages, "Ancient")
         )
-        trapping: Tech = add_to_space(self, classes, "Trapping", get_age(self, ages, "Ancient"))
-        animal_husbandry: Tech = add_to_space(self, classes, "AnimalHusbandry", get_age(self, ages, "Ancient"))
-        bronze_working: Tech = add_to_space(self, classes, "BronzeWorking", get_age(self, ages, "Ancient"))
-        pottery: Tech = add_to_space(self, classes, "Pottery", get_age(self, ages, "Ancient"))
-        writing: Tech = add_to_space(self, classes, "Writing", get_age(self, ages, "Ancient"))
-        mining: Tech = add_to_space(self, classes, "Mining", get_age(self, ages, "Ancient"))
-        archery: Tech = add_to_space(self, classes, "Archery", get_age(self, ages, "Ancient"))
+        trapping: Tech = add_to_space(
+            self, classes, "Trapping", get_age(self, ages, "Ancient")
+        )
+        animal_husbandry: Tech = add_to_space(
+            self, classes, "AnimalHusbandry", get_age(self, ages, "Ancient")
+        )
+        bronze_working: Tech = add_to_space(
+            self, classes, "BronzeWorking", get_age(self, ages, "Ancient")
+        )
+        pottery: Tech = add_to_space(
+            self, classes, "Pottery", get_age(self, ages, "Ancient")
+        )
+        writing: Tech = add_to_space(
+            self, classes, "Writing", get_age(self, ages, "Ancient")
+        )
+        mining: Tech = add_to_space(
+            self, classes, "Mining", get_age(self, ages, "Ancient")
+        )
+        archery: Tech = add_to_space(
+            self, classes, "Archery", get_age(self, ages, "Ancient")
+        )
 
-        astrology: Tech = add_to_space(self, classes, "Astrology", add_age_to_space(self, ages, "Classical"))
-        clay_tablets: Tech = add_to_space(self, classes, "ClayTablets", get_age(self, ages, "Classical"))
-        sailing: Tech = add_to_space(self, classes, "Sailing", get_age(self, ages, "Classical"))
-        masonry: Tech = add_to_space(self, classes, "Masonry", get_age(self, ages, "Classical"))
-        calendar: Tech = add_to_space(self, classes, "Calendar", get_age(self, ages, "Classical"))
-        wheel: Tech = add_to_space(self, classes, "Wheel", get_age(self, ages, "Classical"))
-        irrigation: Tech = add_to_space(self, classes, "Irrigation", get_age(self, ages, "Classical"))
+        astrology: Tech = add_to_space(
+            self, classes, "Astrology", add_age_to_space(self, ages, "Classical")
+        )
+        clay_tablets: Tech = add_to_space(
+            self, classes, "ClayTablets", get_age(self, ages, "Classical")
+        )
+        sailing: Tech = add_to_space(
+            self, classes, "Sailing", get_age(self, ages, "Classical")
+        )
+        masonry: Tech = add_to_space(
+            self, classes, "Masonry", get_age(self, ages, "Classical")
+        )
+        calendar: Tech = add_to_space(
+            self, classes, "Calendar", get_age(self, ages, "Classical")
+        )
+        wheel: Tech = add_to_space(
+            self, classes, "Wheel", get_age(self, ages, "Classical")
+        )
+        irrigation: Tech = add_to_space(
+            self, classes, "Irrigation", get_age(self, ages, "Classical")
+        )
 
-        construction: Tech = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
-        currency: Tech = add_to_space(self, classes, "Currency", get_age(self, ages, "Classical"))
+        construction: Tech = add_to_space(
+            self, classes, "Construction", get_age(self, ages, "Classical")
+        )
+        currency: Tech = add_to_space(
+            self, classes, "Currency", get_age(self, ages, "Classical")
+        )
         celestial_navigation: Tech = add_to_space(
             self, classes, "CelestialNavigation", get_age(self, ages, "Classical")
         )
-        construction: Tech = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
-        engineering: Tech = add_to_space(self, classes, "Engineering", get_age(self, ages, "Classical"))
-        mathematics: Tech = add_to_space(self, classes, "Mathematics", get_age(self, ages, "Classical"))
-        ship_building: Tech = add_to_space(self, classes, "ShipBuilding", get_age(self, ages, "Classical"))
-        horseback_riding: Tech = add_to_space(self, classes, "HorsebackRiding", get_age(self, ages, "Classical"))
-        iron_working: Tech = add_to_space(self, classes, "IronWorking", get_age(self, ages, "Classical"))
-        construction: Tech = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
+        construction: Tech = add_to_space(
+            self, classes, "Construction", get_age(self, ages, "Classical")
+        )
+        engineering: Tech = add_to_space(
+            self, classes, "Engineering", get_age(self, ages, "Classical")
+        )
+        mathematics: Tech = add_to_space(
+            self, classes, "Mathematics", get_age(self, ages, "Classical")
+        )
+        ship_building: Tech = add_to_space(
+            self, classes, "ShipBuilding", get_age(self, ages, "Classical")
+        )
+        horseback_riding: Tech = add_to_space(
+            self, classes, "HorsebackRiding", get_age(self, ages, "Classical")
+        )
+        iron_working: Tech = add_to_space(
+            self, classes, "IronWorking", get_age(self, ages, "Classical")
+        )
+        construction: Tech = add_to_space(
+            self, classes, "Construction", get_age(self, ages, "Classical")
+        )
 
-        apprenticeship: Tech = add_to_space(self, classes, "Apprenticeship", get_age(self, ages, "Medieval"))
-        butress: Tech = add_to_space(self, classes, "Butress", get_age(self, ages, "Medieval"))
-        education: Tech = add_to_space(self, classes, "Education", get_age(self, ages, "Medieval"))
-        machinery: Tech = add_to_space(self, classes, "Machinery", get_age(self, ages, "Medieval"))
-        stirrups: Tech = add_to_space(self, classes, "Stirrups", get_age(self, ages, "Medieval"))
-        castles: Tech = add_to_space(self, classes, "Castles", get_age(self, ages, "Medieval"))
-        military_engineering: Tech = add_to_space(self, classes, "MilitaryEngineering", get_age(self, ages, "Medieval"))
-        military_tactics: Tech = add_to_space(self, classes, "MilitaryTactics", get_age(self, ages, "Medieval"))
+        apprenticeship: Tech = add_to_space(
+            self, classes, "Apprenticeship", get_age(self, ages, "Medieval")
+        )
+        butress: Tech = add_to_space(
+            self, classes, "Butress", get_age(self, ages, "Medieval")
+        )
+        education: Tech = add_to_space(
+            self, classes, "Education", get_age(self, ages, "Medieval")
+        )
+        machinery: Tech = add_to_space(
+            self, classes, "Machinery", get_age(self, ages, "Medieval")
+        )
+        stirrups: Tech = add_to_space(
+            self, classes, "Stirrups", get_age(self, ages, "Medieval")
+        )
+        castles: Tech = add_to_space(
+            self, classes, "Castles", get_age(self, ages, "Medieval")
+        )
+        military_engineering: Tech = add_to_space(
+            self, classes, "MilitaryEngineering", get_age(self, ages, "Medieval")
+        )
+        military_tactics: Tech = add_to_space(
+            self, classes, "MilitaryTactics", get_age(self, ages, "Medieval")
+        )
 
-        banking: Tech = add_to_space(self, classes, "Banking", get_age(self, ages, "Renaissance"))
-        chemistry: Tech = add_to_space(self, classes, "Chemistry", get_age(self, ages, "Renaissance"))
-        composites: Tech = add_to_space(self, classes, "Composites", get_age(self, ages, "Renaissance"))
-        gunpowder: Tech = add_to_space(self, classes, "Gunpowder", get_age(self, ages, "Renaissance"))
-        scientific_theory: Tech = add_to_space(self, classes, "ScientificTheory", get_age(self, ages, "Renaissance"))
-        cartography: Tech = add_to_space(self, classes, "Cartography", get_age(self, ages, "Renaissance"))
-        mass_production: Tech = add_to_space(self, classes, "MassProduction", get_age(self, ages, "Renaissance"))
-        banking: Tech = add_to_space(self, classes, "Banking", get_age(self, ages, "Renaissance"))
-        printing: Tech = add_to_space(self, classes, "Printing", get_age(self, ages, "Renaissance"))
-        square_rigging: Tech = add_to_space(self, classes, "SquareRigging", get_age(self, ages, "Renaissance"))
-        astronomy: Tech = add_to_space(self, classes, "Astronomy", get_age(self, ages, "Renaissance"))
-        metal_casting: Tech = add_to_space(self, classes, "MetalCasting", get_age(self, ages, "Renaissance"))
-        siege_tactics: Tech = add_to_space(self, classes, "SiegeTactics", get_age(self, ages, "Renaissance"))
+        banking: Tech = add_to_space(
+            self, classes, "Banking", get_age(self, ages, "Renaissance")
+        )
+        chemistry: Tech = add_to_space(
+            self, classes, "Chemistry", get_age(self, ages, "Renaissance")
+        )
+        composites: Tech = add_to_space(
+            self, classes, "Composites", get_age(self, ages, "Renaissance")
+        )
+        gunpowder: Tech = add_to_space(
+            self, classes, "Gunpowder", get_age(self, ages, "Renaissance")
+        )
+        scientific_theory: Tech = add_to_space(
+            self, classes, "ScientificTheory", get_age(self, ages, "Renaissance")
+        )
+        cartography: Tech = add_to_space(
+            self, classes, "Cartography", get_age(self, ages, "Renaissance")
+        )
+        mass_production: Tech = add_to_space(
+            self, classes, "MassProduction", get_age(self, ages, "Renaissance")
+        )
+        banking: Tech = add_to_space(
+            self, classes, "Banking", get_age(self, ages, "Renaissance")
+        )
+        printing: Tech = add_to_space(
+            self, classes, "Printing", get_age(self, ages, "Renaissance")
+        )
+        square_rigging: Tech = add_to_space(
+            self, classes, "SquareRigging", get_age(self, ages, "Renaissance")
+        )
+        astronomy: Tech = add_to_space(
+            self, classes, "Astronomy", get_age(self, ages, "Renaissance")
+        )
+        metal_casting: Tech = add_to_space(
+            self, classes, "MetalCasting", get_age(self, ages, "Renaissance")
+        )
+        siege_tactics: Tech = add_to_space(
+            self, classes, "SiegeTactics", get_age(self, ages, "Renaissance")
+        )
 
-        industrialisation: Tech = add_to_space(self, classes, "Industrialisation", get_age(self, ages, "Industrial"))
-        mass_production: Tech = add_to_space(self, classes, "MassProduction", get_age(self, ages, "Industrial"))
-        replaceable_parts: Tech = add_to_space(self, classes, "ReplacableParts", get_age(self, ages, "Industrial"))
-        refining: Tech = add_to_space(self, classes, "Refining", get_age(self, ages, "Industrial"))
-        steam_power: Tech = add_to_space(self, classes, "SteamPower", get_age(self, ages, "Industrial"))
-        steel: Tech = add_to_space(self, classes, "Steel", get_age(self, ages, "Industrial"))
-        ballistics: Tech = add_to_space(self, classes, "Ballistics", get_age(self, ages, "Industrial"))
-        sanitation: Tech = add_to_space(self, classes, "Sanitation", get_age(self, ages, "Industrial"))
-        economics: Tech = add_to_space(self, classes, "Economics", get_age(self, ages, "Industrial"))
-        rifling: Tech = add_to_space(self, classes, "Rifling", get_age(self, ages, "Industrial"))
+        industrialisation: Tech = add_to_space(
+            self, classes, "Industrialisation", get_age(self, ages, "Industrial")
+        )
+        mass_production: Tech = add_to_space(
+            self, classes, "MassProduction", get_age(self, ages, "Industrial")
+        )
+        replaceable_parts: Tech = add_to_space(
+            self, classes, "ReplacableParts", get_age(self, ages, "Industrial")
+        )
+        refining: Tech = add_to_space(
+            self, classes, "Refining", get_age(self, ages, "Industrial")
+        )
+        steam_power: Tech = add_to_space(
+            self, classes, "SteamPower", get_age(self, ages, "Industrial")
+        )
+        steel: Tech = add_to_space(
+            self, classes, "Steel", get_age(self, ages, "Industrial")
+        )
+        ballistics: Tech = add_to_space(
+            self, classes, "Ballistics", get_age(self, ages, "Industrial")
+        )
+        sanitation: Tech = add_to_space(
+            self, classes, "Sanitation", get_age(self, ages, "Industrial")
+        )
+        economics: Tech = add_to_space(
+            self, classes, "Economics", get_age(self, ages, "Industrial")
+        )
+        rifling: Tech = add_to_space(
+            self, classes, "Rifling", get_age(self, ages, "Industrial")
+        )
 
-        combined_arms: Tech = add_to_space(self, classes, "CombinedArms", get_age(self, ages, "Modern"))
-        advanced_ballistics: Tech = add_to_space(self, classes, "AdvancedBallistics", get_age(self, ages, "Modern"))
-        advanced_flight: Tech = add_to_space(self, classes, "AdvancedFlight", get_age(self, ages, "Modern"))
-        electricity: Tech = add_to_space(self, classes, "Electricity", get_age(self, ages, "Modern"))
-        flight: Tech = add_to_space(self, classes, "Flight", get_age(self, ages, "Modern"))
-        guidance_systems: Tech = add_to_space(self, classes, "GuidanceSystems", get_age(self, ages, "Modern"))
-        lasers: Tech = add_to_space(self, classes, "Lasers", get_age(self, ages, "Modern"))
-        rocketry: Tech = add_to_space(self, classes, "Rocketry", get_age(self, ages, "Modern"))
-        satellites: Tech = add_to_space(self, classes, "Satellites", get_age(self, ages, "Modern"))
-        stealth_technology: Tech = add_to_space(self, classes, "StealthTechnology", get_age(self, ages, "Modern"))
-        synthetic_materials: Tech = add_to_space(self, classes, "SyntheticMaterials", get_age(self, ages, "Modern"))
-        telecommunications: Tech = add_to_space(self, classes, "Telecommunications", get_age(self, ages, "Modern"))
-        military_science: Tech = add_to_space(self, classes, "MilitaryScience", get_age(self, ages, "Modern"))
+        combined_arms: Tech = add_to_space(
+            self, classes, "CombinedArms", get_age(self, ages, "Modern")
+        )
+        advanced_ballistics: Tech = add_to_space(
+            self, classes, "AdvancedBallistics", get_age(self, ages, "Modern")
+        )
+        advanced_flight: Tech = add_to_space(
+            self, classes, "AdvancedFlight", get_age(self, ages, "Modern")
+        )
+        electricity: Tech = add_to_space(
+            self, classes, "Electricity", get_age(self, ages, "Modern")
+        )
+        flight: Tech = add_to_space(
+            self, classes, "Flight", get_age(self, ages, "Modern")
+        )
+        guidance_systems: Tech = add_to_space(
+            self, classes, "GuidanceSystems", get_age(self, ages, "Modern")
+        )
+        lasers: Tech = add_to_space(
+            self, classes, "Lasers", get_age(self, ages, "Modern")
+        )
+        rocketry: Tech = add_to_space(
+            self, classes, "Rocketry", get_age(self, ages, "Modern")
+        )
+        satellites: Tech = add_to_space(
+            self, classes, "Satellites", get_age(self, ages, "Modern")
+        )
+        stealth_technology: Tech = add_to_space(
+            self, classes, "StealthTechnology", get_age(self, ages, "Modern")
+        )
+        synthetic_materials: Tech = add_to_space(
+            self, classes, "SyntheticMaterials", get_age(self, ages, "Modern")
+        )
+        telecommunications: Tech = add_to_space(
+            self, classes, "Telecommunications", get_age(self, ages, "Modern")
+        )
+        military_science: Tech = add_to_space(
+            self, classes, "MilitaryScience", get_age(self, ages, "Modern")
+        )
 
-        nuclear_fission: Tech = add_to_space(self, classes, "NuclearFission", get_age(self, ages, "Modern"))
-        plastics: Tech = add_to_space(self, classes, "Plastics", get_age(self, ages, "Modern"))
-        radio: Tech = add_to_space(self, classes, "Radio", get_age(self, ages, "Modern"))
-        combustion: Tech = add_to_space(self, classes, "Combustion", get_age(self, ages, "Modern"))
-        computers: Tech = add_to_space(self, classes, "Computers", get_age(self, ages, "Modern"))
+        nuclear_fission: Tech = add_to_space(
+            self, classes, "NuclearFission", get_age(self, ages, "Modern")
+        )
+        plastics: Tech = add_to_space(
+            self, classes, "Plastics", get_age(self, ages, "Modern")
+        )
+        radio: Tech = add_to_space(
+            self, classes, "Radio", get_age(self, ages, "Modern")
+        )
+        combustion: Tech = add_to_space(
+            self, classes, "Combustion", get_age(self, ages, "Modern")
+        )
+        computers: Tech = add_to_space(
+            self, classes, "Computers", get_age(self, ages, "Modern")
+        )
 
-        nanotechnology: Tech = add_to_space(self, classes, "Nanotechnology", get_age(self, ages, "Information"))
-        nuclear_fusion: Tech = add_to_space(self, classes, "NuclearFusion", get_age(self, ages, "Information"))
-        robotoics: Tech = add_to_space(self, classes, "Robotics", get_age(self, ages, "Information"))
+        nanotechnology: Tech = add_to_space(
+            self, classes, "Nanotechnology", get_age(self, ages, "Information")
+        )
+        nuclear_fusion: Tech = add_to_space(
+            self, classes, "NuclearFusion", get_age(self, ages, "Information")
+        )
+        robotoics: Tech = add_to_space(
+            self, classes, "Robotics", get_age(self, ages, "Information")
+        )
 
         animal_husbandry.requires = [hunting_gethering]
         pottery.requires = [hunting_gethering]

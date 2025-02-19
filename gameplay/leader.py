@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from gameplay.effect import Effects, Effect
 from managers.i18n import T_TranslationOrStr
-from openciv.engine.saving import SaveAble
+from system.saving import SaveAble
 
 
 class Leader(SaveAble):
     def __init__(
-        self, key: str, name: T_TranslationOrStr, description: T_TranslationOrStr, icon: str | None = None
+        self,
+        key: str,
+        name: T_TranslationOrStr,
+        description: T_TranslationOrStr,
+        icon: str | None = None,
     ) -> None:
         super().__init__()
         self.key: str = key

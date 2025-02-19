@@ -1,6 +1,5 @@
-from __future__ import annotations
 from gameplay.citizen import Citizen
-from openciv.engine.mixins.callbacks import CallbacksMixin
+from mixins.callbacks import CallbacksMixin
 
 from typing import Any, List, Self
 

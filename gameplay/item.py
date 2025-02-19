@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from managers.i18n import T_TranslationOrStr
-from openciv.engine.saving import SaveAble
+from system.saving import SaveAble
 from gameplay.effect import Effects
 from gameplay.combat.stats import Stats
 from openciv.engine.requires import Requires
