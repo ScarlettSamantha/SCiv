@@ -3,13 +3,16 @@ from panda3d.core import (
     NodePath,
 )
 
+
 class CivCamera:
     """
     A camera controller that mimics a Civilization-style view,
     now including a ray and pick_object method for clicking on geometry.
     """
-    def __init__(self, base, target: NodePath):
+
+    def __init__(self, base):
         self.base = base
+        self.active: bool = False
 
         # Initial zoom distance
         self.zoom = 20.0
@@ -24,7 +27,7 @@ class CivCamera:
         self.pitch = 45.0
 
         # If a target is provided, store it.
-        self.target = target
+        self.target = None
 
         # Create a pivot node; if a target exists, position the pivot at the target.
         self.pivot = base.render.attachNewNode("camPivot")
@@ -91,6 +94,9 @@ class CivCamera:
         self.base.camera.lookAt(self.pivot)
 
     def update(self, task):
+        if not self.active:
+            return task.cont
+
         """Update camera panning based on key states."""
         dt = self.base.clock.getDt()
         dx, dy = 0, 0
@@ -106,9 +112,7 @@ class CivCamera:
         # Move pivot if needed
         if dx or dy:
             cur_pos = self.pivot.getPos()
-            self.pivot.setPos(cur_pos.getX() + dx,
-                              cur_pos.getY() + dy,
-                              cur_pos.getZ())
+            self.pivot.setPos(cur_pos.getX() + dx, cur_pos.getY() + dy, cur_pos.getZ())
             self.update_camera_position()
 
         return task.cont
