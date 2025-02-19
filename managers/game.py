@@ -56,7 +56,7 @@ class Game(Singleton):
 
         # Generate the world
         self.world.generate(self.properties.width, self.properties.height, 0.5, 1.5)
-        self.world.setup_hex_tiles()
+        self.world.delegate_to_generator()
 
         # Start the game ui
         self.ui.map = self.world
