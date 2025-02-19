@@ -12,7 +12,6 @@ from managers.i18n import _i18n, set_i18n
 from managers.game import Game
 
 
-# 1) Limit FPS to 60
 class FlatHexExample(ShowBase):
     def __init__(self, config_mgr):
         # config_mgr must be applied BEFORE ShowBase to set up prc data
@@ -93,7 +92,7 @@ class FlatHexExample(ShowBase):
         # ShowBase.processMessages(0) might sometimes be used if changes aren't immediate
 
         # 3) Re-open the window
-        self.win = self.openDefaultWindow(props=props, keepCamera=True)  # noqa
+        self.openDefaultWindow(props=props, keepCamera=True)  # noqa
 
 
 config_mgr = ConfigManager("config.json")
