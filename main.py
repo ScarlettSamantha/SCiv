@@ -10,7 +10,7 @@ from managers.input import Input
 from managers.config import ConfigManager
 from managers.i18n import _i18n, set_i18n
 from managers.game import Game
-
+import pathlib
 import simplepbr
 
 
@@ -21,6 +21,8 @@ class FlatHexExample(ShowBase):
         simplepbr.init()
         self.config_mgr = config_mgr
         self.disableMouse()
+        base_file_path = pathlib.Path(__file__).parent.absolute()
+        set_i18n(_i18n(base_file_path / "i18n", "en_EN", True))
 
         # Listen for window events (including moves / resizes)
         self.accept("window-event", self.on_window_event)
@@ -31,7 +33,6 @@ class FlatHexExample(ShowBase):
         input_manager.inject_into_camera()
 
         # I18n system
-        set_i18n(_i18n("i18n", "en", True))
 
         self.civ_camera = CivCamera(self)
         CivCamera._set_instance(self.civ_camera)
