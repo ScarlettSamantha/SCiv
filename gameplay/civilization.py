@@ -1,17 +1,23 @@
-from __future__ import annotations
 from typing import Self, List
 from gameplay.effect import Effects, Effect
 from gameplay.leader import Leader
-from managers.i18n import T_TranslationOrStr
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from abc import abstractmethod
+from random import choice
 
 
 class Civilization:
-    def __init__(self, name: T_TranslationOrStr, description: T_TranslationOrStr) -> None:
-        self.name: T_TranslationOrStr = name
+    def __init__(
+        self,
+        name: T_TranslationOrStrOrNone = None,
+        description: T_TranslationOrStrOrNone = None,
+    ) -> None:
+        self.name: T_TranslationOrStr = name if name is not None else ""
         self.icon: str | None = None
         self._loadable = False
-        self.description: T_TranslationOrStr = description
+        self.description: T_TranslationOrStr = (
+            description if description is not None else ""
+        )
         self._leaders: List[Leader] = []
 
         self._effects: Effects = Effects()
@@ -44,6 +50,9 @@ class Civilization:
     @abstractmethod
     def register_leaders(Self) -> None:
         pass
+
+    def random_leader(self) -> Leader:
+        return choice(self.leaders)
 
     def __str__(self) -> str:
         leader_name_list: List[str] = []
