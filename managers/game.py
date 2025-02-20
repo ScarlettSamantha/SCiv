@@ -1,6 +1,22 @@
-from typing import Any, Optional, Union, List
+from pty import spawn
+from random import choice
+from typing import Any, Optional, Type, Union, List, Dict
+
+from click import Option
+from data.tiles.tile import Tile
+from gameplay.civilization import Civilization
+from gameplay.civilizations.rome import Rome
+from gameplay.leader import Leader
+from gameplay.leaders.augustus import Augustus
+from gameplay.personality import Personality
+from gameplay.player import Player
+from gameplay.units.classes._base import UnitBaseClass
+from managers.i18n import T_TranslationOrStr
+from managers.player import PlayerManager
 from mixins.singleton import Singleton
 from direct.showbase.MessengerGlobal import messenger
+
+from gameplay.repositories.player import PlayerRepository
 
 from managers.ui import ui
 from managers.world import World
@@ -40,6 +56,7 @@ class Game(Singleton):
         self.world: World = World.get_instance()
         self.input: Input = Input.get_instance()
         self.camera: CivCamera = camera
+        self.players: PlayerManager = PlayerManager()
 
         self.properties: Optional[GameSettings] = None
 
@@ -56,26 +73,117 @@ class Game(Singleton):
         self.ui.select_tile(tiles)
 
     def on_game_start(self):
-        if not self.properties:
+        if (
+            not self.properties
+            or not self.properties.width
+            or not self.properties.height
+        ):
             raise ValueError("Game properties not set")
         self.game_active = True
 
-        # Generate the world
-        # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
-        self.world.generate(self.properties.width, self.properties.height, 0.482, 1.5)
-        self.world.delegate_to_generator()
+        def generate_world():
+            # Generate the world
+            # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
+            self.world.generate(
+                self.properties.width,  # type: ignore has already been checked on gmae start if not None
+                self.properties.height,  # type: ignore has already been checked on gmae start if not None
+                0.482,
+                1.5,
+            )
+            self.world.delegate_to_generator()
+            self.ui.map = self.world
 
-        # Start the game ui
-        self.ui.map = self.world
+        def camera_setup():
+            # Some camera stuff
+            self.camera.active = True
 
-        # Some camera stuff
-        self.middle_target = self.base.render.attachNewNode("middle_target")
-        self.middle_target.setPos(self.world.middle_x, self.world.middle_y, 0)
-        self.camera.active = True
+            # Setup input for camera
+            self.input.inject_into_camera()
+            self.input.activate()
 
-        # Setup input for camera
-        self.input.inject_into_camera()
-        self.input.activate()
+        def setup_players(index=0) -> List[Player] | None:
+            if self.properties is None:
+                raise ValueError("Game properties not set")
+
+            if self.properties.num_enemies is None:
+                raise ValueError("Number of enemies not set")
+
+            players = []
+
+            # Setup player
+            def generate_player(
+                name: T_TranslationOrStr,
+                personality: Personality,
+                civilization: Civilization,
+                turn_order=index,
+                leader: Optional[Leader] = None,
+            ):
+                if leader is None:
+                    leader = civilization.random_leader()
+                player = Player(
+                    str(name), turn_order, personality, civilization, leader
+                )
+                return player
+
+            # For testing @todo remove
+            personalities: List[Type[Personality]] = [Personality]
+            civilizations: Dict[str, Type[Civilization]] = (
+                PlayerRepository.load_all_civilizations()
+            )
+            leaders: Dict[str, Type[Leader | Augustus]] = (
+                PlayerRepository.load_all_leaders()
+            )
+
+            for i in range(
+                self.properties.num_enemies + 1  # +1 for the player
+                if self.properties is not None
+                or self.properties.num_enemies is not None
+                else 2
+            ):
+                personality: Personality = choice(personalities)()
+                civilization: Civilization | Rome = choice(
+                    list(civilizations.values())
+                )()
+                leader: Augustus | Leader = choice(list(leaders.values()))()  # type: ignore
+                name = f"Player {i} - {civilization.name}"
+
+                player = generate_player(name, personality, civilization, i, leader)
+                if i == 0:
+                    player.is_human = True
+                    player.is_being_controlled = True
+                players.append(player)
+                self.players.add(player, i == 0)
+            return players
+
+        def place_starting_units():
+            from gameplay.units.core.classes.civilian.settler import Settler
+
+            units: List[UnitBaseClass] = []
+            for player in self.players.players().values():
+                unit: Settler = Settler(base=self.base)
+                unit.owner = player
+                spawn_tile: Optional[Tile] = None
+                # We need to find a tile to spawn the unit on
+                while True:
+                    _spawn_tile: Optional[Tile] = self.world.random_tile()
+                    if _spawn_tile.walkable is False or _spawn_tile.is_occupied():
+                        continue
+                    spawn_tile = _spawn_tile
+                    break
+                units.append(unit)
+                player.units.add_unit(unit)
+                spawn_tile.add_unit(unit)
+                unit.spawn()
+            return len(units) > 0
+
+        generate_world()
+        camera_setup()
+
+        if setup_players() is None:
+            raise ValueError("No players were setup")
+
+        if not place_starting_units():
+            raise ValueError("No units were placed")
 
     def on_game_end(self):
         self.game_active = False
