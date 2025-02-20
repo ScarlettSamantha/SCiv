@@ -1,10 +1,10 @@
 from __future__ import annotations
 from typing import Any
 
-from gameplay.units.baseunit import BaseUnit
+from gameplay.units.classes._base import UnitBaseClass
 
 
-class CoreBaseUnit(BaseUnit):
+class CoreBaseUnit(UnitBaseClass):
     pass
 
 
