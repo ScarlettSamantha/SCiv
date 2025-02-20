@@ -8,7 +8,6 @@ from os import PathLike
 from pathlib import Path
 
 from typing import Union, Dict, Any
-from managers.log import LogManager
 from system.saving import SaveAble
 
 from exceptions.i18n_exception import (
