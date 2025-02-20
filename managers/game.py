@@ -61,14 +61,21 @@ class Game(Singleton):
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)
         self.base = base
-        self.base.accept("system.input.user.tile_clicked", self.process_game_click)
+        self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
+        self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
         self.base.accept("system.game.start", self.on_game_start)
 
-    def process_game_click(self, tiles: Union[list[str], str]):
+    def handle_tile_click(self, tiles: Union[list[str], str]):
         if isinstance(tiles, str):
             tiles = [tiles]
         messenger.send("ui.update.user.tile_clicked", tiles)
         self.ui.select_tile(tiles)
+
+    def handle_unit_click(self, units: Union[list[str], str]):
+        if isinstance(units, str):
+            units = [units]
+        messenger.send("ui.update.user.unit_clicked", units)
+        self.ui.select_unit(units)
 
     def on_game_start(self):
         if (

@@ -1,3 +1,4 @@
+import i18n
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List, Tuple, Union
 
@@ -13,7 +14,7 @@ from gameplay.city import City
 from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
 from managers.player import PlayerManager, Player
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, _t, get_i18n
 
 
 class Tile:
@@ -393,6 +394,15 @@ class Tile:
         else:
             terrain_name: T_TranslationOrStr = "civilization.nature.name"
 
+        _improvements = []
+        for improvement in self._improvements.get_all():
+            _improvements.append(get_i18n().lookup(improvement.name))
+
+        _units = []
+        for unit in self.units.units:
+            data = unit.to_gui()
+            _units.append(f"{data['tag']} {data['name']}")
+
         return {
             "tag": self.tag,
             "x": self.x,
@@ -400,9 +410,9 @@ class Tile:
             "terrain": terrain_name,
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
-            "improvements": self._improvements,
+            "improvements": " | ".join(_improvements),
             "features": self.features,
-            "units": self.units,
+            "units": ",".join(_units),
             "health": self.health,
             "damage": self.damage,
         }

@@ -5,6 +5,7 @@ from menus.game import Game
 from menus.game_escape import PauseMenu
 from mixins.singleton import Singleton
 from managers.world import World
+from gameplay.units.classes._base import UnitBaseClass
 
 
 class ui(Singleton):
@@ -16,8 +17,12 @@ class ui(Singleton):
         self.current_menu = None
         self.game: Optional[Game] = None
         self.map: World = World.get_instance()
+
         self.current_tile: Optional[Tile] = None
         self.previous_tile: Optional[Tile] = None
+
+        self.current_unit: Optional[UnitBaseClass] = None
+        self.previous_unit: Optional[UnitBaseClass] = None
 
         self.game_menu_state: Optional[Game] = None
         self.game_pause_state: Optional[PauseMenu] = None
@@ -97,14 +102,48 @@ class ui(Singleton):
         if self.game_pause_state:
             self.game_pause_state.hide()
 
+    def clear_selection(self):
+        if self.current_tile is not None:
+            self.current_tile.set_color((1, 1, 1, 1))
+        self.current_tile = None
+        self.previous_tile = None
+
+        if self.current_unit is not None:
+            self.current_unit.set_color((1, 1, 1, 1))
+        self.current_unit = None
+        self.previous_unit = None
+
     def select_tile(self, tile_coords: List[str]):
         tile = self.map.map.get(tile_coords[0])
+
+        if self.current_unit is not None:
+            self.current_unit.set_color((1, 1, 1, 1))
+            self.previous_unit = self.current_unit
+            self.current_unit = None
+
         if self.current_tile is not None:
             self.previous_tile = self.current_tile
             self.previous_tile.set_color((1, 1, 1, 1))
+
         if tile is not None:
             tile.set_color((0, 1, 0, 1))
             self.current_tile = tile
+
+    def select_unit(self, unit_tag: List[str]):
+        object = UnitBaseClass.get_unit_by_tag(unit_tag[0])
+
+        if self.current_tile is not None:
+            self.current_tile.set_color((1, 1, 1, 1))
+            self.previous_tile = self.current_tile
+            self.current_tile = None
+
+        if self.current_unit is not None:
+            self.previous_unit = self.current_unit
+            self.previous_unit.set_color((1, 1, 1, 1))
+
+        if object is not None:
+            object.set_color((0, 1, 0, 1))
+            self.current_unit = object
 
     def trigger_render_analyze(self):
         self._base.render.analyze()

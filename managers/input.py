@@ -60,7 +60,15 @@ class Input(Singleton):
             entry = self.pq.getEntry(0)  # closest collision
             picked_obj = entry.getIntoNodePath()
             tile_id = picked_obj.getNetTag("tile_id")
-            messenger.send("system.input.user.tile_clicked", [tile_id])
+
+            start_of_id = tile_id.split("_")[0]
+            if start_of_id == "unit":
+                # This is a unit, not a tilea
+                messenger.send("system.input.user.unit_clicked", [tile_id])
+            elif start_of_id == "tile":
+                # This is a tile
+                messenger.send("system.input.user.tile_clicked", [tile_id])
+
             return picked_obj
         else:
             print("No object picked. Possibly between tiles or outside the game field.")

@@ -1,15 +1,22 @@
+import random
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import NodePath, LVector3
+from panda3d.core import NodePath, LVector3, CollisionNode, BitMask32
 from direct.showbase.Loader import Loader
+from panda3d.core import CollisionCapsule
 
-from managers.i18n import T_TranslationOrStr
-from typing import Optional, Tuple, Type, Any, TYPE_CHECKING
+from managers.i18n import T_TranslationOrStr, Translation, get_i18n
+from typing import Dict, Optional, Tuple, Type, Any, TYPE_CHECKING
+from gameplay.combat.stats import Stats
 
 if TYPE_CHECKING:
     from data.tiles.tile import Tile
     from gameplay.promotion import PromotionTree
     from gameplay.player import Player
+
+
 class UnitBaseClass:
+    units_lookup: Dict[str, "UnitBaseClass"] = {}
+
     def __init__(
         self,
         key: str,
@@ -43,7 +50,34 @@ class UnitBaseClass:
         )
         self.model_position_offset: Tuple[float, float, float] = model_position_offset
         self.base: ShowBase = base
-        self.colliders = NodePath("colliders")
+        self.collides: bool = True
+        self.tag: Optional[str] = None
+
+        self.pos_y: float = 0.0
+        self.pos_x: float = 0.0
+        self.pos_z: float = 0.0
+
+        self.max_health: int = 100
+        self.current_health: int = 100
+
+        self.max_attacks: int = 1
+        self.attacks_left: int = 1
+
+        self.stats: Stats = Stats()
+        # 1 is mele
+        self.range: int = 1
+        self.in_direct: bool = False
+
+        self.max_moves: int = 1
+        self.moves_left: int = 1
+
+        self.can_swim: bool = False
+        self.can_fly: bool = False
+
+        self.can_move: bool = True
+        self.can_attack: bool = True
+        self.can_heal: bool = True
+        self.can_pillage: bool = True
 
     def spawn(self) -> bool:
         """
@@ -93,14 +127,81 @@ class UnitBaseClass:
         model.setPos(LVector3(*pos))
         model.setHpr(LVector3(*self.model_rotation))
         model.setScale(self.model_size)
-        self.colliders = model.findAllMatches("**/+CollisionNode")
-        if self.colliders.getNumPaths() > 0:
-            self.colliders.reparentTo(model)  # Ensure collision nodes are used
-        else:
-            raise ValueError(
-                f"⚠️ No collision detected for {self.key}, consider adding it in GLTF"
-            )
 
+        self.pos_x, self.pos_y, self.pos_z = pos
+
+        if self.collides:
+            model.setCollideMask(BitMask32.bit(1))
+        else:
+            model.setCollideMask(BitMask32.allOff())
+
+        self.tag = f"unit_{self.key}_{random.randint(0, 10000)}"
+        model.setTag("tile_id", self.tag)
         model.reparentTo(self.base.render)  # Attach model to scene graph
 
+        self.register_unit(self)
+
         return model
+
+    def set_color(self, color: Tuple[float, float, float, float]) -> None:
+        """
+        Sets the color of the unit model.
+
+        Args:
+            color (Tuple[float, float, float, float]): The color to set.
+        """
+        if isinstance(self.model, str):
+            raise ValueError(f"Unit {self.key} has no model assigned.")
+
+        self.model.setColor(*color)
+
+    def to_gui(self) -> Dict[str, Any]:
+        return {
+            "tag": self.tag,
+            "key": self.key,
+            "name": get_i18n().lookup(self.name),
+            "description": self.description,
+            "owner": self.owner.name,
+            "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",
+            "health": f"{self.current_health}/{self.max_health}",
+            "attacks": f"{self.attacks_left}/{self.max_attacks}",
+            "damage": self.stats.attack_modifier,
+            "defense": self.stats.defense_modifier,
+            "armor_piercing": self.stats.armor_piercing,
+            "movement": f"{self.moves_left}/{self.max_moves}",
+            "range": self.range,
+            "can_move": self.can_move,
+            "can_attack": self.can_attack,
+            "can_heal": self.can_heal,
+            "can_pillage": self.can_pillage,
+        }
+
+    @classmethod
+    def register_unit(cls, unit: "UnitBaseClass") -> None:
+        """
+        Registers a unit type with the unit lookup table.
+
+        Args:
+            unit (UnitBaseClass): The unit to register.
+        """
+        if unit.tag is None:
+            raise ValueError(f"Unit {unit.key} has no tag")
+
+        if unit.tag not in cls.units_lookup:
+            cls.units_lookup[unit.tag] = unit
+
+    @classmethod
+    def get_unit_by_tag(cls, tag: str) -> Optional["UnitBaseClass"]:
+        """
+        Retrieves a unit instance based on the provided tag.
+
+        Args:
+            tag (str): The tag associated with the unit.
+
+        Returns:
+            UnitBaseClass: The matching unit instance if found; otherwise, None.
+        """
+        for unit in cls.units_lookup.values():
+            if unit.tag == tag:
+                return unit
+        return None

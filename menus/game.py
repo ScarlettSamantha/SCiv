@@ -4,6 +4,7 @@ import math
 from direct.gui.DirectGui import DirectFrame, DirectLabel
 from panda3d.core import LineSegs, NodePath, TextNode
 from data.tiles.tile import Tile
+from gameplay.units.classes._base import UnitBaseClass
 from menus._base import BaseMenu
 from camera import CivCamera
 
@@ -62,6 +63,7 @@ class Game(BaseMenu):
     def register(self):
         # Listen for "ui.update.user.tile_clicked" event if needed
         self.base.accept("ui.update.user.tile_clicked", self.process_game_click)
+        self.base.accept("ui.update.user.unit_clicked", self.process_game_click)
 
     def show(self):
         """Set up all GUI elements."""
@@ -142,13 +144,17 @@ class Game(BaseMenu):
 
         return task.cont
 
-    def update_label_text(self, new_text: Union[list[str], str | Tile]):
+    def update_label_text(self, new_text: Union[list[str], str | Tile | UnitBaseClass]):
         """Helper to update the text of the frame label."""
         if not self.label:
             return
         if isinstance(new_text, str):
             self.label["text"] = new_text
         elif isinstance(new_text, Tile):
+            self.label["text"] = "\n".join(
+                f"{key}: {value}" for key, value in new_text.to_gui().items()
+            )
+        elif isinstance(new_text, UnitBaseClass):
             self.label["text"] = "\n".join(
                 f"{key}: {value}" for key, value in new_text.to_gui().items()
             )
@@ -161,17 +167,20 @@ class Game(BaseMenu):
             tile_id = tile
         elif isinstance(tile, Tile):
             tile_id = tile.tag
+        elif isinstance(tile, UnitBaseClass):
+            tile_id = tile.tag
         else:
             raise ValueError("Invalid tile type")
 
         if tile_id is None or not isinstance(tile_id, str):
             return
-        else:
+        elif tile_id.startswith("unit"):
+            _unit = UnitBaseClass.get_unit_by_tag(tile_id)
+            if _unit is None or not isinstance(_unit, UnitBaseClass):
+                return
+            self.update_label_text(_unit)
+        elif tile_id.startswith("tile"):
             _tile: Optional[Tile] = self.world.map.get(tile_id)
             if _tile is None or not isinstance(_tile, Tile):
                 return
-
-        if _tile is None:
-            return
-
-        self.update_label_text(_tile)
+            self.update_label_text(_tile)
