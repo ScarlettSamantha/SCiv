@@ -38,7 +38,7 @@ class Player:
         leader: Leader,
     ) -> None:
         self.name: str = name
-        self.ip: str | None = None
+        self.id: str | None = None
         self.identifier: str | None = None
 
         self.turn_order: int = turn_order
