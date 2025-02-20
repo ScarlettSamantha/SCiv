@@ -1,5 +1,5 @@
 from panda3d.core import NodePath, LRGBColor, BitMask32
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Tuple, Union
 
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
@@ -19,96 +19,97 @@ from managers.i18n import T_TranslationOrStr, _t
 class Tile:
     def __init__(
         self,
-        base,
+        base: Any,
         x: int = 0,
         y: int = 0,
         pos_x: float = 0.0,
         pos_y: float = 0.0,
         pos_z: float = 0.0,
-    ):
-        self.id = id
+    ) -> None:
+        self.id: int = id(self)
         self.x: int = x
-        self.base = base
+        self.base: Any = base
         self.y: int = y
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
 
         self.tile_terrain: Optional[BaseTerrain] = None
-        self.destroyed = False
-        self.grid_position = None
-        self.raw_position = None
-        self.tag = None
-        self.node = None
+        self.destroyed: bool = False
+        self.grid_position: Optional[Any] = None
+        self.raw_position: Optional[Any] = None
+        self.tag: Optional[str] = None
+        # Instead of a single node, we keep a list of NodePaths.
+        self.models: List[NodePath] = []
 
         # This is the height of the tile in relation to the average sea level in meters.
-        self.gameplay_height = 0
+        self.gameplay_height: int = 0
 
         # None is nature.
         self.player: Optional[Player] = None
 
-        # Base health and if damagable declarations
-        self.damagable = False
-        self.health = 100
-        self.damage = 0
+        # Base health and if damagable declarations.
+        self.damagable: bool = False
+        self.health: int = 100
+        self.damage: int = 0
 
-        # Does it take damage over time ?
-        self.damage_per_turn_mode = DamageMode.DAMAGE_NONE
-        self.damage_per_turn = 0.0
+        # Does it take damage over time?
+        self.damage_per_turn_mode: int = DamageMode.DAMAGE_NONE
+        self.damage_per_turn: float = 0.0
 
-        # Does it damage units over time ?
-        self.damage_per_turn_on_units_mode = DamageMode.DAMAGE_NONE
-        self.damage_per_turn_on_units = 0.0
+        # Does it damage units over time?
+        self.damage_per_turn_on_units_mode: int = DamageMode.DAMAGE_NONE
+        self.damage_per_turn_on_units: float = 0.0
 
-        # Does it damamge improvements over time ?
-        self.damage_per_turn_on_improvements_mode = DamageMode.DAMAGE_NONE
-        self.damage_per_turn_on_improvements = 0.0
+        # Does it damage improvements over time?
+        self.damage_per_turn_on_improvements_mode: int = DamageMode.DAMAGE_NONE
+        self.damage_per_turn_on_improvements: float = 0.0
 
-        # Can units walk over ?
-        self.walkable = True
-        # Can ships make it through ?
-        self.sailable = False
-        # Is this deep water ?
-        self.deep = False
-        # Can airplanes fly over ?
-        self.flyable = True
-        # Is space above accessable ?
-        self.space_above = True
-        # Can it be dug under ?
-        self.diggable = True
-        # Can it be build on ?
-        self.buidable = True
-        # If it can be walked over with clibing.
-        self.climbable = True
+        # Can units walk over?
+        self.walkable: bool = True
+        # Can ships make it through?
+        self.sailable: bool = False
+        # Is this deep water?
+        self.deep: bool = False
+        # Can airplanes fly over?
+        self.flyable: bool = True
+        # Is space above accessible?
+        self.space_above: bool = True
+        # Can it be dug under?
+        self.diggable: bool = True
+        # Can it be built on?
+        self.buidable: bool = True
+        # If it can be walked over with climbing.
+        self.climbable: bool = True
         # If it can be claimed.
-        self.claimable = True
-        # If units can breeth
-        self.air_breatheable = True
-        # Can things grow on it ?
-        self.growable = True
+        self.claimable: bool = True
+        # If units can breathe.
+        self.air_breatheable: bool = True
+        # Can things grow on it?
+        self.growable: bool = True
 
-        # How difficult it is to move over this tile messured in movement cost (MC)
-        self.movement_cost = 1.0
+        # How difficult it is to move over this tile measured in movement cost (MC).
+        self.movement_cost: float = 1.0
 
-        # What weather is the tile having ?
-        self.weather: BaseWeather | None = None
+        # What weather is the tile having?
+        self.weather: Optional[BaseWeather] = None
 
-        # What features does this tile contain ?
+        # What features does this tile contain?
         self.features: List[BaseFeature] = list()
-        # Does this have any units ?
+        # Does this have any units?
         self.units: Units = Units()
-        # Does this have improvements ?
+        # Does this have improvements?
         self._improvements: Improvements = Improvements()
-        # Does this have items sitting on top of it ?
+        # Does this have items sitting on top of it?
         self.items: List[BaseItem] = list()
-        # What kind of states apply to this object ?
+        # What kind of states apply to this object?
         self.states: List[Any] = []
 
-        # Does this contain an city ?
-        self.city: City | None = None
-        # Who if anybody is the owner of this tile ?
-        self.owner: Player | None = None
-        # Who has claimed the tile but does not own it ?
+        # Does this contain a city?
+        self.city: Optional[City] = None
+        # Who, if anybody, is the owner of this tile?
+        self.owner: Optional[Player] = None
+        # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
 
         # We configure base tile yield mostly just for debugging.
@@ -124,46 +125,133 @@ class Tile:
             mode=TileYieldModifier.MODE_SET,
         )
 
-        self.meshCollider = True
+        self.meshCollider: bool = True
 
     def __repr__(self) -> str:
-        return f"{str(self.id)}@{str(self.x)},{str(self.y)}"
+        return f"{self.id}@{self.x},{self.y}"
 
-    def render(self):
+    def render(
+        self, render_all: bool = True, model_index: Optional[int] = None
+    ) -> None:
+        """
+        Render the tile.
+        - If no models have been rendered yet, the default terrain model is loaded.
+        - If render_all is True, all models are unrendered and the default terrain is re-rendered.
+        - If model_index is provided, only that model is unrendered and re-rendered.
+        """
         if not self.tile_terrain:
             print(f"Tile {self} has no terrain set, not rendering.")
             return
 
-        hex_model = self.base.loader.loadModel(self.tile_terrain.model())
+        # If no models exist, render the default terrain.
+        if not self.models:
+            self._render_default_terrain()
+            return
+
+        if render_all:
+            self.unrender_all()
+            self._render_default_terrain()
+            # (Additional models could be re-added here if needed.)
+        elif model_index is not None:
+            self.unrender_model(model_index)
+            if model_index == 0:
+                self._render_default_terrain()
+            # Custom logic for re-rendering other models can be added here.
+        else:
+            self._render_default_terrain()
+
+    def _render_default_terrain(self) -> None:
+        if self.tile_terrain is None:
+            print(f"Tile {self} has no terrain set, cannot render default terrain.")
+            return
+
+        model_path: str = self.tile_terrain.model()
+        hex_model: NodePath = self.base.loader.loadModel(model_path)
+        # Apply consistent styling.
         hex_model.setScale(0.48)
-        # Rotate the model so it lies flat.
         hex_model.setHpr(90, 0, 0)
-        new_hex = hex_model.copyTo(self.base.render)
+        node: NodePath = hex_model.copyTo(self.base.render)
+        node.setPos(self.pos_x, self.pos_y, 0)
+        node.setCollideMask(BitMask32.bit(1))
+        self.tag = f"tile_{self.x}_{self.y}"
+        node.setTag("tile_id", self.tag)
+        if self.models:
+            self.models[0] = node
+        else:
+            self.models.append(node)
 
-        new_hex.setPos(self.pos_x, self.pos_y, 0)
+    def add_model(
+        self,
+        model_path: str,
+        pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        scale: float = 1.0,
+        hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ) -> None:
+        """
+        Add an additional model on top of the tile.
+        """
+        extra_model: NodePath = self.base.loader.loadModel(model_path)
+        extra_model.setScale(0.48 * scale)
+        extra_model.setHpr(*hpr)
+        node: NodePath = extra_model.copyTo(self.base.render)
+        node.setPos(
+            self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2]
+        )
+        node.setCollideMask(BitMask32.bit(1))
+        self.models.append(node)
 
-        # Give the render-geometry a collide mask so ray/solid can detect it
-        new_hex.setCollideMask(BitMask32.bit(1))
-        tag = f"tile_{self.x}_{self.y}"
-        self.tag = tag
-        # Optionally, tag the tile for identification
-        new_hex.setTag("tile_id", tag)
-        self.node = new_hex
+    def unrender(self) -> None:
+        """
+        Remove the tile from the scene by unrendering all models.
+        """
+        self.unrender_all()
 
-    def set_color(self, color: tuple[float, float, float, float]):
-        if self.node:
-            self.node.setColor(*color)
+    def unrender_all(self) -> None:
+        """
+        Remove all models from the scene.
+        """
+        for node in self.models:
+            node.removeNode()
+        self.models.clear()
+
+    def unrender_model(self, model_index: int) -> None:
+        """
+        Remove a specific model by its index in the models list.
+        """
+        if 0 <= model_index < len(self.models):
+            self.models[model_index].removeNode()
+            del self.models[model_index]
+        else:
+            print(f"No model at index {model_index} to unrender.")
+
+    def rerender(self) -> None:
+        """
+        Refresh the tile's visual representation by unrendering and then rendering.
+        """
+        self.unrender_all()
+        self._render_default_terrain()
+        # (Additional models can be re-added using add_model() if required.)
+
+    def set_color(self, color: Tuple[float, float, float, float]) -> None:
+        """
+        Set the color of all rendered models on this tile.
+        """
+        for node in self.models:
+            node.setColor(*color)
 
     def get_node(self) -> Optional[NodePath]:
-        return self.node
+        """
+        Return the first rendered model (typically the terrain) or None if no model exists.
+        """
+        return self.models[0] if self.models else None
 
-    def set_terrain(self, terrain: BaseTerrain):
+    def set_terrain(self, terrain: BaseTerrain) -> None:
         self.tile_terrain = terrain
 
     def get_terrain(self) -> Optional[BaseTerrain]:
         return self.tile_terrain
 
-    def _reset_tile_properties_to_default(self):
+    def _reset_tile_properties_to_default(self) -> None:
         # Has this tile been destroyed.
         self.destroyed = False
         self.grid_position = None
@@ -173,74 +261,74 @@ class Tile:
         self.gameplay_height = 0
 
         # None is nature.
-        self.player: Optional[Player] = None
+        self.player = None
 
-        # Base health and if damagable declarations
+        # Base health and if damagable declarations.
         self.damagable = False
         self.health = 100
         self.damage = 0
 
-        # Does it take damage over time ?
-        self.damage_per_turn_mode = DamageMode.DAMAGE_NONE
-        self.damage_per_turn = 0.0
+        # Does it take damage over time?
+        self.damage_per_turn_mode: int = DamageMode.DAMAGE_NONE
+        self.damage_per_turn: float = 0.0
 
-        # Does it damage units over time ?
-        self.damage_per_turn_on_units_mode = DamageMode.DAMAGE_NONE
-        self.damage_per_turn_on_units = 0.0
+        # Does it damage units over time?
+        self.damage_per_turn_on_units_mode: int = DamageMode.DAMAGE_NONE
+        self.damage_per_turn_on_units: float = 0.0
 
-        # Does it damamge improvements over time ?
-        self.damage_per_turn_on_improvements_mode = DamageMode.DAMAGE_NONE
-        self.damage_per_turn_on_improvements = 0.0
+        # Does it damage improvements over time?
+        self.damage_per_turn_on_improvements_mode: int = DamageMode.DAMAGE_NONE
+        self.damage_per_turn_on_improvements: float = 0.0
 
-        # Can units walk over ?
-        self.walkable = True
-        # Can ships make it through ?
-        self.sailable = False
-        # Is this deep water ?
-        self.deep = False
-        # Can airplanes fly over ?
-        self.flyable = True
-        # Is space above accessable ?
-        self.space_above = True
-        # Can it be dug under ?
-        self.diggable = True
-        # Can it be build on ?
-        self.buidable = True
-        # If it can be walked over with clibing.
+        # Can units walk over?
+        self.walkable: bool = True
+        # Can ships make it through?
+        self.sailable: bool = False
+        # Is this deep water?
+        self.deep: bool = False
+        # Can airplanes fly over?
+        self.flyable: bool = True
+        # Is space above accessible?
+        self.space_above: bool = True
+        # Can it be dug under?
+        self.diggable: bool = True
+        # Can it be built on?
+        self.buidable: bool = True
+        # If it can be walked over with climbing.
         self.climbable = True
         # If it can be claimed.
         self.claimable = True
-        # If units can breeth
+        # If units can breathe.
         self.air_breatheable = True
-        # Can things grow on it ?
+        # Can things grow on it?
         self.growable = True
 
-        # How difficult it is to move over this tile messured in movement cost (MC)
+        # How difficult it is to move over this tile measured in movement cost (MC).
         self.movement_cost = 1.0
 
-        # What weather is the tile having ?
-        self.weather: BaseWeather | None = None
+        # What weather is the tile having?
+        self.weather = None
 
-        # What features does this tile contain ?
-        self.features: List[BaseFeature] = list()
-        # Does this have any units ?
-        self.units: Units = Units()
-        # Does this have improvements ?
-        self._improvements: Improvements = Improvements()
-        # Does this have items sitting on top of it ?
-        self.items: List[BaseItem] = list()
-        # What kind of states apply to this object ?
-        self.states: List[Any] = []
+        # What features does this tile contain?
+        self.features = list()
+        # Does this have any units?
+        self.units = Units()
+        # Does this have improvements?
+        self._improvements = Improvements()
+        # Does this have items sitting on top of it?
+        self.items = list()
+        # What kind of states apply to this object?
+        self.states = list()
 
-        # Does this contain an city ?
-        self.city: City | None = None
-        # Who if anybody is the owner of this tile ?
-        self.owner: Player | None = None
-        # Who has claimed the tile but does not own it ?
-        self.claimants: List[Any] = []
+        # Does this contain a city?
+        self.city = None
+        # Who, if anybody, is the owner of this tile?
+        self.owner = None
+        # Who has claimed the tile but does not own it?
+        self.claimants = list()
 
         # We configure base tile yield mostly just for debugging.
-        self.tile_yield: TileYieldModifier = TileYieldModifier(
+        self.tile_yield = TileYieldModifier(
             values=TileYield(
                 gold=0.0,
                 production=0.0,
@@ -254,7 +342,7 @@ class Tile:
 
         self.meshCollider = True
 
-    def color(self) -> tuple[float, float, float] | LRGBColor:
+    def color(self) -> Union[Tuple[float, float, float], LRGBColor]:
         if self.tile_terrain:
             return self.tile_terrain.color()
         else:
@@ -292,19 +380,24 @@ class Tile:
 
     def remove_unit(self, unit: UnitBaseClass) -> None:
         unit.tile = None
-        self.units.add_unit(unit)
+        # Assuming the intent is to remove the unit.
+        self.units.remove_unit(unit)
 
     def is_occupied(self) -> bool:
         return len(self.units.units) > 0 or self.city is not None
 
     def to_gui(self) -> dict[str, Any]:
+        terrain = self.get_terrain()
+        if terrain is not None:
+            terrain_name: T_TranslationOrStr = terrain.name
+        else:
+            terrain_name: T_TranslationOrStr = "civilization.nature.name"
+
         return {
             "tag": self.tag,
             "x": self.x,
             "y": self.y,
-            "terrain": str(self.get_terrain().name)  # type: ignore
-            if self.get_terrain() is not None
-            else "None",
+            "terrain": terrain_name,
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": self._improvements,
@@ -319,12 +412,12 @@ class Tile:
         player: Optional[Player] = None,
         population: int = 1,
         capital: bool = False,
-    ):
+    ) -> None:
         if player is None:
             player = PlayerManager.player()
         self.city = City.found_new(
             name="Test city", tile=self, population=population, is_capital=capital
         )
 
-    def get_cords(self) -> tuple[float, float, float]:
+    def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
