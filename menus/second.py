@@ -12,7 +12,7 @@ class Second(BaseMenu):
         from managers.game import GameSettings, Game
 
         super().__init__()
-        self.settings = GameSettings(50, 50, None, None, None)
+        self.settings = GameSettings(5, 5, None, 2, "Random")
         game_instance = Game.get_instance()
         game_instance.properties = self.settings
 
