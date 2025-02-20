@@ -76,6 +76,8 @@ class CallbacksMixin:
         LogManager.get_instance().engine.debug(
             f"Registering callback: {callback.__name__} for event: {event}"
         )
+        if event not in self.__callbacks:
+            self._declare_event(event)
         self.__callbacks[event].append(
             {"callback": callback, "kwargs": kwargs if kwargs else None}
         )
