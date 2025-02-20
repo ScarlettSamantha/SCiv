@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from system.requires import Requires
 from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr
-from openciv.engine.requires import Requires
 from gameplay.planes.plane import Plane
 from gameplay.player import Player
 from gameplay.promotion import PromotionTree
