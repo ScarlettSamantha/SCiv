@@ -4,6 +4,7 @@ import math
 from direct.gui.DirectGui import DirectFrame, DirectLabel
 from httpx import head
 from panda3d.core import LineSegs, NodePath, TextNode
+from data.tiles.tile import Tile
 from menus._base import BaseMenu
 from camera import CivCamera
 
@@ -88,17 +89,18 @@ class Game(BaseMenu):
         self.label = DirectLabel(
             parent=self.frame,
             text="Initial text",
-            text_scale=0.05,
-            text_align=TextNode.ALeft,  # anchor text at its left edge
+            text_scale=0.02,
+            text_align=TextNode.ALeft,
+            text_fg=(1, 1, 1, 1),  # anchor text at its left edge
             pos=(left + offset_x, 0, top - offset_z),
-            frameColor=(0, 0, 0, 0),  # make label background transparent
         )
 
         # FPS label in the top-left corner
         self.fps_label = DirectLabel(
             parent=self.base.a2dTopLeft,  # Anchor to the top-left corner
-            text="FPS: 0",
+            text="FPS: 0",  # White text
             text_scale=0.04,
+            text_fg=(1, 1, 1, 1),  # White text
             pos=(0.10, 0, -0.05),  # Small offset right (X) and down (Z)
             frameColor=(0, 0, 0, 0),  # Make label background transparent
         )
@@ -141,12 +143,16 @@ class Game(BaseMenu):
 
         return task.cont
 
-    def update_label_text(self, new_text: Union[list[str], str]):
+    def update_label_text(self, new_text: Union[list[str], str | Tile]):
         """Helper to update the text of the frame label."""
         if not self.label:
             return
         if isinstance(new_text, str):
             self.label["text"] = new_text
+        elif isinstance(new_text, Tile):
+            self.label["text"] = "\n".join(
+                f"{key}: {value}" for key, value in new_text.to_gui().items()
+            )
         else:
             self.label["text"] = "\n".join(new_text)
 
@@ -154,4 +160,6 @@ class Game(BaseMenu):
         """Example method triggered when a tile is clicked."""
         if isinstance(tile, str):
             tile = [tile]
+        tile = tile[0]
+        tile = self.world.map.get(tile)
         self.update_label_text(tile)
