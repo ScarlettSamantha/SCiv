@@ -1,4 +1,9 @@
-from direct.gui.DirectGui import DirectFrame, DirectButton, DirectOptionMenu
+from direct.gui.DirectGui import (
+    DirectFrame,
+    DirectButton,
+    DirectOptionMenu,
+    DirectLabel,
+)
 from menus._base import BaseMenu
 
 
@@ -6,7 +11,7 @@ class Second(BaseMenu):
     def __init__(self):
         from managers.game import GameSettings, Game
 
-        BaseMenu.__init__(self)
+        super().__init__()
         self.settings = GameSettings(50, 50, None, None, None)
         game_instance = Game.get_instance()
         game_instance.properties = self.settings
@@ -14,92 +19,124 @@ class Second(BaseMenu):
     def show(self):
         from managers.ui import ui
 
-        primary = ui.get_instance().get_main_menu
+        primary_menu = ui.get_instance().get_main_menu
         game_ui = ui.get_instance().get_game_ui
 
-        # Create the main frame
+        # Main frame
         self.frame = DirectFrame(
-            frameColor=(0.2, 0.5, 0.2, 1),
+            frameColor=(0.15, 0.15, 0.15, 0.95),  # Dark modern look
             frameSize=(-0.7, 0.7, -0.5, 0.5),
             pos=(0, 0, 0),
         )
 
-        # Drop-down for sizes
+        # Labels
+        DirectLabel(
+            parent=self.frame,
+            text="Select Map Size:",
+            scale=0.05,
+            pos=(-0.4, 0, 0.35),
+        )
+
+        DirectLabel(
+            parent=self.frame,
+            text="Choose Your Empire:",
+            scale=0.05,
+            pos=(0.0, 0, 0.35),
+        )
+
+        DirectLabel(
+            parent=self.frame,
+            text="Number of Enemies:",
+            scale=0.05,
+            pos=(-0.4, 0, 0.15),
+        )
+
+        DirectLabel(
+            parent=self.frame,
+            text="Select Difficulty:",
+            scale=0.05,
+            pos=(0.0, 0, 0.15),
+        )
+
+        # Dropdown: Map Size
         self.size_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
             items=["5x5", "50x50", "75x75", "100x100", "125x125", "150x150"],
             initialitem=0,
-            highlightColor=(0.65, 0.65, 0.65, 1),
+            highlightColor=(0.8, 0.8, 0.8, 1),
             pos=(-0.4, 0, 0.3),
             command=self.on_size_selected,
         )
 
-        # Drop-down for empires
+        # Dropdown: Empire Selection
         self.empire_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
             items=["Romans", "Egyptians"],
             initialitem=0,
-            highlightColor=(0.65, 0.65, 0.65, 1),
+            highlightColor=(0.8, 0.8, 0.8, 1),
             pos=(0.0, 0, 0.3),
             command=self.on_empire_selected,
         )
 
-        # Drop-down for number of enemies
+        # Dropdown: Enemy Count
         self.enemies_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
             items=["1", "2", "3", "4", "5"],
             initialitem=0,
-            highlightColor=(0.65, 0.65, 0.65, 1),
+            highlightColor=(0.8, 0.8, 0.8, 1),
             pos=(-0.4, 0, 0.1),
             command=self.on_enemies_selected,
         )
 
-        # Drop-down for difficulty level
+        # Dropdown: Difficulty Level
         self.difficulty_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
             items=["Easy", "Normal", "Hard", "Insane"],
-            initialitem=1,  # Default to Normal
-            highlightColor=(0.65, 0.65, 0.65, 1),
+            initialitem=1,  # Default: Normal
+            highlightColor=(0.8, 0.8, 0.8, 1),
             pos=(0.0, 0, 0.1),
             command=self.on_difficulty_selected,
         )
 
-        # Start button
+        # Start Game Button
         self.start_button = DirectButton(
-            text="Start",
+            text="▶ Start Game",
             scale=0.07,
             command=game_ui,
-            pos=(0, 0, -0.1),
+            pos=(0.4, 0, -0.4),
             parent=self.frame,
+            frameColor=(0.2, 0.7, 0.2, 1),  # Greenish modern button
         )
 
-        # Back to Main Menu button
+        # Back to Main Menu Button
         self.back_button = DirectButton(
-            text="Back to Main Menu",
+            text="◀ Back to Menu",
             scale=0.07,
-            command=primary,
+            command=primary_menu,
             pos=(-0.4, 0, -0.4),
             parent=self.frame,
+            frameColor=(0.7, 0.2, 0.2, 1),  # Reddish cancel button
         )
 
         return self.frame
 
+    # Event Handlers
     def on_size_selected(self, selected_size):
         self.settings.width, self.settings.height = map(int, selected_size.split("x"))
-        print("Selected size:", self.settings.width, self.settings.height)
+        print(f"Selected size: {self.settings.width}x{self.settings.height}")
 
     def on_empire_selected(self, selected_empire):
         self.settings.player = selected_empire
-        print("Selected empire:", selected_empire)
+        print(f"Selected empire: {selected_empire}")
 
     def on_enemies_selected(self, selected_enemies):
         self.settings.num_enemies = int(selected_enemies)
-        print("Selected number of enemies:", self.settings.enemies)
+        print(f"Selected number of enemies: {self.settings.num_enemies}")
 
     def on_difficulty_selected(self, selected_difficulty):
         self.settings.difficulty = selected_difficulty
-        print("Selected difficulty:", selected_difficulty)
+        print(f"Selected difficulty: {selected_difficulty}")
