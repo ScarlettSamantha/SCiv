@@ -84,14 +84,20 @@ class _i18n:
         self.clear_cache()  # Clear cache after loading new language data
 
     def lookup(
-        self, key: str, default: Any | None = None, fail_on_not_found: bool = True
+        self,
+        key: str | T_TranslationOrStr,
+        default: Any | None = None,
+        fail_on_not_found: bool = True,
     ) -> str:
         # Check if the key is in the cache
+        if isinstance(key, Translation):
+            key = str(key)
+
         if key in self._lookup_cache:
             return self._lookup_cache[key]
 
-        data = self._data
-        splits: list[str] = key.split(sep=".")
+        data = self._data[self.language]
+        splits: list[str] = str(key).split(sep=".")
         for i, level in enumerate(splits):
             if level in data:
                 data = data[level]
@@ -118,6 +124,13 @@ i18n: None | _i18n = None
 def set_i18n(i18n_instance: _i18n) -> None:
     global i18n
     i18n = i18n_instance
+
+
+def get_i18n() -> _i18n:
+    global i18n
+    if i18n is None:
+        raise I18NNotLoadedException("I18n not loaded")
+    return i18n
 
 
 class Translation(SaveAble):
