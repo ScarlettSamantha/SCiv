@@ -3,9 +3,11 @@ from typing import Any, Optional, List
 
 from regex import T
 from data.terrain._base_terrain import BaseTerrain
+from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
 from gameplay.units.baseunit import BaseUnit
+from gameplay.units.classes._base import UnitBaseClass
 from gameplay.weather import BaseWeather
 from gameplay.improvements import Improvements
 from gameplay.tile_yield_modifier import TileYieldModifier, TileYield
@@ -18,7 +20,13 @@ from managers.i18n import T_TranslationOrStr, _t
 
 class Tile:
     def __init__(
-        self, base, x: int = 0, y: int = 0, pos_x: float = 0.0, pos_y: float = 0.0
+        self,
+        base,
+        x: int = 0,
+        y: int = 0,
+        pos_x: float = 0.0,
+        pos_y: float = 0.0,
+        pos_z: float = 0.0,
     ):
         self.id = id
         self.x: int = x
@@ -26,6 +34,7 @@ class Tile:
         self.y: int = y
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
+        self.pos_z: float = pos_z
 
         self.tile_terrain: Optional[BaseTerrain] = None
         self.destroyed = False
@@ -89,7 +98,7 @@ class Tile:
         # What features does this tile contain ?
         self.features: List[BaseFeature] = list()
         # Does this have any units ?
-        self.units: List[BaseUnit] = list()
+        self.units: Units = Units()
         # Does this have improvements ?
         self._improvements: Improvements = Improvements()
         # Does this have items sitting on top of it ?
@@ -123,6 +132,10 @@ class Tile:
         return f"{str(self.id)}@{str(self.x)},{str(self.y)}"
 
     def render(self):
+        if not self.tile_terrain:
+            print(f"Tile {self} has no terrain set, not rendering.")
+            return
+
         hex_model = self.base.loader.loadModel(self.tile_terrain.model())
         hex_model.setScale(0.48)
         # Rotate the model so it lies flat.
@@ -140,9 +153,10 @@ class Tile:
         self.node = new_hex
 
     def set_color(self, color: tuple[float, float, float, float]):
-        self.node.setColor(*color)
+        if self.node:
+            self.node.setColor(*color)
 
-    def get_node(self) -> NodePath:
+    def get_node(self) -> Optional[NodePath]:
         return self.node
 
     def set_terrain(self, terrain: BaseTerrain):
@@ -212,7 +226,7 @@ class Tile:
         # What features does this tile contain ?
         self.features: List[BaseFeature] = list()
         # Does this have any units ?
-        self.units: List[BaseUnit] = list()
+        self.units: Units = Units()
         # Does this have improvements ?
         self._improvements: Improvements = Improvements()
         # Does this have items sitting on top of it ?
@@ -251,11 +265,11 @@ class Tile:
             )
             return (0, 0, 0)
 
-    def model(self):
-        return self.tile_terrain.model()
+    def model(self) -> str:
+        return self.tile_terrain.model() if self.tile_terrain else ""
 
-    def texture(self):
-        return self.tile_terrain.texture()
+    def texture(self) -> str:
+        return self.tile_terrain.texture() if self.tile_terrain else ""
 
     def setTerrain(self, terrain: BaseTerrain) -> None:
         self.tile_terrain = terrain
@@ -272,12 +286,27 @@ class Tile:
     def build(self, improvement: Improvement) -> None:
         self._improvements.add(improvement)
 
+    def add_unit(self, unit: UnitBaseClass) -> None:
+        unit.tile = self
+        if unit.base is None:
+            unit.base = self.base
+        self.units.add_unit(unit)
+
+    def remove_unit(self, unit: UnitBaseClass) -> None:
+        unit.tile = None
+        self.units.add_unit(unit)
+
+    def is_occupied(self) -> bool:
+        return len(self.units.units) > 0 or self.city is not None
+
     def to_gui(self) -> dict[str, Any]:
         return {
             "tag": self.tag,
             "x": self.x,
             "y": self.y,
-            "terrain": self.tile_terrain.name,
+            "terrain": str(self.get_terrain().name)  # type: ignore
+            if self.get_terrain() is not None
+            else "None",
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": self._improvements,
@@ -298,3 +327,6 @@ class Tile:
         self.city = City.found_new(
             name="Test city", tile=self, population=population, is_capital=capital
         )
+
+    def get_cords(self) -> tuple[float, float, float]:
+        return self.pos_x, self.pos_y, self.pos_z
