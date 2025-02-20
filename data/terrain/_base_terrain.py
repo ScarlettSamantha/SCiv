@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Tuple
 from gameplay.tile_modifiers import TileModifiers, TileModifier
 from gameplay.tile_yield_modifier import TileYieldModifier
-from managers.i18n import T_TranslationOrStr
+from managers.i18n import T_TranslationOrStr, Translation
 from panda3d.core import LRGBColor
 
 
@@ -14,7 +14,7 @@ class BaseTerrain:
     def __init__(self):
         self.fallback_color: LRGBColor | Tuple[float, float, float] = rgb(225, 0, 255)
 
-        self.name: T_TranslationOrStr = ""
+        self.name: T_TranslationOrStr = "" if self._name is None else self._name
         self.user_title: T_TranslationOrStr = ""
         self._texture: T_TranslationOrStr = ""
         self._model = "assets/models/tiles/town.glb"
