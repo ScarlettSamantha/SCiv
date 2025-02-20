@@ -27,6 +27,10 @@
       }
     },
     "civilization": {
+      "nature": {
+        "name": "Nature",
+        "description": "The natural world and environment"
+      },
       "rome": {
         "name": "Rome",
         "description": "The Great Roman Empire",
