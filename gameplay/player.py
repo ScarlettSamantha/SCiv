@@ -16,6 +16,7 @@ from gameplay.city import City
 from gameplay.tiles import Tiles
 from gameplay.claims import Claims
 from gameplay._units import Units
+from gameplay.units.classes._base import UnitBaseClass
 from gameplay.votes import Votes
 from gameplay.citizens import Citizens
 
@@ -151,3 +152,9 @@ class Player:
 
     def addEffect(self, key: str, effect: Effect) -> None:
         self.effects.add(effect=effect, key_or_auto=key)
+
+    def addUnit(self, unit: UnitBaseClass) -> None:
+        self.units.add_unit(unit)
+
+    def removeUnit(self, unit: UnitBaseClass) -> None:
+        self.units.remove_unit(unit)
