@@ -40,6 +40,7 @@ class RandomGenerator(BaseGenerator):
                 tile: Tile = random.choice(list(tiles.values()))
 
                 obj_instance: Tile = tile(self.config.base, col, row, x, y)
+                obj_instance.render()
+                # Do after render to get the node. otherwise there is no tag to set..
                 self.map[obj_instance.tag] = obj_instance
                 self.grid[(col, row)] = obj_instance
-                obj_instance.render()
