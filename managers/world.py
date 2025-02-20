@@ -1,3 +1,4 @@
+import random
 from math import sqrt
 from typing import Optional, Tuple, Dict, Type
 from mixins.singleton import Singleton
@@ -57,3 +58,6 @@ class World(Singleton):
 
     def lookup(self, tag):
         return self.map[tag]
+
+    def random_tile(self) -> Tile:
+        return self.grid[random.choice(list(self.grid.keys()))]
