@@ -4,7 +4,7 @@ from managers.i18n import T_TranslationOrStr
 from system.saving import SaveAble
 from gameplay.effect import Effects
 from gameplay.combat.stats import Stats
-from openciv.engine.requires import Requires, RequiresMultiple, T_Requires
+from system.requires import Requires, RequiresMultiple, T_Requires
 from mixins.callbacks import CallbacksMixin
 
 from typing import List, Any, Iterable, Self
