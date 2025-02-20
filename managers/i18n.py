@@ -18,6 +18,7 @@ from exceptions.i18n_exception import (
     I18NNotLoadedException,
 )
 
+
 class _i18n:
     def __init__(
         self,
@@ -33,17 +34,23 @@ class _i18n:
         self.default_language = "en_EN"
         self.language: str = language if language else self.default_language
 
+        # Initialize the lookup cache as an instance variable
+        self._lookup_cache: Dict[str, str] = {}
+
         if auto_load and self.language_exists(language=self.language):
             self.load_language(language=self.language)
 
-    def generate_path(self, path: PathLike[Any] | str) -> PathLike[Any] | str:
-        base_path: Path | PathLike[Any] | str = (
-            Path(self.base_path) if not isinstance(self.base_path, PathLike) else self.base_path
+    def clear_cache(self) -> None:
+        """Clear the lookup cache."""
+        self._lookup_cache.clear()
+
+    def generate_path(self, path: PathLike[Any] | str) -> Path:
+        base_path = (
+            Path(self.base_path)
+            if not isinstance(self.base_path, Path)
+            else self.base_path
         )
-        if isinstance(path, PathLike):
-            return base_path / path  # type: ignore
-        elif isinstance(path, str):  # type: ignore
-            return base_path / path  # type: ignore
+        return base_path / Path(path)
 
     def language_exists(self, language: str) -> bool:
         path = pathlib.Path(self.generate_path(path=f"{language}.json"))
@@ -54,6 +61,7 @@ class _i18n:
 
     def set_data(self, data: Dict[str, Dict[Any, Any]]) -> None:
         self._data = data
+        self.clear_cache()  # Clear cache if underlying data changes
 
     def load_file(self, path: str) -> None:
         try:
@@ -70,27 +78,39 @@ class _i18n:
 
     def set_current_language(self, language: str) -> None:
         self.language = language
+        self.clear_cache()  # Clear cache when language changes
 
     def load_language(self, language: str):
         self.load_file(path=str(self.generate_path(path=f"{language}.json")))
+        self.clear_cache()  # Clear cache after loading new language data
 
-    def lookup(self, key: str, default: Any | None = None, fail_on_not_found: bool = False) -> str:
-        LogManager.get_instance().engine.debug(msg=f"Looking up {key}")
+    def lookup(
+        self, key: str, default: Any | None = None, fail_on_not_found: bool = True
+    ) -> str:
+        # Check if the key is in the cache
+        if key in self._lookup_cache:
+            return self._lookup_cache[key]
+
         data = self._data
         splits: list[str] = key.split(sep=".")
         for i, level in enumerate(splits):
-            if level in list(data.keys()):
-                data: Dict[Any, Any] = data[level]
-                # If we are at the end of the key return the data
+            if level in data:
+                data = data[level]
                 if i == (len(splits) - 1):
-                    return str(data)
+                    result = str(data)
+                    self._lookup_cache[key] = result
+                    return result
             else:
                 if fail_on_not_found:
                     raise I18NTranslationNotFound(f"Key {key} not found")
-                return key
+                result = key
+                self._lookup_cache[key] = result
+                return result
         if default is None and fail_on_not_found:
             raise I18NTranslationNotFound(f"Key {key} not found")
-        return key if default is None else default
+        result = key if default is None else default
+        self._lookup_cache[key] = result
+        return result
 
 
 i18n: None | _i18n = None
