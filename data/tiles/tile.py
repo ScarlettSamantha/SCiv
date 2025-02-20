@@ -1,5 +1,7 @@
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List
+
+from regex import T
 from data.terrain._base_terrain import BaseTerrain
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
@@ -11,6 +13,7 @@ from gameplay.city import City
 from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
 from managers.player import PlayerManager, Player
+from managers.i18n import T_TranslationOrStr, _t
 
 
 class Tile:
@@ -29,6 +32,7 @@ class Tile:
         self.grid_position = None
         self.raw_position = None
         self.tag = None
+        self.node = None
 
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height = 0
@@ -130,8 +134,10 @@ class Tile:
         # Give the render-geometry a collide mask so ray/solid can detect it
         new_hex.setCollideMask(BitMask32.bit(1))
         tag = f"tile_{self.x}_{self.y}"
+        self.tag = tag
         # Optionally, tag the tile for identification
-        self.render = new_hex.setTag("tile_id", tag)
+        new_hex.setTag("tile_id", tag)
+        self.node = new_hex
 
     def set_color(self, color: tuple[float, float, float, float]):
         self.node.setColor(*color)
@@ -265,6 +271,21 @@ class Tile:
 
     def build(self, improvement: Improvement) -> None:
         self._improvements.add(improvement)
+
+    def to_gui(self) -> dict[str, Any]:
+        return {
+            "tag": self.tag,
+            "x": self.x,
+            "y": self.y,
+            "terrain": self.tile_terrain.name,
+            "owner": self.owner if self.owner else _t("civilization.nature.name"),
+            "city": self.city,
+            "improvements": self._improvements,
+            "features": self.features,
+            "units": self.units,
+            "health": self.health,
+            "damage": self.damage,
+        }
 
     def found(
         self,
