@@ -1,8 +1,6 @@
-from pty import spawn
 from random import choice
 from typing import Any, Optional, Type, Union, List, Dict
 
-from click import Option
 from data.tiles.tile import Tile
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome

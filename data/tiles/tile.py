@@ -1,12 +1,10 @@
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List
 
-from regex import T
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
-from gameplay.units.baseunit import BaseUnit
 from gameplay.units.classes._base import UnitBaseClass
 from gameplay.weather import BaseWeather
 from gameplay.improvements import Improvements
@@ -268,7 +266,7 @@ class Tile:
     def model(self) -> str:
         return self.tile_terrain.model() if self.tile_terrain else ""
 
-    def texture(self) -> str:
+    def texture(self) -> T_TranslationOrStr:
         return self.tile_terrain.texture() if self.tile_terrain else ""
 
     def setTerrain(self, terrain: BaseTerrain) -> None:

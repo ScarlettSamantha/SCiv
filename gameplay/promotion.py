@@ -45,7 +45,7 @@ class Promotion(SaveAble, CallbacksMixin):
     def requires(self, requires: T_Requires) -> Self:
         if isinstance(requires, Iterable) and not isinstance(requires, (str, bytes)):
             # Convert Iterable to a list
-            self._requires = RequiresMultiple.convert_from_list(conditions=requires)
+            self._requires = RequiresMultiple.convert_from_list(requires)  # type: ignore
         else:
             self._requires = requires
         return self

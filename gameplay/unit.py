@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from system.requires import Requires
 from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr
@@ -12,7 +10,7 @@ from gameplay.units.classes._base import UnitBaseClass
 from gameplay.resource import Costs
 from gameplay.effect import Effects
 
-from typing import Type, Any, List
+from typing import Optional, Type, Any, List
 
 
 class Unit(SaveAble):
@@ -42,7 +40,7 @@ class Unit(SaveAble):
         auto_instance_promotions: bool = True,
         unit_class: Type[UnitBaseClass] | None = None,
         upgrades_from_class: bool = True,
-        upgrades_to: Unit | None = None,
+        upgrades_to: UnitBaseClass | None = None,
         upgrade_tier: int = 0,
         attackable_from_planes: List[Plane] = [],
         default_plane: Plane | None = None,
@@ -109,9 +107,7 @@ class Unit(SaveAble):
         # Promotion
         self.unit_class: Type[UnitBaseClass] | None = unit_class
         self.promotion_tree_ref: Type[PromotionTree] | None = promotion_tree
-        self.promotions: PromotionTree | None = (
-            None if promotion_tree is None else promotion_tree()
-        )  # type: ignore # noqa # We do this because we implement the arguments in a sub object so we dont have to pass them in every time.
+        self.promotions: Optional[PromotionTree] | None = None  # type: ignore # noqa # We do this because we implement the arguments in a sub object so we dont have to pass them in every time.
         self.auto_instance_promotions: bool = auto_instance_promotions
 
         # Effects
@@ -128,7 +124,7 @@ class Unit(SaveAble):
         self.needs_recalculation: bool = False
 
         # Upgrades
-        self.upgrades_to: Unit | None = upgrades_to
+        self.upgrades_to: UnitBaseClass | None = upgrades_to
         self.upgrades_from_class: bool = upgrades_from_class
         self.upgrade_tier: int = upgrade_tier
         self.upgrade_into_requirement: Requires = Requires()
@@ -154,7 +150,7 @@ class Unit(SaveAble):
         self.movement_left = self.base_movement + self.movement_modifier
         return self.movement_left
 
-    def get_upgrade(self) -> Unit | None:
+    def get_upgrade(self) -> UnitBaseClass | None:
         if self.upgrades_to is not None:
             return self.upgrades_to
         return None

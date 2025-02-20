@@ -1,5 +1,4 @@
 from math import pi, cos, sin
-from panda3d.core import NodePath
 from mixins.singleton import Singleton
 
 

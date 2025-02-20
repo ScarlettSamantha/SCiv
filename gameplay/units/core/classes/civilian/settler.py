@@ -1,6 +1,4 @@
 from typing import Any
-
-from numpy import size
 from managers.i18n import t_
 
 from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass

@@ -1,8 +1,7 @@
-from typing import Union
+from typing import Optional, Union
 import math
 
 from direct.gui.DirectGui import DirectFrame, DirectLabel
-from httpx import head
 from panda3d.core import LineSegs, NodePath, TextNode
 from data.tiles.tile import Tile
 from menus._base import BaseMenu
@@ -156,10 +155,23 @@ class Game(BaseMenu):
         else:
             self.label["text"] = "\n".join(new_text)
 
-    def process_game_click(self, tile: Union[list[str], str]):
+    def process_game_click(self, tile: Union[str, Tile]):
         """Example method triggered when a tile is clicked."""
         if isinstance(tile, str):
-            tile = [tile]
-        tile = tile[0]
-        tile = self.world.map.get(tile)
-        self.update_label_text(tile)
+            tile_id = tile
+        elif isinstance(tile, Tile):
+            tile_id = tile.tag
+        else:
+            raise ValueError("Invalid tile type")
+
+        if tile_id is None or not isinstance(tile_id, str):
+            return
+        else:
+            _tile: Optional[Tile] = self.world.map.get(tile_id)
+            if _tile is None or not isinstance(_tile, Tile):
+                return
+
+        if _tile is None:
+            return
+
+        self.update_label_text(_tile)

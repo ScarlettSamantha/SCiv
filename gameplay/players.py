@@ -24,5 +24,5 @@ class Players:
             self.removePlayer(key)
 
     def reorderTurnOrder(self):
-        sorted_items = sorted(self._data.items(), key=lambda item: item.turn_order)
+        sorted_items = sorted(self._data.items(), key=lambda item: item[1].turn_order)
         self._data = dict(sorted_items)

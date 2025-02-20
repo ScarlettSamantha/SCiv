@@ -1,8 +1,8 @@
-from __future__ import annotations
 from typing import List, Tuple
+
 from gameplay.tile_modifiers import TileModifiers, TileModifier
 from gameplay.tile_yield_modifier import TileYieldModifier
-from managers.i18n import T_TranslationOrStr, Translation
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from panda3d.core import LRGBColor
 
 
@@ -11,6 +11,8 @@ def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
 
 
 class BaseTerrain:
+    _name: T_TranslationOrStrOrNone = None
+
     def __init__(self):
         self.fallback_color: LRGBColor | Tuple[float, float, float] = rgb(225, 0, 255)
 
@@ -29,7 +31,7 @@ class BaseTerrain:
     def model(self) -> str:
         return self._model
 
-    def texture(self) -> str:
+    def texture(self) -> T_TranslationOrStr:
         return self._texture
 
     def add_modifiers(self, modifiers: List[TileModifier] | Tuple[TileModifier, ...]):

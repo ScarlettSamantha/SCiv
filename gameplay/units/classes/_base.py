@@ -1,19 +1,14 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import NodePath, LVector3
 from direct.showbase.Loader import Loader
-from torch import Value
-
 
 from managers.i18n import T_TranslationOrStr
 from typing import Optional, Tuple, Type, Any, TYPE_CHECKING
-
 
 if TYPE_CHECKING:
     from data.tiles.tile import Tile
     from gameplay.promotion import PromotionTree
     from gameplay.player import Player
-
-
 class UnitBaseClass:
     def __init__(
         self,

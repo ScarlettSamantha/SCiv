@@ -16,7 +16,9 @@ class World(Singleton):
         self.rows: int = 5
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
+        # Key is the tag, value is the tile.
         self.map: Dict[str, Tile] = {}
+        # Key is the (col, row) tuple, value is the tile.
         self.grid: Dict[Tuple[int, int], Tile] = {}
 
     def __init__(self, base):
