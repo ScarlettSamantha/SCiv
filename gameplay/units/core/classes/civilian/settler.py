@@ -62,12 +62,12 @@ class Settler(CoreCivilianBaseClass):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.unit.class.settler",
-            name=t_("content.units.classes.units.civilian.settler.name"),
-            description=t_("content.units.classes.units.civilian.settler.description"),
+            name="content.units.core.units.civilian.settler.name",
+            description=t_("content.units.core.units.civilian.settler.description"),
             icon=None,
             promotion_tree=SettlerPromotionTree(),
-            model="assets/models/units/queen.glb",
-            model_rotation=(0, 270, 0),
+            model="assets/models/units/pessent.glb",
+            model_rotation=(0, 0, 0),
             model_size=0.2,
             model_position_offset=(0, 0, 0.1),
             *args,
