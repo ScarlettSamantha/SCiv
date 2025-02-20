@@ -1,7 +1,9 @@
 from __future__ import annotations
+from typing import Any
 
 from gameplay.units.classes.civilian import CivilianBaseClass
 
 
 class CoreCivilianBaseClass(CivilianBaseClass):
-    pass
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
