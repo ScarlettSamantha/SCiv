@@ -1,23 +1,26 @@
 from __future__ import annotations
+from typing import Optional
 
 from gameplay.effect import Effects, Effect
-from managers.i18n import T_TranslationOrStr
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from system.saving import SaveAble
 
 
 class Leader(SaveAble):
     def __init__(
         self,
-        key: str,
-        name: T_TranslationOrStr,
-        description: T_TranslationOrStr,
-        icon: str | None = None,
+        key: Optional[str],
+        name: T_TranslationOrStrOrNone,
+        description: T_TranslationOrStrOrNone,
+        icon: Optional[str] = None,
     ) -> None:
         super().__init__()
-        self.key: str = key
-        self.name: T_TranslationOrStr = name
-        self.icon: str | None = icon
-        self.description: T_TranslationOrStr = description
+        self.key: str = key if key is not None else ""
+        self.name: T_TranslationOrStr = name if name is not None else ""
+        self.icon: str | None = icon if icon is not None else None
+        self.description: T_TranslationOrStr = (
+            description if description is not None else ""
+        )
 
         self._effects: Effects = Effects()
         self._setup_saveable()
