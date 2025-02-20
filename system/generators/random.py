@@ -5,6 +5,7 @@ from os.path import join, dirname
 from data.tiles.tile import Tile
 from system.generators.base import BaseGenerator
 from panda3d.core import BitMask32
+from typing import Type
 from system.pyload import PyLoad
 import random
 
@@ -37,7 +38,7 @@ class RandomGenerator(BaseGenerator):
                 else:
                     y = row * self.config.row_spacing
 
-                tile: Tile = random.choice(list(tiles.values()))
+                tile: Type[Tile] = random.choice(list(tiles.values()))
 
                 obj_instance: Tile = tile(self.config.base, col, row, x, y)
                 obj_instance.render()
