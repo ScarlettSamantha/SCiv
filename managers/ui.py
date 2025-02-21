@@ -1,6 +1,5 @@
 from typing import List, Optional, TYPE_CHECKING
 from direct.showbase.MessengerGlobal import messenger
-from zmq import TYPE
 from data.tiles.tile import Tile
 from managers.player import PlayerManager
 from menus.game import Game
@@ -131,7 +130,15 @@ class ui(Singleton):
             self.previous_tile.set_color((1, 1, 1, 1))
 
         if tile is not None:
-            tile.set_color((0, 1, 0, 1))
+            if tile.owner == PlayerManager.session_player():
+                # Own Tile
+                tile.set_color((0, 1, 0, 0.01))
+            elif tile.owner is PlayerManager.get_nature():
+                # Nature tile
+                tile.set_color((0, 0, 1, 0.01))
+            else:
+                # Enemy tile
+                tile.set_color((1, 0, 0, 0.01))
             self.current_tile = tile
 
     def select_unit(self, unit_tag: List[str]):
@@ -156,4 +163,4 @@ class ui(Singleton):
             self.current_unit = object
 
     def trigger_render_analyze(self):
-        self._base.render.analyze()
+        self._base.render.analyze()  # type: ignore

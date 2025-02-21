@@ -1,7 +1,7 @@
 from managers.base import BaseManager
 from gameplay.player import Player
 
-from typing import Dict
+from typing import Dict, Optional
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 
@@ -11,11 +11,13 @@ class PlayerManager(BaseManager):
         int, Player
     ] = {}  # Players are stored in a dictionary with the key being the turn order. recalculated each turn.
     _session_player: Player | None = None
+    _nature_player: None = None
 
     @classmethod
     def reset(cls) -> None:
         cls._players = {}
         cls._session_player = None
+        cls._nature_player = None
 
     @classmethod
     def add(cls, player: Player, is_session: bool = False) -> None:
@@ -51,3 +53,7 @@ class PlayerManager(BaseManager):
     @classmethod
     def session_player(cls) -> Player | None:
         return cls._session_player
+
+    @classmethod
+    def get_nature(cls) -> Optional[Player]:
+        return cls._nature_player
