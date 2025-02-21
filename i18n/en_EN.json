@@ -1216,15 +1216,7 @@
               "description": "The state is ruled by divine guidance and religious laws."
             },
             "religious_unity": {
-              "name": "Religious Unity",
-              "description": "Promotes harmony and uniformity in religious beliefs and practices."
-            },
-            "autocratic_rule": {
-              "name": "Autocratic Rule",
-              "description": "A single ruler holds absolute power and authority."
-            },
-            "state_surveillance": {
-              "name": "State Surveillance",
+              "nameunimplemented": "State Surveillance",
               "description": "Monitors citizens to maintain control and security."
             },
             "censorship": {
@@ -2331,6 +2323,20 @@
             }
           }
         }
+      }
+    },
+    "generic": {
+      "unknown": {
+        "name": "Unknown",
+        "description": "No information available"
+      },
+      "unknown_player": {
+        "name": "Unknown Player",
+        "description": "Player identity is unknown"
+      },
+      "unimplemented": {
+        "name": "Unimplemented",
+        "description": "Feature is not yet implemented"
       }
     }
   }
