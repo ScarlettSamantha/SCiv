@@ -6,7 +6,7 @@ class FlatDessert(BaseTerrain):
     _name = "world.terrain.flatland_dessert"
     movement_modifier = 0.5
     water_availability = 0
-    _model = "assets/models/tiles/dessert2.obj"
+    _model = "assets/models/tiles/dessert.glb"
     _texture = "assets/models/tiles/dessert2.png"
 
     def __init__(self, *args, **kwargs):

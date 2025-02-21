@@ -6,7 +6,7 @@ class FlatForest(BaseTerrain):
     _name = "world.terrain.flatland_forest"
     movement_modifier = 0.5
     water_availability = 0.75
-    _model = "assets/models/tiles/forrest3.obj"
+    _model = "assets/models/tiles/forest.glb"
     _texture = "assets/models/tiles/forrest3.png"
 
     def __init__(self, *args, **kwargs):

@@ -6,7 +6,7 @@ class FlatTundra(BaseTerrain):
     _name = "world.terrain.flatland_grass"
     movement_modifier = 1
     water_availability = 0.25
-    _model = "assets/models/tiles/grass2.obj"
+    _model = "assets/models/tiles/tundra.glb"
     _texture = "assets/models/tiles/grass2.png"
 
     def __init__(self, *args, **kwargs):

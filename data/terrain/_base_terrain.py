@@ -12,6 +12,7 @@ def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
 
 class BaseTerrain:
     _name: T_TranslationOrStrOrNone = None
+    _model: T_TranslationOrStr = ""
 
     def __init__(self):
         self.fallback_color: LRGBColor | Tuple[float, float, float] = rgb(225, 0, 255)
@@ -19,7 +20,6 @@ class BaseTerrain:
         self.name: T_TranslationOrStr = "" if self._name is None else self._name
         self.user_title: T_TranslationOrStr = ""
         self._texture: T_TranslationOrStr = ""
-        self._model = "assets/models/tiles/town.glb"
 
         self.movement_modifier: float = 0.0
         self.water_availability: float = 1.0
@@ -28,7 +28,7 @@ class BaseTerrain:
         self.tile_modifiers: TileModifiers = TileModifiers()
         self.tile_yield_modifiers: List[TileYieldModifier] = []
 
-    def model(self) -> str:
+    def model(self) -> T_TranslationOrStr:
         return self._model
 
     def texture(self) -> T_TranslationOrStr:

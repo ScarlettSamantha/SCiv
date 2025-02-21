@@ -4,7 +4,7 @@ from data.terrain.traits.land import buildable_flat_land
 
 class HillsTundra(BaseTerrain):
     _name = "world.terrain.hills_tundra"
-    _model = "assets/models/tiles/hills_grass.obj"
+    _model = "assets/models/tiles/tundra.glb"
     _texture = "assets/models/tiles/hills_grass.png"
     movement_modifier = 0.5
     water_availability = 0.25

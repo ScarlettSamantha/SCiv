@@ -10,7 +10,7 @@ from data.terrain.traits.water import open_water_sea
 
 class Sea(BaseTerrain):
     _name = "world.terrain.sea_water"
-    _model = "assets/models/tiles/town.glb"
+    _model = "assets/models/tiles/water_deep.glb"
     _texture: T_TranslationOrStr = "assets/models/tiles/town.png"
     _fallback_color = rgb(0, 119, 255)
 
