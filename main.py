@@ -14,7 +14,7 @@ import pathlib
 import simplepbr
 
 
-class FlatHexExample(ShowBase):
+class Openciv(ShowBase):
     def __init__(self, config_mgr):
         # config_mgr must be applied BEFORE ShowBase to set up prc data
         ShowBase.__init__(self)
@@ -22,15 +22,16 @@ class FlatHexExample(ShowBase):
         self.config_mgr = config_mgr
         self.disableMouse()
         base_file_path = pathlib.Path(__file__).parent.absolute()
-        set_i18n(_i18n(base_file_path / "i18n", "en_EN", True))
+        self.i18n = _i18n(base_file_path / "i18n", "en_EN", True)
+        set_i18n(self.i18n)
 
         # Listen for window events (including moves / resizes)
         self.accept("window-event", self.on_window_event)
 
         # Manager load order is very important DO NOT CHANGE.
-        input_manager = Input(self)
-        Input._set_instance(input_manager)
-        input_manager.inject_into_camera()
+        self.input_manager = Input(self)
+        Input._set_instance(self.input_manager)
+        self.input_manager.inject_into_camera()
 
         # I18n system
 
@@ -42,16 +43,16 @@ class FlatHexExample(ShowBase):
 
         # Init game base system
 
-        world = World.get_instance()
-        world.__setup__(self)
+        self.world = World.get_instance()
+        self.world.__setup__(self)
 
-        ui_manager = ui(self)
-        ui._set_instance(ui_manager)
-        ui_manager.get_main_menu()
-        ui_manager.map = world
+        self.ui_manager = ui(self)
+        ui._set_instance(self.ui_manager)
+        self.ui_manager.get_main_menu()
+        self.ui_manager.map = self.world
 
-        game_manager_instance = Game(self, self.civ_camera)
-        Game._set_instance(game_manager_instance)
+        self.game_manager_instance = Game(self, self.civ_camera)
+        Game._set_instance(self.game_manager_instance)
         # ---------------------------------------------------------------------
         # Optionally: an example of toggling window modes at runtime
         # E.g., press F11 to toggle fullscreen
@@ -102,5 +103,5 @@ class FlatHexExample(ShowBase):
 config_mgr = ConfigManager("config.json")
 config_mgr.apply_config_to_prc()
 
-app = FlatHexExample(config_mgr)
+app = Openciv(config_mgr)
 app.run()
