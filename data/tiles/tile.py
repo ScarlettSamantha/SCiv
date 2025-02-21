@@ -1,4 +1,3 @@
-import i18n
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List, Tuple, Union
 
