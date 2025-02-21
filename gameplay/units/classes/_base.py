@@ -7,6 +7,7 @@ from panda3d.core import CollisionCapsule
 from managers.i18n import T_TranslationOrStr, Translation, get_i18n
 from typing import Dict, Optional, Tuple, Type, Any, TYPE_CHECKING
 from gameplay.combat.stats import Stats
+from managers.player import PlayerManager
 
 if TYPE_CHECKING:
     from data.tiles.tile import Tile
@@ -156,13 +157,20 @@ class UnitBaseClass:
         self.model.setColor(*color)
 
     def to_gui(self) -> Dict[str, Any]:
+        owner = (
+            self.owner.name
+            if self.owner == PlayerManager.get_nature() and self.owner is not None
+            else "Nature"
+        )
+
         return {
             "tag": self.tag,
             "key": self.key,
             "name": get_i18n().lookup(self.name),
             "description": self.description,
-            "owner": self.owner.name,
+            "owner": owner,
             "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",
+            "tile": self.tile.tag if self.tile is not None else "None",
             "health": f"{self.current_health}/{self.max_health}",
             "attacks": f"{self.attacks_left}/{self.max_attacks}",
             "damage": self.stats.attack_modifier,
