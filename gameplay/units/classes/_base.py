@@ -152,21 +152,19 @@ class UnitBaseClass:
         """
         if isinstance(self.model, str) and not isinstance(self.model, NodePath):
             raise ValueError(f"Unit {self.key} has no model assigned.")
-        self.model.setColor(*color) # type: ignore If check above passes, model is NodePath
+        self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
 
     def to_gui(self) -> Dict[str, Any]:
-        owner = (
-            self.owner.name
-            if self.owner == PlayerManager.get_nature() and self.owner is not None
-            else "Nature"
-        )
-
+        if self.owner is None:
+            owner_name = PlayerManager.get_nature()
+        else:
+            owner_name = self.owner.civilization.name
         return {
             "tag": self.tag,
             "key": self.key,
             "name": get_i18n().lookup(self.name),
             "description": self.description,
-            "owner": owner,
+            "owner": owner_name,
             "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",
             "tile": self.tile.tag if self.tile is not None else "None",
             "health": f"{self.current_health}/{self.max_health}",
