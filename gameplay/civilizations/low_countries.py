@@ -1,14 +1,13 @@
-from __future__ import annotations
-
 from gameplay.civilization import Civilization
 from managers.i18n import t_
 
 
 class LowCountries(Civilization):
-    def __init__(self) -> None:
-        super().__init__(
-            name=t_("civilization.low_countries.name"), description=t_("civilization.low_countries.description")
-        )
+    name = t_("civilization.low_countries.name")
+    description = t_("civilization.low_countries.description")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
         self._loadable = True
         self.icon = "icons/rome.png"

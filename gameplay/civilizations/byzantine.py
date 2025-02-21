@@ -1,10 +1,14 @@
 from __future__ import annotations
 from gameplay.civilization import Civilization
+from managers.i18n import t_
 
 
 class Byzantine(Civilization):
-    def __init__(self):
-        super().__init__(name="civilization.byzantine.name", description="civilization.byzantine.description")
+    name = t_("civilization.byzantine.name")
+    description = t_("civilization.byzantine.description")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self._loadable = True
         self.icon = "icons/rome.png"

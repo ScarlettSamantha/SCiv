@@ -5,8 +5,11 @@ from managers.i18n import t_
 
 
 class Ussr(Civilization):
-    def __init__(self):
-        super().__init__(name=t_("civilization.ussr.name"), description=t_("civilization.ussr.description"))
+    name = t_("civilization.ussr.name")
+    description = t_("civilization.ussr.description")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self._loadable = True
         self.icon = "icons/rome.png"

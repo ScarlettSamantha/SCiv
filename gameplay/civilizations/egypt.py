@@ -5,8 +5,11 @@ from managers.i18n import t_
 
 
 class Egypt(Civilization):
-    def __init__(self):
-        super().__init__(name=t_("civilization.egypt.name"), description=t_("civilization.egypt.description"))
+    name = t_("civilization.egypt.name")
+    description = t_("civilization.egypt.description")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self._loadable = True
         self.icon = "icons/rome.png"

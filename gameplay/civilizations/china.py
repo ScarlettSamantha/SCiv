@@ -6,8 +6,11 @@ from managers.i18n import t_
 
 
 class China(Civilization):
-    def __init__(self):
-        super().__init__(name=t_("civilization.china.name"), description=t_("civilization.china.description"))
+    name = t_("civilization.china.name")
+    description = t_("civilization.china.description")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self._loadable = True
         self.icon = "icons/rome.png"

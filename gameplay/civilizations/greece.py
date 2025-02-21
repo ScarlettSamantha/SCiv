@@ -1,12 +1,14 @@
-from __future__ import annotations
 from gameplay.civilization import Civilization
 
 from managers.i18n import t_
 
 
 class Greece(Civilization):
-    def __init__(self):
-        super().__init__(name=t_("civilization.greece.name"), description=t_("civilization.greece.description"))
+    name = t_("civilization.greece.name")
+    description = t_("civilization.greece.description")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self._loadable = True
         self.icon = "icons/rome.png"
