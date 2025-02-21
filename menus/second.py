@@ -8,19 +8,19 @@ from gameplay.civilizations.rome import Rome
 from gameplay.repositories import civilization
 from gameplay.repositories.civilization import Civilization
 from menus._base import BaseMenu
-from system.generators.random import RandomGenerator
 
 
 class Second(BaseMenu):
     def __init__(self):
         from managers.game import GameSettings, Game
+        from system.generators.basic import Basic
 
         super().__init__()
         self.settings = GameSettings(
             width=5,
             height=5,
             num_enemies=2,
-            generator=RandomGenerator,
+            generator=Basic,
             player=Rome,
             victory_conditions=None,
             enemies=None,

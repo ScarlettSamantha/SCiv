@@ -20,12 +20,12 @@ class GameSettings:
         enemies: Optional[List[Any]] = None,
         difficulty: int = 0,
     ):
-        from system.generators.random import RandomGenerator
+        from system.generators.basic import Basic
 
         self.width: int = width
         self.height: int = height
         self.player: Type[Civilization] = player
         self.enemies: Optional[List[Any]] = enemies
-        self.generator: Type["BaseGenerator"] = RandomGenerator
+        self.generator: Type["BaseGenerator"] = Basic
         self.difficulty: int = difficulty
         self.num_enemies: int = num_enemies

@@ -1,3 +1,4 @@
 panda3d
 panda3d_kivy
 types-panda3d
+noise

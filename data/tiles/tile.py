@@ -25,6 +25,7 @@ class Tile:
         pos_x: float = 0.0,
         pos_y: float = 0.0,
         pos_z: float = 0.0,
+        extra_data: Optional[dict] = None,
     ) -> None:
         self.id: int = id(self)
         self.x: int = x
@@ -33,6 +34,7 @@ class Tile:
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
+        self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
         self.tile_terrain: Optional[BaseTerrain] = None
         self.destroyed: bool = False
@@ -41,6 +43,7 @@ class Tile:
         self.tag: Optional[str] = None
         # Instead of a single node, we keep a list of NodePaths.
         self.models: List[NodePath] = []
+        self.extra_data: Optional[dict] = extra_data
 
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height: int = 0
@@ -189,7 +192,7 @@ class Tile:
         model_path: str,
         pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         scale: float = 1.0,
-        hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        hpr: Tuple[float, float, float] = (180.0, 0.0, 180.0),
     ) -> None:
         """
         Add an additional model on top of the tile.
@@ -411,6 +414,9 @@ class Tile:
             "x": self.x,
             "y": self.y,
             "terrain": terrain_name,
+            "model": self.model(),
+            "texture": self.texture(),
+            "class": self.__class__.__name__,
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
@@ -418,6 +424,8 @@ class Tile:
             "units": ",".join(_units),
             "health": self.health,
             "damage": self.damage,
+            "pos": (self.pos_x, self.pos_y, self.pos_z),
+            "Hpr": (),
         }
 
     def found(
