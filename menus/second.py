@@ -4,7 +4,11 @@ from direct.gui.DirectGui import (
     DirectOptionMenu,
     DirectLabel,
 )
+from gameplay.civilizations.rome import Rome
+from gameplay.repositories import civilization
+from gameplay.repositories.civilization import Civilization
 from menus._base import BaseMenu
+from system.generators.random import RandomGenerator
 
 
 class Second(BaseMenu):
@@ -12,7 +16,16 @@ class Second(BaseMenu):
         from managers.game import GameSettings, Game
 
         super().__init__()
-        self.settings = GameSettings(5, 5, None, 2, "Random")
+        self.settings = GameSettings(
+            width=5,
+            height=5,
+            num_enemies=2,
+            generator=RandomGenerator,
+            player=Rome,
+            victory_conditions=None,
+            enemies=None,
+            difficulty=1,
+        )
         game_instance = Game.get_instance()
         game_instance.properties = self.settings
 
@@ -73,7 +86,7 @@ class Second(BaseMenu):
         self.empire_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
-            items=["Romans", "Egyptians"],
+            items=[str(civ.name) for civ in Civilization.all()],
             initialitem=0,
             highlightColor=(0.8, 0.8, 0.8, 1),
             pos=(0.0, 0, 0.3),
@@ -84,7 +97,7 @@ class Second(BaseMenu):
         self.enemies_option = DirectOptionMenu(
             parent=self.frame,
             scale=0.05,
-            items=["1", "2", "3", "4", "5"],
+            items=[str(x) for x in range(1, 11)],
             initialitem=0,
             highlightColor=(0.8, 0.8, 0.8, 1),
             pos=(-0.4, 0, 0.1),
@@ -130,7 +143,7 @@ class Second(BaseMenu):
         print(f"Selected size: {self.settings.width}x{self.settings.height}")
 
     def on_empire_selected(self, selected_empire):
-        self.settings.player = selected_empire
+        self.settings.player = civilization.Civilization.get(selected_empire)
         print(f"Selected empire: {selected_empire}")
 
     def on_enemies_selected(self, selected_enemies):
