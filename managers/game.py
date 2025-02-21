@@ -11,6 +11,7 @@ from gameplay.player import Player
 from gameplay.units.classes._base import UnitBaseClass
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
+from managers.turn import Turn
 from mixins.singleton import Singleton
 from direct.showbase.MessengerGlobal import messenger
 
@@ -53,6 +54,7 @@ class Game(Singleton):
         self.ui: ui = ui.get_instance()
         self.world: World = World.get_instance()
         self.input: Input = Input.get_instance()
+        self.turn: Optional[Turn] = None
         self.camera: CivCamera = camera
         self.players: PlayerManager = PlayerManager()
 
@@ -85,6 +87,8 @@ class Game(Singleton):
         ):
             raise ValueError("Game properties not set")
         self.game_active = True
+        self.turn = Turn.get_instance(self.base)
+        self.turn.activate()
 
         def generate_world():
             # Generate the world
