@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
 from gameplay.personality import Personality
@@ -15,8 +13,8 @@ from gameplay.cities import Cities
 from gameplay.city import City
 from gameplay.tiles import Tiles
 from gameplay.claims import Claims
-from gameplay._units import Units
-from gameplay.units.classes._base import UnitBaseClass
+
+
 from gameplay.votes import Votes
 from gameplay.citizens import Citizens
 
@@ -25,7 +23,10 @@ from gameplay.great import Greats
 
 from gameplay.trades import Trades
 
-from typing import Literal, Self
+from typing import Literal, Self, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gameplay.units.classes._base import UnitBaseClass
 
 
 class Player:
@@ -37,6 +38,8 @@ class Player:
         civilization: Civilization,
         leader: Leader,
     ) -> None:
+        from gameplay._units import Units
+
         self.name: str = name
         self.id: str | None = None
         self.identifier: str | None = None
@@ -153,8 +156,8 @@ class Player:
     def addEffect(self, key: str, effect: Effect) -> None:
         self.effects.add(effect=effect, key_or_auto=key)
 
-    def addUnit(self, unit: UnitBaseClass) -> None:
+    def addUnit(self, unit: "UnitBaseClass") -> None:
         self.units.add_unit(unit)
 
-    def removeUnit(self, unit: UnitBaseClass) -> None:
+    def removeUnit(self, unit: "UnitBaseClass") -> None:
         self.units.remove_unit(unit)
