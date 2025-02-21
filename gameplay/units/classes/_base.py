@@ -1,10 +1,9 @@
 import random
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import NodePath, LVector3, CollisionNode, BitMask32
+from panda3d.core import NodePath, LVector3, BitMask32
 from direct.showbase.Loader import Loader
-from panda3d.core import CollisionCapsule
 
-from managers.i18n import T_TranslationOrStr, Translation, get_i18n
+from managers.i18n import T_TranslationOrStr, get_i18n
 from typing import Dict, Optional, Tuple, Type, Any, TYPE_CHECKING
 from gameplay.combat.stats import Stats
 from managers.player import PlayerManager
@@ -151,10 +150,9 @@ class UnitBaseClass:
         Args:
             color (Tuple[float, float, float, float]): The color to set.
         """
-        if isinstance(self.model, str):
+        if isinstance(self.model, str) and not isinstance(self.model, NodePath):
             raise ValueError(f"Unit {self.key} has no model assigned.")
-
-        self.model.setColor(*color)
+        self.model.setColor(*color) # type: ignore If check above passes, model is NodePath
 
     def to_gui(self) -> Dict[str, Any]:
         owner = (
