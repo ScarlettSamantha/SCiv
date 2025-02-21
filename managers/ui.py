@@ -1,11 +1,16 @@
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from direct.showbase.MessengerGlobal import messenger
+from zmq import TYPE
 from data.tiles.tile import Tile
+from managers.player import PlayerManager
 from menus.game import Game
 from menus.game_escape import PauseMenu
 from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.classes._base import UnitBaseClass
+
+if TYPE_CHECKING:
+    from main import Openciv
 
 
 class ui(Singleton):
@@ -13,7 +18,7 @@ class ui(Singleton):
 
     def __init__(self, base):
         self.menus = []
-        self._base = base
+        self._base: Openciv = base
         self.current_menu = None
         self.game: Optional[Game] = None
         self.map: World = World.get_instance()
@@ -142,7 +147,12 @@ class ui(Singleton):
             self.previous_unit.set_color((1, 1, 1, 1))
 
         if object is not None:
-            object.set_color((0, 1, 0, 1))
+            if object.owner == PlayerManager.session_player():
+                # Green for player units
+                object.set_color((0, 1, 0, 1))
+            else:
+                # Red for enemy units
+                object.set_color((1, 0, 0, 1))
             self.current_unit = object
 
     def trigger_render_analyze(self):
