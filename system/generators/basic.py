@@ -32,9 +32,9 @@ class Basic(BaseGenerator):
             "map_type": MapType.terran,
             "size": max(self.config.width, self.config.height),
             "random_seed": self.seed,
-            "sea_percent": 60,  # 60% water coverage
+            "sea_percent": 40,  # 60% water coverage
             "ocean_type": OceanType.water,
-            "roughness": 8,  # Controls terrain roughness
+            "roughness": 12,  # Controls terrain roughness
             "hydrosphere": True,  # Enables rivers/lakes
             "num_rivers": 50,  # Number of rivers
         }
@@ -79,33 +79,49 @@ class Basic(BaseGenerator):
         """Maps HexGen's terrain data to our tile names."""
 
         if hex_tile.is_water:
-            if hex_tile.base_temperature[0] < 0:
+            if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < 0:
                 return "SeaIce"
-
-            if hex_tile.type.name == "ocean":
-                return "Sea"
-            elif hex_tile.biome == "lake":
-                return "Lake"
-            elif hex_tile.biome == "sea":
-                return "Sea"
             else:
                 return "Sea"
+        else:
+            # Its land
 
-        if hex_tile.altitude > 200:  # Adjust mountain threshold
-            return "Mountain"
+            # We ask for the altitude to determine if it's a mountain
+            if hex_tile.altitude > 200:
+                return "Mountain"
+            if hex_tile.altitude > 70:
+                pass
+                # if hex_tile_biome.id in ()
 
-        if hex_tile.biome == "desert":
-            return "FlatDessert"
-        if hex_tile.biome == "tundra":
-            return "FlatTundra"
-        if hex_tile.biome == "forest":
-            return "FlatForrest"
-        if hex_tile.biome == "grassland":
-            if hex_tile.altitude > 50:
-                return "HillsGrass"
-            return "FlatGrass"
+            if hex_tile.biome.id in (7,):  # Grassland
+                return "FlatGrass"
+            elif hex_tile.biome.id in (
+                8,
+                12,
+            ):  # flat heavy forrest virtual (cold boreal forest)
+                return "FlatHeavyForest"
+            elif hex_tile.biome.id in (
+                12,
+            ):  # Fake tile type: Jungle not (Tropical Rainforest)
+                pass
+                # return "FlatJungle"
+            elif hex_tile.biome.id in (
+                11,
+                10,
+                9,
+                8,
+            ):  # forest
+                return "FlatForrest"
+            elif hex_tile.biome.id in (6, 4):  # Dessert or savannah
+                return "FlatDesert"
+            elif hex_tile.biome.id in (5,):  # Shrubland
+                return "FlatSchrubland"
+            elif hex_tile.biome.id in ():  # Tunda
+                return "FlatTundra"  # boreal forest
+            elif hex_tile.biome.id in (1, 2, 3):  # Arctic / Ice
+                return "FlatSnow"
 
-        return "FlatGrass"
+        raise ValueError(f"Terrain not found for hex_tile: {hex_tile}")
 
     def instantiate_tiles(self):
         """Creates Tile objects and places them on the grid."""

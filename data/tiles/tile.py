@@ -1,5 +1,6 @@
+from shlex import join
 from panda3d.core import NodePath, LRGBColor, BitMask32
-from typing import Any, Optional, List, Tuple, Union
+from typing import Any, Dict, Optional, List, Tuple, Union
 
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
@@ -10,6 +11,7 @@ from gameplay.weather import BaseWeather
 from gameplay.improvements import Improvements
 from gameplay.tile_yield_modifier import TileYieldModifier, TileYield
 from gameplay.city import City
+from hexgen.hex import Hex
 from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
 from managers.player import PlayerManager, Player
@@ -35,6 +37,8 @@ class Tile:
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+        self.extra_data: Optional[dict] = extra_data
 
         self.tile_terrain: Optional[BaseTerrain] = None
         self.destroyed: bool = False
@@ -172,8 +176,12 @@ class Tile:
             print(f"Tile {self} has no terrain set, cannot render default terrain.")
             return
 
+        from os.path import join, dirname, realpath
+
         model_path: str = self.tile_terrain.model()
-        hex_model: NodePath = self.base.loader.loadModel(model_path)
+        hex_model: NodePath = self.base.loader.loadModel(
+            realpath(join(dirname(__file__), "../..", model_path))
+        )
         # Apply consistent styling.
         hex_model.setScale(0.48)
         hex_model.setHpr(90, 0, 0)
@@ -409,7 +417,7 @@ class Tile:
             data = unit.to_gui()
             _units.append(f"{data['tag']} {data['name']}")
 
-        return {
+        data = {
             "tag": self.tag,
             "x": self.x,
             "y": self.y,
@@ -427,6 +435,26 @@ class Tile:
             "pos": (self.pos_x, self.pos_y, self.pos_z),
             "Hpr": (),
         }
+
+        if isinstance(self.extra_data, Hex):
+            data["hex_data"] = {
+                "altitude": self.extra_data.altitude,
+                "biome": str(self.extra_data.biome.value),
+                "moisture": self.extra_data.moisture,
+                "temperature": self.extra_data.base_temperature[0],
+                "is_coast": self.extra_data.is_coast,
+                "is_water": self.extra_data.is_water,
+                "is_land": self.extra_data.is_land,
+                "terrain": self.extra_data.terrain,
+                "zone": self.extra_data.zone.name,
+                "hemosphear": self.extra_data.hemisphere.name,
+            }
+
+            data["hex_data"] = "\n".join(
+                f"{k}: {v}" for k, v in data["hex_data"].items()
+            )
+
+        return data
 
     def found(
         self,

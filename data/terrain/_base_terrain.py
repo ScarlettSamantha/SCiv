@@ -29,7 +29,7 @@ class BaseTerrain:
         self.tile_yield_modifiers: List[TileYieldModifier] = []
 
     def model(self) -> T_TranslationOrStr:
-        return self._model
+        return str(self._model)
 
     def texture(self) -> T_TranslationOrStr:
         return self._texture
