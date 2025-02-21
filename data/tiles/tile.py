@@ -128,6 +128,10 @@ class Tile:
 
         self.meshCollider: bool = True
 
+    @classmethod
+    def generate_tag(cls, x: int, y: int) -> str:
+        return f"tile_{x}_{y}"
+
     def __repr__(self) -> str:
         return f"{self.id}@{self.x},{self.y}"
 
@@ -174,7 +178,7 @@ class Tile:
         node: NodePath = hex_model.copyTo(self.base.render)
         node.setPos(self.pos_x, self.pos_y, 0)
         node.setCollideMask(BitMask32.bit(1))
-        self.tag = f"tile_{self.x}_{self.y}"
+        self.tag = self.generate_tag(self.x, self.y)
         node.setTag("tile_id", self.tag)
         if self.models:
             self.models[0] = node
