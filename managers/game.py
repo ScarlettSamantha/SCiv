@@ -134,11 +134,15 @@ class Game(Singleton):
 
     def on_game_start(self, map_size, civilization, num_players):
         from gameplay.repositories.civilization import Civilization
+        from managers.ui import ui
 
-        self.properties.num_enemies = num_players - 1
-        self.properties.player = Civilization.get(civilization)
-        self.properties.width = int(map_size.split("x")[0])
-        self.properties.height = int(map_size.split("x")[1])
+        ui = ui.get_instance()
+        ui.game_menu_show()
+
+        self.properties.num_enemies = num_players - 1  # type: ignore
+        self.properties.player = Civilization.get(civilization)  # type: ignore
+        self.properties.width = int(map_size.split("x")[0])  # type: ignore
+        self.properties.height = int(map_size.split("x")[1])  # type: ignore
 
         if not self.properties:
             raise ValueError("Game properties not set")

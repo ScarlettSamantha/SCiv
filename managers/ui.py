@@ -7,6 +7,8 @@ from menus.game_escape import PauseMenu
 from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.classes._base import UnitBaseClass
+from panda3d_kivy.app import App
+
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -31,6 +33,7 @@ class ui(Singleton):
         self.game_menu_state: Optional[Game] = None
         self.game_pause_state: Optional[PauseMenu] = None
         self.registered = False if not self.registered else self.register
+        self.kivy: Optional[App] = None
 
         self.showing_colors = False
 
@@ -45,6 +48,7 @@ class ui(Singleton):
     def register(self) -> bool:
         self._base.accept("ui.update.user.tile_clicked", self.select_tile)
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
+        self._base.accept("system.game.start", self.on_game_start)
         self._base.accept("f7", self.trigger_render_analyze)
         self._base.accept("f9", self.show_colors_for_resources)
         return True
@@ -59,6 +63,16 @@ class ui(Singleton):
             else:
                 self.current_menu.destroy()
             self.current_menu = None
+
+    def on_game_start(self):
+        self.game_menu_show()
+
+    def game_menu_show(self):
+        from menus.game_ui import GameUI
+
+        display_region = self._base.win.make_display_region(0, 1, 0, 1)
+        self.kivy = GameUI(self._base, display_region, game_manager=self)
+        self.kivy.run()
 
     def set_current_menu(self, menu):
         self.current_menu = menu
