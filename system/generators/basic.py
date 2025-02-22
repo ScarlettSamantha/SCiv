@@ -81,6 +81,7 @@ class Basic(BaseGenerator):
         desert_temperature_threshold = 30
         moistoire_threshold_mangrove_jungle = 13
         light_jungle_temperature_threshold = 25
+        cold_forrest_temperature_threshold = 3
 
         if hex_tile.is_water:
             if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < 0:
@@ -134,6 +135,8 @@ class Basic(BaseGenerator):
                 8,
                 12,
             ):  # flat heavy forrest virtual (cold boreal forest)
+                if hex_tile.temperature[0] < cold_forrest_temperature_threshold:
+                    return "FlatPineForest"
                 return "FlatHeavyForest"
             elif hex_tile.biome.id in (
                 12,
