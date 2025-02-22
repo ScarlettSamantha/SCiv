@@ -78,9 +78,18 @@ class Basic(BaseGenerator):
     def classify_terrain(self, hex_tile) -> str:
         """Maps HexGen's terrain data to our tile names."""
 
+        desert_temperature_threshold = 30
+        moistoire_threshold_mangrove_jungle = 13
+        light_jungle_temperature_threshold = 25
+
         if hex_tile.is_water:
             if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < 0:
                 return "SeaIce"
+
+            elif (
+                hex_tile.biome.id in (4, 7) and hex_tile.is_coast
+            ):  # Shallow water, For some reason water is dessert or grassland
+                return "Coast"
             else:
                 return "Sea"
         else:
@@ -89,11 +98,37 @@ class Basic(BaseGenerator):
             # We ask for the altitude to determine if it's a mountain
             if hex_tile.altitude > 200:
                 return "Mountain"
-            if hex_tile.altitude > 70:
-                pass
-                # if hex_tile_biome.id in ()
+            if hex_tile.altitude > 160:
+                if hex_tile.biome.id in (7,):
+                    return "HillsGrassland"
+                elif hex_tile.biome.id in (6, 4):
+                    return "HillsDesert"
 
-            if hex_tile.biome.id in (7,):  # Grassland
+            if (
+                hex_tile.biome.id in (4,)
+                and hex_tile.temperature[0] > desert_temperature_threshold
+            ):  # Dessert or savannah, keep this high as it needs to be checked first before grassland
+                return "FlatDesert"
+            elif (
+                hex_tile.biome.id in (7, 11)
+                and hex_tile.moisture > moistoire_threshold_mangrove_jungle
+            ):  # Virtual Mangrove Actual grassland with high moister
+                return "FlatJungle"
+            elif (
+                hex_tile.biome.id in (11,)
+                and hex_tile.temperature[0] < light_jungle_temperature_threshold
+            ):
+                return "FlatLightJungle"
+            elif hex_tile.biome.id in (
+                5,
+            ):  # Virtual Mangrove Actual scrubland with low moister
+                return "FlatSchrubland"
+            elif hex_tile.biome.id in (6,):  # Savana
+                return "FlatSavanna"
+            elif hex_tile.biome.id in (7,) or (
+                hex_tile.biome.id in (6, 4)
+                and hex_tile.temperature[0] <= desert_temperature_threshold
+            ):  # Grassland and when its a "dessert" but to cold to be a dessert
                 return "FlatGrass"
             elif hex_tile.biome.id in (
                 8,
@@ -112,16 +147,17 @@ class Basic(BaseGenerator):
                 8,
             ):  # forest
                 return "FlatForrest"
-            elif hex_tile.biome.id in (6, 4):  # Dessert or savannah
-                return "FlatDesert"
+
             elif hex_tile.biome.id in (5,):  # Shrubland
                 return "FlatSchrubland"
-            elif hex_tile.biome.id in ():  # Tunda
-                return "FlatTundra"  # boreal forest
-            elif hex_tile.biome.id in (1, 2, 3):  # Arctic / Ice
+            elif hex_tile.biome.id in (2,):  # Ice
+                return "FlatTundra"
+            elif hex_tile.biome.id in (1, 3):  # Arctic / Ice
                 return "FlatSnow"
+            elif hex_tile.biome.id in (13,):  # Wasteland
+                return "FlatWasteland"
 
-        raise ValueError(f"Terrain not found for hex_tile: {hex_tile}")
+        raise ValueError(f"Terrain not found for hex_tile: {hex_tile}{hex_tile.biome}")
 
     def instantiate_tiles(self):
         """Creates Tile objects and places them on the grid."""

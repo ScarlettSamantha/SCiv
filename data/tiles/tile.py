@@ -1,7 +1,7 @@
 from shlex import join
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Dict, Optional, List, Tuple, Union
-
+import os
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
@@ -176,12 +176,46 @@ class Tile:
             print(f"Tile {self} has no terrain set, cannot render default terrain.")
             return
 
-        from os.path import join, dirname, realpath
+        from os.path import join, dirname, realpath, exists
+        
 
+        # Get the model path from the terrain (kept as a relative path)
         model_path: str = self.tile_terrain.model()
-        hex_model: NodePath = self.base.loader.loadModel(
-            realpath(join(dirname(__file__), "../..", model_path))
-        )
+        # Resolve the full path to the model file
+        full_model_path: str = realpath(join(dirname(__file__), "../..", model_path))
+
+        if not exists(full_model_path):
+            raise OSError(f"Model file not found: {full_model_path}")
+
+        # Load the model using the full path
+        while True:
+            try:
+                hex_model: NodePath = self.base.loader.loadModel(full_model_path)
+            except OSError as e:
+                print(f"Error loading model: {e}")
+                continue
+            break
+
+        # For each texture in the model, reload it using its full path
+        # but then set the texture's filename back to the original relative path.
+        # texture = hex_model.findAllTextures()[0]
+        # Get the original relative filename from the texture
+        # original_rel_filename = texture.getFilename().getFullpath()
+        # Resolve the texture's full path relative to the model file's directory
+        # full_texture_path = realpath(
+        #    join(dirname(full_model_path), original_rel_filename)
+        # )
+
+        # if not os.path.exists(full_model_path):
+        #    raise OSError(f"Texture file not found: {full_texture_path}")
+
+        # Load the texture using its full path
+        # new_texture = self.base.loader.loadTexture(full_model_path)
+        # Restore the original filename (relative) on the texture object
+        # new_texture.setFilename(original_rel_filename)
+        # Replace the old texture with the newly loaded one
+        # hex_model.setTexture(new_texture, 1)
+
         # Apply consistent styling.
         hex_model.setScale(0.48)
         hex_model.setHpr(90, 0, 0)
