@@ -2,11 +2,11 @@ from ._base_terrain import BaseTerrain
 from data.terrain.traits.land import buildable_flat_land
 
 
-class SeaIce(BaseTerrain):
-    _name = "world.terrain.flatland_grass"
+class FlatTundraSnow(BaseTerrain):
+    _name = "world.terrain.flatland_tundra_snow"
     movement_modifier = 1
     water_availability = 0.25
-    _model = "assets/models/tiles/sea_ice.glb"
+    _model = "assets/models/tiles/flat_tundra_snow.glb"
     _texture = "assets/models/tiles/grass2.png"
 
     def __init__(self, *args, **kwargs):
