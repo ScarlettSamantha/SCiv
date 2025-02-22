@@ -51,6 +51,9 @@ class Tile:
         self.is_coast: bool = False
         self.is_water: bool = False
         self.is_land: bool = False
+        self.is_sea: bool = False
+        self.is_lake: bool = False
+
         self.altitude: float = 0.0
         self.biome: int = 1
         self.moisture: float = 0.0
@@ -473,12 +476,13 @@ class Tile:
         if isinstance(self.extra_data, Hex):
             data["hex_data"] = {
                 "altitude": self.altitude,
-                "biome": str(self.biome),
+                "biome": f"{self.biome.id} - {self.biome.name}",
                 "moisture": self.moisture,
                 "temperature": self.temperature,
                 "is_coast": self.is_coast,
                 "is_water": self.is_water,
                 "is_land": self.is_land,
+                "is_lake": self.is_lake,
                 "terrain": self.terrain,
                 "zone": self.zone,
                 "hemisphere": self.hemisphere,
@@ -522,3 +526,5 @@ class Tile:
         self.is_coast = hex.is_coast
         self.is_water = hex.is_water
         self.is_land = hex.is_land
+        self.is_sea = hex.geoform_type.id == 2  # 2 == Sea
+        self.is_lake = hex.geoform_type.id == 4  # 4 == Lake

@@ -113,20 +113,20 @@ class Basic(BaseGenerator):
             "day_length": 24,
             "base_temp": 0,
             "avg_temp": 15,
-            "sea_percent": 45,
+            "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water, OceanType.hydrocarbons],
             "random_seed": self.seed,
-            "roughness": 8,
+            "roughness": 16,
             "height_range": (0, 245),
             "pressure": 1,  # bar
-            "axial_tilt": 23,
+            "axial_tilt": 90,
             # features
             "craters": True,
             "volanoes": True,
             "num_rivers": 50,
             # territories
-            "num_territories": 0,
+            "num_territories": 3,
         }
 
     def load_tiles(self) -> Dict[str, Type[Tile]]:
@@ -169,7 +169,18 @@ class Basic(BaseGenerator):
         return True
 
     def classify_terrain(self, hex_tile) -> str:
-        """Maps HexGen's terrain data to our tile names."""
+        # arctic =               (1, 'a', 'Arctic')
+        # tundra =               (2, 'u', 'Tundra')
+        # alpine_tundra =        (3, 'p', 'Alpine Tundra')
+        # desert =               (4, 'd', 'Desert')
+        # shrubland =            (5, 's', 'Shrubland')
+        # savanna =              (6, 'S', 'Savanna')
+        # grasslands =           (7, 'g', 'Grasslands')
+        # boreal_forest =        (8, 'b', 'Boreal Forest')
+        # temperate_forest =     (9, 't', 'Temperate Forest')
+        # temperate_rainforest = (10, 'T', 'Temperate Rainforest')
+        # tropical_forest =      (11, 'r', 'Tropical Forest')
+        # tropical_rainforest =  (12, 'R', 'Tropical Rainforest')
 
         desert_temperature_threshold = 30
         moistoire_threshold_mangrove_jungle = 13
@@ -177,13 +188,15 @@ class Basic(BaseGenerator):
         cold_forrest_temperature_threshold = 3
 
         if hex_tile.is_water:
-            if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < 0:
+            if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < -1:
                 return "SeaIce"
 
             elif (
                 hex_tile.biome.id in (4, 7) and hex_tile.is_coast
             ):  # Shallow water, For some reason water is dessert or grassland
                 return "Coast"
+            elif hex_tile.geoform_type.id == 2:
+                return "Lake"
             else:
                 return "Sea"
         else:
@@ -191,7 +204,10 @@ class Basic(BaseGenerator):
 
             # We ask for the altitude to determine if it's a mountain
             if hex_tile.altitude > 205:
+                if hex_tile.temperature[0] < -2:
+                    return "MountainSnow"
                 return "Mountain"
+
             if hex_tile.altitude > 165:
                 if hex_tile.biome.id in (7,):
                     return "HillsGrassland"
@@ -248,10 +264,14 @@ class Basic(BaseGenerator):
 
             elif hex_tile.biome.id in (5,):  # Shrubland
                 return "FlatSchrubland"
-            elif hex_tile.biome.id in (2,):  # Tundra
-                return "FlatSnow"  # Should be snow tundra
-            elif hex_tile.biome.id in (1, 3):  # Arctic / Ice
-                return "FlatSnow"
+            elif hex_tile.biome.id in (1,):  # Arctic / Ice
+                return "FlatIce"
+            elif hex_tile.biome.id in (2, 3):  # 2 Tundra, 3 Alpine Tundra
+                if hex_tile.temperature[0] < 0 or hex_tile.biome.id in (
+                    3,
+                ):  # This is a cold tile or alpine
+                    return "FlatTundraSnow"
+                return "FlatTundra"  # This is a normal tundra should be just 2 left as 3 is handled above
             elif hex_tile.biome.id in (13,):  # Wasteland
                 return "FlatWasteland"
 
