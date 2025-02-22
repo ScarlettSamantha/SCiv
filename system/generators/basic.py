@@ -1,8 +1,9 @@
-import random
 import re
+import math
+import random
 from hexgen.grid import Grid
 from hexgen.mapgen import MapGen
-from hexgen.enums import MapType, OceanType
+from hexgen.enums import MapType, OceanType, SuperEnum
 from data.tiles.tile import Tile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad
@@ -10,6 +11,71 @@ from typing import TYPE_CHECKING, Dict, Type
 
 if TYPE_CHECKING:
     from system.game_settings import GameSettings
+
+
+class HexResourceRating(SuperEnum):
+    """((1 + 1) * 60/1000 ) / (60 ^ 2) * 10000"""
+
+    __keys__ = ["id", "title", "rarity", "multiplier"]
+
+    poor = (1, "Poor", 10, 4)
+    average = (2, "Average", 6, 3)
+    rich = (3, "Rich", 3, 2)
+    abundant = (4, "Abundant", 1, 1)
+
+
+class HexResourceType(SuperEnum):
+    __keys__ = ["id", "rarity", "title", "material", "yield", "color"]
+
+    iron_vein = (1, 15, "Iron Vein", 1000, "commonmetals", (100, 0, 0))
+    copper_vein = (2, 15, "Copper Vein", 1000, "commonmetals", (0, 100, 0))
+    silver_vein = (3, 15, "Silver Vein", 1000, "commonmetals", (0, 0, 100))
+    lead_vein = (4, 15, "Lead Vein", 1000, "commonmetals", (100, 0, 100))
+    aluminum_vein = (5, 15, "Aluminum Vein", 1000, "commonmetals", (50, 150, 50))
+    tin_vein = (6, 15, "Tin Vein", 1000, "commonmetals", (150, 50, 50))
+    titanium_vein = (7, 15, "Titanium Vein", 1000, "commonmetals", (200, 50, 200))
+    magnesium_vein = (8, 15, "Magnesium Vein", 1000, "commonmetals", (50, 200, 50))
+
+    gold_ore_deposit = (9, 1, "Gold Ore Deposit", 500, "preciousmetals", (255, 0, 0))
+    chromite_ore_deposit = (
+        10,
+        3,
+        "Chromite Ore Deposit",
+        500,
+        "preciousmetals",
+        (255, 255, 0),
+    )
+    monazite_ore_deposit = (
+        11,
+        5,
+        "Monazite Ore Deposit",
+        500,
+        "preciousmetals",
+        (0, 0, 255),
+    )
+    bastnasite_ore_deposit = (
+        12,
+        4,
+        "Bastnasite Ore Deposit",
+        500,
+        "preciousmetals",
+        (0, 125, 200),
+    )
+    xenotime_ore_deposit = (
+        13,
+        1,
+        "Xenotime Ore Deposit",
+        500,
+        "preciousmetals",
+        (200, 125, 0),
+    )
+
+    graphite_deposit = (14, 10, "Graphite Deposit", 1500, "carbon", (0, 0, 0))
+    coal_deposit = (15, 30, "Coal Deposit", 1500, "carbon", (255, 255, 255))
+
+    quartz_deposit = (16, 7, "Quartz Vein", 1000, "silicon", (80, 80, 80))
+
+    uranium_ore_deposit = (17, 1, "Uranium Ore Deposit", 10, "uranium", (255, 50, 50))
 
 
 class Basic(BaseGenerator):
@@ -20,9 +86,10 @@ class Basic(BaseGenerator):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
         self.map: Dict[str, Tile] = self.world.map
+        from random import randrange
 
         # Random seed
-        self.seed = random.randint(0, 999999)
+        self.seed = randrange(0, 999999)
 
         # Load tile definitions
         self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
@@ -37,6 +104,29 @@ class Basic(BaseGenerator):
             "roughness": 12,  # Controls terrain roughness
             "hydrosphere": True,  # Enables rivers/lakes
             "num_rivers": 50,  # Number of rivers
+        }
+        self.map_params = {
+            "map_type": MapType.terran,
+            "surface_pressure": 1013.25,
+            "size": max(self.config.width, self.config.height),
+            "year_length": 365,
+            "day_length": 24,
+            "base_temp": 0,
+            "avg_temp": 15,
+            "sea_percent": 45,
+            "hydrosphere": True,
+            "ocean_type": [OceanType.water, OceanType.hydrocarbons],
+            "random_seed": self.seed,
+            "roughness": 8,
+            "height_range": (0, 245),
+            "pressure": 1,  # bar
+            "axial_tilt": 23,
+            # features
+            "craters": True,
+            "volanoes": True,
+            "num_rivers": 50,
+            # territories
+            "num_territories": 0,
         }
 
     def load_tiles(self) -> Dict[str, Type[Tile]]:
@@ -71,7 +161,10 @@ class Basic(BaseGenerator):
                 hex_tile.terrain = terrain  # Store terrain type
                 hex_tile.render_pos = (x, y)  # Store adjusted render coordinates
 
-        # Step 3: Instantiate tiles for rendering
+        # Step 3: Generate resources
+        self.generate_resources()
+
+        # Step 4: Instantiate tiles for rendering
         self.instantiate_tiles()
         return True
 
@@ -97,13 +190,15 @@ class Basic(BaseGenerator):
             # Its land
 
             # We ask for the altitude to determine if it's a mountain
-            if hex_tile.altitude > 200:
+            if hex_tile.altitude > 205:
                 return "Mountain"
-            if hex_tile.altitude > 160:
+            if hex_tile.altitude > 165:
                 if hex_tile.biome.id in (7,):
                     return "HillsGrassland"
                 elif hex_tile.biome.id in (6, 4):
                     return "HillsDesert"
+                elif hex_tile.biome.id in (3,):
+                    return "HillsSnow"
 
             if (
                 hex_tile.biome.id in (4,)
@@ -153,8 +248,8 @@ class Basic(BaseGenerator):
 
             elif hex_tile.biome.id in (5,):  # Shrubland
                 return "FlatSchrubland"
-            elif hex_tile.biome.id in (2,):  # Ice
-                return "FlatTundra"
+            elif hex_tile.biome.id in (2,):  # Tundra
+                return "FlatSnow"  # Should be snow tundra
             elif hex_tile.biome.id in (1, 3):  # Arctic / Ice
                 return "FlatSnow"
             elif hex_tile.biome.id in (13,):  # Wasteland
@@ -193,8 +288,39 @@ class Basic(BaseGenerator):
                 obj_instance: Tile = tile_class(
                     self.base, x, y, render_x, render_y, extra_data=hex_tile
                 )
+                obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
 
                 # Generate a unique tag for mapping
                 tag = obj_instance.generate_tag(x, y)
                 self.map[tag] = obj_instance
+
+    def generate_resources(self):
+        """Places resources on hexes based on resource rarity."""
+        print("Placing resources")
+        # Get lists of resource ratings and types.
+        ratings = HexResourceRating.list()
+        types = HexResourceType.list()
+
+        # Create a combined list of all possible resource configurations.
+        combined = []
+        for r in ratings:
+            for t in types:
+                combined.append(dict(rating=r, type=t))
+
+        # Iterate over each hex in the grid.
+        # Adjust this loop if your grid structure is different.
+        for col in self.hex_grid.grid:
+            for hex_tile in col:
+                # For each hex, loop through every possible resource.
+                for resource in combined:
+                    chance = (
+                        resource["rating"].rarity
+                        * resource["type"].rarity
+                        * self.hex_grid.size
+                        / 100
+                    ) / (math.pow(self.hex_grid.size, 2))
+                    if random.uniform(0, 1) <= chance:
+                        # Assign the resource. If you want to allow multiple resources,
+                        # you could store them in a list.
+                        hex_tile.resource = resource

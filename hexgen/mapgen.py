@@ -264,33 +264,12 @@ class MapGen:
 
         self.territories = []
         self.generate_territories()
-        self.generate_resources()
+        # self.generate_resources()
         self.geoforms = []
         self._determine_landforms()
 
         print("Done") if self.debug else False
 
-    def generate_resources(self):
-        print("Placing resources")
-        ratings = HexResourceRating.list()
-        types = HexResourceType.list()
-
-        combined = []
-
-        for r in ratings:
-            for t in types:
-                combined.append(dict(rating=r, type=t))
-        for h in self.hex_grid.hexes:
-            for resource in combined:
-                chance = (
-                    resource.get("rating").rarity
-                    * resource.get("type").rarity
-                    * self.hex_grid.size
-                    / 1000
-                ) / (math.pow(self.hex_grid.size, 2))
-                given = random.uniform(0, 1)
-                if given <= chance:
-                    h.resource = resource
 
     def generate_territories(self):
         """
@@ -1013,81 +992,6 @@ class MapGen:
             if s.x == x and s.y == y:
                 seg.append(s.side)
         return seg
-
-    def export(self, filename):
-        """Export the map data as a JSON file"""
-        with Timer("Compiling data into dictionary", self.debug):
-            params = copy.copy(self.params)
-            params["map_type"] = params.get("map_type").to_dict()
-            params["ocean_type"] = params.get("ocean_type").to_dict()
-            data = {
-                "parameters": params,
-                "details": {
-                    "size": self.hex_grid.size,
-                    "sea_level": self.hex_grid.sealevel,
-                    "avg_height": self.hex_grid.average_height,
-                    "max_height": self.hex_grid.highest_height,
-                    "min_height": self.hex_grid.lowest_height,
-                },
-                "hexes": [],
-                "geoforms": [],
-            }
-
-            def edge_dict(edge):
-                return dict(
-                    is_river=edge.is_river,
-                    is_coast=edge.is_coast,
-                    direction=edge.direction.name,
-                )
-
-            for x, row in enumerate(self.hex_grid.grid):
-                row_data = []
-                for y, col in enumerate(row):
-                    h = self.hex_grid.find_hex(x, y)
-                    color_temperature = (
-                        (h.color_temperature[0][0] + h.color_temperature[1][0]) / 2,
-                        (h.color_temperature[0][1] + h.color_temperature[1][1]) / 2,
-                        (h.color_temperature[0][2] + h.color_temperature[1][2]) / 2,
-                    )
-                    temperature = round((h.temperature[0] + h.temperature[1]) / 2, 2)
-                    row_data.append(
-                        {
-                            "id": h.id.hex,
-                            "x": x,
-                            "y": y,
-                            "altitude": h.altitude,
-                            "temperature": temperature,
-                            "moisture": h.moisture,
-                            "biome": h.biome.to_dict(),
-                            "type": h.type.name,
-                            "is_inland": h.is_inland,
-                            "is_coast": h.is_coast,
-                            "geoform": h.geoform.id.hex,
-                            "colors": {
-                                "satellite": h.color_satellite,
-                                "terrain": h.color_terrain,
-                                "temperature": color_temperature,
-                                "biome": h.color_biome,
-                                "rivers": h.color_rivers,
-                            },
-                            "edges": {
-                                "east": edge_dict(h.edge_east),
-                                "north_east": edge_dict(h.edge_north_east),
-                                "north_west": edge_dict(h.edge_north_west),
-                                "west": edge_dict(h.edge_west),
-                                "south_west": edge_dict(h.edge_south_west),
-                                "south_east": edge_dict(h.edge_south_east),
-                            },
-                        }
-                    )
-                data["hexes"].append(row_data)
-            for geoform in self.geoforms:
-                data["geoforms"].append(geoform.to_dict())
-        with open(filename, "w") as outfile:
-            with Timer("Writing data to JSON file", self.debug):
-                json.dump(data, outfile)
-        return data
-
 
 from hexgen.river import RiverSegment
 from hexgen.hex import Hex, HexSide, HexFeature

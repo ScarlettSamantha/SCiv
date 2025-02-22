@@ -1,7 +1,6 @@
-from shlex import join
 from panda3d.core import NodePath, LRGBColor, BitMask32
-from typing import Any, Dict, Optional, List, Tuple, Union
-import os
+from typing import Any, Optional, List, Tuple, Union
+from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
@@ -48,6 +47,18 @@ class Tile:
         # Instead of a single node, we keep a list of NodePaths.
         self.models: List[NodePath] = []
         self.extra_data: Optional[dict] = extra_data
+
+        self.is_coast: bool = False
+        self.is_water: bool = False
+        self.is_land: bool = False
+        self.altitude: float = 0.0
+        self.biome: int = 1
+        self.moisture: float = 0.0
+        self.temperature: float = 0.0
+        self.terrain: str = "plains"
+        self.zone: str = "temperate"
+        self.hemisphere: str = "north"
+        self.resource: Optional[dict] = None
 
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height: int = 0
@@ -176,10 +187,8 @@ class Tile:
             print(f"Tile {self} has no terrain set, cannot render default terrain.")
             return
 
-        from os.path import join, dirname, realpath, exists
-
         # Get the model path from the terrain (kept as a relative path)
-        model_path: str = self.tile_terrain.model()
+        model_path: str = str(self.tile_terrain.model())
         # Resolve the full path to the model file
         full_model_path: str = realpath(join(dirname(__file__), "../..", model_path))
 
@@ -208,7 +217,8 @@ class Tile:
 
         # Apply consistent styling.
         hex_model.setScale(0.48)
-        hex_model.setHpr(90, 0, 0)
+        hex_model.setHpr(270, 0, 0)
+
         node: NodePath = hex_model.copyTo(self.base.render)
         node.setPos(self.pos_x, self.pos_y, 0)
         node.setCollideMask(BitMask32.bit(1))
@@ -391,7 +401,7 @@ class Tile:
             return (0, 0, 0)
 
     def model(self) -> str:
-        return self.tile_terrain.model() if self.tile_terrain else ""
+        return str(self.tile_terrain.model()) if self.tile_terrain else ""
 
     def texture(self) -> T_TranslationOrStr:
         return self.tile_terrain.texture() if self.tile_terrain else ""
@@ -462,16 +472,20 @@ class Tile:
 
         if isinstance(self.extra_data, Hex):
             data["hex_data"] = {
-                "altitude": self.extra_data.altitude,
-                "biome": str(self.extra_data.biome.value),
-                "moisture": self.extra_data.moisture,
-                "temperature": self.extra_data.base_temperature[0],
-                "is_coast": self.extra_data.is_coast,
-                "is_water": self.extra_data.is_water,
-                "is_land": self.extra_data.is_land,
-                "terrain": self.extra_data.terrain,
-                "zone": self.extra_data.zone.name,
-                "hemosphear": self.extra_data.hemisphere.name,
+                "altitude": self.altitude,
+                "biome": str(self.biome),
+                "moisture": self.moisture,
+                "temperature": self.temperature,
+                "is_coast": self.is_coast,
+                "is_water": self.is_water,
+                "is_land": self.is_land,
+                "terrain": self.terrain,
+                "zone": self.zone,
+                "hemisphere": self.hemisphere,
+                "resource['rating']": self.resource["rating"]
+                if self.resource
+                else None,
+                "resource['type']": self.resource["type"] if self.resource else None,
             }
 
             data["hex_data"] = "\n".join(
@@ -494,3 +508,17 @@ class Tile:
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
+
+    def enrich_from_extra_data(self, hex: Hex) -> None:
+        self.extra_data = hex
+        self.altitude = hex.altitude
+        self.biome = hex.biome
+        self.moisture = hex.moisture
+        self.temperature = hex.base_temperature[0]
+        self.terrain = hex.terrain
+        self.zone = hex.zone.name
+        self.hemisphere = hex.hemisphere.name
+        self.resource = hex.resource
+        self.is_coast = hex.is_coast
+        self.is_water = hex.is_water
+        self.is_land = hex.is_land

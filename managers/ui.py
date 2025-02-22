@@ -32,6 +32,8 @@ class ui(Singleton):
         self.game_pause_state: Optional[PauseMenu] = None
         self.registered = False if not self.registered else self.register
 
+        self.showing_colors = False
+
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
         self._base = base
@@ -44,6 +46,7 @@ class ui(Singleton):
         self._base.accept("ui.update.user.tile_clicked", self.select_tile)
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
         self._base.accept("f7", self.trigger_render_analyze)
+        self._base.accept("f9", self.show_colors_for_resources)
         return True
 
     def cleanup_menu(self):
@@ -164,3 +167,13 @@ class ui(Singleton):
 
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore
+
+    def show_colors_for_resources(self):
+        for _, hex in self.map.map.items():
+            if hex.resource is not None:
+                if self.showing_colors:
+                    hex.set_color((1, 1, 1, 1))
+                else:
+                    hex.set_color((1, 1, 1, 0.01))
+
+                self.showing_colors = not self.showing_colors

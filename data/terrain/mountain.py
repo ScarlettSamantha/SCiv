@@ -9,7 +9,7 @@ from data.terrain.traits.land import mountain
 
 class Mountain(BaseTerrain):
     _name = "world.terrain.mountain"
-    _model = "assets/models/tiles/mountains.glb"
+    _model = "assets/models/tiles/snow_mountain.glb"
     _texture: T_TranslationOrStr = "assets/models/tiles/mountain.png"
     _fallback_color = rgb(0, 119, 255)
 
