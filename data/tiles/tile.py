@@ -177,24 +177,14 @@ class Tile:
             return
 
         from os.path import join, dirname, realpath, exists
-        
 
         # Get the model path from the terrain (kept as a relative path)
         model_path: str = self.tile_terrain.model()
         # Resolve the full path to the model file
         full_model_path: str = realpath(join(dirname(__file__), "../..", model_path))
 
-        if not exists(full_model_path):
-            raise OSError(f"Model file not found: {full_model_path}")
-
         # Load the model using the full path
-        while True:
-            try:
-                hex_model: NodePath = self.base.loader.loadModel(full_model_path)
-            except OSError as e:
-                print(f"Error loading model: {e}")
-                continue
-            break
+        hex_model: NodePath = self.base.loader.loadModel(full_model_path)
 
         # For each texture in the model, reload it using its full path
         # but then set the texture's filename back to the original relative path.
