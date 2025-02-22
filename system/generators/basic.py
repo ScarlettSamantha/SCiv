@@ -126,7 +126,7 @@ class Basic(BaseGenerator):
             "volanoes": True,
             "num_rivers": 50,
             # territories
-            "num_territories": 3,
+            "num_territories": 0,
         }
 
     def load_tiles(self) -> Dict[str, Type[Tile]]:

@@ -21,6 +21,7 @@ class Openciv(ShowBase):
         simplepbr.init()
         self.config_mgr = config_mgr
         self.disableMouse()
+
         base_file_path = pathlib.Path(__file__).parent.absolute()
         self.i18n = _i18n(base_file_path / "i18n", "en_EN", True)
         set_i18n(self.i18n)

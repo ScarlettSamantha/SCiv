@@ -11,6 +11,8 @@ from managers.world import World
 from managers.input import Input
 from camera import CivCamera
 from system.generators.base import BaseGenerator
+from gameplay.civilizations.rome import Rome
+from system.generators.basic import Basic
 from system.game_settings import GameSettings
 
 
@@ -30,8 +32,15 @@ class Game(Singleton):
 
         self.active_generator: BaseGenerator | None = None
 
-        self.properties: Optional[GameSettings] = (
-            None  # These are injected by the 2nd menu
+        self.properties: Optional[GameSettings] = GameSettings(
+            width=5,
+            height=5,
+            num_enemies=2,
+            generator=Basic,
+            player=Rome,
+            victory_conditions=None,
+            enemies=None,
+            difficulty=1,
         )
 
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
@@ -123,7 +132,14 @@ class Game(Singleton):
         if players is None:
             raise ValueError("No players were setup")
 
-    def on_game_start(self):
+    def on_game_start(self, map_size, civilization, num_players):
+        from gameplay.repositories.civilization import Civilization
+
+        self.properties.num_enemies = num_players - 1
+        self.properties.player = Civilization.get(civilization)
+        self.properties.width = int(map_size.split("x")[0])
+        self.properties.height = int(map_size.split("x")[1])
+
         if not self.properties:
             raise ValueError("Game properties not set")
         self.game_active = True

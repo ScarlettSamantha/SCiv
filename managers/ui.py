@@ -70,13 +70,13 @@ class ui(Singleton):
         from menus.primary import Primary
 
         self.cleanup_menu()
-        self.set_current_menu(Primary().show())
+        self.set_current_menu(Primary(self._base).show())
 
     def get_secondary_menu(self):
         from menus.second import Second
 
         self.cleanup_menu()
-        self.set_current_menu(Second().show())
+        self.set_current_menu(Second(self._base).show())
 
     def get_game_ui(self):
         from menus.game import Game
