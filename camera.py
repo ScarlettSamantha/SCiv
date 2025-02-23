@@ -71,6 +71,14 @@ class CivCamera(Singleton):
     def __setup__(self, *args, **kwargs):
         return super().__setup__(*args, **kwargs)
 
+    def getPos(self):
+        """Return the current position of the camera in world space."""
+        return self.base.camera.getPos(self.base.render)
+
+    def getHpr(self):
+        """Return the current orientation (heading, pitch, roll) of the camera."""
+        return self.base.camera.getHpr(self.base.render)
+
     # -------------------------------------------------------------------------
     #  Setup Controls
     # -------------------------------------------------------------------------
@@ -208,21 +216,29 @@ class CivCamera(Singleton):
             return task.cont
 
         dt = self.base.clock.getDt()
+        move_vec = (0, 0)  # Store movement in X, Y
 
-        # Key-based panning in X/Y
-        dx, dy = 0.0, 0.0
-        if self.keys["up"]:
-            dy += self.pan_speed * dt
+        # Convert degrees to radians for rotation
+        yaw_rad = self.yaw * (pi / 180.0)
+
+        # Calculate forward and right movement directions based on yaw
+        forward = (sin(yaw_rad), -cos(yaw_rad))  # Forward movement vector
+        right = (cos(yaw_rad), sin(yaw_rad))  # Right movement vector
+
+        # WASD-based movement (relative to camera yaw)
         if self.keys["down"]:
-            dy -= self.pan_speed * dt
+            move_vec = (move_vec[0] + forward[0] * self.pan_speed * dt, move_vec[1] + forward[1] * self.pan_speed * dt)
+        if self.keys["up"]:
+            move_vec = (move_vec[0] - forward[0] * self.pan_speed * dt, move_vec[1] - forward[1] * self.pan_speed * dt)
         if self.keys["left"]:
-            dx -= self.pan_speed * dt
+            move_vec = (move_vec[0] - right[0] * self.pan_speed * dt, move_vec[1] - right[1] * self.pan_speed * dt)
         if self.keys["right"]:
-            dx += self.pan_speed * dt
+            move_vec = (move_vec[0] + right[0] * self.pan_speed * dt, move_vec[1] + right[1] * self.pan_speed * dt)
 
-        if (dx != 0) or (dy != 0):
+        # Apply movement to the pivot
+        if move_vec != (0, 0):
             x0, y0, z0 = self.pivot.getPos()
-            self.pivot.setPos(x0 + dx, y0 + dy, z0)
+            self.pivot.setPos(x0 + move_vec[0], y0 + move_vec[1], z0)
             self.update_camera_position()
 
         # Q/E-based rotation
@@ -233,7 +249,7 @@ class CivCamera(Singleton):
             self.yaw -= self.rotate_speed * dt
             self.update_camera_position()
 
-        # Mouse dragging
+        # Mouse dragging (adjusted for rotation)
         if self.base.mouseWatcherNode.hasMouse():
             md = self.base.win.getPointer(0)
             x = md.getX()
@@ -243,19 +259,18 @@ class CivCamera(Singleton):
 
             if self.left_dragging:
                 # Left-drag => rotate around pivot's heading
-                # We'll do direct offset => yaw change
-                # Lower factor to reduce speed
                 rotation_factor = 0.1  # Slower rotation
                 self.yaw -= delta_x * rotation_factor
                 self.update_camera_position()
 
             elif self.right_dragging:
-                # Right-drag => pan the pivot in XY plane
-                pan_factor = 0.02  # Tweak for sensitivity
+                # Right-drag => pan the pivot relative to rotation
+                pan_factor = 0.02  # Adjust sensitivity
+                move_x = (-delta_x * pan_factor) * cos(yaw_rad) - (delta_y * pan_factor) * sin(yaw_rad)
+                move_y = (-delta_x * pan_factor) * sin(yaw_rad) + (delta_y * pan_factor) * cos(yaw_rad)
+
                 x0, y0, z0 = self.pivot.getPos()
-                new_x = x0 - (delta_x * pan_factor)
-                new_y = y0 + (delta_y * pan_factor)
-                self.pivot.setPos(new_x, new_y, z0)
+                self.pivot.setPos(x0 + move_x, y0 + move_y, z0)
                 self.update_camera_position()
 
             # Store new mouse pos
