@@ -155,9 +155,7 @@ class Tile:
     def __repr__(self) -> str:
         return f"{self.id}@{self.x},{self.y}"
 
-    def render(
-        self, render_all: bool = True, model_index: Optional[int] = None
-    ) -> None:
+    def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
         Render the tile.
         - If no models have been rendered yet, the default terrain model is loaded.
@@ -246,9 +244,7 @@ class Tile:
         extra_model.setScale(0.48 * scale)
         extra_model.setHpr(*hpr)
         node: NodePath = extra_model.copyTo(self.base.render)
-        node.setPos(
-            self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2]
-        )
+        node.setPos(self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2])
         node.setCollideMask(BitMask32.bit(1))
         self.models.append(node)
 
@@ -302,6 +298,15 @@ class Tile:
 
     def get_terrain(self) -> Optional[BaseTerrain]:
         return self.tile_terrain
+
+    def is_spawnable_upon(self, on_other_units: bool = False, on_mountains: bool = False) -> bool:
+        return (
+            not self.is_water
+            and not self.is_sea
+            and (on_other_units or len(self.units) == 0)
+            and not self.city
+            and (on_mountains or self.altitude < 200)  # No spawning on mountains
+        )
 
     def _reset_tile_properties_to_default(self) -> None:
         # Has this tile been destroyed.
@@ -398,9 +403,7 @@ class Tile:
         if self.tile_terrain:
             return self.tile_terrain.color()
         else:
-            print(
-                f"No terrain set for tile, returning default color: {self.__class__.__name__}"
-            )
+            print(f"No terrain set for tile, returning default color: {self.__class__.__name__}")
             return (0, 0, 0)
 
     def model(self) -> str:
@@ -476,7 +479,7 @@ class Tile:
         if isinstance(self.extra_data, Hex):
             data["hex_data"] = {
                 "altitude": self.altitude,
-                "biome": f"{self.biome.id} - {self.biome.name}",
+                "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
                 "moisture": self.moisture,
                 "temperature": self.temperature,
                 "is_coast": self.is_coast,
@@ -486,15 +489,11 @@ class Tile:
                 "terrain": self.terrain,
                 "zone": self.zone,
                 "hemisphere": self.hemisphere,
-                "resource['rating']": self.resource["rating"]
-                if self.resource
-                else None,
+                "resource['rating']": self.resource["rating"] if self.resource else None,
                 "resource['type']": self.resource["type"] if self.resource else None,
             }
 
-            data["hex_data"] = "\n".join(
-                f"{k}: {v}" for k, v in data["hex_data"].items()
-            )
+            data["hex_data"] = "\n".join(f"{k}: {v}" for k, v in data["hex_data"].items())
 
         return data
 
@@ -506,25 +505,23 @@ class Tile:
     ) -> None:
         if player is None:
             player = PlayerManager.player()
-        self.city = City.found_new(
-            name="Test city", tile=self, population=population, is_capital=capital
-        )
+        self.city = City.found_new(name="Test city", tile=self, population=population, is_capital=capital)
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
 
     def enrich_from_extra_data(self, hex: Hex) -> None:
-        self.extra_data = hex
+        self.extra_data = hex  # type: ignore
         self.altitude = hex.altitude
-        self.biome = hex.biome
+        self.biome = hex.biome  # type: ignore
         self.moisture = hex.moisture
         self.temperature = hex.base_temperature[0]
-        self.terrain = hex.terrain
-        self.zone = hex.zone.name
+        self.terrain = hex.terrain  # type: ignore
+        self.zone = hex.zone.name  # type: ignore
         self.hemisphere = hex.hemisphere.name
         self.resource = hex.resource
         self.is_coast = hex.is_coast
         self.is_water = hex.is_water
         self.is_land = hex.is_land
-        self.is_sea = hex.geoform_type.id == 2  # 2 == Sea
-        self.is_lake = hex.geoform_type.id == 4  # 4 == Lake
+        self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
+        self.is_lake = hex.geoform_type.id == 4  # type: ignore # 4 == Lake
