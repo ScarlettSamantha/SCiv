@@ -217,29 +217,21 @@ class Basic(BaseGenerator):
                     return "HillsSnow"
 
             if (
-                hex_tile.biome.id in (4,)
-                and hex_tile.temperature[0] > desert_temperature_threshold
+                hex_tile.biome.id in (4,) and hex_tile.temperature[0] > desert_temperature_threshold
             ):  # Dessert or savannah, keep this high as it needs to be checked first before grassland
                 return "FlatDesert"
             elif (
-                hex_tile.biome.id in (7, 11)
-                and hex_tile.moisture > moistoire_threshold_mangrove_jungle
+                hex_tile.biome.id in (7, 11) and hex_tile.moisture > moistoire_threshold_mangrove_jungle
             ):  # Virtual Mangrove Actual grassland with high moister
                 return "FlatJungle"
-            elif (
-                hex_tile.biome.id in (11,)
-                and hex_tile.temperature[0] < light_jungle_temperature_threshold
-            ):
+            elif hex_tile.biome.id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
                 return "FlatLightJungle"
-            elif hex_tile.biome.id in (
-                5,
-            ):  # Virtual Mangrove Actual scrubland with low moister
+            elif hex_tile.biome.id in (5,):  # Virtual Mangrove Actual scrubland with low moister
                 return "FlatSchrubland"
             elif hex_tile.biome.id in (6,):  # Savana
                 return "FlatSavanna"
             elif hex_tile.biome.id in (7,) or (
-                hex_tile.biome.id in (6, 4)
-                and hex_tile.temperature[0] <= desert_temperature_threshold
+                hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
             ):  # Grassland and when its a "dessert" but to cold to be a dessert
                 return "FlatGrass"
             elif hex_tile.biome.id in (
@@ -249,9 +241,7 @@ class Basic(BaseGenerator):
                 if hex_tile.temperature[0] < cold_forrest_temperature_threshold:
                     return "FlatPineForest"
                 return "FlatHeavyForest"
-            elif hex_tile.biome.id in (
-                12,
-            ):  # Fake tile type: Jungle not (Tropical Rainforest)
+            elif hex_tile.biome.id in (12,):  # Fake tile type: Jungle not (Tropical Rainforest)
                 pass
                 # return "FlatJungle"
             elif hex_tile.biome.id in (
@@ -267,9 +257,7 @@ class Basic(BaseGenerator):
             elif hex_tile.biome.id in (1,):  # Arctic / Ice
                 return "FlatIce"
             elif hex_tile.biome.id in (2, 3):  # 2 Tundra, 3 Alpine Tundra
-                if hex_tile.temperature[0] < 0 or hex_tile.biome.id in (
-                    3,
-                ):  # This is a cold tile or alpine
+                if hex_tile.temperature[0] < 0 or hex_tile.biome.id in (3,):  # This is a cold tile or alpine
                     return "FlatTundraSnow"
                 return "FlatTundra"  # This is a normal tundra should be just 2 left as 3 is handled above
             elif hex_tile.biome.id in (13,):  # Wasteland
@@ -287,27 +275,19 @@ class Basic(BaseGenerator):
                 terrain = hex_tile.terrain  # ✅ Now correctly assigned
 
                 # Find the correct tile class or default to FlatGrassland
-                tile_class = self.tiles_dict.get(
-                    terrain, self.tiles_dict.get("FlatGrassland")
-                )
+                tile_class = self.tiles_dict.get(terrain, self.tiles_dict.get("FlatGrassland"))
                 if tile_class is None:
                     raise ValueError(f"Tile class for terrain '{terrain}' not found.")
 
                 # Compute the rendering position using the correct offset
                 render_x = col * self.world.col_spacing  # Base X spacing
                 if col % 2 == 1:  # If the column is odd, apply staggered row offset
-                    render_y = row * self.world.row_spacing + (
-                        self.world.row_spacing * 0.5
-                    )
+                    render_y = row * self.world.row_spacing + (self.world.row_spacing * 0.5)
                 else:
-                    render_y = (
-                        row * self.world.row_spacing
-                    )  # Even columns align normally
+                    render_y = row * self.world.row_spacing  # Even columns align normally
 
                 # Instantiate the tile object
-                obj_instance: Tile = tile_class(
-                    self.base, x, y, render_x, render_y, extra_data=hex_tile
-                )
+                obj_instance: Tile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
 
@@ -334,12 +314,9 @@ class Basic(BaseGenerator):
             for hex_tile in col:
                 # For each hex, loop through every possible resource.
                 for resource in combined:
-                    chance = (
-                        resource["rating"].rarity
-                        * resource["type"].rarity
-                        * self.hex_grid.size
-                        / 100
-                    ) / (math.pow(self.hex_grid.size, 2))
+                    chance = (resource["rating"].rarity * resource["type"].rarity * self.hex_grid.size / 100) / (
+                        math.pow(self.hex_grid.size, 2)
+                    )
                     if random.uniform(0, 1) <= chance:
                         # Assign the resource. If you want to allow multiple resources,
                         # you could store them in a list.
