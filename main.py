@@ -5,6 +5,7 @@ from lights import setup_lights
 from camera import CivCamera
 
 from managers.world import World
+from managers.unit import Unit
 from managers.ui import ui
 from managers.input import Input
 from managers.config import ConfigManager
@@ -52,6 +53,9 @@ class Openciv(ShowBase):
         self.ui_manager.get_main_menu()
         self.ui_manager.map = self.world
 
+        self.unit_manager = Unit(self)
+        Unit._set_instance(self.unit_manager)
+
         self.game_manager_instance = Game(self, self.civ_camera)
         Game._set_instance(self.game_manager_instance)
         # ---------------------------------------------------------------------
@@ -77,9 +81,7 @@ class Openciv(ShowBase):
         """
         Example: Switch between fullscreen <-> windowed at runtime.
         """
-        current_mode = self.config_mgr.config_data["window"].get(
-            "screen-mode", "windowed"
-        )
+        current_mode = self.config_mgr.config_data["window"].get("screen-mode", "windowed")
         new_mode = "fullscreen" if current_mode != "fullscreen" else "windowed"
         self.config_mgr.set_screen_mode(new_mode)
 
