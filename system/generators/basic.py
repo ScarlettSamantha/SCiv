@@ -166,6 +166,9 @@ class Basic(BaseGenerator):
 
         # Step 4: Instantiate tiles for rendering
         self.instantiate_tiles()
+
+        # Step 5: Place starting units
+        self.place_starting_units()
         return True
 
     def classify_terrain(self, hex_tile) -> str:
@@ -294,6 +297,7 @@ class Basic(BaseGenerator):
                 # Generate a unique tag for mapping
                 tag = obj_instance.generate_tag(x, y)
                 self.map[tag] = obj_instance
+                self.world.grid[(col, row)] = obj_instance
 
     def generate_resources(self):
         """Places resources on hexes based on resource rarity."""
