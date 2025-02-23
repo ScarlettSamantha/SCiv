@@ -14,6 +14,7 @@ from gameplay.units.classes._base import UnitBaseClass
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, _t
 from managers.player import PlayerManager
 
+from managers.unit import Unit
 from system.game_settings import GameSettings
 
 
@@ -55,9 +56,7 @@ class BaseGenerator(ABC):
 
         return player
 
-    def setup_players(
-        self, player_civilization: Type[Civilization]
-    ) -> List[Player] | None:
+    def setup_players(self, player_civilization: Type[Civilization]) -> List[Player] | None:
         if self.config.num_enemies is None:
             raise ValueError("Number of enemies not set")
 
@@ -67,9 +66,7 @@ class BaseGenerator(ABC):
             if i == 0:
                 chosen_civilization: Type[Civilization] = player_civilization
             else:
-                chosen_civilization: Type[Civilization] = (
-                    CivilizationRepository.random()
-                )  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
+                chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
             chosen_personality: Type[Personality] = PersonalityRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
 
             if isinstance(chosen_civilization, list):
@@ -101,6 +98,7 @@ class BaseGenerator(ABC):
     def place_starting_units(self) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
 
+        unit_manager: Unit = Unit.get_instance()
         units: List[UnitBaseClass] = []
         for player in PlayerManager.players().values():
             unit: Settler = Settler(base=self.base)
@@ -113,15 +111,19 @@ class BaseGenerator(ABC):
                 if _spawn_tile is None:
                     raise Exception("No tiles found to spawn unit on")
 
-                if _spawn_tile.walkable is False or _spawn_tile.is_occupied():
+                if _spawn_tile.is_spawnable_upon() is False:
                     continue
 
                 spawn_tile = _spawn_tile
                 break
 
             units.append(unit)
-            player.units.add_unit(unit)
             spawn_tile.add_unit(unit)
+
+            # Spawn first otherwise the unit will not have a tag
             unit.spawn()
+
+            player.units.add_unit(unit)
+            unit_manager.add_unit(unit)
 
         return len(units) > 0

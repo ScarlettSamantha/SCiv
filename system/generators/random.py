@@ -37,9 +37,7 @@ class RandomGenerator(BaseGenerator):
                 for row in range(self.config.width):
                     x = col * self.world.col_spacing
                     if col % 2 == 1:
-                        y = row * self.world.row_spacing + (
-                            self.world.row_spacing * 0.5
-                        )
+                        y = row * self.world.row_spacing + (self.world.row_spacing * 0.5)
                     else:
                         y = row * self.world.row_spacing
 
@@ -49,11 +47,10 @@ class RandomGenerator(BaseGenerator):
                     obj_instance.render()
                     # Do after render to get the node. otherwise there is no tag to set..
                     self.map[
-                        str(obj_instance.tag)
-                        if obj_instance.tag is None
-                        else obj_instance.generate_tag(col, row)
+                        str(obj_instance.tag) if obj_instance.tag is None else obj_instance.generate_tag(col, row)
                     ] = obj_instance
                     self.grid[(col, row)] = obj_instance
+                    self.map[str(obj_instance.tag)] = obj_instance
 
         generate_grid()
         self.place_starting_units()

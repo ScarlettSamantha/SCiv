@@ -13,3 +13,6 @@ class Units:
 
     def remove_unit(self, unit: UnitBaseClass):
         self.units.remove(unit)
+
+    def __len__(self):
+        return len(self.units)
