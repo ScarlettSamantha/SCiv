@@ -31,9 +31,18 @@ class Action:
         self.action_args: Tuple[Any] = args
         self.action_kwargs: Dict[str, Any] = kwargs
 
+        self.on_the_spot_action: bool = True
+        self.targeting_tile_action: bool = False
+        self.targeting_unit_action: bool = False
+
+        self.remove_actions_after_use: bool = False
+
     def run(self):
-        if self.action is not None and (self.condition is None or self.condition(self) is True):
+        if self.action is not None:
             result = self.action(self, self.action_args, self.action_kwargs)
+
+            if self.condition is None or self.condition(self) is False:
+                return
 
             if result is None:
                 return

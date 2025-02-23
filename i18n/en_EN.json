@@ -2,7 +2,9 @@
   "en_EN": {
     "actions": {
       "unit": {
-        "move": "Move"
+        "move": "Move",
+        "found_city": "Found City",
+        "self_destroy": "Suicide"
       }
     },
     "world": {

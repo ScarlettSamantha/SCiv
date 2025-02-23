@@ -171,7 +171,8 @@ class ui(Singleton):
 
         if self.current_unit is not None:
             self.previous_unit = self.current_unit
-            self.previous_unit.set_color((1, 1, 1, 1))
+            if self.previous_unit.model is not None:
+                self.previous_unit.set_color((1, 1, 1, 1))
 
         if object is not None:
             if object.owner == PlayerManager.session_player():

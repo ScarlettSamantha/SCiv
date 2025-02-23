@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 class City:
     def __init__(self, name: str, tile: "Tile"):
+        from gameplay.player import Player
+
         self.name: str = name
         self.player: Optional[Player] = None
         self.tile: Tile = tile
@@ -63,9 +65,10 @@ class City:
 
     @classmethod
     def found_new(
-        cls, name: str, tile: "Tile", population: int = 1, is_capital: bool = False
+        cls, name: str, tile: "Tile", owner: "Player", population: int = 1, is_capital: bool = False
     ) -> "City":
         instance = City(name=name, tile=tile)
+        instance.player = owner
         instance.population = population
         instance.is_capital = is_capital
         return instance

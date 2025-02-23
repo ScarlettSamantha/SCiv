@@ -2,7 +2,7 @@ import random
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import NodePath, LVector3, BitMask32
 from direct.showbase.Loader import Loader
-
+from abc import ABC
 from managers.i18n import T_TranslationOrStr, get_i18n, t_
 from typing import Callable, Dict, List, Optional, Tuple, Type, Any, TYPE_CHECKING
 from gameplay.combat.stats import Stats
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
 
 
-class UnitBaseClass:
+class UnitBaseClass(ABC):
     units_lookup: Dict[str, "UnitBaseClass"] = {}
     _model: Optional[str] = None
 
@@ -28,7 +28,6 @@ class UnitBaseClass:
         icon: str | None,
         promotion_tree: Type["PromotionTree"],
         owner: Optional["Player"] = None,
-        tile: Optional["Tile"] = None,
         model: Optional[NodePath] = None,
         model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         model_size: float = 1.0,
@@ -42,7 +41,7 @@ class UnitBaseClass:
         self.icon: str | None = icon
         self.promotion_tree: Type[PromotionTree] = promotion_tree
         self.owner: Player | None = owner
-        self.tile: Tile | None = tile  # Tile must be set before spawning
+        self.tile: Tile  # Tile must be set before spawning
         self.model: Optional[NodePath] = model  # Will hold the Panda3D model
         self.model_size: float = model_size  # Default size of the model
         self.model_rotation: Tuple[float, float, float] = model_rotation  # Default rotation of the model
@@ -50,6 +49,7 @@ class UnitBaseClass:
         self.base: ShowBase = base
         self.collides: bool = True
         self.tag: Optional[str] = None
+        self.actions: List[Action] = []
 
         self.pos_y: float = 0.0
         self.pos_x: float = 0.0
@@ -76,6 +76,10 @@ class UnitBaseClass:
         self.can_attack: bool = True
         self.can_heal: bool = True
         self.can_pillage: bool = True
+        self._register()
+
+    def _register(self):
+        self.add_action(Action(name=t_("actions.unit.self_destroy"), action=self.destroy))
 
     def spawn(self) -> bool:
         """
@@ -101,10 +105,7 @@ class UnitBaseClass:
         return True
 
     def get_actions(self) -> List[Action]:
-        actions = [
-            Action(t_("actions.unit.move"), self.move, usable=self.can_move),
-        ]
-        return actions
+        return self.actions
 
     def move(self, _: Action, _args: List[Any], kwargs: Dict[str, Any]) -> Optional[bool]:
         if "tile" not in kwargs:
@@ -125,6 +126,12 @@ class UnitBaseClass:
             if self.model is not None:
                 self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
             return True
+
+    def add_action(self, action: Action) -> None:
+        self.actions.append(action)
+
+    def remove_action(self, action: Action) -> None:
+        self.actions.remove(action)
 
     def load_model(self, model_path: str) -> NodePath | None:
         loader: Loader = Loader(self.base)
@@ -167,7 +174,8 @@ class UnitBaseClass:
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
         if isinstance(self.model, str) and not isinstance(self.model, NodePath):
             raise ValueError(f"Unit {self.key} has no model assigned.")
-        self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
+        if self.model is not None:
+            self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
 
     def to_gui(self) -> Dict[str, Any]:
         if self.owner is None:
@@ -194,6 +202,27 @@ class UnitBaseClass:
             "can_heal": self.can_heal,
             "can_pillage": self.can_pillage,
         }
+
+    def destroy(self, *args, **kwargs) -> bool:
+        """Removes the unit from the scene and cleans up references."""
+        if self.model:
+            self.model.removeNode()  # Remove from the scene graph
+            self.model = None  # Clear reference
+
+        # Remove from the units lookup dictionary if it exists
+        if self.tag and self.tag in self.units_lookup:
+            del self.units_lookup[self.tag]
+
+        # Nullify references to break cyclic dependencies
+        self.tile.units.remove_unit(self)
+
+        if self.owner is not None:
+            self.owner.units.remove_unit(self)
+
+        self.owner = None
+        self.actions.clear()
+        self.tag = None
+        return True
 
     @classmethod
     def register_unit(cls, unit: "UnitBaseClass") -> None:

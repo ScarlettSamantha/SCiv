@@ -189,11 +189,6 @@ class GameUI(App):
         self.wait_for_action_of_user: Optional[Callable] = None
         self.unit_waiting_for_action: Optional[UnitBaseClass] = None
 
-        # Add skill buttons to the action bar
-        for i in range(10):
-            button = Button(text=f"Skill {i + 1}", size_hint=(None, None), width=100, height=75)
-            self.action_bar.add_widget(button)
-
         # Schedule updates for the stats displayed on the camera panel
         Clock.schedule_interval(self.update_stats_bar, 1.0)  # Update every second
 
@@ -239,6 +234,13 @@ class GameUI(App):
 
     def prepare_action(self, action: Action, unit: UnitBaseClass, _instance):
         """Prepares an action and waits for the next tile click before executing."""
+        if action.on_the_spot_action:
+            action.action_kwargs["unit"] = unit
+            action.run()
+            if action.remove_actions_after_use:
+                self.action_bar.clear_widgets()
+            return
+
         self.wait_for_next_input_of_user = True
         self.wait_for_action_of_user = partial(self.execute_action, action, unit)
         self.unit_waiting_for_action = unit
@@ -259,7 +261,8 @@ class GameUI(App):
         self.wait_for_next_input_of_user = False
         self.wait_for_action_of_user = None
         self.unit_waiting_for_action = None
-        self.game_manager.select_unit(unit)
+        if action.remove_actions_after_use:
+            self.action_bar.clear_widgets()
 
     # --- Raycaster Control Methods ---
     def disable_raycaster(self):

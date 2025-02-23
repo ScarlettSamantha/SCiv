@@ -1,6 +1,7 @@
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List, Tuple, Union
 from os.path import dirname, realpath, join
+from data.terrain import city
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
@@ -235,7 +236,7 @@ class Tile:
         model_path: str,
         pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         scale: float = 1.0,
-        hpr: Tuple[float, float, float] = (180.0, 0.0, 180.0),
+        hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     ) -> None:
         """
         Add an additional model on top of the tile.
@@ -247,6 +248,15 @@ class Tile:
         node.setPos(self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2])
         node.setCollideMask(BitMask32.bit(1))
         self.models.append(node)
+
+        if self.tag is None:
+            raise AssertionError("Tile tag is not set.")
+
+        node.setTag("tile_id", self.tag)
+        if self.models:
+            self.models[0] = node
+        else:
+            self.models.append(node)
 
     def unrender(self) -> None:
         """
@@ -427,6 +437,9 @@ class Tile:
     def improvements(self) -> Improvements:
         return self._improvements
 
+    def is_city(self) -> bool:
+        return self.city is not None
+
     def build(self, improvement: Improvement) -> None:
         self._improvements.add(improvement)
 
@@ -437,7 +450,7 @@ class Tile:
         self.units.add_unit(unit)
 
     def remove_unit(self, unit: UnitBaseClass) -> None:
-        unit.tile = None
+        del unit.tile
         # Assuming the intent is to remove the unit.
         self.units.remove_unit(unit)
 
@@ -465,7 +478,7 @@ class Tile:
             "x": self.x,
             "y": self.y,
             "terrain": terrain_name,
-            "model": self.model(),
+            "model": self.model,
             "texture": self.texture(),
             "class": self.__class__.__name__,
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
@@ -489,6 +502,7 @@ class Tile:
                 "is_water": self.is_water,
                 "is_land": self.is_land,
                 "is_lake": self.is_lake,
+                "is_city": self.is_city(),
                 "terrain": self.terrain,
                 "zone": self.zone,
                 "hemisphere": self.hemisphere,
@@ -506,9 +520,20 @@ class Tile:
         population: int = 1,
         capital: bool = False,
     ) -> None:
+        from data.terrain.city import City as CityTerrain
+
         if player is None:
             player = PlayerManager.player()
-        self.city = City.found_new(name="Test city", tile=self, population=population, is_capital=capital)
+
+        self.city = City.found_new(name="Test city", owner=player, tile=self, population=population, is_capital=capital)
+        self.unrender_model(0)
+        self.setTerrain(CityTerrain())
+        self.owner = player
+        self.owner.tiles.add_tile(self)
+        self.owner.cities.add(self.city)
+        if capital or not self.owner.capital or len(self.owner.cities) > 0:
+            self.owner.capital = self.city
+        self._render_default_terrain()
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
