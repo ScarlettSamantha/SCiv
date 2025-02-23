@@ -2,3 +2,10 @@ panda3d
 panda3d_kivy
 types-panda3d
 noise
+pytest
+pytest-cov
+poetry-core
+webcolors
+pymarkdownlnt
+sentry-sdk
+python-dotenv
