@@ -25,7 +25,7 @@ FloatLayout:
         Spinner:
             id: size_spinner
             text: app.map_size
-            values: ['50x75', '50x50', '60x120', '100x100', '150x150']
+            values: ['50x75', '50x50', '60x120', '90x110', '100x100', '150x150']
             on_text: app.map_size = self.text
 
         Label:
@@ -54,22 +54,18 @@ FloatLayout:
 
 
 class CivSelectorApp(App):
-    map_size = StringProperty("90x110")
+    map_size = StringProperty("50x75")
     civilization = StringProperty("Rome")
     num_players = NumericProperty(4)
     all_civilizations = ListProperty([])
-    all_civilizations = ListProperty(
-        [str(civ.name).lower() for civ in Civilization.all()]
-    )
+    all_civilizations = ListProperty([str(civ.name).lower() for civ in Civilization.all()])
 
     def build(self):
         # Build the Kivy UI from the KV string.
         return Builder.load_string(KV)
 
     def get_game_ui(self):
-        messenger.send(
-            "system.game.start", [self.map_size, self.civilization, self.num_players]
-        )
+        messenger.send("system.game.start", [self.map_size, self.civilization, self.num_players])
         self.root.clear_widgets()
         self.window.clear()  # type: ignore
         self.window.remove_widget(self.root)  # type: ignore
