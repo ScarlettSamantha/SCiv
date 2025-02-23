@@ -120,7 +120,7 @@ class Basic(BaseGenerator):
             "roughness": 16,
             "height_range": (0, 245),
             "pressure": 1,  # bar
-            "axial_tilt": 90,
+            "axial_tilt": 180,
             # features
             "craters": True,
             "volanoes": True,

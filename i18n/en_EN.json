@@ -1,5 +1,10 @@
 {
   "en_EN": {
+    "actions": {
+      "unit": {
+        "move": "Move"
+      }
+    },
     "world": {
       "terrain": {
         "mountain": "Mountain",

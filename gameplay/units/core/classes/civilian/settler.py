@@ -27,9 +27,7 @@ class Generational(SettlerPromotion):
         super().__init__(
             key="core.unit.promotion.generational",
             name=t_("content.units.core.promotions.settler.generational.name"),
-            description=t_(
-                "content.units.core.promotions.settler.generation.description"
-            ),
+            description=t_("content.units.core.promotions.settler.generation.description"),
             icon="",
             *args,
             **kwargs,
@@ -59,6 +57,8 @@ class SettlerPromotionTree(PromotionTree):
 
 
 class Settler(CoreCivilianBaseClass):
+    _model = "assets/models/units/pessent.glb"
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.unit.class.settler",
@@ -66,7 +66,6 @@ class Settler(CoreCivilianBaseClass):
             description=t_("content.units.core.units.civilian.settler.description"),
             icon=None,
             promotion_tree=SettlerPromotionTree(),
-            model="assets/models/units/pessent.glb",
             model_rotation=(0, 0, 0),
             model_size=0.2,
             model_position_offset=(0, 0, 0.1),

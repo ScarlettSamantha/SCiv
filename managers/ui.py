@@ -158,8 +158,11 @@ class ui(Singleton):
                 tile.set_color((1, 0, 0, 0.01))
             self.current_tile = tile
 
-    def select_unit(self, unit_tag: List[str]):
-        object = UnitBaseClass.get_unit_by_tag(unit_tag[0])
+    def select_unit(self, unit: List[str] | UnitBaseClass):
+        if isinstance(unit, list):
+            object = UnitBaseClass.get_unit_by_tag(unit[0])
+        else:
+            object = unit
 
         if self.current_tile is not None:
             self.current_tile.set_color((1, 1, 1, 1))

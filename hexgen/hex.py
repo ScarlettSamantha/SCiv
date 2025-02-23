@@ -201,8 +201,8 @@ class Hex:
         axial_tilt = abs(self.grid.params.get("axial_tilt"))
 
         # northern polar zone
-        northern_polar_zone = 90 - axial_tilt
-        southern_polar_zone = -(90 - axial_tilt)
+        northern_polar_zone = axial_tilt
+        southern_polar_zone = -(0 - axial_tilt)
         northern_tropic_zone = axial_tilt
         southern_tropic_zone = -axial_tilt
         northern_temperate = axial_tilt + (axial_tilt / 2)
@@ -309,9 +309,7 @@ class Hex:
             elif 20 < rain and 20 < temp:
                 return Biome.tropical_rainforest
 
-            raise Exception(
-                "Biome invalid Rainfall: {}, Temperature: {}".format(rain, temp)
-            )
+            raise Exception("Biome invalid Rainfall: {}, Temperature: {}".format(rain, temp))
 
         elif map_type is MapType.volcanic:
             if self.altitude < 60:
@@ -586,30 +584,22 @@ class Hex:
         h1 = self.hex_north_west
         h2 = self.hex_east
         up, down = self.decide_slope(h1, h2)
-        self.edge_north_east = Edge(
-            HexSide.north_east, self, self.hex_north_east, up, down
-        )
+        self.edge_north_east = Edge(HexSide.north_east, self, self.hex_north_east, up, down)
 
         h1 = self.hex_south_west
         h2 = self.hex_east
         up, down = self.decide_slope(h1, h2)
-        self.edge_south_east = Edge(
-            HexSide.south_east, self, self.hex_south_east, up, down
-        )
+        self.edge_south_east = Edge(HexSide.south_east, self, self.hex_south_east, up, down)
 
         h1 = self.hex_north_east
         h2 = self.hex_west
         up, down = self.decide_slope(h1, h2)
-        self.edge_north_west = Edge(
-            HexSide.north_west, self, self.hex_north_west, up, down
-        )
+        self.edge_north_west = Edge(HexSide.north_west, self, self.hex_north_west, up, down)
 
         h1 = self.hex_south_east
         h2 = self.hex_west
         up, down = self.decide_slope(h1, h2)
-        self.edge_south_west = Edge(
-            HexSide.south_west, self, self.hex_south_west, up, down
-        )
+        self.edge_south_west = Edge(HexSide.south_west, self, self.hex_south_west, up, down)
 
     def get_edge(self, side):
         if side is HexSide.east:
@@ -777,9 +767,7 @@ class Hex:
 
             def process(color):
                 if self.biome is Biome.barren_ice_caps:
-                    return randomize_color(
-                        blend_colors(color, Biome.barren_ice_caps.color)
-                    )
+                    return randomize_color(blend_colors(color, Biome.barren_ice_caps.color))
                 return randomize_color(color)
 
             for level, color in color_list:
@@ -791,12 +779,8 @@ class Hex:
     @property
     def color_pressure(self):
         """Returns a season dict representing the map color of the pressure at summer and winter"""
-        end_year = (
-            round((self.pressure[0] - self.grid.params.get("surface_pressure"))) * 5
-        )
-        mid_year = (
-            round((self.pressure[1] - self.grid.params.get("surface_pressure"))) * 5
-        )
+        end_year = round((self.pressure[0] - self.grid.params.get("surface_pressure"))) * 5
+        mid_year = round((self.pressure[1] - self.grid.params.get("surface_pressure"))) * 5
         return ((100 + end_year, 100, 100), (100 + mid_year, 100, 100))
 
 

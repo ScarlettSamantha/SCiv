@@ -3,10 +3,11 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.core import NodePath, LVector3, BitMask32
 from direct.showbase.Loader import Loader
 
-from managers.i18n import T_TranslationOrStr, get_i18n
-from typing import Dict, Optional, Tuple, Type, Any, TYPE_CHECKING
+from managers.i18n import T_TranslationOrStr, get_i18n, t_
+from typing import Callable, Dict, List, Optional, Tuple, Type, Any, TYPE_CHECKING
 from gameplay.combat.stats import Stats
 from managers.player import PlayerManager
+from system.actions import Action
 
 if TYPE_CHECKING:
     from data.tiles.tile import Tile
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
 class UnitBaseClass:
     units_lookup: Dict[str, "UnitBaseClass"] = {}
+    _model: Optional[str] = None
 
     def __init__(
         self,
@@ -27,7 +29,7 @@ class UnitBaseClass:
         promotion_tree: Type["PromotionTree"],
         owner: Optional["Player"] = None,
         tile: Optional["Tile"] = None,
-        model: Optional[T_TranslationOrStr] = None,
+        model: Optional[NodePath] = None,
         model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         model_size: float = 1.0,
         model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
@@ -41,13 +43,9 @@ class UnitBaseClass:
         self.promotion_tree: Type[PromotionTree] = promotion_tree
         self.owner: Player | None = owner
         self.tile: Tile | None = tile  # Tile must be set before spawning
-        self.model: Optional[NodePath | T_TranslationOrStr] = (
-            model  # Will hold the Panda3D model
-        )
+        self.model: Optional[NodePath] = model  # Will hold the Panda3D model
         self.model_size: float = model_size  # Default size of the model
-        self.model_rotation: Tuple[float, float, float] = (
-            model_rotation  # Default rotation of the model
-        )
+        self.model_rotation: Tuple[float, float, float] = model_rotation  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = model_position_offset
         self.base: ShowBase = base
         self.collides: bool = True
@@ -68,8 +66,8 @@ class UnitBaseClass:
         self.range: int = 1
         self.in_direct: bool = False
 
-        self.max_moves: int = 1
-        self.moves_left: int = 1
+        self.max_moves: int = 5
+        self.moves_left: int = 5
 
         self.can_swim: bool = False
         self.can_fly: bool = False
@@ -90,25 +88,45 @@ class UnitBaseClass:
         if not self.tile.is_occupied():  # Assumed tile method
             raise ValueError(f"Tile at {self.tile.get_cords()} is not passable.")
 
-        if not isinstance(self.model, str):
+        if not isinstance(self._model, str):
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
         # Load the Panda3D model and position it at the tile
-        self.model = self.load_model(self.model)
+        self.model = self.load_model(self._model)
 
-        if not self.model:
+        if not self._model:
             raise RuntimeError(f"Failed to load model for unit {self.key}")
 
-        print(
-            f"Unit {self.key} spawned at {self.tile.get_cords()} with model {self.model}"
-        )
+        print(f"Unit {self.key} spawned at {self.tile.get_cords()} with model {self._model}")
         return True
 
+    def get_actions(self) -> List[Action]:
+        actions = [
+            Action(t_("actions.unit.move"), self.move, usable=self.can_move),
+        ]
+        return actions
+
+    def move(self, _: Action, _args: List[Any], kwargs: Dict[str, Any]) -> Optional[bool]:
+        if "tile" not in kwargs:
+            raise ValueError("No tile provided to move action.")
+
+        tile = kwargs["tile"]
+
+        if not self.can_move:
+            return False
+
+        if self.moves_left <= 0:
+            return False
+
+        if not tile.is_occupied() and self.tile_is_occupiable(tile):
+            self.tile = tile
+            self.moves_left -= 1
+            self.pos_x, self.pos_y, _ = tile.get_cords()
+            if self.model is not None:
+                self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
+            return True
+
     def load_model(self, model_path: str) -> NodePath | None:
-        """
-        Loads the unit model in Panda3D, places it at the correct position,
-        and automatically loads its collision geometry (if available).
-        """
         loader: Loader = Loader(self.base)
         model: Optional[NodePath] = loader.loadModel(model_path)
         if not model:
@@ -143,13 +161,10 @@ class UnitBaseClass:
 
         return model
 
-    def set_color(self, color: Tuple[float, float, float, float]) -> None:
-        """
-        Sets the color of the unit model.
+    def tile_is_occupiable(self, tile: "Tile") -> bool:
+        return tile.is_passable()
 
-        Args:
-            color (Tuple[float, float, float, float]): The color to set.
-        """
+    def set_color(self, color: Tuple[float, float, float, float]) -> None:
         if isinstance(self.model, str) and not isinstance(self.model, NodePath):
             raise ValueError(f"Unit {self.key} has no model assigned.")
         self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
@@ -182,12 +197,6 @@ class UnitBaseClass:
 
     @classmethod
     def register_unit(cls, unit: "UnitBaseClass") -> None:
-        """
-        Registers a unit type with the unit lookup table.
-
-        Args:
-            unit (UnitBaseClass): The unit to register.
-        """
         if unit.tag is None:
             raise ValueError(f"Unit {unit.key} has no tag")
 
@@ -196,15 +205,6 @@ class UnitBaseClass:
 
     @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["UnitBaseClass"]:
-        """
-        Retrieves a unit instance based on the provided tag.
-
-        Args:
-            tag (str): The tag associated with the unit.
-
-        Returns:
-            UnitBaseClass: The matching unit instance if found; otherwise, None.
-        """
         for unit in cls.units_lookup.values():
             if unit.tag == tag:
                 return unit

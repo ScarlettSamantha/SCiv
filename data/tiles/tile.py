@@ -399,6 +399,9 @@ class Tile:
 
         self.meshCollider = True
 
+    def is_passable(self) -> bool:
+        return self.walkable and not self.is_water
+
     def color(self) -> Union[Tuple[float, float, float], LRGBColor]:
         if self.tile_terrain:
             return self.tile_terrain.color()
