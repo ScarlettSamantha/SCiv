@@ -47,9 +47,6 @@ class ConfigManager:
         for key, val in render_settings.items():
             loadPrcFileData("", f"{key} {val}")
 
-        if self.config_data.get("render", {}).get("clock-mode") == "unlimited":
-            ClockObject.getGlobalClock().syncFrameTime()
-
         # 2) Window settings
         window_settings = self.config_data.get("window", {})
 
@@ -87,9 +84,7 @@ class ConfigManager:
             loadPrcFileData("", f"sync-video {bool(window_settings['sync-video'])}")
 
         if "show-frame-rate-meter" in window_settings:
-            loadPrcFileData(
-                "", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}"
-            )
+            loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")
 
     def set_screen_mode(self, mode):
         """
