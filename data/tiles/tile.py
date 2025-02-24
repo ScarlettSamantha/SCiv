@@ -309,6 +309,9 @@ class Tile:
     def get_terrain(self) -> Optional[BaseTerrain]:
         return self.tile_terrain
 
+    def get_climbable(self) -> bool:
+        return self.climbable
+
     def is_spawnable_upon(self, on_other_units: bool = False, on_mountains: bool = False) -> bool:
         return (
             not self.is_water

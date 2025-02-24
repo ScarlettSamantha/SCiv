@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.tile import Tile
 from managers.player import PlayerManager
@@ -27,6 +27,9 @@ class ui(Singleton):
         self.current_tile: Optional[Tile] = None
         self.previous_tile: Optional[Tile] = None
 
+        self.neighbours_tiles: List[Tile] = []
+        self.previous_tiles: List[Tile] = []
+
         self.current_unit: Optional[UnitBaseClass] = None
         self.previous_unit: Optional[UnitBaseClass] = None
 
@@ -35,7 +38,6 @@ class ui(Singleton):
         self.registered = False if not self.registered else self.register
 
         self.game_menu: Optional[App] = None
-        self.config_menu: Optional[App] = None
 
         self.showing_colors = False
 
@@ -78,6 +80,7 @@ class ui(Singleton):
 
     def game_menu_show(self):
         from menus.game_ui import GameUI
+        from menus.game import Game
 
         self.game_menu = GameUI(self._base, game_manager=self)
         self.game_menu.run()
@@ -132,10 +135,9 @@ class ui(Singleton):
             self.game_pause_state.hide()
 
     def clear_selection(self):
-        if self.current_tile is not None:
-            self.current_tile.set_color((1, 1, 1, 1))
-        self.current_tile = None
-        self.previous_tile = None
+        self.current_tiles[0].set_color((1, 1, 1, 1))
+        self.current_tiles = []
+        self.previous_tiles = []
 
         if self.current_unit is not None:
             self.current_unit.set_color((1, 1, 1, 1))
@@ -143,28 +145,65 @@ class ui(Singleton):
         self.previous_unit = None
 
     def select_tile(self, tile_coords: List[str]):
+        from gameplay.repositories.tile import TileRepository
+
         tile = self.map.map.get(tile_coords[0])
 
-        if self.current_unit is not None:
-            self.current_unit.set_color((1, 1, 1, 1))
-            self.previous_unit = self.current_unit
-            self.current_unit = None
+        if tile is None:
+            return
 
-        if self.current_tile is not None:
-            self.previous_tile = self.current_tile
-            self.previous_tile.set_color((1, 1, 1, 1))
+        self.previous_tile = self.current_tile
+        self.current_tile = tile
+        self.neighbours_tiles = []
 
-        if tile is not None:
-            if tile.owner == PlayerManager.session_player():
-                # Own Tile
-                tile.set_color((0, 1, 0, 0.01))
-            elif tile.owner is PlayerManager.get_nature():
-                # Nature tile
-                tile.set_color((0, 0, 1, 0.01))
-            else:
-                # Enemy tile
-                tile.set_color((1, 0, 0, 0.01))
-            self.current_tile = tile
+        # Colors for selected tile and neighbors
+        colors: List[Tuple[float, float, float, float]] = [(0, 1, 0, 1), (0, 0, 1, 1), (1, 0, 0, 1)]
+        colors_neighbours: List[Tuple[float, float, float, float]] = [(1, 1, 0, 1)] * 3
+
+        self.color_tile(tile, colors)
+        self.color_neighbors(tile, colors_neighbours)
+
+        self.neighbours_tiles = TileRepository.get_neighbors(tile)
+
+        # Restore colors of previously selected tile and neighbors
+        if self.previous_tile:
+            self.restore_tile_colors(self.previous_tile)
+        for neighbor in self.neighbours_tiles:
+            self.restore_tile_colors(neighbor)
+
+    def color_tile(
+        self,
+        tile: Tile,
+        color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
+    ):
+        if color is None:
+            color = (1, 1, 1, 1)
+
+        if tile.owner == PlayerManager.session_player():
+            tile.set_color(color if isinstance(color, tuple) else color[0])
+        elif tile.owner is PlayerManager.get_nature():
+            tile.set_color(color if isinstance(color, tuple) else color[1])
+        else:
+            tile.set_color(color if isinstance(color, tuple) else color[2])
+
+    def color_neighbors(
+        self,
+        tile: Tile,
+        color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
+    ):
+        from gameplay.repositories.tile import TileRepository
+
+        if color is None:
+            color = (1, 1, 1, 1)
+
+        neighbors = TileRepository.get_neighbors(tile)
+        for i, _tile in enumerate(neighbors):
+            _tile.set_color(color if isinstance(color, tuple) else color[i % len(color)])
+
+        return neighbors
+
+    def restore_tile_colors(self, tile: Tile):
+        tile.set_color((1, 1, 1, 1))
 
     def select_unit(self, unit: List[str] | UnitBaseClass):
         if isinstance(unit, list):
