@@ -33,7 +33,9 @@ class ui(Singleton):
         self.game_menu_state: Optional[Game] = None
         self.game_pause_state: Optional[PauseMenu] = None
         self.registered = False if not self.registered else self.register
-        self.kivy: Optional[App] = None
+
+        self.game_menu: Optional[App] = None
+        self.config_menu: Optional[App] = None
 
         self.showing_colors = False
 
