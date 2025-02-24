@@ -8,7 +8,7 @@ from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.classes._base import UnitBaseClass
 from panda3d_kivy.app import App
-
+from panda3d.core import PStatClient
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -50,8 +50,16 @@ class ui(Singleton):
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
         self._base.accept("system.game.start", self.on_game_start)
         self._base.accept("f7", self.trigger_render_analyze)
+        self._base.accept("p", self.activate_pstat)
+        self._base.accept("l", self.deactivate_pstat)
         self._base.accept("f9", self.show_colors_for_resources)
         return True
+
+    def activate_pstat(self):
+        PStatClient.connect()
+
+    def deactivate_pstat(self):
+        PStatClient.disconnect()
 
     def cleanup_menu(self):
         # Only destroy if it's not the Game object.
