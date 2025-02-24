@@ -49,3 +49,6 @@ class World(Singleton):
 
     def random_tile(self) -> Tile:
         return self.grid[random.choice(list(self.grid.keys()))]
+
+    def get_grid(self) -> Dict[Tuple[int, int], Tile]:
+        return self.grid
