@@ -48,7 +48,6 @@ class ui(Singleton):
     def register(self) -> bool:
         self._base.accept("ui.update.user.tile_clicked", self.select_tile)
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
-        self._base.accept("system.game.start", self.on_game_start)
         self._base.accept("f7", self.trigger_render_analyze)
         self._base.accept("p", self.activate_pstat)
         self._base.accept("l", self.deactivate_pstat)
