@@ -64,8 +64,8 @@ class Game(Singleton):
 
     def choose_generator(self, random: bool = False, name: Optional[str] = None):
         if random:
-            generator_cls: Type[BaseGenerator] | List[Type[BaseGenerator]] = (
-                GeneratorRepository.random(1)
+            generator_cls: Type[BaseGenerator] | List[Type[BaseGenerator]] = GeneratorRepository.random(
+                1
             )  # returns a class
         else:
             generators_cls: List[Type[BaseGenerator]] = GeneratorRepository.all()
@@ -89,9 +89,7 @@ class Game(Singleton):
             raise AssertionError("Game properties not set")
 
         # Instantiate the generator, thereby checking that it’s not an unbound type.
-        self.active_generator = generator_cls(
-            self.properties, self.base
-        )  # Now self.generator is an instance.
+        self.active_generator = generator_cls(self.properties, self.base)  # Now self.generator is an instance.
 
     def generate_world(self):
         # Generate the world
@@ -107,9 +105,7 @@ class Game(Singleton):
         self.active_generator = self.properties.generator(self.properties, self.base)
 
         if self.active_generator is None:
-            raise AssertionError(
-                "No generator was found, should have been set in generate_world"
-            )
+            raise AssertionError("No generator was found, should have been set in generate_world")
 
         self.ui.map = self.world
 
@@ -123,9 +119,7 @@ class Game(Singleton):
 
     def setup_players(self):
         if self.active_generator is None:
-            raise AssertionError(
-                "No generator was found, should have been set in generate_world"
-            )
+            raise AssertionError("No generator was found, should have been set in generate_world")
 
         players = self.active_generator.setup_players(self.properties.player)  # type: ignore
 
@@ -135,9 +129,6 @@ class Game(Singleton):
     def on_game_start(self, map_size, civilization, num_players):
         from gameplay.repositories.civilization import Civilization
         from managers.ui import ui
-
-        ui = ui.get_instance()
-        ui.game_menu_show()
 
         self.properties.num_enemies = num_players - 1  # type: ignore
         self.properties.player = Civilization.get(civilization)  # type: ignore
@@ -153,9 +144,7 @@ class Game(Singleton):
         self.setup_players()
 
         if self.active_generator is None:
-            raise AssertionError(
-                "No generator was found, should have been set in generate_world"
-            )
+            raise AssertionError("No generator was found, should have been set in generate_world")
 
         self.turn = Turn.get_instance(self.base)
         self.turn.activate()
