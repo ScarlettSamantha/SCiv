@@ -1,15 +1,10 @@
 from typing import Any, Callable, Dict, Optional
 from functools import partial
 
-from panda3d_kivy.app import App
 from kivy.lang import Builder
+from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
-from kivy.core.window import Window
-
 from camera import CivCamera
 from gameplay.units.classes._base import UnitBaseClass
 
@@ -21,134 +16,89 @@ from managers.world import World
 from system.actions import Action
 
 
-class HoverBehavior:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Register custom events
-        self.register_event_type("on_enter")  # type: ignore
-        self.register_event_type("on_leave")  # type: ignore
-        self._hovered = False
-
-        # Bind to mouse movement
-
-    def on_enter(self):
-        """Override to define behavior on hover enter."""
-        pass
-
-    def on_leave(self):
-        """Override to define behavior on hover leave."""
-        pass
-
-
-class FloatLayoutWithHover(FloatLayout, HoverBehavior):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def on_enter(self):
-        app = App.get_running_app()
-        if app and hasattr(app, "disable_raycaster"):
-            app.disable_raycaster()
-
-    def on_leave(self):
-        app = App.get_running_app()
-        if app and hasattr(app, "enable_raycaster"):
-            app.enable_raycaster()
-
-
-class HoverBoxLayout(BoxLayout, HoverBehavior):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def on_enter(self):
-        app = App.get_running_app()
-        if app and hasattr(app, "disable_raycaster"):
-            app.disable_raycaster()
-
-    def on_leave(self):
-        app = App.get_running_app()
-        if app and hasattr(app, "enable_raycaster"):
-            app.enable_raycaster()
-
-
 # --- KV Layout with HoverFrames for UI Panels ---
 KV = r"""
-FloatLayout:
-    # Action Bar at the Bottom
-    HoverBoxLayout:
-        id: action_bar
-        orientation: 'horizontal'
-        size_hint: None, None
-        width: 1000
-        height: 80
-        spacing: 10
-        pos_hint: {'center_x': 0.5, 'y': 0}  # Centered at the bottom
+<GameUIScreen>:
+    FloatLayout:
+        # Action Bar at the Bottom
+        HoverBoxLayout:
+            id: action_bar
+            orientation: 'horizontal'
+            size_hint: None, None
+            width: 1000
+            height: 80
+            spacing: 10
+            pos_hint: {'center_x': 0.5, 'y': 0}  # Centered at the bottom
 
-    # Debug Panel (Top-Left Corner) wrapped in a HoverFrame
-    FloatLayoutWithHover:
-        id: debug_frame
-        size_hint: None, None
-        width: 300
-        height: 500
-        pos_hint: {'x': 0, 'top': 1}  # Position at top-left
+        # Debug Panel (Top-Left Corner) wrapped in a HoverFrame
+        FloatLayout:
+            id: debug_frame
+            size_hint: None, None
+            width: 300
+            height: 500
+            pos_hint: {'x': 0, 'top': 1}  # Position at top-left
 
-        canvas.before:
-            Color:
-                rgba: (0, 0, 0, 0.7)  # Black background with 70% opacity
-            Rectangle:
-                pos: self.pos
-                size: self.size
+            canvas.before:
+                Color:
+                    rgba: (0, 0, 0, 0.7)  # Black background with 70% opacity
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
-        Label:
-            id: debug_panel
-            text: "Debug Info:\nFPS: 60\nPlayer Pos: (0,0,0)"
-            size_hint_x: 1
-            size_hint_y: None
-            font_size: '11sp'
-            height: self.texture_size[1]
-            valign: 'top'
-            halign: 'left'
-            text_size: self.width, None
-            pos_hint: {'top': 1}
-            color: (1, 1, 1, 1)
+            Label:
+                id: debug_panel
+                text: "Debug Info:\nFPS: 60\nPlayer Pos: (0,0,0)"
+                size_hint_x: 1
+                size_hint_y: None
+                font_size: '11sp'
+                height: self.texture_size[1]
+                valign: 'top'
+                halign: 'left'
+                text_size: self.width, None
+                pos_hint: {'top': 1}
+                color: (1, 1, 1, 1)
 
-    # Camera Panel (Top-Right Corner) wrapped in a HoverFrame
-    FloatLayoutWithHover:
-        id: camera_frame
-        size_hint: None, None
-        width: 200
-        height: 200
-        pos_hint: {'right': 1, 'top': 1}  # Position at top-right
+        # Camera Panel (Top-Right Corner) wrapped in a HoverFrame
+        FloatLayout:
+            id: camera_frame
+            size_hint: None, None
+            width: 200
+            height: 200
+            pos_hint: {'right': 1, 'top': 1}  # Position at top-right
 
-        canvas.before:
-            Color:
-                rgba: (0, 0, 0, 0.5)  # Black background with 50% opacity
-            Rectangle:
-                pos: self.pos
-                size: self.size
+            canvas.before:
+                Color:
+                    rgba: (0, 0, 0, 0.5)  # Black background with 50% opacity
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
-        Label:
-            id: camera_panel
-            text: "Debug Info:\nFPS: 60\nPlayer Pos: (0,0,0)"
-            size_hint_x: 1
-            size_hint_y: None
-            font_size: '11sp'
-            height: self.texture_size[1]
-            valign: 'top'
-            halign: 'right'
-            text_size: self.width, None
-            pos_hint: {'top': 1, 'right': 1}
-            color: (1, 1, 1, 1)
+            Label:
+                id: camera_panel
+                text: "Debug Info:\nFPS: 60\nPlayer Pos: (0,0,0)"
+                size_hint_x: 1
+                size_hint_y: None
+                font_size: '11sp'
+                height: self.texture_size[1]
+                valign: 'top'
+                halign: 'right'
+                text_size: self.width, None
+                pos_hint: {'top': 1, 'right': 1}
+                color: (1, 1, 1, 1)
 """
 
 
-class GameUI(App):
+class GameUIScreen(Screen):
     debug_data: Dict[str, str] = {
         "state": "Playing",
     }
 
-    def __init__(self, panda_app, display_region=None, **kwargs):
-        self.game_manager: "ui" = kwargs.get("game_manager")  # type: ignore
-        self._base = panda_app
+    def __init__(self, **kwargs):
+        self.game_manager: "ui" = kwargs.get("game_manager")
+        self._base: Any = kwargs.get("base")
+        del kwargs["game_manager"]
+        del kwargs["base"]
+        super().__init__(**kwargs)
         self.world_manager = World.get_instance()
         self.camera: CivCamera = CivCamera.get_instance()
         self.unit_manager = Unit.get_instance()
@@ -163,12 +113,10 @@ class GameUI(App):
         # List of UI elements that disable input when hovered
         self.non_collidable_ui = []
 
-        del kwargs["game_manager"]
-
         self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
         self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
 
-        super().__init__(panda_app, display_region, **kwargs)
+        Builder.load_string(KV)
 
     def register_non_collidable(self, element):
         """Adds a UI element to the list of non-collidable UI elements."""

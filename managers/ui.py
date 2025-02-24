@@ -7,11 +7,13 @@ from menus.game_escape import PauseMenu
 from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.classes._base import UnitBaseClass
-from panda3d_kivy.app import App
+
 from panda3d.core import PStatClient
+
 
 if TYPE_CHECKING:
     from main import Openciv
+    from menus.kivy.core import SCivGUI
 
 
 class ui(Singleton):
@@ -37,7 +39,7 @@ class ui(Singleton):
         self.game_pause_state: Optional[PauseMenu] = None
         self.registered = False if not self.registered else self.register
 
-        self.game_menu: Optional[App] = None
+        self.game_gui: Optional[SCivGUI] = None
 
         self.showing_colors = False
 
@@ -48,6 +50,17 @@ class ui(Singleton):
         if not self.registered:
             self.register()
             self.registered = True
+
+    def get_gui(self) -> "SCivGUI":
+        if self.game_gui is None:
+            raise ValueError("GUI not initialized")
+        return self.game_gui
+
+    def kivy_setup(self):
+        from menus.kivy.core import SCivGUI
+
+        self.game_gui = SCivGUI(self._base)
+        self.game_gui.run()
 
     def register(self) -> bool:
         self._base.accept("ui.update.user.tile_clicked", self.select_tile)
@@ -64,60 +77,16 @@ class ui(Singleton):
     def deactivate_pstat(self):
         PStatClient.disconnect()
 
-    def cleanup_menu(self):
-        # Only destroy if it's not the Game object.
-        # For the game, we simply hide it instead, preserving state.
-        if self.current_menu:
-            if isinstance(self.current_menu, PauseMenu):
-                # Hide the game menu instead of destroying it, so state is preserved
-                self.current_menu.hide()
-            else:
-                self.current_menu.destroy()
-            self.current_menu = None
-
     def on_game_start(self):
-        self.game_menu_show()
-
-    def game_menu_show(self):
-        from menus.game_ui import GameUI
-        from menus.game import Game
-
-        self.game_menu = GameUI(self._base, game_manager=self)
-        self.game_menu.run()
-
-    def set_current_menu(self, menu):
-        self.current_menu = menu
-
-    def get_current_menu(self):
-        return self.current_menu
-
-    def get_main_menu(self):
-        from menus.primary import Primary
-
-        self.cleanup_menu()
-        self.set_current_menu(Primary(self._base).show())
-
-    def get_secondary_menu(self):
-        from menus.second import Second
-
-        self.cleanup_menu()
-        self.set_current_menu(Second(self._base).show())
+        pass
 
     def get_game_ui(self):
-        from menus.game import Game
-
         # If we don't have an active Game, create one
         if self.game is None:
-            self.game = Game(self._base)
-            self.game.register()
             messenger.send("system.game.start")
         else:
             # If we do, we're just resuming it
             messenger.send("system.game.resume")
-
-        # Show the (existing or new) game UI
-        self.cleanup_menu()  # This will hide any previous menu but won't destroy the game
-        self.set_current_menu(self.game.show())
 
     def get_escape_menu(self):
         from menus.game_escape import PauseMenu

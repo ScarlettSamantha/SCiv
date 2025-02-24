@@ -26,7 +26,7 @@ class Openciv(ShowBase):
         self.disableMouse()
 
         base_file_path = pathlib.Path(__file__).parent.absolute()
-        self.i18n = _i18n(base_file_path / "i18n", "en_EN", True)
+        self.i18n = _i18n(str(base_file_path / "i18n"), "en_EN", True)
         set_i18n(self.i18n)
 
         # Listen for window events (including moves / resizes)
@@ -51,8 +51,10 @@ class Openciv(ShowBase):
         self.world.__setup__(self)
 
         self.ui_manager = ui(self)
+        self.ui_manager.kivy_setup()
+        self.ui_manager.register()
         ui._set_instance(self.ui_manager)
-        self.ui_manager.get_main_menu()
+
         self.ui_manager.map = self.world
 
         self.unit_manager = Unit(self)
@@ -60,6 +62,7 @@ class Openciv(ShowBase):
 
         self.game_manager_instance = Game(self, self.civ_camera)
         Game._set_instance(self.game_manager_instance)
+
         # ---------------------------------------------------------------------
         # Optionally: an example of toggling window modes at runtime
         # E.g., press F11 to toggle fullscreen
