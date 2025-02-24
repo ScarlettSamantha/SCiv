@@ -1,5 +1,6 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import WindowProperties
+from panda3d.core import loadPrcFile
 
 from lights import setup_lights
 from camera import CivCamera
@@ -13,6 +14,7 @@ from managers.i18n import _i18n, set_i18n
 from managers.game import Game
 import pathlib
 import simplepbr
+from panda3d.core import ClockObject
 
 
 class Openciv(ShowBase):
@@ -103,8 +105,12 @@ class Openciv(ShowBase):
         self.openDefaultWindow(props=props, keepCamera=True)  # noqa
 
 
+loadPrcFile("config.prc")
 config_mgr = ConfigManager("config.json")
 config_mgr.apply_config_to_prc()
+
+globalClock = ClockObject.getGlobalClock()  # Removes frame sync
+globalClock.setFrameRate(144)
 
 app = Openciv(config_mgr)
 app.run()
