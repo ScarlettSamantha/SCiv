@@ -12,7 +12,8 @@ class Units:
         self.units.append(unit)
 
     def remove_unit(self, unit: UnitBaseClass):
-        self.units.remove(unit)
+        if unit in self.units:
+            self.units.remove(unit)
 
     def __len__(self):
         return len(self.units)
