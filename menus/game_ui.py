@@ -28,20 +28,8 @@ class HoverBehavior:
         self.register_event_type("on_enter")  # type: ignore
         self.register_event_type("on_leave")  # type: ignore
         self._hovered = False
-        # Bind to mouse movement
-        Window.bind(mouse_pos=self.on_mouse_move)
 
-    def on_mouse_move(self, window, pos):
-        if not self.get_root_window():  # type: ignore
-            return
-        # Check if the mouse is over the widget
-        inside = self.collide_point(*self.to_widget(*pos))  # type: ignore
-        if inside and not self._hovered:
-            self._hovered = True
-            self.dispatch("on_enter")  # type: ignore
-        elif not inside and self._hovered:
-            self._hovered = False
-            self.dispatch("on_leave")  # type: ignore
+        # Bind to mouse movement
 
     def on_enter(self):
         """Override to define behavior on hover enter."""
@@ -166,6 +154,14 @@ class GameUI(App):
         self.unit_manager = Unit.get_instance()
         self.input = Input.get_instance()
         self.waiting_for_world_input: bool = False
+        self._hovered = False
+
+        self.wait_for_next_input_of_user: bool = False
+        self.wait_for_action_of_user: Optional[Callable] = None
+        self.unit_waiting_for_action: Optional[UnitBaseClass] = None
+
+        # List of UI elements that disable input when hovered
+        self.non_collidable_ui = []
 
         del kwargs["game_manager"]
 
@@ -174,25 +170,61 @@ class GameUI(App):
 
         super().__init__(panda_app, display_region, **kwargs)
 
+    def register_non_collidable(self, element):
+        """Adds a UI element to the list of non-collidable UI elements."""
+        if element not in self.non_collidable_ui:
+            self.non_collidable_ui.append(element)
+
     def build(self):
-        # Set the mask for UI elements
         # Load the UI and keep references to the ids
         self.data = Builder.load_string(KV)
         self.ids: Any = self.data.ids  # type: ignore
 
         # Get references from the layout
         self.action_bar = self.ids.action_bar
-        self.debug_panel = self.ids.debug_panel  # This is the label inside the debug frame
-        self.camera_panel = self.ids.camera_panel  # This is the label inside the camera frame
+        self.debug_panel = self.ids.debug_panel  # Debug panel
+        self.camera_panel = self.ids.camera_panel  # Camera panel
 
-        self.wait_for_next_input_of_user: bool = False
-        self.wait_for_action_of_user: Optional[Callable] = None
-        self.unit_waiting_for_action: Optional[UnitBaseClass] = None
+        # Register UI elements as non-collidable
+        self.register_non_collidable(self.action_bar)
+        self.register_non_collidable(self.debug_panel)
+        self.register_non_collidable(self.camera_panel)
 
-        # Schedule updates for the stats displayed on the camera panel
-        Clock.schedule_interval(self.update_stats_bar, 1.0)  # Update every second
+        # Reduce clock update frequency (every 0.25 seconds instead of every tick)
+        Clock.schedule_interval(self.update_stats_bar, 0.25)
+
+        # Track mouse movement via Panda3D task manager
+        self._base.taskMgr.add(self.track_mouse_movement, "TrackMouseMovement")
 
         return self.data
+
+    def track_mouse_movement(self, task):
+        if self._base.mouseWatcherNode.hasMouse():  # Check if the mouse is detected
+            mouse_pos = self._base.mouseWatcherNode.getMouse()
+            # Convert Panda3D mouse coords (-1 to 1) to screen space
+            screen_x = (mouse_pos.getX() + 1) / 2 * self._base.win.getXSize()
+            screen_y = (1 - mouse_pos.getY()) / 2 * self._base.win.getYSize()
+
+            self.on_mouse_move(screen_x, screen_y)  # Call mouse move handler
+
+        return task.cont  # Keep running this task every frame
+
+    def on_mouse_move(self, x, y):
+        # Convert Y-coordinates if needed
+        kivy_window_height = self._base.win.getYSize()
+        y = kivy_window_height - y  # Flip Y-axis if needed
+
+        # Check if mouse is inside any registered UI element
+        inside_ui = any(
+            element.x <= x <= element.right and element.y <= y <= element.top for element in self.non_collidable_ui
+        )
+
+        # print(f"Inside UI: {inside_ui}, Mouse Pos: {x}, {y}")
+
+        if inside_ui:
+            self.input.active = False
+        else:
+            self.input.active = True
 
     def update_stats_bar(self, dt):
         fps = self._base.clock.getAverageFrameRate()
@@ -263,12 +295,3 @@ class GameUI(App):
         self.unit_waiting_for_action = None
         if action.remove_actions_after_use:
             self.action_bar.clear_widgets()
-
-    # --- Raycaster Control Methods ---
-    def disable_raycaster(self):
-        """Disable the raycaster when hovering over UI elements."""
-        self.input.active = False
-
-    def enable_raycaster(self):
-        """Enable the raycaster when not hovering over UI elements."""
-        self.input.active = True
