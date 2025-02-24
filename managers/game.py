@@ -162,6 +162,9 @@ class Game(Singleton):
 
         self.camera_setup()
 
+        ui = ui.get_instance()
+        ui.game_menu_show()
+
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
 

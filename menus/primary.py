@@ -56,10 +56,10 @@ class Primary(BaseMenu):
 
     def start_game_config(self):
         from menus.game_config import CivSelectorApp
+        from direct.showbase.MessengerGlobal import messenger
+        from managers.ui import ui
 
-        display_region = self.base.win.make_display_region(0, 1, 0, 1)
-        app = CivSelectorApp(self.base, display_region)
-        app.run()
+        messenger.send("system.game.start", ["100x100", "rome", 5])
 
         self.hidden = True  # type: ignore
         self.frame.hide()

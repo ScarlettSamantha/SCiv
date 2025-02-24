@@ -77,9 +77,8 @@ class ui(Singleton):
     def game_menu_show(self):
         from menus.game_ui import GameUI
 
-        display_region = self._base.win.make_display_region(0, 1, 0, 1)
-        self.kivy = GameUI(self._base, display_region, game_manager=self)
-        self.kivy.run()
+        self.game_menu = GameUI(self._base, game_manager=self)
+        self.game_menu.run()
 
     def set_current_menu(self, menu):
         self.current_menu = menu
