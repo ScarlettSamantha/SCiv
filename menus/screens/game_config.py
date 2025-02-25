@@ -38,7 +38,7 @@ class GameConfigMenu(Screen):
         self.size_popup: Optional[ScrollablePopup] = None
         self.size_popup_button: Optional[Button] = None
 
-        self.selected_resolution: Tuple[int, int] = (50, 90)
+        self.selected_resolution: Tuple[int, int] = (25, 25)
         self.selected_civilization: Optional[Type[BaseCivilization]] = None
         self.player_count: int = 4
 
