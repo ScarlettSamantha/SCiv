@@ -74,6 +74,7 @@ class MainMenuScreen(Screen):
 
         self.options_button = Button(text="Options", size_hint=(None, None), height=50, width=button_width)
         self.options_button.pos_hint = {"center_x": 0.5}
+        self.options_button.on_press = self.to_config_screen
 
         self.credit_button = Button(text="Credits", size_hint=(None, None), height=50, width=button_width)
         self.credit_button.pos_hint = {"center_x": 0.5}
@@ -94,3 +95,6 @@ class MainMenuScreen(Screen):
 
         float_layout.add_widget(container)
         return float_layout
+
+    def to_config_screen(self):
+        self.manager.current = "options_screen"

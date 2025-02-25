@@ -1,5 +1,6 @@
-from typing import Any, Optional, Type, Union, List
+from typing import Any, Optional, Tuple, Type, Union, List
 
+from gameplay.civilization import Civilization
 from gameplay.repositories.generators import GeneratorRepository
 from managers.player import PlayerManager
 from managers.turn import Turn
@@ -14,6 +15,7 @@ from system.generators.base import BaseGenerator
 from gameplay.civilizations.rome import Rome
 from system.generators.basic import Basic
 from system.game_settings import GameSettings
+from gameplay.civilization import Civilization as BaseCivilization
 
 
 class Game(Singleton):
@@ -126,17 +128,17 @@ class Game(Singleton):
         if players is None:
             raise ValueError("No players were setup")
 
-    def on_game_start(self, map_size, civilization, num_players):
-        from gameplay.repositories.civilization import Civilization
+    def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Civilization, num_players):
         from managers.ui import ui
 
-        self.properties.num_enemies = num_players - 1  # type: ignore
-        self.properties.player = Civilization.get(civilization)  # type: ignore
-        self.properties.width = int(map_size.split("x")[0])  # type: ignore
-        self.properties.height = int(map_size.split("x")[1])  # type: ignore
+        if self.properties is None:
+            raise AssertionError("Game properties not set")
 
-        if not self.properties:
-            raise ValueError("Game properties not set")
+        self.properties.num_enemies = num_players
+        self.properties.player = Civilization.get(civilization) if isinstance(civilization, str) else civilization  # type: ignore
+        self.properties.width = int(map_size.split("x")[0]) if isinstance(map_size, str) else map_size[0]
+        self.properties.height = int(map_size.split("x")[1]) if isinstance(map_size, str) else map_size[1]
+
         self.game_active = True
 
         self.active_generator = self.world.get_generator()  # type: ignore
@@ -151,14 +153,9 @@ class Game(Singleton):
 
         self.camera_setup()
 
-        ui = ui.get_instance()
-        ui.game_menu_show()
-
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
 
     def on_game_end(self):
         self.game_active = False
         self.game_over = True
-        self.ui.cleanup_menu()
-        self.ui.get_main_menu()

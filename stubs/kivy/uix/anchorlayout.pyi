@@ -8,7 +8,9 @@ class AnchorLayout(Layout):
     anchor_y: OptionProperty[str]
     padding: VariableListProperty[int]
 
-    def __init__(self,
-                 anchor_x: Optional[str] = 'center',
-                 anchor_y: Optional[str] = 'center',
-                 padding: Optional[List[int]] = [0, 0, 0, 0]) -> None: ...
+    def __init__(
+        self,
+        anchor_x: Optional[str] = "center",
+        anchor_y: Optional[str] = "center",
+        padding: Optional[List[int]] = [0, 0, 0, 0],
+    ) -> None: ...

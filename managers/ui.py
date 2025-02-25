@@ -77,9 +77,6 @@ class ui(Singleton):
     def deactivate_pstat(self):
         PStatClient.disconnect()
 
-    def on_game_start(self):
-        pass
-
     def get_game_ui(self):
         # If we don't have an active Game, create one
         if self.game is None:

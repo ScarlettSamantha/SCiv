@@ -1,47 +1,35 @@
-from kivy.app import App
-from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager, Screen
+#!/usr/bin/env python
+from panda3d.core import loadPrcFileData
+from direct.showbase.ShowBase import ShowBase
+from panda3d_kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.spinner import Spinner
+from kivy.uix.dropdown import DropDown
 
-# Create both screens. Please note the root.manager.current: this is how
-# you can control the ScreenManager from kv. Each screen has by default a
-# property manager that gives you the instance of the ScreenManager used.
-Builder.load_string("""
-<MenuScreen>:
-    BoxLayout:
-        Button:
-            text: 'Goto settings'
-            on_press: root.manager.current = 'settings'
-        Button:
-            text: 'Quit'
-
-<SettingsScreen>:
-    BoxLayout:
-        Button:
-            text: 'My settings button'
-        Button:
-            text: 'Back to menu'
-            on_press: root.manager.current = 'menu'
-""")
+# Optionally configure the window title
+loadPrcFileData("", "window-title Simple Panda3D Window")
 
 
-# Declare both screens
-class MenuScreen(Screen):
-    pass
+class Demo(App):
+    def __init__(self, panda_app, **kwargs):
+        super().__init__(panda_app, **kwargs)
 
-
-class SettingsScreen(Screen):
-    pass
-
-
-class TestApp(App):
     def build(self):
-        # Create the screen manager
-        sm = ScreenManager()
-        sm.add_widget(MenuScreen(name="menu"))
-        sm.add_widget(SettingsScreen(name="settings"))
+        layout = BoxLayout()
+        layout.add_widget(Spinner(text="Hello", values=["World", "Panda3D", "Kivy"]))
+        layout.add_widget(DropDown(text="Hello", values=["World", "Panda3D", "Kivy"]))
+        return layout
 
-        return sm
+
+class SimpleWindow(ShowBase):
+    def __init__(self) -> None:
+        ShowBase.__init__(self)
+
+        # Create a Kivy App instance
+        self.kivy_app = Demo(self)
+        self.kivy_app.run()  # Starts the Kivy app
 
 
 if __name__ == "__main__":
-    TestApp().run()
+    app = SimpleWindow()
+    app.run()  # Starts the main loop
