@@ -67,7 +67,6 @@ class GameUIScreen(Screen):
     def get_debug_frame(self) -> FloatLayout:
         if self.debug_frame is None:
             raise AssertionError("Debug panel is not initialized.")
-
         return self.debug_frame
 
     def get_camera_frame(self) -> FloatLayout:
@@ -89,6 +88,20 @@ class GameUIScreen(Screen):
         # Main container
         self.root_layout = FloatLayout()
 
+        self.root_layout.add_widget(self.build_action_bar())
+        self.root_layout.add_widget(self.build_camera_panel())
+        self.root_layout.add_widget(self.build_debug_frame())
+
+        self.register_non_collidable(self.action_bar_frame)
+        self.register_non_collidable(self.debug_frame)
+        self.register_non_collidable(self.camera_frame)
+
+        Clock.schedule_interval(self.update_stats_bar, 0.25)
+        self._base.taskMgr.add(self.track_mouse_movement, "TrackMouseMovement")
+
+        return self.root_layout
+
+    def build_action_bar(self) -> BoxLayout:
         # --- Action Bar (Bottom Centered) ---
         self.action_bar_frame = BoxLayout(
             orientation="horizontal",
@@ -98,8 +111,44 @@ class GameUIScreen(Screen):
             spacing=10,
             pos_hint={"center_x": 0.5, "y": 0},
         )
-        self.root_layout.add_widget(self.action_bar_frame)
+        return self.action_bar_frame
 
+    def build_camera_panel(self) -> FloatLayout:
+        # --- Camera Panel (Top-Right Corner) ---
+        self.camera_frame = FloatLayout(
+            size_hint=(None, None),
+            width=200,
+            height=200,
+            pos_hint={"right": 1, "top": 1},
+        )
+
+        with self.camera_frame.canvas.before:  # type: ignore
+            Color(0, 0, 0, 0.5)  # Black background with 50% opacity
+            self.camera_rect = Rectangle(size=self.camera_frame.size, pos=self.camera_frame.pos)
+
+        def update_camera_rect(instance, value):
+            self.camera_rect.size = instance.size
+            self.camera_rect.pos = instance.pos
+
+        self.camera_frame.bind(size=update_camera_rect, pos=update_camera_rect)  # type: ignore
+
+        self.camera_panel = Label(
+            text="Camera Info:\nZoom: 1.0\nAngle: 45°",
+            size_hint=(None, None),
+            width=200,
+            height=100,
+            font_size="11sp",
+            valign="top",
+            halign="right",
+            text_size=(200, 100),
+            pos_hint={"right": 1, "top": 1},
+            color=(1, 1, 1, 1),
+        )
+
+        self.camera_frame.add_widget(self.camera_panel)
+        return self.camera_frame
+
+    def build_debug_frame(self) -> FloatLayout:
         # --- Debug Panel (Top-Left Corner) ---
         self.debug_frame = FloatLayout(
             size_hint=(None, None),
@@ -120,62 +169,19 @@ class GameUIScreen(Screen):
 
         self.debug_panel = Label(
             text="Debug Info:\nFPS: 60\nPlayer Pos: (0,0,0)",
-            size_hint_x=1,
-            size_hint_y=None,
+            size_hint=(None, None),
+            width=300,
+            height=500,
             font_size="11sp",
-            height=50,
             valign="top",
             halign="left",
-            text_size=(300, None),
-            pos_hint={"top": 1},
+            text_size=(300, 500),
+            pos_hint={"x": 0, "top": 1},
             color=(1, 1, 1, 1),
         )
 
         self.debug_frame.add_widget(self.debug_panel)
-        self.root_layout.add_widget(self.debug_frame)
-
-        # --- Camera Panel (Top-Right Corner) ---
-        self.camera_frame = FloatLayout(
-            size_hint=(None, None),
-            width=200,
-            height=200,
-            pos_hint={"right": 1, "top": 1},
-        )
-
-        with self.camera_frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.5)  # Black background with 50% opacity
-            self.camera_rect = Rectangle(size=self.camera_frame.size, pos=self.camera_frame.pos)
-
-        def update_camera_rect(instance, value):
-            self.camera_rect.size = instance.size
-            self.camera_rect.pos = instance.pos
-
-        self.camera_frame.bind(size=update_camera_rect, pos=update_camera_rect)  # type: ignore
-
-        self.camera_panel = Label(
-            text="Debug Info:\nFPS: 60\nPlayer Pos: (0,0,0)",
-            size_hint_x=1,
-            size_hint_y=None,
-            font_size="11sp",
-            height=50,
-            valign="top",
-            halign="right",
-            text_size=(200, None),
-            pos_hint={"top": 1, "right": 1},
-            color=(1, 1, 1, 1),
-        )
-
-        self.camera_frame.add_widget(self.camera_panel)
-        self.root_layout.add_widget(self.camera_frame)
-
-        self.register_non_collidable(self.action_bar_frame)
-        self.register_non_collidable(self.debug_panel)
-        self.register_non_collidable(self.camera_panel)
-
-        Clock.schedule_interval(self.update_stats_bar, 0.25)
-        self._base.taskMgr.add(self.track_mouse_movement, "TrackMouseMovement")
-
-        return self.root_layout
+        return self.debug_frame
 
     def register_non_collidable(self, element):
         """Adds a UI element to the list of non-collidable UI elements."""
