@@ -29,13 +29,9 @@ class GameUIScreen(Screen):
     }
 
     def __init__(self, **kwargs: Any):
-        if "game_manager" not in kwargs:
-            raise ValueError("Game Manager is required to initialize the UI.")
-
-        self.game_manager: "ui" = kwargs.get("game_manager")  # type: ignore # we check for it above
-
+        if "base" not in kwargs:
+            raise ValueError("GameUIScreen requires a 'base' keyword argument.")
         self._base: Any = kwargs.get("base")
-        del kwargs["game_manager"]
         del kwargs["base"]
 
         super().__init__(**kwargs)
@@ -66,7 +62,7 @@ class GameUIScreen(Screen):
         self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
         self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
 
-        Builder.load_string(self.build_screen())
+        self.add_widget(self.build_screen())
 
     def get_debug_frame(self) -> FloatLayout:
         if self.debug_frame is None:
@@ -171,9 +167,6 @@ class GameUIScreen(Screen):
 
         self.camera_frame.add_widget(self.camera_panel)
         self.root_layout.add_widget(self.camera_frame)
-
-        # Add the entire layout to the screen
-        self.add_widget(self.root_layout)
 
         self.register_non_collidable(self.action_bar_frame)
         self.register_non_collidable(self.debug_panel)

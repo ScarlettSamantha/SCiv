@@ -7,6 +7,7 @@ from menus.screens.main_menu import MainMenuScreen
 from menus.screens.game_config import GameConfigMenu
 from menus.screens.pause_menu import PauseMenu
 from menus.screens.options_menu import OptionsScreen
+from menus.screens.game_ui import GameUIScreen
 
 
 class SCivGUI(App):
@@ -25,7 +26,7 @@ class SCivGUI(App):
         screen_manager = ScreenManager()
         screen_manager.add_widget(MainMenuScreen(name="main_menu"))
         screen_manager.add_widget(GameConfigMenu(name="game_config_screen"))
-        screen_manager.add_widget(OptionsScreen(name="game_ui"))
+        screen_manager.add_widget(GameUIScreen(name="game_ui", base=self._base))
         screen_manager.add_widget(OptionsScreen(name="options_screen"))
         screen_manager.add_widget(PauseMenu(name="pause_menu"))
         screen_manager.current = "main_menu"
