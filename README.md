@@ -4,6 +4,32 @@
 
 > ⚠️ **Danger:** This code is highly dynamic and can be vulnerable to arbitrary remote code execution if modified or when using downloaded files. Malicious actors could exploit this to run harmful code(*!There is no sandbox!*). Be extremely cautious and only load trusted, verified sources.
 
+## Running it
+
+At the moment it will run *something* and I will attempt to keep the main branch booting into the "game" at the least.
+
+### How to run it
+
+Its not that hard to actually run it as its panda3d now.
+```
+git clone git@github.com:ScarlettSamantha/SCiv.git
+cd SCiv
+python3 -m venv .
+bin/pip install -r requirements.txt
+python3 main.py
+```
+
+### Debugging
+
+You can connect it to pstats you need to have it listening on the default port `5185` then you press `p` to activate pstats broadcasting and `l` to stop it again.
+
+In the `config.prc` is defined it will also debug GPU data but if this is causing issues you can disable it there.
+
+#### Issues
+
+* Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
+* Why venv: Because if I tell you to break system packages and something goes wrong people get mad.
+
 ## Project
 
 - [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
