@@ -1,4 +1,4 @@
-# OpenCiv
+# SCiv
 
 > 🚨 **Warning:** This project is in a very early development phase and is likely not functional yet. It may lack gameplay elements and is currently focused on testing raw system implementations.
 
@@ -114,7 +114,7 @@ In the `config.prc` is defined it will also debug GPU data but if this is causin
 
 > [Main document](meta/vision.md)
 
-OpenCiv aims to create a larger and more complex game than Civilization VI, featuring a greater number of civilizations and deeper gameplay mechanics. Our goal is to build a game that retains the fun and engaging core gameplay of Civ6 while enhancing its complexity and mod-ability from the ground up. My aim is to create a more Stellaris-style Civ with more interesting things to do.
+SCiv aims to create a larger and more complex game than Civilization VI, featuring a greater number of civilizations and deeper gameplay mechanics. Our goal is to build a game that retains the fun and engaging core gameplay of Civ6 while enhancing its complexity and mod-ability from the ground up. My aim is to create a more Stellaris-style Civ with more interesting things to do.
 
 ### Pitfalls
 
