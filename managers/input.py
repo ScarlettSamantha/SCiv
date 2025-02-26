@@ -53,7 +53,7 @@ class Input(Singleton):
 
         mpos = self.base.mouseWatcherNode.getMouse()
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())
-        self.picker.traverse(self.base.render)
+        self.picker.traverse(self.base.render) # type: ignore
 
         if self.pq.getNumEntries() > 0:
             self.pq.sortEntries()
