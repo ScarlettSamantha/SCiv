@@ -1,0 +1,3 @@
+[submodule "stubs/kivy"]
+	path = stubs/kivy
+	url = git@github.com:ScarlettSamantha/kivy-panda3d-stubs.git
