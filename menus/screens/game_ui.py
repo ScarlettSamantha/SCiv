@@ -82,15 +82,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         return self.root_layout
 
     def build_screen(self):
-        # Main container
-        if self.action_bar_frame is None or self.debug_frame is None or self.stats_frame is None:
-            raise AssertionError("Action bar, debug panel, or stats panel is not initialized.")
-
         self.root_layout = FloatLayout()
 
         self.root_layout.add_widget(self.build_action_bar())
         self.root_layout.add_widget(self.build_stats_frame())
         self.root_layout.add_widget(self.build_debug_frame())
+
+        if self.action_bar_frame is None or self.debug_frame is None or self.stats_frame is None:
+            raise AssertionError("Action bar, debug panel, or stats panel is not initialized.")
 
         self.register_non_collidable(self.action_bar_frame.frame)
         self.register_non_collidable(self.debug_frame.frame)
