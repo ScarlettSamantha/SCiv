@@ -1,12 +1,12 @@
-from enum import Enum
 import uuid
+from hexgen.enums import EdgeDirection
 
 
 class Edge:
     def __init__(self, side, one, two, up, down):
         """
-            One and Two are Hexes on both sides.
-            Up is the Hex upslope of the edge and Down is the Hex downslope
+        One and Two are Hexes on both sides.
+        Up is the Hex upslope of the edge and Down is the Hex downslope
         """
         self.side = side
         self.one = one
@@ -19,13 +19,13 @@ class Edge:
         self.is_river = False
 
     def __repr__(self):
-        return "<Edge Side: {}, One: {}, Two: {}, " \
-               "Down: {}, delta: {}, direction: {}>".format(self.side, self.one, self.two, self.down, self.delta, self.direction)
+        return "<Edge Side: {}, One: {}, Two: {}, Down: {}, delta: {}, direction: {}>".format(
+            self.side, self.one, self.two, self.down, self.delta, self.direction
+        )
 
     @property
     def is_coast(self):
-        return self.one.is_water and self.two.is_land or \
-               self.one.is_land and self.two.is_water
+        return self.one.is_water and self.two.is_land or self.one.is_land and self.two.is_water
 
     @property
     def direction(self):
@@ -61,7 +61,3 @@ class Edge:
         Eg: A Hex's south-east is equal to the bottom-left's north-west
         """
         return other.one == self.two or (self.one == other.one and self.two == other.two)
-
-from hexgen.hex import HexSide
-
-from hexgen.enums import EdgeDirection

@@ -1,9 +1,7 @@
 import sys
-
-sys.setrecursionlimit(1500)
 import random
 
-from hexgen.hex import Hex
+sys.setrecursionlimit(1500)
 
 
 class Territory:
@@ -43,9 +41,7 @@ class Territory:
                     [
                         m.territory
                         for m in h.surrounding
-                        if m.is_land
-                        and m.territory is not None
-                        and m.territory.id != self.id
+                        if m.is_land and m.territory is not None and m.territory.id != self.id
                     ]
                 )
             )
@@ -53,10 +49,7 @@ class Territory:
 
     def avg_temp(self):
         temperatures = [
-            h.temperature
-            if isinstance(h.temperature, (int, float))
-            else h.temperature[0]
-            for h in self.members
+            h.temperature if isinstance(h.temperature, (int, float)) else h.temperature[0] for h in self.members
         ]
         return round(sum(temperatures) / self.size, 2)
 
@@ -110,10 +103,7 @@ class Territory:
             sur = [
                 s
                 for s in sh.map_surrounding
-                if s.is_land
-                and s.territory is not None
-                and s.territory == self
-                and s.marked is False
+                if s.is_land and s.territory is not None and s.territory == self and s.marked is False
             ]
             # print("\t\tStep into HEX: {}, {} -> Found: {}".format(sh.x, sh.y, len(sur)))
             for h in sur:

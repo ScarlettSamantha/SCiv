@@ -1,5 +1,4 @@
 import math
-from copy import copy
 import numpy as np
 from hexgen.hex import Hex
 

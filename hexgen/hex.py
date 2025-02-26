@@ -1,8 +1,5 @@
 import uuid
-import math
-import random
-from enum import Enum
-
+from hexgen.edge import Edge
 from hexgen.constants import *
 from hexgen.enums import (
     Biome,
@@ -13,15 +10,6 @@ from hexgen.enums import (
     Zones,
     Hemisphere,
     HexEdge,
-)
-from hexgen.util import (
-    blend_colors,
-    lighten,
-    randomize_color,
-    pressure_at_seasons,
-    decide_wind,
-    is_opposite_hex,
-    memoized,
 )
 
 
@@ -267,19 +255,7 @@ class Hex:
         :return: Biome
         """
         map_type = self.grid.params.get("map_type")
-        if map_type is MapType.barren:  # barren
-            if self.grid.params.get("pressure") < 0.003:  # trace atmosphere
-                return Biome.barren
-            else:  # small atmosphere
-                # TODO: determine where to put ice caps based on atmospheric compounds
-                if self in self.grid.coldest_hexes and self.temperature < 0:
-                    return Biome.barren_ice_caps
-                elif self.moisture > 5 or self.has_feature(HexFeature.lake):
-                    return Biome.barren_wet
-                else:
-                    return Biome.barren_dusty
-
-        elif map_type is MapType.terran:
+        if map_type is MapType.terran:
             temp = self.temperature[0]
             rain = self.moisture
             if temp <= -10:
@@ -310,14 +286,6 @@ class Hex:
                 return Biome.tropical_rainforest
 
             raise Exception("Biome invalid Rainfall: {}, Temperature: {}".format(rain, temp))
-
-        elif map_type is MapType.volcanic:
-            if self.altitude < 60:
-                return Biome.volcanic_liquid
-            elif self.has_feature(HexFeature.lava_flow):
-                return Biome.volcanic_molten_river
-            else:
-                return Biome.volcanic_solid
 
         return Biome.lifeless
 
@@ -628,160 +596,3 @@ class Hex:
 
     def __repr__(self):
         return "<HEX: X: {}, Y: {}, Z: {}>".format(self.x, self.y, self.altitude)
-
-    @property
-    def color_terrain(self):
-        altitude = self.altitude
-        hex_grid = self.grid
-
-        if self.has_feature(HexFeature.lake):
-            return 0, 0, 255
-
-        map_type = self.grid.params.get("map_type")
-        color_gradient = map_type.colors
-
-        for level, color in color_gradient:
-            if altitude < hex_grid.sealevel + level:
-                return color
-        return color_gradient[-1][1]
-
-    @property
-    def color_rivers(self):
-        if self.is_water:
-            if self.altitude < self.grid.sealevel - 10:
-                color = (0, 20, 130)
-            else:
-                color = (0, 20, 170)
-        else:
-            if self.moisture < 5:
-                color = (199, 177, 56)
-            elif self.moisture < 10:
-                color = (151, 167, 104)
-            elif self.moisture < 15:
-                color = (128, 163, 128)
-            elif self.moisture < 20:
-                color = (104, 158, 151)
-            elif self.moisture < 25:
-                color = (80, 153, 175)
-            elif self.moisture < 30:
-                color = (56, 148, 199)
-            else:
-                color = (56, 148, 199)
-
-        if self.has_feature(HexFeature.lake):
-            color = (0, 0, 255)
-
-        return color
-
-    @property
-    def color_biome(self):
-        if self.has_feature(HexFeature.glacier):
-            return 204, 204, 204
-        if self.is_land:
-            return self.biome.color
-        return 0, 20, 170
-
-    @property
-    def color_territories(self):
-        if self.territory is None:
-            return 200, 200, 200
-        return self.territory.color
-
-    @property
-    def color_temperature(self):
-        def color_temp(loc):
-            last_temp = -300
-            for index, value in enumerate(TEMPERATURE_COLORS):
-                temp, color = value
-                if last_temp <= loc <= temp:
-                    # if self.is_land:
-                    #     return color[0] - 20, color[1] - 20, color[2] - 20
-                    return color
-                last_temp = temp
-            return TEMPERATURE_COLORS[-1][1]
-
-        return (color_temp(self.temperature[0]), color_temp(self.temperature[1]))
-
-    @property
-    def color_satellite(self):
-        hex_grid = self.grid
-        map_type = self.grid.params.get("map_type")
-        if map_type is MapType.terran or map_type is MapType.oceanic:
-            # if self.has_feature(HexFeature.lake):
-            #     return 0, 20, 170
-            # if self.is_land:
-            #     colors = [h.biome.color for h in self.bubble(distance=2) if h.is_land]
-            #     colors.append(self.biome.color)
-            #     # colors is an array of 3-tuple colors
-
-            #     mul = 1 / len(colors)
-            #     avg_r = round(sum([mul * c[0] for c in colors]))
-            #     avg_g = round(sum([mul * c[1] for c in colors]))
-            #     avg_b = round(sum([mul * c[2] for c in colors]))
-            #     return avg_r, avg_g, avg_b
-            if self.has_feature(HexFeature.glacier):
-                return randomize_color(Biome.arctic.color_satellite)
-
-            if self.is_land:
-                return randomize_color(lighten(self.biome.color_satellite, 0.9))
-            # water
-            for level, color in TERRAN_OCEAN_SATELLITE:
-                if self.altitude < self.grid.sealevel + level:
-                    return random.choice(color)
-            return random.choice(TERRAN_OCEAN_SATELLITE[-1][1])
-        elif map_type is MapType.glacial:
-            for level, color in GLACIAL_SATELLITE:
-                if self.altitude < self.grid.sealevel + level:
-                    return randomize_color(color)
-            return randomize_color(GLACIAL_SATELLITE[-1][1])
-        elif map_type is MapType.volcanic:
-            if self.biome is Biome.volcanic_liquid:
-                return random.choice(VOLCANIC_LIQUID)
-            else:
-
-                def process(color):
-                    r_color = randomize_color(color)
-                    if self.biome is Biome.volcanic_molten_river:
-                        b_color = Biome.volcanic_molten_river.color_satellite
-                        return randomize_color(blend_colors(b_color, r_color))
-                    return randomize_color(r_color)
-
-                for level, color in VOLCANIC_SATELLITE:
-                    if self.altitude < self.grid.sealevel + level:
-                        return process(color)
-                return process(VOLCANIC_SATELLITE[-1][1])
-        else:
-            if self.is_water:
-                for level, color in TERRAN_OCEAN_SATELLITE:
-                    if self.altitude < self.grid.sealevel + level:
-                        return random.choice(color)
-                return random.choice(TERRAN_OCEAN_SATELLITE[-1][1])
-
-            # land
-            if self.grid.params.get("pressure") < 0.003:
-                color_list = BARREN_SATELLITE
-            elif self.biome is Biome.barren_wet:
-                color_list = BARREN_WET
-            else:
-                color_list = DUSTY_BARREN_SATELLITE
-
-            def process(color):
-                if self.biome is Biome.barren_ice_caps:
-                    return randomize_color(blend_colors(color, Biome.barren_ice_caps.color))
-                return randomize_color(color)
-
-            for level, color in color_list:
-                if self.altitude < self.grid.sealevel + level:
-                    return process(color)
-
-            return process(color)
-
-    @property
-    def color_pressure(self):
-        """Returns a season dict representing the map color of the pressure at summer and winter"""
-        end_year = round((self.pressure[0] - self.grid.params.get("surface_pressure"))) * 5
-        mid_year = round((self.pressure[1] - self.grid.params.get("surface_pressure"))) * 5
-        return ((100 + end_year, 100, 100), (100 + mid_year, 100, 100))
-
-
-from hexgen.edge import Edge
