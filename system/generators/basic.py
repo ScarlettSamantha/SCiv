@@ -112,15 +112,15 @@ class Basic(BaseGenerator):
             "year_length": 365,
             "day_length": 24,
             "base_temp": 0,
-            "avg_temp": 15,
+            "avg_temp": 12,
             "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water, OceanType.hydrocarbons],
             "random_seed": self.seed,
-            "roughness": 16,
+            "roughness": 18,
             "height_range": (0, 245),
             "pressure": 1,  # bar
-            "axial_tilt": 180,
+            "axial_tilt": 18,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
             # features
             "craters": True,
             "volanoes": True,
@@ -185,7 +185,7 @@ class Basic(BaseGenerator):
         # tropical_forest =      (11, 'r', 'Tropical Forest')
         # tropical_rainforest =  (12, 'R', 'Tropical Rainforest')
 
-        desert_temperature_threshold = 30
+        desert_temperature_threshold = 35
         moistoire_threshold_mangrove_jungle = 13
         light_jungle_temperature_threshold = 25
         cold_forrest_temperature_threshold = 3
