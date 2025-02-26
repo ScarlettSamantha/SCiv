@@ -409,7 +409,7 @@ class Tile:
                 "altitude": self.altitude,
                 "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
                 "moisture": self.moisture,
-                "temperature": self.temperature,
+                "temperature": f"{self.extra_data.base_temperature[0]}, {self.extra_data.base_temperature[1]}",
                 "is_coast": self.is_coast,
                 "is_water": self.is_water,
                 "is_land": self.is_land,
