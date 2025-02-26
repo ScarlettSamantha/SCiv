@@ -57,7 +57,7 @@ class Game(Singleton):
         self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
         self.base.accept("system.game.start", self.on_game_start)
         self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
-        self.base.accept("game.input.user.quit_game", self.on_game_end)
+        self.base.accept("game.input.user.quit_game", self.quit_game)
 
     def toggle_pause_game(self) -> None:
         self.is_paused = not self.is_paused
@@ -171,4 +171,4 @@ class Game(Singleton):
         self.game_over = True
 
     def quit_game(self):
-        self.base.userExit()
+        self.base.destroy()

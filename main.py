@@ -116,4 +116,8 @@ globalClock = ClockObject.getGlobalClock()  # Removes frame sync
 globalClock.setFrameRate(144)
 
 app = Openciv(config_mgr)
-app.run()
+
+try:
+    app.run()
+except SystemExit:
+    print("Goodbye :-)")
