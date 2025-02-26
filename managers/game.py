@@ -25,7 +25,7 @@ class Game(Singleton):
         self.game_won: bool = False
         self.base: Any = base
 
-        self.ui: ui = ui.get_instance()
+        self.ui: ui = ui.get_instance(base=self.base)
         self.world: World = World.get_instance()
         self.input: Input = Input.get_instance()
         self.turn: Optional[Turn] = None
@@ -44,6 +44,8 @@ class Game(Singleton):
             enemies=None,
             difficulty=1,
         )
+
+        self.is_paused: bool = False
 
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)

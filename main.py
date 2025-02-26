@@ -50,6 +50,9 @@ class Openciv(ShowBase):
         self.world = World.get_instance()
         self.world.__setup__(self)
 
+        self.game_manager_instance = Game(self, self.civ_camera)
+        Game._set_instance(self.game_manager_instance)
+
         self.ui_manager = ui(self)
         self.ui_manager.kivy_setup()
         self.ui_manager.register()
@@ -59,9 +62,6 @@ class Openciv(ShowBase):
 
         self.unit_manager = Unit(self)
         Unit._set_instance(self.unit_manager)
-
-        self.game_manager_instance = Game(self, self.civ_camera)
-        Game._set_instance(self.game_manager_instance)
 
         # ---------------------------------------------------------------------
         # Optionally: an example of toggling window modes at runtime
