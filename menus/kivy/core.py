@@ -30,6 +30,6 @@ class SCivGUI(App):
         screen_manager.add_widget(GameConfigMenu(name="game_config_screen"))
         screen_manager.add_widget(GameUIScreen(name="game_ui", base=self._base))
         screen_manager.add_widget(OptionsScreen(name="options_screen"))
-        screen_manager.add_widget(PauseScreen(name="pause_menu"))
+        screen_manager.add_widget(PauseScreen(name="pause_menu", base=self._base))
         screen_manager.current = "main_menu"
         return screen_manager

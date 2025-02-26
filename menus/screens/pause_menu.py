@@ -4,14 +4,22 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.graphics import Color, Rectangle
+from menus.kivy.mixins.collidable import CollisionPreventionMixin
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from main import Openciv
 
 
-class PauseMenu(Popup):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+class PauseMenu(Popup, CollisionPreventionMixin):
+    def __init__(self, base: "Openciv", **kwargs):
+        CollisionPreventionMixin.__init__(self, base=base, **kwargs)
+        Popup.__init__(self, base=base, **kwargs)
+
         self.title = "Paused"
         self.size_hint = (0.5, 0.6)
         self.auto_dismiss = False
+        self._base: "Openciv" = base
 
     def build_widget(self):
         self.container: BoxLayout = BoxLayout(
@@ -63,6 +71,7 @@ class PauseMenu(Popup):
         self.container.add_widget(self.quit_btn)
 
         self.add_widget(self.container)
+        self.register_non_collidable(self.container)
 
     def save_game(self, instance):
         print("Saving game...")
@@ -84,9 +93,9 @@ class PauseMenu(Popup):
 
 
 class PauseScreen(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, base: "Openciv", **kwargs):
         super().__init__(**kwargs)
-        self.pause_menu = PauseMenu()
+        self.pause_menu = PauseMenu(base=base)
         self.build: bool = False
         self.build_screen()
 
