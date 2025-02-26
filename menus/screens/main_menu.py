@@ -1,11 +1,9 @@
-from turtle import title, width
 from typing import Optional
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 
 
@@ -84,6 +82,7 @@ class MainMenuScreen(Screen):
 
         self.exit_button = Button(text="Exit", size_hint=(None, None), height=50, width=button_width)
         self.exit_button.pos_hint = {"center_x": 0.5}
+        self.exit_button.bind(on_press=exit)
 
         container.add_widget(self.continue_button)
         container.add_widget(self.new_button)
@@ -98,3 +97,8 @@ class MainMenuScreen(Screen):
 
     def to_config_screen(self):
         self.manager.current = "options_screen"
+
+    def exit(self):
+        from direct.showbase.MessengerGlobal import messenger
+
+        messenger.send("game.input.user.quit_game")

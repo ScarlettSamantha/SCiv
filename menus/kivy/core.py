@@ -1,11 +1,11 @@
 from typing import Optional
 from panda3d_kivy.app import App
-from kivy.lang import Builder
-from kivy.uix.screenmanager import Screen, ScreenManager
+
+from kivy.uix.screenmanager import ScreenManager
 
 from menus.screens.main_menu import MainMenuScreen
 from menus.screens.game_config import GameConfigMenu
-from menus.screens.pause_menu import PauseMenu
+from menus.screens.pause_menu import PauseScreen
 from menus.screens.options_menu import OptionsScreen
 from menus.screens.game_ui import GameUIScreen
 
@@ -19,8 +19,10 @@ class SCivGUI(App):
     def setup(self):
         pass
 
-    def get_screen_manager(self) -> Optional[ScreenManager]:
-        return self.screen_manager or None
+    def get_screen_manager(self) -> ScreenManager:
+        if self.screen_manager is None:
+            self.screen_manager = self.build()
+        return self.screen_manager
 
     def build(self):
         screen_manager = ScreenManager()
@@ -28,6 +30,6 @@ class SCivGUI(App):
         screen_manager.add_widget(GameConfigMenu(name="game_config_screen"))
         screen_manager.add_widget(GameUIScreen(name="game_ui", base=self._base))
         screen_manager.add_widget(OptionsScreen(name="options_screen"))
-        screen_manager.add_widget(PauseMenu(name="pause_menu"))
+        screen_manager.add_widget(PauseScreen(name="pause_menu"))
         screen_manager.current = "main_menu"
         return screen_manager

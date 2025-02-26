@@ -2,8 +2,7 @@ from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.tile import Tile
 from managers.player import PlayerManager
-from menus.game import Game
-from menus.game_escape import PauseMenu
+
 from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.classes._base import UnitBaseClass
@@ -14,16 +13,19 @@ from panda3d.core import PStatClient
 if TYPE_CHECKING:
     from main import Openciv
     from menus.kivy.core import SCivGUI
+    from managers.game import Game
 
 
 class ui(Singleton):
     current_menu = None
 
     def __init__(self, base):
+        from managers.game import Game
+
         self.menus = []
         self._base: Openciv = base
         self.current_menu = None
-        self.game: Optional[Game] = None
+        self.game: Optional["Game"] = Game.get_instance()
         self.map: World = World.get_instance()
 
         self.current_tile: Optional[Tile] = None
@@ -36,7 +38,6 @@ class ui(Singleton):
         self.previous_unit: Optional[UnitBaseClass] = None
 
         self.game_menu_state: Optional[Game] = None
-        self.game_pause_state: Optional[PauseMenu] = None
         self.registered = False if not self.registered else self.register
 
         self.game_gui: Optional[SCivGUI] = None
@@ -56,6 +57,11 @@ class ui(Singleton):
             raise ValueError("GUI not initialized")
         return self.game_gui
 
+    def get_game(self) -> "Game":
+        if self.game is None:
+            raise ValueError("Game not initialized")
+        return self.game
+
     def kivy_setup(self):
         from menus.kivy.core import SCivGUI
 
@@ -72,7 +78,7 @@ class ui(Singleton):
         return True
 
     def activate_pstat(self):
-        PStatClient.connect()
+        PStatClient.connect("127.0.0.1", 5185)
 
     def deactivate_pstat(self):
         PStatClient.disconnect()
@@ -86,19 +92,8 @@ class ui(Singleton):
             messenger.send("system.game.resume")
 
     def get_escape_menu(self):
-        from menus.game_escape import PauseMenu
-
-        if self.game_pause_state is None:
-            self.game_pause_state = PauseMenu(self._base)
-            self.game_pause_state.show()
-        elif self.game_pause_state is not None and self.game_pause_state.is_hidden():
-            self.game_pause_state.show()
-        else:
-            self.game_pause_state.hide()
-
-    def hide_escape_menu(self):
-        if self.game_pause_state:
-            self.game_pause_state.hide()
+        self.get_gui().get_screen_manager().current = "game_ui" if self.get_game().is_paused else "pause_menu"
+        self.get_game().is_paused = not self.get_game().is_paused
 
     def clear_selection(self):
         self.current_tiles[0].set_color((1, 1, 1, 1))

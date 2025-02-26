@@ -141,8 +141,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
                     size_hint=(None, None),
                     width=100,
                     height=75,
-                    on_press=partial(self.prepare_action, action, _unit),
                 )
+                button.bind(on_press=partial(self.prepare_action, action, _unit))
                 self.action_bar_frame.add_button(button)
 
     def prepare_action(self, action: Action, unit: UnitBaseClass, _instance):

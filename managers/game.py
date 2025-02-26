@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Type, Union, List
+from typing import Any, Optional, Tuple, Type, Union, List, TYPE_CHECKING
 
 from gameplay.civilization import Civilization
 from gameplay.repositories.generators import GeneratorRepository
@@ -17,13 +17,16 @@ from system.generators.basic import Basic
 from system.game_settings import GameSettings
 from gameplay.civilization import Civilization as BaseCivilization
 
+if TYPE_CHECKING:
+    from main import Openciv
+
 
 class Game(Singleton):
     def __init__(self, base, camera: CivCamera):
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
-        self.base: Any = base
+        self.base: "Openciv" = base
 
         self.ui: ui = ui.get_instance(base=self.base)
         self.world: World = World.get_instance()
@@ -53,6 +56,11 @@ class Game(Singleton):
         self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
         self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
         self.base.accept("system.game.start", self.on_game_start)
+        self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
+        self.base.accept("game.input.user.quit_game", self.on_game_end)
+
+    def toggle_pause_game(self) -> None:
+        self.is_paused = not self.is_paused
 
     def handle_tile_click(self, tiles: Union[list[str], str]):
         if isinstance(tiles, str):
@@ -161,3 +169,6 @@ class Game(Singleton):
     def on_game_end(self):
         self.game_active = False
         self.game_over = True
+
+    def quit_game(self):
+        self.base.userExit()
