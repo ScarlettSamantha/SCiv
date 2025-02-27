@@ -3,15 +3,18 @@ import os
 from typing import Any, Dict
 from system.vars import VERSION_NAME_STRING, APPLICATION_NAME
 from panda3d.core import loadPrcFileData
+from mixins.singleton import Singleton
 
 
-class ConfigManager:
+class ConfigManager(Singleton):
     config_data: Dict[str, Any] = {}
+    config_file = "config.json"
 
-    def __init__(self, config_file="config.json"):
-        self.config_file = config_file
+    def __setup__(self, *args: Any, **kwargs: Any) -> None:
+        self.config_file = self.config_file
         self.config_data = self._load_config()
         self.apply_config_to_prc()
+        return super().__setup__(*args, **kwargs)
 
     def _load_config(self):
         """Internal method: load config from JSON or return default if missing/invalid."""
@@ -49,6 +52,16 @@ class ConfigManager:
     def get_config_full(self):
         """Return the full config data."""
         return self.config_data
+
+    def set_by_key(self, value: Any, *args):
+        """
+        Set a value in the config by key.
+        Example: set_by_key([1280, 720], "window", "win-size")
+        """
+        data = self.config_data
+        for key in args[:-1]:
+            data = data.get(key, {})
+        data[args[-1]] = value
 
     def save_config(self):
         """Persist current config to the JSON file."""
