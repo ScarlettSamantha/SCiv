@@ -2,20 +2,21 @@ from typing import Any, Optional, Tuple, Type, Union, List, TYPE_CHECKING
 
 from gameplay.civilization import Civilization
 from gameplay.repositories.generators import GeneratorRepository
+from managers.entity import EntityManager
 from managers.player import PlayerManager
 from managers.turn import Turn
 from mixins.singleton import Singleton
 from direct.showbase.MessengerGlobal import messenger
-
+from managers.config import ConfigManager
 from managers.ui import ui
 from managers.world import World
 from managers.input import Input
 from camera import CivCamera
+from panda3d.core import WindowProperties
 from system.generators.base import BaseGenerator
 from gameplay.civilizations.rome import Rome
 from system.generators.basic import Basic
 from system.game_settings import GameSettings
-from gameplay.civilization import Civilization as BaseCivilization
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -188,8 +189,6 @@ class Game(Singleton):
             raise ValueError("No players were setup")
 
     def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Civilization, num_players):
-        from managers.ui import ui
-
         if self.properties is None:
             raise AssertionError("Game properties not set")
 
