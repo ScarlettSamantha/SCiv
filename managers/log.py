@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from datetime import datetime
-from typing import Any, Callable, Union, Dict
+from typing import Dict
 from mixins.singleton import Singleton
 
 
