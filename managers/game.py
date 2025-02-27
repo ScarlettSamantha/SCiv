@@ -51,15 +51,62 @@ class Game(Singleton):
         )
 
         self.is_paused: bool = False
+        self.debug: bool = False
+
+        self.configure_environment()
+        self.register()
+
+    def register(self):
+        def timers():
+            self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)
+
+        timers()
+
+    def configure_environment(self):
+        self.base.disableMouse()
+        from system.vars import APPLICATION_NAME, VERSION_NAME_STRING
+
+        props = WindowProperties()
+
+        win_size: Tuple[int, int] = self.config.get_by_key("window", "win-size")
+        win_origin: Tuple[int, int] = self.config.get_by_key("window", "win-origin")
+
+        props.setSize(win_size[0], win_size[1])
+        props.setOrigin(win_origin[0], win_origin[1])
+        props.setTitle(f"{APPLICATION_NAME}<{VERSION_NAME_STRING}>")
+
+        self.base.win.requestProperties(props)
+
+    def environment_writeback(self):
+        props = self.base.win.getProperties()
+        win_size = (props.getXSize(), props.getYSize())  # Get current window size
+        win_origin = (props.getXOrigin(), props.getYOrigin())  # Get window position
+
+        self.config.set_by_key([win_size[0], win_size[1]], "window", "win-size")
+        self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
+
+    def config_saveback(self, task):
+        self.environment_writeback()
+        self.config.save_config()
+        return task.again
 
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)
         self.base = base
-        self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
-        self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
-        self.base.accept("system.game.start", self.on_game_start)
-        self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
-        self.base.accept("game.input.user.quit_game", self.quit_game)
+
+        def register_callback_inputs():
+            self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
+            self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
+            self.base.accept("system.game.start", self.on_game_start)
+            self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
+            self.base.accept("game.input.user.quit_game", self.quit_game)
+            self.base.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
+
+        register_callback_inputs()
+
+    def toggle_wireframe(self):
+        if not self.debug:
+            return
 
     def toggle_pause_game(self) -> None:
         self.is_paused = not self.is_paused
