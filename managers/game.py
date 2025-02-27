@@ -34,6 +34,8 @@ class Game(Singleton):
         self.turn: Optional[Turn] = None
         self.camera: CivCamera = camera
         self.players: PlayerManager = PlayerManager()
+        self.config: ConfigManager = ConfigManager.get_instance()
+        self.entities: EntityManager = EntityManager.get_instance(base=self.base)
 
         self.active_generator: BaseGenerator | None = None
 
