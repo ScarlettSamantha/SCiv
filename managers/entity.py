@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, TypeVar, Generic
+from typing import Any, Dict, Optional, Type, TypeVar
+
 from data.tiles.tile import Tile
 from mixins.singleton import Singleton
 from enum import Enum
@@ -10,8 +11,9 @@ from gameplay.improvements import Improvement
 from gameplay.city import City
 from gameplay.player import Player
 from system.entity import BaseEntity
-
 from weakref import ReferenceType, ref
+from system.save_file import BaseSaver, SavePickleFile
+from main import Openciv
 
 
 class EntityType(Enum):
@@ -30,15 +32,49 @@ K = TypeVar("K", bound=str)
 V = TypeVar("V", bound=BaseEntity)
 
 
+class BaseEntityManagerSerializer(ABC):
+    @abstractmethod
+    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> Any:
+        pass
+
+    @abstractmethod
+    def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
+        pass
+
+
+class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
+    import pickle
+
+    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
+        return self.pickle.dumps(data)
+
+    def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
+        return self.pickle.loads(data)
+
+
 class EntityManager(Singleton):
     _entities: Dict[EntityType, Dict[str, BaseEntity]] = {type_: {} for type_ in EntityType}
+    _meta_data: Dict[str, Any] = {}
 
-    def __init__(self):
-        self.serializer: Optional[BaseEntityManagerSerializer] = None
+    # Default we pick the PickleEntityManagerSerializer
+    _default_serializer: Type[BaseEntityManagerSerializer] = PickleEntityManagerSerializer
+    _default_savefile_handler: Type[BaseSaver] = SavePickleFile
 
-    def __setup__(self, base, serializer: Type["BaseEntityManagerSerializer"], *args, **kwargs):
-        self.base = base
-        self.serializer = serializer()
+    def __setup__(
+        self,
+        base: "Openciv",
+        serializer: Optional[Type["BaseEntityManagerSerializer"]] = None,
+        saver: Optional[Type["BaseSaver"]] = None,
+        session_name: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        self.base: Openciv = base
+        self.serializer: BaseEntityManagerSerializer = (
+            serializer() if serializer is not None else self._default_serializer()
+        )
+        self.saver: Type[BaseSaver] = saver if saver is not None else self._default_savefile_handler
+        self.session: Optional[str] = session_name if session_name is not None else str(uuid4().hex)
         return super().__setup__(*args, **kwargs)
 
     def check_object_against_type(self, type: EntityType, entity: object) -> bool:
@@ -108,39 +144,48 @@ class EntityManager(Singleton):
     def register_serializer(self, serializer: "BaseEntityManagerSerializer"):
         self.serializer = serializer
 
-    def dump(self, type: Optional[EntityType] = None):
-        if not self.serializer:
-            raise ValueError("No serializer registered.")
-        self.serializer.dump(self.get_all(type))
-
-    def load(self, data: Any, type: Optional[EntityType] = None):
+    def dump(self):
         if not self.serializer:
             raise ValueError("No serializer registered.")
 
-        self.clear(type)
-        loaded_data = self.serializer.load(data)
+        data = self.serializer.dump(self._entities)
 
-        for entity_type in EntityType:
-            entity_dict = loaded_data.get(entity_type.storage_key, {})
-            if isinstance(entity_dict, dict):
-                self._entities[entity_type].update(entity_dict)
+        if self.saver is None:
+            raise ValueError("No saver registered.")
 
+        if self.session is None:
+            raise ValueError("No session name set.")
 
-class BaseEntityManagerSerializer(ABC):
-    @abstractmethod
-    def dump(self, data: Dict[str, Dict[str, BaseEntity]] | Dict[str, BaseEntity]) -> Any:
-        pass
+        saver_instance = self.saver()
+        saver_instance.set_data(data)
+        saver_instance.set_identifier(self.session)
+        saver_instance.set_meta_data(self._meta_data)
+        saver_instance.save()
 
-    @abstractmethod
-    def load(self, data: Any) -> Dict[str, Dict[str, BaseEntity]] | Dict[str, BaseEntity]:
-        pass
+    def load(self):
+        if self.saver is None:
+            raise ValueError("No saver registered.")
 
+        if self.session is None:
+            raise ValueError("No session name set.")
 
-class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
-    import pickle
+        self.clear()
 
-    def dump(self, data: Dict[str, Dict[str, BaseEntity]] | Dict[str, BaseEntity]) -> bytes:
-        return self.pickle.dumps(data)
+        saver_instance = self.saver()
+        saver_instance.set_identifier(self.session)
+        loaded_data: str = saver_instance.load()
 
-    def load(self, data: Any) -> Dict[str, Dict[str, BaseEntity]] | Dict[str, BaseEntity]:
-        return self.pickle.loads(data)
+        unserialized_data: Dict[EntityType, Dict[str, BaseEntity]] = self.serializer.load(loaded_data)
+
+        for entity_type, entity_dict in unserialized_data.items():
+            self._entities[entity_type].update(entity_dict)
+
+    def get_all_session(self):
+        if self.saver is None:
+            raise ValueError("No saver registered.")
+
+        if self.session is None:
+            raise ValueError("No session name set.")
+
+        saver_instance = self.saver()
+        return saver_instance.get_saved_session()
