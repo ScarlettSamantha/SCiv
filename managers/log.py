@@ -21,7 +21,7 @@ class LogManager(Singleton):
             "engine": logging.DEBUG,
             "graphics": logging.INFO,
             "misc": logging.DEBUG,
-            "debug": logging.DEBUG
+            "debug": logging.DEBUG,
         }
 
         for log_type, level in log_types.items():
@@ -35,12 +35,8 @@ class LogManager(Singleton):
             # Create log directory structure
             log_dir: str = f"logs/{log_type}"
             os.makedirs(name=log_dir, exist_ok=True)
-            if self.testing_mode:
-                log_file: str = os.path.join(
-                    log_dir, f'test_log_{datetime.now().strftime(format="%Y_%m_%d_%H_%M_%S")}.log'
-                )
-            else:
-                log_file: str = os.path.join(log_dir, f'log_{datetime.now().strftime(format="%Y_%m_%d_%H_%M_%S")}.log')
+            log_file_name: str = f"log_{datetime.now().timestamp()}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.log"
+            log_file: str = os.path.join(log_dir, log_file_name)
 
             # Create file handler
             file_handler = logging.FileHandler(filename=log_file)
@@ -59,7 +55,6 @@ class LogManager(Singleton):
                 logger.addHandler(stream_handler)
 
             self.loggers[log_type] = logger
-
 
     def log(self, log_type: str, message: str):
         if log_type in self.loggers:
