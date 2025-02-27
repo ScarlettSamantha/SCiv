@@ -1,13 +1,17 @@
 import json
 import os
+from typing import Any, Dict
+from system.vars import VERSION_NAME_STRING, APPLICATION_NAME
 from panda3d.core import loadPrcFileData
-from panda3d.core import ClockObject
 
 
 class ConfigManager:
+    config_data: Dict[str, Any] = {}
+
     def __init__(self, config_file="config.json"):
         self.config_file = config_file
         self.config_data = self._load_config()
+        self.apply_config_to_prc()
 
     def _load_config(self):
         """Internal method: load config from JSON or return default if missing/invalid."""
@@ -20,14 +24,31 @@ class ConfigManager:
 
         # If not found or failed, return a reasonable default:
         return {
-            "render": {"clock-mode": "limited", "clock-frame-rate": 60},
+            "dev": {
+                "debug": False,
+            },
+            "render": {"clock-mode": "limited", "clock-frame-rate": 144},
             "window": {
                 "screen-mode": "windowed",  # "windowed", "fullscreen", or "borderless"
                 "win-origin": [100, 100],
-                "win-size": [1280, 720],
-                "window-title": "My Panda3D App",
+                "win-size": [1600, 900],
+                "window-title": f"{APPLICATION_NAME}<{VERSION_NAME_STRING}>",
             },
         }
+
+    def get_by_key(self, *args) -> Any:
+        """
+        Get a value from the config by key.
+        Example: get_by_key("window", "win-size") -> [1280, 720]
+        """
+        data = self.config_data
+        for key in args:
+            data = data.get(key, {})
+        return data
+
+    def get_config_full(self):
+        """Return the full config data."""
+        return self.config_data
 
     def save_config(self):
         """Persist current config to the JSON file."""
