@@ -16,9 +16,10 @@ from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
 from managers.player import PlayerManager, Player
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
+from system.entity import BaseEntity
 
 
-class Tile:
+class Tile(BaseEntity):
     def __init__(
         self,
         base: Any,

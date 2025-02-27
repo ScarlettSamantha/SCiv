@@ -3,13 +3,15 @@ from gameplay.improvement import Improvement
 from gameplay.citizens import Citizens
 from typing import TYPE_CHECKING, Optional
 
+from system.entity import BaseEntity
+
 
 if TYPE_CHECKING:
     from gameplay.player import Player
     from data.tiles.tile import Tile
 
 
-class City:
+class City(BaseEntity):
     def __init__(self, name: str, tile: "Tile"):
         from gameplay.player import Player
 

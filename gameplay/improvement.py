@@ -5,6 +5,7 @@ from gameplay.effect import Effects
 from gameplay.conditions import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
 from mixins.callbacks import CallbacksMixin
+from system.entity import BaseEntity
 from system.saving import SaveAble
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.tags import Taggable
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from data.tiles.tile import Tile
 
 
-class Improvement(CallbacksMixin, SaveAble, Taggable):
+class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
     # Will always finish in 1 turn.
     SINGLE_TURN = 0
     # Will finish in a fixed amount of turns.
@@ -150,9 +151,7 @@ class Improvement(CallbacksMixin, SaveAble, Taggable):
 
     def upgrade(self):
         if self.upgrade_into is None:
-            raise ImprovementUpgradeException(
-                "Cant upgrade into a null object. needs to be an improvement effect"
-            )
+            raise ImprovementUpgradeException("Cant upgrade into a null object. needs to be an improvement effect")
         self.replace(self.upgrade_into)
 
     def replace(self, _with: Improvement):

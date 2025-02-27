@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Type, Any, TYPE_CHECKI
 from gameplay.combat.stats import Stats
 from managers.player import PlayerManager
 from system.actions import Action
+from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from data.tiles.tile import Tile
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
 
 
-class UnitBaseClass(ABC):
+class UnitBaseClass(BaseEntity, ABC):
     units_lookup: Dict[str, "UnitBaseClass"] = {}
     _model: Optional[str] = None
 

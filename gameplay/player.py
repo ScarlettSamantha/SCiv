@@ -25,11 +25,13 @@ from gameplay.trades import Trades
 
 from typing import Literal, Self, TYPE_CHECKING
 
+from system.entity import BaseEntity
+
 if TYPE_CHECKING:
     from gameplay.units.classes._base import UnitBaseClass
 
 
-class Player:
+class Player(BaseEntity):
     def __init__(
         self,
         name: str,
@@ -65,35 +67,27 @@ class Player:
         self.war_readiness: int = 0  # can be negative and postive.
         self.war_exaustion: int = 0  # can be negative and postive.
 
-        self.size_penalty: float = (
-            0  # 0-3, multiplicative penalty based on the size of the empire.
-        )
-        self.population_pentality: float = (
-            0  # 0-3, multiplicative penalty based on the population of the empire.
-        )
+        self.size_penalty: float = 0  # 0-3, multiplicative penalty based on the size of the empire.
+        self.population_pentality: float = 0  # 0-3, multiplicative penalty based on the population of the empire.
         self.population: int = 0  # total population of the empire.
-        self.citizens: Citizens = Citizens()  # keeps track of the citizens in the empire, but citizens are primarially stored in cities.
+        self.citizens: Citizens = (
+            Citizens()
+        )  # keeps track of the citizens in the empire, but citizens are primarially stored in cities.
 
         # Empire stats
-        self.revolt: float = (
-            0.0  # revolt is a percentage of the empire that is in revolt. 0-100
-        )
-        self.anarchy: float = (
-            0.0  # anarchy is a percentage of the empire that is in anarchy. 0-100
-        )
+        self.revolt: float = 0.0  # revolt is a percentage of the empire that is in revolt. 0-100
+        self.anarchy: float = 0.0  # anarchy is a percentage of the empire that is in anarchy. 0-100
         self.subpression: float = 0.0  # multiplicative bonus on the effectiveness of subpression operations and opression of revolt and anarchy.
         self.popularity: float = 0.0  # 0-100, percentage of the population that supports the goverment. This is not loyality to the goverment, but support for the empire in general. (not a border mechanic)
         self.taxes: int = 0  # 0-100, percentage of the civilian income that is taxed.
 
-        self.police_effectiveness: float = (
-            0.0  # 0-3 multiplier on the effectiveness of police operations.
+        self.police_effectiveness: float = 0.0  # 0-3 multiplier on the effectiveness of police operations.
+        self.counter_intelligence_effectiveness: float = (
+            0.0  # 0-3 multiplier on the effectiveness of counter intelligence operations.
         )
-        self.counter_intelligence_effectiveness: float = 0.0  # 0-3 multiplier on the effectiveness of counter intelligence operations.
 
         self.world_standing: float = 0.0  # can be negative or positive, 0 is neutral. range is only implied and not defined. but can be assumed to be -100 to 100
-        self.delegates: float = (
-            0.0  # absolute number of delegates the player has in the world congress.
-        )
+        self.delegates: float = 0.0  # absolute number of delegates the player has in the world congress.
 
         self.goverment_strength = 0
         self.goverment: Goverment = Goverment()
@@ -117,9 +111,7 @@ class Player:
         self._register_callbacks()
 
     def _register_callbacks(self) -> None:
-        self.citizens.register_callback(
-            event="on_birth", callback=self.on_citizen_birth
-        )
+        self.citizens.register_callback(event="on_birth", callback=self.on_citizen_birth)
 
     def on_citizen_birth(self, citizen: Citizen) -> None:
         self.population += 1
