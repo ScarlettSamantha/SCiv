@@ -21,6 +21,8 @@ class BaseSaver(ABC):
         self.meta_data: Dict[str, Any]  # Will be converted to json
         self.identifier: str
         self.hash: str
+        self.incrementer: int
+        self.inject_metadata: bool = True
 
     def set_identifier(self, identifier: str):
         self.identifier = identifier
@@ -35,6 +37,9 @@ class BaseSaver(ABC):
     def set_hash(self, hash: str):
         self.hash = hash
 
+    def set_incrementer(self, incrementer: int) -> None:
+        self.incrementer = incrementer
+
     def get_identifier(self) -> str:
         return self.identifier
 
@@ -46,6 +51,29 @@ class BaseSaver(ABC):
 
     def get_hash(self) -> str:
         return self.hash
+
+    def get_incrementer(self) -> int:
+        return self.incrementer
+
+    def cycle_incrementer(self, amount: int = 1) -> int:
+        self.incrementer += amount
+        return self.incrementer
+
+    def register_modifications_metadata(self) -> Dict[str, str] | None:
+        if not self.inject_metadata:
+            return None
+
+        self.meta_data["saver"] = {
+            "class": self.__class__.__name__,
+            "compression": self.compression_enabled,
+            "checksum_crc32": self.hash,
+            "meta_checksum_crc32": "",
+            "extension": self.extension,
+            "game_name": self.game_name,
+            "base_path": self.base_path,
+        }
+
+        self.meta_data["saver"]["meta_checksum_crc32"] = str(zlib.crc32(repr(self.meta_data).encode()))
 
     @abstractmethod
     def save(self) -> bool: ...
@@ -59,10 +87,12 @@ class BaseSaver(ABC):
     @abstractmethod
     def get_saved_meta_data(self) -> Dict[str, Any]: ...
 
-    def compress_data(self, data: bytes) -> bytes:
+    def compress_and_inject_data(self, data: bytes) -> bytes:
         """Compress data using gzip if enabled."""
         if self.compression_enabled:
             return gzip.compress(data)
+        if self.inject_metadata:
+            self.register_modifications_metadata()
         return data
 
     def decompress_data(self, data: bytes) -> bytes:
@@ -109,7 +139,7 @@ class SavePickleFile(BaseSaver):
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"
 
-        compressed_data: bytes = self.compress_data(self.data.encode("utf-8"))
+        compressed_data: bytes = self.compress_and_inject_data(self.data.encode("utf-8"))
 
         try:
             with open(data_path, "wb") as file:
@@ -127,7 +157,7 @@ class SavePickleFile(BaseSaver):
             return False
 
     def load(self) -> str | bool:
-        save_dir = Path(self.base_path) / self.identifier
+        save_dir = Path(self.base_path) / self.identifier / str(self.incrementer)
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"

@@ -54,7 +54,7 @@ class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
 
 class EntityManager(Singleton):
     _entities: Dict[EntityType, Dict[str, BaseEntity]] = {type_: {} for type_ in EntityType}
-    _meta_data: Dict[str, Any] = {}
+    _meta_data: Dict[str, Dict[str, Any]] = {"system": {}, "game": {}, "stats": {}, "player": {}}
 
     # Default we pick the PickleEntityManagerSerializer
     _default_serializer: Type[BaseEntityManagerSerializer] = PickleEntityManagerSerializer
@@ -75,7 +75,30 @@ class EntityManager(Singleton):
         )
         self.saver: Type[BaseSaver] = saver if saver is not None else self._default_savefile_handler
         self.session: Optional[str] = session_name if session_name is not None else str(uuid4().hex)
+        self.session_incrementer: int = 0  # Used to keep track of how many times the session has been loaded
+
+        # Stats
+        self.stats = {
+            # Amount of times register is called
+            "total_entities_registered": 0,
+            # Amount of times unregister is called
+            "total_entities_unregistered": 0,
+            # Amount of entities registered
+            "total_entities": 0,
+            # Amount of entities registered but not unregistered.
+            "total_orphan_entities": 0,
+        }
+
         return super().__setup__(*args, **kwargs)
+
+    def add_default_meta_data(self) -> None:
+        """
+        Call this as late to saving as possible so the most accurate stats gets saved.
+        """
+        self.add_meta_data("stats", self.stats)
+        self._meta_data["stats"]["total_orphan_entities"] = (
+            self.stats["total_entities_unregistered"] - self.stats["total_entities"]
+        )
 
     def check_object_against_type(self, type: EntityType, entity: object) -> bool:
         return isinstance(entity, type.base_type)
@@ -87,6 +110,9 @@ class EntityManager(Singleton):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
 
+        self.stats["total_entities_registered"] += 1
+        self.stats["total_entities"] += 1
+
         storage = self.object_type_to_storage(type)
         if key in storage:
             raise ValueError(f"Entity with key {key} already exists.")
@@ -96,6 +122,8 @@ class EntityManager(Singleton):
         storage[key] = entity
 
     def unregister(self, type: EntityType, key: str):
+        self.stats["total_entities_unregistered"] += 1
+        self.stats["total_entities"] -= 1
         self.object_type_to_storage(type).pop(key, None)
 
     def add_library(self, type: EntityType):
@@ -122,6 +150,9 @@ class EntityManager(Singleton):
         self, type: EntityType, keys: list[str], weak_refs: bool = False
     ) -> list[BaseEntity | ReferenceType[BaseEntity] | None]:
         return [self.get_ref(type, key, weak_ref=weak_refs) for key in keys]
+
+    def add_meta_data(self, key: str, value: Any):
+        self._meta_data[key] = value
 
     def get_all(self, type: Optional[EntityType] = None) -> Dict[str, BaseEntity]:
         if type is None:
@@ -159,7 +190,12 @@ class EntityManager(Singleton):
         saver_instance = self.saver()
         saver_instance.set_data(data)
         saver_instance.set_identifier(self.session)
+        saver_instance.set_incrementer(self.session_incrementer)
+
+        # Add meta data before saving to the file to keep track of the state of the game, keep these as late as possible
+        self.add_default_meta_data()
         saver_instance.set_meta_data(self._meta_data)
+
         saver_instance.save()
 
     def load(self):
@@ -174,6 +210,9 @@ class EntityManager(Singleton):
         saver_instance = self.saver()
         saver_instance.set_identifier(self.session)
         loaded_data: str = saver_instance.load()
+
+        self.session_incrementer = saver_instance.get_incrementer()
+        self._meta_data = saver_instance.get_saved_meta_data()
 
         unserialized_data: Dict[EntityType, Dict[str, BaseEntity]] = self.serializer.load(loaded_data)
 
