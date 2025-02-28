@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
@@ -17,10 +17,25 @@ class StatsPanel(FloatLayout):
         self.label: Optional[Label] = None
         self.rect: Optional[Rectangle] = None
 
+        self._periodicals: Dict[str, Any] = {
+            "window_size": f"{self.base.win.getXSize()},{self.base.win.getYSize()}",
+            "window_pos": f"{self.base.win.properties.getXOrigin()},{self.base.win.properties.getYOrigin()}",
+        }
+
         self.register()
 
     def register(self):
-        Clock.schedule_interval(self.on_update, 0.25)
+        def clocks():
+            Clock.schedule_interval(self.on_update, 0.25)
+            Clock.schedule_interval(self.periodicals, 1)
+
+        clocks()
+
+    def periodicals(self, dt):
+        self._periodicals["window_size"] = (f"{self.base.win.getXSize()},{self.base.win.getYSize()}",)
+        self._periodicals["window_pos"] = (
+            f"{self.base.win.properties.getXOrigin()},{self.base.win.properties.getYOrigin()}",
+        )
 
     def build(self) -> FloatLayout:
         # --- Camera Panel (Top-Right Corner) ---
@@ -45,11 +60,11 @@ class StatsPanel(FloatLayout):
             text="Camera Info:\nZoom: 1.0\nAngle: 45°",
             size_hint=(None, None),
             width=200,
-            height=100,
+            height=150,
             font_size="11sp",
             valign="top",
             halign="right",
-            text_size=(200, 100),
+            text_size=(200, 150),
             pos_hint={"right": 1, "top": 1},
             color=(1, 1, 1, 1),
         )
@@ -59,5 +74,13 @@ class StatsPanel(FloatLayout):
 
     def on_update(self, dt):
         fps = self.base.clock.getAverageFrameRate()
-        text = f"FPS: {fps:.2f}\nYaw: {self.camera.yaw}\nPOS: {self.camera.getPos()} \nHPR: {self.camera.getHpr()} \n"
-        self.label.text = text  # type: ignore # We know it exists because it's initialized in build_screen
+        text = (
+            f"FPS: {fps:.2f}",
+            f"Yaw: {self.camera.yaw}",
+            f"POS: {self.camera.getPos()}",
+            f"HPR: {self.camera.getHpr()}",
+            "--Periodicals:--",
+            f"Window_size(x,y): {self._periodicals['window_size'][0]}",
+            f"Window_Pos(top-left): {self._periodicals['window_pos'][0]}",
+        )
+        self.label.text = "\n".join(text)  # type: ignore # We know it exists because it's initialized in build_screen
