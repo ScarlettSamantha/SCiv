@@ -1,7 +1,6 @@
-import re
+
 import math
 import random
-from hexgen.grid import Grid
 from hexgen.mapgen import MapGen
 from hexgen.enums import MapType, OceanType, SuperEnum
 from data.tiles.base_tile import BaseTile
@@ -132,8 +131,9 @@ class Basic(BaseGenerator):
     def load_tiles(self) -> Dict[str, Type[BaseTile]]:
         """Loads tile classes dynamically."""
         classes = PyLoad.load_classes("data/tiles", base_classes=BaseTile)
-        if "Tile" in classes:
-            del classes["Tile"]
+        # Remove the base class from the list
+        if "BaseTile" in classes:
+            del classes["BaseTile"]
         return classes
 
     def generate(self) -> bool:
@@ -291,6 +291,7 @@ class Basic(BaseGenerator):
 
                 # Instantiate the tile object
                 obj_instance: BaseTile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
+                obj_instance.register()
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
 
