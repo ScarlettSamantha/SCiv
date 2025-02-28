@@ -1,15 +1,13 @@
-from __future__ import annotations
-from gameplay.resource import BaseResource, ResourceTypeLuxury, ResourceValueType
+from typing import Tuple
+from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Jade(BaseLuxuryResource):
+    name: T_TranslationOrStr = _t("content.resources.core.jade.name")
+    description: T_TranslationOrStr = _t("content.resources.core.jade.description")
+    spawn_chance: float | Tuple[float, float] = 5.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Jade(BaseResource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.luxury.jade",
-            _t("content.resources.core.jade"),
-            value,
-            ResourceTypeLuxury,
-            ResourceValueType.INT,
-        )
+        super().__init__("resource.core.strategic.jade", value=value)

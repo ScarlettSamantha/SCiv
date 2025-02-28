@@ -1,15 +1,13 @@
-from __future__ import annotations
-from gameplay.resource import BaseResource, ResourceTypeBonus, ResourceValueType
+from typing import Tuple
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Salt(BaseBonusResource):
+    name: T_TranslationOrStr = _t("content.resources.core.salt.name")
+    description: T_TranslationOrStr = _t("content.resources.core.salt.description")
+    spawn_chance: float | Tuple[float, float] = 5.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Salt(BaseResource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.bonus.salt",
-            _t("content.resources.core.salt"),
-            value,
-            ResourceTypeBonus,
-            ResourceValueType.INT,
-        )
+        super().__init__("resource.core.strategic.salt", value=value)

@@ -1,15 +1,13 @@
-from __future__ import annotations
-from gameplay.resource import BaseResource, ResourceTypeBonus, ResourceValueType
+from typing import Tuple
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Furs(BaseBonusResource):
+    name: T_TranslationOrStr = _t("content.resources.core.furs.name")
+    description: T_TranslationOrStr = _t("content.resources.core.furs.description")
+    spawn_chance: float | Tuple[float, float] = 5.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Furs(BaseResource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.bonus.furs",
-            _t("content.resources.core.furs"),
-            value,
-            ResourceTypeBonus,
-            ResourceValueType.INT,
-        )
+        super().__init__("resource.core.strategic.furs", value=value)

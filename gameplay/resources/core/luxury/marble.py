@@ -1,15 +1,13 @@
-from __future__ import annotations
-from gameplay.resource import BaseResource, ResourceTypeLuxury, ResourceValueType
+from typing import Tuple
+from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Marble(BaseLuxuryResource):
+    name: T_TranslationOrStr = _t("content.resources.core.marble.name")
+    description: T_TranslationOrStr = _t("content.resources.core.marble.description")
+    spawn_chance: float | Tuple[float, float] = 5.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Marble(BaseResource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.luxury.marble",
-            _t("content.resources.core.marble"),
-            value,
-            ResourceTypeLuxury,
-            ResourceValueType.INT,
-        )
+        super().__init__("resource.core.strategic.marble", value=value)
