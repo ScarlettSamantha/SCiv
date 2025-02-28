@@ -1,5 +1,4 @@
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import loadPrcFile
 
 from lights import setup_lights
 from camera import CivCamera
