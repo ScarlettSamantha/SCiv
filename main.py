@@ -3,9 +3,8 @@ from direct.showbase.ShowBase import ShowBase
 from lights import setup_lights
 from camera import CivCamera
 
-from managers.world import World
 from managers.unit import Unit
-from managers.ui import ui
+
 from managers.input import Input
 from managers.config import ConfigManager
 from managers.i18n import _i18n, set_i18n
@@ -19,6 +18,9 @@ class Openciv(ShowBase):
     def __init__(
         self,
     ):
+        from managers.world import World
+        from managers.ui import ui
+
         # config_mgr must be applied BEFORE ShowBase to set up prc data
         ShowBase.__init__(self)
         simplepbr.init()
