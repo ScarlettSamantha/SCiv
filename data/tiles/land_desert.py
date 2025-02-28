@@ -1,8 +1,8 @@
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from data.terrain.flat_desert import FlatDessert
 
 
-class LandDesert(Tile):
+class LandDesert(BaseTile):
     _terrain = FlatDessert
     _model = _terrain.model
     _cache_name = "LandDesert"

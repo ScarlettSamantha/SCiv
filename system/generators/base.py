@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Type
 
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
 from gameplay.personality import Personality
@@ -103,10 +103,10 @@ class BaseGenerator(ABC):
         for player in PlayerManager.players().values():
             unit: Settler = Settler(base=self.base)
             unit.owner = player
-            spawn_tile: Optional[Tile] = None
+            spawn_tile: Optional[BaseTile] = None
             # We need to find a tile to spawn the unit on
             while True:
-                _spawn_tile: Optional[Tile] = self.base.world.random_tile()
+                _spawn_tile: Optional[BaseTile] = self.base.world.random_tile()
 
                 if _spawn_tile is None:
                     raise Exception("No tiles found to spawn unit on")

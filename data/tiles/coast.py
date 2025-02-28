@@ -1,8 +1,8 @@
 from data.terrain.coast import Coast as CoastTerrain
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 
-class Coast(Tile):
+class Coast(BaseTile):
     _cache_name = "Coast"
     _terrain = CoastTerrain()
     _model = _terrain.model

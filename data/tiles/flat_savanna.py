@@ -1,8 +1,8 @@
 from data.terrain.flat_savanna import FlatSavanna as FlatSavannaTerrain
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 
-class FlatSavanna(Tile):
+class FlatSavanna(BaseTile):
     _terrain = FlatSavannaTerrain
     _model = _terrain.model
     _cache_name = "FlatSavanna"

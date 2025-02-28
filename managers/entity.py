@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, TypeVar
 
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from mixins.singleton import Singleton
 from enum import Enum
 from uuid import uuid4
@@ -17,7 +17,7 @@ from main import Openciv
 
 
 class EntityType(Enum):
-    TILE = ("_tiles_", Tile)
+    TILE = ("_tiles_", BaseTile)
     UNIT = ("_units_", UnitBaseClass)
     IMPROVEMENT = ("_improvements_", Improvement)
     CITY = ("_cities_", City)

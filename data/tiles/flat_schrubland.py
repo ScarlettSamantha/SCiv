@@ -1,8 +1,8 @@
 from data.terrain.flat_schrubland import FlatSchrubland as FlatSchrublandTerrain
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 
-class FlatSchrubland(Tile):
+class FlatSchrubland(BaseTile):
     _terrain = FlatSchrublandTerrain
     _model = _terrain.model
 

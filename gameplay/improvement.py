@@ -13,7 +13,7 @@ from managers.tags import Taggable
 from typing import Tuple, TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from data.tiles.tile import Tile
+    from data.tiles.base_tile import BaseTile
 
 
 class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
@@ -28,7 +28,7 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
         self,
         key: str,
         name: str,
-        tile: Tile,
+        tile: BaseTile,
         health: int = 100,
         max_health: int = 100,
         *args,
@@ -62,7 +62,7 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
         self.description: T_TranslationOrStrOrNone = None
 
         self.multi_turn_mode = self.SINGLE_TURN
-        self.tile: Tile = tile
+        self.tile: BaseTile = tile
 
         # Following 3 are not needed in single turn mode.
         self.production_needed = None
@@ -160,7 +160,7 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
     @staticmethod
     def basic_resource_improvement(
         name: str,
-        tile: Tile,
+        tile: BaseTile,
         property: str,
         delta: float,
         mode: int = TileYield.ADDITIVE,

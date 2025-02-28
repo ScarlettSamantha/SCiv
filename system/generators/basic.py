@@ -4,7 +4,7 @@ import random
 from hexgen.grid import Grid
 from hexgen.mapgen import MapGen
 from hexgen.enums import MapType, OceanType, SuperEnum
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad
 from typing import TYPE_CHECKING, Dict, Type
@@ -85,14 +85,14 @@ class Basic(BaseGenerator):
     def __init__(self, config: "GameSettings", base):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
-        self.map: Dict[str, Tile] = self.world.map
+        self.map: Dict[str, BaseTile] = self.world.map
         from random import randrange
 
         # Random seed
         self.seed = randrange(0, 999999)
 
         # Load tile definitions
-        self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
+        self.tiles_dict: Dict[str, Type[BaseTile]] = self.load_tiles()
 
         # Initialize HexGen world parameters
         self.map_params = {
@@ -129,9 +129,9 @@ class Basic(BaseGenerator):
             "num_territories": 0,
         }
 
-    def load_tiles(self) -> Dict[str, Type[Tile]]:
+    def load_tiles(self) -> Dict[str, Type[BaseTile]]:
         """Loads tile classes dynamically."""
-        classes = PyLoad.load_classes("data/tiles", base_classes=Tile)
+        classes = PyLoad.load_classes("data/tiles", base_classes=BaseTile)
         if "Tile" in classes:
             del classes["Tile"]
         return classes
@@ -290,7 +290,7 @@ class Basic(BaseGenerator):
                     render_y = row * self.world.row_spacing  # Even columns align normally
 
                 # Instantiate the tile object
-                obj_instance: Tile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
+                obj_instance: BaseTile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
 

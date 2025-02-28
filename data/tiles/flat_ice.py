@@ -1,8 +1,8 @@
 from data.terrain.flat_ice import FlatIce as FlatIceTerrain
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 
-class FlatIce(Tile):
+class FlatIce(BaseTile):
     _terrain = FlatIceTerrain
     _model = _terrain.model
     _cache_name = "FlatIce"

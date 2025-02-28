@@ -1,8 +1,8 @@
 from data.terrain.flat_tundra_snow import FlatTundraSnow as FlatTundraSnowTerrain
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 
-class FlatTundraSnow(Tile):
+class FlatTundraSnow(BaseTile):
     _terrain = FlatTundraSnowTerrain
     _model = _terrain.model
     _cache_name = "FlatTundraSnow"

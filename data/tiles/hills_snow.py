@@ -1,8 +1,8 @@
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from data.terrain.hills_snow import HillsSnow as HillSnowTerrain
 
 
-class HillsSnow(Tile):
+class HillsSnow(BaseTile):
     _terrain = HillSnowTerrain
     _model = _terrain.model
     _cache_name = "HillsSnow"

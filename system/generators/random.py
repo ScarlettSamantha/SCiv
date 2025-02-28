@@ -1,4 +1,4 @@
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 from system.generators.base import BaseGenerator
 from typing import Type, TYPE_CHECKING, Dict, Tuple
@@ -16,13 +16,13 @@ class RandomGenerator(BaseGenerator):
     def __init__(self, config: "GameSettings", base):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
-        self.map: Dict[str, Tile] = self.world.map  # Syntax Sugar
-        self.grid: Dict[Tuple[int, int], Tile] = self.world.grid  # Syntax Sugar
+        self.map: Dict[str, BaseTile] = self.world.map  # Syntax Sugar
+        self.grid: Dict[Tuple[int, int], BaseTile] = self.world.grid  # Syntax Sugar
 
     def load_tiles(self):
-        from data.tiles.tile import Tile
+        from data.tiles.base_tile import BaseTile
 
-        classes = PyLoad.load_classes("data/tiles", base_classes=Tile)
+        classes = PyLoad.load_classes("data/tiles", base_classes=BaseTile)
         if "Tile" in classes:
             del classes["Tile"]
         return classes
@@ -41,9 +41,9 @@ class RandomGenerator(BaseGenerator):
                     else:
                         y = row * self.world.row_spacing
 
-                    tile: Type[Tile] = random.choice(list(tiles.values()))
+                    tile: Type[BaseTile] = random.choice(list(tiles.values()))
 
-                    obj_instance: Tile = tile(self.base, col, row, x, y)
+                    obj_instance: BaseTile = tile(self.base, col, row, x, y)
                     obj_instance.render()
                     # Do after render to get the node. otherwise there is no tag to set..
                     self.map[

@@ -19,7 +19,7 @@ from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from system.entity import BaseEntity
 
 
-class Tile(BaseEntity):
+class BaseTile(BaseEntity):
     def __init__(
         self,
         base: Any,

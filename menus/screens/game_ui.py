@@ -11,7 +11,7 @@ from kivy.uix.label import Label
 from camera import CivCamera
 from gameplay.units.classes._base import UnitBaseClass
 
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 from managers.unit import Unit
 from managers.world import World
@@ -110,7 +110,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         return self.debug_frame.build_debug_frame()
 
     def process_tile_click(self, tile: str):
-        _tile: Optional[Tile] = self.world_manager.lookup_on_tag(tile)
+        _tile: Optional[BaseTile] = self.world_manager.lookup_on_tag(tile)
 
         if _tile is not None:
             self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _tile.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
@@ -160,7 +160,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.waiting_for_world_input = True
         self.debug_panel.text = "Waiting for tile selection..."  # type: ignore # We know it exists because it's initialized in build_screen
 
-    def execute_action(self, action: Action, unit: UnitBaseClass, tile: Optional[Tile]):
+    def execute_action(self, action: Action, unit: UnitBaseClass, tile: Optional[BaseTile]):
         """Executes the action after tile selection (if required)."""
         action.action_kwargs["unit"] = unit
 

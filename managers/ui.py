@@ -1,6 +1,6 @@
 from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from managers.player import PlayerManager
 
 from mixins.singleton import Singleton
@@ -28,11 +28,11 @@ class ui(Singleton):
         self.game: Optional["Game"] = Game.get_instance()
         self.map: World = World.get_instance()
 
-        self.current_tile: Optional[Tile] = None
-        self.previous_tile: Optional[Tile] = None
+        self.current_tile: Optional[BaseTile] = None
+        self.previous_tile: Optional[BaseTile] = None
 
-        self.neighbours_tiles: List[Tile] = []
-        self.previous_tiles: List[Tile] = []
+        self.neighbours_tiles: List[BaseTile] = []
+        self.previous_tiles: List[BaseTile] = []
 
         self.current_unit: Optional[UnitBaseClass] = None
         self.previous_unit: Optional[UnitBaseClass] = None
@@ -134,7 +134,7 @@ class ui(Singleton):
 
     def color_tile(
         self,
-        tile: Tile,
+        tile: BaseTile,
         color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
     ):
         if color is None:
@@ -149,7 +149,7 @@ class ui(Singleton):
 
     def color_neighbors(
         self,
-        tile: Tile,
+        tile: BaseTile,
         color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
     ):
         from gameplay.repositories.tile import TileRepository
@@ -163,7 +163,7 @@ class ui(Singleton):
 
         return neighbors
 
-    def restore_tile_colors(self, tile: Tile):
+    def restore_tile_colors(self, tile: BaseTile):
         tile.set_color((1, 1, 1, 1))
 
     def select_unit(self, unit: List[str] | UnitBaseClass):

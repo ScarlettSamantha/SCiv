@@ -1,8 +1,8 @@
 from data.terrain.flat_heavy_forest import FlatHeavyForest as FlatHeavyForestTerrain
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 
 
-class FlatHeavyForest(Tile):
+class FlatHeavyForest(BaseTile):
     _terrain = FlatHeavyForestTerrain
     _model = _terrain.model
 

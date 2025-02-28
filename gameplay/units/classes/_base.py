@@ -11,7 +11,7 @@ from system.actions import Action
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from data.tiles.tile import Tile
+    from data.tiles.base_tile import BaseTile
     from gameplay.promotion import PromotionTree
     from gameplay.player import Player
 
@@ -42,7 +42,7 @@ class UnitBaseClass(BaseEntity, ABC):
         self.icon: str | None = icon
         self.promotion_tree: Type[PromotionTree] = promotion_tree
         self.owner: Player | None = owner
-        self.tile: Tile  # Tile must be set before spawning
+        self.tile: BaseTile  # Tile must be set before spawning
         self.model: Optional[NodePath] = model  # Will hold the Panda3D model
         self.model_size: float = model_size  # Default size of the model
         self.model_rotation: Tuple[float, float, float] = model_rotation  # Default rotation of the model
@@ -169,7 +169,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         return model
 
-    def tile_is_occupiable(self, tile: "Tile") -> bool:
+    def tile_is_occupiable(self, tile: "BaseTile") -> bool:
         return tile.is_passable()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:

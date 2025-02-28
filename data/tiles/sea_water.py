@@ -1,9 +1,9 @@
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from data.terrain.sea import Sea
 from typing import Type
 
 
-class SeaWater(Tile):
+class SeaWater(BaseTile):
     _terrain: Type[Sea] = Sea
     _model = _terrain._model
     _cache_name = "SeaWater"

@@ -1,8 +1,8 @@
-from data.tiles.tile import Tile
+from data.tiles.base_tile import BaseTile
 from data.terrain.flat_forest import FlatForest
 
 
-class LandForest(Tile):
+class LandForest(BaseTile):
     _terrain = FlatForest
     _model = _terrain.model
     _cache_name = "LandForest"
