@@ -4,10 +4,11 @@ from managers.i18n import T_TranslationOrStr, _t
 
 
 class Angre(MechanicBaseResource):
+    key: str = "resource.core.mechanic.angre"
     name: T_TranslationOrStr = _t("content.resources.core.angre.name")
     description: T_TranslationOrStr = _t("content.resources.core.angre.description")
     spawn_chance: float | Tuple[float, float] = 0
     spawn_amount: float | Tuple[float, float] = 0
 
     def __init__(self, value: int = 0):
-        super().__init__("resource.core.mechanic.angre", value=value)
+        super().__init__(value=value)

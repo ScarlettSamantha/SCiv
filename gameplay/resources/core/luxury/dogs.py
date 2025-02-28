@@ -4,10 +4,11 @@ from managers.i18n import T_TranslationOrStr, _t
 
 
 class Dogs(BaseLuxuryResource):
+    key: str = "resource.core.luxury.dogs"
     name: T_TranslationOrStr = _t("content.resources.core.dogs.name")
     description: T_TranslationOrStr = _t("content.resources.core.dogs.description")
     spawn_chance: float | Tuple[float, float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 
     def __init__(self, value: int = 0):
-        super().__init__("resource.core.strategic.dogs", value=value)
+        super().__init__(value=value)

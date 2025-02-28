@@ -4,10 +4,11 @@ from managers.i18n import T_TranslationOrStr, _t
 
 
 class Gas(BaseStrategyResource):
+    key: str = "resource.core.strategic.gas"
     name: T_TranslationOrStr = _t("content.resources.core.gas.name")
     description: T_TranslationOrStr = _t("content.resources.core.gas.description")
     spawn_chance: float | Tuple[float, float] = 5.0
     spawn_amount: float | Tuple[float, float] = 3.0
 
     def __init__(self, value: int = 0):
-        super().__init__("resource.core.strategic.gas", value=value)
+        super().__init__(value=value)
