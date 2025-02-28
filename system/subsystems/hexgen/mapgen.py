@@ -2,13 +2,11 @@ import random
 import sys
 
 from system.subsystems.hexgen.river import RiverSegment
-from system.subsystems.hexgen.hex import Hex, HexSide, HexFeature
-from system.subsystems.hexgen.constants import *
+from system.subsystems.hexgen.hex import HexSide, HexFeature
+
 from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.enums import (
     OceanType,
-    HexResourceType,
-    HexResourceRating,
     MapType,
     Hemisphere,
     GeoformType,
