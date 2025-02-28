@@ -1,17 +1,18 @@
-from __future__ import annotations
-from typing import List
-
+from typing import List, Generic, TypeVar
 from gameplay.units.unit_base import UnitBaseClass
 
 
-class Units:
-    def __init__(self):
-        self.units: List[UnitBaseClass] = []
+T = TypeVar("T", bound="UnitBaseClass")
 
-    def add_unit(self, unit: UnitBaseClass):
+
+class Units(Generic[T]):
+    def __init__(self):
+        self.units: List[T] = []
+
+    def add_unit(self, unit: T) -> None:
         self.units.append(unit)
 
-    def remove_unit(self, unit: UnitBaseClass):
+    def remove_unit(self, unit: T):
         if unit in self.units:
             self.units.remove(unit)
 
