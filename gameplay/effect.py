@@ -3,7 +3,7 @@ from __future__ import annotations
 from managers.i18n import T_TranslationOrStr
 from system.saving import SaveAble
 from system.requires import Requires
-from gameplay.resource import Resource
+from gameplay.resource import BaseResource
 from gameplay.planes.plane import Plane
 from gameplay.combat.stats import Stats
 from exceptions.effects_exception import (
@@ -21,9 +21,7 @@ class Targetable:
 
 
 class EffectTargetType(SaveAble):
-    def __init__(
-        self, key: str, target_planes: Plane, *args: Any, **kwargs: Any
-    ) -> None:
+    def __init__(self, key: str, target_planes: Plane, *args: Any, **kwargs: Any) -> None:
         SaveAble.__init__(self=self, *args, **kwargs)
         self.key: str = key
         self.target_planes: Plane = target_planes
@@ -94,7 +92,7 @@ class Effect(SaveAble):
         can_player_self_activate: bool = False,
         can_buyoff: bool = False,
         buyoff_cost: int = 0,
-        buyoff_resource: Type[Resource] | None = None,
+        buyoff_resource: Type[BaseResource] | None = None,
         combat_stats: Stats = Stats(),
         *args: Any,
         **kwargs: Any,
@@ -111,7 +109,7 @@ class Effect(SaveAble):
         self.is_bought_off: bool = False
 
         self.buyoff_cost: int = buyoff_cost
-        self.buyoff_resource: Type[Resource] | None = buyoff_resource
+        self.buyoff_resource: Type[BaseResource] | None = buyoff_resource
         self.can_buyoff: bool = can_buyoff
         self.can_player_self_activate: bool = can_player_self_activate
         self.can_player_self_deactivate: bool = can_player_self_deactivate
@@ -126,9 +124,7 @@ class Effect(SaveAble):
 
         self._setup_saveable()
 
-    def buyoff(
-        self, change_active: bool = True, fail_on_unallowed_buyoff: bool = True
-    ) -> Effect:
+    def buyoff(self, change_active: bool = True, fail_on_unallowed_buyoff: bool = True) -> Effect:
         if not self.can_buyoff:
             if fail_on_unallowed_buyoff:
                 raise EffectCannotBeBoughtOff(f"Effect {self.key} cannot be bought off")
@@ -147,9 +143,7 @@ class Effect(SaveAble):
 
 
 class Effects(SaveAble):
-    def __init__(
-        self, name: T_TranslationOrStr | None = None, *args: Any, **kwargs: Any
-    ) -> None:
+    def __init__(self, name: T_TranslationOrStr | None = None, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.index: int = 0
         self.effects: Dict[str, Effect] = {}
@@ -169,9 +163,7 @@ class Effects(SaveAble):
     ) -> None:
         if auto_add_name_on_empty and getattr(effect, "name") is None:
             effect.name = f"!nameless_effect_from_{self.name}_{self.index}"
-        self.logger.loggers["gameplay"].debug(
-            f"Adding effect {effect.name} to {self.name}"
-        )
+        self.logger.loggers["gameplay"].debug(f"Adding effect {effect.name} to {self.name}")
         self.effects[effect.key if key_or_auto is None else key_or_auto] = effect
         self.index += 1
 
@@ -193,9 +185,7 @@ class Effects(SaveAble):
             if fail_on_not_found:
                 raise EffectDoesNotExist(f"Effect {key} does not exist in {self.name}")
             return
-        self.logger.loggers["gameplay"].debug(
-            f"Deleting effect {self.effects[key].name} from {self.name}"
-        )
+        self.logger.loggers["gameplay"].debug(f"Deleting effect {self.effects[key].name} from {self.name}")
         del self.effects[key]
 
     def __iter__(self) -> Generator[Effect, None, None]:
@@ -233,9 +223,7 @@ class Effects(SaveAble):
         elif isinstance(other, dict):  # type: ignore
             return self._merge_effects_dict(effects=other)
         else:
-            raise TypeError(
-                "Can only merge with another Effects instance, list of Effects, or dict of Effects"
-            )
+            raise TypeError("Can only merge with another Effects instance, list of Effects, or dict of Effects")
 
     def __radd__(self, other: Effects | List[Effect] | Dict[str, Effect]) -> Effects:
         return self.__add__(other)
@@ -253,9 +241,7 @@ class Effects(SaveAble):
             for key in other:
                 new_effects.delete(key=key, fail_on_not_found=False)
         else:
-            raise TypeError(
-                "Can only subtract with another Effects instance, str, or list of str"
-            )
+            raise TypeError("Can only subtract with another Effects instance, str, or list of str")
         return new_effects
 
     def __rsub__(self, other: Effects) -> Effects:

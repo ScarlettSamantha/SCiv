@@ -1,10 +1,10 @@
 from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeLuxury, ResourceValueType
+from gameplay.resource import BaseResource, ResourceTypeLuxury, ResourceValueType
 
 from managers.i18n import _t
 
 
-class Gold(Resource):
+class Gold(BaseResource):
     def __init__(self, value: int = 0):
         super().__init__(
             "core.luxury.gold",

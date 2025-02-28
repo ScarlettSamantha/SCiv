@@ -1,8 +1,8 @@
 from __future__ import annotations
-from gameplay.resource import Resource
+from gameplay.resource import BaseResource
 
 
-class MechanicBaseResource(Resource):
+class MechanicBaseResource(BaseResource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gameplay.saving import SaveAble
-from gameplay.resource import Resource
+from gameplay.resource import BaseResource
 from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
 from gameplay.resources.core.basic.food import Food
@@ -104,7 +104,7 @@ class TileYield(SaveAble):
             "holy",
         ]
 
-        self.other_mechnics: Dict[str, Resource] = {}
+        self.other_mechnics: Dict[str, BaseResource] = {}
 
         self._setup_saveable()
 

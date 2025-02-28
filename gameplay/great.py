@@ -5,7 +5,7 @@ from exceptions.great_exception import GreatPersonTreeNotLoaded
 from system.saving import SaveAble
 from managers.log import LogManager
 from gameplay.effect import Effects
-from gameplay.resource import Resource
+from gameplay.resource import BaseResource
 from gameplay.resources.core.mechanics._base import BaseGreatMechanicResource
 
 
@@ -15,11 +15,7 @@ class Great(SaveAble):
         key: str,
         name: T_TranslationOrStr,
         description: T_TranslationOrStr,
-        resource_type_required: Resource
-        | None
-        | Tuple
-        | BaseGreatMechanicResource
-        | List = None,
+        resource_type_required: BaseResource | None | Tuple | BaseGreatMechanicResource | List = None,
         cost: float = 0.0,
         *args,
         **kwargs,
@@ -32,9 +28,9 @@ class Great(SaveAble):
         self.bought: bool = False
         self.on_map: bool = False
         self.effects: Effects = Effects()
-        self.resource_type_required: (
-            Resource | None | Tuple | BaseGreatMechanicResource | List
-        ) = resource_type_required
+        self.resource_type_required: BaseResource | None | Tuple | BaseGreatMechanicResource | List = (
+            resource_type_required
+        )
         self._setup_saveable()
 
 
@@ -60,30 +56,22 @@ class GreatsTree(SaveAble):
 
     def buy_great(self, great: Great) -> Great:
         self.points -= great.points
-        LogManager.get_instance().gameplay.debug(
-            f"Bought Great {great.__class__.__name__} for {great.points} points"
-        )
+        LogManager.get_instance().gameplay.debug(f"Bought Great {great.__class__.__name__} for {great.points} points")
         return great
 
     def add_great(self, great: Great) -> NoReturn:
         self.greats.append(great)
-        LogManager.get_instance().gameplay.debug(
-            f"Added Great {great.__class__.__name__} to {self.name}"
-        )
+        LogManager.get_instance().gameplay.debug(f"Added Great {great.__class__.__name__} to {self.name}")
 
     def remove_great(self, great: Great) -> NoReturn:
         self.greats.remove(great)
-        LogManager.get_instance().gameplay.debug(
-            f"Removed Great {great.__class__.__name__} from {self.name}"
-        )
+        LogManager.get_instance().gameplay.debug(f"Removed Great {great.__class__.__name__} from {self.name}")
 
     def __add__(self, b: int | float | Great) -> ForwardRef("GreatsTree"):
         if isinstance(b, Great):
             self.add_great(b)
             return self
-        LogManager.get_instance().gameplay.debug(
-            f"Adding {b.__class__.__name__} points to {self.name}"
-        )
+        LogManager.get_instance().gameplay.debug(f"Adding {b.__class__.__name__} points to {self.name}")
         self.points += float(b)
         return self
 
@@ -94,9 +82,7 @@ class GreatsTree(SaveAble):
         if isinstance(b, Great):
             self.remove_great(b)
             return self
-        LogManager.get_instance().gameplay.debug(
-            f"Subtracting {b} points from {self.name}"
-        )
+        LogManager.get_instance().gameplay.debug(f"Subtracting {b} points from {self.name}")
         self.points -= float(b)
         return self
 
