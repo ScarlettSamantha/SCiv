@@ -1,12 +1,14 @@
 import math
 import random
+from data.terrain._base_terrain import BaseTerrain
+from gameplay.resource import BaseResource, ResourceSpawnablePlace
+from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.mapgen import MapGen
 from system.subsystems.hexgen.enums import MapType, OceanType, SuperEnum
-from system.subsystems.hexgen.resources import ResourceManager
 from data.tiles.base_tile import BaseTile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Dict, List, Type
 
 if TYPE_CHECKING:
     from system.game_settings import GameSettings
@@ -161,9 +163,6 @@ class Basic(BaseGenerator):
                 hex_tile.terrain = terrain  # Store terrain type
                 hex_tile.render_pos = (x, y)  # Store adjusted render coordinates
 
-        # Step 3: Generate resources
-        self.generate_resources()
-
         # Step 4: Instantiate tiles for rendering
         self.instantiate_tiles()
 
@@ -274,8 +273,8 @@ class Basic(BaseGenerator):
             for row in range(self.config.width):
                 hex_tile = self.hex_grid.grid[col][row]
 
-                x, y = hex_tile.x, hex_tile.y 
-                terrain = hex_tile.terrain 
+                x, y = hex_tile.x, hex_tile.y
+                terrain = hex_tile.terrain
                 # Find the correct tile class or default to FlatGrassland
                 tile_class = self.tiles_dict.get(terrain, self.tiles_dict.get("FlatGrassland"))
                 if tile_class is None:
@@ -291,6 +290,13 @@ class Basic(BaseGenerator):
                 # Instantiate the tile object
                 obj_instance: BaseTile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.register()
+
+                def inject_resource():
+                    self.choose_resource(obj_instance, hex_tile)
+                    return obj_instance
+
+                inject_resource()
+
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
 
@@ -299,6 +305,110 @@ class Basic(BaseGenerator):
                 self.map[tag] = obj_instance
                 self.world.grid[(col, row)] = obj_instance
 
-    def generate_resources(self):
-        resource_manager: ResourceManager = ResourceManager(self.hex_grid)
-        resource_manager.generate_resources()
+    def get_all_resources(self) -> List[Type[BaseResource]]:
+        from gameplay.repositories.resources import ResourceRepository
+        from gameplay.resource import ResourceType
+
+        instance = ResourceRepository()
+        resources = instance.all_by_type([ResourceType.STRATEGIC, ResourceType.BONUS, ResourceType.LUXURY])
+        return resources
+
+    def choose_resource(self, _base_tile: BaseTile, hex_tile: Hex) -> Type[BaseResource] | None:
+        resources = self.get_all_resources()
+        used_resources = set()
+        hex_tile = hex_tile
+        base_tile_type: Type[BaseTile] = type(_base_tile)
+
+        def _choose_resource() -> Type[BaseResource] | None:
+            available_resources = [r for r in resources if r not in used_resources]
+            return filter_out_tile_specific_resources(available_resources, base_tile_type)
+
+        def filter_out_tile_specific_resources(
+            available_resources, base_tile: Type[BaseTile]
+        ) -> Type[BaseResource] | None:
+            """
+            Returns a single resource from 'available_resources' that is valid for the given tile.
+            Returns None if no valid resource can be found after 100 attempts.
+            """
+            i = 0
+            while i < 100:
+                resource = random.choice(available_resources)
+                # If the tile is water, skip land-only resources
+                if hex_tile.is_water:
+                    if resource.spawn_type == ResourceSpawnablePlace.LAND:
+                        i += 1
+                        continue
+                else:
+                    # The tile is land, skip water-only resources
+                    if resource.spawn_type == ResourceSpawnablePlace.WATER:
+                        i += 1
+                        continue
+                # If we get here, the resource is valid for the tile
+                return resource
+            # If we couldn't find a valid resource in 100 tries, return None
+            return None
+
+        resource: Type[BaseResource] | None = _choose_resource()
+
+        if resource is None:
+            return
+
+        # Determine the spawn chance for the resource
+        spawn_chance: float = 0
+        if isinstance(resource.spawn_chance, dict):
+            terrain = _base_tile.get_terrain()
+            terrain_type = terrain.__class__
+            if terrain_type in resource.spawn_chance:
+                spawn_chance: float = resource.spawn_chance.get(
+                    terrain_type, resource.spawn_chance.get(BaseTerrain, 0)
+                )  # base terrain is the default
+        else:
+            spawn_chance: float = resource.spawn_chance
+
+        # Attempt to place the resource on the tile based on its spawn chance
+        against_chance = random.uniform(0, 100)  # for profiler it makes it easier to see the random call
+        if against_chance <= spawn_chance:
+            hex_tile.add_gameplay_resource(resource)  # Assign the resource to the tile
+            # used_resources.add(resource)  # Track used resources to increase variety
+
+            # If the resource is clusterable, attempt clustering
+            if resource.clusterable is not None:
+                self._cluster_resource(hex_tile, resource)
+
+    def _cluster_resource(self, center_tile, resource):
+        """
+        Handles clustering of resources around the initially placed tile.
+        """
+
+        # Determine maximum cluster radius and dropoff rate
+        max_radius = (
+            resource.cluster_max_radius
+            if isinstance(resource.cluster_max_radius, int)
+            else random.randint(resource.cluster_max_radius[0], resource.cluster_max_radius[1])
+        )
+        dropoff_rate = (
+            resource.cluster_dropoff_amount_rate
+            if isinstance(resource.cluster_dropoff_amount_rate, float)
+            else random.uniform(resource.cluster_dropoff_amount_rate[0], resource.cluster_dropoff_amount_rate[1])
+        )
+
+        # Use bubble function to get all hexes within clusterable radius
+        cluster_hexes = center_tile.bubble(max_radius)
+
+        for hex_tile in cluster_hexes:
+            if hex_tile.resource is None:
+                # Compute probability based on distance from original tile
+                distance = self._hex_distance(center_tile, hex_tile)
+                new_probability = 1.0 - (dropoff_rate * distance)
+
+                # Ensure probability is above zero before proceeding
+                if new_probability > 0 and random.uniform(0, 1) <= new_probability * resource.clusterable:
+                    hex_tile.resource = resource  # Assign resource to neighboring tile
+
+    def _hex_distance(self, hex1, hex2):
+        """
+        Calculates the distance between two hex tiles using axial coordinates.
+        """
+        dx = abs(hex1.x - hex2.x)
+        dy = abs(hex1.y - hex2.y)
+        return max(dx, dy, abs(dx - dy))

@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional, Tuple, TypeVar, Union, List, Dict, Any, Self, Type, Generic
 
+from data.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
 from exceptions.resource_exception import ResourceTypeException
 
@@ -81,6 +82,12 @@ T_ResourceType = TypeVar("T_ResourceType", bound=ResourceTypeBase)
 T_ResourceTypeType = TypeVar("T_ResourceTypeType", bound=Type[ResourceTypeBase])
 
 
+class ResourceSpawnablePlace(Enum):
+    LAND = 0
+    WATER = 1
+    BOTH = 2
+
+
 class BaseResource(Generic[T_ResourceType]):
     key: str
     name: T_TranslationOrStr
@@ -88,9 +95,12 @@ class BaseResource(Generic[T_ResourceType]):
     type: Type[T_ResourceType]
     icon: T_TranslationOrStr | None
     configure_as_float_or_int: ResourceValueType = ResourceValueType.INT
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
 
     # Determines the chance that the resource will spawn on a given tile. If a tuple is provided (min, max),
-    spawn_chance: float | Tuple[float, float] = 0.0
+    # If given a dict with terrains, the spawn chance will be different for each terrain.
+    # If it is a baseTerrain object, the spawn chance will be the same for all terrains.
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 0.0
 
     # Determines the amount of the resource that will spawn on a given tile. If a tuple is provided (min, max),
     # the amount will be randomly chosen within this range.
