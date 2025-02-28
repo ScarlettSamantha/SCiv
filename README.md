@@ -11,6 +11,7 @@ At the moment it will run *something* and I will attempt to keep the main branch
 ### How to run it
 
 Its not that hard to actually run it as its panda3d now.
+
 ```
 git clone git@github.com:ScarlettSamantha/SCiv.git
 cd SCiv
@@ -32,10 +33,28 @@ In the `config.prc` is defined it will also debug GPU data but if this is causin
 
 ## Project
 
-- [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
-- [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
-- [Changelog](CHANGELOG.md) - Automatically generated changelog.
-- [File Structure](https://github.com/ScarlettSamantha/openciv-meta/blob/main/File%20Structure.md) - The project structure
+### 0.1.0 Goals
+
+* [x] Have world render
+* [ ] Have resource system
+* [x] Have ok atleast map generator
+* [x] Manage entities
+* [x] Spawn units
+* [ ] Unit actions
+* [ ] Process a turn
+* [ ] Cities that can build something
+* [ ] Basic UI element
+* [ ] Movement for units both pathfinded and weighted + UI
+* [x] Basic backend system integration like managers, systems, logging
+* [x] Proper Implementation UI system (kivy)
+* [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
+
+### Other information
+
+* [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
+* [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
+* [Changelog](CHANGELOG.md) - Automatically generated changelog.
+* [File Structure](https://github.com/ScarlettSamantha/openciv-meta/blob/main/File%20Structure.md) - The project structure
 
 <details>
 
@@ -124,28 +143,28 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 
 ### Mechanics
 
-- [Ages](./ideas/gameplay/age.md)
-- [Climate](./ideas/gameplay/climate.md)
-- [Disease](./ideas/gameplay/disease.md)
-- [Yields](./ideas/gameplay/yields.md)
-- [Movement](./ideas/gameplay/mechanics/movement.md)
-- [Religion](./ideas/gameplay/mechanics/religion.md)
+* [Ages](./ideas/gameplay/age.md)
+* [Climate](./ideas/gameplay/climate.md)
+* [Disease](./ideas/gameplay/disease.md)
+* [Yields](./ideas/gameplay/yields.md)
+* [Movement](./ideas/gameplay/mechanics/movement.md)
+* [Religion](./ideas/gameplay/mechanics/religion.md)
 
 ### Wonders
 
-- [Early](./ideas/wonders/early.md)
-- [Mid](./ideas/wonders/mid.md)
-- [Late](./ideas/wonders/late.md)
+* [Early](./ideas/wonders/early.md)
+* [Mid](./ideas/wonders/mid.md)
+* [Late](./ideas/wonders/late.md)
 
 ### Greats
 
-- [Artists](./ideas/gameplay/greats/artist.md)
-- [Commercial](./ideas/gameplay/greats/commercial.md)
-- [Folk Hero](./ideas/gameplay/greats/hero.md)
-- [Holy](./ideas/gameplay/greats/faith.md)
-- [Generals & Admirals](./ideas/gameplay/greats/military.md)
-- [Engineers](./ideas/gameplay/greats/production.md)
-- [Scientists](./ideas/gameplay/greats/science.md)
+* [Artists](./ideas/gameplay/greats/artist.md)
+* [Commercial](./ideas/gameplay/greats/commercial.md)
+* [Folk Hero](./ideas/gameplay/greats/hero.md)
+* [Holy](./ideas/gameplay/greats/faith.md)
+* [Generals & Admirals](./ideas/gameplay/greats/military.md)
+* [Engineers](./ideas/gameplay/greats/production.md)
+* [Scientists](./ideas/gameplay/greats/science.md)
 
 ### Resources
 
