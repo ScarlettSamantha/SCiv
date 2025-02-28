@@ -6,7 +6,7 @@ from gameplay.player import Player
 from gameplay.promotion import PromotionTree
 from gameplay.item import Items
 from gameplay.combat.stats import Stats
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 from gameplay.resource import Costs
 from gameplay.effect import Effects
 

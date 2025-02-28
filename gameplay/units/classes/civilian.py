@@ -1,5 +1,5 @@
 from typing import Any
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 
 
 class CivilianBaseClass(UnitBaseClass):

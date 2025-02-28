@@ -10,7 +10,7 @@ from gameplay.repositories.civilization import Civilization as CivilizationRepos
 from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, _t
 from managers.player import PlayerManager
 

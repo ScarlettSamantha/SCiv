@@ -5,7 +5,7 @@ from managers.player import PlayerManager
 
 from mixins.singleton import Singleton
 from managers.world import World
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 
 from panda3d.core import PStatClient
 

@@ -1,6 +1,6 @@
 from typing import Optional, Dict
 
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 from mixins.singleton import Singleton
 
 

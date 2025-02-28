@@ -28,7 +28,7 @@ from typing import Literal, Self, TYPE_CHECKING
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from gameplay.units.classes._base import UnitBaseClass
+    from gameplay.units.unit_base import UnitBaseClass
 
 
 class Player(BaseEntity):

@@ -6,7 +6,7 @@ from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
 from gameplay.improvements import Improvements
 from gameplay.tile_yield_modifier import TileYieldModifier, TileYield

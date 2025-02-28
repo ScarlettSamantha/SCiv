@@ -9,7 +9,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from camera import CivCamera
-from gameplay.units.classes._base import UnitBaseClass
+from gameplay.units.unit_base import UnitBaseClass
 
 from data.tiles.base_tile import BaseTile
 
