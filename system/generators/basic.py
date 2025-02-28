@@ -1,8 +1,7 @@
-
 import math
 import random
-from hexgen.mapgen import MapGen
-from hexgen.enums import MapType, OceanType, SuperEnum
+from system.subsystems.hexgen.mapgen import MapGen
+from system.subsystems.hexgen.enums import MapType, OceanType, SuperEnum
 from data.tiles.base_tile import BaseTile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad

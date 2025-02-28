@@ -1,7 +1,7 @@
 import uuid
-from hexgen.edge import Edge
-from hexgen.constants import *
-from hexgen.enums import (
+from system.subsystems.hexgen.edge import Edge
+from system.subsystems.hexgen.constants import *
+from system.subsystems.hexgen.enums import (
     Biome,
     MapType,
     HexType,

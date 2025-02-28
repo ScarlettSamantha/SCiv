@@ -10,7 +10,7 @@ from gameplay.weather import BaseWeather
 from gameplay.improvements import Improvements
 from gameplay.tile_yield_modifier import TileYieldModifier, TileYield
 from gameplay.city import City
-from hexgen.hex import Hex
+from system.subsystems.hexgen.hex import Hex
 from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
 from managers.player import PlayerManager, Player

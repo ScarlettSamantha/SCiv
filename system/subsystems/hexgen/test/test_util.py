@@ -1,9 +1,9 @@
 from unittest import TestCase
 
-from hexgen.util import latitude_to_number
+from system.subsystems.hexgen.util import latitude_to_number
+
 
 class TestLatitudeToNumber(TestCase):
-
     def test_basic(self):
         self.assertEqual(latitude_to_number(0, 100), 50, "0°N is supposed to be the equator")
         self.assertEqual(latitude_to_number(90, 100), 0, "90°N is supposed to be the north pole")

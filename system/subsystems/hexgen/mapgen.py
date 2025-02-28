@@ -1,11 +1,11 @@
 import random
 import sys
 
-from hexgen.river import RiverSegment
-from hexgen.hex import Hex, HexSide, HexFeature
-from hexgen.constants import *
-from hexgen.territory import Territory
-from hexgen.enums import (
+from system.subsystems.hexgen.river import RiverSegment
+from system.subsystems.hexgen.hex import Hex, HexSide, HexFeature
+from system.subsystems.hexgen.constants import *
+from system.subsystems.hexgen.territory import Territory
+from system.subsystems.hexgen.enums import (
     OceanType,
     HexResourceType,
     HexResourceRating,
@@ -13,10 +13,10 @@ from hexgen.enums import (
     Hemisphere,
     GeoformType,
 )
-from hexgen.geoform import Geoform
-from hexgen.heightmap import Heightmap
-from hexgen.grid import Grid
-from hexgen.util import (
+from system.subsystems.hexgen.geoform import Geoform
+from system.subsystems.hexgen.heightmap import Heightmap
+from system.subsystems.hexgen.grid import Grid
+from system.subsystems.hexgen.util import (
     decide_wind,
     pressure_at_seasons,
     Timer,

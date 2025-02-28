@@ -1,6 +1,7 @@
 import math
 import numpy as np
-from hexgen.hex import Hex
+from system.subsystems.hexgen.hex import Hex
+
 
 class GridBoundsException(Exception):
     pass
@@ -34,10 +35,10 @@ class Grid:
 
     @property
     def size(self):
-        return self.params.get('size')
+        return self.params.get("size")
 
     def find_hex(self, x, y):
-        """ Finds a hex and a x and y coordinate """
+        """Finds a hex and a x and y coordinate"""
         try:
             return self.grid[x][y]
         except IndexError:
@@ -52,7 +53,7 @@ class Grid:
                 self.grid[x][y].calculate()
                 alt += self.grid[x][y].altitude
                 hexes.append(self.grid[x][y])
-        self.avg_altitude = round(alt / math.pow(self.size, 2) )
+        self.avg_altitude = round(alt / math.pow(self.size, 2))
 
         self.hexes = sorted(hexes, key=lambda x: x.temperature)
 

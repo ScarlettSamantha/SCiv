@@ -2,7 +2,7 @@ import math
 import random
 import time
 
-from hexgen.enums import HexEdge, Hemisphere
+from system.subsystems.hexgen.enums import HexEdge, Hemisphere
 
 from collections.abc import Hashable
 import functools
@@ -39,6 +39,7 @@ class memoized(object):
         """Support instance methods."""
         return functools.partial(self.__call__, obj)
 
+
 def latitude_to_number(latitude, map_size):
     """Converts latitude in degrees (north is positive, south is negative) to a number
     corresponding to the latitude grid position"""
@@ -53,52 +54,24 @@ def pressure_at_seasons(latitude, base_pressure, pressure_diff, itcz_rise):
     itcz_rise = the rise in altitude of the ITCZ at this season at this latitude
     """
     itcz = (-10 + itcz_rise, 10 + itcz_rise)
-    sthz = dict(
-        north=(20 + itcz_rise, 40 + itcz_rise), south=(-40 + itcz_rise, -20 + itcz_rise)
-    )
-    pf = dict(
-        north=(50 + itcz_rise, 70 + itcz_rise), south=(-70 + itcz_rise, -50 + itcz_rise)
-    )
+    sthz = dict(north=(20 + itcz_rise, 40 + itcz_rise), south=(-40 + itcz_rise, -20 + itcz_rise))
+    pf = dict(north=(50 + itcz_rise, 70 + itcz_rise), south=(-70 + itcz_rise, -50 + itcz_rise))
 
     if itcz[0] <= latitude <= itcz[1]:  # ITCZ
         # highest around 0 degrees
-        final_pressure = base_pressure - (-math.pow(latitude - itcz_rise, 2) + 100) * (
-            pressure_diff / 100
-        )
-    elif (
-        sthz.get("south", [None, None])[0]
-        <= latitude
-        <= sthz.get("south", [None, None])[1]
-    ):  # southern STHZ
+        final_pressure = base_pressure - (-math.pow(latitude - itcz_rise, 2) + 100) * (pressure_diff / 100)
+    elif sthz.get("south", [None, None])[0] <= latitude <= sthz.get("south", [None, None])[1]:  # southern STHZ
         # highest around -30 degrees
-        final_pressure = (
-            base_pressure
-            + ((-math.pow(latitude + (30 - itcz_rise), 2) + 100) / 100) * pressure_diff
-        )
-    elif (
-        sthz.get("north", [None, None])[0]
-        <= latitude
-        <= sthz.get("north", [None, None])[1]
-    ):  # northern STHZ
+        final_pressure = base_pressure + ((-math.pow(latitude + (30 - itcz_rise), 2) + 100) / 100) * pressure_diff
+    elif sthz.get("north", [None, None])[0] <= latitude <= sthz.get("north", [None, None])[1]:  # northern STHZ
         # highest around 30 degrees
-        final_pressure = (
-            base_pressure
-            + ((-math.pow(latitude - (30 + itcz_rise), 2) + 100) / 100) * pressure_diff
-        )
-    elif (
-        pf.get("south", [None, None])[0] <= latitude <= pf.get("south", [None, None])[1]
-    ):  # southern PF
+        final_pressure = base_pressure + ((-math.pow(latitude - (30 + itcz_rise), 2) + 100) / 100) * pressure_diff
+    elif pf.get("south", [None, None])[0] <= latitude <= pf.get("south", [None, None])[1]:  # southern PF
         # highest around -60 degrees
-        final_pressure = base_pressure - (
-            (-math.pow(latitude + (60 - itcz_rise), 2) + 100) / 100
-        ) * (pressure_diff / 2)
-    elif (
-        pf.get("north", [None, None])[0] <= latitude <= pf.get("north", [None, None])[1]
-    ):  # northern PF
+        final_pressure = base_pressure - ((-math.pow(latitude + (60 - itcz_rise), 2) + 100) / 100) * (pressure_diff / 2)
+    elif pf.get("north", [None, None])[0] <= latitude <= pf.get("north", [None, None])[1]:  # northern PF
         # highest around 60 degrees
-        final_pressure = base_pressure - (
-            (-math.pow(latitude - (60 + itcz_rise), 2) + 100) / 100
-        ) * (pressure_diff / 2)
+        final_pressure = base_pressure - ((-math.pow(latitude - (60 + itcz_rise), 2) + 100) / 100) * (pressure_diff / 2)
     else:
         final_pressure = base_pressure + random.randint(-1, 1)
     return round(final_pressure)
@@ -150,9 +123,7 @@ def decide_wind(season_index, world_pressure, hexagon):
             corrected_wind_direction = clockwise_hex_edge(wind_direction, True)
 
     windward_hex = hexagon.neighbor_at(wind_direction)
-    pressure_diff = abs(
-        hexagon.pressure[season_index] - windward_hex.pressure[season_index]
-    )
+    pressure_diff = abs(hexagon.pressure[season_index] - windward_hex.pressure[season_index])
 
     return {
         "direction": corrected_wind_direction,

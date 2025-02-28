@@ -1,5 +1,5 @@
 import uuid
-from hexgen.enums import EdgeDirection
+from system.subsystems.hexgen.enums import EdgeDirection
 
 
 class Edge:

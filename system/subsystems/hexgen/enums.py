@@ -1,5 +1,5 @@
 from enum import Enum
-from hexgen.constants import TERRAIN_TERRAN
+from system.subsystems.hexgen.constants import TERRAIN_TERRAN
 
 
 class SuperEnum(Enum):
@@ -163,6 +163,8 @@ class MapType(SuperEnum):
 
     terran = (1, "Terran", TERRAIN_TERRAN)
     gas = (3, "Gas", None)
+
+
 class HexType(Enum):
     land = "Land"  # hex over or at sealevel
     ocean = "Ocean"  # hex under sealevel
@@ -278,9 +280,11 @@ class Zones(SuperEnum):
     southern_temperate = (7, "Southern Temperate", (150, 250, 150), "F", 0.90)
     antarctic_circle = (8, "Antarctic Circle", (150, 150, 250), "S", 0.60)
 
+
 class Hemisphere(Enum):
     northern = "Northern"
     southern = "Southern"
+
 
 class Season(Enum):
     winter = "Winter"
