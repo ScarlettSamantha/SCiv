@@ -1,25 +1,34 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
 
 from kivy.clock import Clock
 from camera import CivCamera
+from panda3d.core import GraphicsWindow, WindowProperties
+
+if TYPE_CHECKING:
+    from main import Openciv
+    from direct.showbase.ShowBase import ShowBase
 
 
 class StatsPanel(FloatLayout):
-    def __init__(self, base, **kwargs):
+    def __init__(self, base: "Openciv | ShowBase", **kwargs):
         super().__init__(**kwargs)
-        self.base = base
+        self.base: "Openciv | ShowBase" = base
         self.camera: CivCamera = CivCamera.get_instance()
 
         self.frame: Optional[FloatLayout] = None
         self.label: Optional[Label] = None
         self.rect: Optional[Rectangle] = None
 
+        # These are just for type hinting
+        self.window: "GraphicsWindow" = self.base.win
+        self.window_properties: WindowProperties = self.window.properties
+
         self._periodicals: Dict[str, Any] = {
-            "window_size": f"{self.base.win.getXSize()},{self.base.win.getYSize()}",
-            "window_pos": f"{self.base.win.properties.getXOrigin()},{self.base.win.properties.getYOrigin()}",
+            "window_size": f"{self.window.getXSize()},{self.base.win.getYSize()}",
+            "window_pos": f"{self.window_properties.getXOrigin()},{self.window_properties.getYOrigin()}",
         }
 
         self.register()
