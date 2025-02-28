@@ -1,14 +1,14 @@
 from data.terrain._base_terrain import BaseTerrain
 from gameplay.resources.core.mechanics.mechanic_resource import BaseGreatMechanicResource
 from managers.i18n import _t, T_TranslationOrStr
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Type
 
 
 class GreatScientist(BaseGreatMechanicResource):
     key: str = "resource.core.mechanic.great.scientist"
     name: T_TranslationOrStr = _t("content.greats.core.trees.scientists.name")
     description: T_TranslationOrStr = _t("content.greats.core.trees.scientists.description")
-    spawn_chance: float | Dict[BaseTerrain, float] = 0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount: float | Tuple[float, float] = 0
 
     def __init__(self, value: int = 0):

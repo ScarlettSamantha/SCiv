@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Type
 from data.terrain._base_terrain import BaseTerrain
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
@@ -9,7 +9,7 @@ class Whales(BaseBonusResource):
     key: str = "resource.core.strategic.whales"
     name: T_TranslationOrStr = _t("content.resources.core.whales.name")
     description: T_TranslationOrStr = _t("content.resources.core.whales.description")
-    spawn_chance: float | Dict[BaseTerrain, float] = 8.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 8.0
     spawn_amount: float | Tuple[float, float] = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
 
