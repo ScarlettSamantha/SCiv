@@ -15,3 +15,17 @@ APPLICATION_NAME: str = "SCIV"
 CREATOR: Tuple[str, str] = ("Scarlett Samantha Verheul", "scarlett.verheul@gmail.com")
 
 AUTHORS: List[Tuple[str, str]] = [CREATOR]
+
+
+class Colors:
+    RESTORE = (1, 1, 1, 1)
+
+    RED = (1, 0, 0, 1)
+    GREEN = (0, 1, 0, 1)
+    BLUE = (0, 0, 1, 1)
+    TIEL = (0.5, 0.2, 0.7, 1)
+    YELLOW = (1, 1, 0, 1)
+    BLACK = (0, 0, 0, 1)
+    ORANGE = (1, 0.5, 0, 1)
+    PURPLE = (0.5, 0, 1, 1)
+    GREY = (0.5, 0.5, 0.5, 1)
