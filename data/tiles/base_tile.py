@@ -1,7 +1,6 @@
 from panda3d.core import NodePath, LRGBColor, BitMask32
 from typing import Any, Optional, List, Tuple, Union
 from os.path import dirname, realpath, join
-from data.terrain import city
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
@@ -17,6 +16,7 @@ from world.items._base_item import BaseItem
 from managers.player import PlayerManager, Player
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from system.entity import BaseEntity
+from managers.entity import EntityManager, EntityType
 
 
 class BaseTile(BaseEntity):
@@ -38,6 +38,8 @@ class BaseTile(BaseEntity):
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
+        self._entity_manager = EntityManager.get_instance()
 
         self.extra_data: Optional[dict] = extra_data
 
@@ -156,6 +158,18 @@ class BaseTile(BaseEntity):
 
     def __repr__(self) -> str:
         return f"{self.id}@{self.x},{self.y}"
+
+    def register(self):
+        """Registers as a entity in the system."""
+        from managers.entity import EntityType  # Prevent circular import
+
+        self._entity_manager.register(entity=self, key=str(self.id), type=EntityType.TILE)
+
+    def unregister(self):
+        """Unregisters as a entity in the system."""
+        from managers.entity import EntityType  # Prevent circular import
+
+        self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
@@ -466,3 +480,8 @@ class BaseTile(BaseEntity):
         self.is_land = hex.is_land
         self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
         self.is_lake = hex.geoform_type.id == 4  # type: ignore # 4 == Lake
+
+    def destroy(self):
+        self._entity_manager.unregister(entity=self, type=EntityType.TILE)
+        self.unrender_all()
+        self.destroyed = True

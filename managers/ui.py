@@ -2,12 +2,13 @@ from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
 from managers.player import PlayerManager
-
+from managers.entity import EntityManager, EntityType
 from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.unit_base import UnitBaseClass
 
 from panda3d.core import PStatClient
+from system.entity import BaseEntity
 
 
 if TYPE_CHECKING:
@@ -56,6 +57,12 @@ class ui(Singleton):
         if self.game_gui is None:
             raise ValueError("GUI not initialized")
         return self.game_gui
+
+    def get_entities(self) -> EntityManager:
+        if self.game is None:
+            raise AssertionError("Game not initialized")
+
+        return self.game.entities
 
     def get_game(self) -> "Game":
         if self.game is None:
@@ -168,9 +175,12 @@ class ui(Singleton):
 
     def select_unit(self, unit: List[str] | UnitBaseClass):
         if isinstance(unit, list):
-            object = UnitBaseClass.get_unit_by_tag(unit[0])
+            result = self.get_entities().get(EntityType.UNIT, unit[0])
+            if result is None:
+                return
+            object: BaseEntity | UnitBaseClass = result
         else:
-            object = unit
+            object: BaseEntity | UnitBaseClass = unit
 
         if self.current_tile is not None:
             self.current_tile.set_color((1, 1, 1, 1))
@@ -182,7 +192,7 @@ class ui(Singleton):
             if self.previous_unit.model is not None:
                 self.previous_unit.set_color((1, 1, 1, 1))
 
-        if object is not None:
+        if object is not None and isinstance(object, UnitBaseClass):
             if object.owner == PlayerManager.session_player():
                 # Green for player units
                 object.set_color((0, 1, 0, 1))

@@ -5,6 +5,7 @@ from kivy.graphics import Color, Rectangle
 
 from kivy.clock import Clock
 from camera import CivCamera
+from managers.entity import EntityManager
 from panda3d.core import GraphicsWindow, WindowProperties
 
 if TYPE_CHECKING:
@@ -22,6 +23,8 @@ class StatsPanel(FloatLayout):
         self.label: Optional[Label] = None
         self.rect: Optional[Rectangle] = None
 
+        self.entity_manager: EntityManager = EntityManager.get_instance()
+
         # These are just for type hinting
         self.window: "GraphicsWindow" = self.base.win
         self.window_properties: WindowProperties = self.window.properties
@@ -29,6 +32,11 @@ class StatsPanel(FloatLayout):
         self._periodicals: Dict[str, Any] = {
             "window_size": f"{self.window.getXSize()},{self.base.win.getYSize()}",
             "window_pos": f"{self.window_properties.getXOrigin()},{self.window_properties.getYOrigin()}",
+            "entity_manager_entities_total": 0,
+            "entity_manager_entities_orphans": 0,
+            "entity_manager_total_players": 0,
+            "entity_manager_total_units": 0,
+            "entity_manager_total_tiles": 0,
         }
 
         self.register()
@@ -46,12 +54,22 @@ class StatsPanel(FloatLayout):
             f"{self.base.win.properties.getXOrigin()},{self.base.win.properties.getYOrigin()}",
         )
 
+        self.entity_manager.calculate_stats()
+        entity_stats = self.entity_manager.stats
+
+        self._periodicals["entity_manager_entities_total"] = entity_stats["total_entities"]
+        self._periodicals["entity_manager_entities_orphans"] = entity_stats["total_orphan_entities"]
+
+        self._periodicals["entity_manager_total_players"] = entity_stats["total_players"]
+        self._periodicals["entity_manager_total_units"] = entity_stats["total_units"]
+        self._periodicals["entity_manager_total_tiles"] = entity_stats["total_tiles"]
+
     def build(self) -> FloatLayout:
         # --- Camera Panel (Top-Right Corner) ---
         self.frame = FloatLayout(
             size_hint=(None, None),
             width=200,
-            height=200,
+            height=300,
             pos_hint={"right": 1, "top": 1},
         )
 
@@ -69,11 +87,11 @@ class StatsPanel(FloatLayout):
             text="Camera Info:\nZoom: 1.0\nAngle: 45°",
             size_hint=(None, None),
             width=200,
-            height=150,
+            height=300,
             font_size="11sp",
             valign="top",
             halign="right",
-            text_size=(200, 150),
+            text_size=(200, 300),
             pos_hint={"right": 1, "top": 1},
             color=(1, 1, 1, 1),
         )
@@ -91,5 +109,11 @@ class StatsPanel(FloatLayout):
             "--Periodicals:--",
             f"Window_size(x,y): {self._periodicals['window_size'][0]}",
             f"Window_Pos(top-left): {self._periodicals['window_pos'][0]}",
+            "--Entity Info:--",
+            f"Entities: {str(self._periodicals['entity_manager_entities_total'])}",
+            f"Orphans: {str(self._periodicals['entity_manager_entities_orphans'])}",
+            f"Players: {str(self._periodicals['entity_manager_total_players'])}",
+            f"Units: {str(self._periodicals['entity_manager_total_units'])}",
+            f"Tiles: {str(self._periodicals['entity_manager_total_tiles'])}",
         )
         self.label.text = "\n".join(text)  # type: ignore # We know it exists because it's initialized in build_screen

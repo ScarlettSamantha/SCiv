@@ -53,6 +53,8 @@ class BaseGenerator(ABC):
             _name: str = get_i18n().lookup(name)
 
         player = Player(_name, turn_order, personality, civilization, leader)
+        if player.is_registered is False:
+            player.register()
 
         return player
 

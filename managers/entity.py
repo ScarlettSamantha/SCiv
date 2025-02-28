@@ -1,15 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, TypeVar
 
-from data.tiles.base_tile import BaseTile
+
 from mixins.singleton import Singleton
 from enum import Enum
 from uuid import uuid4
 
-from gameplay.units.classes._base import UnitBaseClass
-from gameplay.improvements import Improvement
-from gameplay.city import City
-from gameplay.player import Player
 from system.entity import BaseEntity
 from weakref import ReferenceType, ref
 from system.save_file import BaseSaver, SavePickleFile
@@ -17,19 +13,45 @@ from main import Openciv
 
 
 class EntityType(Enum):
-    TILE = ("_tiles_", BaseTile)
-    UNIT = ("_units_", UnitBaseClass)
-    IMPROVEMENT = ("_improvements_", Improvement)
-    CITY = ("_cities_", City)
-    PLAYER = ("_players_", Player)
+    TILE = ("_tiles_", None)
+    UNIT = ("_units_", None)
+    IMPROVEMENT = ("_improvements_", None)
+    CITY = ("_cities_", None)
+    PLAYER = ("_players_", None)
 
-    def __init__(self, storage_key: str, base_type: Type[BaseEntity]):
+    def __init__(self, storage_key: str, base_type: Type["BaseEntity"] | None):
         self.storage_key = storage_key
-        self.base_type = base_type
+        self._base_type = base_type  # Store it privately
+
+    @property
+    def base_type(self):
+        """Lazy import to avoid circular dependencies."""
+        if self._base_type is None:
+            if self == EntityType.TILE:
+                from data.tiles.base_tile import BaseTile
+
+                self._base_type = BaseTile
+            elif self == EntityType.UNIT:
+                from gameplay.units.unit_base import UnitBaseClass
+
+                self._base_type = UnitBaseClass
+            elif self == EntityType.IMPROVEMENT:
+                from gameplay.improvement import Improvement
+
+                self._base_type = Improvement
+            elif self == EntityType.CITY:
+                from gameplay.city import City
+
+                self._base_type = City
+            elif self == EntityType.PLAYER:
+                from gameplay.player import Player
+
+                self._base_type = Player
+        return self._base_type
 
 
 K = TypeVar("K", bound=str)
-V = TypeVar("V", bound=BaseEntity)
+V = TypeVar("V", bound="BaseEntity")
 
 
 class BaseEntityManagerSerializer(ABC):
@@ -87,6 +109,10 @@ class EntityManager(Singleton):
             "total_entities": 0,
             # Amount of entities registered but not unregistered.
             "total_orphan_entities": 0,
+            # Dynamic stats
+            "total_players": 0,
+            "total_units": 0,
+            "total_tiles": 0,
         }
 
         return super().__setup__(*args, **kwargs)
@@ -101,12 +127,19 @@ class EntityManager(Singleton):
         )
 
     def check_object_against_type(self, type: EntityType, entity: object) -> bool:
+        if type.base_type is None:
+            return False
         return isinstance(entity, type.base_type)
+
+    def calculate_stats(self):
+        self.stats["total_players"] = len(self._entities[EntityType.PLAYER])
+        self.stats["total_units"] = len(self._entities[EntityType.UNIT])
+        self.stats["total_tiles"] = len(self._entities[EntityType.TILE])
 
     def object_type_to_storage(self, type: EntityType) -> Dict[str, BaseEntity]:
         return self._entities[type]
 
-    def register(self, type: EntityType, entity: BaseEntity, key: str = str(uuid4().hex), inject_key: bool = True):
+    def register(self, type: EntityType, entity: BaseEntity, key: str = str(uuid4().hex)):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
 
@@ -117,11 +150,21 @@ class EntityManager(Singleton):
         if key in storage:
             raise ValueError(f"Entity with key {key} already exists.")
 
-        if inject_key:
-            entity.entity_key = key
+        entity.entity_key = key
+        entity.entity_type_ref = type.storage_key
+        entity.is_registered = True
         storage[key] = entity
 
-    def unregister(self, type: EntityType, key: str):
+    def unregister(self, type: EntityType, entity: BaseEntity):
+        key = entity.entity_key
+
+        if key is None:
+            raise AssertionError("Key is None, this should not happen.")  # To silence mypy
+
+        entity.is_registered = False
+        entity.entity_key = None
+        entity.entity_type_ref = None
+
         self.stats["total_entities_unregistered"] += 1
         self.stats["total_entities"] -= 1
         self.object_type_to_storage(type).pop(key, None)
@@ -136,6 +179,13 @@ class EntityManager(Singleton):
         storage = self.object_type_to_storage(type)
         entity = storage.get(key)
         return ref(entity) if weak_ref and entity else entity
+
+    def get_ref_weak(self, type: EntityType, key: str) -> ReferenceType[BaseEntity]:
+        unit_ref = self.get_ref(type, key, weak_ref=True)
+
+        if not isinstance(unit_ref, ReferenceType):
+            raise ValueError(f"Entity with key {key} does not exist.")
+        return unit_ref
 
     def get(self, type: EntityType, key: str) -> BaseEntity | None:
         result = self.get_ref(type, key, weak_ref=False)

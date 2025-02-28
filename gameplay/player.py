@@ -40,6 +40,7 @@ class Player(BaseEntity):
         civilization: Civilization,
         leader: Leader,
     ) -> None:
+        super().__init__()
         from gameplay._units import Units
 
         self.name: str = name
@@ -110,9 +111,20 @@ class Player(BaseEntity):
 
         self._register_callbacks()
 
+    def register(self) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        EntityManager.get_instance().register(entity=self, type=EntityType.PLAYER, key=f"{self.name}-{self.turn_order}")
+
+    def unregister(self) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        EntityManager.get_instance().unregister(entity=self, type=EntityType.PLAYER)
+
     def _register_callbacks(self) -> None:
         self.citizens.register_callback(event="on_birth", callback=self.on_citizen_birth)
 
+    # @todo make citizens seperate thing.
     def on_citizen_birth(self, citizen: Citizen) -> None:
         self.population += 1
 
@@ -153,3 +165,7 @@ class Player(BaseEntity):
 
     def removeUnit(self, unit: "UnitBaseClass") -> None:
         self.units.remove_unit(unit)
+
+    def destroy(self):
+        """Player is destroyed or wiped out."""
+        self.unregister()

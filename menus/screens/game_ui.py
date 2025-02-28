@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, Optional
 from functools import partial
+from weakref import ReferenceType
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
@@ -15,13 +16,14 @@ from data.tiles.base_tile import BaseTile
 
 from managers.unit import Unit
 from managers.world import World
-from menus.kivy.parts import action_bar
+from managers.entity import EntityManager, EntityType
 from system.actions import Action
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.action_bar import ActionBar
+from system.entity import BaseEntity
 
 
 class GameUIScreen(Screen, CollisionPreventionMixin):
@@ -82,7 +84,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         return self.root_layout
 
     def build_screen(self):
-        self.root_layout = FloatLayout()
+        self.root_layout = FloatLayout(size_hint=(1, 1))
 
         self.root_layout.add_widget(self.build_action_bar())
         self.root_layout.add_widget(self.build_stats_frame())
@@ -122,9 +124,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
                 self.wait_for_action_of_user = None  # Reset state
 
     def process_unit_click(self, unit: str):
-        _unit: Optional[UnitBaseClass] = self.unit_manager.find_unit(unit)
+        _unit: ReferenceType[BaseEntity] = EntityManager.get_instance().get_ref_weak(EntityType.UNIT, unit)
         if _unit is not None:
-            self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
+            self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
         self.generate_buttons_for_unit_actions(unit)
 
     def generate_buttons_for_unit_actions(self, unit: str):

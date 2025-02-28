@@ -1,10 +1,11 @@
 import random
 from direct.showbase.ShowBase import ShowBase
+
 from panda3d.core import NodePath, LVector3, BitMask32
 from direct.showbase.Loader import Loader
 from abc import ABC
 from managers.i18n import T_TranslationOrStr, get_i18n, t_
-from typing import Callable, Dict, List, Optional, Tuple, Type, Any, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, Type, Any, TYPE_CHECKING
 from gameplay.combat.stats import Stats
 from managers.player import PlayerManager
 from system.actions import Action
@@ -17,7 +18,6 @@ if TYPE_CHECKING:
 
 
 class UnitBaseClass(BaseEntity, ABC):
-    units_lookup: Dict[str, "UnitBaseClass"] = {}
     _model: Optional[str] = None
 
     def __init__(
@@ -81,6 +81,21 @@ class UnitBaseClass(BaseEntity, ABC):
 
     def _register(self):
         self.add_action(Action(name=t_("actions.unit.self_destroy"), action=self.destroy))
+
+    def register(self) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        entity_manager: EntityManager = EntityManager.get_instance()
+
+        entity_manager.register(entity=self, type=EntityType.UNIT, key=self.tag if self.tag else self.key)
+
+        if self.owner is not None:
+            self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
+
+    def unregister(self) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        EntityManager.get_instance().unregister(entity=self, type=EntityType.UNIT)
 
     def spawn(self) -> bool:
         """
@@ -165,7 +180,7 @@ class UnitBaseClass(BaseEntity, ABC):
         model.setTag("tile_id", self.tag)
         model.reparentTo(self.base.render)  # Attach model to scene graph
 
-        self.register_unit(self)
+        self.register()
 
         return model
 
@@ -211,8 +226,7 @@ class UnitBaseClass(BaseEntity, ABC):
             self.model = None  # Clear reference
 
         # Remove from the units lookup dictionary if it exists
-        if self.tag and self.tag in self.units_lookup:
-            del self.units_lookup[self.tag]
+        self.unregister()
 
         # Nullify references to break cyclic dependencies
         self.tile.units.remove_unit(self)
@@ -226,16 +240,10 @@ class UnitBaseClass(BaseEntity, ABC):
         return True
 
     @classmethod
-    def register_unit(cls, unit: "UnitBaseClass") -> None:
-        if unit.tag is None:
-            raise ValueError(f"Unit {unit.key} has no tag")
-
-        if unit.tag not in cls.units_lookup:
-            cls.units_lookup[unit.tag] = unit
-
-    @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["UnitBaseClass"]:
-        for unit in cls.units_lookup.values():
-            if unit.tag == tag:
-                return unit
+        from managers.entity import EntityManager, EntityType
+
+        entity: UnitBaseClass | BaseEntity | None = EntityManager.get_instance().get(EntityType.UNIT, tag)
+        if isinstance(entity, UnitBaseClass):
+            return entity
         return None
