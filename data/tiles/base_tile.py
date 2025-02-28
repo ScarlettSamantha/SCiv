@@ -1,5 +1,6 @@
+from gameplay.resource import BaseResource, Resources
 from panda3d.core import NodePath, LRGBColor, BitMask32
-from typing import Any, Optional, List, Tuple, Union
+from typing import Any, Optional, List, Tuple, Type, Union
 from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
@@ -65,8 +66,9 @@ class BaseTile(BaseEntity):
         self.terrain: str = "plains"
         self.zone: str = "temperate"
         self.hemisphere: str = "north"
-        self.resource: Optional[dict] = None
 
+        self.resource: Optional[dict] = None
+        self.resources: Resources = Resources()
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height: int = 0
 
@@ -361,6 +363,15 @@ class BaseTile(BaseEntity):
     def tileYield(self) -> TileYieldModifier:
         return self.tile_yield
 
+    def get_resources(self) -> Resources:
+        return self.resources
+
+    def add_resource(self, resource: BaseResource) -> None:
+        self.resources.add(resource)
+
+    def remove_resource(self, resource: BaseResource) -> None:
+        self.resources.remove(resource)
+
     def improvements(self) -> Improvements:
         return self._improvements
 
@@ -411,6 +422,7 @@ class BaseTile(BaseEntity):
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
+            "resources": self.resources.flatten(),
             "features": self.features,
             "units": ",".join(_units),
             "health": self.health,
@@ -465,6 +477,10 @@ class BaseTile(BaseEntity):
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
 
+    def instance_resource(self, resource: Type[BaseResource]):
+        """Just here to decouplel it from enrich from extra data as it will be gone soon."""
+        self.resources.add(resource(3), auto_instance=True)
+
     def enrich_from_extra_data(self, hex: Hex) -> None:
         self.extra_data = hex  # type: ignore
         self.altitude = hex.altitude
@@ -474,12 +490,14 @@ class BaseTile(BaseEntity):
         self.terrain = hex.terrain  # type: ignore
         self.zone = hex.zone.name  # type: ignore
         self.hemisphere = hex.hemisphere.name
-        self.resource = hex.resource
         self.is_coast = hex.is_coast
         self.is_water = hex.is_water
         self.is_land = hex.is_land
         self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
         self.is_lake = hex.geoform_type.id == 4  # type: ignore # 4 == Lake
+        resource: Type[BaseResource] | None = hex.get_gameplay_resource()
+        if resource is not None:
+            self.instance_resource(resource)
 
     def destroy(self):
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)

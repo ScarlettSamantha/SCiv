@@ -2,6 +2,7 @@ import math
 import random
 from system.subsystems.hexgen.mapgen import MapGen
 from system.subsystems.hexgen.enums import MapType, OceanType, SuperEnum
+from system.subsystems.hexgen.resources import ResourceManager
 from data.tiles.base_tile import BaseTile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad
@@ -273,9 +274,8 @@ class Basic(BaseGenerator):
             for row in range(self.config.width):
                 hex_tile = self.hex_grid.grid[col][row]
 
-                x, y = hex_tile.x, hex_tile.y  # ✅ Base HexGen coordinates
-                terrain = hex_tile.terrain  # ✅ Now correctly assigned
-
+                x, y = hex_tile.x, hex_tile.y 
+                terrain = hex_tile.terrain 
                 # Find the correct tile class or default to FlatGrassland
                 tile_class = self.tiles_dict.get(terrain, self.tiles_dict.get("FlatGrassland"))
                 if tile_class is None:
@@ -300,28 +300,5 @@ class Basic(BaseGenerator):
                 self.world.grid[(col, row)] = obj_instance
 
     def generate_resources(self):
-        """Places resources on hexes based on resource rarity."""
-        print("Placing resources")
-        # Get lists of resource ratings and types.
-        ratings = HexResourceRating.list()
-        types = HexResourceType.list()
-
-        # Create a combined list of all possible resource configurations.
-        combined = []
-        for r in ratings:
-            for t in types:
-                combined.append(dict(rating=r, type=t))
-
-        # Iterate over each hex in the grid.
-        # Adjust this loop if your grid structure is different.
-        for col in self.hex_grid.grid:
-            for hex_tile in col:
-                # For each hex, loop through every possible resource.
-                for resource in combined:
-                    chance = (resource["rating"].rarity * resource["type"].rarity * self.hex_grid.size / 100) / (
-                        math.pow(self.hex_grid.size, 2)
-                    )
-                    if random.uniform(0, 1) <= chance:
-                        # Assign the resource. If you want to allow multiple resources,
-                        # you could store them in a list.
-                        hex_tile.resource = resource
+        resource_manager: ResourceManager = ResourceManager(self.hex_grid)
+        resource_manager.generate_resources()

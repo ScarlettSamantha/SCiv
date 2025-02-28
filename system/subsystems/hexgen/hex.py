@@ -1,5 +1,7 @@
+from typing import Optional, Type
 import uuid
 from system.subsystems.hexgen.edge import Edge
+from gameplay.resource import BaseResource
 from system.subsystems.hexgen.constants import *
 from system.subsystems.hexgen.enums import (
     Biome,
@@ -26,6 +28,8 @@ class Hex:
         self.edge_south_east = None
         self.edge_north_west = None
         self.edge_south_west = None
+
+        self.gameplay_resource: Optional[Type[BaseResource]] = None
 
         self.distance = 0  # distance in hexes to the coast. 0 if no coast
         self.moisture = 0
@@ -59,9 +63,11 @@ class Hex:
 
         self.id = uuid.uuid4()
 
-        # if self.temperature[0] <= -12 or self.temperature[1] <= 12 and self.is_water:
-        #     # TODO: this should be better
-        # self.features.add(HexFeature.glacier)
+    def add_gameplay_resource(self, resource: Type[BaseResource]) -> None:
+        self.gameplay_resource = resource
+
+    def get_gameplay_resource(self) -> Type[BaseResource] | None:
+        return self.gameplay_resource
 
     def has_feature(self, feature):
         """

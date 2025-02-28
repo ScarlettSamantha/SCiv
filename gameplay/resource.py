@@ -82,6 +82,7 @@ T_ResourceTypeType = TypeVar("T_ResourceTypeType", bound=Type[ResourceTypeBase])
 
 
 class BaseResource(Generic[T_ResourceType]):
+    key: str
     name: T_TranslationOrStr
     description: T_TranslationOrStr
     type: Type[T_ResourceType]
@@ -118,13 +119,11 @@ class BaseResource(Generic[T_ResourceType]):
 
     def __init__(
         self,
-        key: str,
         value: Union[float, int] = 0,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         super().__init__()
-        self.key: str = key
         self.value: Union[float, int] = value
         self.value_storage: ResourceValueType = self.configure_as_float_or_int
 
