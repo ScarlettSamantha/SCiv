@@ -69,7 +69,7 @@ class EntityManager(Singleton):
         *args,
         **kwargs,
     ):
-        self.base: Openciv = base
+        self.base: "Openciv" = base
         self.serializer: BaseEntityManagerSerializer = (
             serializer() if serializer is not None else self._default_serializer()
         )
