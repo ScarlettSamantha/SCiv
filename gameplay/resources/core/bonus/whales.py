@@ -6,7 +6,7 @@ from managers.i18n import T_TranslationOrStr, _t
 
 
 class Whales(BaseBonusResource):
-    key: str = "resource.core.strategic.whales"
+    key: str = "resource.core.bonus.whales"
     name: T_TranslationOrStr = _t("content.resources.core.whales.name")
     description: T_TranslationOrStr = _t("content.resources.core.whales.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 8.0
