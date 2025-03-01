@@ -1,6 +1,6 @@
 from gameplay.resource import BaseResource, Resources
-from panda3d.core import NodePath, LRGBColor, BitMask32
-from typing import Any, Optional, List, Tuple, Type, Union
+from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TransparencyAttrib
+from typing import Any, Optional, List, Tuple, Type, Union, TYPE_CHECKING
 from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
@@ -18,6 +18,10 @@ from managers.player import PlayerManager, Player
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from system.entity import BaseEntity
 from managers.entity import EntityManager, EntityType
+from panda3d.core import TextureStage
+
+if TYPE_CHECKING:
+    from main import Openciv
 
 
 class BaseTile(BaseEntity):
@@ -33,7 +37,7 @@ class BaseTile(BaseEntity):
     ) -> None:
         self.id: int = id(self)
         self.x: int = x
-        self.base: Any = base
+        self.base: "Openciv" = base
         self.y: int = y
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
@@ -139,6 +143,9 @@ class BaseTile(BaseEntity):
         # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
 
+        self.texture_card: Optional[NodePath] = None
+        self.texture_card_texture: Optional[NodePath] = None
+
         # We configure base tile yield mostly just for debugging.
         self.tile_yield: TileYieldModifier = TileYieldModifier(
             values=TileYield(
@@ -172,6 +179,56 @@ class BaseTile(BaseEntity):
         from managers.entity import EntityType  # Prevent circular import
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
+
+    def add_icon_to_tile(self) -> None:
+        """
+        Append the texture as a separate node instead of replacing existing models.
+        """
+
+        # Create a card for the resource icon
+
+        resources = self.resources.flatten()
+        self.texture_card = CardMaker(f"resource_icon_{self.id}")
+        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # Setting a small
+        for _, resource in resources.items():
+            texture_path = resource.icon
+            if not texture_path:
+                print(f"Resource {resource} has no icon set, cannot add texture.")
+                continue
+
+            self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
+            texture = self.base.loader.load_texture(texturePath=texture_path)
+
+            if not self.models:
+                print(f"Tile {self} has no models rendered, cannot add texture.")
+                return
+
+            self.texture_card_texture.setTexture(texture, 1)
+            self.texture_card_texture.setPos((-0.3, 0, 0.3))  # Positioning the icon
+            self.texture_card_texture.setHpr((0, 270, 270))  # Match the tile model's rotation
+            self.texture_card_texture.setScale(4.0)
+            self.texture_card_texture.setTransparency(True)
+
+            self.texture_card_texture.reparentTo(self.models[0])
+
+            # Extract the texture from the NodePath
+            texture = self.texture_card_texture.find_texture("*")  # type: ignore # Finds the first available texture
+
+            if not texture:
+                print(f"Texture not found in NodePath: {self.texture_card_texture}")
+                return
+
+            # Create a new TextureStage to add the texture
+            tex_stage = TextureStage(f"extra_texture_{id(texture)}")
+            tex_stage.setMode(TextureStage.MModulate)  # Blend with the base texture
+
+            # Append texture node to the existing model instead of overriding it
+            for node in self.models:
+                # Create a new node for the texture
+                texture_holder = NodePath(f"texture_node_{id(texture)}")
+                texture_holder.setTransparency(TransparencyAttrib.MAlpha)
+                texture_holder.reparentTo(self.texture_card_texture)  # Attach it to the tile model
+                texture_holder.setTexture(tex_stage, texture)
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
@@ -213,7 +270,8 @@ class BaseTile(BaseEntity):
 
         # Load the model using the full path
         hex_model: NodePath = self.base.loader.loadModel(full_model_path)
-
+        if hex_model is None:
+            raise AssertionError(f"Model not found: {full_model_path}")
         # For each texture in the model, reload it using its full path
         # but then set the texture's filename back to the original relative path.
         # texture = hex_model.findAllTextures()[0]
@@ -259,6 +317,10 @@ class BaseTile(BaseEntity):
         Add an additional model on top of the tile.
         """
         extra_model: NodePath = self.base.loader.loadModel(model_path)
+
+        if extra_model is None:
+            raise AssertionError(f"Model not found: {model_path}")
+
         extra_model.setScale(0.48 * scale)
         extra_model.setHpr(*hpr)
         node: NodePath = extra_model.copyTo(self.base.render)
