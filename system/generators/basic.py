@@ -401,7 +401,7 @@ class Basic(BaseGenerator):
 
         # Attempt to place the resource on the tile based on its spawn chance
         against_chance = random.uniform(0, 100)  # for profiler it makes it easier to see the random call
-        if against_chance <= filtered_spawn_chance:
+        if float(against_chance) <= float(filtered_spawn_chance):
             if resource is not None:
                 hex_tile.add_gameplay_resource(resource)  # Assign the resource to the tile
                 # used_resources.add(resource)  # Track used resources to increase variety
