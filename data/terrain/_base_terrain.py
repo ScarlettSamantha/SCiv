@@ -13,6 +13,7 @@ def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
 class BaseTerrain:
     _name: T_TranslationOrStrOrNone = None
     _model: T_TranslationOrStr = ""
+    can_spawn_resources: bool = True
 
     def __init__(self):
         self.fallback_color: LRGBColor | Tuple[float, float, float] = rgb(225, 0, 255)
