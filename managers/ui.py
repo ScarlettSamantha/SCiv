@@ -1,6 +1,7 @@
 from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
+from gameplay.resource import ResourceTypeStrategic, ResourceTypeBonus
 from managers.player import PlayerManager
 from managers.entity import EntityManager, EntityType
 from mixins.singleton import Singleton
@@ -226,7 +227,14 @@ class ui(Singleton):
     def show_colors_for_resources(self):
         for _, hex in self.map.map.items():
             if len(hex.resources) > 0:
-                hex.set_color(Colors.GREEN if self.showing_colors else Colors.RESTORE)
+                is_strategic: bool = len(hex.resources.resources[ResourceTypeStrategic]) > 0
+                is_bonus: bool = len(hex.resources.resources[ResourceTypeBonus]) > 0
+                if is_strategic:
+                    hex.set_color(Colors.YELLOW if self.showing_colors else Colors.RESTORE)
+                elif is_bonus:
+                    hex.set_color(Colors.BLUE if self.showing_colors else Colors.RESTORE)
+                else:
+                    hex.set_color(Colors.GREEN if self.showing_colors else Colors.RESTORE)
             else:
                 hex.set_color(Colors.RED if self.showing_colors else Colors.RESTORE)
         self.showing_colors = not self.showing_colors
