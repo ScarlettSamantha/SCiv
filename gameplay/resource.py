@@ -93,7 +93,7 @@ class BaseResource(Generic[T_ResourceType]):
     name: T_TranslationOrStr
     description: T_TranslationOrStr
     type: Type[T_ResourceType]
-    icon: T_TranslationOrStr | None
+    icon: str = "assets/icons/resources/default.png"
     configure_as_float_or_int: ResourceValueType = ResourceValueType.INT
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
 

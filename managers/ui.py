@@ -1,4 +1,5 @@
-from typing import List, Optional, TYPE_CHECKING, Tuple
+from json import load
+from typing import Dict, List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
 from gameplay.resource import ResourceTypeStrategic, ResourceTypeBonus
@@ -9,8 +10,8 @@ from managers.world import World
 from gameplay.units.unit_base import UnitBaseClass
 from system.vars import Colors
 from panda3d.core import PStatClient
+from direct.showbase.Loader import Loader
 from system.entity import BaseEntity
-
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -45,6 +46,7 @@ class ui(Singleton):
         self.game_gui: Optional[SCivGUI] = None
 
         self.showing_colors = False
+        self.loader: Loader = Loader(self._base)
 
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
@@ -85,7 +87,12 @@ class ui(Singleton):
         self._base.accept("n", self.show_colors_for_resources)
         self._base.accept("m", self.show_colors_for_water)
         self._base.accept("b", self.show_colors_for_units)
+        self._base.accept("z", self.calculate_icons_for_tiles)
+        self._base.accept("game.state.true_game_start", self.post_game_start)
         return True
+
+    def post_game_start(self):
+        self.calculate_icons_for_tiles()
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
@@ -93,10 +100,14 @@ class ui(Singleton):
     def deactivate_pstat(self):
         PStatClient.disconnect()
 
+    def calculate_icons_for_tiles(self):
+        for _, tile in self.map.map.items():
+            tile.add_icon_to_tile()
+
     def get_game_ui(self):
         # If we don't have an active Game, create one
         if self.game is None:
-            messenger.send("system.game.start")
+            messenger.send("system.game.start_load")
         else:
             # If we do, we're just resuming it
             messenger.send("system.game.resume")

@@ -178,7 +178,7 @@ class GameConfigMenu(Screen):
 
         players: int = int(self.player_count)
 
-        messenger.send("system.game.start", [size, civ, players])
+        messenger.send("system.game.start_load", [size, civ, players])
         self.manager.current = "game_ui"
 
     def back_to_main_menu(self):
