@@ -323,7 +323,9 @@ class BaseTile(BaseEntity):
     def set_terrain(self, terrain: BaseTerrain) -> None:
         self.tile_terrain = terrain
 
-    def get_terrain(self) -> Optional[BaseTerrain]:
+    def get_terrain(self) -> BaseTerrain:
+        if self.tile_terrain is None:
+            raise AssertionError("Tile terrain is not set.")
         return self.tile_terrain
 
     def get_climbable(self) -> bool:

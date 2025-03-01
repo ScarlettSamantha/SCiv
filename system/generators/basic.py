@@ -1,5 +1,5 @@
-import math
 import random
+
 from data.terrain._base_terrain import BaseTerrain
 from gameplay.resource import BaseResource, ResourceSpawnablePlace
 from system.subsystems.hexgen.hex import Hex
@@ -314,17 +314,16 @@ class Basic(BaseGenerator):
         return resources
 
     def choose_resource(self, _base_tile: BaseTile, hex_tile: Hex) -> Type[BaseResource] | None:
-        resources = self.get_all_resources()
-        used_resources = set()
+        """@TODO add stats for the map to show how % of each resource is on the map and what type and average spawn rates"""
+        all_resources: List[Type[BaseResource]] = self.get_all_resources()
         hex_tile = hex_tile
-        base_tile_type: Type[BaseTile] = type(_base_tile)
 
         def _choose_resource() -> Type[BaseResource] | None:
-            available_resources = [r for r in resources if r not in used_resources]
-            return filter_out_tile_specific_resources(available_resources, base_tile_type)
+            filtered_resource: Type[BaseResource] | None = filter_out_tile_specific_resources(all_resources, _base_tile)
+            return filtered_resource
 
         def filter_out_tile_specific_resources(
-            available_resources, base_tile: Type[BaseTile]
+            _all_resources: List[Type[BaseResource]], base_tile: BaseTile
         ) -> Type[BaseResource] | None:
             """
             Returns a single resource from 'available_resources' that is valid for the given tile.
@@ -332,17 +331,47 @@ class Basic(BaseGenerator):
             """
             i = 0
             while i < 100:
-                resource = random.choice(available_resources)
-                # If the tile is water, skip land-only resources
-                if hex_tile.is_water:
-                    if resource.spawn_type == ResourceSpawnablePlace.LAND:
-                        i += 1
-                        continue
-                else:
-                    # The tile is land, skip water-only resources
-                    if resource.spawn_type == ResourceSpawnablePlace.WATER:
-                        i += 1
-                        continue
+                resource: Type[BaseResource] = random.choice(_all_resources)
+                i += 1
+
+                def filter_by_type() -> bool:
+                    # If the tile is water, skip land-only resources
+                    if resource.spawn_type == ResourceSpawnablePlace.BOTH:
+                        return True
+                    elif (
+                        (hex_tile.is_water and not hex_tile.is_land)
+                        and (resource.spawn_type is ResourceSpawnablePlace.LAND)
+                    ) or (
+                        (hex_tile.is_land and not hex_tile.is_water)
+                        and (resource.spawn_type is ResourceSpawnablePlace.WATER)
+                    ):
+                        return False
+                    elif (
+                        base_tile.get_terrain().can_spawn_resources is False
+                    ):  # to prevent things like mountains spawning resources
+                        return False
+                    elif (hex_tile.is_water is False and hex_tile.is_land is False) and (
+                        resource.spawn_type is ResourceSpawnablePlace.LAND
+                    ):  # Think hexgen has a bug with plains @TODO check this
+                        return True
+                    return True
+
+                def filter_by_terrain() -> bool:
+                    # If the resource requires a specific terrain type, check if it matches
+                    if isinstance(resource.spawn_chance, dict):
+                        if (
+                            base_tile.get_terrain().__class__ not in resource.spawn_chance
+                            and BaseTerrain not in resource.spawn_chance
+                        ):
+                            return False
+
+                    return True
+
+                if not filter_by_type():
+                    continue
+                if not filter_by_terrain():
+                    continue
+
                 # If we get here, the resource is valid for the tile
                 return resource
             # If we couldn't find a valid resource in 100 tries, return None
@@ -351,29 +380,35 @@ class Basic(BaseGenerator):
         resource: Type[BaseResource] | None = _choose_resource()
 
         if resource is None:
-            return
+            spawn_chance: float = 0.0  # @TODO add a default spawn chance for resources that are not found, This is to prevent mountains from spawning resources
 
         # Determine the spawn chance for the resource
-        spawn_chance: float = 0
-        if isinstance(resource.spawn_chance, dict):
+        spawn_chance = getattr(resource, "spawn_chance", 0.0)
+        filtered_spawn_chance: float = 0.0
+        if isinstance(spawn_chance, dict):
             terrain = _base_tile.get_terrain()
             terrain_type = terrain.__class__
-            if terrain_type in resource.spawn_chance:
-                spawn_chance: float = resource.spawn_chance.get(
-                    terrain_type, resource.spawn_chance.get(BaseTerrain, 0)
-                )  # base terrain is the default
+            if isinstance(spawn_chance, dict) and terrain_type in spawn_chance:
+                filtered_spawn_chance: float = spawn_chance.get(
+                    terrain_type, spawn_chance.get(BaseTerrain, 0.0)
+                )  # base terrain is the default, if it doesn't exist then 0, so you can define to not spawn on a specific terrain.
+            else:
+                filtered_spawn_chance: float = 0.0
+        elif isinstance(spawn_chance, float) or isinstance(spawn_chance, int):
+            filtered_spawn_chance: float = spawn_chance
         else:
-            spawn_chance: float = resource.spawn_chance
+            raise ValueError(f"Invalid spawn_chance type for resource {resource}")
 
         # Attempt to place the resource on the tile based on its spawn chance
         against_chance = random.uniform(0, 100)  # for profiler it makes it easier to see the random call
-        if against_chance <= spawn_chance:
-            hex_tile.add_gameplay_resource(resource)  # Assign the resource to the tile
-            # used_resources.add(resource)  # Track used resources to increase variety
+        if against_chance <= filtered_spawn_chance:
+            if resource is not None:
+                hex_tile.add_gameplay_resource(resource)  # Assign the resource to the tile
+                # used_resources.add(resource)  # Track used resources to increase variety
 
-            # If the resource is clusterable, attempt clustering
-            if resource.clusterable is not None:
-                self._cluster_resource(hex_tile, resource)
+                # If the resource is clusterable, attempt clustering
+                if resource.clusterable is not None:
+                    self._cluster_resource(hex_tile, resource)
 
     def _cluster_resource(self, center_tile, resource):
         """
