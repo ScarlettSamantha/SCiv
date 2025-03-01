@@ -835,6 +835,14 @@
             "name": "Whales",
             "description": "Large marine mammals hunted for their oil and meat."
           },
+          "clams": {
+            "name": "Clams",
+            "description": "Marine bivalve mollusks, harvested for food."
+          },
+          "lobster": {
+            "name": "Lobster",
+            "description": "A large marine crustacean with a hard shell, prized for its meat."
+          },
           "wheat": {
             "name": "Wheat",
             "description": "A cereal grain that is a staple food used to make flour for bread."
