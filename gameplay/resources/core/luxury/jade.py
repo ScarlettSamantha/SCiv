@@ -8,6 +8,7 @@ class Jade(BaseLuxuryResource):
     key: str = "resource.core.luxury.jade"
     name: T_TranslationOrStr = _t("content.resources.core.jade.name")
     description: T_TranslationOrStr = _t("content.resources.core.jade.description")
+    icon: str = "assets/icons/resources/core/luxury/bordered_emerald.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

@@ -8,6 +8,7 @@ class Pigs(BaseBonusResource):
     key: str = "resource.core.bonus.pigs"
     name: T_TranslationOrStr = _t("content.resources.core.pigs.name")
     description: T_TranslationOrStr = _t("content.resources.core.pigs.description")
+    icon: str = "assets/icons/resources/core/bonus/hex_border_pigs.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

@@ -12,6 +12,7 @@ class Gas(BaseStrategyResource):
     name: T_TranslationOrStr = _t("content.resources.core.gas.name")
     description: T_TranslationOrStr = _t("content.resources.core.gas.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 15.0, Coast: 5.0, BaseTerrain: 7.0}
+    icon: str = "assets/icons/resources/core/strategic/bordered_chemicals.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.BOTH
     spawn_amount: float | Tuple[float, float] = 3.0
 

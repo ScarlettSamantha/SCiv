@@ -1,13 +1,14 @@
 from typing import Dict, Tuple, Type
 from data.terrain._base_terrain import BaseTerrain
-from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Furs(BaseBonusResource):
-    key: str = "resource.core.bonus.furs"
+class Furs(BaseLuxuryResource):
+    key: str = "resource.core.luxury.furs"
     name: T_TranslationOrStr = _t("content.resources.core.furs.name")
     description: T_TranslationOrStr = _t("content.resources.core.furs.description")
+    icon: str = "assets/icons/resources/core/luxury/hex_border_furs.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

@@ -8,6 +8,7 @@ class Uranium(BaseStrategyResource):
     key: str = "resource.core.strategic.uranium"
     name: T_TranslationOrStr = _t("content.resources.core.uranium.name")
     description: T_TranslationOrStr = _t("content.resources.core.uranium.description")
+    icon: str = "assets/icons/resources/core/strategic/bordered_uranium.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 3.0
     spawn_amount: float | Tuple[float, float] = 3.0
 

@@ -8,6 +8,7 @@ class Copper(BaseBonusResource):
     key: str = "resource.core.bonus.copper"
     name: T_TranslationOrStr = _t("content.resources.core.copper.name")
     description: T_TranslationOrStr = _t("content.resources.core.copper.description")
+    icon: str = "assets/icons/resources/core/bonus/hex_border_copper.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

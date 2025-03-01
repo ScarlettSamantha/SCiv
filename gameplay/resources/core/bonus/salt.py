@@ -8,6 +8,7 @@ class Salt(BaseBonusResource):
     key: str = "resource.core.bonus.salt"
     name: T_TranslationOrStr = _t("content.resources.core.salt.name")
     description: T_TranslationOrStr = _t("content.resources.core.salt.description")
+    icon: str = "assets/icons/resources/core/bonus/hex_border_salt.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

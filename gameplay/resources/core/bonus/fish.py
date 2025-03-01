@@ -9,6 +9,7 @@ class Fish(BaseBonusResource):
     key: str = "resource.core.bonus.fish"
     name: T_TranslationOrStr = _t("content.resources.core.fish.name")
     description: T_TranslationOrStr = _t("content.resources.core.fish.description")
+    icon: str = "assets/icons/resources/core/bonus/bordered_fish.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 25.0
     spawn_amount: float | Tuple[float, float] = 3.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
