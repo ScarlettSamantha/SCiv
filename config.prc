@@ -3,3 +3,5 @@ win-size 1920 1080
 
 # Enable GPU timing for debugging
 pstats-gpu-timing 1
+
+framebuffer-srgb 0
