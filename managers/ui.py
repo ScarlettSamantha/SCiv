@@ -1,15 +1,17 @@
-from typing import List, Optional, TYPE_CHECKING, Tuple
+from json import load
+from typing import Dict, List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
+from gameplay.resource import ResourceTypeStrategic, ResourceTypeBonus
 from managers.player import PlayerManager
 from managers.entity import EntityManager, EntityType
 from mixins.singleton import Singleton
 from managers.world import World
 from gameplay.units.unit_base import UnitBaseClass
-
+from system.vars import Colors
 from panda3d.core import PStatClient
+from direct.showbase.Loader import Loader
 from system.entity import BaseEntity
-
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -44,6 +46,7 @@ class ui(Singleton):
         self.game_gui: Optional[SCivGUI] = None
 
         self.showing_colors = False
+        self.loader: Loader = Loader(self._base)
 
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
@@ -81,8 +84,15 @@ class ui(Singleton):
         self._base.accept("f7", self.trigger_render_analyze)
         self._base.accept("p", self.activate_pstat)
         self._base.accept("l", self.deactivate_pstat)
-        self._base.accept("f9", self.show_colors_for_resources)
+        self._base.accept("n", self.show_colors_for_resources)
+        self._base.accept("m", self.show_colors_for_water)
+        self._base.accept("b", self.show_colors_for_units)
+        self._base.accept("z", self.calculate_icons_for_tiles)
+        self._base.accept("game.state.true_game_start", self.post_game_start)
         return True
+
+    def post_game_start(self):
+        self.calculate_icons_for_tiles()
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
@@ -90,10 +100,14 @@ class ui(Singleton):
     def deactivate_pstat(self):
         PStatClient.disconnect()
 
+    def calculate_icons_for_tiles(self):
+        for _, tile in self.map.map.items():
+            tile.add_icon_to_tile()
+
     def get_game_ui(self):
         # If we don't have an active Game, create one
         if self.game is None:
-            messenger.send("system.game.start")
+            messenger.send("system.game.start_load")
         else:
             # If we do, we're just resuming it
             messenger.send("system.game.resume")
@@ -103,12 +117,12 @@ class ui(Singleton):
         self.get_game().is_paused = not self.get_game().is_paused
 
     def clear_selection(self):
-        self.current_tiles[0].set_color((1, 1, 1, 1))
+        self.current_tiles[0].set_color(Colors.RESTORE)
         self.current_tiles = []
         self.previous_tiles = []
 
         if self.current_unit is not None:
-            self.current_unit.set_color((1, 1, 1, 1))
+            self.current_unit.set_color(Colors.RESTORE)
         self.current_unit = None
         self.previous_unit = None
 
@@ -125,8 +139,8 @@ class ui(Singleton):
         self.neighbours_tiles = []
 
         # Colors for selected tile and neighbors
-        colors: List[Tuple[float, float, float, float]] = [(0, 1, 0, 1), (0, 0, 1, 1), (1, 0, 0, 1)]
-        colors_neighbours: List[Tuple[float, float, float, float]] = [(1, 1, 0, 1)] * 3
+        colors: List[Tuple[float, float, float, float]] = [Colors.GREEN, Colors.BLUE, Colors.RED]
+        colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
 
         self.color_tile(tile, colors)
         self.color_neighbors(tile, colors_neighbours)
@@ -145,7 +159,7 @@ class ui(Singleton):
         color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
     ):
         if color is None:
-            color = (1, 1, 1, 1)
+            color = Colors.RESTORE
 
         if tile.owner == PlayerManager.session_player():
             tile.set_color(color if isinstance(color, tuple) else color[0])
@@ -162,7 +176,7 @@ class ui(Singleton):
         from gameplay.repositories.tile import TileRepository
 
         if color is None:
-            color = (1, 1, 1, 1)
+            color = Colors.RESTORE
 
         neighbors = TileRepository.get_neighbors(tile)
         for i, _tile in enumerate(neighbors):
@@ -171,7 +185,7 @@ class ui(Singleton):
         return neighbors
 
     def restore_tile_colors(self, tile: BaseTile):
-        tile.set_color((1, 1, 1, 1))
+        tile.set_color(Colors.RESTORE)
 
     def select_unit(self, unit: List[str] | UnitBaseClass):
         if isinstance(unit, list):
@@ -183,33 +197,63 @@ class ui(Singleton):
             object: BaseEntity | UnitBaseClass = unit
 
         if self.current_tile is not None:
-            self.current_tile.set_color((1, 1, 1, 1))
+            self.current_tile.set_color(Colors.RESTORE)
             self.previous_tile = self.current_tile
             self.current_tile = None
 
         if self.current_unit is not None:
             self.previous_unit = self.current_unit
             if self.previous_unit.model is not None:
-                self.previous_unit.set_color((1, 1, 1, 1))
+                self.previous_unit.set_color(Colors.RESTORE)
 
         if object is not None and isinstance(object, UnitBaseClass):
             if object.owner == PlayerManager.session_player():
                 # Green for player units
-                object.set_color((0, 1, 0, 1))
+                object.set_color(Colors.GREEN)
             else:
                 # Red for enemy units
-                object.set_color((1, 0, 0, 1))
+                object.set_color(Colors.RED)
             self.current_unit = object
 
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore
 
+    def show_colors_for_water(self):
+        for _, hex in self.map.map.items():
+            if self.showing_colors:
+                hex.set_color(Colors.RESTORE)
+                continue
+
+            if hex.is_coast and hex.is_water:
+                hex.set_color(Colors.TIEL)
+            elif hex.is_water:
+                hex.set_color(Colors.BLUE)
+            elif not hex.is_water:
+                hex.set_color(Colors.RED)
+            else:
+                hex.set_color(Colors.RESTORE)
+
+        self.showing_colors = not self.showing_colors
+
     def show_colors_for_resources(self):
         for _, hex in self.map.map.items():
-            if hex.resource is not None:
-                if self.showing_colors:
-                    hex.set_color((1, 1, 1, 1))
+            if len(hex.resources) > 0:
+                is_strategic: bool = len(hex.resources.resources[ResourceTypeStrategic]) > 0
+                is_bonus: bool = len(hex.resources.resources[ResourceTypeBonus]) > 0
+                if is_strategic:
+                    hex.set_color(Colors.YELLOW if self.showing_colors else Colors.RESTORE)
+                elif is_bonus:
+                    hex.set_color(Colors.BLUE if self.showing_colors else Colors.RESTORE)
                 else:
-                    hex.set_color((1, 1, 1, 0.01))
+                    hex.set_color(Colors.GREEN if self.showing_colors else Colors.RESTORE)
+            else:
+                hex.set_color(Colors.RED if self.showing_colors else Colors.RESTORE)
+        self.showing_colors = not self.showing_colors
 
-                self.showing_colors = not self.showing_colors
+    def show_colors_for_units(self):
+        for _, hex in self.map.map.items():
+            if len(hex.units) > 0:
+                hex.set_color(Colors.BLUE if self.showing_colors else Colors.RESTORE)
+            else:
+                hex.set_color(Colors.RED if self.showing_colors else Colors.RESTORE)
+        self.showing_colors = not self.showing_colors

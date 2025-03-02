@@ -12,6 +12,7 @@ class MountainSnow(BaseTerrain):
     _model = "assets/models/tiles/snow_mountain.glb"
     _texture: T_TranslationOrStr = "assets/models/tiles/mountain.png"
     _fallback_color = rgb(0, 119, 255)
+    can_spawn_resources = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -762,7 +762,50 @@
               "description": "Internal game mechanics resource"
             }
           },
-
+          "chicken": {
+            "name": "Chicken",
+            "description": "A domesticated bird raised for meat and eggs."
+          },
+          "gems": {
+            "name": "Gems",
+            "description": "Precious stones used in jewelry and decoration."
+          },
+          "unions": {
+            "name": "Unions",
+            "description": "A union resource"
+          },
+          "sheep": {
+            "name": "Sheep",
+            "description": "Domesticated animals raised for wool and meat."
+          },
+          "clay": {
+            "name": "Clay",
+            "description": "A natural material used for pottery and construction."
+          },
+          "berries": {
+            "name": "Berries",
+            "description": "Small, edible fruits gathered from bushes."
+          },
+          "wood": {
+            "name": "Wood",
+            "description": "A fibrous material from trees used for construction and fuel."
+          },
+          "cotton": {
+            "name": "Cotton",
+            "description": "A soft, fluffy fiber used for textiles."
+          },
+          "stone": {
+            "name": "Stone",
+            "description": "A hard, solid mineral used for construction and tools."
+          },
+          "iron": {
+            "name": "Iron",
+            "description": "A strong, magnetic metal used for tools and construction."
+          },
+          "dyes": {
+            "name": "Dye",
+            "description": "A coloring material used for fabrics and other materials."
+          },
           "bison": {
             "name": "Bison",
             "description": "A large wild animal of the bovine family, important for food and raw materials."
@@ -834,6 +877,14 @@
           "whales": {
             "name": "Whales",
             "description": "Large marine mammals hunted for their oil and meat."
+          },
+          "clams": {
+            "name": "Clams",
+            "description": "Marine bivalve mollusks, harvested for food."
+          },
+          "lobster": {
+            "name": "Lobster",
+            "description": "A large marine crustacean with a hard shell, prized for its meat."
           },
           "wheat": {
             "name": "Wheat",

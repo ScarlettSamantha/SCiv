@@ -1,15 +1,16 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeStrategic, ResourceValueType
+from typing import Dict, Tuple, Type
+from data.terrain._base_terrain import BaseTerrain
+from gameplay.resources.core.strategic.strategic_resource import BaseStrategyResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Aluminium(BaseStrategyResource):
+    key: str = "resource.core.strategic.aluminium"
+    name: T_TranslationOrStr = _t("content.resources.core.aluminium.name")
+    description: T_TranslationOrStr = _t("content.resources.core.aluminium.description")
+    icon: str = "assets/icons/resources/core/strategic/bordered_rare_earth_rods.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Aluminium(Resource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.bonus.aluminium",
-            _t("content.resources.core.aluminium"),
-            value,
-            ResourceTypeStrategic,
-            ResourceValueType.INT,
-        )
+        super().__init__(value=value)

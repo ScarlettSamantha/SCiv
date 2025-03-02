@@ -1,0 +1,14 @@
+{
+  "folders": [
+	{
+		"path": ".."
+	},
+	{
+		"path": "../../kivy-panda3d-stubs"
+	},
+	{
+		"path": "../../panda3d-kivy-fork"
+	}
+],
+  "settings": {}
+}

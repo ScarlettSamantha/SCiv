@@ -19,7 +19,7 @@ from gameplay.votes import Votes
 from gameplay.citizens import Citizens
 
 from gameplay.resource import Resources
-from gameplay.great import Greats
+
 
 from gameplay.trades import Trades
 
@@ -105,7 +105,7 @@ class Player(BaseEntity):
         self.trades: Trades = Trades()
 
         self.resources: Resources = Resources()
-        self.greats: Greats = Greats()
+        # self.greats: Greats = Greats()
 
         self.effects: Effects = Effects()
 

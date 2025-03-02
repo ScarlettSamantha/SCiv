@@ -1,15 +1,16 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeBonus, ResourceValueType
+from typing import Dict, Tuple, Type
+from data.terrain._base_terrain import BaseTerrain
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Cows(BaseBonusResource):
+    key: str = "resource.core.bonus.cows"
+    name: T_TranslationOrStr = _t("content.resources.core.cows.name")
+    description: T_TranslationOrStr = _t("content.resources.core.cows.description")
+    icon: str = "assets/icons/resources/core/bonus/bordered_cow.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 6.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Cows(Resource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.bonus.cows",
-            _t("content.resources.core.cows"),
-            value,
-            ResourceTypeBonus,
-            ResourceValueType.INT,
-        )
+        super().__init__(value=value)

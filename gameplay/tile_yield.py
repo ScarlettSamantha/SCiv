@@ -1,29 +1,6 @@
 from __future__ import annotations
 
 from gameplay.saving import SaveAble
-from gameplay.resource import Resource
-from gameplay.resources.core.basic.culture import Culture
-from gameplay.resources.core.basic.faith import Faith
-from gameplay.resources.core.basic.food import Food
-from gameplay.resources.core.basic.gold import Gold
-from gameplay.resources.core.basic.housing import Housing
-from gameplay.resources.core.basic.production import Production
-from gameplay.resources.core.basic.science import Science
-
-from gameplay.resources.core.mechanics.stability import Stability
-from gameplay.resources.core.mechanics.contentment import Contentment
-from gameplay.resources.core.mechanics.angre import Angre
-from gameplay.resources.core.mechanics.revolt import Revolt
-
-from gameplay.resources.core.mechanics.greats import (
-    GreatArtist,
-    GreatCommerece,
-    GreatMilitary,
-    GreatEngineer,
-    GreatScientist,
-    GreatHero,
-    GreatHoly,
-)
 
 from typing import Dict, List, Any, Self
 
@@ -59,6 +36,29 @@ class TileYield(SaveAble):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
+        from gameplay.resource import BaseResource
+        from gameplay.resources.core.basic.culture import Culture
+        from gameplay.resources.core.basic.faith import Faith
+        from gameplay.resources.core.basic.food import Food
+        from gameplay.resources.core.basic.gold import Gold
+        from gameplay.resources.core.basic.housing import Housing
+        from gameplay.resources.core.basic.production import Production
+        from gameplay.resources.core.basic.science import Science
+
+        from gameplay.resources.core.mechanics.stability import Stability
+        from gameplay.resources.core.mechanics.contentment import Contentment
+        from gameplay.resources.core.mechanics.angre import Angre
+        from gameplay.resources.core.mechanics.revolt import Revolt
+
+        from gameplay.resources.core.mechanics.greats import (
+            GreatArtist,
+            GreatCommerece,
+            GreatMilitary,
+            GreatEngineer,
+            GreatScientist,
+            GreatHero,
+            GreatHoly,
+        )
 
         # Initialize the attributes specific to TileYield
         self._name: str | None = name
@@ -104,7 +104,7 @@ class TileYield(SaveAble):
             "holy",
         ]
 
-        self.other_mechnics: Dict[str, Resource] = {}
+        self.other_mechnics: Dict[str, BaseResource] = {}
 
         self._setup_saveable()
 

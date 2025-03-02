@@ -1,15 +1,16 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeLuxury, ResourceValueType
+from typing import Dict, Tuple, Type
+from data.terrain._base_terrain import BaseTerrain
+from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Gold(BaseLuxuryResource):
+    key: str = "resource.core.luxury.gold"
+    name: T_TranslationOrStr = _t("content.resources.core.gold.name")
+    description: T_TranslationOrStr = _t("content.resources.core.gold.description")
+    icon: str = "assets/icons/resources/core/luxury/bordered_gold.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Gold(Resource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.luxury.gold",
-            _t("content.resources.core.gold"),
-            value,
-            ResourceTypeLuxury,
-            ResourceValueType.INT,
-        )
+        super().__init__(value=value)

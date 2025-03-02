@@ -1,15 +1,16 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeBonus, ResourceValueType
+from typing import Dict, Tuple, Type
+from data.terrain._base_terrain import BaseTerrain
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from managers.i18n import T_TranslationOrStr, _t
 
-from managers.i18n import _t
 
+class Salt(BaseBonusResource):
+    key: str = "resource.core.bonus.salt"
+    name: T_TranslationOrStr = _t("content.resources.core.salt.name")
+    description: T_TranslationOrStr = _t("content.resources.core.salt.description")
+    icon: str = "assets/icons/resources/core/bonus/hex_border_salt.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
+    spawn_amount: float | Tuple[float, float] = 5.0
 
-class Salt(Resource):
     def __init__(self, value: int = 0):
-        super().__init__(
-            "core.bonus.salt",
-            _t("content.resources.core.salt"),
-            value,
-            ResourceTypeBonus,
-            ResourceValueType.INT,
-        )
+        super().__init__(value=value)

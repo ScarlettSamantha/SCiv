@@ -1,15 +1,15 @@
-from __future__ import annotations
+from typing import Dict, Tuple, Type
+from data.terrain._base_terrain import BaseTerrain
 from gameplay.resources.core.basic._base import BasicBaseResource
-from managers.i18n import _t
+from managers.i18n import T_TranslationOrStr, _t
 
 
 class Food(BasicBaseResource):
-    def __init__(self, value, *args, **kwargs):
-        super().__init__(
-            "core.basic.food",
-            _t("content.resources.food.name"),
-            _t("content.resources.food.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.basic.food"
+    name: T_TranslationOrStr = _t("content.resources.core.food.name")
+    description: T_TranslationOrStr = _t("content.resources.core.food.description")
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
+    spawn_amount: float | Tuple[float, float] = 0
+
+    def __init__(self, value: int = 0):
+        super().__init__(value=value)
