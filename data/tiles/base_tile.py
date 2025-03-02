@@ -1,5 +1,5 @@
 from gameplay.resource import BaseResource, Resources
-from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, Texture, TransparencyAttrib
+from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, Texture
 from typing import Any, Optional, List, Tuple, Type, Union, TYPE_CHECKING
 from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
