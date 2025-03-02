@@ -350,6 +350,8 @@ class Basic(BaseGenerator):
                         base_tile.get_terrain().can_spawn_resources is False
                     ):  # to prevent things like mountains spawning resources
                         return False
+                    elif hex_tile.temperature[0] < -1.0 and hex_tile.is_water is True:
+                        return False  # No resources on sea ice # Land based can spawn due to migration
                     elif (hex_tile.is_water is False and hex_tile.is_land is False) and (
                         resource.spawn_type is ResourceSpawnablePlace.LAND
                     ):  # Think hexgen has a bug with plains @TODO check this
@@ -367,9 +369,9 @@ class Basic(BaseGenerator):
 
                     return True
 
-                if not filter_by_type():
+                if filter_by_type() is False:
                     continue
-                if not filter_by_terrain():
+                if filter_by_terrain() is False:
                     continue
 
                 # If we get here, the resource is valid for the tile
