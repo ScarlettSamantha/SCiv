@@ -1,12 +1,10 @@
-from gameplay.saving import SaveAble
-
 from typing import Dict, List, Any, Self, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from gameplay.resource import BaseResource
 
 
-class TileYield(SaveAble):
+class TileYield:
     BASE: int = 0
     ADDITIVE: int = 1
 
@@ -36,8 +34,6 @@ class TileYield(SaveAble):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        super().__init__(*args, **kwargs)
-
         # Initialize the attributes specific to TileYield
         self._name: str | None = name
         self.mode: int = mode
@@ -108,8 +104,6 @@ class TileYield(SaveAble):
 
         self.other_mechnics: Dict[str, "BaseResource"] = {}
 
-        self._setup_saveable()
-
     @property
     def name(self) -> None | str:
         return self._name
@@ -137,62 +131,83 @@ class TileYield(SaveAble):
             raise ValueError(f"cannot get property[{name}] as it does not exist or is accessable")
         return getattr(self, name)
 
-    def export_basic(self) -> Dict["BaseResource", int]:
-        resources: Dict["BaseResource", int] = {}
-        for item in self.calculatable_properties():
-            resources[getattr(self, item)] = item
+    def export_basic(self) -> List["BaseResource"]:
+        resources: List["BaseResource"] = [
+            self.gold,
+            self.production,
+            self.food,
+            self.science,
+            self.culture,
+        ]
         return resources
 
     def add(self, tile_yield: "TileYield") -> Self:
-        for property in self.calculatable_properties():
-            addative_value = getattr(tile_yield, property)
-            old_value = getattr(self, property)
-            setattr(self, property, old_value + addative_value)
-        for property in self.mechanic_resources():
-            addative_value = getattr(tile_yield, property)
-            old_value = getattr(self, property)
-            # Ensure both values are floats
-            setattr(self, property, old_value + addative_value)
-        for property in self.calculatable_great_people():
-            addative_value = getattr(tile_yield, f"great_person_{property}")
-            old_value = getattr(self, f"great_person_{property}")
-            setattr(self, f"great_person_{property}", old_value + addative_value)
+        # Process simple calculatable properties
+        for prop in self.calculatable_properties():
+            current = getattr(self, prop)  # e.g. Gold, Production, etc.
+            addition = getattr(tile_yield, prop)
+            new_val = current.value + addition.value
+            setattr(self, prop, type(current)(value=new_val))
+
+        # Process mechanic resources similarly
+        for prop in self.mechanic_resources():
+            current = getattr(self, prop)
+            addition = getattr(tile_yield, prop)
+            new_val = current.value + addition.value
+            setattr(self, prop, type(current)(value=new_val))
+
+        # Process great people, noting the attribute naming convention
+        for prop in self.calculatable_great_people():
+            current = getattr(self, f"great_person_{prop}")
+            addition = getattr(tile_yield, f"great_person_{prop}")
+            new_val = current.value + addition.value
+            setattr(self, f"great_person_{prop}", type(current)(value=new_val))
+
+        # Process other mechanics if available
         for key, mechanic in self.other_mechnics.items():
-            # Property is not in the other object so no operation.
-            if key not in tile_yield.other_mechnics.keys():
+            if key not in tile_yield.other_mechnics:
                 continue
-            addative_value = getattr(tile_yield, str(mechanic))
-            self.other_mechnics[key] = tile_yield.other_mechnics[key] + addative_value
+            current = mechanic
+            addition = getattr(tile_yield, str(mechanic))
+            new_val = current.value + addition.value
+            self.other_mechnics[key] = type(current)(value=new_val)
+
         return self
 
     def multiply(self, tile_yield: "TileYield") -> Self:
-        for property in self.calculatable_properties():
-            multiplicative_value = getattr(tile_yield, property)
-            if (
-                multiplicative_value == 0.0
-                or multiplicative_value == 1.0
-                or multiplicative_value == -1.0
-                or multiplicative_value == 0
-                or (hasattr(multiplicative_value, "value") and multiplicative_value.value == 0.0)
-            ):
+        # Multiply calculatable properties
+        for prop in self.calculatable_properties():
+            multiplicative = getattr(tile_yield, prop)
+            # Skip multiplicative identities
+            if multiplicative.value in {0.0, 1.0, -1.0}:
                 continue
-            old_value = getattr(self, property)
-            new_value = old_value * multiplicative_value
-            setattr(self, property, new_value)
-        for property in self.mechanic_resources():
-            multiplicative_value = getattr(tile_yield, property)
-            new_value = getattr(self, property) * multiplicative_value
-            setattr(self, property, new_value)
-        for property in self.calculatable_great_people():
-            multiplicative_value = getattr(tile_yield, f"great_person_{property}")
-            new_value = getattr(self, f"great_person_{property}") * multiplicative_value
-            setattr(self, f"great_person_{property}", new_value)
+            current = getattr(self, prop)
+            new_val = current.value * multiplicative.value
+            setattr(self, prop, type(current)(value=new_val))
+
+        # Multiply mechanic resources
+        for prop in self.mechanic_resources():
+            multiplicative = getattr(tile_yield, prop)
+            current = getattr(self, prop)
+            new_val = current.value * multiplicative.value
+            setattr(self, prop, type(current)(value=new_val))
+
+        # Multiply great people yields
+        for prop in self.calculatable_great_people():
+            multiplicative = getattr(tile_yield, f"great_person_{prop}")
+            current = getattr(self, f"great_person_{prop}")
+            new_val = current.value * multiplicative.value
+            setattr(self, f"great_person_{prop}", type(current)(value=new_val))
+
+        # Multiply other mechanics if available
         for key, mechanic in self.other_mechnics.items():
-            # Property is not in the other object so no operation.
-            if key not in tile_yield.other_mechnics.keys():
+            if key not in tile_yield.other_mechnics:
                 continue
-            multiplicative_value = getattr(tile_yield, str(mechanic))
-            self.other_mechnics[key] = tile_yield.other_mechnics[key] * multiplicative_value
+            multiplicative = getattr(tile_yield, str(mechanic))
+            current = mechanic
+            new_val = current.value * multiplicative.value
+            self.other_mechnics[key] = type(current)(value=new_val)
+
         return self
 
     def calculate(self) -> None:

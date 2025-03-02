@@ -223,7 +223,7 @@ class BaseTile(BaseEntity):
 
             # Set up the main icon's texture and transformation
             self.texture_card_texture.setTexture(texture, 1)
-            self.texture_card_texture.setPos((-0.3, 0, 0.3))
+            self.texture_card_texture.setPos((-0.55, 0, 0.151))
             self.texture_card_texture.setHpr((0, 270, 270))
             self.texture_card_texture.setScale(6.0)
             self.texture_card_texture.setTransparency(True)
@@ -245,18 +245,14 @@ class BaseTile(BaseEntity):
             texture_holder.reparentTo(self.texture_card_texture)
             texture_holder.setTexture(tex_stage, texture)
 
-            basic_resources: Dict[BaseResource, int] = self.tile_yield.get_yield().export_basic()
+            basic_resources: List[BaseResource] = self.tile_yield.get_yield().export_basic()
+
             if len(basic_resources) == 0:
                 return
 
-            # icons: Dict[BaseResource, int] = {}
-            # for prop in basic_resources.calculatable_properties():
-            #    prop_value: BaseResource = basic_resources.get_prop(prop)
-            #    icons[prop_value] = int(prop_value.value)
+            self._add_small_icons_with_numbers(basic_resources)
 
-            # self._add_small_icons_with_numbers(icons)
-
-    def _add_small_icons_with_numbers(self, basic_resources: Dict[BaseResource, int]) -> None:
+    def _add_small_icons_with_numbers(self, basic_resources: List[BaseResource]) -> None:
         """
         Add a grid of small icons (3 on top row, 2 on bottom row) under the main icon.
         Each icon displays a number overlay provided in the icons dict (icon path -> number).
@@ -269,15 +265,16 @@ class BaseTile(BaseEntity):
         grid_positions: List[Tuple[float, float, float]] = [
             (-0.1, 0, -0.1),  # Top row, left
             (0.0, 0, -0.1),  # Top row, center
-            (0.15, 0, -0.1),  # Top row, right
-            (-0.075, 0, -0.25),  # Bottom row, left
-            (0.075, 0, -0.25),  # Bottom row, right
+            (0.10, 0, -0.1),  # Top row, right
+            (-0.05, 0, -0.18),  # Bottom row, left
+            (0.05, 0, -0.18),  # Bottom row, right
         ]
+        font = self.base.loader.load_font("assets/fonts/Washington.ttf")
 
         # Iterate over icons, using grid positions until they run out.
-        i = 0
-        for resource, num in basic_resources.items():
+        for i, resource in enumerate(basic_resources):
             # Create small icon card
+            resource: BaseResource = resource  # Type hinting
             icon_path = resource.icon
 
             small_icon_card = CardMaker("small_icon")
@@ -286,6 +283,7 @@ class BaseTile(BaseEntity):
 
             # Load texture from the given icon path
             texture = self.base.loader.load_texture(texturePath=icon_path)
+            texture.set_format(Texture.F_srgb_alpha)  # type: ignore
             if not texture:
                 print(f"Failed to load texture for small icon: {icon_path}")
                 continue
@@ -294,18 +292,21 @@ class BaseTile(BaseEntity):
             small_icon_np.setPos(*grid_positions[i])
             small_icon_np.setScale(1.0)
             small_icon_np.setTransparency(True)
-
-            # Create a TextNode to overlay the number
-            text_node = TextNode("icon_number")
-            text_node.setText(str(num))
-            text_node.setAlign(TextNode.ACenter)  # Center the text
-            text_np = small_icon_np.attachNewNode(text_node)
-            text_np.setScale(1)  # Adjust scale based on icon size
-            text_np.setPos(0, 0, 3)  # Position it on top of the icon; tweak as needed
-
-            # Parent the small icon (with its overlay) to the main texture card
             small_icon_np.reparentTo(self.texture_card_texture)
-            i += 1
+
+            # Create text node for number overlay
+            text_node = TextNode(f"icon_counter_{i}")
+            text_node.setText("1")
+            text_node.setFont(font)
+            text_node.setTextColor(1, 1, 1, 1)  # White text
+            text_node.setAlign(TextNode.ACenter)
+            text_node.setShadow(0.03, 0.03)  # Slight shadow
+            text_node.setShadowColor(0, 0, 0, 1)  # Black shadow
+
+            text_np = small_icon_np.attachNewNode(text_node)
+            text_np.setScale(0.2)
+            text_np.setPos(0, 0, 0.2)  # Adjust positioning for better visibility above icons
+            text_np.setBillboardPointEye()
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
