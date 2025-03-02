@@ -26,6 +26,14 @@ You can connect it to pstats you need to have it listening on the default port `
 
 In the `config.prc` is defined it will also debug GPU data but if this is causing issues you can disable it there.
 
+#### Lenses
+
+There are also lenses for debugging
+
+- `b`: Highlights units in `blue` while tiles that have no units in `red`
+- `n`: Highlights resources and their types on the map `yellow` for strategic, `green`/`yellow` for bonus, `red` for none. please note colors might look different
+- `m`: Highlights water and different types of it, `tiel` is coastal and shallow, `blue` deeper and sea
+
 #### Issues
 
 * Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
@@ -36,14 +44,14 @@ In the `config.prc` is defined it will also debug GPU data but if this is causin
 ### 0.1.0 Goals
 
 * [x] Have world render
-* [ ] Have resource system
+* ![ ] Have resource system (WIP)
 * [x] Have ok atleast map generator
 * [x] Manage entities
 * [x] Spawn units
 * [ ] Unit actions
 * [ ] Process a turn
 * [ ] Cities that can build something
-* [ ] Basic UI element
+* ![ ] Basic UI element (WIP)
 * [ ] Movement for units both pathfinded and weighted + UI
 * [x] Basic backend system integration like managers, systems, logging
 * [x] Proper Implementation UI system (kivy)
