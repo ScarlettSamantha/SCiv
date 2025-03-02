@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional, Tuple, TypeVar, Union, List, Dict, Any, Self, Type, Generic
+from typing import Optional, Tuple, TypeVar, Union, List, Dict, Any, Self, Type, Generic, TYPE_CHECKING
 
 from data.terrain._base_terrain import BaseTerrain
+
 from managers.i18n import T_TranslationOrStr, t_
 from exceptions.resource_exception import ResourceTypeException
+
+if TYPE_CHECKING:
+    from gameplay.tile_yield_modifier import TileYieldModifier
+    from gameplay.tile_yield import TileYield
 
 
 class ResourceType(Enum):
@@ -136,6 +141,24 @@ class BaseResource(Generic[T_ResourceType]):
         super().__init__()
         self.value: Union[float, int] = value
         self.value_storage: ResourceValueType = self.configure_as_float_or_int
+        self._tile_yield_modifier: Optional[TileYieldModifier] = None
+
+    def setup(self):
+        from gameplay.tile_yield_modifier import TileYieldModifier
+
+        self._tile_yield_modifier = TileYieldModifier()
+
+    def get_yield_modifier(self) -> "TileYieldModifier":
+        # This is a lazy setup to avoid circular imports
+        if self._tile_yield_modifier is None:
+            self.setup()
+        return self._tile_yield_modifier  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
+
+    def add_to_yield_modifier(self, tile_yield_modifier: "TileYieldModifier | TileYield") -> None:
+        # This is a lazy setup to avoid circular imports
+        if self._tile_yield_modifier is None:
+            self.setup()
+        self._tile_yield_modifier.add(tile_yield_modifier)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
     def _check_same_type(self, other: "BaseResource") -> None:
         if not isinstance(other, BaseResource) or type(self) != type(other):
@@ -296,6 +319,16 @@ class Resources:
                 for key, resource in sub_dict.items()
             }
         return {key: resource for sub_dict in self.resources.values() for key, resource in sub_dict.items()}
+
+    def flatten_non_mechanic(self) -> Dict[str, BaseResource]:
+        # This is a helper method to get all resources that are not mechanic resources.
+        # Also to counter the issue of circular imports.
+        return self.flatten([ResourceType.BONUS, ResourceType.LUXURY, ResourceType.STRATEGIC])
+
+    def flatten_basics(self) -> Dict[str, BaseResource]:
+        # This is a helper method to get all resources that are not mechanic resources.
+        # Also to counter the issue of circular imports.
+        return self.resources[ResourceTypeBasic]
 
     def get(
         self, _type: Type[ResourceTypeBase] | None = None, key: str | None = None

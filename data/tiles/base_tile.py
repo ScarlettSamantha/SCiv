@@ -1,6 +1,7 @@
+from numpy import tile
 from gameplay.resource import BaseResource, Resources
-from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, Texture
-from typing import Any, Optional, List, Tuple, Type, Union, TYPE_CHECKING
+from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TextNode, Texture
+from typing import Any, Dict, Optional, List, Tuple, Type, Union, TYPE_CHECKING
 from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
@@ -150,16 +151,26 @@ class BaseTile(BaseEntity):
         self.tile_yield: TileYieldModifier = TileYieldModifier(
             values=TileYield(
                 gold=0.0,
-                production=0.0,
+                production=1.0,
                 science=0.0,
                 food=0.0,
                 culture=0.0,
                 housing=0.0,
             ),
-            mode=TileYieldModifier.MODE_SET,
+            mode=TileYieldModifier.MODE_ADDITIVE,
         )
-
         self.meshCollider: bool = True
+
+    def add_data_to_tileyield(self):
+        # Add terrain modifiers to the tile yield
+        terrain_modifiers: TileYieldModifier = self.get_terrain().tile_yield_modifiers
+        self.tile_yield.add(terrain_modifiers)
+
+        # Add resource modifiers from the resources on the tile
+        for _, resource in self.resources.flatten_non_mechanic().items():
+            self.tile_yield.add(resource.get_yield_modifier())
+
+        self.tile_yield.calculate()
 
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
@@ -182,54 +193,119 @@ class BaseTile(BaseEntity):
 
     def add_icon_to_tile(self) -> None:
         """
-        Append the texture as a separate node instead of replacing existing models.
+        Append the texture as a separate node instead of replacing existing models,
+        then adds a grid of small icons under the main icon.
         """
+        from gameplay.repositories.resources import ResourceRepository
 
-        # Create a card for the resource icon
-
+        self.calculate_tile_yield()
         resources = self.resources.flatten()
         self.texture_card = CardMaker(f"resource_icon_{self.id}")
-        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # Setting a small
+        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+
+        if not resources:
+            return
+
         for _, resource in resources.items():
             texture_path = resource.icon
             if not texture_path:
                 print(f"Resource {resource} has no icon set, cannot add texture.")
                 continue
 
+            # Create the main texture card node
             self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
             texture = self.base.loader.load_texture(texturePath=texture_path)
-            texture.set_format(Texture.F_srgb_alpha)  # type: ignore # This is correct
+            texture.set_format(Texture.F_srgb_alpha)  # type: ignore
 
             if not self.models:
                 print(f"Tile {self} has no models rendered, cannot add texture.")
                 return
 
+            # Set up the main icon's texture and transformation
             self.texture_card_texture.setTexture(texture, 1)
-            self.texture_card_texture.setPos((-0.3, 0, 0.3))  # Positioning the icon
-            self.texture_card_texture.setHpr((0, 270, 270))  # Match the tile model's rotation
+            self.texture_card_texture.setPos((-0.3, 0, 0.3))
+            self.texture_card_texture.setHpr((0, 270, 270))
             self.texture_card_texture.setScale(6.0)
             self.texture_card_texture.setTransparency(True)
-
             self.texture_card_texture.reparentTo(self.models[0])
 
-            # Extract the texture from the NodePath
-            texture = self.texture_card_texture.find_texture("*")  # type: ignore # Finds the first available texture
-
+            # Extract the texture from the main NodePath (first available texture)
+            texture = self.texture_card_texture.find_texture("*")  # type: ignore
             if not texture:
                 print(f"Texture not found in NodePath: {self.texture_card_texture}")
                 return
 
-            # Create a new TextureStage to add the texture
+            # Create a new TextureStage to blend the texture as a decal
             tex_stage = TextureStage(f"extra_texture_{id(texture)}")
-            tex_stage.setMode(TextureStage.MDecal)  # Blend with the base texture
+            tex_stage.setMode(TextureStage.MDecal)
 
-            # Append texture node to the existing model instead of overriding it
-            for node in self.models:
-                # Create a new node for the texture
-                texture_holder = NodePath(f"texture_node_{id(texture)}")
-                texture_holder.setTransparency(True)
-                texture_holder.reparentTo(self.texture_card_texture)  # Attach it to the tile model
-                texture_holder.setTexture(tex_stage, texture)
+            # Append the texture node to each model without overriding existing textures
+            texture_holder = NodePath(f"texture_node_{id(texture)}")
+            texture_holder.setTransparency(True)
+            texture_holder.reparentTo(self.texture_card_texture)
+            texture_holder.setTexture(tex_stage, texture)
+
+            basic_resources: Dict[BaseResource, int] = self.tile_yield.get_yield().export_basic()
+            if len(basic_resources) == 0:
+                return
+
+            # icons: Dict[BaseResource, int] = {}
+            # for prop in basic_resources.calculatable_properties():
+            #    prop_value: BaseResource = basic_resources.get_prop(prop)
+            #    icons[prop_value] = int(prop_value.value)
+
+            # self._add_small_icons_with_numbers(icons)
+
+    def _add_small_icons_with_numbers(self, basic_resources: Dict[BaseResource, int]) -> None:
+        """
+        Add a grid of small icons (3 on top row, 2 on bottom row) under the main icon.
+        Each icon displays a number overlay provided in the icons dict (icon path -> number).
+        """
+        if not hasattr(self, "texture_card_texture"):
+            print("Main texture card not set. Cannot add small icons.")
+            return
+
+        # Define grid positions relative to the main icon
+        grid_positions: List[Tuple[float, float, float]] = [
+            (-0.1, 0, -0.1),  # Top row, left
+            (0.0, 0, -0.1),  # Top row, center
+            (0.15, 0, -0.1),  # Top row, right
+            (-0.075, 0, -0.25),  # Bottom row, left
+            (0.075, 0, -0.25),  # Bottom row, right
+        ]
+
+        # Iterate over icons, using grid positions until they run out.
+        i = 0
+        for resource, num in basic_resources.items():
+            # Create small icon card
+            icon_path = resource.icon
+
+            small_icon_card = CardMaker("small_icon")
+            small_icon_card.setFrame(-0.03, 0.03, -0.03, 0.03)
+            small_icon_np = NodePath(small_icon_card.generate())  # type: ignore
+
+            # Load texture from the given icon path
+            texture = self.base.loader.load_texture(texturePath=icon_path)
+            if not texture:
+                print(f"Failed to load texture for small icon: {icon_path}")
+                continue
+
+            small_icon_np.setTexture(texture, 1)
+            small_icon_np.setPos(*grid_positions[i])
+            small_icon_np.setScale(1.0)
+            small_icon_np.setTransparency(True)
+
+            # Create a TextNode to overlay the number
+            text_node = TextNode("icon_number")
+            text_node.setText(str(num))
+            text_node.setAlign(TextNode.ACenter)  # Center the text
+            text_np = small_icon_np.attachNewNode(text_node)
+            text_np.setScale(1)  # Adjust scale based on icon size
+            text_np.setPos(0, 0, 3)  # Position it on top of the icon; tweak as needed
+
+            # Parent the small icon (with its overlay) to the main texture card
+            small_icon_np.reparentTo(self.texture_card_texture)
+            i += 1
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
@@ -258,6 +334,10 @@ class BaseTile(BaseEntity):
             # Custom logic for re-rendering other models can be added here.
         else:
             self._render_default_terrain()
+        self.calculate_tile_yield()
+
+    def calculate_tile_yield(self) -> None:
+        self.tile_yield.calculate()
 
     def _render_default_terrain(self) -> None:
         if self.tile_terrain is None:
@@ -487,6 +567,7 @@ class BaseTile(BaseEntity):
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
+            "tile_yield": str(self.tile_yield.get_yield()),
             "resources": self.resources.flatten(),
             "features": self.features,
             "units": ",".join(_units),

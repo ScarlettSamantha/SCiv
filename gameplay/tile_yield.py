@@ -1,8 +1,9 @@
-from __future__ import annotations
-
 from gameplay.saving import SaveAble
 
-from typing import Dict, List, Any, Self
+from typing import Dict, List, Any, Self, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gameplay.resource import BaseResource
 
 
 class TileYield(SaveAble):
@@ -36,7 +37,11 @@ class TileYield(SaveAble):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        from gameplay.resource import BaseResource
+
+        # Initialize the attributes specific to TileYield
+        self._name: str | None = name
+        self.mode: int = mode
+
         from gameplay.resources.core.basic.culture import Culture
         from gameplay.resources.core.basic.faith import Faith
         from gameplay.resources.core.basic.food import Food
@@ -60,29 +65,26 @@ class TileYield(SaveAble):
             GreatHoly,
         )
 
-        # Initialize the attributes specific to TileYield
-        self._name: str | None = name
-        self.mode: int = mode
         self.gold: Gold = Gold(value=gold)
-        self.production: Production = Production(value=production)
-        self.science: Science = Science(value=science)
-        self.food: Food = Food(value=food)
-        self.culture: Culture = Culture(value=culture)
-        self.housing: Housing = Housing(value=housing)
-        self.faith: Faith = Faith(value=faith)
+        self.production = Production(value=production)
+        self.science = Science(value=science)
+        self.food = Food(value=food)
+        self.culture = Culture(value=culture)
+        self.housing = Housing(value=housing)
+        self.faith = Faith(value=faith)
 
-        self.contentment: Contentment = Contentment(value=0.0)
-        self.angre: Angre = Angre(value=0.0)
-        self.revolt: Revolt = Revolt(value=0.0)
-        self.stability: Stability = Stability(value=0.0)
+        self.contentment = Contentment(value=0.0)
+        self.angre = Angre(value=0.0)
+        self.revolt = Revolt(value=0.0)
+        self.stability = Stability(value=0.0)
 
-        self.great_person_science: GreatScientist = GreatScientist(value=0.0)
-        self.great_person_production: GreatEngineer = GreatEngineer(value=0.0)
-        self.great_person_artist: GreatArtist = GreatArtist(value=0.0)
-        self.great_person_military: GreatMilitary = GreatMilitary(value=0.0)
-        self.great_person_commerce: GreatCommerece = GreatCommerece(value=0.0)
-        self.great_person_hero: GreatHero = GreatHero(value=0.0)
-        self.great_person_holy: GreatHoly = GreatHoly(value=0.0)
+        self.great_person_science = GreatScientist(value=0.0)
+        self.great_person_production = GreatEngineer(value=0.0)
+        self.great_person_artist = GreatArtist(value=0.0)
+        self.great_person_military = GreatMilitary(value=0.0)
+        self.great_person_commerce = GreatCommerece(value=0.0)
+        self.great_person_hero = GreatHero(value=0.0)
+        self.great_person_holy = GreatHoly(value=0.0)
 
         self._calculatable_properties: List[str] = [
             "gold",
@@ -104,7 +106,7 @@ class TileYield(SaveAble):
             "holy",
         ]
 
-        self.other_mechnics: Dict[str, BaseResource] = {}
+        self.other_mechnics: Dict[str, "BaseResource"] = {}
 
         self._setup_saveable()
 
@@ -119,10 +121,10 @@ class TileYield(SaveAble):
     def __repr__(self) -> str:
         return f"TileYield<Mode:{self.MODE_STR[self.mode]}>g:<{self.gold}>|p:<{self.production}>|s:<{self.science}>|f:<{self.food}>|c:<{self.culture}>|h:<{self.housing}>|fa:<{self.faith}>"
 
-    def __add__(self, b: TileYield) -> Self:
+    def __add__(self, b: "TileYield") -> Self:
         return self.add(tile_yield=b)
 
-    def __mul__(self, b: TileYield) -> Self:
+    def __mul__(self, b: "TileYield") -> Self:
         return self.multiply(tile_yield=b)
 
     def set_prop(self, name: str, value: Any):
@@ -130,7 +132,18 @@ class TileYield(SaveAble):
             raise ValueError(f"cannot set property[{name}] as it does not exist or is accessable")
         setattr(self, name, value)
 
-    def add(self, tile_yield: TileYield) -> Self:
+    def get_prop(self, name: str) -> Any:
+        if name not in self.calculatable_great_people() + self.calculatable_properties():
+            raise ValueError(f"cannot get property[{name}] as it does not exist or is accessable")
+        return getattr(self, name)
+
+    def export_basic(self) -> Dict["BaseResource", int]:
+        resources: Dict["BaseResource", int] = {}
+        for item in self.calculatable_properties():
+            resources[getattr(self, item)] = item
+        return resources
+
+    def add(self, tile_yield: "TileYield") -> Self:
         for property in self.calculatable_properties():
             addative_value = getattr(tile_yield, property)
             old_value = getattr(self, property)
@@ -152,7 +165,7 @@ class TileYield(SaveAble):
             self.other_mechnics[key] = tile_yield.other_mechnics[key] + addative_value
         return self
 
-    def multiply(self, tile_yield: TileYield) -> Self:
+    def multiply(self, tile_yield: "TileYield") -> Self:
         for property in self.calculatable_properties():
             multiplicative_value = getattr(tile_yield, property)
             if (
@@ -208,9 +221,18 @@ class TileYield(SaveAble):
         return self._calculatable_great_people
 
     @staticmethod
-    def baseYield() -> TileYield:
+    def baseYield() -> "TileYield":
         return TileYield()
 
     @staticmethod
-    def nullYield() -> TileYield:
+    def nullYield() -> "TileYield":
         return TileYield(gold=0.0, production=0.0, science=0.0, food=0.0, culture=0.0, housing=0.0, faith=0.0)
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __len__(self) -> int:
+        total = 0
+        for property in self.calculatable_properties():
+            total += getattr(self, property)
+        return int(total)

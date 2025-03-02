@@ -299,6 +299,7 @@ class Basic(BaseGenerator):
 
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
+                obj_instance.add_data_to_tileyield()
 
                 # Generate a unique tag for mapping
                 tag = obj_instance.generate_tag(x, y)
