@@ -4,10 +4,11 @@ from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Cats(BaseLuxuryResource):
-    key: str = "resource.core.luxury.cats"
-    name: T_TranslationOrStr = _t("content.resources.core.cats.name")
-    description: T_TranslationOrStr = _t("content.resources.core.cats.description")
+class Dyes(BaseLuxuryResource):
+    key: str = "resource.core.luxury.dyes"
+    name: T_TranslationOrStr = _t("content.resources.core.dyes.name")
+    description: T_TranslationOrStr = _t("content.resources.core.dyes.description")
+    icon: str = "assets/icons/resources/core/luxury/hex_border_dyes.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

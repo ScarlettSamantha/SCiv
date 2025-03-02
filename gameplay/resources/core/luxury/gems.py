@@ -4,10 +4,11 @@ from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Marble(BaseLuxuryResource):
-    key: str = "resource.core.luxury.marble"
-    name: T_TranslationOrStr = _t("content.resources.core.marble.name")
-    description: T_TranslationOrStr = _t("content.resources.core.marble.description")
+class Gems(BaseLuxuryResource):
+    key: str = "resource.core.luxury.gems"
+    name: T_TranslationOrStr = _t("content.resources.core.gems.name")
+    description: T_TranslationOrStr = _t("content.resources.core.gems.description")
+    icon: str = "assets/icons/resources/core/luxury/hex_border_gems.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

@@ -8,6 +8,7 @@ class RareEarthMetals(BaseStrategyResource):
     key: str = "resource.core.strategic.rare_earth_metals"
     name: T_TranslationOrStr = _t("content.resources.core.rare_earth_metals.name")
     description: T_TranslationOrStr = _t("content.resources.core.rare_earth_metals.description")
+    icon: str = "assets/icons/resources/core/strategic/bordered_rare_earth_metals.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 2.0
     spawn_amount: float | Tuple[float, float] = 3.0
 

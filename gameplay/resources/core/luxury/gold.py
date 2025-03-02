@@ -8,6 +8,7 @@ class Gold(BaseLuxuryResource):
     key: str = "resource.core.luxury.gold"
     name: T_TranslationOrStr = _t("content.resources.core.gold.name")
     description: T_TranslationOrStr = _t("content.resources.core.gold.description")
+    icon: str = "assets/icons/resources/core/luxury/bordered_gold.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

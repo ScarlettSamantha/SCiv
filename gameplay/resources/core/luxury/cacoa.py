@@ -4,10 +4,11 @@ from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Dogs(BaseLuxuryResource):
-    key: str = "resource.core.luxury.dogs"
-    name: T_TranslationOrStr = _t("content.resources.core.dogs.name")
-    description: T_TranslationOrStr = _t("content.resources.core.dogs.description")
+class Cacoa(BaseLuxuryResource):
+    key: str = "resource.core.luxury.cacoa"
+    name: T_TranslationOrStr = _t("content.resources.core.cacoa.name")
+    description: T_TranslationOrStr = _t("content.resources.core.cacoa.description")
+    icon: str = "assets/icons/resources/core/luxury/bordered_cacoa.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

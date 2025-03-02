@@ -4,10 +4,11 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Obsidian(BaseBonusResource):
-    key: str = "resource.core.bonus.obsidian"
-    name: T_TranslationOrStr = _t("content.resources.core.obsidian.name")
-    description: T_TranslationOrStr = _t("content.resources.core.obsidian.description")
+class Cotton(BaseBonusResource):
+    key: str = "resource.core.bonus.cotton"
+    name: T_TranslationOrStr = _t("content.resources.core.cotton.name")
+    description: T_TranslationOrStr = _t("content.resources.core.cotton.description")
+    icon: str = "assets/icons/resources/core/bonus/hex_border_cotton.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

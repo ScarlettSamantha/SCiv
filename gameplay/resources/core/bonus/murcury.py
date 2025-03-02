@@ -8,6 +8,7 @@ class Murcury(BaseBonusResource):
     key: str = "resource.core.bonus.murcury"
     name: T_TranslationOrStr = _t("content.resources.core.murcury.name")
     description: T_TranslationOrStr = _t("content.resources.core.murcury.description")
+    icon: str = "assets/icons/resources/core/bonus/bordered_murcury.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

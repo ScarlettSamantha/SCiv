@@ -4,10 +4,11 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Potato(BaseBonusResource):
-    key: str = "resource.core.bonus.potato"
-    name: T_TranslationOrStr = _t("content.resources.core.potato.name")
-    description: T_TranslationOrStr = _t("content.resources.core.potato.description")
+class Unions(BaseBonusResource):
+    key: str = "resource.core.bonus.unions"
+    name: T_TranslationOrStr = _t("content.resources.core.unions.name")
+    description: T_TranslationOrStr = _t("content.resources.core.unions.description")
+    icon: str = "assets/icons/resources/core/bonus/bordered_unions.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 6.0
     spawn_amount: float | Tuple[float, float] = 5.0
 

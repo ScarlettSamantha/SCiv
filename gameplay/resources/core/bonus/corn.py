@@ -4,10 +4,11 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Cheese(BaseBonusResource):
-    key: str = "resource.core.bonus.cheese"
-    name: T_TranslationOrStr = _t("content.resources.core.cheese.name")
-    description: T_TranslationOrStr = _t("content.resources.core.cheese.description")
+class Corn(BaseBonusResource):
+    key: str = "resource.core.bonus.corn"
+    name: T_TranslationOrStr = _t("content.resources.core.corn.name")
+    description: T_TranslationOrStr = _t("content.resources.core.corn.description")
+    icon: str = "assets/icons/resources/core/bonus/bordered_corn.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 2.5  # noqa: F821
     spawn_amount: float | Tuple[float, float] = 5.0
 
