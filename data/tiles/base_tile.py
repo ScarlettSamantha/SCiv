@@ -206,7 +206,7 @@ class BaseTile(BaseEntity):
             self.texture_card_texture.setTexture(texture, 1)
             self.texture_card_texture.setPos((-0.3, 0, 0.3))  # Positioning the icon
             self.texture_card_texture.setHpr((0, 270, 270))  # Match the tile model's rotation
-            self.texture_card_texture.setScale(4.0)
+            self.texture_card_texture.setScale(6.0)
             self.texture_card_texture.setTransparency(True)
 
             self.texture_card_texture.reparentTo(self.models[0])
@@ -220,7 +220,7 @@ class BaseTile(BaseEntity):
 
             # Create a new TextureStage to add the texture
             tex_stage = TextureStage(f"extra_texture_{id(texture)}")
-            tex_stage.setMode(TextureStage.MModulate)  # Blend with the base texture
+            tex_stage.setMode(TextureStage.MDecal)  # Blend with the base texture
 
             # Append texture node to the existing model instead of overriding it
             for node in self.models:
