@@ -14,5 +14,3 @@ class TradersGreatsTree(BaseCoreGreatsTree):
 
         # Do this before saving so we can save the greats we loaded.
         self.load_greats_from_folder()
-
-        self._setup_saveable()

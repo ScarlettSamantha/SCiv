@@ -32,7 +32,6 @@ class Civic(SaveAble, CallbacksMixin):
         self._completed: bool = False
         self.requires: List[Requires] = []
 
-        self._setup_saveable()
         self.declare_callbacks()
 
     def declare_callbacks(self):

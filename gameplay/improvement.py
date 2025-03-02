@@ -81,8 +81,6 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
         self._owner = None
         self._tile_ref = None
 
-        self._setup_saveable()
-
     def _validate_state(self) -> bool:
         return True
 

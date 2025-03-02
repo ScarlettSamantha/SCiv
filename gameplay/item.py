@@ -31,8 +31,6 @@ class Item(SaveAble):
         self.requires: Requires = requires
         self.combat_stats: Stats = Stats()
 
-        self._setup_saveable()
-
 
 class Items(SaveAble):
     def __init__(
@@ -51,7 +49,6 @@ class Items(SaveAble):
         self.icon: str | None = icon
 
         self.items: List[Item] = []
-        self._setup_saveable()
 
     def add_item(self, item: Item) -> Items:
         self.items.append(item)
