@@ -18,5 +18,5 @@ class Clams(BaseBonusResource):
     spawn_amount: float | Tuple[float, float] = 3.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
