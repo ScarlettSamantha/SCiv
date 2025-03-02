@@ -1,5 +1,5 @@
 from gameplay.resource import BaseResource, Resources
-from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TransparencyAttrib
+from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, Texture, TransparencyAttrib
 from typing import Any, Optional, List, Tuple, Type, Union, TYPE_CHECKING
 from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
@@ -198,6 +198,7 @@ class BaseTile(BaseEntity):
 
             self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
             texture = self.base.loader.load_texture(texturePath=texture_path)
+            texture.set_format(Texture.F_srgb_alpha)  # type: ignore # This is correct
 
             if not self.models:
                 print(f"Tile {self} has no models rendered, cannot add texture.")
@@ -226,7 +227,7 @@ class BaseTile(BaseEntity):
             for node in self.models:
                 # Create a new node for the texture
                 texture_holder = NodePath(f"texture_node_{id(texture)}")
-                texture_holder.setTransparency(TransparencyAttrib.MAlpha)
+                texture_holder.setTransparency(True)
                 texture_holder.reparentTo(self.texture_card_texture)  # Attach it to the tile model
                 texture_holder.setTexture(tex_stage, texture)
 
