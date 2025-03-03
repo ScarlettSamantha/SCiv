@@ -26,8 +26,6 @@ class EffectTargetType(SaveAble):
         self.key: str = key
         self.target_planes: Plane = target_planes
 
-        self._setup_saveable()
-
 
 class EffectTargetTypeTile(EffectTargetType):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -122,8 +120,6 @@ class Effect(SaveAble):
         self._links: List[Any] = []
         self._tags: List[Any] = []
 
-        self._setup_saveable()
-
     def buyoff(self, change_active: bool = True, fail_on_unallowed_buyoff: bool = True) -> Effect:
         if not self.can_buyoff:
             if fail_on_unallowed_buyoff:
@@ -148,7 +144,7 @@ class Effects(SaveAble):
         self.index: int = 0
         self.effects: Dict[str, Effect] = {}
         self.name: T_TranslationOrStr | None = name
-        self._setup_saveable()
+
         # We need to calculate the effects of all effects in the here to be able to give combat_stats.
         self.combat_stats: Stats = Stats()
 

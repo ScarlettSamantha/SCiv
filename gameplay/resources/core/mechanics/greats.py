@@ -11,7 +11,7 @@ class GreatScientist(BaseGreatMechanicResource):
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount: float | Tuple[float, float] = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -22,7 +22,7 @@ class GreatArtist(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -33,7 +33,7 @@ class GreatHero(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -44,7 +44,7 @@ class GreatHoly(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -55,7 +55,7 @@ class GreatMilitary(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -66,7 +66,7 @@ class GreatEngineer(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -77,7 +77,7 @@ class GreatCommerece(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)
 
 
@@ -88,5 +88,5 @@ class GreatExplorer(BaseGreatMechanicResource):
     spawn_chance = 0
     spawn_amount = 0
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int | float = 0):
         super().__init__(value=value)

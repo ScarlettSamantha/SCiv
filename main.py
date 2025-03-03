@@ -13,7 +13,7 @@ from managers.i18n import _i18n, set_i18n
 
 import pathlib
 import simplepbr
-from panda3d.core import ClockObject
+from panda3d.core import ClockObject, load_prc_file
 
 
 class Openciv(ShowBase):
@@ -90,7 +90,7 @@ class Openciv(ShowBase):
 if __name__ == "__main__":
     globalClock = ClockObject.getGlobalClock()  # Removes frame sync
     globalClock.setFrameRate(144)
-
+    load_prc_file("config.prc")
     app = Openciv()
 
     try:

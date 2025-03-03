@@ -18,12 +18,9 @@ class Leader(SaveAble):
         self.key: str = key if key is not None else ""
         self.name: T_TranslationOrStr = name if name is not None else ""
         self.icon: str | None = icon if icon is not None else None
-        self.description: T_TranslationOrStr = (
-            description if description is not None else ""
-        )
+        self.description: T_TranslationOrStr = description if description is not None else ""
 
         self._effects: Effects = Effects()
-        self._setup_saveable()
 
     @property
     def effects(self) -> Effects:

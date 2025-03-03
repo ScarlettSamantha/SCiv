@@ -35,7 +35,6 @@ class Promotion(SaveAble, CallbacksMixin):
         self.combat_stats: Stats = combat_stats
 
         self.aquired: bool = aquired
-        self._setup_saveable()
 
     @property
     def requires(self) -> T_Requires:
@@ -111,7 +110,6 @@ class PromotionTree(SaveAble, CallbacksMixin):
         self.begin_effects: Effects = Effects()
         self._effects: Effects | None = None
         self.register_promotions()
-        self._setup_saveable()
 
     @abstractmethod
     def register_promotions(self) -> None:
@@ -125,9 +123,7 @@ class PromotionTree(SaveAble, CallbacksMixin):
     ) -> None:
         self.calculate_effects()
         if sub_trigger_aquire:
-            self.trigger_callback(
-                category="on_promotion_aquire", promotion=promotion, promotion_tree=self
-            )
+            self.trigger_callback(category="on_promotion_aquire", promotion=promotion, promotion_tree=self)
         if sub_trigger_completion_check and self.completed():
             self.trigger_callback(category="on_complete", promotion_tree=self)
 
@@ -148,16 +144,12 @@ class PromotionTree(SaveAble, CallbacksMixin):
             self.trigger_callback(category="on_unaquire", promotion_tree=self)
 
     def add_promotion(self, promotion: Promotion) -> PromotionTree:
-        promotion.register_callback(
-            event="on_aquire", callback=self._on_promotion_aquire
-        )
+        promotion.register_callback(event="on_aquire", callback=self._on_promotion_aquire)
         self.promotions.append(promotion)
         return self
 
     def remove_promotion(self, promotion: Promotion) -> PromotionTree:
-        promotion.unregister_callback(
-            event="on_un_aquire", callback=self._on_promotion_unaquire
-        )
+        promotion.unregister_callback(event="on_un_aquire", callback=self._on_promotion_unaquire)
         self.promotions.remove(promotion)
         return self
 
@@ -216,7 +208,5 @@ class PromotionTree(SaveAble, CallbacksMixin):
         return {
             "unlocked": self.unlocked,
             "num_promotions": len(self.promotions),
-            "num_aquired": len(
-                [promotion for promotion in self.promotions if promotion.aquired]
-            ),
+            "num_aquired": len([promotion for promotion in self.promotions if promotion.aquired]),
         }

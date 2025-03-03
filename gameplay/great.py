@@ -31,7 +31,6 @@ class Great(SaveAble):
         self.resource_type_required: BaseResource | None | Tuple | BaseGreatMechanicResource | List = (
             resource_type_required
         )
-        self._setup_saveable()
 
 
 class GreatsTree(SaveAble):
@@ -52,7 +51,6 @@ class GreatsTree(SaveAble):
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
         self.effects_on_finish: Effects = Effects()
-        self._setup_saveable()
 
     def buy_great(self, great: Great) -> Great:
         self.points -= great.points

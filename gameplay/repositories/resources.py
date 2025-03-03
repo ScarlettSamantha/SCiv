@@ -51,3 +51,13 @@ class ResourceRepository:
             return resources
 
         return cls.__cached_resources_by_type.get(resource_type, [])
+
+    @classmethod
+    def find(cls, key: str) -> Optional[Type[BaseResource]]:
+        if not cls.__cached_resources_classes:
+            cls.load_into_cache()
+
+        for resource_class in cls.__cached_resources_classes:
+            if resource_class.key == key:
+                return resource_class
+        return None

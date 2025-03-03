@@ -6,7 +6,6 @@ _T = TypeVar("_T")
 
 
 class TileModifier:
-    
     MODIFIER_MODE_SET = 0
     MODIFIER_MODE_PERCENTAGE_OFFSET = 1
 
@@ -49,3 +48,9 @@ class TileModifiers:
             if isinstance(item, __key):
                 return item
         return None
+
+    def get_modifiers(self) -> List[TileModifier]:
+        return self._modifiers
+
+    def __iter__(self):
+        return iter(self._modifiers)

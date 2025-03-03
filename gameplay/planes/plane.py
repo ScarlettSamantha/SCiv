@@ -18,5 +18,3 @@ class Plane(SaveAble):
         self.key: str = key
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
-
-        self._setup_saveable()

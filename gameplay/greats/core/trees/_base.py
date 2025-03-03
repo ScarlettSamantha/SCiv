@@ -10,7 +10,6 @@ class BaseCoreGreatsTree(GreatsTree):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.load_folder = None
-        self._setup_saveable()
 
     def base_folder(self) -> str:
         return "openciv/gameplay/greats/"

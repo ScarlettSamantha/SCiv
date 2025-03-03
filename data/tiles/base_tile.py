@@ -1,6 +1,6 @@
 from gameplay.resource import BaseResource, Resources
-from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, Texture
-from typing import Any, Optional, List, Tuple, Type, Union, TYPE_CHECKING
+from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TextNode, Texture
+from typing import Any, Dict, Optional, List, Tuple, Type, Union, TYPE_CHECKING
 from os.path import dirname, realpath, join
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
@@ -18,13 +18,14 @@ from managers.player import PlayerManager, Player
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from system.entity import BaseEntity
 from managers.entity import EntityManager, EntityType
-from panda3d.core import TextureStage
 
 if TYPE_CHECKING:
     from main import Openciv
 
 
 class BaseTile(BaseEntity):
+    texture_cache: Dict[str, Texture] = {}
+
     def __init__(
         self,
         base: Any,
@@ -150,16 +151,29 @@ class BaseTile(BaseEntity):
         self.tile_yield: TileYieldModifier = TileYieldModifier(
             values=TileYield(
                 gold=0.0,
-                production=0.0,
+                production=1.0,
                 science=0.0,
                 food=0.0,
                 culture=0.0,
                 housing=0.0,
             ),
-            mode=TileYieldModifier.MODE_SET,
+            mode=TileYieldModifier.MODE_ADDITIVE,
         )
-
         self.meshCollider: bool = True
+
+        self._showing_small_icons: bool = False
+        self._showing_large_icons: bool = False
+
+    def add_data_to_tileyield(self):
+        # Add terrain modifiers to the tile yield
+        terrain_modifiers: TileYieldModifier = self.get_terrain().tile_yield_modifiers
+        self.tile_yield.add(terrain_modifiers)
+
+        # Add resource modifiers from the resources on the tile
+        for _, resource in self.resources.flatten_non_mechanic().items():
+            self.tile_yield.add(resource.get_yield_modifier())
+
+        self.tile_yield.calculate()
 
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
@@ -180,56 +194,164 @@ class BaseTile(BaseEntity):
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
+    def clear_large_icons(self) -> None:
+        """
+        Remove the main texture icon from the tile.
+        """
+        if hasattr(self, "tile_icon_group"):
+            self.tile_icon_group.removeNode()
+            del self.tile_icon_group
+            self._showing_large_icons = False
+
+    def clear_small_icons(self) -> None:
+        """
+        Remove all small icons and text overlays from the tile.
+        """
+        if hasattr(self, "mini_icons_card"):
+            self.mini_icons_card.removeNode()
+            del self.mini_icons_card
+            self._showing_small_icons = False
+        if hasattr(self, "text_card"):
+            self.text_card.removeNode()
+            del self.text_card
+
+    def clear_all_icons(self) -> None:
+        """
+        Remove all icons from the tile.
+        """
+        if hasattr(self, "tile_icon_group"):
+            self.tile_icon_group.removeNode()
+            del self.tile_icon_group
+            self._showing_large_icons = False
+        if hasattr(self, "mini_icons_card"):
+            self.mini_icons_card.removeNode()
+            del self.mini_icons_card
+            self._showing_small_icons = False
+        if hasattr(self, "text_card"):
+            self.text_card.removeNode()
+            del self.text_card
+
+    def create_root_ui_node(self) -> None:
+        self.texture_card = CardMaker(f"resource_icon_{self.id}")
+        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+        self.tile_icon_group = NodePath("tile_icon_group")
+        self.tile_icon_group.reparentTo(self.models[0])
+        self.tile_icon_group.setCollideMask(BitMask32.bit(0))
+
     def add_icon_to_tile(self) -> None:
         """
-        Append the texture as a separate node instead of replacing existing models.
+        Append the texture as a separate node instead of replacing existing models,
+        then set up the structure to later add mini icons and text overlays as separate cards.
         """
+        resources: Dict[str, BaseResource] = self.resources.flatten()
+        resource = list(resources.values())[0] if resources else None
 
-        # Create a card for the resource icon
+        if not hasattr(self, "tile_icon_group"):
+            self.create_root_ui_node()
 
-        resources = self.resources.flatten()
-        self.texture_card = CardMaker(f"resource_icon_{self.id}")
-        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # Setting a small
-        for _, resource in resources.items():
+        if resource is not None:
             texture_path = resource.icon
             if not texture_path:
-                print(f"Resource {resource} has no icon set, cannot add texture.")
-                continue
+                raise AssertionError(f"Resource {resource} has no icon set, cannot add texture.")
 
+            # Create the main texture card node
             self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
-            texture = self.base.loader.load_texture(texturePath=texture_path)
-            texture.set_format(Texture.F_srgb_alpha)  # type: ignore # This is correct
+            if texture_path not in self.texture_cache:
+                self.texture_cache[texture_path] = self.base.loader.load_texture(texturePath=texture_path)
+                self.texture_cache[texture_path].set_format(Texture.F_srgb_alpha)  # type: ignore
+            texture = self.texture_cache[texture_path]
 
             if not self.models:
-                print(f"Tile {self} has no models rendered, cannot add texture.")
                 return
 
+            # Reparent the main icon card to the common group.
+            self.texture_card_texture.reparentTo(self.tile_icon_group)
             self.texture_card_texture.setTexture(texture, 1)
-            self.texture_card_texture.setPos((-0.3, 0, 0.3))  # Positioning the icon
-            self.texture_card_texture.setHpr((0, 270, 270))  # Match the tile model's rotation
+            self.texture_card_texture.setPos((-0.55, 0, 0.151))
+            self.texture_card_texture.setHpr((0, 270, 270))
             self.texture_card_texture.setScale(6.0)
             self.texture_card_texture.setTransparency(True)
 
-            self.texture_card_texture.reparentTo(self.models[0])
+        self._showing_large_icons = True
 
-            # Extract the texture from the NodePath
-            texture = self.texture_card_texture.find_texture("*")  # type: ignore # Finds the first available texture
+    def add_small_icons(self) -> None:
+        basic_resources: List[BaseResource] = self.tile_yield.get_yield().export_basic()
+        if len(basic_resources) == 0:
+            return
+
+        if not hasattr(self, "tile_icon_group"):
+            self.create_root_ui_node()
+
+        # Create a separate node for mini icons if not already created.
+        if not hasattr(self, "mini_icons_card"):
+            self.mini_icons_card = NodePath("mini_icons_card")
+            self.mini_icons_card.reparentTo(self.tile_icon_group)
+
+        # Create a separate node for text overlays if not already created.
+        if not hasattr(self, "text_card"):
+            self.text_card = NodePath("text_card")
+            self.text_card.reparentTo(self.tile_icon_group)
+
+        # Define grid positions relative to the tile icon group.
+        grid_positions: List[Tuple[float, float, float]] = [
+            # top-bottom (- is up), left-right (- is left), z
+            (0.2, -0.48, 0.18),  # Top row, left # gold
+            (0.33, 0.0, 0.18),  # Top row, center # production
+            (0.15, 0.52, 0.18),  # Top row, right # food
+            (0.65, -0.35, 0.18),  # Bottom row, left # science
+            (0.65, 0.3, 0.18),  # Bottom row, right # culture
+        ]
+        grid_positions_text: List[Tuple[float, float, float]] = [
+            (0.25, -0.5, -0.20),  # Top row, left
+            (0.40, 0, -0.20),  # Top row, center
+            (0.25, 0.5, -0.2),  # Top row, right
+            (0.8, -0.4, -0.2),  # Bottom row, left
+            (0.8, 0.4, -0.2),  # Bottom row, right
+        ]
+        font = self.base.loader.load_font("assets/fonts/Washington.ttf")
+
+        for i, resource in enumerate(basic_resources):
+            icon_path = resource.icon
+
+            # Create mini icon card.
+            small_icon_card = CardMaker("small_icon")
+            small_icon_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+            small_icon_np = NodePath(small_icon_card.generate())  # type: ignore
+
+            if icon_path not in self.texture_cache:
+                self.texture_cache[icon_path] = self.base.loader.load_texture(texturePath=icon_path)
+                self.texture_cache[icon_path].set_format(Texture.F_srgb_alpha)  # type: ignore
+            texture = self.texture_cache[icon_path]
 
             if not texture:
-                print(f"Texture not found in NodePath: {self.texture_card_texture}")
-                return
+                raise AssertionError(f"Failed to load texture for small icon: {icon_path}")
 
-            # Create a new TextureStage to add the texture
-            tex_stage = TextureStage(f"extra_texture_{id(texture)}")
-            tex_stage.setMode(TextureStage.MDecal)  # Blend with the base texture
+            small_icon_np.setTexture(texture, 1)
+            small_icon_np.setPos(grid_positions[i])
+            small_icon_np.setHpr(0, 270, -90)
+            small_icon_np.setScale(3.0)
+            small_icon_np.setTransparency(True)
+            small_icon_np.setCollideMask(BitMask32.bit(0))
+            # Attach mini icon to its dedicated card.
+            small_icon_np.reparentTo(self.mini_icons_card)
 
-            # Append texture node to the existing model instead of overriding it
-            for node in self.models:
-                # Create a new node for the texture
-                texture_holder = NodePath(f"texture_node_{id(texture)}")
-                texture_holder.setTransparency(True)
-                texture_holder.reparentTo(self.texture_card_texture)  # Attach it to the tile model
-                texture_holder.setTexture(tex_stage, texture)
+            # Create a text node for the number overlay.
+            text_node = TextNode(f"icon_counter_{i}")
+            text_node.setText(str(int(resource.value)))
+            text_node.setFont(font)
+            text_node.setTextColor(1, 1, 1, 1)  # White text.
+            text_node.setAlign(TextNode.ACenter)
+            text_node.setShadow(0, 0)  # Slight shadow.
+            text_node.setShadowColor(0, 0, 0, 1)  # Black shadow.
+
+            # Attach the text node to the separate text card.
+            text_np = self.text_card.attachNewNode(text_node)
+            # Position the text above the mini icon.
+            x, y, z = grid_positions_text[i]
+            text_np.setHpr(90, -90, 0)
+            text_np.setPos(x, y, z + 0.4)
+            text_np.setScale(0.3)
+        self._showing_small_icons = True
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
@@ -258,6 +380,10 @@ class BaseTile(BaseEntity):
             # Custom logic for re-rendering other models can be added here.
         else:
             self._render_default_terrain()
+        self.calculate_tile_yield()
+
+    def calculate_tile_yield(self) -> None:
+        self.tile_yield.calculate()
 
     def _render_default_terrain(self) -> None:
         if self.tile_terrain is None:
@@ -487,6 +613,7 @@ class BaseTile(BaseEntity):
             "owner": self.owner if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
+            "tile_yield": str(self.tile_yield.get_yield()),
             "resources": self.resources.flatten(),
             "features": self.features,
             "units": ",".join(_units),

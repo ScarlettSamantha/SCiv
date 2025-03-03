@@ -82,13 +82,21 @@ class TileYieldModifier:
     def __repr__(self):
         return str(self.calculate())
 
+    def get_yield(self, from_cache: bool = True) -> TileYield:
+        if from_cache and self._calulated_cache is not None:
+            return self._calulated_cache
+        return self.calculate()
+
     def get(self) -> Dict:
         return self.__dict__
 
     def props(self) -> TileYield:
         return self.calculate()
 
-    def add(self, obj_ref: TileYield | Type["TileYieldModifier"] | List[TileYield] | Dict[str, TileYield]) -> Self:
+    def add(
+        self,
+        obj_ref: TileYield | Type["TileYieldModifier"] | List[TileYield] | Dict[str, TileYield] | TileYieldModifier,
+    ) -> Self:
         def _add(self: Self, obj: TileYield) -> None:
             if not self.disable_recoverable_storage:
                 self._raw_recoverable_yields[len(self._raw_recoverable_yields)] = [obj]
@@ -109,8 +117,23 @@ class TileYieldModifier:
                     _add(self=self, obj=item)
         elif isinstance(obj_ref, TileYield):
             _add(self=self, obj=obj_ref)
+        elif isinstance(obj_ref, TileYieldModifier):
+            for _, item in obj_ref.get_addative().items():
+                self.add_addative(item)
+            for _, item in obj_ref.get_percentage_cummulative().items():
+                self.add_percentage_cumulative(item)
+            for _, item in obj_ref.get_percentage_addative().items():
+                self.add_percentage_addative(item)
         return self
 
-    def __add__(self, a: Type["TileYieldModifier"] | List[TileYield] | Dict[str, TileYield]) -> Self:
+    def __add__(
+        self,
+        a: Type["TileYieldModifier"] | List[TileYield] | Dict[str, TileYield] | TileYieldModifier,
+    ) -> Self:
         self.add(a)
         return self
+
+    def __str__(self) -> str:
+        if self._calulated_cache is not None:
+            return str(self._calulated_cache)
+        return str(self.calculate())

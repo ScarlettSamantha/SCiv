@@ -44,11 +44,7 @@ class _i18n:
         self._lookup_cache.clear()
 
     def generate_path(self, path: PathLike[Any] | str) -> Path:
-        base_path = (
-            Path(self.base_path)
-            if not isinstance(self.base_path, Path)
-            else self.base_path
-        )
+        base_path = Path(self.base_path) if not isinstance(self.base_path, Path) else self.base_path
         return base_path / Path(path)
 
     def language_exists(self, language: str) -> bool:
@@ -137,7 +133,6 @@ class Translation(SaveAble):
     def __init__(self, key: str) -> None:
         SaveAble.__init__(self)
         self.key: str = key
-        self._setup_saveable()
 
     def __repr__(self) -> str:
         self_str: str = str(self) if i18n else "[!unloaded i18n engine!]"
