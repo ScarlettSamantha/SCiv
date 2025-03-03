@@ -33,6 +33,9 @@ There are also lenses for debugging
 - `b`: Highlights units in `blue` while tiles that have no units in `red`
 - `n`: Highlights resources and their types on the map `yellow` for strategic, `green`/`yellow` for bonus, `red` for none. please note colors might look different
 - `m`: Highlights water and different types of it, `tiel` is coastal and shallow, `blue` deeper and sea
+- `z`: Calculates and toggles major icons on tiles
+- `x`: Toggles big buttons on tiles
+- `c`: Toggles small icons on tiles
 
 #### Issues
 
@@ -44,7 +47,7 @@ There are also lenses for debugging
 ### 0.1.0 Goals
 
 * [x] Have world render
-* ![ ] Have resource system (WIP)
+* [x] Have resource system
 * [x] Have ok atleast map generator
 * [x] Manage entities
 * [x] Spawn units
