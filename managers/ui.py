@@ -1,5 +1,4 @@
-from json import load
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple
+from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
 from gameplay.resource import ResourceTypeStrategic, ResourceTypeBonus
@@ -87,7 +86,10 @@ class ui(Singleton):
         self._base.accept("n", self.show_colors_for_resources)
         self._base.accept("m", self.show_colors_for_water)
         self._base.accept("b", self.show_colors_for_units)
+
         self._base.accept("z", self.calculate_icons_for_tiles)
+        self._base.accept("x", self.toggle_big_tile_icons)
+        self._base.accept("c", self.toggle_little_tile_icons)
         self._base.accept("game.state.true_game_start", self.post_game_start)
         return True
 
@@ -102,7 +104,33 @@ class ui(Singleton):
 
     def calculate_icons_for_tiles(self):
         for _, tile in self.map.map.items():
+            tile.tile_yield.calculate()
+            self.toggle_tile_icons(tile, small=True, large=True)
+
+    def toggle_tile_icons(self, tile: BaseTile, small: bool = False, large: bool = False):
+        if small and tile._showing_small_icons is False:
+            tile.add_small_icons()
+        elif small and tile._showing_small_icons is True:
+            tile.clear_small_icons()
+
+        if large and tile._showing_large_icons is False:
             tile.add_icon_to_tile()
+        elif large and tile._showing_large_icons is True:
+            tile.clear_large_icons()
+
+    def toggle_big_tile_icons(self):
+        for _, tile in self.map.map.items():
+            if tile._showing_large_icons is False:
+                tile.add_icon_to_tile()
+            else:
+                tile.clear_large_icons()
+
+    def toggle_little_tile_icons(self):
+        for _, tile in self.map.map.items():
+            if tile._showing_small_icons is False:
+                tile.add_small_icons()
+            else:
+                tile.clear_small_icons()
 
     def get_game_ui(self):
         # If we don't have an active Game, create one

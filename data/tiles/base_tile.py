@@ -1,4 +1,3 @@
-from numpy import tile
 from gameplay.resource import BaseResource, Resources
 from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TextNode, Texture
 from typing import Any, Dict, Optional, List, Tuple, Type, Union, TYPE_CHECKING
@@ -19,13 +18,14 @@ from managers.player import PlayerManager, Player
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from system.entity import BaseEntity
 from managers.entity import EntityManager, EntityType
-from panda3d.core import TextureStage
 
 if TYPE_CHECKING:
     from main import Openciv
 
 
 class BaseTile(BaseEntity):
+    texture_cache: Dict[str, Texture] = {}
+
     def __init__(
         self,
         base: Any,
@@ -161,6 +161,9 @@ class BaseTile(BaseEntity):
         )
         self.meshCollider: bool = True
 
+        self._showing_small_icons: bool = False
+        self._showing_large_icons: bool = False
+
     def add_data_to_tileyield(self):
         # Add terrain modifiers to the tile yield
         terrain_modifiers: TileYieldModifier = self.get_terrain().tile_yield_modifiers
@@ -191,122 +194,164 @@ class BaseTile(BaseEntity):
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
+    def clear_large_icons(self) -> None:
+        """
+        Remove the main texture icon from the tile.
+        """
+        if hasattr(self, "tile_icon_group"):
+            self.tile_icon_group.removeNode()
+            del self.tile_icon_group
+            self._showing_large_icons = False
+
+    def clear_small_icons(self) -> None:
+        """
+        Remove all small icons and text overlays from the tile.
+        """
+        if hasattr(self, "mini_icons_card"):
+            self.mini_icons_card.removeNode()
+            del self.mini_icons_card
+            self._showing_small_icons = False
+        if hasattr(self, "text_card"):
+            self.text_card.removeNode()
+            del self.text_card
+
+    def clear_all_icons(self) -> None:
+        """
+        Remove all icons from the tile.
+        """
+        if hasattr(self, "tile_icon_group"):
+            self.tile_icon_group.removeNode()
+            del self.tile_icon_group
+            self._showing_large_icons = False
+        if hasattr(self, "mini_icons_card"):
+            self.mini_icons_card.removeNode()
+            del self.mini_icons_card
+            self._showing_small_icons = False
+        if hasattr(self, "text_card"):
+            self.text_card.removeNode()
+            del self.text_card
+
+    def create_root_ui_node(self) -> None:
+        self.texture_card = CardMaker(f"resource_icon_{self.id}")
+        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+        self.tile_icon_group = NodePath("tile_icon_group")
+        self.tile_icon_group.reparentTo(self.models[0])
+        self.tile_icon_group.setCollideMask(BitMask32.bit(0))
+
     def add_icon_to_tile(self) -> None:
         """
         Append the texture as a separate node instead of replacing existing models,
-        then adds a grid of small icons under the main icon.
+        then set up the structure to later add mini icons and text overlays as separate cards.
         """
-        from gameplay.repositories.resources import ResourceRepository
+        resources: Dict[str, BaseResource] = self.resources.flatten()
+        resource = list(resources.values())[0] if resources else None
 
-        self.calculate_tile_yield()
-        resources = self.resources.flatten()
-        self.texture_card = CardMaker(f"resource_icon_{self.id}")
-        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+        if not hasattr(self, "tile_icon_group"):
+            self.create_root_ui_node()
 
-        if not resources:
-            return
-
-        for _, resource in resources.items():
+        if resource is not None:
             texture_path = resource.icon
             if not texture_path:
-                print(f"Resource {resource} has no icon set, cannot add texture.")
-                continue
+                raise AssertionError(f"Resource {resource} has no icon set, cannot add texture.")
 
             # Create the main texture card node
             self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
-            texture = self.base.loader.load_texture(texturePath=texture_path)
-            texture.set_format(Texture.F_srgb_alpha)  # type: ignore
+            if texture_path not in self.texture_cache:
+                self.texture_cache[texture_path] = self.base.loader.load_texture(texturePath=texture_path)
+                self.texture_cache[texture_path].set_format(Texture.F_srgb_alpha)  # type: ignore
+            texture = self.texture_cache[texture_path]
 
             if not self.models:
-                print(f"Tile {self} has no models rendered, cannot add texture.")
                 return
 
-            # Set up the main icon's texture and transformation
+            # Reparent the main icon card to the common group.
+            self.texture_card_texture.reparentTo(self.tile_icon_group)
             self.texture_card_texture.setTexture(texture, 1)
             self.texture_card_texture.setPos((-0.55, 0, 0.151))
             self.texture_card_texture.setHpr((0, 270, 270))
             self.texture_card_texture.setScale(6.0)
             self.texture_card_texture.setTransparency(True)
-            self.texture_card_texture.reparentTo(self.models[0])
 
-            # Extract the texture from the main NodePath (first available texture)
-            texture = self.texture_card_texture.find_texture("*")  # type: ignore
-            if not texture:
-                print(f"Texture not found in NodePath: {self.texture_card_texture}")
-                return
+        self._showing_large_icons = True
 
-            # Create a new TextureStage to blend the texture as a decal
-            tex_stage = TextureStage(f"extra_texture_{id(texture)}")
-            tex_stage.setMode(TextureStage.MDecal)
-
-            # Append the texture node to each model without overriding existing textures
-            texture_holder = NodePath(f"texture_node_{id(texture)}")
-            texture_holder.setTransparency(True)
-            texture_holder.reparentTo(self.texture_card_texture)
-            texture_holder.setTexture(tex_stage, texture)
-
-            basic_resources: List[BaseResource] = self.tile_yield.get_yield().export_basic()
-
-            if len(basic_resources) == 0:
-                return
-
-            self._add_small_icons_with_numbers(basic_resources)
-
-    def _add_small_icons_with_numbers(self, basic_resources: List[BaseResource]) -> None:
-        """
-        Add a grid of small icons (3 on top row, 2 on bottom row) under the main icon.
-        Each icon displays a number overlay provided in the icons dict (icon path -> number).
-        """
-        if not hasattr(self, "texture_card_texture"):
-            print("Main texture card not set. Cannot add small icons.")
+    def add_small_icons(self) -> None:
+        basic_resources: List[BaseResource] = self.tile_yield.get_yield().export_basic()
+        if len(basic_resources) == 0:
             return
 
-        # Define grid positions relative to the main icon
+        if not hasattr(self, "tile_icon_group"):
+            self.create_root_ui_node()
+
+        # Create a separate node for mini icons if not already created.
+        if not hasattr(self, "mini_icons_card"):
+            self.mini_icons_card = NodePath("mini_icons_card")
+            self.mini_icons_card.reparentTo(self.tile_icon_group)
+
+        # Create a separate node for text overlays if not already created.
+        if not hasattr(self, "text_card"):
+            self.text_card = NodePath("text_card")
+            self.text_card.reparentTo(self.tile_icon_group)
+
+        # Define grid positions relative to the tile icon group.
         grid_positions: List[Tuple[float, float, float]] = [
-            (-0.1, 0, -0.1),  # Top row, left
-            (0.0, 0, -0.1),  # Top row, center
-            (0.10, 0, -0.1),  # Top row, right
-            (-0.05, 0, -0.18),  # Bottom row, left
-            (0.05, 0, -0.18),  # Bottom row, right
+            # top-bottom (- is up), left-right (- is left), z
+            (0.2, -0.48, 0.18),  # Top row, left # gold
+            (0.33, 0.0, 0.18),  # Top row, center # production
+            (0.15, 0.52, 0.18),  # Top row, right # food
+            (0.65, -0.35, 0.18),  # Bottom row, left # science
+            (0.65, 0.3, 0.18),  # Bottom row, right # culture
+        ]
+        grid_positions_text: List[Tuple[float, float, float]] = [
+            (0.25, -0.5, -0.20),  # Top row, left
+            (0.40, 0, -0.20),  # Top row, center
+            (0.25, 0.5, -0.2),  # Top row, right
+            (0.8, -0.4, -0.2),  # Bottom row, left
+            (0.8, 0.4, -0.2),  # Bottom row, right
         ]
         font = self.base.loader.load_font("assets/fonts/Washington.ttf")
 
-        # Iterate over icons, using grid positions until they run out.
         for i, resource in enumerate(basic_resources):
-            # Create small icon card
-            resource: BaseResource = resource  # Type hinting
             icon_path = resource.icon
 
+            # Create mini icon card.
             small_icon_card = CardMaker("small_icon")
-            small_icon_card.setFrame(-0.03, 0.03, -0.03, 0.03)
+            small_icon_card.setFrame(-0.05, 0.05, -0.05, 0.05)
             small_icon_np = NodePath(small_icon_card.generate())  # type: ignore
 
-            # Load texture from the given icon path
-            texture = self.base.loader.load_texture(texturePath=icon_path)
-            texture.set_format(Texture.F_srgb_alpha)  # type: ignore
+            if icon_path not in self.texture_cache:
+                self.texture_cache[icon_path] = self.base.loader.load_texture(texturePath=icon_path)
+                self.texture_cache[icon_path].set_format(Texture.F_srgb_alpha)  # type: ignore
+            texture = self.texture_cache[icon_path]
+
             if not texture:
-                print(f"Failed to load texture for small icon: {icon_path}")
-                continue
+                raise AssertionError(f"Failed to load texture for small icon: {icon_path}")
 
             small_icon_np.setTexture(texture, 1)
-            small_icon_np.setPos(*grid_positions[i])
-            small_icon_np.setScale(1.0)
+            small_icon_np.setPos(grid_positions[i])
+            small_icon_np.setHpr(0, 270, -90)
+            small_icon_np.setScale(3.0)
             small_icon_np.setTransparency(True)
-            small_icon_np.reparentTo(self.texture_card_texture)
+            small_icon_np.setCollideMask(BitMask32.bit(0))
+            # Attach mini icon to its dedicated card.
+            small_icon_np.reparentTo(self.mini_icons_card)
 
-            # Create text node for number overlay
+            # Create a text node for the number overlay.
             text_node = TextNode(f"icon_counter_{i}")
-            text_node.setText("1")
+            text_node.setText(str(int(resource.value)))
             text_node.setFont(font)
-            text_node.setTextColor(1, 1, 1, 1)  # White text
+            text_node.setTextColor(1, 1, 1, 1)  # White text.
             text_node.setAlign(TextNode.ACenter)
-            text_node.setShadow(0.03, 0.03)  # Slight shadow
-            text_node.setShadowColor(0, 0, 0, 1)  # Black shadow
+            text_node.setShadow(0, 0)  # Slight shadow.
+            text_node.setShadowColor(0, 0, 0, 1)  # Black shadow.
 
-            text_np = small_icon_np.attachNewNode(text_node)
-            text_np.setScale(0.2)
-            text_np.setPos(0, 0, 0.2)  # Adjust positioning for better visibility above icons
-            text_np.setBillboardPointEye()
+            # Attach the text node to the separate text card.
+            text_np = self.text_card.attachNewNode(text_node)
+            # Position the text above the mini icon.
+            x, y, z = grid_positions_text[i]
+            text_np.setHpr(90, -90, 0)
+            text_np.setPos(x, y, z + 0.4)
+            text_np.setScale(0.3)
+        self._showing_small_icons = True
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         """
