@@ -95,7 +95,7 @@ class DebugActions(
 
         items = {str(v.value): k for k, v in DebugUIOptionsValues.__members__.items()}
         self.debug_ui_spinner = Spinner(
-            text="Dropdown UI",
+            text="Debug UI (ALL)",
             size_hint=(None, None),
             width=150,
             height=80,
@@ -146,9 +146,8 @@ class DebugActions(
             self.logger.error(f"No matching state for {instance.text}")
             return
 
-        state_str = str(state_enum.name)
-        self.logger.info(f"Debug UI change requested to state {state_str}.")
-        messenger.send("ui.update.ui.debug_ui_toggle", [state_str])
+        self.logger.info(f"Debug UI change requested to state {str(state_enum.name)}.")
+        messenger.send("ui.update.ui.debug_ui_toggle", [state_enum])
 
     def get_frame(self) -> BoxLayout:
         if not self.frame:

@@ -41,12 +41,21 @@ class StatsPanel(FloatLayout):
 
         self.register()
 
+    def get_frame(self) -> FloatLayout:
+        if self.frame is None:
+            self.frame = self.build()
+        return self.frame
+
     def register(self):
         def clocks():
             Clock.schedule_interval(self.on_update, 0.25)
             Clock.schedule_interval(self.periodicals, 1)
 
         clocks()
+
+    def hide(self):
+        if self.frame is not None:
+            self.frame.opacity = 0
 
     def periodicals(self, dt):
         self._periodicals["window_size"] = (f"{self.base.win.getXSize()},{self.base.win.getYSize()}",)

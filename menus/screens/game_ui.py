@@ -5,27 +5,26 @@ from weakref import ReferenceType
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
-
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from camera import CivCamera
 from gameplay.units.unit_base import UnitBaseClass
+from system.actions import Action
+from system.entity import BaseEntity
 
 from data.tiles.base_tile import BaseTile
 
 from managers.unit import Unit
 from managers.world import World
 from managers.entity import EntityManager, EntityType
-from menus.kivy.parts.debug_actions import DebugActions
-from system.actions import Action
-from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
+from menus.kivy.parts.debug_actions import DebugActions
+from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.action_bar import ActionBar
-from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -69,6 +68,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.debug_actions: Optional[DebugActions] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
+        self.debug_panels_showing_state: Dict[str, bool] = {
+            "stats": False,
+            "actions": False,
+            "debug": False,
+        }
+
         self.logger.info("Game UI Screen initialized.")
         self.add_widget(self.build_screen())
         self.logger.info("Game UI Screen built.")
@@ -79,12 +84,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
         self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
 
-    def get_debug_frame(self) -> FloatLayout:
+    def unregister(self):
+        self.logger.info("Unregistering event listeners.")
+
+    def get_debug_frame(self) -> DebugPanel:
         if self.debug_frame is None:
             raise AssertionError("Debug panel is not initialized.")
         return self.debug_frame
 
-    def get_camera_frame(self) -> FloatLayout:
+    def get_stats_frame(self) -> StatsPanel:
         if self.stats_frame is None:
             raise AssertionError("Camera panel is not initialized.")
         return self.stats_frame
@@ -130,24 +138,70 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.register_non_collidable(self.debug_actions.frame)
 
         self.logger.info("Non-collidable UI elements registered.")
-
         return self.root_layout
 
     def build_action_bar(self) -> BoxLayout:
         self.action_bar_frame = ActionBar(base=self._base)
+
         return self.action_bar_frame.build()
 
     def build_stats_frame(self) -> FloatLayout:
         self.stats_frame = StatsPanel(base=self._base)
+        self.debug_panels_showing_state["stats"] = True
         return self.stats_frame.build()
 
     def build_debug_frame(self) -> FloatLayout:
         self.debug_frame = DebugPanel(base=self._base)
+        self.debug_panels_showing_state["debug"] = True
         return self.debug_frame.build_debug_frame()
 
     def build_debug_actions(self) -> BoxLayout:
         self.debug_actions = DebugActions(base=self._base, logger=self.logger)
+        self.debug_panels_showing_state["actions"] = True
         return self.debug_actions.build()
+
+    def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
+        if self.debug_actions is None or self.debug_frame is None or self.stats_frame is None:
+            raise AssertionError("Debug actions, debug panel, or stats panel is not initialized.")
+
+        self.get_debug_frame().get_frame().disabled = not debug
+        self.get_debug_frame().get_frame().opacity = 0 if not debug else 1
+        self.get_stats_frame().get_frame().disabled = not stats
+        self.get_stats_frame().get_frame().opacity = 0 if not stats else 1
+
+        if actions and not self.debug_panels_showing_state["actions"]:
+            self.add_widget(self.debug_actions)
+            self.register_non_collidable(self.debug_actions.frame)
+        else:
+            frame = self.get_action_bar_frame().get_frame()
+            for child in frame.children:  # type: ignore
+                frame.remove_widget(child)
+            self.remove_widget(frame)
+            self.remove_widget(self.debug_actions)
+            self.unregister_non_collidable(self.debug_actions.frame)
+
+        if debug and not self.debug_panels_showing_state["debug"]:
+            self.add_widget(self.debug_frame)
+            self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
+            self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
+            self.register_non_collidable(self.debug_frame.frame)
+        else:
+            frame = self.get_debug_frame()
+            for child in frame.children:  # type: ignore
+                frame.remove_widget(child)
+            self.remove_widget(frame)
+            self._base.ignore("ui.update.user.tile_clicked")
+            self._base.ignore("ui.update.user.unit_clicked")
+            self.unregister_non_collidable(self.debug_frame.frame)
+
+        if stats and not self.debug_panels_showing_state["stats"]:
+            frame = self.get_stats_frame().get_frame()
+            self.add_widget(frame)
+            self.register_non_collidable(self.stats_frame.frame)
+        else:
+            frame = self.get_stats_frame()
+            frame.hide()
+            self.register_non_collidable(self.stats_frame.frame)
 
     def process_tile_click(self, tile: str):
         _tile: Optional[BaseTile] = self.world_manager.lookup_on_tag(tile)

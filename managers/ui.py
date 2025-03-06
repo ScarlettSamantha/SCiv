@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, TYPE_CHECKING, Tuple
+from typing import Dict, List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
 from gameplay.resource import ResourceTypeStrategic, ResourceTypeBonus
@@ -50,6 +50,8 @@ class ui(Singleton):
 
         self.show_resources_in_radius: bool = False
         self.show_colors_in_radius: bool = False
+
+        self.debug_show: Dict[str, bool] = {"actions": False, "stats": False, "debug": False}
 
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
@@ -133,7 +135,35 @@ class ui(Singleton):
         self.calculate_icons_for_tiles(small=small, large=big)
 
     def debug_ui_change(self, value: Enum):
-        pass
+        from menus.kivy.parts.debug_actions import DebugUIOptionsValues
+
+        actions, stats, debug = False, False, False
+
+        if DebugUIOptionsValues.ALL_DEBUG_UI == value:
+            actions, stats, debug = True, True, True
+        elif DebugUIOptionsValues.NONE == value:
+            ...  # Do nothing as we are already set to False
+        elif DebugUIOptionsValues.DEBUG == value:
+            debug = True
+        elif DebugUIOptionsValues.STATS == value:
+            stats = True
+        elif DebugUIOptionsValues.ACTIONS == value:
+            actions = True
+        elif DebugUIOptionsValues.DEBUG_AND_STATS == value:
+            debug, stats = True, True
+        elif DebugUIOptionsValues.DEBUG_AND_ACTIONS == value:
+            debug, actions = True, True
+        else:
+            raise ValueError("Invalid value for debug ui change")
+
+        self.draw_debug_ui(debug, stats, actions)
+
+    def draw_debug_ui(self, debug: bool, stats: bool, actions: bool):
+        if self.game_gui is None:
+            raise AssertionError("GUI not initialized")
+
+        self.debug_show = {"actions": actions, "stats": stats, "debug": debug}
+        self.game_gui.debug_ui_state(stats, actions, debug)
 
     def on_lense_change(self, value: Enum):
         from menus.kivy.parts.debug_actions import LenseOptionsValues
