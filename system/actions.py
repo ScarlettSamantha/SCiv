@@ -7,7 +7,7 @@ class Action:
         self,
         name: T_TranslationOrStr,
         action: Callable[[Self, Any, Any], Optional[bool]],
-        condition: Optional[Callable[[Self], bool]] = None,
+        condition: Optional[Callable[[Self], bool] | bool] = None,
         on_success: Optional[Callable[[Self, Tuple, Dict], Optional[bool]]] = None,
         on_failure: Optional[Callable[[Self, Tuple, Dict], None]] = None,
         icon: str | None = None,
@@ -22,7 +22,7 @@ class Action:
         self.icon: str | None = icon
         self.useable: bool = usable
 
-        self.condition: Optional[Callable[[Self], bool]] = condition
+        self.condition: Optional[Callable[[Self], bool] | bool] = condition
         self.action: Callable[[Self, List | Tuple, Dict], Optional[bool]] = action
 
         self.on_success: Optional[Callable[[Self, Tuple, Dict], Optional[bool]]] = on_success
@@ -41,7 +41,13 @@ class Action:
         if self.action is not None:
             result = self.action(self, self.action_args, self.action_kwargs)
 
-            if self.condition is None or self.condition(self) is False:
+            condition_met: bool = False
+            if isinstance(self.condition, bool):
+                condition_met = self.condition
+            elif isinstance(self.condition, Callable):
+                condition_met = self.condition(self)
+
+            if self.condition is None or condition_met is False:
                 return
 
             if result is None:
