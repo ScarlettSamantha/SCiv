@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Optional, TYPE_CHECKING, Tuple
 from direct.showbase.MessengerGlobal import messenger
 from data.tiles.base_tile import BaseTile
@@ -47,6 +48,9 @@ class ui(Singleton):
         self.showing_colors = False
         self.loader: Loader = Loader(self._base)
 
+        self.show_resources_in_radius: bool = False
+        self.show_colors_in_radius: bool = False
+
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
         self._base = base
@@ -79,6 +83,10 @@ class ui(Singleton):
 
     def register(self) -> bool:
         self._base.accept("ui.update.user.tile_clicked", self.select_tile)
+        self._base.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
+        self._base.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
+        self._base.accept("ui.update.ui.lense_change", self.on_lense_change)
+
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
         self._base.accept("f7", self.trigger_render_analyze)
         self._base.accept("p", self.activate_pstat)
@@ -94,7 +102,7 @@ class ui(Singleton):
         return True
 
     def post_game_start(self):
-        self.calculate_icons_for_tiles()
+        self.calculate_icons_for_tiles(small=False, large=True)
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
@@ -102,21 +110,53 @@ class ui(Singleton):
     def deactivate_pstat(self):
         PStatClient.disconnect()
 
-    def calculate_icons_for_tiles(self):
+    def calculate_icons_for_tiles(self, small: bool = True, large: bool = True):
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
-            self.toggle_tile_icons(tile, small=True, large=True)
+            self.toggle_tile_icons(tile, small=small, large=large)
+
+    def on_resource_ui_change_request(self, value: Enum):
+        from menus.kivy.parts.debug_actions import MapActionsValues
+
+        self.show_resources_in_radius = False
+        small, big = False, False
+
+        if MapActionsValues.BIG_ICONS == value:
+            big = True
+        elif MapActionsValues.SMALL_ICONS == value:
+            small = True
+        elif MapActionsValues.SMALL_BIG_ICONS == value:
+            small, big = True, True
+        elif MapActionsValues.ALL_IN_RADIUS == value:
+            self.show_resources_in_radius = True  # We hide the rest of the icons
+
+        self.calculate_icons_for_tiles(small=small, large=big)
+
+    def debug_ui_change(self, value: Enum):
+        pass
+
+    def on_lense_change(self, value: Enum):
+        from menus.kivy.parts.debug_actions import LenseOptionsValues
+
+        self.restore_all_tiles_colors()
+
+        if LenseOptionsValues.RESOURCES == value:
+            self.show_colors_for_resources()
+        elif LenseOptionsValues.WATER == value:
+            self.show_colors_for_water()
+        elif LenseOptionsValues.UNITS == value:
+            self.show_colors_for_units()
+        elif LenseOptionsValues.NONE == value:
+            return
+        else:
+            raise ValueError("Invalid value for lense change")
 
     def toggle_tile_icons(self, tile: BaseTile, small: bool = False, large: bool = False):
-        if small and tile._showing_small_icons is False:
+        tile.clear_all_icons()
+        if small:
             tile.add_small_icons()
-        elif small and tile._showing_small_icons is True:
-            tile.clear_small_icons()
-
-        if large and tile._showing_large_icons is False:
+        if large:
             tile.add_icon_to_tile()
-        elif large and tile._showing_large_icons is True:
-            tile.clear_large_icons()
 
     def toggle_big_tile_icons(self):
         for _, tile in self.map.map.items():
@@ -154,6 +194,20 @@ class ui(Singleton):
         self.current_unit = None
         self.previous_unit = None
 
+    def clear_previous_selected_tiles(self):
+        # Restore colors of previously selected tile and neighbors
+        tiles = self.previous_tiles
+        if self.previous_tile is not None:
+            tiles.append(self.previous_tile)
+
+        if len(tiles) == 0 or tiles is None:
+            return
+
+        for tile in tiles:
+            if self.show_resources_in_radius:
+                tile.clear_all_icons()
+            tile.set_color(Colors.RESTORE)
+
     def select_tile(self, tile_coords: List[str]):
         from gameplay.repositories.tile import TileRepository
 
@@ -164,22 +218,28 @@ class ui(Singleton):
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
-        self.neighbours_tiles = []
 
         # Colors for selected tile and neighbors
         colors: List[Tuple[float, float, float, float]] = [Colors.GREEN, Colors.BLUE, Colors.RED]
         colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
 
-        self.color_tile(tile, colors)
-        self.color_neighbors(tile, colors_neighbours)
-
-        self.neighbours_tiles = TileRepository.get_neighbors(tile)
+        self.previous_tiles = self.neighbours_tiles
+        self.neighbours_tiles = []
+        self.neighbours_tiles = TileRepository.get_neighbors(tile, check_passable=False)
 
         # Restore colors of previously selected tile and neighbors
-        if self.previous_tile:
-            self.restore_tile_colors(self.previous_tile)
+        if self.previous_tile is not None or len(self.previous_tiles) == 0:
+            self.clear_previous_selected_tiles()
+
+        if self.show_resources_in_radius:
+            self.toggle_tile_icons(tile, small=True, large=True)
+        self.color_tile(tile, colors)
+
         for neighbor in self.neighbours_tiles:
-            self.restore_tile_colors(neighbor)
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(neighbor, small=True, large=True)
+            if self.show_resources_in_radius:
+                self.color_tile(neighbor, colors_neighbours)
 
     def color_tile(
         self,
@@ -206,7 +266,7 @@ class ui(Singleton):
         if color is None:
             color = Colors.RESTORE
 
-        neighbors = TileRepository.get_neighbors(tile)
+        neighbors = TileRepository.get_neighbors(tile, check_passable=False)
         for i, _tile in enumerate(neighbors):
             _tile.set_color(color if isinstance(color, tuple) else color[i % len(color)])
 
@@ -214,6 +274,11 @@ class ui(Singleton):
 
     def restore_tile_colors(self, tile: BaseTile):
         tile.set_color(Colors.RESTORE)
+
+    def restore_all_tiles_colors(self):
+        self.showing_color = False
+        for _, tile in self.map.map.items():
+            tile.set_color(Colors.RESTORE)
 
     def select_unit(self, unit: List[str] | UnitBaseClass):
         if isinstance(unit, list):
@@ -261,27 +326,23 @@ class ui(Singleton):
             else:
                 hex.set_color(Colors.RESTORE)
 
-        self.showing_colors = not self.showing_colors
-
     def show_colors_for_resources(self):
         for _, hex in self.map.map.items():
             if len(hex.resources) > 0:
                 is_strategic: bool = len(hex.resources.resources[ResourceTypeStrategic]) > 0
                 is_bonus: bool = len(hex.resources.resources[ResourceTypeBonus]) > 0
                 if is_strategic:
-                    hex.set_color(Colors.YELLOW if self.showing_colors else Colors.RESTORE)
+                    hex.set_color(Colors.YELLOW)
                 elif is_bonus:
-                    hex.set_color(Colors.BLUE if self.showing_colors else Colors.RESTORE)
+                    hex.set_color(Colors.BLUE)
                 else:
-                    hex.set_color(Colors.GREEN if self.showing_colors else Colors.RESTORE)
+                    hex.set_color(Colors.GREEN)
             else:
-                hex.set_color(Colors.RED if self.showing_colors else Colors.RESTORE)
-        self.showing_colors = not self.showing_colors
+                hex.set_color(Colors.RED)
 
     def show_colors_for_units(self):
         for _, hex in self.map.map.items():
             if len(hex.units) > 0:
-                hex.set_color(Colors.BLUE if self.showing_colors else Colors.RESTORE)
+                hex.set_color(Colors.BLUE)
             else:
-                hex.set_color(Colors.RED if self.showing_colors else Colors.RESTORE)
-        self.showing_colors = not self.showing_colors
+                hex.set_color(Colors.RED)
