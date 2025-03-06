@@ -67,8 +67,8 @@ class UnitBaseClass(BaseEntity, ABC):
         self.range: int = 1
         self.in_direct: bool = False
 
-        self.max_moves: int = 5
-        self.moves_left: int = 5
+        self.max_moves: int = 10
+        self.moves_left: int | float = 10.0
 
         self.can_swim: bool = False
         self.can_fly: bool = False
@@ -123,11 +123,13 @@ class UnitBaseClass(BaseEntity, ABC):
     def get_actions(self) -> List[Action]:
         return self.actions
 
-    def move(self, _: Action, _args: List[Any], kwargs: Dict[str, Any]) -> Optional[bool]:
+    def move(self, action: Action, _args: List[Any], kwargs: Dict[str, Any]) -> Optional[bool]:
         if "tile" not in kwargs:
             raise ValueError("No tile provided to move action.")
 
-        tile = kwargs["tile"]
+        from gameplay.repositories.tile import TileRepository
+
+        target_tile: BaseTile = kwargs["tile"]
 
         if not self.can_move:
             return False
@@ -135,13 +137,32 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.moves_left <= 0:
             return False
 
-        if not tile.is_occupied() and self.tile_is_occupiable(tile):
-            self.tile = tile
-            self.moves_left -= 1
-            self.pos_x, self.pos_y, _ = tile.get_cords()
+        result_tile: Optional[BaseTile] = None
+        if not target_tile.is_occupied() and self.tile_is_occupiable(target_tile):
+            self.pos_x, self.pos_y, _ = target_tile.get_cords()  # We keep the z position as it is for now.
             if self.model is not None:
-                self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
-            return True
+                if (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is not None:
+                    # self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
+                    for tile in tiles_to_move:
+                        unit_movement: float = self.moves_left
+                        if (
+                            unit_movement - target_tile.movement_cost
+                        ) <= 0:  # We have no more moves left so we end on previous tile
+                            break
+
+                        if tile.is_visisted_by(self) is False:
+                            # Keep trapped units from moving
+                            result_tile = tile
+                            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
+                            return False
+
+                        result_tile = tile
+                        self.moves_left -= tile.movement_cost
+
+        if result_tile is not None and self.model is not None:
+            result_cords = result_tile.get_cords()
+            self.model.setPos(LVector3(result_cords[0], result_cords[1], self.pos_z))  # we dont move the z axis for now
+        return True
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)

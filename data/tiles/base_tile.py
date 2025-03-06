@@ -238,6 +238,10 @@ class BaseTile(BaseEntity):
         self.tile_icon_group.reparentTo(self.models[0])
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))
 
+    def is_visisted_by(self, unit: UnitBaseClass) -> bool:
+        # @TODO implement this.
+        return True
+
     def add_icon_to_tile(self) -> None:
         """
         Append the texture as a separate node instead of replacing existing models,

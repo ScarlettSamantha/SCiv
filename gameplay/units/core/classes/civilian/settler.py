@@ -1,5 +1,5 @@
-from abc import ABCMeta
 from typing import Any
+
 from managers.i18n import t_
 
 from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
@@ -74,6 +74,7 @@ class Settler(CoreCivilianBaseClass):
             *args,
             **kwargs,
         )
+        self.max_moves
 
     def founding_conditions(self, _) -> bool:
         if self.tile.is_city() is False or self.tile.owner != self.owner or not self.tile.is_passable():
@@ -90,6 +91,17 @@ class Settler(CoreCivilianBaseClass):
         found_action.on_the_spot_action = True
         found_action.remove_actions_after_use = True
         self.actions.append(found_action)
+
+        walk_action = Action(
+            name=t_("actions.unit.move"),
+            action=self.move,
+            condition=self.can_move,
+            on_failure=lambda action, args, kwargs: None,
+        )
+        walk_action.on_the_spot_action = False
+        walk_action.targeting_tile_action = True
+        self.actions.append(walk_action)
+
         return super()._register()
 
     def found_city(self, _, *args, **kwargs):
