@@ -12,6 +12,11 @@ class DebugPanel(FloatLayout):
         self.panel = None
         self.rect = None
 
+    def get_frame(self) -> FloatLayout:
+        if self.frame is None:
+            self.frame = self.build_debug_frame()
+        return self.frame
+
     def build_debug_frame(self) -> FloatLayout:
         # --- Debug Panel (Top-Left Corner) ---
         self.frame = FloatLayout(

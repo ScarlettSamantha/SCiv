@@ -33,3 +33,7 @@ class SCivGUI(App):
         screen_manager.add_widget(PauseScreen(name="pause_menu", base=self._base))
         screen_manager.current = "main_menu"
         return screen_manager
+
+    def debug_ui_state(self, stats: bool, actions: bool, debug: bool) -> None:
+        screen: GameUIScreen = self.get_screen_manager().get_screen("game_ui")
+        screen.toggle_debug_panels(stats, actions, debug)
