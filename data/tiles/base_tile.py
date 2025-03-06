@@ -1,3 +1,4 @@
+from logging import Logger
 from gameplay.resource import BaseResource, Resources
 from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TextNode, Texture
 from typing import Any, Dict, Optional, List, Tuple, Type, Union, TYPE_CHECKING
@@ -46,6 +47,7 @@ class BaseTile(BaseEntity):
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
         self._entity_manager = EntityManager.get_instance()
+        self.logger: Logger = self.base.logger.gameplay.getChild("map.tile")
 
         self.extra_data: Optional[dict] = extra_data
 
@@ -239,7 +241,7 @@ class BaseTile(BaseEntity):
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))
 
     def is_visisted_by(self, unit: UnitBaseClass) -> bool:
-        # @TODO implement this.
+        self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
 
     def add_icon_to_tile(self) -> None:
