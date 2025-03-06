@@ -54,7 +54,6 @@ class Input(Singleton):
         mpos = self.base.mouseWatcherNode.getMouse()
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())
         self.picker.traverse(self.base.render)  # type: ignore
-
         if self.pq.getNumEntries() > 0:
             self.pq.sortEntries()
             entry = self.pq.getEntry(0)  # closest collision
@@ -63,7 +62,7 @@ class Input(Singleton):
 
             start_of_id = tile_id.split("_")[0]
             if start_of_id == "unit":
-                # This is a unit, not a tilea
+                # This is a unit, not a tile
                 messenger.send("system.input.user.unit_clicked", [tile_id])
             elif start_of_id == "tile":
                 # This is a tile
