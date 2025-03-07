@@ -1,20 +1,36 @@
 import random
-from direct.showbase.ShowBase import ShowBase
-
-from panda3d.core import NodePath, LVector3, BitMask32
-from direct.showbase.Loader import Loader
 from abc import ABC
-from managers.i18n import T_TranslationOrStr, get_i18n, t_
-from typing import Dict, List, Optional, Tuple, Type, Any, TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+
+from direct.showbase.Loader import Loader
+from direct.showbase.ShowBase import ShowBase
+from panda3d.core import BitMask32, LVector3, NodePath
+
 from gameplay.combat.stats import Stats
+from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
 from system.actions import Action
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from data.tiles.base_tile import BaseTile
-    from gameplay.promotion import PromotionTree
     from gameplay.player import Player
+    from gameplay.promotion import PromotionTree
+
+
+class CantMoveReason(Enum):
+    SAME_TILE = -2
+    COULD_MOVE = -1
+    NO_MOVES = 0
+    NO_PATH = 1
+    NO_TARGET = 2
+    IMMOBILE = 3
+    IMPASSABLE = 4
+    NO_OWNER = 5
+    OTHER_OWNER = 6
+    NO_UNIT = 7
+    UNIT_TRAPPED_WIDWAY = 8
 
 
 class UnitBaseClass(BaseEntity, ABC):
@@ -67,8 +83,8 @@ class UnitBaseClass(BaseEntity, ABC):
         self.range: int = 1
         self.in_direct: bool = False
 
-        self.max_moves: int = 5
-        self.moves_left: int = 5
+        self.max_moves: int = 10
+        self.moves_left: int | float = 10.0
 
         self.can_swim: bool = False
         self.can_fly: bool = False
@@ -91,6 +107,10 @@ class UnitBaseClass(BaseEntity, ABC):
 
         if self.owner is not None:
             self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
+
+    def set_pos(self, pos: Tuple[float, float, float]) -> None:
+        self.pos_x, self.pos_y, self.pos_z = pos
+        self.model.setPos(LVector3(*pos))
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -123,25 +143,68 @@ class UnitBaseClass(BaseEntity, ABC):
     def get_actions(self) -> List[Action]:
         return self.actions
 
-    def move(self, _: Action, _args: List[Any], kwargs: Dict[str, Any]) -> Optional[bool]:
+    def move(self, action: Action, _args: List[Any], kwargs: Dict[str, Any]) -> CantMoveReason:
         if "tile" not in kwargs:
             raise ValueError("No tile provided to move action.")
 
-        tile = kwargs["tile"]
+        from gameplay.repositories.tile import TileRepository
+
+        target_tile: BaseTile = kwargs["tile"]
 
         if not self.can_move:
-            return False
+            return CantMoveReason.IMMOBILE
 
         if self.moves_left <= 0:
-            return False
+            return CantMoveReason.NO_MOVES
 
-        if not tile.is_occupied() and self.tile_is_occupiable(tile):
-            self.tile = tile
-            self.moves_left -= 1
-            self.pos_x, self.pos_y, _ = tile.get_cords()
-            if self.model is not None:
-                self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
-            return True
+        if target_tile.passable is False:
+            return CantMoveReason.IMPASSABLE
+
+        result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
+        if target_tile.is_occupied() or not self.tile_is_occupiable(target_tile):
+            return CantMoveReason.OTHER_OWNER
+
+        if self.model is None:
+            raise ValueError(f"Unit {self.key} has no model assigned.")
+
+        # Attempt pathfinding
+        if (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is None:
+            return CantMoveReason.NO_PATH
+
+        # This was a bug for a while, but it was fixed
+        if (len(tiles_to_move) - 1) == 0:
+            return CantMoveReason.SAME_TILE
+
+        del tiles_to_move[0]  # Remove the first tile as it is the current tile
+
+        for tile in tiles_to_move:
+            tile: BaseTile = tile  # this is a type hint
+            cords: Tuple[float, float, float] = tile.get_cords()
+
+            if (self.moves_left - tile.movement_cost) < 0:
+                previous_tile_cords: Tuple[float, float, float] = (
+                    result_tile.get_cords()
+                )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
+                self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z))
+                return CantMoveReason.NO_MOVES
+
+            # Check if tile is still valid for the unit
+            if tile.is_visisted_by(self) is False:
+                # Move partially onto this tile and then get trapped or do partial logic
+                self.moves_left -= tile.movement_cost
+                self.set_pos((cords[0], cords[1], self.pos_z))
+                return CantMoveReason.UNIT_TRAPPED_WIDWAY
+
+            # If we got here, we can step onto tile
+            result_tile = tile
+            self.moves_left -= tile.movement_cost
+            self.set_pos((cords[0], cords[1], self.pos_z))
+
+        if result_tile == target_tile:
+            return CantMoveReason.COULD_MOVE
+        elif result_tile is None:
+            return CantMoveReason.NO_PATH
+        return CantMoveReason.NO_MOVES
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -201,7 +264,7 @@ class UnitBaseClass(BaseEntity, ABC):
         return {
             "tag": self.tag,
             "key": self.key,
-            "name": get_i18n().lookup(self.name),
+            "name": str(self.name),
             "description": self.description,
             "owner": owner_name,
             "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",

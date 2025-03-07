@@ -251,8 +251,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.wait_for_next_input_of_user = True
         self.wait_for_action_of_user = partial(self.execute_action, action, unit)
         self.unit_waiting_for_action = unit
-        self.waiting_for_world_input = True
-        self.debug_panel.text = "Waiting for tile selection..."  # type: ignore # We know it exists because it's initialized in build_screen
+        self.waiting_for_world_input = True  # type: ignore # We know it exists because it's initialized in build_screen
 
     def execute_action(self, action: Action, unit: UnitBaseClass, tile: Optional[BaseTile]):
         """Executes the action after tile selection (if required)."""

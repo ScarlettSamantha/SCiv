@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from managers.i18n import T_TranslationOrStr
-from ._base_terrain import BaseTerrain
-from ._base_terrain import rgb
-
 from data.terrain.traits.land import mountain
+from managers.i18n import T_TranslationOrStr
+
+from ._base_terrain import BaseTerrain, rgb
 
 
 class MountainSnow(BaseTerrain):
@@ -19,5 +18,8 @@ class MountainSnow(BaseTerrain):
 
         self.movement_modifier = 3
         self.water_availability = 0
+
+        self.passable: bool = False
+        self.passable_without_tech: bool = False
 
         self.add_modifiers(mountain)

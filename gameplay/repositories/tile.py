@@ -253,13 +253,13 @@ class TileRepository:
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
         open_set = []
-        heappush(open_set, (0, start))
+        heappush(open_set, (0, id(start), start))  # Use id(start) for unique sorting
         came_from: Dict["BaseTile", "BaseTile"] = {}
         g_score: Dict["BaseTile", float] = {start: 0.0}
         f_score: Dict["BaseTile", float] = {start: cls.heuristic_tiles(start, goal)}
 
         while open_set:
-            _, current = heappop(open_set)
+            _, __, current = heappop(open_set)  # Extract current safely
 
             if current == goal:
                 path = []
@@ -269,14 +269,14 @@ class TileRepository:
                 path.append(start)
                 return path[::-1]
 
-            for neighbor in cls.get_neighbors(current):
-                tentative_g_score = g_score[current] + neighbor.movement_cost / movement_speed
+            for neighbor in cls.get_neighbors(current, check_passable=True):
+                tentative_g_score = g_score[current] + (neighbor.movement_cost / movement_speed)
 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score[neighbor] = tentative_g_score + cls.heuristic_tiles(neighbor, goal)
-                    heappush(open_set, (f_score[neighbor], neighbor))
+                    heappush(open_set, (f_score[neighbor], id(neighbor), neighbor))  # Use id() for tie-breaking
 
         return None  # No path found
 
