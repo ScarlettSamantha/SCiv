@@ -1,7 +1,6 @@
 # SCiv
 
 > 🚨 **Warning:** This project is in a very early development phase and is likely not functional yet. It may lack gameplay elements and is currently focused on testing raw system implementations.
-
 > ⚠️ **Danger:** This code is highly dynamic and can be vulnerable to arbitrary remote code execution if modified or when using downloaded files. Malicious actors could exploit this to run harmful code(*!There is no sandbox!*). Be extremely cautious and only load trusted, verified sources.
 
 ## Running it
@@ -14,7 +13,7 @@ At the moment it will run *something* and I will attempt to keep the main branch
 
 Its not that hard to actually run it as its panda3d now.
 
-```
+```bash
 git clone git@github.com:ScarlettSamantha/SCiv.git
 cd SCiv
 python3 -m venv .
@@ -30,7 +29,8 @@ In the `config.prc` is defined it will also debug GPU data but if this is causin
 
 #### Lenses
 
-There are also lenses for debugging
+There are also lenses for debugging or you can use the buttons in the debug ui they will trigger the same functions.
+Beware the menu and button states dont update each other tough
 
 - `b`: Highlights units in `blue` while tiles that have no units in `red`
 - `n`: Highlights resources and their types on the map `yellow` for strategic, `green`/`yellow` for bonus, `red` for none. please note colors might look different
@@ -41,33 +41,33 @@ There are also lenses for debugging
 
 #### Issues
 
-* Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
-* Why venv: Because if I tell you to break system packages and something goes wrong people get mad.
+- Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
+- Why venv: Because if I tell you to break system packages and something goes wrong people get mad.
 
 ## Project
 
 ### 0.1.0 Goals
 
-* [x] Have world render
-* [x] Have resource system
-* [x] Have ok atleast map generator
-* [x] Manage entities
-* [x] Spawn units
-* [ ] Unit actions (WIP)
-* [ ] Process a turn
-* [ ] Cities that can build something
-* ![ ] Basic UI element (WIP)
-* [ ] Movement for units both pathfinded and weighted + UI (WIP)
-* [x] Basic backend system integration like managers, systems, logging
-* [x] Proper Implementation UI system (kivy)
-* [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
+- [x] Have world render
+- [x] Have resource system
+- [x] Have ok atleast map generator
+- [x] Manage entities
+- [x] Spawn units
+- [ ] Unit actions (WIP)
+- [ ] Process a turn
+- [ ] Cities that can build something
+- ![ ] Basic UI element (WIP)
+- [ ] Movement for units both pathfinded and weighted + UI (WIP)
+- [x] Basic backend system integration like managers, systems, logging
+- [x] Proper Implementation UI system (kivy)
+- [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
 
 ### Other information
 
-* [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
-* [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
-* [Changelog](CHANGELOG.md) - Automatically generated changelog.
-* [File Structure](https://github.com/ScarlettSamantha/openciv-meta/blob/main/File%20Structure.md) - The project structure
+- [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
+- [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
+- [Changelog](CHANGELOG.md) - Automatically generated changelog.
+- [File Structure](https://github.com/ScarlettSamantha/openciv-meta/blob/main/File%20Structure.md) - The project structure
 
 <details>
 
@@ -156,28 +156,28 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 
 ### Mechanics
 
-* [Ages](./ideas/gameplay/age.md)
-* [Climate](./ideas/gameplay/climate.md)
-* [Disease](./ideas/gameplay/disease.md)
-* [Yields](./ideas/gameplay/yields.md)
-* [Movement](./ideas/gameplay/mechanics/movement.md)
-* [Religion](./ideas/gameplay/mechanics/religion.md)
+- [Ages](./ideas/gameplay/age.md)
+- [Climate](./ideas/gameplay/climate.md)
+- [Disease](./ideas/gameplay/disease.md)
+- [Yields](./ideas/gameplay/yields.md)
+- [Movement](./ideas/gameplay/mechanics/movement.md)
+- [Religion](./ideas/gameplay/mechanics/religion.md)
 
 ### Wonders
 
-* [Early](./ideas/wonders/early.md)
-* [Mid](./ideas/wonders/mid.md)
-* [Late](./ideas/wonders/late.md)
+- [Early](./ideas/wonders/early.md)
+- [Mid](./ideas/wonders/mid.md)
+- [Late](./ideas/wonders/late.md)
 
 ### Greats
 
-* [Artists](./ideas/gameplay/greats/artist.md)
-* [Commercial](./ideas/gameplay/greats/commercial.md)
-* [Folk Hero](./ideas/gameplay/greats/hero.md)
-* [Holy](./ideas/gameplay/greats/faith.md)
-* [Generals & Admirals](./ideas/gameplay/greats/military.md)
-* [Engineers](./ideas/gameplay/greats/production.md)
-* [Scientists](./ideas/gameplay/greats/science.md)
+- [Artists](./ideas/gameplay/greats/artist.md)
+- [Commercial](./ideas/gameplay/greats/commercial.md)
+- [Folk Hero](./ideas/gameplay/greats/hero.md)
+- [Holy](./ideas/gameplay/greats/faith.md)
+- [Generals & Admirals](./ideas/gameplay/greats/military.md)
+- [Engineers](./ideas/gameplay/greats/production.md)
+- [Scientists](./ideas/gameplay/greats/science.md)
 
 ### Resources
 
@@ -308,6 +308,5 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | [Culture](./ideas/gameplay/victory/culture.md)   | Culture/Tourism/Archaeology/Diplomacy | [culture.md](./ideas/gameplay/victory/culture.md)   | code |
 
 > ⚖️ **Disclaimer:** This game and its associated code are provided for educational and informational purposes only. The author assumes no responsibility for any errors, omissions, or inaccuracies in the code. Users are strongly advised to thoroughly review, test, the code. The author makes no guarantees regarding the security, reliability, or performance of the game. By using this code, you agree that the author shall not be held liable for any damages, losses, or other consequences arising from its use, misuse, or inability to use the game, including but not limited to any unintended or harmful actions caused by the game. Use this game at your own risk and ensure that all necessary precautions are taken.
-
 > 🌍 **Historical Context and Point of View Disclaimer:**
 > OpenCiv includes civilizations, leaders, and events inspired by real-world history but real history is complex. While I strive to create a neutral point of view, the game may simplify or alter historical events for gameplay purposes. These portrayals try to not reflect any political or cultural stance but should not be taken as any kind of truth. The content reflects my personal view and understanding from a (inherently limited) Western perspective, and I try to avoid contentious topics I am uncomfortable with dealing with. I acknowledge that many events depicted were horrible and should never be repeated. This game is for entertainment. Please don't cancel me; I want to create a fun game for everyone. 🙏
