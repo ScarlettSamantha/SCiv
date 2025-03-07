@@ -6,6 +6,8 @@
 
 ## Running it
 
+> Known Bugs: [Known Bugs](meta/known_bugs.md)
+
 At the moment it will run *something* and I will attempt to keep the main branch booting into the "game" at the least.
 
 ### How to run it
