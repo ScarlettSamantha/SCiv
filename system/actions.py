@@ -61,18 +61,19 @@ class Action:
             self.action_result = self.action(self, self.action_args, self.action_kwargs)
 
             if self.success_condition is not None:
-                self.action_result = self.success_condition(self, self.action_args, self.action_kwargs)
+                if self.success_condition(self, self.action_args, self.action_kwargs) is False:
+                    self.action_result = False
 
             if self.action_result is None:
                 return
 
-            if self.action_result is True:
+            if self.action_result is not False:  # Very important to check for False, as None is a valid return value
                 if self.on_success is not None:
                     self.on_success(self, self.action_args, self.action_kwargs)
             else:
                 if self.on_failure is not None:
                     if self.get_return_as_failure_argument:
-                        self.on_failure(self, self.action_args, self.action_kwargs, self.action_result)
+                        self.on_failure(self, self.action_args, self.action_kwargs)
                     else:
                         self.on_failure(self, self.action_args, self.action_kwargs)
 
