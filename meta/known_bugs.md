@@ -5,6 +5,7 @@
 - [ ] Units can teleport to random tiles
 - [ ] Units dont respect not climbing over mountains (without tech)
 - [ ] Issues with the dropdowns
+- [ ] Cant keep selection of unit properly internally when a tile is clicked.
 
 ### Things that seem like bugs
 
