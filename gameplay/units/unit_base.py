@@ -110,7 +110,8 @@ class UnitBaseClass(BaseEntity, ABC):
 
     def set_pos(self, pos: Tuple[float, float, float]) -> None:
         self.pos_x, self.pos_y, self.pos_z = pos
-        self.model.setPos(LVector3(*pos))
+        if self.model is not None:
+            self.model.setPos(LVector3(*pos))
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
