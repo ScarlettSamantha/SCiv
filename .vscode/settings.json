@@ -1,0 +1,14 @@
+{
+    "markdownlint.config": {
+        "extends": ".markdownlint.json",
+    },
+    "markdownlint.run": "onSave",
+    "markdownlint.configFile": ".markdownlint.json",
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    "ruff.organizeImports": false
+}
