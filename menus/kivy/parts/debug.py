@@ -1,6 +1,6 @@
+from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.graphics import Color, Rectangle
 
 
 class DebugPanel(FloatLayout):
@@ -22,7 +22,7 @@ class DebugPanel(FloatLayout):
         self.frame = FloatLayout(
             size_hint=(None, None),
             width=300,
-            height=500,
+            height=600,
             pos_hint={"x": 0, "top": 1},
         )
 
@@ -40,11 +40,11 @@ class DebugPanel(FloatLayout):
             text="Debug Info: None Yet",
             size_hint=(None, None),
             width=300,
-            height=500,
+            height=600,
             font_size="11sp",
             valign="top",
             halign="left",
-            text_size=(300, 500),
+            text_size=(300, 600),
             pos_hint={"x": 0, "top": 1},
             color=(1, 1, 1, 1),
         )
