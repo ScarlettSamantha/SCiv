@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 
 class CantMoveReason(Enum):
+    SAME_TILE = -2
     COULD_MOVE = -1
     NO_MOVES = 0
     NO_PATH = 1
@@ -160,37 +161,44 @@ class UnitBaseClass(BaseEntity, ABC):
             return CantMoveReason.IMPASSABLE
 
         result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
-        if not target_tile.is_occupied() and self.tile_is_occupiable(target_tile):
-            if self.model is not None:
-                # Attempt pathfinding
-                if (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is None:
-                    return CantMoveReason.NO_PATH
+        if target_tile.is_occupied() or not self.tile_is_occupiable(target_tile):
+            return CantMoveReason.OTHER_OWNER
 
-                for tile in tiles_to_move:
-                    # Before stepping onto 'tile', store our current tile as the fallback
-                    previous_tile = result_tile
+        if self.model is None:
+            raise ValueError(f"Unit {self.key} has no model assigned.")
 
-                    # Check if we have enough movement to step onto this tile
-                    if (self.moves_left - tile.movement_cost) < 0:
-                        # Not enough moves left; revert to the previous tile's position
-                        if previous_tile is not None:
-                            self.set_pos((tile.get_cords()[0], tile.get_cords()[1], self.pos_z))
-                        return CantMoveReason.NO_MOVES
+        # Attempt pathfinding
+        if (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is None:
+            return CantMoveReason.NO_PATH
 
-                    # Check if tile is still valid for the unit
-                    if tile.is_visisted_by(self) is False:
-                        # Move partially onto this tile and then get trapped or do partial logic
-                        cords = tile.get_cords()
-                        self.set_pos(cords[0], cords[1], self.pos_z)
-                        return CantMoveReason.UNIT_TRAPPED_WIDWAY
+        # This was a bug for a while, but it was fixed
+        if (len(tiles_to_move) - 1) == 0:
+            return CantMoveReason.SAME_TILE
 
-                    # If we got here, we can step onto tile
-                    result_tile = tile
-                    self.moves_left -= tile.movement_cost
+        del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
-        if result_tile is not None and self.model is not None:
-            result_cords = result_tile.get_cords()
-            self.set_pos((result_cords[0], result_cords[1], self.pos_z))
+        for tile in tiles_to_move:
+            tile: BaseTile = tile  # this is a type hint
+            cords: Tuple[float, float, float] = tile.get_cords()
+
+            if (self.moves_left - tile.movement_cost) < 0:
+                previous_tile_cords: Tuple[float, float, float] = (
+                    result_tile.get_cords()
+                )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
+                self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z))
+                return CantMoveReason.NO_MOVES
+
+            # Check if tile is still valid for the unit
+            if tile.is_visisted_by(self) is False:
+                # Move partially onto this tile and then get trapped or do partial logic
+                self.moves_left -= tile.movement_cost
+                self.set_pos((cords[0], cords[1], self.pos_z))
+                return CantMoveReason.UNIT_TRAPPED_WIDWAY
+
+            # If we got here, we can step onto tile
+            result_tile = tile
+            self.moves_left -= tile.movement_cost
+            self.set_pos((cords[0], cords[1], self.pos_z))
 
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE

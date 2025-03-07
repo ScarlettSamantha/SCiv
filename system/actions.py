@@ -47,8 +47,6 @@ class Action:
 
     def run(self):
         if self.action is not None:
-            self.action_result = self.action(self, self.action_args, self.action_kwargs)
-
             condition_met: bool = False
             if isinstance(self.condition, bool):
                 condition_met = self.condition
@@ -57,6 +55,8 @@ class Action:
 
             if self.condition is None or condition_met is False:
                 return
+
+            self.action_result = self.action(self, self.action_args, self.action_kwargs)
 
             if self.action_result is None:
                 return

@@ -258,6 +258,9 @@ class BaseTile(BaseEntity):
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))
 
     def is_visisted_by(self, unit: UnitBaseClass) -> bool:
+        from system.vars import Colors
+
+        self.set_color(Colors.PURPLE + (1,))
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
 
