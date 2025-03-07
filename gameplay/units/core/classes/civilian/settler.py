@@ -1,10 +1,8 @@
 from typing import Any
 
-from managers.i18n import t_
-
-from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from gameplay.promotion import Promotion, PromotionTree
-from system.actions import Action
+from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
+from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
 
@@ -82,25 +80,13 @@ class Settler(CoreCivilianBaseClass):
         return True
 
     def _register(self):
-        found_action = Action(
-            name=t_("actions.unit.found_city"),
-            action=self.found_city,
-            condition=self.founding_conditions,
-            on_failure=lambda action, args, kwargs: None,
-        )
-        found_action.on_the_spot_action = True
-        found_action.remove_actions_after_use = True
-        self.actions.append(found_action)
+        from gameplay.actions.unit.found import FoundAction
 
-        walk_action = Action(
-            name=t_("actions.unit.move"),
-            action=self.move,
-            condition=self.can_move,
-            on_failure=lambda action, args, kwargs: None,
-        )
-        walk_action.on_the_spot_action = False
-        walk_action.targeting_tile_action = True
-        self.actions.append(walk_action)
+        self.actions.append(FoundAction(self))
+
+        from gameplay.actions.unit.move import WalkAction
+
+        self.actions.append(WalkAction(self))
 
         return super()._register()
 

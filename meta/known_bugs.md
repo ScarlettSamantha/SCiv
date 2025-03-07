@@ -7,6 +7,14 @@
 - [ ] Issues with the dropdowns
 - [ ] Cant keep selection of unit properly internally when a tile is clicked.
 
+## Gameplay
+
+- [ ] Found actions is broken
+
+### Units
+
+- [ ]? Water seems to be having some impact on path finding that it should not, I think it has to do with the heuristics from A* in the repository
+
 ### Things that seem like bugs
 
 - [ ] UI buttons not updating with keyboard shortcuts for it.
