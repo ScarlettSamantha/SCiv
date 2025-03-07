@@ -10,3 +10,6 @@ class Coast(BaseTerrain):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.passable: bool = False
+        self.passable_without_tech: bool = False

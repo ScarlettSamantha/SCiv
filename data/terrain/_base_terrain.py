@@ -1,7 +1,8 @@
-from typing import List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Tuple
+
+from panda3d.core import LRGBColor
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
-from panda3d.core import LRGBColor
 
 
 def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
@@ -9,7 +10,7 @@ def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
 
 
 if TYPE_CHECKING:
-    from gameplay.tile_modifiers import TileModifiers, TileModifier
+    from gameplay.tile_modifiers import TileModifier, TileModifiers
     from gameplay.tile_yield_modifier import TileYieldModifier
 
 
@@ -34,6 +35,9 @@ class BaseTerrain:
 
         self.tile_modifiers: TileModifiers = TileModifiers()
         self.tile_yield_modifiers: TileYieldModifier = TileYieldModifier()
+
+        self.passable: bool = True
+        self.passable_without_tech: bool = True
 
     def model(self) -> T_TranslationOrStr:
         return str(self._model)

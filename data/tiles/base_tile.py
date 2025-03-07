@@ -1,24 +1,26 @@
 from logging import Logger
-from gameplay.resource import BaseResource, Resources
-from panda3d.core import CardMaker, NodePath, LRGBColor, BitMask32, TextNode, Texture
-from typing import Any, Dict, Optional, List, Tuple, Type, Union, TYPE_CHECKING
-from os.path import dirname, realpath, join
+from os.path import dirname, join, realpath
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+
+from panda3d.core import BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
+
 from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
+from gameplay.city import City
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
+from gameplay.improvements import Improvements
+from gameplay.resource import BaseResource, Resources
+from gameplay.tile_yield_modifier import TileYield, TileYieldModifier
 from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
-from gameplay.improvements import Improvements
-from gameplay.tile_yield_modifier import TileYieldModifier, TileYield
-from gameplay.city import City
+from managers.entity import EntityManager, EntityType
+from managers.i18n import T_TranslationOrStr, _t, get_i18n
+from managers.player import Player, PlayerManager
+from system.entity import BaseEntity
 from system.subsystems.hexgen.hex import Hex
 from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
-from managers.player import PlayerManager, Player
-from managers.i18n import T_TranslationOrStr, _t, get_i18n
-from system.entity import BaseEntity
-from managers.entity import EntityManager, EntityType
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -51,12 +53,12 @@ class BaseTile(BaseEntity):
 
         self.extra_data: Optional[dict] = extra_data
 
-        self.tile_terrain: Optional[BaseTerrain] = None
         self.destroyed: bool = False
         self.grid_position: Optional[Any] = None
         self.raw_position: Optional[Any] = None
         self.tag: Optional[str] = None
         # Instead of a single node, we keep a list of NodePaths.
+
         self.models: List[NodePath] = []
         self.extra_data: Optional[dict] = extra_data
 
@@ -149,6 +151,8 @@ class BaseTile(BaseEntity):
         self.texture_card: Optional[NodePath] = None
         self.texture_card_texture: Optional[NodePath] = None
 
+        self.inherit_passability_from_terrain: bool = True
+
         # We configure base tile yield mostly just for debugging.
         self.tile_yield: TileYieldModifier = TileYieldModifier(
             values=TileYield(
@@ -165,6 +169,19 @@ class BaseTile(BaseEntity):
 
         self._showing_small_icons: bool = False
         self._showing_large_icons: bool = False
+
+    @property
+    def tile_terrain(self) -> BaseTerrain:
+        return self._tile_terrain
+
+    @tile_terrain.setter
+    def tile_terrain(self, value: BaseTerrain) -> None:
+        self._tile_terrain = value
+        if self.inherit_passability_from_terrain:
+            self.passable: bool = True if self.tile_terrain is None or self.tile_terrain.passable is True else False
+            self.passable_without_tech: bool = (
+                True if self.tile_terrain is None or self.tile_terrain.passable_without_tech is True else False
+            )
 
     def add_data_to_tileyield(self):
         # Add terrain modifiers to the tile yield
@@ -536,6 +553,8 @@ class BaseTile(BaseEntity):
         )
 
     def is_passable(self) -> bool:
+        if self.inherit_passability_from_terrain:
+            return self.passable
         return self.walkable and not self.is_water
 
     def color(self) -> Union[Tuple[float, float, float], LRGBColor]:
@@ -614,6 +633,8 @@ class BaseTile(BaseEntity):
             "y": self.y,
             "terrain": terrain_name,
             "model": self.model,
+            "passable": f"{str(self.passable)}, {str(self.passable_without_tech)}",
+            "movement_cost": self.movement_cost,
             "texture": self.texture(),
             "class": self.__class__.__name__,
             "owner": self.owner if self.owner else _t("civilization.nature.name"),

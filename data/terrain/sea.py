@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-from gameplay.tile_modifiers import TileModifier, TileModifiers
 from gameplay.tile_yield import TileYield
 from gameplay.tile_yield_modifier import TileYieldModifier
 from managers.i18n import T_TranslationOrStr
-from ._base_terrain import BaseTerrain
-from ._base_terrain import rgb
 
-
-from data.terrain.traits.water import open_water_sea
+from ._base_terrain import BaseTerrain, rgb
 
 
 class Sea(BaseTerrain):
@@ -22,6 +18,9 @@ class Sea(BaseTerrain):
 
         self.name = "world.terrain.sea_water"
         self.movement_modifier = 0.5
+
+        self.passable: bool = False
+        self.passable_without_tech: bool = False
 
         modifier = TileYieldModifier(TileYield(food=1))
         modifier.add(TileYield(gold=3))
