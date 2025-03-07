@@ -53,11 +53,11 @@ There are also lenses for debugging
 * [x] Have ok atleast map generator
 * [x] Manage entities
 * [x] Spawn units
-* [ ] Unit actions
+* [ ] Unit actions (WIP)
 * [ ] Process a turn
 * [ ] Cities that can build something
 * ![ ] Basic UI element (WIP)
-* [ ] Movement for units both pathfinded and weighted + UI
+* [ ] Movement for units both pathfinded and weighted + UI (WIP)
 * [x] Basic backend system integration like managers, systems, logging
 * [x] Proper Implementation UI system (kivy)
 * [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
