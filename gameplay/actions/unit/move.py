@@ -11,13 +11,23 @@ class WalkAction(Action):
             name=t_("actions.unit.move"),
             action=instance.move,
             condition=instance.can_move,
+            on_success=self.success,
             on_failure=self.show_cant_move_popup,
+            success_condition=self.is_successfull,
         )
         self.on_the_spot_action = False
         self.targeting_tile_action = True
         self.get_return_as_failure_argument = True
 
-    def show_cant_move_popup(self, action: Action, reason: CantMoveReason, *args, **kwargs):
+    def is_successfull(self, action: Action, *args, **kwargs) -> bool:
+        if action.get_result() == CantMoveReason.COULD_MOVE:
+            return True
+        return False
+
+    def success(self, *args, **kwargs):
+        messenger.send("unit.action.move.success", [self.get_result()])
+
+    def show_cant_move_popup(self, action: Action, *args, **kwargs):
         result = action.get_result()
         text, description = "", ""
         if result == CantMoveReason.NO_MOVES:

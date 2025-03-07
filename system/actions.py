@@ -11,6 +11,7 @@ class Action:
         condition: Optional[Callable[[Self], bool] | bool] = None,
         on_success: Optional[Callable[[Self, Tuple, Dict], Optional[bool]]] = None,
         on_failure: Optional[Callable[[Self, Tuple, Dict], None]] = None,
+        success_condition: Optional[Callable[[Self, Tuple, Dict], bool]] = None,
         icon: str | None = None,
         usable: bool = True,
         description: T_TranslationOrStrOrNone = None,
@@ -28,6 +29,7 @@ class Action:
 
         self.on_success: Optional[Callable[[Self, Tuple, Dict], Optional[bool]]] = on_success
         self.on_failure: Optional[Callable[[Self, Tuple, Dict], Optional[bool]]] = on_failure
+        self.success_condition: Optional[Callable[[Self, Tuple, Dict], bool]] = success_condition
 
         self.action_args: Tuple[Any] = args
         self.action_kwargs: Dict[str, Any] = kwargs
@@ -57,6 +59,9 @@ class Action:
                 return
 
             self.action_result = self.action(self, self.action_args, self.action_kwargs)
+
+            if self.success_condition is not None:
+                self.action_result = self.success_condition(self, self.action_args, self.action_kwargs)
 
             if self.action_result is None:
                 return
