@@ -1,5 +1,30 @@
 {
   "en_EN": {
+    "ui": {
+      "dialoges": {
+        "unit_cant_move": {
+          "title": "Unit can't move",
+          "message": "This unit does not have any movement points left. Please go to next turn."
+        },
+        "unit_cant_move_impassable": {
+          "title": "Unit can't move",
+          "message": "This unit can't move to this tile. It is impassable."
+        },
+        "unit_cant_move_path": {
+          "title": "Unit can't move",
+          "message": "This unit can't move to this tile. There is no path."
+        }
+      },
+      "buttons": {
+        "accept": "Accept",
+        "cancel": "Cancel",
+        "close": "Close",
+        "next": "Next",
+        "previous": "Previous",
+        "ok": "OK",
+        "decline": "Decline"
+      }
+    },
     "actions": {
       "unit": {
         "move": "Move",

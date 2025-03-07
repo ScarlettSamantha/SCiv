@@ -1,22 +1,26 @@
 from enum import Enum
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple
-from direct.showbase.MessengerGlobal import messenger
-from data.tiles.base_tile import BaseTile
-from gameplay.resource import ResourceTypeStrategic, ResourceTypeBonus
-from managers.player import PlayerManager
-from managers.entity import EntityManager, EntityType
-from mixins.singleton import Singleton
-from managers.world import World
-from gameplay.units.unit_base import UnitBaseClass
-from system.vars import Colors
-from panda3d.core import PStatClient
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+
 from direct.showbase.Loader import Loader
+from direct.showbase.MessengerGlobal import messenger
+from kivy.uix.popup import Popup
+from panda3d.core import PStatClient
+
+from data.tiles.base_tile import BaseTile
+from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
+from gameplay.units.unit_base import UnitBaseClass
+from managers.entity import EntityManager, EntityType
+from managers.player import PlayerManager
+from managers.world import World
+from menus.kivy.elements.popup import ModalPopup as PopupOverride
+from mixins.singleton import Singleton
 from system.entity import BaseEntity
+from system.vars import Colors
 
 if TYPE_CHECKING:
     from main import Openciv
-    from menus.kivy.core import SCivGUI
     from managers.game import Game
+    from menus.kivy.core import SCivGUI
 
 
 class ui(Singleton):
@@ -52,6 +56,8 @@ class ui(Singleton):
         self.show_colors_in_radius: bool = False
 
         self.debug_show: Dict[str, bool] = {"actions": False, "stats": False, "debug": False}
+
+        self.popups: Dict[str, Popup] = {}
 
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
@@ -89,6 +95,8 @@ class ui(Singleton):
         self._base.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
         self._base.accept("ui.update.ui.lense_change", self.on_lense_change)
 
+        self._base.accept("ui.request.open.popup", self.show_draggable_popup)
+
         self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
         self._base.accept("f7", self.trigger_render_analyze)
         self._base.accept("p", self.activate_pstat)
@@ -102,6 +110,30 @@ class ui(Singleton):
         self._base.accept("c", self.toggle_little_tile_icons)
         self._base.accept("game.state.true_game_start", self.post_game_start)
         return True
+
+    def show_draggable_popup(
+        self,
+        id: str,
+        title: str,
+        message: str,
+        confirm: bool = False,
+        on_confirm: Optional[Callable] = None,
+        on_cancel: Optional[Callable] = None,
+    ):
+        if confirm:
+            popup = PopupOverride(
+                title=title, message=message, on_confirm=on_confirm, cancel_callback=on_cancel, width=400, height=200
+            )
+            self.popups[id] = popup
+            popup.open()
+        else:
+            popup = PopupOverride(title=title, message=message, width=400, height=200)
+            self.popups[id] = popup
+            popup.open()
+
+    def close_popup(self, id: str):
+        if id in self.popups:
+            self.popups[id].dismiss()
 
     def post_game_start(self):
         self.calculate_icons_for_tiles(small=False, large=True)

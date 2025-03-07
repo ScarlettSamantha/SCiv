@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import io
-import pathlib
 import json
-
+import pathlib
 from os import PathLike
 from pathlib import Path
-
-from typing import Union, Dict, Any
-from system.saving import SaveAble
+from typing import Any, Dict, Union
 
 from exceptions.i18n_exception import (
-    I18NLoadException,
     I18NDecodeException,
-    I18NTranslationNotFound,
+    I18NLoadException,
     I18NNotLoadedException,
+    I18NTranslationNotFound,
 )
 
 
@@ -129,9 +126,8 @@ def get_i18n() -> _i18n:
     return i18n
 
 
-class Translation(SaveAble):
+class Translation:
     def __init__(self, key: str) -> None:
-        SaveAble.__init__(self)
         self.key: str = key
 
     def __repr__(self) -> str:
@@ -154,6 +150,10 @@ class Translation(SaveAble):
 
     def __eq__(self, other: Translation) -> bool:
         return self.key == other.key
+
+    def __len__(self) -> int:
+        """Return the length of the string representation of the translation."""
+        return len(self.__str__())
 
 
 _t = Translation
