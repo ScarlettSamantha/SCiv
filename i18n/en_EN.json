@@ -2,25 +2,29 @@
   "en_EN": {
     "ui": {
       "dialoges": {
-        "unit_cant_move_no_moves": {
-          "title": "Unit can't move",
-          "message": "This unit does not have any movement points left. Please go to next turn."
-        },
-        "unit_cant_move_impassable": {
-          "title": "Unit can't move",
-          "message": "This unit can't move to this tile. It is impassable."
-        },
-        "unit_cant_move_path": {
-          "title": "Unit can't move",
-          "message": "This unit can't move to this tile. There is no path."
-        },
-        "unit_cant_move_other_unit": {
-          "title": "Unit can't move",
-          "message": "This unit can't move to this tile. There is another unit on it."
-        },
-        "unit_movement_unknown_issue": {
-          "title": "Unit can't move (bug)",
-          "message": "This unit can't move to this tile. There is an unknown issue. (Please report this issue): \n"
+        "unit": {
+          "move_errors": {
+            "no_moves": {
+              "title": "Unit can't move",
+              "message": "This unit does not have any movement points left. Please go to next turn."
+            },
+            "move_impassable": {
+              "title": "Unit can't move",
+              "message": "This unit can't move to this tile. It is impassable."
+            },
+            "move_path": {
+              "title": "Unit can't move",
+              "message": "This unit can't move to this tile. There is no path."
+            },
+            "other_unit": {
+              "title": "Unit can't move",
+              "message": "This unit can't move to this tile. There is another unit on it."
+            },
+            "unknown_issue": {
+              "title": "Unit can't move (bug)",
+              "message": "This unit can't move to this tile. There is an unknown issue. (Please report this issue): \n"
+            }
+          }
         }
       },
       "buttons": {
