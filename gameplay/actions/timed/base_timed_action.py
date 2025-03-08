@@ -1,4 +1,3 @@
-from threading import Timer
 from typing import Callable, Dict, List, Optional, Self
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
@@ -30,7 +29,7 @@ class BaseTimedAction(Action):
         self._on_callback: Optional[Callable[[Self, Callable, List, Dict], None]] = on_callback
         self._on_invoke: Optional[Callable[[Self, List, Dict], None]] = on_invoke
         self._delay: int = delay
-        self._timer: Optional[Timer] = None  # Holds reference to avoid GC.
+        self.sequence: Optional[Sequence] = None  # Holds reference to avoid GC.
         self._logger = self.logger.getChild("timed")
         self.logger = self.logger.getChild("timed").getChild(str(self.name))
 
@@ -53,5 +52,5 @@ class BaseTimedAction(Action):
         """Starts the timed action in a non-blocking fashion."""
         self._run_invoke()
         self._logger.info(f"Starting timer for action {self.name} with a delay of {self._delay} seconds.")
-        sequence: Sequence = Sequence(Wait(self._delay), Func(self._timed_callback))
-        sequence.start()
+        self.sequence = Sequence(Wait(self._delay), Func(self._timed_callback))
+        self.sequence.start()
