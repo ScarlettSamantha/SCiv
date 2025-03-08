@@ -1,11 +1,12 @@
 from direct.showbase.MessengerGlobal import messenger
 
+from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.units.unit_base import CantMoveReason, UnitBaseClass
 from managers.i18n import t_
 from system.actions import Action
 
 
-class WalkAction(Action):
+class WalkAction(BaseUnitAction):
     def __init__(self, instance: UnitBaseClass):
         self.unit = instance
         super().__init__(
