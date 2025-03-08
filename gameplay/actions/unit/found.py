@@ -40,6 +40,7 @@ class FoundAction(BaseUnitAction):
         return True
 
     def found_action_wrapper(self, *args, **kwargs) -> bool:
+        self.tile = self.unit.tile  # This has to be done before the unit is destroyed otherwise the tile will be None.
         if not self.unit.tile.found(self.unit.owner):
             return False
 

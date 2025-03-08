@@ -1,14 +1,13 @@
-from gameplay.improvements import Improvements
-from gameplay.improvement import Improvement
-from gameplay.citizens import Citizens
 from typing import TYPE_CHECKING, Optional
 
+from gameplay.citizens import Citizens
+from gameplay.improvement import Improvement
+from gameplay.improvements import Improvements
 from system.entity import BaseEntity
 
-
 if TYPE_CHECKING:
-    from gameplay.player import Player
     from data.tiles.base_tile import BaseTile
+    from gameplay.player import Player
 
 
 class City(BaseEntity):
@@ -64,6 +63,9 @@ class City(BaseEntity):
 
     def on_citizen_birth(self, citizen):
         self.population += 1
+
+    def de_capitalize(self):
+        self.is_capital = False
 
     @classmethod
     def found_new(

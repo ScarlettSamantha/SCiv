@@ -679,12 +679,21 @@ class BaseTile(BaseEntity):
         self,
         player: Optional[Player] = None,
         population: int = 1,
-        capital: bool = False,
+        capital: Optional[bool] = None,  # None is Auto detect
     ) -> bool:
+        """
+        Found a city on this tile. If no player is provided, the current player is used.
+        If no population is provided, the default is 1. If no capital is provided, the default is True if the player has no cities.
+
+        The messeging system is used to inform the player of the city being founded via the action(gameplay.actions.unit.found) that calls this mostly.
+        """
         from data.terrain.city import City as CityTerrain
 
         if player is None:
             player = PlayerManager.player()
+
+        if capital is None:
+            capital = len(player.cities) == 0
 
         self.city = City.found_new(name="Test city", owner=player, tile=self, population=population, is_capital=capital)
         self.unrender_model(0)
@@ -692,8 +701,10 @@ class BaseTile(BaseEntity):
         self.owner = player
         self.owner.tiles.add_tile(self)
         self.owner.cities.add(self.city)
-        if capital or not self.owner.capital or len(self.owner.cities) > 0:
-            self.owner.capital = self.city
+        if self.owner.capital is not None:  # we have a capital
+            self.owner.capital.de_capitalize()  # We tell the current capital to de-capitalize so it can be done with something in the future, for now its just a property set.
+        self.owner.capital = self.city
+
         self._render_default_terrain()
         return True
 
