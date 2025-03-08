@@ -552,7 +552,7 @@ class BaseTile(BaseEntity):
             and not self.is_sea
             and (on_other_units or len(self.units) == 0)
             and not self.city
-            and (on_mountains or self.altitude < 200)  # No spawning on mountains
+            and (on_mountains or self.altitude < 200)  # No spawning on mountains # @TODO this might be a bug. check in the future if this is the reason units can spawn on mountains.
         )
 
     def is_passable(self) -> bool:
