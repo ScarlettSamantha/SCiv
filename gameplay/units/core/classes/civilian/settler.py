@@ -72,7 +72,6 @@ class Settler(CoreCivilianBaseClass):
             *args,
             **kwargs,
         )
-        self.max_moves
 
     def founding_conditions(self, _) -> bool:
         if (
