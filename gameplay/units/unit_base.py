@@ -176,7 +176,8 @@ class UnitBaseClass(BaseEntity, ABC):
         if (len(tiles_to_move) - 1) == 0:
             return CantMoveReason.SAME_TILE
 
-        del tiles_to_move[0]  # Remove the first tile as it is the current tile
+        if tiles_to_move[0] == self.tile:
+            del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
         for tile in tiles_to_move:
             tile: BaseTile = tile  # this is a type hint
