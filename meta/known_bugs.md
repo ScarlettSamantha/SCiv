@@ -6,6 +6,7 @@
 - [x] Units dont respect not climbing over mountains (without tech)
 - [ ] Issues with the dropdowns
 - [ ] Cant keep selection of unit properly internally when a tile is clicked.
+- [ ] Window drifts up and right very slightly over time (meaby because of writeback system?)
 
 ## Gameplay
 
