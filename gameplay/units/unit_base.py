@@ -31,6 +31,7 @@ class CantMoveReason(Enum):
     OTHER_OWNER = 6
     NO_UNIT = 7
     UNIT_TRAPPED_WIDWAY = 8
+    OTHER_UNIT_ON_TILE = 9
 
 
 class UnitBaseClass(BaseEntity, ABC):
@@ -112,10 +113,10 @@ class UnitBaseClass(BaseEntity, ABC):
     def set_pos(self, pos: Tuple[float, float, float], maintain_z: bool = True) -> None: ...
 
     @overload
-    def set_pos(self, pos: BaseTile, maintain_z: bool = True, set_as_tile: bool = True) -> None: ...
+    def set_pos(self, pos: "BaseTile", maintain_z: bool = True, set_as_tile: bool = True) -> None: ...
 
     def set_pos(
-        self, pos: Union[Tuple[float, float, float], BaseTile], maintain_z: bool = True, set_as_tile: bool = True
+        self, pos: Union[Tuple[float, float, float], "BaseTile"], maintain_z: bool = True, set_as_tile: bool = True
     ) -> None:
         if isinstance(pos, tuple):
             if maintain_z:
@@ -182,7 +183,9 @@ class UnitBaseClass(BaseEntity, ABC):
         if target_tile.passable is False:
             return CantMoveReason.IMPASSABLE
 
-        result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
+        if target_tile.is_occupied() is True:
+            return CantMoveReason.OTHER_UNIT_ON_TILE
+
         if target_tile.is_occupied() or not self.tile_is_occupiable(target_tile):
             return CantMoveReason.OTHER_OWNER
 
@@ -200,6 +203,7 @@ class UnitBaseClass(BaseEntity, ABC):
         if tiles_to_move[0] == self.tile:
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
+        result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
         for tile in tiles_to_move:
             tile: BaseTile = tile  # this is a type hint
             cords: Tuple[float, float, float] = tile.get_cords()
