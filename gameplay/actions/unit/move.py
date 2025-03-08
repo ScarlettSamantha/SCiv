@@ -40,23 +40,23 @@ class WalkAction(BaseUnitAction):
         text, description = "", ""
         if result == CantMoveReason.NO_MOVES:
             text, description = (
-                t_("ui.dialoges.unit.move_errors.no_moves.title"),
-                t_("ui.dialoges.unit.move_errors.no_moves.message"),
+                t_("ui.dialogs.unit.move_errors.no_moves.title"),
+                t_("ui.dialogs.unit.move_errors.no_moves.message"),
             )
         elif result == CantMoveReason.IMPASSABLE:
             text, description = (
-                t_("ui.dialoges.unit.move_errors.move_impassable.title"),
-                t_("ui.dialoges.unit.move_errors.move_impassable.message"),
+                t_("ui.dialogs.unit.move_errors.move_impassable.title"),
+                t_("ui.dialogs.unit.move_errors.move_impassable.message"),
             )
         elif result == CantMoveReason.NO_PATH:
             text, description = (
-                t_("ui.dialoges.unit.move_errors.move_path.title"),
-                t_("ui.dialoges.unit.move_errors.move_path.message"),
+                t_("ui.dialogs.unit.move_errors.move_path.title"),
+                t_("ui.dialogs.unit.move_errors.move_path.message"),
             )
         elif result == CantMoveReason.OTHER_UNIT_ON_TILE:
             text, description = (
-                t_("ui.dialoges.unit.move_errors.other_unit.title"),
-                t_("ui.dialoges.unit.move_errors.other_unit.message"),
+                t_("ui.dialogs.unit.move_errors.other_unit.title"),
+                t_("ui.dialogs.unit.move_errors.other_unit.message"),
             )
 
         if len(text) > 0 or len(description) > 0:
@@ -68,7 +68,7 @@ class WalkAction(BaseUnitAction):
             messenger.send(
                 "ui.request.open.popup",
                 [
-                    t_("ui.dialoges.unit.move_errors.unknown_issue.message"),
-                    t_("ui.dialoges.unit.move_errors.unknown_issue.message", suffix=str(result)),
+                    t_("ui.dialogs.unit.move_errors.unknown_issue.message"),
+                    t_("ui.dialogs.unit.move_errors.unknown_issue.message", suffix=str(result)),
                 ],
             )

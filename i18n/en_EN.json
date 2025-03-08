@@ -1,7 +1,7 @@
 {
   "en_EN": {
     "ui": {
-      "dialoges": {
+      "dialogs": {
         "unit": {
           "move_errors": {
             "no_moves": {
@@ -23,6 +23,20 @@
             "unknown_issue": {
               "title": "Unit can't move (bug)",
               "message": "This unit can't move to this tile. There is an unknown issue. (Please report this issue): \n"
+            }
+          },
+          "found_city": {
+            "city_founded_by_other": {
+              "title": "A player has founded a city",
+              "message": "A player has founded a city."
+            },
+            "founded_own_capital": {
+              "title": "City founded",
+              "message": "You have founded an city, its now your capital."
+            },
+            "city_founded": {
+              "title": "City founded",
+              "message": "You have founded an city."
             }
           }
         }
