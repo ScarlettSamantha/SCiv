@@ -1,7 +1,7 @@
 import random
 from abc import ABC
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
 
 from direct.showbase.Loader import Loader
 from direct.showbase.ShowBase import ShowBase
@@ -108,10 +108,31 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.owner is not None:
             self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
 
-    def set_pos(self, pos: Tuple[float, float, float]) -> None:
-        self.pos_x, self.pos_y, self.pos_z = pos
+    @overload
+    def set_pos(self, pos: Tuple[float, float, float], maintain_z: bool = True) -> None: ...
+
+    @overload
+    def set_pos(self, pos: BaseTile, maintain_z: bool = True, set_as_tile: bool = True) -> None: ...
+
+    def set_pos(
+        self, pos: Union[Tuple[float, float, float], BaseTile], maintain_z: bool = True, set_as_tile: bool = True
+    ) -> None:
+        if isinstance(pos, tuple):
+            if maintain_z:
+                self.pos_x, self.pos_y, _ = pos
+            else:
+                self.pos_x, self.pos_y, self.pos_z = pos
+
+        elif isinstance(pos, BaseTile):
+            if maintain_z:
+                (self.pos_x, self.pos_y, _) = pos.get_cords()
+            else:
+                (self.pos_x, self.pos_y, self.pos_z) = pos.get_cords()
+            if set_as_tile:
+                self.tile = pos
+
         if self.model is not None:
-            self.model.setPos(LVector3(*pos))
+            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
