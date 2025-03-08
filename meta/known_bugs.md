@@ -9,7 +9,7 @@
 
 ## Gameplay
 
-- [ ] Found actions is broken
+- [X] Found actions is broken
 
 ### Units
 

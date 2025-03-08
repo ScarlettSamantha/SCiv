@@ -75,7 +75,13 @@ class Settler(CoreCivilianBaseClass):
         self.max_moves
 
     def founding_conditions(self, _) -> bool:
-        if self.tile.is_city() is False or self.tile.owner != self.owner or not self.tile.is_passable():
+        if (
+            self.tile.is_city() is True
+            or (
+                self.tile.owner != self.owner and self.tile.owner is not None
+            )  # We need to check if the tile is owned by the player or nobody we can't found a city on an enemy tile
+            or not self.tile.is_passable()  # We need to check if the tile is passable cant found a city on a mountain (tech meaby? @TODO)
+        ):
             return False
         return True
 
@@ -89,8 +95,3 @@ class Settler(CoreCivilianBaseClass):
         self.actions.append(WalkAction(self))
 
         return super()._register()
-
-    def found_city(self, _, *args, **kwargs):
-        self.tile.found(self.owner)
-        self.destroy()
-        return True
