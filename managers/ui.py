@@ -15,7 +15,7 @@ from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
-from system.vars import Colors
+from helpers.colors import Colors
 
 if TYPE_CHECKING:
     from main import Openciv
