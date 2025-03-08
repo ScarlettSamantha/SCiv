@@ -7,7 +7,7 @@ class Action:
     def __init__(
         self,
         name: T_TranslationOrStr,
-        action: Callable[[Self, Any, Any], Optional[bool]],
+        action: Callable[[Self, Any, Any], Optional[Any]],
         condition: Optional[Callable[[Self], bool] | bool] = None,
         on_success: Optional[Callable[[Self, Tuple, Dict], Optional[bool]]] = None,
         on_failure: Optional[Callable[[Self, Tuple, Dict], None]] = None,
@@ -58,16 +58,25 @@ class Action:
             if self.condition is None or condition_met is False:
                 return
 
+            # We actually run the action here
             self.action_result = self.action(self, self.action_args, self.action_kwargs)
 
             if self.success_condition is not None:
-                if self.success_condition(self, self.action_args, self.action_kwargs) is False:
-                    self.action_result = False
-
-            if self.action_result is None:
+                """We test for true as the system works that you can return anything that is not False to be a success and that will be passed to the on_success callback."""
+                if self.success_condition(self, self.action_args, self.action_kwargs):
+                    if self.on_success is not None:
+                        self.on_success(self, self.action_args, self.action_kwargs)
+                else:
+                    if self.on_failure is not None:
+                        if self.get_return_as_failure_argument:
+                            self.on_failure(self, self.action_args, self.action_kwargs)
+                        else:
+                            self.on_failure(self, self.action_args, self.action_kwargs)
                 return
 
-            if self.action_result is not False:  # Very important to check for False, as None is a valid return value
+            if (
+                self.action_result is not False
+            ):  # Very important to check for False, as None is a valid return value. has to do with sucess condition check.
                 if self.on_success is not None:
                     self.on_success(self, self.action_args, self.action_kwargs)
             else:
