@@ -186,6 +186,7 @@ class UnitBaseClass(BaseEntity, ABC):
                 previous_tile_cords: Tuple[float, float, float] = (
                     result_tile.get_cords()
                 )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
+                self.tile = result_tile
                 self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z))
                 return CantMoveReason.NO_MOVES
 
@@ -194,12 +195,14 @@ class UnitBaseClass(BaseEntity, ABC):
                 # Move partially onto this tile and then get trapped or do partial logic
                 self.moves_left -= tile.movement_cost
                 self.set_pos((cords[0], cords[1], self.pos_z))
+                self.tile = tile
                 return CantMoveReason.UNIT_TRAPPED_WIDWAY
 
             # If we got here, we can step onto tile
             result_tile = tile
             self.moves_left -= tile.movement_cost
             self.set_pos((cords[0], cords[1], self.pos_z))
+            self.tile = tile
 
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE
