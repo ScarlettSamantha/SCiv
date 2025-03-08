@@ -680,7 +680,7 @@ class BaseTile(BaseEntity):
         player: Optional[Player] = None,
         population: int = 1,
         capital: bool = False,
-    ) -> None:
+    ) -> bool:
         from data.terrain.city import City as CityTerrain
 
         if player is None:
@@ -695,6 +695,7 @@ class BaseTile(BaseEntity):
         if capital or not self.owner.capital or len(self.owner.cities) > 0:
             self.owner.capital = self.city
         self._render_default_terrain()
+        return True
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
