@@ -93,16 +93,15 @@ class Action:
             if (
                 self.action_result is not False
             ):  # Very important to check for False, as None is a valid return value. has to do with sucess condition check.
+                self.logger.info(f"Action: {self.name} was successful.")
                 if self.on_success is not None:
-                    self.logger.info(f"Action: {self.name} was successful.")
+                    self.logger.info(f"Action: {self.name} has on_success callback, running it.")
                     self.on_success(self, self.action_args, self.action_kwargs)
             else:
+                self.logger.info(f"Action: {self.name} was a failure.")
                 if self.on_failure is not None:
-                    self.logger.info(f"Action: {self.name} was a failure.")
-                    if self.get_return_as_failure_argument:
-                        self.on_failure(self, self.action_args, self.action_kwargs)
-                    else:
-                        self.on_failure(self, self.action_args, self.action_kwargs)
+                    self.logger.info(f"Action: {self.name} has on_failure callback, running it.")
+                    self.on_failure(self, self.action_args, self.action_kwargs)
 
         else:
             raise ValueError("Action has no callable action to run.")
