@@ -1,23 +1,24 @@
 from logging import Logger
-from typing import Any, Optional, Tuple, Type, Union, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union
 
+from direct.showbase.MessengerGlobal import messenger
+from panda3d.core import WindowProperties
+
+from camera import CivCamera
 from gameplay.civilization import Civilization
+from gameplay.civilizations.rome import Rome
 from gameplay.repositories.generators import GeneratorRepository
+from managers.config import ConfigManager
 from managers.entity import EntityManager
+from managers.input import Input
 from managers.player import PlayerManager
 from managers.turn import Turn
-from mixins.singleton import Singleton
-from direct.showbase.MessengerGlobal import messenger
-from managers.config import ConfigManager
 from managers.ui import ui
 from managers.world import World
-from managers.input import Input
-from camera import CivCamera
-from panda3d.core import WindowProperties
-from system.generators.base import BaseGenerator
-from gameplay.civilizations.rome import Rome
-from system.generators.basic import Basic
+from mixins.singleton import Singleton
 from system.game_settings import GameSettings
+from system.generators.base import BaseGenerator
+from system.generators.basic import Basic
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -80,18 +81,26 @@ class Game(Singleton):
 
         self.base.win.requestProperties(props)
 
-    def environment_writeback(self):
+    def environment_writeback(self) -> bool:
         self.logger.info("Writing back window properties to config")
         props = self.base.win.getProperties()
         win_size = (props.getXSize(), props.getYSize())  # Get current window size
         win_origin = (props.getXOrigin(), props.getYOrigin())  # Get window position
 
+        old_win_size = tuple(self.config.get_by_key("window", "win-size"))
+        old_win_origin = tuple(self.config.get_by_key("window", "win-origin"))
+
+        if old_win_size == win_size and old_win_origin == win_origin:
+            self.logger.info("No changes to write back")
+            return False
+
         self.config.set_by_key([win_size[0], win_size[1]], "window", "win-size")
         self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
+        return True
 
     def config_saveback(self, task):
-        self.environment_writeback()
-        self.config.save_config()
+        if self.environment_writeback() is True:
+            self.config.save_config()
         return task.again
 
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
