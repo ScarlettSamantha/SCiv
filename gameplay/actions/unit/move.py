@@ -7,17 +7,24 @@ from system.actions import Action
 
 class WalkAction(Action):
     def __init__(self, instance: UnitBaseClass):
+        self.unit = instance
         super().__init__(
             name=t_("actions.unit.move"),
-            action=instance.move,
+            action=self.move_wrapper,
             condition=instance.can_move,
             on_success=self.success,
             on_failure=self.show_cant_move_popup,
             success_condition=self.is_successfull,
         )
+
         self.on_the_spot_action = False
         self.targeting_tile_action = True
         self.get_return_as_failure_argument = True
+
+    def move_wrapper(self, *args, **kwargs) -> CantMoveReason:
+        result = self.unit.move(*args, **kwargs)
+        self._result = result
+        return result
 
     def is_successfull(self, action: Action, *args, **kwargs) -> bool:
         if action.get_result() == CantMoveReason.COULD_MOVE:
@@ -32,10 +39,9 @@ class WalkAction(Action):
         text, description = "", ""
         if result == CantMoveReason.NO_MOVES:
             text, description = (
+                t_("ui.dialoges.unit_cant_move_no_moves.title"),
                 t_("ui.dialoges.unit_cant_move_no_moves.message"),
-                t_("ui.dialoges.unit_cant_move_no_moves.description"),
             )
-
         elif result == CantMoveReason.IMPASSABLE:
             text, description = (
                 t_("ui.dialoges.unit_cant_move_impassable.title"),
@@ -46,9 +52,22 @@ class WalkAction(Action):
                 t_("ui.dialoges.unit_cant_move_path.title"),
                 t_("ui.dialoges.unit_cant_move_path.message"),
             )
+        elif result == CantMoveReason.OTHER_UNIT_ON_TILE:
+            text, description = (
+                t_("ui.dialoges.unit_cant_move_other_unit.title"),
+                t_("ui.dialoges.unit_cant_move_other_unit.message"),
+            )
 
         if len(text) > 0 or len(description) > 0:
             messenger.send(
                 "ui.request.open.popup",
                 ["unit_cant_move", text, description],
+            )
+        else:
+            messenger.send(
+                "ui.request.open.popup",
+                [
+                    t_("ui.dialoges.unit_movement_unknown_issue.message"),
+                    t_("ui.dialoges.unit_movement_unknown_issue.message", suffix=str(result)),
+                ],
             )
