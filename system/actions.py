@@ -2,6 +2,16 @@ from typing import Any, Callable, Dict, List, Optional, Self, Tuple
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
+"""Action system will provide a generic way to handle actions in the game. This will be used for units, buildings, and other game objects that can perform actions.
+
+Actions cannot be stateful, they are meant to be stateless and only perform an action when called. They can have conditions to check if they can be run or not.
+They can have properties that can be used to determine if they can be run or not. or while they are active have a state. but they should not be used to store state.
+They wont be registered in the entity manager, they will be used as a one-off action. and therefore also not be saved to the save file.
+
+Raises:
+    ValueError: If the action has no callable action to run.
+"""
+
 
 class Action:
     def __init__(
