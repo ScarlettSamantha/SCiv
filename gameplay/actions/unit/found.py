@@ -7,7 +7,7 @@ from gameplay.units.unit_base import UnitBaseClass
 from managers.i18n import t_
 
 if TYPE_CHECKING:
-    from data.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.core.classes.civilian.settler import Settler
 
 

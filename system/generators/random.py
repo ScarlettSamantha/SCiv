@@ -1,9 +1,9 @@
-from data.tiles.base_tile import BaseTile
-
-from system.generators.base import BaseGenerator
-from typing import Type, TYPE_CHECKING, Dict, Tuple
-from system.pyload import PyLoad
 import random
+from typing import TYPE_CHECKING, Dict, Tuple, Type
+
+from gameplay.tiles.base_tile import BaseTile
+from system.generators.base import BaseGenerator
+from system.pyload import PyLoad
 
 if TYPE_CHECKING:
     from system.game_settings import GameSettings
@@ -20,7 +20,7 @@ class RandomGenerator(BaseGenerator):
         self.grid: Dict[Tuple[int, int], BaseTile] = self.world.grid  # Syntax Sugar
 
     def load_tiles(self):
-        from data.tiles.base_tile import BaseTile
+        from gameplay.tiles.base_tile import BaseTile
 
         classes = PyLoad.load_classes("data/tiles", base_classes=BaseTile)
         if "Tile" in classes:

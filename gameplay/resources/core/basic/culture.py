@@ -5,7 +5,7 @@ from managers.i18n import T_TranslationOrStr, _t
 
 
 class Culture(BasicBaseResource):
-    from data.terrain._base_terrain import BaseTerrain
+    from gameplay.terrain._base_terrain import BaseTerrain
 
     key: str = "resource.core.basic.culture"
     name: T_TranslationOrStr = _t("content.resources.core.culture.name")

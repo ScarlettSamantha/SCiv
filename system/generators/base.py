@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Type
 
-from data.tiles.base_tile import BaseTile
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
 from gameplay.personality import Personality
@@ -10,10 +9,10 @@ from gameplay.repositories.civilization import Civilization as CivilizationRepos
 from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
+from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
-from managers.i18n import T_TranslationOrStrOrNone, get_i18n, _t
+from managers.i18n import T_TranslationOrStrOrNone, _t, get_i18n
 from managers.player import PlayerManager
-
 from managers.unit import Unit
 from system.game_settings import GameSettings
 

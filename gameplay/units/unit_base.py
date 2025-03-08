@@ -14,9 +14,9 @@ from system.actions import Action
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from data.tiles.base_tile import BaseTile
     from gameplay.player import Player
     from gameplay.promotion import PromotionTree
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class CantMoveReason(Enum):

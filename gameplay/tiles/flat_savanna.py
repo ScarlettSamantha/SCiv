@@ -1,5 +1,5 @@
-from data.terrain.flat_savanna import FlatSavanna as FlatSavannaTerrain
-from data.tiles.base_tile import BaseTile
+from gameplay.terrain.flat_savanna import FlatSavanna as FlatSavannaTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class FlatSavanna(BaseTile):

@@ -1,6 +1,7 @@
 from typing import Dict, Tuple, Type
-from data.terrain._base_terrain import BaseTerrain
+
 from gameplay.resources.core.mechanics.mechanic_resource import MechanicBaseResource
+from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, _t
 
 

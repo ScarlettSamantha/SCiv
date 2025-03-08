@@ -1,4 +1,4 @@
-from data.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import BaseTile
 from gameplay.actions.timed.base_timed_action import BaseTimedAction
 from helpers.colors import Colors
 from managers.i18n import t_

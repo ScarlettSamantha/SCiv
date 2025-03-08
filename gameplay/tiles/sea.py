@@ -1,5 +1,5 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.sea import Sea as SeaTerrain
+from gameplay.terrain.sea import Sea as SeaTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class Sea(BaseTile):

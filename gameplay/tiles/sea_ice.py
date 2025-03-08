@@ -1,6 +1,7 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.sea_ice import SeaIce as SeaIceTerrain
 from typing import Type
+
+from gameplay.terrain.sea_ice import SeaIce as SeaIceTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class SeaIce(BaseTile):

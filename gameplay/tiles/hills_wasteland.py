@@ -1,5 +1,5 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.hills_tundra import HillsTundra
+from gameplay.terrain.hills_tundra import HillsTundra
+from gameplay.tiles.base_tile import BaseTile
 
 
 class HillsWasteland(BaseTile):

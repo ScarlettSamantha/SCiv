@@ -1,7 +1,7 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.mountain_snow import MountainSnow as MountainSnowTerrain
 from typing import Type
 
+from gameplay.terrain.mountain_snow import MountainSnow as MountainSnowTerrain
+from gameplay.tiles.base_tile import BaseTile
 from managers.i18n import T_TranslationOrStr
 
 

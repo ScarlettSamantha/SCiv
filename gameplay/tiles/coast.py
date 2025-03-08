@@ -1,5 +1,5 @@
-from data.terrain.coast import Coast as CoastTerrain
-from data.tiles.base_tile import BaseTile
+from gameplay.terrain.coast import Coast as CoastTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class Coast(BaseTile):

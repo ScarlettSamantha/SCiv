@@ -6,8 +6,8 @@ from gameplay.improvements import Improvements
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from data.tiles.base_tile import BaseTile
     from gameplay.player import Player
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class City(BaseEntity):

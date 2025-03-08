@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from data.terrain.traits.land import mountain
+from gameplay.terrain.traits.land import mountain
 from managers.i18n import T_TranslationOrStr
 
 from ._base_terrain import BaseTerrain, rgb

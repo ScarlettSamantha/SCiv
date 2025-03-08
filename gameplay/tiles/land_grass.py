@@ -1,5 +1,5 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.flat_grass import FlatGrass
+from gameplay.terrain.flat_grass import FlatGrass
+from gameplay.tiles.base_tile import BaseTile
 
 
 class LandGrass(BaseTile):

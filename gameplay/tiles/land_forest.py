@@ -1,5 +1,5 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_forest import FlatForest
+from gameplay.tiles.base_tile import BaseTile
 
 
 class LandForest(BaseTile):

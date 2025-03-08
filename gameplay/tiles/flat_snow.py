@@ -1,5 +1,5 @@
-from data.terrain.flat_snow import FlatSnow as FlatSnowTerrain
-from data.tiles.base_tile import BaseTile
+from gameplay.terrain.flat_snow import FlatSnow as FlatSnowTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class FlatSnow(BaseTile):

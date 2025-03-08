@@ -1,11 +1,10 @@
-from typing import Dict, Tuple, TYPE_CHECKING
-
+from typing import TYPE_CHECKING, Dict, Tuple
 
 if TYPE_CHECKING:
-    from data.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import BaseTile
 
 
-class Tiles:
+class PlayerTiles:
     def __init__(self):
         self.tiles: Dict[Tuple[int, int], "BaseTile"] = {}
 

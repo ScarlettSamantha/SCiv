@@ -1,14 +1,14 @@
 import random
+from typing import TYPE_CHECKING, Dict, List, Type
 
-from data.terrain._base_terrain import BaseTerrain
 from gameplay.resource import BaseResource, ResourceSpawnablePlace
-from system.subsystems.hexgen.hex import Hex
-from system.subsystems.hexgen.mapgen import MapGen
-from system.subsystems.hexgen.enums import MapType, OceanType, SuperEnum
-from data.tiles.base_tile import BaseTile
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.tiles.base_tile import BaseTile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad
-from typing import TYPE_CHECKING, Dict, List, Type
+from system.subsystems.hexgen.enums import MapType, OceanType, SuperEnum
+from system.subsystems.hexgen.hex import Hex
+from system.subsystems.hexgen.mapgen import MapGen
 
 if TYPE_CHECKING:
     from system.game_settings import GameSettings
@@ -132,7 +132,7 @@ class Basic(BaseGenerator):
 
     def load_tiles(self) -> Dict[str, Type[BaseTile]]:
         """Loads tile classes dynamically."""
-        classes = PyLoad.load_classes("data/tiles", base_classes=BaseTile)
+        classes = PyLoad.load_classes("gameplay/tiles", base_classes=BaseTile)
         # Remove the base class from the list
         if "BaseTile" in classes:
             del classes["BaseTile"]

@@ -1,5 +1,5 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.hills_grass import HillsGrass
+from gameplay.terrain.hills_grass import HillsGrass
+from gameplay.tiles.base_tile import BaseTile
 
 
 class HillsGrassland(BaseTile):

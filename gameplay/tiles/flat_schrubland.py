@@ -1,5 +1,5 @@
-from data.terrain.flat_schrubland import FlatSchrubland as FlatSchrublandTerrain
-from data.tiles.base_tile import BaseTile
+from gameplay.terrain.flat_schrubland import FlatSchrubland as FlatSchrublandTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class FlatSchrubland(BaseTile):

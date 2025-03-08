@@ -1,5 +1,5 @@
-from data.terrain.flat_light_jungle import FlatLightJungle as FlatLightJungleTerrain
-from data.tiles.base_tile import BaseTile
+from gameplay.terrain.flat_light_jungle import FlatLightJungle as FlatLightJungleTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class FlatLightJungle(BaseTile):

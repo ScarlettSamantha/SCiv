@@ -1,5 +1,5 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.lake import Lake as LakeTerrain
+from gameplay.terrain.lake import Lake as LakeTerrain
+from gameplay.tiles.base_tile import BaseTile
 
 
 class Lake(BaseTile):

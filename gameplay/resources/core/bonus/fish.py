@@ -1,9 +1,9 @@
 from typing import Dict, Tuple, Type
-from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+
 from gameplay.resource import ResourceSpawnablePlace
-from data.terrain._base_terrain import BaseTerrain
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile_yield import TileYield
-from gameplay.tile_yield_modifier import TileYieldModifier
 from managers.i18n import T_TranslationOrStr, _t
 
 

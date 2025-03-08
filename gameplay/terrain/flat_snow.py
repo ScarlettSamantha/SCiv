@@ -1,5 +1,6 @@
+from gameplay.terrain.traits.land import buildable_flat_land
+
 from ._base_terrain import BaseTerrain
-from data.terrain.traits.land import buildable_flat_land
 
 
 class FlatSnow(BaseTerrain):

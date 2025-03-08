@@ -1,30 +1,27 @@
-from logging import Logger
-from typing import Any, Callable, Dict, Optional, TYPE_CHECKING
 from functools import partial
+from logging import Logger
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from weakref import ReferenceType
 
-from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
 
 from camera import CivCamera
+from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
-from system.actions import Action
-from system.entity import BaseEntity
-
-from data.tiles.base_tile import BaseTile
-
+from managers.entity import EntityManager, EntityType
 from managers.unit import Unit
 from managers.world import World
-from managers.entity import EntityManager, EntityType
-
-from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
-from menus.kivy.parts.debug import DebugPanel
-from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.action_bar import ActionBar
+from menus.kivy.parts.debug import DebugPanel
+from menus.kivy.parts.debug_actions import DebugActions
+from menus.kivy.parts.stats import StatsPanel
+from system.actions import Action
+from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from main import Openciv

@@ -1,6 +1,7 @@
-from data.tiles.base_tile import BaseTile
-from data.terrain.sea import Sea
 from typing import Type
+
+from gameplay.terrain.sea import Sea
+from gameplay.tiles.base_tile import BaseTile
 
 
 class SeaWater(BaseTile):

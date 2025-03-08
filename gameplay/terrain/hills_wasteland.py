@@ -1,7 +1,8 @@
 # Lake class
+from gameplay.terrain.traits.water import open_water_lake
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
+
 from ._base_terrain import BaseTerrain, rgb
-from data.terrain.traits.water import open_water_lake
 
 
 class Lake(BaseTerrain):

@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
 
-from data.terrain._base_terrain import BaseTerrain
 from gameplay._units import Units
 from gameplay.city import City
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
 from gameplay.improvements import Improvements
 from gameplay.resource import BaseResource, Resources
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile_yield_modifier import TileYield, TileYieldModifier
 from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
@@ -688,7 +688,7 @@ class BaseTile(BaseEntity):
 
         The messeging system is used to inform the player of the city being founded via the action(gameplay.actions.unit.found) that calls this mostly.
         """
-        from data.terrain.city import City as CityTerrain
+        from gameplay.terrain.city import City as CityTerrain
 
         if player is None:
             player = PlayerManager.player()
