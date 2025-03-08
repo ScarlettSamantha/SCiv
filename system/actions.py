@@ -1,6 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Self, Tuple
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
+from managers.log import LogManager
 
 """Action system will provide a generic way to handle actions in the game. This will be used for units, buildings, and other game objects that can perform actions.
 
@@ -33,6 +34,7 @@ class Action:
         self.description: T_TranslationOrStrOrNone = description  # Might be used as a tooltip
         self.icon: str | None = icon
         self.useable: bool = usable
+        self.logger = LogManager.get_instance().engine.getChild("actions")
 
         self.condition: Optional[Callable[[Self], bool] | bool] = condition
         self.action: Callable[[Self, List | Tuple, Dict], Optional[bool]] = action
@@ -58,14 +60,15 @@ class Action:
         return self.action_result
 
     def run(self):
+        self.logger.info(f"Running action: {self.name}")
         if self.action is not None:
-            condition_met: bool = False
+            condition_met: bool = True
             if isinstance(self.condition, bool):
                 condition_met = self.condition
             elif isinstance(self.condition, Callable):
                 condition_met = self.condition(self)
 
-            if self.condition is None or condition_met is False:
+            if self.condition is None and condition_met is False:
                 return
 
             # We actually run the action here
@@ -73,11 +76,14 @@ class Action:
 
             if self.success_condition is not None:
                 """We test for true as the system works that you can return anything that is not False to be a success and that will be passed to the on_success callback."""
+                self.logger.info(f"Checking success condition for action: {self.name}")
                 if self.success_condition(self, self.action_args, self.action_kwargs):
                     if self.on_success is not None:
+                        self.logger.info(f"Action: {self.name} was successful.")
                         self.on_success(self, self.action_args, self.action_kwargs)
                 else:
                     if self.on_failure is not None:
+                        self.logger.info(f"Action: {self.name} was a failure.")
                         if self.get_return_as_failure_argument:
                             self.on_failure(self, self.action_args, self.action_kwargs)
                         else:
@@ -88,9 +94,11 @@ class Action:
                 self.action_result is not False
             ):  # Very important to check for False, as None is a valid return value. has to do with sucess condition check.
                 if self.on_success is not None:
+                    self.logger.info(f"Action: {self.name} was successful.")
                     self.on_success(self, self.action_args, self.action_kwargs)
             else:
                 if self.on_failure is not None:
+                    self.logger.info(f"Action: {self.name} was a failure.")
                     if self.get_return_as_failure_argument:
                         self.on_failure(self, self.action_args, self.action_kwargs)
                     else:
