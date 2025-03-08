@@ -24,4 +24,4 @@
 
 ## Map/World
 
-- [ ] When generating it will sometimes with smaller maps get stuck on generating aquafers I think I know why this is, it might have to do that its trying to spawn many aquafers but cant find a place for them all and gets stuck infinitly.
+- [X] When generating it will sometimes with smaller maps get stuck on generating aquafers I think I know why this is, it might have to do that its trying to spawn many aquafers but cant find a place for them all and gets stuck infinitly. (@after-fixed: Refactored it into a sum instead of a flat hardcoded parametered random_int)

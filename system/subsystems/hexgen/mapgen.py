@@ -1,28 +1,27 @@
 import random
 import sys
 
-from system.subsystems.hexgen.river import RiverSegment
-from system.subsystems.hexgen.hex import HexSide, HexFeature
-
-from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.enums import (
-    OceanType,
-    MapType,
-    Hemisphere,
     GeoformType,
+    Hemisphere,
+    MapType,
+    OceanType,
 )
 from system.subsystems.hexgen.geoform import Geoform
-from system.subsystems.hexgen.heightmap import Heightmap
 from system.subsystems.hexgen.grid import Grid
+from system.subsystems.hexgen.heightmap import Heightmap
+from system.subsystems.hexgen.hex import HexFeature, HexSide
+from system.subsystems.hexgen.river import RiverSegment
+from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.util import (
-    decide_wind,
-    pressure_at_seasons,
     Timer,
-    is_isthmus,
-    is_bay,
-    is_strait,
+    decide_wind,
     first_hex_without_geoform,
+    is_bay,
+    is_isthmus,
     is_peninsula,
+    is_strait,
+    pressure_at_seasons,
 )
 
 sys.setrecursionlimit(10000000)
@@ -86,6 +85,8 @@ class MapGen:
 
         self._generate_pressure()
 
+        self.num_tiles: int = 0
+
         if self.params.get("hydrosphere"):
             self._generate_rivers()
 
@@ -94,6 +95,7 @@ class MapGen:
             print("Making coastal moisture") if self.debug else False
             for y, row in enumerate(self.hex_grid.grid):
                 for x, col in enumerate(row):
+                    self.num_tiles += 1  # count the number of tiles when we're here anyway.
                     hex = self.hex_grid.grid[x][y]
                     if hex.is_land:
                         if hex.distance <= 5:
@@ -104,7 +106,10 @@ class MapGen:
                             hex.moisture += random.randint(1, 6)
 
         # generate aquifers
-        num_aquifers = random.randint(5, 25)
+        factor_min_max: int = 2
+        max_aquifers: int = self.num_tiles // 80  # Floor Devide needs to be smaller to get the bigger integer
+        min_aquifers: int = max_aquifers // factor_min_max
+        num_aquifers = random.randint(min_aquifers, max_aquifers)
 
         if self.params.get("hydrosphere") is False or self.params.get("sea_percent") == 100:
             num_aquifers = 0
@@ -204,26 +209,26 @@ class MapGen:
                 size_list = list(range(size))
                 size_list.reverse()
                 hexes = []
-                for i in size_list:
-                    i += 1
-                    this_height = round(height / i)
-                    if i == 1:
-                        l = center_hex.surrounding + [center_hex]
+                for iteration in size_list:
+                    iteration += 1
+                    this_height = round(height / iteration)
+                    if iteration == 1:
+                        list_of_hexes = center_hex.surrounding + [center_hex]
                     else:
-                        l = center_hex.bubble(distance=i)
-                    for h in l:
-                        hexes.append(h)
-                        h.altitude = center_hex.altitude + this_height
-                        h.add_feature(HexFeature.volcano)
+                        list_of_hexes = center_hex.bubble(distance=iteration)
+                    for hex in list_of_hexes:
+                        hexes.append(hex)
+                        hex.altitude = center_hex.altitude + this_height
+                        hex.add_feature(HexFeature.volcano)
 
                 last_altitude = 0
-                for h in hexes[: round(len(hexes) / 2)]:
-                    for i in h.surrounding:
-                        if i.has_feature(HexFeature.volcano) is False:
-                            i.add_feature(HexFeature.volcano)
-                            i.altitude += 5
-                            i.altitude = min(i.altitude, 255)
-                            last_altitude = i.altitude
+                for hex in hexes[: round(len(hexes) / 2)]:
+                    for serounding_hex in hex.surrounding:
+                        if serounding_hex.has_feature(HexFeature.volcano) is False:
+                            serounding_hex.add_feature(HexFeature.volcano)
+                            serounding_hex.altitude += 5
+                            serounding_hex.altitude = min(serounding_hex.altitude, 255)
+                            last_altitude = serounding_hex.altitude
                 center_hex.altitude += last_altitude + 5
 
                 # lava flow
