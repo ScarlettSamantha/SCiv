@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
@@ -9,13 +9,14 @@ from panda3d.core import PStatClient
 from data.tiles.base_tile import BaseTile
 from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
 from gameplay.units.unit_base import UnitBaseClass
+from helpers.colors import Colors
+from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
-from helpers.colors import Colors
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -94,6 +95,8 @@ class ui(Singleton):
         self._base.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
         self._base.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
         self._base.accept("ui.update.ui.lense_change", self.on_lense_change)
+
+        self._base.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self._base.accept("ui.request.open.popup", self.show_draggable_popup)
 
@@ -317,6 +320,15 @@ class ui(Singleton):
             tile.set_color(color if isinstance(color, tuple) else color[1])
         else:
             tile.set_color(color if isinstance(color, tuple) else color[2])
+
+    def leave_trail(
+        self,
+        unit: Any,
+        tile: BaseTile,
+    ):
+        from gameplay.actions.timed.trail import Trial
+
+        ActionManager.add_timed_action(Trial(tile=tile))
 
     def color_neighbors(
         self,

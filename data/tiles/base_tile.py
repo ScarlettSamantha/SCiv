@@ -2,6 +2,7 @@ from logging import Logger
 from os.path import dirname, join, realpath
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
+from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
 
 from data.terrain._base_terrain import BaseTerrain
@@ -258,9 +259,7 @@ class BaseTile(BaseEntity):
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))
 
     def is_visisted_by(self, unit: UnitBaseClass) -> bool:
-        from helpers.colors import Colors
-
-        self.set_color((*Colors.PURPLE[:3], 1.0))
+        messenger.send("unit.action.move.visiting_tile", [unit, self])
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
 
@@ -552,7 +551,9 @@ class BaseTile(BaseEntity):
             and not self.is_sea
             and (on_other_units or len(self.units) == 0)
             and not self.city
-            and (on_mountains or self.altitude < 200)  # No spawning on mountains # @TODO this might be a bug. check in the future if this is the reason units can spawn on mountains.
+            and (
+                on_mountains or self.altitude < 200
+            )  # No spawning on mountains # @TODO this might be a bug. check in the future if this is the reason units can spawn on mountains.
         )
 
     def is_passable(self) -> bool:
