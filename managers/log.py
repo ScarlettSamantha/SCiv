@@ -4,6 +4,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict
+
 from mixins.singleton import Singleton
 
 
@@ -12,19 +13,20 @@ class LogManager(Singleton):
         self.debug_mode: bool = debug_mode
         self.testing_mode: bool = testing_mode
         self.loggers: Dict[str, logging.Logger] = {}
+        self.base_logger = logging.getLogger(name="SCIV")
         self.setup_loggers()
 
     def setup_loggers(self) -> None:
         log_types: Dict[str, int] = {
-            "gameplay": logging.INFO,
+            "gameplay": logging.DEBUG,
             "engine": logging.DEBUG,
-            "graphics": logging.INFO,
+            "graphics": logging.DEBUG,
             "misc": logging.DEBUG,
             "debug": logging.DEBUG,
         }
 
         for log_type, level in log_types.items():
-            logger: logging.Logger = logging.getLogger(name=log_type)
+            logger: logging.Logger = self.base_logger.getChild(log_type)
             logger.setLevel(level=level)
 
             # Remove all handlers associated with the logger
@@ -47,11 +49,6 @@ class LogManager(Singleton):
             logger.addHandler(hdlr=file_handler)
 
             # Add stream handler if in debug mode and not testing mode
-            if self.debug_mode and not self.testing_mode:
-                stream_handler = logging.StreamHandler()
-                stream_handler.setLevel(logging.DEBUG)
-                stream_handler.setFormatter(formatter)
-                logger.addHandler(stream_handler)
 
             self.loggers[log_type] = logger
 
