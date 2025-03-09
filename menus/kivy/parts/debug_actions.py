@@ -1,12 +1,14 @@
 from enum import Enum
 from logging import Logger
 from typing import Optional
+
+from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from menus.kivy.elements.button_value import ButtonValue
 from kivy.uix.spinner import Spinner
+
+from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
-from direct.showbase.MessengerGlobal import messenger
 
 
 class MapActionsValues(Enum):
@@ -22,6 +24,7 @@ class LenseOptionsValues(Enum):
     UNITS = "Units"
     WATER = "Water"
     RESOURCES = "Resources"
+    EMPIRES = "Empires"
 
 
 class DebugUIOptionsValues(Enum):

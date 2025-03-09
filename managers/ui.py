@@ -211,6 +211,8 @@ class ui(Singleton):
             self.show_colors_for_water()
         elif LenseOptionsValues.UNITS == value:
             self.show_colors_for_units()
+        elif LenseOptionsValues.EMPIRES == value:
+            self.show_empire_colors()
         elif LenseOptionsValues.NONE == value:
             return
         else:
@@ -420,3 +422,10 @@ class ui(Singleton):
                 hex.set_color(Colors.BLUE)
             else:
                 hex.set_color(Colors.RED)
+
+    def show_empire_colors(self):
+        for _, hex in self.map.map.items():
+            if hex.owner is not None:
+                hex.set_color(hex.owner.color)
+            else:
+                hex.set_color(Colors.RESTORE)
