@@ -35,7 +35,7 @@ class Game(Singleton):
         self.ui: ui = ui.get_instance(base=self.base)
         self.world: World = World.get_instance()
         self.input: Input = Input.get_instance()
-        self.turn: Optional[Turn] = None
+        self.turn: Turn = Turn.get_instance(base=self.base)
         self.camera: CivCamera = camera
         self.players: PlayerManager = PlayerManager()
         self.config: ConfigManager = ConfigManager.get_instance()
@@ -64,7 +64,11 @@ class Game(Singleton):
         def timers():
             self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)
 
+        def messenger():
+            self.base.accept("game.turn.request_end", self.process_turn)
+
         timers()
+        messenger()
 
     def configure_environment(self):
         self.base.disableMouse()
@@ -237,6 +241,12 @@ class Game(Singleton):
         self.base.messenger.send("game.state.true_game_start")
         self.logger.info("Game start complete")
         self.ui.post_game_start()
+
+    def process_turn(self):
+        if self.turn is None:
+            raise AssertionError("Turn is not set")
+
+        self.turn.end_turn()
 
     def on_game_end(self):
         self.game_active = False
