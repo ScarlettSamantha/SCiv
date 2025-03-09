@@ -74,9 +74,11 @@ Beware the menu and button states dont update each other tough
 - [x] Manage entities
 - [x] Spawn units
 - [x] Unit actions
-- [x] Process a minimal turn (WIP)
-- [ ] Cities that can build something
-- ![ ] Basic UI element (WIP)
+- [x] Process a minimal turn
+- [ ] Cities that can build something (WIP)
+- [ ] Basic player ownership and city being aware of tiles around it (WIP)
+- [ ] UI city show ownership of tiles around it. (WIP)
+- [ ] Basic UI element (WIP)
 - [x] Movement for units both pathfinded and weighted + UI
 - [x] Basic backend system integration like managers, systems, logging
 - [x] Proper Implementation UI system (kivy)
