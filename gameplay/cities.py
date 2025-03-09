@@ -1,6 +1,8 @@
 from __future__ import annotations
+
+from typing import Iterator, List
+
 from gameplay.city import City
-from typing import List, Iterator
 
 
 class Cities:
@@ -9,6 +11,14 @@ class Cities:
 
     def add(self, value: City) -> None:
         self._cities.append(value)
+
+    def remove(self, value: City, auto_destroy: bool = True) -> None:
+        self._cities.remove(value)
+        if auto_destroy:
+            value.destroy()
+
+    def has(self, value: City) -> bool:
+        return value in self._cities
 
     def __iter__(self) -> Iterator[City]:
         self.index = 0

@@ -148,6 +148,8 @@ class BaseTile(BaseEntity):
         self.owner: Optional[Player] = None
         # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
+        # is this city being worked by a city?
+        self.city_owner: Optional[City] = None
 
         self.texture_card: Optional[NodePath] = None
         self.texture_card_texture: Optional[NodePath] = None
@@ -674,6 +676,14 @@ class BaseTile(BaseEntity):
 
             data["hex_data"] = "\n".join(f"{k}: {v}" for k, v in data["hex_data"].items())
 
+        if self.city is not None:
+            data["city"] = {
+                "owned_tiles": ",".join(str(tile.tag) for tile in self.city.owned_tiles if tile.tag is not None),
+                "population": self.city.population,
+                "is_capital": self.city.is_capital,
+            }
+            data["city"] = "\n".join(f"{k}: {v}" for k, v in data["city"].items())
+
         return data
 
     def found(
@@ -696,7 +706,9 @@ class BaseTile(BaseEntity):
         if capital is None:
             capital = len(player.cities) == 0
 
-        self.city = City.found_new(name="Test city", owner=player, tile=self, population=population, is_capital=capital)
+        self.city = City.found_new(
+            name="Test city", owner=player, tile=self, population=population, is_capital=capital, auto_claim_radius=1
+        )
         self.unrender_model(0)
         self.setTerrain(CityTerrain())
         self.owner = player
