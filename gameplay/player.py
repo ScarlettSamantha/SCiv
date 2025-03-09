@@ -1,30 +1,22 @@
-from gameplay.civilization import Civilization
-from gameplay.leader import Leader
-from gameplay.personality import Personality
-from gameplay.effect import Effect, Effects
-from gameplay.goverment import Goverment
-from gameplay.citizen import Citizen
-from gameplay.mood import Mood
-from gameplay.moods import Moods
-
-from gameplay.relationships import Relationships
+from typing import TYPE_CHECKING, Literal, Self
 
 from gameplay.cities import Cities
-from gameplay.city import City
-from gameplay.tiles import Tiles
-from gameplay.claims import Claims
-
-
-from gameplay.votes import Votes
+from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
-
+from gameplay.city import City
+from gameplay.civilization import Civilization
+from gameplay.claims import Claims
+from gameplay.effect import Effect, Effects
+from gameplay.goverment import Goverment
+from gameplay.leader import Leader
+from gameplay.mood import Mood
+from gameplay.moods import Moods
+from gameplay.personality import Personality
+from gameplay.relationships import Relationships
 from gameplay.resource import Resources
-
-
+from gameplay.player_tiles import PlayerTiles
 from gameplay.trades import Trades
-
-from typing import Literal, Self, TYPE_CHECKING
-
+from gameplay.votes import Votes
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -97,7 +89,7 @@ class Player(BaseEntity):
         self.capital: City | None = (
             None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
         )
-        self.tiles: Tiles = Tiles()
+        self.tiles: PlayerTiles = PlayerTiles()
         self.claims: Claims = Claims()
         self.units: Units = Units()
         self.votes: Votes = Votes()

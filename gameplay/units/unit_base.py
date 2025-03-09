@@ -14,24 +14,24 @@ from system.actions import Action
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from data.tiles.base_tile import BaseTile
     from gameplay.player import Player
     from gameplay.promotion import PromotionTree
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class CantMoveReason(Enum):
-    SAME_TILE = -2
-    COULD_MOVE = -1
-    NO_MOVES = 0
-    NO_PATH = 1
-    NO_TARGET = 2
-    IMMOBILE = 3
-    IMPASSABLE = 4
-    NO_OWNER = 5
-    OTHER_OWNER = 6
-    NO_UNIT = 7
-    UNIT_TRAPPED_WIDWAY = 8
-    OTHER_UNIT_ON_TILE = 9
+    SAME_TILE = -2  # This is a special case where the unit is already on the tile
+    COULD_MOVE = -1  # This is more of a ok unit could move.
+    NO_MOVES = 0  # This is when the unit has no moves left
+    NO_PATH = 1  # This is when the unit has no path to the target
+    NO_TARGET = 2  # This is when the unit has no target this is a bug.
+    IMMOBILE = 3  # This is when the unit is immobile and cannot move.
+    IMPASSABLE = 4  # This is only when the target tile is impassable as otherwise routing would have caught it. and trigger NO_PATH
+    NO_OWNER = 5  # This is when the unit has no owner
+    OTHER_OWNER = 6  # This is when the target tile is owned by another player this can integrate with the other owner in some way.
+    NO_UNIT = 7  # This is when the unit has no unit to move this is a bug.
+    UNIT_TRAPPED_WIDWAY = 8  # This is when the unit is trapped midway through the path as the tiles have an on_visit check which can be used to trap the unit this can be used to do partial logic.
+    OTHER_UNIT_ON_TILE = 9  # This might have to integrate with the other owner in some way ether being it attacking or being attacked or just not being able to move.
 
 
 class UnitBaseClass(BaseEntity, ABC):

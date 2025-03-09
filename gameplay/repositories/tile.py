@@ -1,7 +1,8 @@
-from typing import Dict, List, Tuple, Optional
-from data.tiles.base_tile import BaseTile
-from managers.world import World
 from heapq import heappop, heappush
+from typing import Dict, List, Optional, Tuple
+
+from gameplay.tiles.base_tile import BaseTile
+from managers.world import World
 
 
 class TileRepository:

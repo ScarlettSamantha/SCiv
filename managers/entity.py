@@ -1,15 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, TypeVar
-
-
-from mixins.singleton import Singleton
 from enum import Enum
+from typing import Any, Dict, Optional, Type, TypeVar
 from uuid import uuid4
-
-from system.entity import BaseEntity
 from weakref import ReferenceType, ref
-from system.save_file import BaseSaver, SavePickleFile
+
 from main import Openciv
+from mixins.singleton import Singleton
+from system.entity import BaseEntity
+from system.save_file import BaseSaver, SavePickleFile
 
 
 class EntityType(Enum):
@@ -28,7 +26,7 @@ class EntityType(Enum):
         """Lazy import to avoid circular dependencies."""
         if self._base_type is None:
             if self == EntityType.TILE:
-                from data.tiles.base_tile import BaseTile
+                from gameplay.tiles.base_tile import BaseTile
 
                 self._base_type = BaseTile
             elif self == EntityType.UNIT:

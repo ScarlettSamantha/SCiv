@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional, Tuple, TypeVar, Union, List, Dict, Any, Self, Type, Generic, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, Self, Tuple, Type, TypeVar, Union
 
-from data.terrain._base_terrain import BaseTerrain
-
-from managers.i18n import T_TranslationOrStr, t_
 from exceptions.resource_exception import ResourceTypeException
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
-    from gameplay.tile_yield_modifier import TileYieldModifier
     from gameplay.tile_yield import TileYield
+    from gameplay.tile_yield_modifier import TileYieldModifier
 
 
 class ResourceType(Enum):

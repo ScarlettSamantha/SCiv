@@ -6,8 +6,8 @@ from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
 from panda3d.core import PStatClient
 
-from data.tiles.base_tile import BaseTile
 from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
+from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from helpers.colors import Colors
 from managers.action import ActionManager

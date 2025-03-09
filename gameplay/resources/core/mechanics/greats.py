@@ -1,7 +1,8 @@
-from data.terrain._base_terrain import BaseTerrain
-from gameplay.resources.core.mechanics.mechanic_resource import BaseGreatMechanicResource
-from managers.i18n import _t, T_TranslationOrStr
 from typing import Dict, Tuple, Type
+
+from gameplay.resources.core.mechanics.mechanic_resource import BaseGreatMechanicResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, _t
 
 
 class GreatScientist(BaseGreatMechanicResource):

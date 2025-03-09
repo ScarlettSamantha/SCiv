@@ -1,9 +1,10 @@
 from typing import Dict, Tuple, Type
-from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+
 from gameplay.resource import ResourceSpawnablePlace
-from data.terrain.coast import Coast
-from data.terrain.sea import Sea
-from data.terrain._base_terrain import BaseTerrain
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.terrain.coast import Coast
+from gameplay.terrain.sea import Sea
 from managers.i18n import T_TranslationOrStr, _t
 
 

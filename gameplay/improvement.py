@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from gameplay.tile_yield import TileYield
-from gameplay.effect import Effects
+from typing import TYPE_CHECKING, Callable, Tuple
+
 from gameplay.conditions import Conditions
+from gameplay.effect import Effects
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
+from gameplay.tile_yield import TileYield
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
+from managers.tags import Taggable
 from mixins.callbacks import CallbacksMixin
 from system.entity import BaseEntity
 from system.saving import SaveAble
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
-from managers.tags import Taggable
-
-from typing import Tuple, TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from data.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):

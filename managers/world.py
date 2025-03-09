@@ -1,10 +1,10 @@
 import random
 from math import sqrt
-from typing import Optional, Tuple, Dict, Type
+from typing import Dict, Optional, Tuple, Type
 
+from gameplay.tiles.base_tile import BaseTile
 from mixins.singleton import Singleton
 from system.generators.base import BaseGenerator
-from data.tiles.base_tile import BaseTile
 
 
 class World(Singleton):
