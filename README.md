@@ -58,11 +58,11 @@ Beware the menu and button states dont update each other tough
 - [x] Have ok atleast map generator
 - [x] Manage entities
 - [x] Spawn units
-- [ ] Unit actions (WIP)
-- [ ] Process a turn
+- [x] Unit actions
+- [ ] Process a minimal turn
 - [ ] Cities that can build something
 - ![ ] Basic UI element (WIP)
-- [ ] Movement for units both pathfinded and weighted + UI (WIP)
+- [x] Movement for units both pathfinded and weighted + UI
 - [x] Basic backend system integration like managers, systems, logging
 - [x] Proper Implementation UI system (kivy)
 - [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
