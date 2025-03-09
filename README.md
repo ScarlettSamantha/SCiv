@@ -74,7 +74,7 @@ Beware the menu and button states dont update each other tough
 - [x] Manage entities
 - [x] Spawn units
 - [x] Unit actions
-- [ ] Process a minimal turn (WIP)
+- [x] Process a minimal turn (WIP)
 - [ ] Cities that can build something
 - ![ ] Basic UI element (WIP)
 - [x] Movement for units both pathfinded and weighted + UI
@@ -89,6 +89,7 @@ Beware the menu and button states dont update each other tough
 - [Changelog](CHANGELOG.md) - Automatically generated changelog.
 - [File Structure](meta/structure.md) - The project structure
 - [Todo](meta/todo.md) - Things that still need to be done in current codebase.
+- [Signals](meta/technical/signals.md) - Signals used to send to other elements of the code
 
 <details>
 
