@@ -14,11 +14,19 @@ At the moment it will run *something* and I will attempt to keep the main branch
 
 Its not that hard to actually run it as its panda3d now. Please do checkout the development branch for now as the main branch will be very outdated and the dev brenches should work semi ok as most features are made in feature branches.
 
+#### ubuntu
+
+It might give you the standard error when trying to install python packages but ether pip or venv are required. or you need to pull your own packages from the distro's repository (eg: apt install python packages). This is why I have provided a venv route, you can choose to just system install the packages.
+
 ```bash
-git clone git@github.com:ScarlettSamantha/SCiv.git
+sudo apt install git python3-pip python3-venv
+```
+
+```bash
+git clone https://github.com/ScarlettSamantha/SCiv.git
 cd SCiv
-git checkout dev-0.1.0 
 python3 -m venv .
+source bin/activate
 bin/pip install -r requirements.txt
 python3 main.py
 ```
