@@ -23,7 +23,13 @@ bin/pip install -r requirements.txt
 python3 main.py
 ```
 
+#### Requirements
+
+It requires (*for now*) a unix OS, Python3.11 or greater and hardware spec wise it depends on map size I can run a 150x150 map at zoom levels with a *7800XT* when using normal map sizes eg: *90x120* ish requires about `750MB` ram and I expect this to grow to about `2-4GB` ram required. VRAM it seems to use around `500MB` I expect this to row to some `3-6GB` In the end depending on the textures and models. its mostly single core usage so a strong single core performing cpu should be better. its also at normal zoom levels at the moment of writing on my pc cpu bound (Intel 13th gen i5).
+
 ### Debugging
+
+I dont have windows or used it in a while so I cant help with windows debugging.
 
 You can connect it to pstats you need to have it listening on the default port `5185` then you press `p` to activate pstats broadcasting and `l` to stop it again.
 
