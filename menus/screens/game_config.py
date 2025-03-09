@@ -1,21 +1,20 @@
 from typing import Optional, Tuple, Type
 
-from anyio import value
-from kivy.uix.screenmanager import Screen
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.slider import Slider
-from kivy.uix.checkbox import CheckBox
-from kivy.uix.widget import Widget
-from kivy.uix.popup import Popup
 from kivy.graphics import Color, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.screenmanager import Screen
+from kivy.uix.slider import Slider
+from kivy.uix.widget import Widget
 
-from gameplay.repositories.civilization import Civilization
-from menus.kivy.elements.scrollable_popup import ScrollablePopup
-from menus.kivy.elements.button_value import ButtonValue
 from gameplay.civilization import Civilization as BaseCivilization
+from gameplay.repositories.civilization import Civilization
+from menus.kivy.elements.button_value import ButtonValue
+from menus.kivy.elements.scrollable_popup import ScrollablePopup
 
 
 class GameConfigMenu(Screen):
@@ -163,7 +162,7 @@ class GameConfigMenu(Screen):
     def select_civilization(self, civilization, _value: Type[BaseCivilization]):
         """Updates the civilization selection button"""
         self.selected_civilization = _value
-        print(f"{civilization}, {value}")
+        print(f"{civilization}, {_value}")
         self.dropdown_button.text = civilization
 
     def start_game(self):
