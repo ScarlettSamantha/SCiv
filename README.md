@@ -187,6 +187,7 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 
 ### Resources
 
+<details>
 | Resource          | Type                                                    | Code                                                  | Docs                                               |
 | ----------------- | ------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------- |
 | Bison             | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](resources/core/bonus/bison.py)                 | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
@@ -224,9 +225,10 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | Oil               | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/oil.py)               | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
 | Rare Earth Metals | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/rare_earth_metals.py) | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
 | Uranium           | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/uranium.py)           | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-
+</details>
 ### Civilizations
 
+<details>
 | Civilization                                                  | Wikipedia Link                                                         | Code                                                     |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
 | [Akkadian](./ideas/civs/akkadian.md)               | [Akkadian Empire](https://en.wikipedia.org/wiki/Akkadian_Empire)       | [code](openciv/gameplay/civilization/akkadian.py)        |
@@ -247,9 +249,11 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | [Spain](./ideas/civs/spain.md)                     | [History of Spain](https://en.wikipedia.org/wiki/History_of_Spain)     | [code](openciv/gameplay/civilization/spain.py)           |
 | [USSR](./ideas/civs/ussr.md)                       | [Soviet Union](https://en.wikipedia.org/wiki/Soviet_Union)             | [code](openciv/gameplay/civilization/ussr.py)            |
 | [Vikings](./ideas/civs/vikings.md)                 | [Vikings](https://en.wikipedia.org/wiki/Vikings)                       | [code](openciv/gameplay/civilization/vikings.py)         |
+</details>
 
 ### Leaders
 
+<details>
 | Leader                                                                         | Wikipedia Link                                                                                       | Code                                                        |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | [Abraham Lincoln](./ideas/gameplay/leaders/abraham_lincoln.md)                 | [Abraham Lincoln (American Empire)](https://en.wikipedia.org/wiki/Abraham_Lincoln)                   | [code](openciv/gameplay/leaders/abraham_lincoln.py)         |
@@ -301,9 +305,11 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | [William the Silent](./ideas/gameplay/leaders/willem.md)                       | [William the Silent (Low Countries)](https://en.wikipedia.org/wiki/William_the_Silent)               | [code](openciv/gameplay/leaders/willem.py)                  |
 | [Wu Zetian](./ideas/gameplay/leaders/wu_zetian.md)                             | [Wu Zetian (China)](https://en.wikipedia.org/wiki/Wu_Zetian)                                         | [code](openciv/gameplay/leaders/wu_zetian.py)               |
 | [Xerxes](./ideas/gameplay/leaders/xerxes.md)                                   | [Xerxes I (Persia)](https://en.wikipedia.org/wiki/Xerxes_I)                                          | [code](openciv/gameplay/leaders/xerxes.py)                  |
+</details>
 
 ### Win Conditions
 
+<details>
 | Condition                                        | Mechanic                              | Meta-Docs                                           | Code |
 | ------------------------------------------------ | ------------------------------------- | --------------------------------------------------- | ---- |
 | [Alliance](./ideas/gameplay/victory/alliance.md) | State Building/Diplomacy              | [alliance.md](./ideas/gameplay/victory/alliance.md) | code |
@@ -312,6 +318,7 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | [Religion](./ideas/gameplay/victory/religion.md) | Religion/War/Spy/Instability          | [religion.md](./ideas/gameplay/victory/religion.md) | code |
 | [Science](./ideas/gameplay/victory/science.md)   | State Building/Diplomacy              | [science.md](./ideas/gameplay/victory/science.md)   | code |
 | [Culture](./ideas/gameplay/victory/culture.md)   | Culture/Tourism/Archaeology/Diplomacy | [culture.md](./ideas/gameplay/victory/culture.md)   | code |
+</details>
 
 > ⚖️ **Disclaimer:** This game and its associated code are provided for educational and informational purposes only. The author assumes no responsibility for any errors, omissions, or inaccuracies in the code. Users are strongly advised to thoroughly review, test, the code. The author makes no guarantees regarding the security, reliability, or performance of the game. By using this code, you agree that the author shall not be held liable for any damages, losses, or other consequences arising from its use, misuse, or inability to use the game, including but not limited to any unintended or harmful actions caused by the game. Use this game at your own risk and ensure that all necessary precautions are taken.
 > 🌍 **Historical Context and Point of View Disclaimer:**
