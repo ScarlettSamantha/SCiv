@@ -12,11 +12,12 @@ At the moment it will run *something* and I will attempt to keep the main branch
 
 ### How to run it
 
-Its not that hard to actually run it as its panda3d now.
+Its not that hard to actually run it as its panda3d now. Please do checkout the development branch for now as the main branch will be very outdated and the dev brenches should work semi ok as most features are made in feature branches.
 
 ```bash
 git clone git@github.com:ScarlettSamantha/SCiv.git
 cd SCiv
+git checkout dev-0.1.0 
 python3 -m venv .
 bin/pip install -r requirements.txt
 python3 main.py
