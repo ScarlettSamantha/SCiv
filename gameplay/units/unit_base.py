@@ -280,6 +280,10 @@ class UnitBaseClass(BaseEntity, ABC):
     def tile_is_occupiable(self, tile: "BaseTile") -> bool:
         return tile.is_passable()
 
+    def restore_movement_points(self) -> None:
+        """Resets the unit's movement points to the maximum value. Called by the Turn manager."""
+        self.moves_left = self.max_moves
+
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
         if isinstance(self.model, str) and not isinstance(self.model, NodePath):
             raise ValueError(f"Unit {self.key} has no model assigned.")

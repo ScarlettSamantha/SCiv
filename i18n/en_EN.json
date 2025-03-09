@@ -49,6 +49,12 @@
         "previous": "Previous",
         "ok": "OK",
         "decline": "Decline"
+      },
+      "player_ui": {
+        "turn_button": {
+          "end_turn": "End Turn {turn}",
+          "on_turn": "Processing Turn {turn}"
+        }
       }
     },
     "actions": {
