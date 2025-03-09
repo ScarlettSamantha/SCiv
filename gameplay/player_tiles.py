@@ -19,3 +19,9 @@ class PlayerTiles:
 
     def remove_tile(self, x: int, y: int):
         del self.tiles[(x, y)]
+
+    def add(self, tile: "BaseTile"):
+        self.add_tile(tile)
+
+    def remove(self, tile: "BaseTile"):
+        self.remove_tile(tile.x, tile.y)
