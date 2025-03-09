@@ -51,8 +51,10 @@ class City(BaseEntity, DirectObject):
         if self.player is not None:
             self._register_object()
 
+        self.register()
+
     def register(self):
-        self.accept("game.gameplay.city.gets_tile_ownership", self.on_tile_ownership_changed)
+        messenger.accept("game.gameplay.city.gets_tile_ownership", self, self.on_tile_ownership_changed)
 
     def build(self, improvement: Improvement):
         self._improvements.add(improvement)
