@@ -226,6 +226,7 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | Rare Earth Metals | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/rare_earth_metals.py) | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
 | Uranium           | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/uranium.py)           | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
 </details>
+
 ### Civilizations
 
 <details>
