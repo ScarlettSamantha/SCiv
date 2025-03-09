@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+from logging import Logger
 from typing import Any, Dict, Optional, Type, TypeVar
 from uuid import uuid4
 from weakref import ReferenceType, ref
@@ -96,6 +97,7 @@ class EntityManager(Singleton):
         self.saver: Type[BaseSaver] = saver if saver is not None else self._default_savefile_handler
         self.session: Optional[str] = session_name if session_name is not None else str(uuid4().hex)
         self.session_incrementer: int = 0  # Used to keep track of how many times the session has been loaded
+        self.logger: Logger = self.base.logger.engine.getChild("manager.entity")
 
         # Stats
         self.stats = {
@@ -157,7 +159,8 @@ class EntityManager(Singleton):
         key = entity.entity_key
 
         if key is None:
-            raise AssertionError("Key is None, this should not happen.")  # To silence mypy
+            self.logger.warning(f"Entity {str(entity)} has no key, cannot unregister.")
+            return  # Already unregistered
 
         entity.is_registered = False
         entity.entity_key = None
