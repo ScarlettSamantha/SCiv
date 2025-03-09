@@ -59,7 +59,7 @@ Beware the menu and button states dont update each other tough
 - [x] Manage entities
 - [x] Spawn units
 - [x] Unit actions
-- [ ] Process a minimal turn
+- [ ] Process a minimal turn (WIP)
 - [ ] Cities that can build something
 - ![ ] Basic UI element (WIP)
 - [x] Movement for units both pathfinded and weighted + UI
@@ -72,7 +72,8 @@ Beware the menu and button states dont update each other tough
 - [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
 - [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
 - [Changelog](CHANGELOG.md) - Automatically generated changelog.
-- [File Structure](Meta/structure.md) - The project structure
+- [File Structure](meta/structure.md) - The project structure
+- [Todo](meta/todo.md) - Things that still need to be done in current codebase.
 
 <details>
 
