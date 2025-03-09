@@ -46,6 +46,10 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 - `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 
+- `game.gameplay.tiles.ownership_change` (E: manager-world)
+- `game.gameplay.city.requests_tile` (E: city | L: manager-world)
+- `game.gameplay.city.gets_tile_ownership` (E: manager-world | L:city)
+
 ### Units
 
 - `unit.action.move.visiting_tile` (E: BaseTile | L: manager-ui)
