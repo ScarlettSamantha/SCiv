@@ -1,6 +1,7 @@
 # SCiv
 
 > 🚨 **Warning:** This project is in a very early development phase and is likely not functional yet. It may lack gameplay elements and is currently focused on testing raw system implementations.
+
 > ⚠️ **Danger:** This code is highly dynamic and can be vulnerable to arbitrary remote code execution if modified or when using downloaded files. Malicious actors could exploit this to run harmful code(*!There is no sandbox!*). Be extremely cautious and only load trusted, verified sources.
 
 ## Running it
@@ -46,6 +47,10 @@ Beware the menu and button states dont update each other tough
 
 ## Project
 
+> Structure [Project Structure](meta/structure.md)
+
+> Improvements/ToDo's [TODO](meta/todo.md)
+
 ### 0.1.0 Goals
 
 - [x] Have world render
@@ -67,7 +72,7 @@ Beware the menu and button states dont update each other tough
 - [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
 - [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
 - [Changelog](CHANGELOG.md) - Automatically generated changelog.
-- [File Structure](https://github.com/ScarlettSamantha/openciv-meta/blob/main/File%20Structure.md) - The project structure
+- [File Structure](Meta/structure.md) - The project structure
 
 <details>
 
