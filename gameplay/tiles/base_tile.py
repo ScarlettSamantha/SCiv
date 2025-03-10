@@ -666,7 +666,9 @@ class BaseTile(BaseEntity):
     def addTileYield(self, tileYield: TileYield) -> None:
         self.tile_yield.values += tileYield  # type: ignore
 
-    def tileYield(self) -> TileYieldModifier:
+    def get_tile_yield(self, calculate_yield: bool = False) -> TileYieldModifier:
+        if calculate_yield:
+            self.calculate_tile_yield()
         return self.tile_yield
 
     def get_resources(self) -> Resources:
