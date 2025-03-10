@@ -1,33 +1,33 @@
+import pathlib
 from logging import Logger
-from direct.showbase.ShowBase import ShowBase
+
+import simplepbr
 from direct.showbase.Messenger import Messenger
-from lights import setup_lights
+from direct.showbase.ShowBase import ShowBase
+from panda3d.core import load_prc_file
+
 from camera import CivCamera
-
-from managers.log import LogManager
-from managers.unit import Unit
-
-from managers.input import Input
+from helpers.cache import Cache
+from lights import setup_lights
 from managers.config import ConfigManager
 from managers.i18n import _i18n, set_i18n
-
-import pathlib
-import simplepbr
-from panda3d.core import ClockObject, load_prc_file
+from managers.input import Input
+from managers.log import LogManager
+from managers.unit import Unit
 
 
 class Openciv(ShowBase):
     def __init__(
         self,
     ):
-        from managers.world import World
         from managers.ui import ui
+        from managers.world import World
 
         # config_mgr must be applied BEFORE ShowBase to set up prc data
         ShowBase.__init__(self)
         simplepbr.init()
         self.disableMouse()
-
+        Cache.set_showbase_instance(self)
         # Base messenger object from panda3d
         self.messenger: Messenger = Messenger()
 
@@ -88,8 +88,6 @@ class Openciv(ShowBase):
 
 
 if __name__ == "__main__":
-    globalClock = ClockObject.getGlobalClock()  # Removes frame sync
-    globalClock.setFrameRate(144)
     load_prc_file("config.prc")
     app = Openciv()
 
