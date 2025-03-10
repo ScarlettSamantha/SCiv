@@ -117,8 +117,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
                 raise AssertionError("City UI is not initialized.")
 
             self.showing_city = city
-            self.city_ui.city_label.text = city.name
-            self.get_city_ui().show()
+            self.get_city_ui().show(city=city)
         else:
             if not self.get_city_ui().is_hidden():
                 self.showing_city = None
@@ -220,7 +219,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         return self.player_turn_control.build_debug_frame()
 
     def build_city_ui(self) -> BoxLayout:
-        self.city_ui = CityUI(base=self._base, name="City", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
+        self.city_ui = CityUI(base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
         result = self.city_ui.build()
         self.city_ui.hide()
         return result
