@@ -241,6 +241,7 @@ class Game(Singleton):
         self.base.messenger.send("game.state.true_game_start")
         self.logger.info("Game start complete")
         self.ui.post_game_start()
+        self.camera.recenter()
 
     def process_turn(self):
         if self.turn is None:
