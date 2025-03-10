@@ -2,8 +2,9 @@ from logging import Logger
 from os.path import dirname, join, realpath
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
+from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
+from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
 
 from gameplay._units import Units
 from gameplay.city import City
@@ -15,6 +16,7 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile_yield_modifier import TileYield, TileYieldModifier
 from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
+from helpers.colors import Colors, Tuple4f
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from managers.player import Player, PlayerManager
@@ -154,6 +156,9 @@ class BaseTile(BaseEntity):
         self.texture_card: Optional[NodePath] = None
         self.texture_card_texture: Optional[NodePath] = None
 
+        self.city_name_group: Optional[NodePath] = None
+        self.city_name_texture_card_texture: Optional[NodePath] = None
+
         self.inherit_passability_from_terrain: bool = True
 
         # We configure base tile yield mostly just for debugging.
@@ -256,6 +261,11 @@ class BaseTile(BaseEntity):
     def create_root_ui_node(self) -> None:
         self.texture_card = CardMaker(f"resource_icon_{self.id}")
         self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+
+        self.city_name_group = NodePath("city_name_group")
+        self.city_name_group.reparentTo(self.models[0])
+        self.city_name_group.setCollideMask(BitMask32.bit(0))
+
         self.tile_icon_group = NodePath("tile_icon_group")
         self.tile_icon_group.reparentTo(self.models[0])
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))
@@ -264,6 +274,94 @@ class BaseTile(BaseEntity):
         messenger.send("unit.action.move.visiting_tile", [unit, self])
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
+
+    def add_city_name(self) -> None:
+        if self.city is None:
+            return
+
+        if not hasattr(self, "tile_icon_group"):
+            self.create_root_ui_node()
+
+        if self.city_name_group is None:
+            raise AssertionError("City name group not created.")
+
+        city_text = TextNode("city_name_text")
+        city_text.setText(self.city.name)
+
+        # Load the font
+        font = self.base.loader.load_font("assets/fonts/Washington.ttf")
+        if font:
+            font.setPolyMargin(0.01)  # Improve clarity
+            try:
+                font.setPixelsPerUnit(250)  # Improve clarity
+            except AssertionError:
+                pass  # For some reason some letters are not showing up. This is a workaround. they are replaced with []
+            city_text.setFont(font)
+
+        # Load and verify texture
+        texture = self.base.loader.load_texture("assets/city_name_border.png")
+        if not texture:
+            raise RuntimeError("Failed to load city name border texture.")
+        city_text.setCardTexture(texture)
+
+        # Set text appearance
+        text_color: Tuple4f = Colors.WHITE if self.city.player is None else self.city.player.color
+        city_text.setTextColor(*text_color)
+        city_text.setAlign(TextNode.ACenter)
+        city_text.setCardDecal(True)
+
+        if self.city.is_capital:
+            city_text.setCardAsMargin(0.5, 0.2, 0.25, 0.25)
+        else:
+            city_text.setCardAsMargin(0.3, 0.3, 0.25, 0.25)
+
+        city_np = self.city_name_group.attachNewNode(city_text)
+
+        city_np.setPos(0, 0, 2.8)  # Position it above the city
+        city_np.setHpr((0, 45, 0))
+
+        # Ensure a fixed card size
+        card_size = 1.0  # Keep the card size fixed
+        city_np.setScale(card_size)
+
+        # Handle text overflow by adjusting text scale
+        max_width = 2.0  # Max width the text should fit within
+        base_font_size = 1.0  # Default font scale
+
+        text_width = city_text.getWidth()
+        if text_width > max_width:
+            text_scale = max_width / text_width
+        else:
+            text_scale = base_font_size
+
+        city_text.set_glyph_scale(text_scale)  # type: ignore
+
+        # Ensure visibility and proper rendering
+        city_np.setTransparency(True)
+        city_np.setCollideMask(BitMask32.bit(0))
+        city_np.setBin("fixed", 50)
+        city_np.setDepthWrite(True)
+        city_np.setDepthTest(True)
+        city_np.setTwoSided(True)
+        city_np.setAntialias(AntialiasAttrib.MAuto)
+        city_np.set_billboard_point_eye()  # Always face the camera.
+
+        # If the city is the capital, add an icon before the name
+        if self.city.is_capital:
+            capital_icon = OnscreenImage(image="assets/icons/capital_icon.png")
+            capital_icon.reparentTo(city_np)
+            capital_icon.setScale(0.2)  # Adjust size as needed
+            capital_icon.set_antialias(AntialiasAttrib.MAuto)  # type: ignore
+            capital_icon.setTransparency(True)
+
+            capital_icon.setBin("fixed", 51)  # Higher than text
+            capital_icon.setDepthWrite(False)
+            capital_icon.setDepthTest(False)
+            capital_icon.setPos(-1.25, 0.265, 0)
+
+        # Ensure the city_name_group is reparented to a visible node.
+        if self.models:
+            self.city_name_group.reparentTo(self.models[0])
 
     def add_icon_to_tile(self) -> None:
         """
@@ -409,6 +507,9 @@ class BaseTile(BaseEntity):
             self._render_default_terrain()
         self.calculate_tile_yield()
 
+        if self.city is not None:
+            self.add_city_name()
+
     def calculate_tile_yield(self) -> None:
         self.tile_yield.calculate()
 
@@ -426,27 +527,7 @@ class BaseTile(BaseEntity):
         hex_model: NodePath = self.base.loader.loadModel(full_model_path)
         if hex_model is None:
             raise AssertionError(f"Model not found: {full_model_path}")
-        # For each texture in the model, reload it using its full path
-        # but then set the texture's filename back to the original relative path.
-        # texture = hex_model.findAllTextures()[0]
-        # Get the original relative filename from the texture
-        # original_rel_filename = texture.getFilename().getFullpath()
-        # Resolve the texture's full path relative to the model file's directory
-        # full_texture_path = realpath(
-        #    join(dirname(full_model_path), original_rel_filename)
-        # )
 
-        # if not os.path.exists(full_model_path):
-        #    raise OSError(f"Texture file not found: {full_texture_path}")
-
-        # Load the texture using its full path
-        # new_texture = self.base.loader.loadTexture(full_model_path)
-        # Restore the original filename (relative) on the texture object
-        # new_texture.setFilename(original_rel_filename)
-        # Replace the old texture with the newly loaded one
-        # hex_model.setTexture(new_texture, 1)
-
-        # Apply consistent styling.
         hex_model.setScale(0.48)
         hex_model.setHpr(270, 0, 0)
 
@@ -678,6 +759,7 @@ class BaseTile(BaseEntity):
 
         if self.city is not None:
             data["city"] = {
+                "city_name": self.city.name,
                 "owned_tiles": ",".join(str(tile.tag) for tile in self.city.owned_tiles if tile.tag is not None),
                 "population": self.city.population,
                 "is_capital": self.city.is_capital,
@@ -707,8 +789,14 @@ class BaseTile(BaseEntity):
             capital = len(player.cities) == 0
 
         self.city = City.found_new(
-            name="Test city", owner=player, tile=self, population=population, is_capital=capital, auto_claim_radius=1
+            name=player.civilization.get_city_name(),
+            owner=player,
+            tile=self,
+            population=population,
+            is_capital=capital,
+            auto_claim_radius=1,
         )
+
         self.unrender_model(0)
         self.setTerrain(CityTerrain())
         self.owner = player
@@ -719,6 +807,7 @@ class BaseTile(BaseEntity):
         self.owner.capital = self.city
 
         self._render_default_terrain()
+        self.add_city_name()
         return True
 
     def get_cords(self) -> Tuple[float, float, float]:

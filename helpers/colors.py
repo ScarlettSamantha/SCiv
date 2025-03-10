@@ -19,6 +19,7 @@ class Colors:
     ORANGE: Tuple4f = (1, 0.5, 0, 1)
     PURPLE: Tuple4f = (0.5, 0, 1, 1)
     GREY: Tuple4f = (0.5, 0.5, 0.5, 1)
+    WHITE: Tuple4f = (1, 1, 1, 1)
 
     COLORS: List[Tuple4f] = [
         RED,
