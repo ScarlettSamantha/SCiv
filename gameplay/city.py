@@ -115,6 +115,7 @@ class City(BaseEntity):
         instance.player = owner
         instance.population = population
         instance.is_capital = is_capital
+        instance.player.add_city(instance)
         tile.city = instance
         tile.city_owner = instance
 
