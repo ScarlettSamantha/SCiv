@@ -1,3 +1,4 @@
+from logging import Logger
 from math import cos, pi, sin
 from typing import TYPE_CHECKING, Tuple
 
@@ -21,12 +22,15 @@ class CivCamera(Singleton):
     def __init__(self, base: "Openciv"):
         self.base: "Openciv" = base
         self.active = True
+        self.logger: Logger = self.base.logger.engine.getChild("camera")
 
         # Zoom parameters
         self.zoom = 20.0
         self.min_zoom = 2.0
         self.max_zoom = 50.0
         self.zoom_speed = 2.0
+
+        self.zoom_enabled: bool = True
 
         # Optional pitch
         self.pitch = 45.0  # We'll keep a fixed pitch at 45 degrees
@@ -130,17 +134,34 @@ class CivCamera(Singleton):
         self.base.accept("mouse3", self.start_right_drag)
         self.base.accept("mouse3-up", self.stop_right_drag)
 
+        self.base.accept("system.input.disable_zoom", self.disable_zoom)
+        self.base.accept("system.input.enable_zoom", self.enable_zoom)
+
     def set_key(self, key, value):
         self.keys[key] = value
+
+    def disable_zoom(self):
+        self.logger.debug("Disabling zoom")
+        self.zoom_enabled = False
+
+    def enable_zoom(self):
+        self.logger.debug("Enabling zoom")
+        self.zoom_enabled = True
 
     # -------------------------------------------------------------------------
     #  Zoom
     # -------------------------------------------------------------------------
     def zoom_in(self):
+        if not self.zoom_enabled:
+            return
+
         self.zoom = max(self.min_zoom, self.zoom - self.zoom_speed)
         self.update_camera_position()
 
     def zoom_out(self):
+        if not self.zoom_enabled:
+            return
+
         self.zoom = min(self.max_zoom, self.zoom + self.zoom_speed)
         self.update_camera_position()
 
