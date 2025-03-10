@@ -172,3 +172,9 @@ class Player(BaseEntity):
 
     def get_all_units(self) -> list[weakref.ReferenceType["UnitBaseClass"]]:
         return self.get_units().all()
+
+    def add_city(self, city: City) -> None:
+        self.cities.add(city)
+
+    def remove_city(self, city: City) -> None:
+        self.cities.remove(city)
