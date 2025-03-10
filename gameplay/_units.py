@@ -19,3 +19,6 @@ class Units(Generic[T]):
 
     def __len__(self):
         return len(self.units)
+
+    def all(self) -> List[T]:
+        return self.units
