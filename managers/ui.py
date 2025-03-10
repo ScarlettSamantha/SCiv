@@ -15,6 +15,7 @@ from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
+from menus.screens.game_ui import GameUIScreen
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
@@ -95,7 +96,6 @@ class ui(Singleton):
         self._base.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
         self._base.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
         self._base.accept("ui.update.ui.lense_change", self.on_lense_change)
-
         self._base.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self._base.accept("ui.request.open.popup", self.show_draggable_popup)
@@ -292,6 +292,12 @@ class ui(Singleton):
 
         if tile is None:
             return
+
+        if tile.city is not None and tile.city.player is not None:
+            if PlayerManager.is_session_player(tile.city.player):
+                messenger.send("ui.update.user.city_clicked", [tile.city])
+            else:
+                messenger.send("ui.update.user.enemey_city_clicked", [tile.city])
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
