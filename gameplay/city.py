@@ -6,6 +6,7 @@ from direct.showbase.MessengerGlobal import messenger
 from gameplay.citizens import Citizens
 from gameplay.improvement import Improvement
 from gameplay.improvements import Improvements
+from gameplay.tile_yield_modifier import TileYieldModifier
 from managers.log import LogManager
 from system.entity import BaseEntity
 
@@ -132,3 +133,10 @@ class City(BaseEntity):
                 messenger.send("game.gameplay.city.requests_tile", [instance, neighbour])
 
         return instance
+
+    def calculate_yield_from_tiles(self) -> TileYieldModifier:
+        tile_yields = TileYieldModifier()
+        for tile in self.owned_tiles:
+            tile_yields += tile.get_tile_yield(calculate_yield=True)
+
+        return tile_yields
