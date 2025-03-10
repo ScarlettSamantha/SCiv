@@ -1,3 +1,4 @@
+from time import time
 from typing import TYPE_CHECKING, Dict, Tuple
 
 from gameplay.city import messenger
@@ -16,9 +17,17 @@ class CollisionPreventionMixin:
     tick_rate: float = 0.5  # How often to check for mouse movement
     ui_geometry_update_interval: float = 5.0  # Seconds between UI geometry cache updates
 
-    def __init__(self, base: "Openciv"):
+    def __init__(self, base: "Openciv", disable_zoom: bool = False):
         self._input = Input.get_instance()
         self._base: "Openciv" = base
+
+        self.disable_zoom: bool = disable_zoom
+
+        self.last_raycaster_state = None
+        self.last_zoom_state = None
+
+        self.state_change_cooldown = 0.5  # Minimum time in seconds between state changes
+        self.last_state_change_time = 0.0
 
         if not self.has_tracking_enabled:
             self.enable_tracking()
@@ -80,12 +89,14 @@ class CollisionPreventionMixin:
                 inside_ui = True
                 break  # Stop checking after first detected collision
 
-        if inside_ui:
-            messenger.send("system.input.raycaster_off")
-            self.in_collision_with_ui = True
-        else:
-            messenger.send("system.input.raycaster_on")
-            self.in_collision_with_ui = False
+        current_time = time()
+        if current_time - self.last_state_change_time < self.state_change_cooldown:
+            return  # Prevent rapid toggling
+
+        if inside_ui and not self.in_collision_with_ui:
+            self._set_input_state(raycaster=False, zoom_disabled=self.disable_zoom)
+        elif not inside_ui and self.in_collision_with_ui:
+            self._set_input_state(raycaster=True, zoom_disabled=not self.disable_zoom)
 
     def register_non_collidable(self, element):
         """Adds a UI element to the list of non-collidable UI elements."""
@@ -100,3 +111,17 @@ class CollisionPreventionMixin:
             self.non_collidable_ui.remove(element)
             # Remove element from cache if present
             self.ui_geometry_cache.pop(element, None)
+
+    def _set_input_state(self, raycaster: bool, zoom_disabled: bool):
+        """Changes input state only if necessary, preventing spam."""
+        current_time = time()
+        if self.last_raycaster_state != raycaster:
+            messenger.send("system.input.raycaster_off" if not raycaster else "system.input.raycaster_on")
+            self.last_raycaster_state = raycaster
+
+        if self.disable_zoom and self.last_zoom_state != zoom_disabled:
+            messenger.send("system.input.disable_zoom" if zoom_disabled else "system.input.enable_zoom")
+            self.last_zoom_state = zoom_disabled
+
+        self.in_collision_with_ui = not raycaster
+        self.last_state_change_time = current_time
