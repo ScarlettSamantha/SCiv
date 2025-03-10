@@ -287,20 +287,14 @@ class ui(Singleton):
         self.current_tile = tile
 
         # Colors for selected tile and neighbors
-        colors: List[Tuple[float, float, float, float]] = [Colors.GREEN, Colors.BLUE, Colors.RED]
         colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
 
         self.previous_tiles = self.neighbours_tiles
         self.neighbours_tiles = []
         self.neighbours_tiles = TileRepository.get_neighbors(tile, check_passable=False)
 
-        # Restore colors of previously selected tile and neighbors
-        if self.previous_tile is not None or len(self.previous_tiles) == 0:
-            self.clear_previous_selected_tiles()
-
         if self.show_resources_in_radius:
             self.toggle_tile_icons(tile, small=True, large=True)
-        self.color_tile(tile, colors)
 
         for neighbor in self.neighbours_tiles:
             if self.show_resources_in_radius:
