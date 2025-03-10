@@ -1,5 +1,7 @@
+import weakref
 from typing import TYPE_CHECKING, Literal, Optional, Self
 
+from gameplay._units import Units
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
@@ -164,3 +166,9 @@ class Player(BaseEntity):
     def destroy(self):
         """Player is destroyed or wiped out."""
         self.unregister()
+
+    def get_units(self) -> Units:
+        return self.units
+
+    def get_all_units(self) -> list[weakref.ReferenceType["UnitBaseClass"]]:
+        return self.get_units().all()
