@@ -1,7 +1,6 @@
 from logging import Logger
 from typing import TYPE_CHECKING, List, Optional
 
-from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.citizens import Citizens
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
     from gameplay.tiles.base_tile import BaseTile
 
 
-class City(BaseEntity, DirectObject):
+class City(BaseEntity):
     logger: Logger = LogManager.get_instance().gameplay.getChild("city")
 
     def __init__(self, name: str, tile: "BaseTile", *args, **kwargs):
@@ -54,7 +53,10 @@ class City(BaseEntity, DirectObject):
         self.register()
 
     def register(self):
-        messenger.accept("game.gameplay.city.gets_tile_ownership", self, self.on_tile_ownership_changed)
+        if self.base is None:
+            raise AssertionError("Base is not set.")
+
+        self.base.accept("game.gameplay.city.gets_tile_ownership", self.on_tile_ownership_changed)
 
     def build(self, improvement: Improvement):
         self._improvements.add(improvement)
