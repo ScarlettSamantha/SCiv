@@ -46,7 +46,7 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 - `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 
-- `game.gameplay.tiles.ownership_change` (E: manager-world)
+- `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
 - `game.gameplay.city.requests_tile` (E: city | L: manager-world)
 - `game.gameplay.city.gets_tile_ownership` (E: manager-world | L:city)
 - `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
@@ -60,12 +60,13 @@ These are used by the UI manager to controll some debug actions these may disape
 - `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
 - `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
 - `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
-- `ui.update.user.enemey_city_clicked` (E: manager-ui)
+- `ui.update.user.enemey_city_clicked` (E: manager-ui | L: screen-game-ui)
 - `ui.update.ui.hide_city_ui`
 - `ui.update.ui.show_city_ui`
 - `ui.update.ui.debug_ui_toggle` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.lense_change` (E: ui-debug-actions | L: manager-ui)
+- `ui.update.ui.unit_unselected` (E: manager-ui | L: screen-game-ui)
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 
 ## Sytem
