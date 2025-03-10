@@ -49,6 +49,7 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.gameplay.tiles.ownership_change` (E: manager-world)
 - `game.gameplay.city.requests_tile` (E: city | L: manager-world)
 - `game.gameplay.city.gets_tile_ownership` (E: manager-world | L:city)
+- `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
 
 ### Units
 
@@ -75,3 +76,4 @@ These are used by the UI manager to controll some debug actions these may disape
 - `system.input.raycaster_on` (L: manager-input)
 - `system.input.raycaster_on_delay` (L: manager-input)
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
+- `system.unit.destroyed` (E: unit-base)

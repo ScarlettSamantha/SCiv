@@ -4,6 +4,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
 
 from direct.showbase.Loader import Loader
+from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import BitMask32, LVector3, NodePath
 
@@ -322,7 +323,7 @@ class UnitBaseClass(BaseEntity, ABC):
             "can_pillage": self.can_pillage,
         }
 
-    def destroy(self, *args, **kwargs) -> bool:
+    def destroy(self, as_system: bool = False, *args, **kwargs) -> bool:
         """Removes the unit from the scene and cleans up references."""
         if self.model:
             self.model.removeNode()  # Remove from the scene graph
@@ -340,6 +341,12 @@ class UnitBaseClass(BaseEntity, ABC):
         self.owner = None
         self.actions.clear()
         self.tag = None
+
+        if as_system:
+            messenger.send("system.unit.destroyed", [self])
+        else:
+            messenger.send("game.gameplay.unit.destroyed", [self])
+
         return True
 
     @classmethod
