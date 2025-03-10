@@ -8,7 +8,9 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 
 from gameplay.city import City
+from gameplay.tile_yield_modifier import TileYieldModifier
 from menus.kivy.elements.clipping import ClippingScrollList
+from menus.kivy.elements.image_label import ImageLabel
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 
@@ -43,6 +45,12 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.actions_scroll: Optional[ScrollView] = None
         self.actions_label: Optional[Label] = None
 
+        self.gold_label: Optional[ImageLabel] = None
+        self.production_label: Optional[ImageLabel] = None
+        self.food_label: Optional[ImageLabel] = None
+        self.science_label: Optional[ImageLabel] = None
+        self.culture_label: Optional[ImageLabel] = None
+
         self.add_widget(self.build())
 
     def set_city(self, city: City):
@@ -67,6 +75,22 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         if self.player_label is not None and self.city.player is not None:
             self.player_label.text = f"Player: {str(self.city.player.name)}"
+
+        if (
+            self.gold_label is not None
+            and self.production_label is not None
+            and self.food_label is not None
+            and self.science_label is not None
+            and self.culture_label is not None
+        ):
+            tile_yield_modifier: TileYieldModifier = self.city.calculate_yield_from_tiles()
+            tile_yield = tile_yield_modifier.calculate()
+
+            self.gold_label.set_text(f"Gold: {tile_yield.gold.value}")
+            self.production_label.set_text(f"Production: {tile_yield.production.value}")
+            self.food_label.set_text(f"Food: {tile_yield.food.value}")
+            self.science_label.set_text(f"Science: {tile_yield.science.value}")
+            self.culture_label.set_text(f"Culture: {tile_yield.culture.value}")
 
     def build(self) -> BoxLayout:
         self.background_color = (0, 0, 0, 1)  # Black background
@@ -137,7 +161,50 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.frame.add_widget(clipping_container)
 
         # Footer (Bottom section)
-        self.footer = BoxLayout(orientation="horizontal", size_hint=(1, None), height=80, spacing=10)
+        self.footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
+
+        self.gold_label = ImageLabel(
+            text="Gold: ?",
+            img_source="assets/icons/resources/core/basic/gold.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
+        )
+        self.production_label = ImageLabel(
+            text="Production: ?",
+            img_source="assets/icons/resources/core/basic/production.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
+        )
+        self.food_label = ImageLabel(
+            text="Food: ?",
+            img_source="assets/icons/resources/core/basic/food.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
+        )
+        self.science_label = ImageLabel(
+            text="Science: ?",
+            img_source="assets/icons/resources/core/basic/science.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
+        )
+        self.culture_label = ImageLabel(
+            text="Culture: ?",
+            img_source="assets/icons/resources/core/basic/culture.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
+        )
+
+        self.footer.add_widget(self.gold_label)
+        self.footer.add_widget(self.production_label)
+        self.footer.add_widget(self.food_label)
+        self.footer.add_widget(self.science_label)
+        self.footer.add_widget(self.culture_label)
+
         self.frame.add_widget(self.footer)
 
         return self.frame
