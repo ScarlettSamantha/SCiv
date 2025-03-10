@@ -70,7 +70,7 @@ class World(Singleton):
     def get_grid(self) -> Dict[Tuple[int, int], "BaseTile"]:
         return self.grid
 
-    def set_ownership_of_tile(self, tile: "BaseTile", player: Player):
+    def set_ownership_of_tile(self, tile: "BaseTile", player: Player, city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
         old_owner: Optional[Player] = tile.owner
         if old_owner is not None:
@@ -83,10 +83,11 @@ class World(Singleton):
         player.tiles.add(tile)
         tile.owner = player
 
-        if tile.city is not None and not player.cities.has(tile.city):  # We don't want to add the city twice
+        if city is not None:  # We don't want to add the city twice
             self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
-            player.cities.add(tile.city)  # Add the city to the player's cities as its a claim on the tile
-            tile.city.player = player
+            player.cities.add(city)  # Add the city to the player's cities as its a claim on the tile
+            city.player = player
+            city.owned_tiles.append(tile)
 
         self.logger.info(f"Tile {tile} is now owned by {player}, sending message.")
         messenger.send("game.gameplay.tiles.ownership_changed", [tile, player, old_owner])
@@ -114,7 +115,7 @@ class World(Singleton):
 
         if can_own_tile:
             self.logger.info(f"City {city.name} can own tile {tile.tag}.")
-            self.set_ownership_of_tile(tile, city.player)
+            self.set_ownership_of_tile(tile, city.player, city)
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
             self.base.messenger.send(

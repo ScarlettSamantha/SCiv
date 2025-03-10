@@ -804,7 +804,6 @@ class BaseTile(BaseEntity):
         self.setTerrain(CityTerrain())
         self.owner = player
         self.owner.tiles.add_tile(self)
-        self.owner.cities.add(self.city)
         if self.owner.capital is not None:  # we have a capital
             self.owner.capital.de_capitalize()  # We tell the current capital to de-capitalize so it can be done with something in the future, for now its just a property set.
         self.owner.capital = self.city
