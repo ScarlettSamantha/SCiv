@@ -88,13 +88,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def register(self):
         self.logger.info("Registering event listeners.")
+
         self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
         self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
         self._base.accept("ui.update.user.city_clicked", self.process_city_click)
+        self._base.accept("ui.update.user.enemey_city_clicked", self.process_enemy_city_click)
+
         self._base.accept("ui.update.ui.unit_unselected", self.clear_action_bar)
+
         self._base.accept("system.unit.destroyed", self.clear_action_bar)
         self._base.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
-        self._base.accept("ui.update.user.enemey_city_clicked", self.process_enemy_city_click)
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
@@ -104,14 +107,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def process_enemy_city_click(self, city: Any):
         self.popup("enemy_city_selected", "Enemy City", f"City: {city.name}\nOwner: {city.player.name}")
+        if self.city_ui is not None and not self.city_ui.is_hidden():
+            self.showing_city = None
+            self.get_city_ui().hide()
 
     def process_city_click(self, city: Any):
         if self.showing_city is None or city != self.showing_city:
-            self.showing_city = city
-
             if self.city_ui is None or self.city_ui.city_label is None:
                 raise AssertionError("City UI is not initialized.")
 
+            self.showing_city = city
             self.city_ui.city_label.text = city.name
             self.get_city_ui().show()
         else:
