@@ -1,5 +1,10 @@
-from math import pi, cos, sin
+from math import cos, pi, sin
+from typing import TYPE_CHECKING, Tuple
+
 from mixins.singleton import Singleton
+
+if TYPE_CHECKING:
+    from main import Openciv
 
 
 class CivCamera(Singleton):
@@ -13,8 +18,8 @@ class CivCamera(Singleton):
       - WASD/arrow keys => optional panning
     """
 
-    def __init__(self, base):
-        self.base = base
+    def __init__(self, base: "Openciv"):
+        self.base: "Openciv" = base
         self.active = True
 
         # Zoom parameters
@@ -174,10 +179,31 @@ class CivCamera(Singleton):
         Recenter camera pivot on target or (0,0,0),
         and optionally reset yaw/zoom.
         """
-        self.reset_pivot_position()
-        # Reset orientation/zoom if desired:
-        self.yaw = 0.0
-        self.zoom = 20.0
+        from managers.game import PlayerManager
+
+        center: Tuple[float, float, float] = (0, 0, 0)
+        # Determine correct center first
+        if PlayerManager.if_has_capital():
+            capital = PlayerManager.player().capital
+            if capital is None:
+                return
+            tile = capital.tile.get_pos()
+            center = (tile[0], tile[1], 0)
+        elif len((units := PlayerManager.session_player().get_all_units())) > 0:
+            unit = units[0]()
+            if unit is not None and unit.tile is not None:
+                center = unit.tile.get_pos()
+                center = (center[0], center[1], 0)
+        else:
+            center = self.target.getPos() if self.target else (0, 0, 0)
+
+        # Move pivot only once to prevent flickering
+        self.pivot.setPos(center)
+
+        # Reset the camera's rotation but keep yaw
+        self.base.camera.setHpr(0, self.pitch, 0)  # Reset heading & roll, keep default pitch
+        self.yaw = 0  # Reset yaw
+        self.zoom = 20.0  # Reset zoom
         self.update_camera_position()
 
     # -------------------------------------------------------------------------
