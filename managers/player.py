@@ -1,9 +1,8 @@
-from managers.base import BaseManager
-from gameplay.player import Player
-
 from typing import Dict, Optional
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
+from gameplay.player import Player
+from managers.base import BaseManager
 
 
 class PlayerManager(BaseManager):
@@ -22,9 +21,7 @@ class PlayerManager(BaseManager):
     @classmethod
     def add(cls, player: Player, is_session: bool = False) -> None:
         if cls.turn_exists(player.turn_order):
-            raise InvalidPregameCondition(
-                f"Player with turn order {player.turn_order} already exists."
-            )
+            raise InvalidPregameCondition(f"Player with turn order {player.turn_order} already exists.")
         cls._players[player.turn_order] = player
         if is_session:
             cls._session_player = player
@@ -57,3 +54,7 @@ class PlayerManager(BaseManager):
     @classmethod
     def get_nature(cls) -> Optional[Player]:
         return cls._nature_player
+
+    @classmethod
+    def is_session_player(cls, player: Player) -> bool:
+        return cls._session_player == player
