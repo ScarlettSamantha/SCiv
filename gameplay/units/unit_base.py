@@ -269,13 +269,19 @@ class UnitBaseClass(BaseEntity, ABC):
         else:
             model.setCollideMask(BitMask32.allOff())
 
-        self.tag = f"unit_{self.key}_{random.randint(0, 10000)}"
+        self.tag = self.generate_unit_tag()
         model.setTag("tile_id", self.tag)
         model.reparentTo(self.base.render)  # Attach model to scene graph
 
         self.register()
 
         return model
+
+    def generate_unit_tag(self) -> str:
+        if self.owner is not None:
+            return f"unit_{self.owner.id}_{self.key}_{random.randint(0, 1000000)}"
+        else:
+            return f"unit_{self.key}_{random.randint(0, 1000000)}"
 
     def tile_is_occupiable(self, tile: "BaseTile") -> bool:
         return tile.is_passable()
