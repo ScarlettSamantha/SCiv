@@ -10,7 +10,8 @@ class Cities:
         self._cities: List[City] = []
 
     def add(self, value: City) -> None:
-        self._cities.append(value)
+        if value not in self._cities:
+            self._cities.append(value)
 
     def remove(self, value: City, auto_destroy: bool = True) -> None:
         self._cities.remove(value)
