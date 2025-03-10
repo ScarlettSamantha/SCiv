@@ -76,5 +76,7 @@ These are used by the UI manager to controll some debug actions these may disape
 - `system.input.raycaster_off` (L: manager-input)
 - `system.input.raycaster_on` (L: manager-input)
 - `system.input.raycaster_on_delay` (L: manager-input)
+- `system.input.disable_zoom` (E: collision-mixin | L: camera)
+- `system.input.enable_zoom` (E: collision-mixin | L: camera)
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
 - `system.unit.destroyed` (E: unit-base)
