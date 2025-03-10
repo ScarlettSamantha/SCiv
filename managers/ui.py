@@ -114,6 +114,16 @@ class ui(Singleton):
         self._base.accept("game.state.true_game_start", self.post_game_start)
         return True
 
+    def get_main_game_ui(self) -> GameUIScreen:
+        return self.get_gui().get_screen_manager().get_screen("game_ui")
+
+    def on_unit_destroyed(self, unit: UnitBaseClass):
+        messenger.send("ui.update.ui.unit_unselected", [unit])
+        if unit == self.current_unit:
+            self.current_unit = None
+        if unit == self.previous_unit:
+            self.previous_unit = None
+
     def show_draggable_popup(
         self,
         id: str,
