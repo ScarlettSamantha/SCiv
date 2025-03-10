@@ -91,6 +91,7 @@ class BaseGenerator(ABC):
                 leader=None,  # None means it will pick from its own list of registered leaders
                 turn_order=i,
             )
+            player.id = str(i)
 
             players.append(player)
             PlayerManager.add(player, i == 0)
