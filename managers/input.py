@@ -1,24 +1,55 @@
-from panda3d.core import (
-    CollisionRay,
-    CollisionNode,
-    CollisionTraverser,
-    CollisionHandlerQueue,
-    BitMask32,
-)
-from typing import Any
-from mixins.singleton import Singleton
+from typing import TYPE_CHECKING, Any, Optional
+
+from direct.interval.IntervalGlobal import Func, Sequence, Wait
 from direct.showbase.MessengerGlobal import messenger
+from panda3d.core import (
+    BitMask32,
+    CollisionHandlerQueue,
+    CollisionNode,
+    CollisionRay,
+    CollisionTraverser,
+)
+
+from mixins.singleton import Singleton
+
+if TYPE_CHECKING:
+    from main import Openciv
 
 
 class Input(Singleton):
-    def __init__(self, base):
-        self.base: Any = base
+    def __init__(self, base: "Openciv"):
+        self.base: "Openciv" = base
         self.active: bool = False
+        self.sequence: Optional[Sequence] = None
+
+        self.logger = self.base.logger.engine.getChild("manager.input")
+
+        self.register()
+
+    def register(self):
+        """
+        Bind relevant mouse or keyboard events here.
+        """
+        # Left-click
+        self.base.accept("mouse1", self.pick_object)
+
+        # Escape key
+        self.base.accept("escape", self.on_escape)
+
+        self.base.accept("system.input.raycaster_on", self.activate)
+        self.base.accept("system.input.raycaster_off", self.de_activate)
+        self.base.accept("system.input.raycaster_on_delay", self.delay_activate)
+
+    def delay_activate(self, delay: int | float):
+        self.sequence = Sequence(Wait(delay), Func(self.activate))
+        self.sequence.start()
 
     def de_activate(self):
+        self.logger.info("Deactivating input raycaster.")
         self.active = False
 
     def activate(self):
+        self.logger.info("Activating input raycaster.")
         self.active = True
 
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
@@ -70,18 +101,8 @@ class Input(Singleton):
 
             return picked_obj
         else:
-            print("No object picked. Possibly between tiles or outside the game field.")
+            self.logger.debug("No object picked. Possibly between tiles or outside the game field.")
             return None
-
-    def register(self):
-        """
-        Bind relevant mouse or keyboard events here.
-        """
-        # Left-click
-        self.base.accept("mouse1", self.pick_object)
-
-        # Escape key
-        self.base.accept("escape", self.on_escape)
 
     def on_escape(self):
         """
