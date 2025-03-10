@@ -206,6 +206,9 @@ class BaseTile(BaseEntity):
     def generate_tag(cls, x: int, y: int) -> str:
         return f"tile_{x}_{y}"
 
+    def get_pos(self) -> Tuple[float, float, float]:
+        return self.pos_x, self.pos_y, self.pos_z
+
     def __repr__(self) -> str:
         return f"{self.id}@{self.x},{self.y}"
 
