@@ -9,7 +9,7 @@ from direct.showbase.ShowBase import ShowBase
 from panda3d.core import BitMask32, LVector3, NodePath
 
 from gameplay.combat.stats import Stats
-from managers.i18n import T_TranslationOrStr, t_
+from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from system.actions import Action
 from system.entity import BaseEntity
@@ -95,10 +95,10 @@ class UnitBaseClass(BaseEntity, ABC):
         self.can_attack: bool = True
         self.can_heal: bool = True
         self.can_pillage: bool = True
-        self._register()
 
-    def _register(self):
-        self.add_action(Action(name=t_("actions.unit.self_destroy"), action=self.destroy))
+        self.register_actions()
+
+    def register_actions(self): ...
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType

@@ -84,7 +84,7 @@ class Settler(CoreCivilianBaseClass):
             return False
         return True
 
-    def _register(self):
+    def register_actions(self):
         from gameplay.actions.unit.found import FoundAction
 
         self.actions.append(FoundAction(self))
@@ -93,4 +93,4 @@ class Settler(CoreCivilianBaseClass):
 
         self.actions.append(WalkAction(self))
 
-        return super()._register()
+        super().register_actions()
