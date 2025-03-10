@@ -44,10 +44,10 @@ class Spain(Civilization):
         from gameplay.leaders.charles_v import CharlesV
         from gameplay.leaders.isabella import Isabella
         from gameplay.leaders.james import James
-        from gameplay.leaders.phillip import Phillip
+        from gameplay.leaders.philip import Philip
 
         self.add_leader(Isabella())
         self.add_leader(CharlesV())
         self.add_leader(CharlesIII())
         self.add_leader(James())
-        self.add_leader(Phillip())
+        self.add_leader(Philip())
