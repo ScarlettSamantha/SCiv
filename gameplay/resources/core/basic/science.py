@@ -11,6 +11,7 @@ class Science(BasicBaseResource):
     description: T_TranslationOrStr = _t("content.resources.core.science.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount: float | Tuple[float, float] = 0
+    icon: str = "assets/icons/resources/core/basic/science.png"
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
