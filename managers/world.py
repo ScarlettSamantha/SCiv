@@ -116,7 +116,7 @@ class World(Singleton):
             self.logger.info(f"City {city.name} can own tile {tile.tag}.")
             self.set_ownership_of_tile(tile, city.player)
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
-            city.on_tile_ownership_changed(city, tile)
+
             self.base.messenger.send(
                 "game.gameplay.city.gets_tile_ownership",
                 [city, tile],
