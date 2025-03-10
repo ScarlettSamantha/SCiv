@@ -1,5 +1,7 @@
-from managers.input import Input
 from typing import TYPE_CHECKING
+
+from gameplay.city import messenger
+from managers.input import Input
 
 if TYPE_CHECKING:
     from main import Openciv
@@ -9,7 +11,7 @@ class CollisionPreventionMixin:
     non_collidable_ui = []
     has_tracking_enabled: bool = False
     in_collision_with_ui: bool = False
-    tick_rate: float = 0.25  # How often to check for mouse movement
+    tick_rate: float = 0.5  # How often to check for mouse movement
 
     def __init__(self, base: "Openciv"):
         self._input = Input.get_instance()
@@ -58,7 +60,12 @@ class CollisionPreventionMixin:
                 inside_ui = True
                 break  # Stop checking after first detected collision
 
-        self._input.active = not inside_ui
+        if inside_ui:
+            messenger.send("system.input.raycaster_off")
+            self.in_collision_with_ui = True
+        else:
+            messenger.send("system.input.raycaster_on")
+            self.in_collision_with_ui = False
 
     def register_non_collidable(self, element):
         """Adds a UI element to the list of non-collidable UI elements."""
