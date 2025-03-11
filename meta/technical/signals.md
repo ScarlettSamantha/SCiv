@@ -42,15 +42,20 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.input.user.quit_game` (E: ui-main-menu, E: ui-pause-menu | L: manager-game)
 - `game.input.user.wireframe_toggle` (E:NONE | L: manager-game)
 - `game.state.true_game_start` (E: manager-game | L: manager-ui)
+
 - `game.turn.request_end` (E:ui-player-turn-control | L:manager-turn)
 - `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
+- `game.turn.process_city` (E:manager-turn | L: city)
 - `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
 - `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
 
-- `game.gameplay.city.request_start_building_improvement` (E: ui-part-city)
+- `game.gameplay.city.request_start_building_improvement` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_improvement` (E: city | L: ui-part-city)
+- `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
+- `game.gameplay.city.population_grow` (E: city)
+- `game.gameplay.city.population_starve` (E: city | L: manager-ui)
 - `game.gameplay.city.requests_tile` (E: city | L: manager-world)
 - `game.gameplay.city.gets_tile_ownership` (E: manager-world | L:city)
 
