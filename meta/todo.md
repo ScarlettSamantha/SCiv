@@ -6,8 +6,8 @@ These are not features more things that exist right now and needs to be done som
 
 ## De-integrate
 
-- [ ] Delete/Refactor: system/saving.py
-- [ ] Delete/Implement(?): managers/assets.py
+- [ ] Delete and de-implement/~~Refactor~~: system/saving.py
+- [x] ~~Delete~~/Implement(?): managers/assets.py (@after: Implemented it as a proper asset manager and cache)
 
 ## CI/CD
 
@@ -15,13 +15,16 @@ These are not features more things that exist right now and needs to be done som
 
 ## Refactors
 
-- [ ] Move lights.py to a system ?
-- [ ] Move camera.py to a system ?
+- [ ] Move lights.py to a system type class?
+- [ ] Move camera.py to a system type class?
 - [ ] Remove old classes from old engine.
 - [ ] Move more logic from main into the game manager of possible.
+- [ ] Rename tileyield to something more generic as its used as the generic resource container
 
 ## Improvements
 
 - [ ] Add crash handler for sending back debug crash data.
 - [ ] Make it so player cant controll enemy units, its already aware what enemy units are and whats its own.
 - [x] Colidable mixin should not calculate geometry of ui elements every tick but every few ticks
+- [ ] Refactor class file into a non-colision and better named.
+- [ ] Cities need to check if they are buildable and not to close to other cities.
