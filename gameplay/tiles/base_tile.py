@@ -168,7 +168,7 @@ class BaseTile(BaseEntity):
                 gold=0.0,
                 production=1.0,
                 science=0.0,
-                food=0.0,
+                food=1.0,
                 culture=0.0,
                 housing=0.0,
             ),
