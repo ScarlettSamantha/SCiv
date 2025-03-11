@@ -1,14 +1,16 @@
-from typing import Self, List
-from gameplay.effect import Effects, Effect
-from gameplay.leader import Leader
-from managers.i18n import T_TranslationOrStr
 from abc import abstractmethod
 from random import choice
+from typing import List, Self
+
+from gameplay.effect import Effect, Effects
+from gameplay.leader import Leader
+from managers.i18n import T_TranslationOrStr
 
 
 class Civilization:
     name: T_TranslationOrStr = ""
     description: T_TranslationOrStr = ""
+    city_names: List[T_TranslationOrStr] = []
 
     def __init__(
         self,
@@ -20,6 +22,7 @@ class Civilization:
 
         self._effects: Effects = Effects()
         self.leader: Leader | None = None
+        self.city_name_index: int = 0
 
         # Init registers
         self.register_effects()
@@ -52,6 +55,17 @@ class Civilization:
 
     def random_leader(self) -> Leader:
         return choice(self.leaders)
+
+    def get_city_name(self) -> str:
+        return str(self.get_city_name_translation())
+
+    def get_city_name_translation(self) -> T_TranslationOrStr:
+        city_name = self.city_names[self.city_name_index]
+        if self.city_name_index < len(self.city_names) - 1:
+            self.city_name_index = 0  # Reset to 0 as we have reached the end of the list
+        else:
+            self.city_name_index += 1
+        return city_name
 
     def __str__(self) -> str:
         leader_name_list: List[str] = []

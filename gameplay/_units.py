@@ -1,6 +1,7 @@
-from typing import List, Generic, TypeVar
-from gameplay.units.unit_base import UnitBaseClass
+from typing import TYPE_CHECKING, Generic, List, TypeVar
 
+if TYPE_CHECKING:
+    from gameplay.units.unit_base import UnitBaseClass
 
 T = TypeVar("T", bound="UnitBaseClass")
 
@@ -18,3 +19,6 @@ class Units(Generic[T]):
 
     def __len__(self):
         return len(self.units)
+
+    def all(self) -> List[T]:
+        return self.units

@@ -46,6 +46,11 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 - `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 
+- `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
+- `game.gameplay.city.requests_tile` (E: city | L: manager-world)
+- `game.gameplay.city.gets_tile_ownership` (E: manager-world | L:city)
+- `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
+
 ### Units
 
 - `unit.action.move.visiting_tile` (E: BaseTile | L: manager-ui)
@@ -54,13 +59,24 @@ These are used by the UI manager to controll some debug actions these may disape
 
 - `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
 - `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
+- `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
+- `ui.update.user.enemey_city_clicked` (E: manager-ui | L: screen-game-ui)
+- `ui.update.ui.hide_city_ui`
+- `ui.update.ui.show_city_ui`
 - `ui.update.ui.debug_ui_toggle` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.lense_change` (E: ui-debug-actions | L: manager-ui)
-- `ui.request.open.popup` (E: actions-* | L: manager-ui)
+- `ui.update.ui.unit_unselected` (E: manager-ui | L: screen-game-ui)
+- `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 
 ## Sytem
 
 - `system.input.user.tile_clicked` (E: manager-input | L: manager-game)
 - `system.input.user.unit_clicked` (E: manager-input | L: manager-game)
+- `system.input.raycaster_off` (L: manager-input)
+- `system.input.raycaster_on` (L: manager-input)
+- `system.input.raycaster_on_delay` (L: manager-input)
+- `system.input.disable_zoom` (E: collision-mixin | L: camera)
+- `system.input.enable_zoom` (E: collision-mixin | L: camera)
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
+- `system.unit.destroyed` (E: unit-base)

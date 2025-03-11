@@ -1,5 +1,11 @@
-from math import pi, cos, sin
+from logging import Logger
+from math import cos, pi, sin
+from typing import TYPE_CHECKING, Tuple
+
 from mixins.singleton import Singleton
+
+if TYPE_CHECKING:
+    from main import Openciv
 
 
 class CivCamera(Singleton):
@@ -13,15 +19,18 @@ class CivCamera(Singleton):
       - WASD/arrow keys => optional panning
     """
 
-    def __init__(self, base):
-        self.base = base
+    def __init__(self, base: "Openciv"):
+        self.base: "Openciv" = base
         self.active = True
+        self.logger: Logger = self.base.logger.engine.getChild("camera")
 
         # Zoom parameters
         self.zoom = 20.0
         self.min_zoom = 2.0
         self.max_zoom = 50.0
         self.zoom_speed = 2.0
+
+        self.zoom_enabled: bool = True
 
         # Optional pitch
         self.pitch = 45.0  # We'll keep a fixed pitch at 45 degrees
@@ -125,17 +134,34 @@ class CivCamera(Singleton):
         self.base.accept("mouse3", self.start_right_drag)
         self.base.accept("mouse3-up", self.stop_right_drag)
 
+        self.base.accept("system.input.disable_zoom", self.disable_zoom)
+        self.base.accept("system.input.enable_zoom", self.enable_zoom)
+
     def set_key(self, key, value):
         self.keys[key] = value
+
+    def disable_zoom(self):
+        self.logger.debug("Disabling zoom")
+        self.zoom_enabled = False
+
+    def enable_zoom(self):
+        self.logger.debug("Enabling zoom")
+        self.zoom_enabled = True
 
     # -------------------------------------------------------------------------
     #  Zoom
     # -------------------------------------------------------------------------
     def zoom_in(self):
+        if not self.zoom_enabled:
+            return
+
         self.zoom = max(self.min_zoom, self.zoom - self.zoom_speed)
         self.update_camera_position()
 
     def zoom_out(self):
+        if not self.zoom_enabled:
+            return
+
         self.zoom = min(self.max_zoom, self.zoom + self.zoom_speed)
         self.update_camera_position()
 
@@ -174,10 +200,31 @@ class CivCamera(Singleton):
         Recenter camera pivot on target or (0,0,0),
         and optionally reset yaw/zoom.
         """
-        self.reset_pivot_position()
-        # Reset orientation/zoom if desired:
-        self.yaw = 0.0
-        self.zoom = 20.0
+        from managers.game import PlayerManager
+
+        center: Tuple[float, float, float] = (0, 0, 0)
+        # Determine correct center first
+        if PlayerManager.if_has_capital():
+            capital = PlayerManager.player().capital
+            if capital is None:
+                return
+            tile = capital.tile.get_pos()
+            center = (tile[0], tile[1], 0)
+        elif len((units := PlayerManager.session_player().get_all_units())) > 0:
+            unit = units[0]()
+            if unit is not None and unit.tile is not None:
+                center = unit.tile.get_pos()
+                center = (center[0], center[1], 0)
+        else:
+            center = self.target.getPos() if self.target else (0, 0, 0)
+
+        # Move pivot only once to prevent flickering
+        self.pivot.setPos(center)
+
+        # Reset the camera's rotation but keep yaw
+        self.base.camera.setHpr(0, self.pitch, 0)  # Reset heading & roll, keep default pitch
+        self.yaw = 0  # Reset yaw
+        self.zoom = 20.0  # Reset zoom
         self.update_camera_position()
 
     # -------------------------------------------------------------------------

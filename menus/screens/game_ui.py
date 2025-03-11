@@ -3,6 +3,7 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from weakref import ReferenceType
 
+from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -10,6 +11,7 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
 from camera import CivCamera
+from gameplay.city import City
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from managers.entity import EntityManager, EntityType
@@ -17,6 +19,7 @@ from managers.unit import Unit
 from managers.world import World
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.action_bar import ActionBar
+from menus.kivy.parts.city import CityUI
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
@@ -42,12 +45,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             raise AssertionError("Base is not initialized.")
 
         del kwargs["base"]
+        from managers.ui import ui
 
         super().__init__(base=self._base, **kwargs)
 
         self.world_manager = World.get_instance()
         self.camera: CivCamera = CivCamera.get_instance()
-        self.unit_manager = Unit.get_instance()
+        self.unit_manager: Unit = Unit.get_instance()
+        self.ui_manager: ui = ui.get_instance()
 
         self.waiting_for_world_input: bool = False
 
@@ -65,7 +70,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.stats_frame: Optional[StatsPanel] = None
         self.debug_actions: Optional[DebugActions] = None
         self.player_turn_control: Optional[PlayerTurnControl] = None
+        self.city_ui: Optional[CityUI] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
+
+        self.showing_city: Optional[City] = None
 
         self.debug_panels_showing_state: Dict[str, bool] = {
             "stats": False,
@@ -80,8 +88,40 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def register(self):
         self.logger.info("Registering event listeners.")
+
         self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
         self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
+        self._base.accept("ui.update.user.city_clicked", self.process_city_click)
+        self._base.accept("ui.update.user.enemey_city_clicked", self.process_enemy_city_click)
+
+        self._base.accept("ui.update.ui.unit_unselected", self.clear_action_bar)
+
+        self._base.accept("system.unit.destroyed", self.clear_action_bar)
+        self._base.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
+
+    def popup(self, name: str, header: str, text: str):
+        messenger.send("ui.request.open.popup", [name, header, text])
+
+    def on_unit_destroyed(self, unit: BaseEntity):
+        self.clear_action_bar()
+
+    def process_enemy_city_click(self, city: Any):
+        self.popup("enemy_city_selected", "Enemy City", f"City: {city.name}\nOwner: {city.player.name}")
+        if self.city_ui is not None and not self.city_ui.is_hidden():
+            self.showing_city = None
+            self.get_city_ui().hide()
+
+    def process_city_click(self, city: Any):
+        if self.showing_city is None or city != self.showing_city:
+            if self.city_ui is None or self.city_ui.city_label is None:
+                raise AssertionError("City UI is not initialized.")
+
+            self.showing_city = city
+            self.get_city_ui().show(city=city)
+        else:
+            if not self.get_city_ui().is_hidden():
+                self.showing_city = None
+                self.get_city_ui().hide()
 
     def unregister(self):
         self.logger.info("Unregistering event listeners.")
@@ -116,6 +156,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             raise AssertionError("Root layout is not initialized.")
         return self.root_layout
 
+    def get_city_ui(self) -> CityUI:
+        if self.city_ui is None:
+            raise AssertionError("City UI is not initialized.")
+        return self.city_ui
+
     def build_screen(self):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
@@ -125,6 +170,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.root_layout.add_widget(self.build_debug_frame())
         self.root_layout.add_widget(self.build_debug_actions())
         self.root_layout.add_widget(self.build_player_turn_control())
+        self.root_layout.add_widget(self.build_city_ui())
 
         if (
             self.action_bar_frame is None
@@ -132,6 +178,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             or self.stats_frame is None
             or self.debug_actions is None
             or self.player_turn_control is None
+            or self.city_ui is None
         ):
             raise AssertionError("Action bar, debug panel, or stats panel, player_turn_control is not initialized.")
 
@@ -143,6 +190,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.register_non_collidable(self.stats_frame.frame)
         self.register_non_collidable(self.debug_actions.frame)
         self.register_non_collidable(self.player_turn_control.frame)
+        self.register_non_collidable(self.city_ui.frame)
 
         self.logger.info("Non-collidable UI elements registered.")
         return self.root_layout
@@ -169,6 +217,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
     def build_player_turn_control(self) -> FloatLayout:
         self.player_turn_control = PlayerTurnControl(base=self._base)
         return self.player_turn_control.build_debug_frame()
+
+    def build_city_ui(self) -> BoxLayout:
+        self.city_ui = CityUI(base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
+        result = self.city_ui.build()
+        self.city_ui.hide()
+        return result
 
     def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
         if self.debug_actions is None or self.debug_frame is None or self.stats_frame is None:
@@ -216,6 +270,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
     def process_tile_click(self, tile: str):
         _tile: Optional[BaseTile] = self.world_manager.lookup_on_tag(tile)
 
+        if _tile is not None and _tile.city is None:
+            self.get_city_ui().hide()
+            self.showing_city = None
+
+        self.clear_action_bar()
+
         if _tile is not None:
             self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _tile.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
 
@@ -227,9 +287,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def process_unit_click(self, unit: str):
         _unit: ReferenceType[BaseEntity] = EntityManager.get_instance().get_ref_weak(EntityType.UNIT, unit)
+
+        if unit != self.ui_manager.current_unit:
+            self.clear_action_bar()
+            self.generate_buttons_for_unit_actions(unit)
+
+        if self.showing_city is not None:
+            self.get_city_ui().hide()
+            self.showing_city = None
+
         if _unit is not None:
             self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
-        self.generate_buttons_for_unit_actions(unit)
 
     def generate_buttons_for_unit_actions(self, unit: str):
         if self.action_bar_frame is None:
@@ -248,6 +316,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
                 )
                 button.bind(on_press=partial(self.prepare_action, action, _unit))
                 self.action_bar_frame.add_button(button)
+
+    def clear_action_bar(self):
+        if self.action_bar_frame is None:
+            raise AssertionError("Action bar is not initialized.")
+
+        self.action_bar_frame.clear_buttons()
 
     def prepare_action(self, action: Action, unit: UnitBaseClass, _instance):
         """Prepares an action and waits for the next tile click before executing."""
@@ -279,4 +353,4 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.unit_waiting_for_action = None
 
         if action.remove_actions_after_use:
-            self.get_action_bar_frame().clear_widgets()
+            self.clear_action_bar()

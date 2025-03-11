@@ -4,11 +4,12 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
 
 from direct.showbase.Loader import Loader
+from direct.showbase.MessengerGlobal import messenger
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import BitMask32, LVector3, NodePath
 
 from gameplay.combat.stats import Stats
-from managers.i18n import T_TranslationOrStr, t_
+from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from system.actions import Action
 from system.entity import BaseEntity
@@ -94,10 +95,10 @@ class UnitBaseClass(BaseEntity, ABC):
         self.can_attack: bool = True
         self.can_heal: bool = True
         self.can_pillage: bool = True
-        self._register()
 
-    def _register(self):
-        self.add_action(Action(name=t_("actions.unit.self_destroy"), action=self.destroy))
+        self.register_actions()
+
+    def register_actions(self): ...
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -269,13 +270,19 @@ class UnitBaseClass(BaseEntity, ABC):
         else:
             model.setCollideMask(BitMask32.allOff())
 
-        self.tag = f"unit_{self.key}_{random.randint(0, 10000)}"
+        self.tag = self.generate_unit_tag()
         model.setTag("tile_id", self.tag)
         model.reparentTo(self.base.render)  # Attach model to scene graph
 
         self.register()
 
         return model
+
+    def generate_unit_tag(self) -> str:
+        if self.owner is not None:
+            return f"unit_{self.owner.id}_{self.key}_{random.randint(0, 1000000)}"
+        else:
+            return f"unit_{self.key}_{random.randint(0, 1000000)}"
 
     def tile_is_occupiable(self, tile: "BaseTile") -> bool:
         return tile.is_passable()
@@ -316,7 +323,7 @@ class UnitBaseClass(BaseEntity, ABC):
             "can_pillage": self.can_pillage,
         }
 
-    def destroy(self, *args, **kwargs) -> bool:
+    def destroy(self, as_system: bool = False, *args, **kwargs) -> bool:
         """Removes the unit from the scene and cleans up references."""
         if self.model:
             self.model.removeNode()  # Remove from the scene graph
@@ -334,6 +341,12 @@ class UnitBaseClass(BaseEntity, ABC):
         self.owner = None
         self.actions.clear()
         self.tag = None
+
+        if as_system:
+            messenger.send("system.unit.destroyed", [self])
+        else:
+            messenger.send("game.gameplay.unit.destroyed", [self])
+
         return True
 
     @classmethod

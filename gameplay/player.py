@@ -1,5 +1,7 @@
-from typing import TYPE_CHECKING, Literal, Self
+import weakref
+from typing import TYPE_CHECKING, Literal, Optional, Self
 
+from gameplay._units import Units
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
@@ -12,11 +14,12 @@ from gameplay.leader import Leader
 from gameplay.mood import Mood
 from gameplay.moods import Moods
 from gameplay.personality import Personality
+from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
 from gameplay.resource import Resources
-from gameplay.player_tiles import PlayerTiles
 from gameplay.trades import Trades
 from gameplay.votes import Votes
+from helpers.colors import Colors, Tuple4f
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -31,6 +34,7 @@ class Player(BaseEntity):
         personality: Personality,
         civilization: Civilization,
         leader: Leader,
+        color: Optional[Tuple4f] = None,
     ) -> None:
         super().__init__()
         from gameplay._units import Units
@@ -38,6 +42,7 @@ class Player(BaseEntity):
         self.name: str = name
         self.id: str | None = None
         self.identifier: str | None = None
+        self.color: Tuple4f = color if color else Colors.sequence()
 
         self.turn_order: int = turn_order
 
@@ -161,3 +166,15 @@ class Player(BaseEntity):
     def destroy(self):
         """Player is destroyed or wiped out."""
         self.unregister()
+
+    def get_units(self) -> Units:
+        return self.units
+
+    def get_all_units(self) -> list[weakref.ReferenceType["UnitBaseClass"]]:
+        return self.get_units().all()
+
+    def add_city(self, city: City) -> None:
+        self.cities.add(city)
+
+    def remove_city(self, city: City) -> None:
+        self.cities.remove(city)

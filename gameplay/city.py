@@ -1,8 +1,13 @@
-from typing import TYPE_CHECKING, Optional
+from logging import Logger
+from typing import TYPE_CHECKING, List, Optional
+
+from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.citizens import Citizens
 from gameplay.improvement import Improvement
 from gameplay.improvements import Improvements
+from gameplay.tile_yield_modifier import TileYieldModifier
+from managers.log import LogManager
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -11,12 +16,16 @@ if TYPE_CHECKING:
 
 
 class City(BaseEntity):
-    def __init__(self, name: str, tile: "BaseTile"):
+    logger: Logger = LogManager.get_instance().gameplay.getChild("city")
+
+    def __init__(self, name: str, tile: "BaseTile", *args, **kwargs):
+        super().__init__(*args, **kwargs)
         from gameplay.player import Player
 
         self.name: str = name
         self.player: Optional[Player] = None
         self.tile: BaseTile = tile
+        self.owned_tiles: List[BaseTile] = [self.tile]
         self.is_capital: bool = False
 
         self.active: bool = True
@@ -41,6 +50,14 @@ class City(BaseEntity):
 
         if self.player is not None:
             self._register_object()
+
+        self.register()
+
+    def register(self):
+        if self.base is None:
+            raise AssertionError("Base is not set.")
+
+        self.base.accept("game.gameplay.city.gets_tile_ownership", self.on_tile_ownership_changed)
 
     def build(self, improvement: Improvement):
         self._improvements.add(improvement)
@@ -67,12 +84,59 @@ class City(BaseEntity):
     def de_capitalize(self):
         self.is_capital = False
 
+    def assign_tile(self, tile: "BaseTile"):
+        self.owned_tiles.append(tile)
+
+    def deassign_tile(self, tile: "BaseTile"):
+        self.owned_tiles.remove(tile)
+
+    def destroy(self): ...
+
+    def on_tile_ownership_changed(self, city: "City", tile: "BaseTile"):
+        self.logger.debug(f"City {city.name} is being told that tile {tile.tag} has changed ownership.")
+        if city != self and tile not in self.owned_tiles:
+            # This does not concern us
+            return
+        elif city == self and tile not in self.owned_tiles:
+            self.assign_tile(tile)  # We now own this tile.
+        elif city == self and tile in self.owned_tiles:
+            self.deassign_tile(tile)  # We are being told that we no longer own this tile.
+
     @classmethod
     def found_new(
-        cls, name: str, tile: "BaseTile", owner: "Player", population: int = 1, is_capital: bool = False
+        cls,
+        name: str,
+        tile: "BaseTile",
+        owner: "Player",
+        population: int = 1,
+        is_capital: bool = False,
+        auto_claim_radius: int = 0,
     ) -> "City":
         instance = City(name=name, tile=tile)
         instance.player = owner
         instance.population = population
         instance.is_capital = is_capital
+        instance.player.add_city(instance)
+        tile.city = instance
+        tile.city_owner = instance
+
+        if auto_claim_radius > 0:
+            from gameplay.repositories.tile import TileRepository
+
+            neighbours: List[BaseTile] = TileRepository.get_neighbors(
+                tile,
+                auto_claim_radius,
+                check_passable=False,
+            )
+            for neighbour in neighbours:
+                cls.logger.debug(f"City {instance.name} is requesting claiming tile {neighbour.tag}, sending message.")
+                messenger.send("game.gameplay.city.requests_tile", [instance, neighbour])
+
         return instance
+
+    def calculate_yield_from_tiles(self) -> TileYieldModifier:
+        tile_yields = TileYieldModifier()
+        for tile in self.owned_tiles:
+            tile_yields += tile.get_tile_yield(calculate_yield=True)
+
+        return tile_yields

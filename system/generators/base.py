@@ -91,6 +91,7 @@ class BaseGenerator(ABC):
                 leader=None,  # None means it will pick from its own list of registered leaders
                 turn_order=i,
             )
+            player.id = str(i)
 
             players.append(player)
             PlayerManager.add(player, i == 0)
@@ -112,7 +113,7 @@ class BaseGenerator(ABC):
                 if _spawn_tile is None:
                     raise Exception("No tiles found to spawn unit on")
 
-                if _spawn_tile.is_spawnable_upon() is False:
+                if _spawn_tile.is_spawnable_upon() is False or not _spawn_tile.is_passable():
                     continue
 
                 spawn_tile = _spawn_tile

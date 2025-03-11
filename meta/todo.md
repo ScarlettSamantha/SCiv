@@ -23,3 +23,5 @@ These are not features more things that exist right now and needs to be done som
 ## Improvements
 
 - [ ] Add crash handler for sending back debug crash data.
+- [ ] Make it so player cant controll enemy units, its already aware what enemy units are and whats its own.
+- [x] Colidable mixin should not calculate geometry of ui elements every tick but every few ticks
