@@ -39,7 +39,7 @@ class Korea(Civilization):
 
     def register_leaders(self):
         from gameplay.leaders.goi import Goi
-        from gameplay.leaders.sejon import Sejon
+        from gameplay.leaders.sejong import Sejong
 
-        self.add_leader(Sejon())
+        self.add_leader(Sejong())
         self.add_leader(Goi())
