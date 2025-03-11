@@ -71,7 +71,6 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.base.accept("ui.update.ui.hide_city_ui", self.hide)
         self.base.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
         self.base.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
-        self.base.accept("game.turn.end_process", self.on_end_turn_process)
 
     def set_city(self, city: City):
         self.city = city

@@ -21,7 +21,7 @@ class PlayerTurnControl(FloatLayout):
 
     def register(self):
         self.base.accept("game.turn.start_process", self.on_turn_change_start)
-        self.base.accept("game.turn.end_process", self.on_turn_change_end)
+        self.base.accept("ui.update.ui.refresh_player_turn_control", self.on_turn_change_end)
 
     def get_frame(self) -> FloatLayout:
         if self.frame is None:
