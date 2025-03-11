@@ -4,9 +4,10 @@ from kivy.uix.label import Label
 
 
 class DebugPanel(FloatLayout):
-    def __init__(self, base, **kwargs):
+    def __init__(self, base, offset=10, **kwargs):
         super().__init__(**kwargs)
         self.base = base
+        self.offset = offset  # Fixed pixel offset from the top
 
         self.frame = None
         self.panel = None
@@ -22,8 +23,8 @@ class DebugPanel(FloatLayout):
         self.frame = FloatLayout(
             size_hint=(None, None),
             width=300,
-            height=600,
-            pos_hint={"x": 0, "top": 1},
+            height=700,
+            pos_hint={"left": 1, "top": 0.975},
         )
 
         with self.frame.canvas.before:  # type: ignore
@@ -45,12 +46,16 @@ class DebugPanel(FloatLayout):
             valign="top",
             halign="left",
             text_size=(300, 700),
-            pos_hint={"x": 0, "top": 1},
+            pos_hint={"left": 1, "top": 1},
             color=(1, 1, 1, 1),
+            padding=10,
         )
 
         self.frame.add_widget(self.panel)
         return self.frame
 
     def update_debug_info(self, text: str):
-        self.panel.text = text  # type: ignore
+        if self.panel is None:
+            return
+
+        self.panel.text = text

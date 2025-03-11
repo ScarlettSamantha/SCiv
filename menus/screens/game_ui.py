@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from weakref import ReferenceType
 
 from direct.showbase.MessengerGlobal import messenger
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -24,6 +25,7 @@ from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.stats import StatsPanel
+from menus.kivy.parts.top_bar import TopBar
 from system.actions import Action
 from system.entity import BaseEntity
 
@@ -71,6 +73,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.debug_actions: Optional[DebugActions] = None
         self.player_turn_control: Optional[PlayerTurnControl] = None
         self.city_ui: Optional[CityUI] = None
+        self.top_bar: Optional[TopBar] = None
+
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
         self.showing_city: Optional[City] = None
@@ -161,6 +165,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             raise AssertionError("City UI is not initialized.")
         return self.city_ui
 
+    def get_top_bar(self) -> TopBar:
+        if self.top_bar is None:
+            raise AssertionError("Top bar is not initialized.")
+        return self.top_bar
+
     def build_screen(self):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
@@ -171,6 +180,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.root_layout.add_widget(self.build_debug_actions())
         self.root_layout.add_widget(self.build_player_turn_control())
         self.root_layout.add_widget(self.build_city_ui())
+        self.root_layout.add_widget(self.build_top_bar())
 
         if (
             self.action_bar_frame is None
@@ -179,6 +189,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             or self.debug_actions is None
             or self.player_turn_control is None
             or self.city_ui is None
+            or self.top_bar is None
         ):
             raise AssertionError("Action bar, debug panel, or stats panel, player_turn_control is not initialized.")
 
@@ -191,6 +202,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.register_non_collidable(self.debug_actions.frame)
         self.register_non_collidable(self.player_turn_control.frame)
         self.register_non_collidable(self.city_ui.frame)
+        self.register_non_collidable(self.top_bar.frame)
 
         self.logger.info("Non-collidable UI elements registered.")
         return self.root_layout
@@ -223,6 +235,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         result = self.city_ui.build()
         self.city_ui.hide()
         return result
+
+    def build_top_bar(self) -> AnchorLayout:
+        self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
+        return self.top_bar.build()
 
     def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
         if self.debug_actions is None or self.debug_frame is None or self.stats_frame is None:

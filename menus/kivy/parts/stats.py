@@ -1,16 +1,18 @@
-from typing import Any, Dict, Optional, TYPE_CHECKING
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
-from kivy.graphics import Color, Rectangle
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from kivy.clock import Clock
-from camera import CivCamera
-from managers.entity import EntityManager
+from kivy.graphics import Color, Rectangle
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties
 
+from camera import CivCamera
+from managers.entity import EntityManager
+
 if TYPE_CHECKING:
-    from main import Openciv
     from direct.showbase.ShowBase import ShowBase
+
+    from main import Openciv
 
 
 class StatsPanel(FloatLayout):
@@ -79,18 +81,21 @@ class StatsPanel(FloatLayout):
             size_hint=(None, None),
             width=200,
             height=300,
-            pos_hint={"right": 1, "top": 1},
+            pos_hint={"right": 1, "top": 0.975},
         )
 
         with self.frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.5)  # Black background with 50% opacity
+            Color(0, 0, 0, 0.8)
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
 
         def update_camera_rect(instance, value):
-            self.rect.size = instance.size  # type: ignore
-            self.rect.pos = instance.pos  # type: ignore
+            if self.rect is None:
+                return
 
-        self.frame.bind(size=update_camera_rect, pos=update_camera_rect)  # type: ignore
+            self.rect.size = instance.size
+            self.rect.pos = instance.pos
+
+        self.frame.bind(size=update_camera_rect, pos=update_camera_rect)
 
         self.label = Label(
             text="Camera Info:\nZoom: 1.0\nAngle: 45°",
@@ -103,6 +108,7 @@ class StatsPanel(FloatLayout):
             text_size=(200, 300),
             pos_hint={"right": 1, "top": 1},
             color=(1, 1, 1, 1),
+            padding=10,
         )
 
         self.frame.add_widget(self.label)
