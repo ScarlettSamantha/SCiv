@@ -1,8 +1,9 @@
 from typing import List, Optional
+
 from gameplay.improvement import Improvement
 
 
-class Improvements:
+class ImprovementsSet:
     def __init__(self, improvements: Optional[List] = None):
         self._improvements = {}
         if improvements is not None:
