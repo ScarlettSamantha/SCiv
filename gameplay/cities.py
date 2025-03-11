@@ -20,9 +20,11 @@ class Cities:
     def has(self, value: "City") -> bool:
         return value in self._cities
 
+    def __contains__(self, value: "City") -> bool:
+        return self.has(value)
+
     def __iter__(self) -> Iterator["City"]:
-        self.index = 0
-        return self
+        return iter(self._cities)
 
     def __len__(self) -> int:
         return len(self._cities)
