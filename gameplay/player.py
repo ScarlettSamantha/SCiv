@@ -5,7 +5,6 @@ from gameplay._units import Units
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
-from gameplay.city import City
 from gameplay.civilization import Civilization
 from gameplay.claims import Claims
 from gameplay.effect import Effect, Effects
@@ -23,6 +22,7 @@ from helpers.colors import Colors, Tuple4f
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.city import City
     from gameplay.units.unit_base import UnitBaseClass
 
 
@@ -91,9 +91,7 @@ class Player(BaseEntity):
         self.goverment: Goverment = Goverment()
 
         self.cities: Cities = Cities()
-        self.capital: City | None = (
-            None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
-        )
+        self.capital: "City | None" = None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
         self.tiles: PlayerTiles = PlayerTiles()
         self.claims: Claims = Claims()
         self.units: Units = Units()
@@ -173,8 +171,8 @@ class Player(BaseEntity):
     def get_all_units(self) -> list[weakref.ReferenceType["UnitBaseClass"]]:
         return self.get_units().all()
 
-    def add_city(self, city: City) -> None:
+    def add_city(self, city: "City") -> None:
         self.cities.add(city)
 
-    def remove_city(self, city: City) -> None:
+    def remove_city(self, city: "City") -> None:
         self.cities.remove(city)
