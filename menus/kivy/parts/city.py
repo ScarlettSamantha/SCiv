@@ -10,7 +10,7 @@ from kivy.uix.scrollview import ScrollView
 
 from gameplay.city import City
 from gameplay.repositories.improvements import BaseCityImprovement
-from gameplay.tile_yield_modifier import TileYieldModifier
+from gameplay.yields import Yields
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
 from menus.kivy.elements.image_label import ImageLabel
@@ -101,8 +101,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             and self.science_label is not None
             and self.culture_label is not None
         ):
-            tile_yield_modifier: TileYieldModifier = self.city.calculate_yield_from_tiles()
-            tile_yield = tile_yield_modifier.calculate()
+            tile_yield: Yields = self.city.calculate_yield_from_tiles()
 
             self.gold_label.set_text(f"Gold: {tile_yield.gold.value}")
             self.production_label.set_text(f"Production: {tile_yield.production.value}")

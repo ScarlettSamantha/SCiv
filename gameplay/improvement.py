@@ -7,7 +7,7 @@ from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeExcepti
 from gameplay.player import Player
 from gameplay.resources.core.basic._base import BasicBaseResource
 from gameplay.resources.core.basic.production import Production
-from gameplay.tile_yield import TileYield
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from mixins.callbacks import CallbacksMixin
 from system.entity import BaseEntity

@@ -13,7 +13,7 @@ from gameplay.improvement import Improvement
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tile_yield_modifier import TileYield, TileYieldModifier
+from gameplay.tile_yield_modifier import TileYieldModifier, Yields
 from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
 from helpers.colors import Colors, Tuple4f
@@ -164,7 +164,7 @@ class BaseTile(BaseEntity):
 
         # We configure base tile yield mostly just for debugging.
         self.tile_yield: TileYieldModifier = TileYieldModifier(
-            values=TileYield(
+            values=Yields(
                 gold=0.0,
                 production=1.0,
                 science=0.0,
@@ -664,7 +664,7 @@ class BaseTile(BaseEntity):
     def setTerrain(self, terrain: BaseTerrain) -> None:
         self.tile_terrain = terrain
 
-    def addTileYield(self, tileYield: TileYield) -> None:
+    def addTileYield(self, tileYield: Yields) -> None:
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self, calculate_yield: bool = False) -> TileYieldModifier:

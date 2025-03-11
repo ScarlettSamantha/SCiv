@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tile_yield import TileYield
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, _t
 
 
@@ -18,4 +18,4 @@ class Fish(BaseBonusResource):
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
-        self.add_to_yield_modifier(TileYield(food=2))
+        self.add_to_yield_modifier(Yields(food=2))

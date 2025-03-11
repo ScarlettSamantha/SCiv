@@ -8,9 +8,9 @@ from gameplay.yields import Yields
 from managers.i18n import t_
 
 
-class Barracks(BaseCityImprovement):
-    name = t_("content.improvements.core.city.barracks.name")
-    description = t_("content.improvements.core.city.barracks.description")
+class granary(BaseCityImprovement):
+    name = t_("content.improvements.core.city.granary.name")
+    description = t_("content.improvements.core.city.granary.description")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -18,7 +18,7 @@ class Barracks(BaseCityImprovement):
         self.amount_resource_needed = Yields(production=50)
         self.resource_needed: Type["BasicBaseResource"] = Production
 
-        self.tile_yield_improvement = Yields.nullYield()  # just unlocks the ability to train units.
+        self.tile_yield_improvement = Yields(food=2)  # just unlocks the ability to train units.
         self.conditions.add(condition=Condition.no_condition())  # no-op, we can build this at the start of the game.
         self.maintenance_cost = Yields(gold=0.5)
 

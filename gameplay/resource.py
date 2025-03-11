@@ -8,7 +8,7 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
-    from gameplay.tile_yield import TileYield
+    from gameplay.yields import Yields
     from gameplay.tile_yield_modifier import TileYieldModifier
 
 
@@ -153,7 +153,7 @@ class BaseResource(Generic[T_ResourceType]):
             self.setup()
         return self._tile_yield_modifier  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
-    def add_to_yield_modifier(self, tile_yield_modifier: "TileYieldModifier | TileYield") -> None:
+    def add_to_yield_modifier(self, tile_yield_modifier: "TileYieldModifier | Yields") -> None:
         # This is a lazy setup to avoid circular imports
         if self._tile_yield_modifier is None:
             self.setup()
