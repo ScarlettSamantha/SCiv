@@ -19,3 +19,6 @@ class ImprovementsSet:
 
     def get_all(self) -> List[Improvement]:
         return list(self._improvements.values())
+
+    def __contains__(self, a) -> bool:
+        return a in self._improvements.values()
