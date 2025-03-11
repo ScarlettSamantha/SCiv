@@ -10,7 +10,7 @@ from gameplay._units import Units
 from gameplay.city import City
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
-from gameplay.improvements import Improvements
+from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile_yield_modifier import TileYield, TileYieldModifier
@@ -139,7 +139,7 @@ class BaseTile(BaseEntity):
         # Does this have any units?
         self.units: Units = Units()
         # Does this have improvements?
-        self._improvements: Improvements = Improvements()
+        self._improvements: ImprovementsSet = ImprovementsSet()
         # Does this have items sitting on top of it?
         self.items: List[BaseItem] = list()
         # What kind of states apply to this object?
@@ -681,7 +681,7 @@ class BaseTile(BaseEntity):
     def remove_resource(self, resource: BaseResource) -> None:
         self.resources.remove(resource)
 
-    def improvements(self) -> Improvements:
+    def improvements(self) -> ImprovementsSet:
         return self._improvements
 
     def is_city(self) -> bool:
