@@ -17,6 +17,7 @@ from gameplay.tile_yield_modifier import TileYield, TileYieldModifier
 from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
 from helpers.colors import Colors, Tuple4f
+from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from managers.player import Player, PlayerManager
@@ -292,7 +293,7 @@ class BaseTile(BaseEntity):
         city_text.setText(self.city.name)
 
         # Load the font
-        font = self.base.loader.load_font("assets/fonts/Washington.ttf")
+        font = AssetManager.load_font("assets/fonts/Washington.ttf")
         if font:
             font.setPolyMargin(0.01)  # Improve clarity
             try:
@@ -302,7 +303,7 @@ class BaseTile(BaseEntity):
             city_text.setFont(font)
 
         # Load and verify texture
-        texture = self.base.loader.load_texture("assets/city_name_border.png")
+        texture = AssetManager.load_texture("assets/city_name_border.png")
         if not texture:
             raise RuntimeError("Failed to load city name border texture.")
         city_text.setCardTexture(texture)
@@ -436,7 +437,7 @@ class BaseTile(BaseEntity):
             (0.8, -0.4, -0.2),  # Bottom row, left
             (0.8, 0.4, -0.2),  # Bottom row, right
         ]
-        font = self.base.loader.load_font("assets/fonts/Washington.ttf")
+        font = AssetManager.load_font("assets/fonts/Washington.ttf")
 
         for i, resource in enumerate(basic_resources):
             icon_path = resource.icon
@@ -447,7 +448,7 @@ class BaseTile(BaseEntity):
             small_icon_np = NodePath(small_icon_card.generate())  # type: ignore
 
             if icon_path not in self.texture_cache:
-                self.texture_cache[icon_path] = self.base.loader.load_texture(texturePath=icon_path)
+                self.texture_cache[icon_path] = AssetManager.load_texture(path=icon_path)
                 self.texture_cache[icon_path].set_format(Texture.F_srgb_alpha)  # type: ignore
             texture = self.texture_cache[icon_path]
 
