@@ -58,18 +58,18 @@ class Improvement(CallbacksMixin, BaseEntity):
         self.tile: Optional[BaseTile] = None
 
         # Following 3 are not needed in single turn mode.
-        self.amount_resource_needed: TileYield = TileYield.nullYield()
+        self.amount_resource_needed: Yields = Yields.nullYield()
         self.resource_needed: type[BasicBaseResource] = Production
 
         # Dynamic value, will be set by the game.
         self.turns_needed: float | int | None = None
         self.build_progress: float | int | None = None
 
-        self.tile_yield_improvement: TileYield = TileYield.nullYield()
+        self.tile_yield_improvement: Yields = Yields.nullYield()
         self.effects: Effects = Effects()
         self.conditions: Conditions = Conditions()
 
-        self.maintenance_cost: TileYield = TileYield.nullYield()
+        self.maintenance_cost: Yields = Yields.nullYield()
 
         self._model_offset: Tuple[int, int, int] = (
             0,
@@ -98,17 +98,17 @@ class Improvement(CallbacksMixin, BaseEntity):
         self._tile_ref = value
 
     @property
-    def tile_yield(self) -> TileYield:
+    def tile_yield(self) -> Yields:
         return self._tile_yield_improvement
 
     @tile_yield.setter
-    def tile_yield(self, value: TileYield) -> None:
-        if not isinstance(value, TileYield):
+    def tile_yield(self, value: Yields) -> None:
+        if not isinstance(value, Yields):
             raise TypeError(f"Tileyield cannot be type {type(value)}")
         self._tile_yield_improvement = value
 
     def set_price_free(self):
-        self.amount_resource_needed = TileYield.nullYield()
+        self.amount_resource_needed = Yields.nullYield()
 
     def on_construct(self, callback: Callable):
         self.register_callback("on_construct", callback)
@@ -154,11 +154,11 @@ class Improvement(CallbacksMixin, BaseEntity):
         tile: "BaseTile",
         property: str,
         delta: float,
-        mode: int = TileYield.ADDITIVE,
+        mode: int = Yields.ADDITIVE,
         health: int = 100,
     ) -> "Improvement":
         ref = Improvement(key=name, name=name, tile=tile, health=health)
-        _yield = TileYield(f"{name} yield")
+        _yield = Yields(f"{name} yield")
         _yield.mode = mode
         _yield.set_prop(property, delta)
         ref.tile_yield = _yield
