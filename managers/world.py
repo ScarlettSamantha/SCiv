@@ -119,6 +119,6 @@ class World(Singleton):
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
             self.base.messenger.send(
-                "game.gameplay.city.gets_tile_ownership",
+                f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],
             )

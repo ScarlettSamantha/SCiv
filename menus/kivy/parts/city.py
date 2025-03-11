@@ -1,6 +1,7 @@
+from math import floor
 from typing import TYPE_CHECKING, Dict, Optional
 
-from direct.showbase.Messenger import Messenger
+from direct.showbase import MessengerGlobal
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -68,6 +69,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.base.accept("ui.update.ui.refresh_city_ui", self.update)
         self.base.accept("ui.update.ui.show_city_ui", self.show)
         self.base.accept("ui.update.ui.hide_city_ui", self.hide)
+        self.base.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
+        self.base.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
+        self.base.accept("game.turn.end_process", self.on_end_turn_process)
 
     def set_city(self, city: City):
         self.city = city
@@ -83,7 +87,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             self.city_label.text = self.city_name
 
         if self.population_label is not None:
-            self.population_label.text = f"Pop: {self.city.population}"
+            food_collected = str(floor(self.city.food_collected.food.value))
+            food_required = str(floor(self.city.population_food_required.food.value))
+
+            self.population_label.text = f"Pop: {self.city.population}({food_collected}/{food_required})"
 
         if self.is_capital_label is not None:
             self.is_capital_label.text = f"Capital: {'Yes' if self.city.is_capital else 'No'}"
@@ -109,6 +116,22 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             self.science_label.set_text(f"Science: {tile_yield.science.value}")
             self.culture_label.set_text(f"Culture: {tile_yield.culture.value}")
 
+        if self.current_button is not None and self.city.is_building and self.city.building is not None:
+            resource_required = list(self.city.resource_required_amount.props(True).values())
+            resource_got = list(self.city.resource_collected.props(True).values())
+
+            if resource_required is None or len(resource_required) == 0:
+                self.logger.error("Resource required is None or empty.")
+                raise AssertionError("Resource required is None or empty.")
+
+            resource_got = 0.0 if resource_got is None or len(resource_got) == 0 else resource_got[0].value
+            resource_required = resource_required[0].value
+            text = f"Building: {self.city.building.name} {str(floor(resource_got))}/{str(floor(resource_required))}"
+
+            self.current_button.text = text
+        elif self.current_button is not None and not self.city.is_building:
+            self.current_button.text = "Idle"
+
         if self.button_container is not None:
             self.generate_buttons()
             self.button_container.clear_widgets()
@@ -127,11 +150,20 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
             class_instance = class_ref()
+            if self.city is None:
+                continue
+
             if not class_instance.conditions.are_met():
                 continue
 
+            if type(class_instance) in self.city._improvements:  # We already have this improvement
+                continue
+
+            if type(class_instance) == type(self.city.building):  # We are already building this
+                continue
+
             button = ButtonValue(
-                text=format_button_text(class_instance), value=class_instance.name, size_hint=(1, None), height=50
+                text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
             )
             button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
             buttons[class_name] = button
@@ -147,7 +179,24 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         self.logger.debug(f"Requesting to build improvement: {instance.value} in city: {self.city.name}")
 
-        Messenger().send("game.gameplay.city.request_start_building_improvement", [self.city, instance.value])
+        MessengerGlobal.messenger.send(
+            f"game.gameplay.city.request_start_building_improvement_{self.city.tag}", [self.city, instance.value]
+        )
+
+    def on_city_start_building_improvement(self, city: City, improvement: BaseCityImprovement):
+        if city != self.city:  # We dont have it selected so we dont have to update
+            return
+        self.update()
+
+    def on_city_finish_building_improvement(self, city: City, improvement: BaseCityImprovement):
+        if city != self.city:
+            return
+        self.update()
+
+    def on_end_turn_process(self, turn: int):
+        if self.city is None:
+            return
+        self.update()
 
     def build(self) -> BoxLayout:
         self.logger.debug("Building City UI")
