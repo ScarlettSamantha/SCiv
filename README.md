@@ -68,6 +68,11 @@ Beware the menu and button states dont update each other tough
 
 ### 0.1.0 Goals
 
+The goal of the 0.1.0 release is to have systems functional(engine, managers, rendering and world) and in a testable state.
+
+What does this mean concrete? I the sytems to run and in the end want to be able to build a builder in a city with production calculated from the tiles, which then can build an improvement on a tile which in turn increases tile resources.
+A POC/Demo state would be best case senario but that might wait till version 0.2.0 due to not planning to include save and loading in 0.1.0 goals but as one of the first 0.2.0 goals
+
 - [x] Have world render
 - [x] Have resource system
 - [x] Have ok atleast map generator
@@ -76,13 +81,34 @@ Beware the menu and button states dont update each other tough
 - [x] Unit actions
 - [x] Process a minimal turn
 - [ ] Cities that can build something (WIP)
-- [x] Basic player ownership and city being aware of tiles around it (WIP)
-- [x] UI city show ownership of tiles around it. (WIP)
+- [x] Basic player ownership and city being aware of tiles around it
+- [x] UI city show ownership of tiles around it.
 - [ ] Basic UI element (WIP)
 - [x] Movement for units both pathfinded and weighted + UI
 - [x] Basic backend system integration like managers, systems, logging
 - [x] Proper Implementation UI system (kivy)
-- [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
+
+### (Provisional) 0.2.0 Goals
+
+- [ ] Saving/Loading + GUI
+- [ ] Map regeneration
+- [ ] Map gen parameters in GUI
+- [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for
+this.
+- [ ] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
+- [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
+- [ ] City/Empire borders drawn
+- [ ] Change log generation + Auto versioning
+
+### (Provisional) 0.3.0 Goals
+
+<details>
+
+- [ ] Unit embarkaction/disembarkaction.
+- [ ] Sea/Air units
+- [ ] Show result before moving
+
+</details>
 
 ### Other information
 
