@@ -20,6 +20,7 @@ class Openciv(ShowBase):
     def __init__(
         self,
     ):
+        from managers.assets import AssetManager
         from managers.ui import ui
         from managers.world import World
 
@@ -28,6 +29,7 @@ class Openciv(ShowBase):
         simplepbr.init()
         self.disableMouse()
         Cache.set_showbase_instance(self)
+
         # Base messenger object from panda3d
         self.messenger: Messenger = Messenger()
 
@@ -55,6 +57,11 @@ class Openciv(ShowBase):
         config_mgr = ConfigManager()
         ConfigManager._set_instance(config_mgr)
         config_mgr.apply_config_to_prc()
+
+        self.engine_logger.info("Setting up asset manager")
+        self.asset_manager: AssetManager = AssetManager.get_instance()
+        AssetManager._set_instance(self.asset_manager)
+        self.asset_manager.set_base(self)
 
         self.engine_logger.info("Setting up camera")
         self.civ_camera = CivCamera(self)
