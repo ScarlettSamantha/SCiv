@@ -39,6 +39,10 @@ class PlayerManager(BaseManager):
         return cls._players[turn]
 
     @classmethod
+    def all(cls) -> Dict[int, Player]:
+        return cls._players
+
+    @classmethod
     def players(cls) -> Dict[int, Player]:
         return cls._players
 
