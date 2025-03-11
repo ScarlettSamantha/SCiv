@@ -19,7 +19,9 @@ class AssetManager(Singleton):
     base: Optional["Openciv"] = None
     _logger: Optional[Logger] = None
 
-    def __setup__(self): ...
+    def __setup__(self):
+        if self._logger is None and self.base is not None and self.base.logger is not None:
+            self._logger = self.base.logger.engine.getChild("manager.asset")
 
     @classmethod
     def logger(cls) -> Logger:
