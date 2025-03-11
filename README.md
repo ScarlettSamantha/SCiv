@@ -66,7 +66,7 @@ Beware the menu and button states dont update each other tough
 
 > Improvements/ToDo's [TODO](meta/todo.md)
 
-### 0.1.0 Goals
+### 0.1.0 Goals - Dev
 
 The goal of the 0.1.0 release is to have systems functional(engine, managers, rendering and world) and in a testable state.
 
@@ -88,7 +88,9 @@ A POC/Demo state would be best case senario but that might wait till version 0.2
 - [x] Basic backend system integration like managers, systems, logging
 - [x] Proper Implementation UI system (kivy)
 
-### (Provisional) 0.2.0 Goals
+### (Provisional) 0.2.0 Goals - Dev
+
+The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
 
 - [ ] Saving/Loading + GUI
 - [ ] Map regeneration
@@ -99,14 +101,35 @@ this.
 - [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
 - [ ] City/Empire borders drawn
 - [ ] Change log generation + Auto versioning
+- [ ] Working research
+- [ ] Civic system implementation
+- [ ] Hide development things behind a toggle.
+- [ ] Settings menu
+- [ ] Basic documentation
+- [ ] Dynamic spawning of models when buildings/improvements get build
 
-### (Provisional) 0.3.0 Goals
+### (Provisional) 0.3.0 Goals - Alpha
+
+Adding more functionality to aready existing systems and flushing out the combat system and working on units that can inhabit a other plane eg: air, water and space(satelites) units.
+
+This should be the first real "playable" version that should be some level of fun.
 
 <details>
 
 - [ ] Unit embarkaction/disembarkaction.
 - [ ] Sea/Air units
 - [ ] Show result before moving
+- [ ] Wonders
+- [ ] (?) Basic enemy AI
+- [ ] Unit promotions and exp
+- [ ] Auto move if a move action is to far to do it at the end of the next turn
+- [ ] Build queue
+- [ ] Battle result calculation UI
+- [ ] Basic ingame codex UI (not fully implemented)
+- [ ] Better looking tiles
+- [ ] Barbarians
+- [ ] Rivers (navigable ?)
+- [ ] City renaming/manual naming
 
 </details>
 
@@ -301,5 +324,6 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 </details>
 
 > ⚖️ **Disclaimer:** This game and its associated code are provided for educational and informational purposes only. The author assumes no responsibility for any errors, omissions, or inaccuracies in the code. Users are strongly advised to thoroughly review, test, the code. The author makes no guarantees regarding the security, reliability, or performance of the game. By using this code, you agree that the author shall not be held liable for any damages, losses, or other consequences arising from its use, misuse, or inability to use the game, including but not limited to any unintended or harmful actions caused by the game. Use this game at your own risk and ensure that all necessary precautions are taken.
+
 > 🌍 **Historical Context and Point of View Disclaimer:**
 > OpenCiv includes civilizations, leaders, and events inspired by real-world history but real history is complex. While I strive to create a neutral point of view, the game may simplify or alter historical events for gameplay purposes. These portrayals try to not reflect any political or cultural stance but should not be taken as any kind of truth. The content reflects my personal view and understanding from a (inherently limited) Western perspective, and I try to avoid contentious topics I am uncomfortable with dealing with. I acknowledge that many events depicted were horrible and should never be repeated. This game is for entertainment. Please don't cancel me; I want to create a fun game for everyone. 🙏
