@@ -2137,6 +2137,20 @@
               "name": "Wind Farm",
               "description": "Facility for wind energy production"
             }
+          },
+          "city": {
+            "barracks": {
+              "name": "Barracks",
+              "description": "Military training facility"
+            },
+            "granary": {
+              "name": "Granary",
+              "description": "Food storage building"
+            },
+            "monument": {
+              "name": "Monument",
+              "description": "Cultural heritage site"
+            }
           }
         }
       },

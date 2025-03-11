@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
+from direct.showbase.Messenger import Messenger
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -8,14 +9,19 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 
 from gameplay.city import City
+from gameplay.repositories.improvements import BaseCityImprovement
 from gameplay.tile_yield_modifier import TileYieldModifier
+from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
 from menus.kivy.elements.image_label import ImageLabel
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
+if TYPE_CHECKING:
+    from main import Openciv
+
 
 class CityUI(BoxLayout, CollisionPreventionMixin):
-    def __init__(self, base, name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
+    def __init__(self, base: "Openciv", name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
         super().__init__(base=base, disable_zoom=True, orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
         self.pos_hint = {"x": 0, "center_y": 0.75}  # Align left & center vertically
         self.size_hint = (0.45, 0.2)  # type: ignore # Ensure fixed width and height
@@ -25,7 +31,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        self.base = base
+        self.base: "Openciv" = base
+        self.logger = base.logger.gameplay.getChild("ui.city_ui")
         self.frame: Optional[BoxLayout] = None
         self.hidden: bool = False
 
@@ -51,7 +58,16 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.science_label: Optional[ImageLabel] = None
         self.culture_label: Optional[ImageLabel] = None
 
+        self.buildable_buttons: Dict[str, Button] = {}
+        self.buildable_improvements: Dict[str, BaseCityImprovement] = {}
+
         self.add_widget(self.build())
+        self.register()
+
+    def register(self):
+        self.base.accept("ui.update.ui.refresh_city_ui", self.update)
+        self.base.accept("ui.update.ui.show_city_ui", self.show)
+        self.base.accept("ui.update.ui.hide_city_ui", self.hide)
 
     def set_city(self, city: City):
         self.city = city
@@ -59,6 +75,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
     def update(self):
         if self.city is None:
             return
+        self.logger.debug(f"Updating City UI for city: {self.city.name}")
+
         self.city_name = self.city.name
 
         if self.city_label is not None:
@@ -92,7 +110,48 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             self.science_label.set_text(f"Science: {tile_yield.science.value}")
             self.culture_label.set_text(f"Culture: {tile_yield.culture.value}")
 
+        if self.button_container is not None:
+            self.generate_buttons()
+            self.button_container.clear_widgets()
+            for button in self.buildable_buttons.values():
+                self.button_container.add_widget(button)
+
+    def generate_buttons(self) -> Dict[str, Button]:
+        from gameplay.repositories.improvements import ImprovementsRepository
+
+        self.buildable_improvements = {}
+        self.buildable_buttons = {}
+        buttons = {}
+
+        def format_button_text(instance: BaseCityImprovement) -> str:
+            return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
+
+        for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
+            class_instance = class_ref()
+            if not class_instance.conditions.are_met():
+                continue
+
+            button = ButtonValue(
+                text=format_button_text(class_instance), value=class_instance.name, size_hint=(1, None), height=50
+            )
+            button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
+            buttons[class_name] = button
+
+            self.buildable_improvements[class_name] = class_instance
+            self.buildable_buttons[class_name] = button
+
+        return buttons
+
+    def on_build_button_click(self, instance: ButtonValue):
+        if self.city is None:
+            return
+
+        self.logger.debug(f"Requesting to build improvement: {instance.value} in city: {self.city.name}")
+
+        Messenger().send("game.gameplay.city.request_start_building_improvement", [self.city, instance.value])
+
     def build(self) -> BoxLayout:
+        self.logger.debug("Building City UI")
         self.background_color = (0, 0, 0, 1)  # Black background
 
         # Main container (background black box)
@@ -150,15 +209,15 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.frame.add_widget(self.actions_label)
 
         # ScrollView Clipping Container
-        clipping_container = ClippingScrollList(size_hint=(1, None), height=400)
+        self.button_container = ClippingScrollList(size_hint=(1, None), height=400)
 
         # Add buttons (Actions List)
-        for i in range(20):
+        for i in range(5):
             btn = Button(text=f"Action {i + 1}", size_hint=(1, None), height=50)
-            clipping_container.add_widget(btn)
+            self.button_container.add_widget(btn)
 
         # Add ScrollView inside the clipping container
-        self.frame.add_widget(clipping_container)
+        self.frame.add_widget(self.button_container)
 
         # Footer (Bottom section)
         self.footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
@@ -214,6 +273,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         if self.frame is None:
             raise AssertionError("City view has not been built yet.")
 
+        self.logger.debug("Showing City UI")
+
         if city is not None:
             self.set_city(city)
 
@@ -228,6 +289,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         """Hides the City View."""
         if self.frame is None:
             raise AssertionError("City view has not been built yet.")
+
+        self.logger.debug("Hiding City UI")
 
         if auto_forget:
             self.city = None

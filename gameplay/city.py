@@ -4,13 +4,14 @@ from typing import TYPE_CHECKING, List, Optional
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.citizens import Citizens
-from gameplay.improvement import Improvement
-from gameplay.improvements import Improvements
+from gameplay.improvements_set import ImprovementsSet
+from gameplay.resource import BaseResource
 from gameplay.tile_yield_modifier import TileYieldModifier
 from managers.log import LogManager
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
 
@@ -43,7 +44,11 @@ class City(BaseEntity):
 
         self.tax_level: float = 0.0
 
-        self._improvements: Improvements = Improvements()
+        self.is_producing: bool = False
+        self.resource_required: Optional[BaseResource] = None
+        self.resource_required_amount: int = 0
+
+        self._improvements: ImprovementsSet = ImprovementsSet()
 
         # @todo
         self.spies = []
@@ -59,7 +64,7 @@ class City(BaseEntity):
 
         self.base.accept("game.gameplay.city.gets_tile_ownership", self.on_tile_ownership_changed)
 
-    def build(self, improvement: Improvement):
+    def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
 
     def promote_to_capital(self):
