@@ -18,6 +18,7 @@ from gameplay.relationships import Relationships
 from gameplay.resource import Resources
 from gameplay.trades import Trades
 from gameplay.votes import Votes
+from gameplay.yields import Yields
 from helpers.colors import Colors, Tuple4f
 from system.entity import BaseEntity
 
@@ -104,6 +105,11 @@ class Player(BaseEntity):
 
         self.effects: Effects = Effects()
 
+        self.science: Yields = Yields(science=0)
+        self.culture: Yields = Yields(culture=0)
+        self.faith: Yields = Yields(faith=0)
+        self.gold: Yields = Yields(gold=0)
+
         self._register_callbacks()
 
     def register(self) -> None:
@@ -122,6 +128,12 @@ class Player(BaseEntity):
     # @todo make citizens seperate thing.
     def on_citizen_birth(self, citizen: Citizen) -> None:
         self.population += 1
+
+    def contribute(self, yield_: Yields) -> None:
+        self.science += yield_
+        self.culture += yield_
+        self.faith += yield_
+        self.gold += yield_
 
     def _recalculate(self) -> None:
         properties: tuple[

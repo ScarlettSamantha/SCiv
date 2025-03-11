@@ -99,11 +99,16 @@ class City(BaseEntity):
         self.logger.debug(f"City {self.name} is processing turn {turn}.")
 
         # Calculate yield once per turn
-        tile_yield: Yields = self.calculate_yield_from_tiles()
+        yields: Yields = self.calculate_yield_from_tiles()
 
         self._process_food()
         if self.is_building and self.building is not None:
-            self._process_production(tile_yield)
+            self._process_production(yields)
+        self._process_owner_contributions(yields)
+
+    def _process_owner_contributions(self, yields: Yields):
+        if self.player is not None:
+            self.player.contribute(yields)
 
     def _process_production(self, tile_yield: Yields) -> None:
         """Process production: add resources and check if improvement is complete."""
