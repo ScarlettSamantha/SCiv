@@ -769,6 +769,9 @@ class BaseTile(BaseEntity):
                 "owned_tiles": ",".join(str(tile.tag) for tile in self.city.owned_tiles if tile.tag is not None),
                 "population": self.city.population,
                 "is_capital": self.city.is_capital,
+                "is_building": self.city.is_building,
+                "building": self.city.building,
+                "resources_needed": f"{self.city.resource_required_amount}/{self.city.resource_collected}",
             }
             data["city"] = "\n".join(f"{k}: {v}" for k, v in data["city"].items())
 

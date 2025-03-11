@@ -40,11 +40,11 @@ class DebugPanel(FloatLayout):
             text="Debug Info: None Yet",
             size_hint=(None, None),
             width=300,
-            height=600,
+            height=700,
             font_size="11sp",
             valign="top",
             halign="left",
-            text_size=(300, 600),
+            text_size=(300, 700),
             pos_hint={"x": 0, "top": 1},
             color=(1, 1, 1, 1),
         )
