@@ -1,3 +1,5 @@
+from typing import List
+
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.uix.boxlayout import BoxLayout
@@ -11,6 +13,10 @@ class ClippingScrollList(ScrollView):
         self.do_scroll_y = True
         self.smooth_scroll_speed = 0.2  # Adjust speed (higher = slower)
 
+        # Make scrollbar wider and white
+        self.bar_width = 12  # Increase scrollbar width
+        self.bar_color = [1, 1, 1, 1]  # RGBA (White, fully opaque)
+
         self._container = BoxLayout(orientation="vertical", size_hint_y=None, padding=5)
         self._container.bind(minimum_height=self._container.setter("height"))  # type: ignore
 
@@ -21,7 +27,7 @@ class ClippingScrollList(ScrollView):
         if isinstance(widget, Widget) and widget != self._container:
             widget.opacity = 1  # Ensure all widgets start visible
             self._container.add_widget(widget)
-            self._apply_clipping()  # Ensure correct visibility
+            self._apply_clipping()  # Ensure correct visibility and scrolling behavior
         else:
             super().add_widget(widget, *args, **kwargs)
 
@@ -45,18 +51,22 @@ class ClippingScrollList(ScrollView):
 
     def _apply_clipping(self, *args):
         """
-        Apply clipping so items:
-        - Start **visible** in the viewport.
-        - Become **hidden as soon as their top crosses above the viewport's top**.
+        Apply clipping and enable/disable scrolling dynamically.
         """
-        viewport_y = self.to_window(0, self.y)[1] + self.height  # Invert viewport Y
+        viewport_height = self.height
+        content_height = self._container.height
+
+        # Disable scrolling if content fits in viewport
+        self.do_scroll_y = content_height > viewport_height
+
+        viewport_y = self.to_window(0, self.y)[1] + viewport_height  # Inverted viewport Y
 
         for child in self._container.children:  # type: ignore
             child_y = child.to_window(0, child.y)[1] + child.height  # Adjust for Kivy-Panda inversion
             child_top = child_y  # The top edge of the widget
 
             # Correct visibility logic:
-            is_visible = (child_top >= viewport_y - self.height) and (child_top < viewport_y)
+            is_visible = (child_top >= viewport_y - viewport_height) and (child_top < viewport_y)
 
             if is_visible and child.opacity == 0:
                 child.opacity = 1
@@ -68,3 +78,7 @@ class ClippingScrollList(ScrollView):
         Ensure the clipping updates when resizing the widget.
         """
         self._apply_clipping()
+
+    def clear_widgets(self, children: List[Widget] | None = None) -> None:
+        self._container.clear_widgets(children=children)
+        self._apply_clipping()  # Re-check scroll enablement
