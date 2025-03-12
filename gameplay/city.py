@@ -108,7 +108,7 @@ class City(BaseEntity):
 
     def _process_owner_contributions(self, yields: Yields):
         if self.player is not None:
-            self.player.contribute(yields)
+            self.player.contribute(yields.only(["gold", "faith", "science", "culture"]))
 
     def _process_production(self, tile_yield: Yields) -> None:
         """Process production: add resources and check if improvement is complete."""
