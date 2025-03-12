@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +15,13 @@ class Liberalism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.individual_rights import IndividualRights
+        from gameplay.cultures.core.civil_liberties import CivilLiberties
         from gameplay.cultures.core.free_market import FreeMarket
+        from gameplay.cultures.core.global_cooperation import GlobalCooperation
+        from gameplay.cultures.core.individual_rights import IndividualRights
         from gameplay.cultures.core.representative_democracy import RepresentativeDemocracy
         from gameplay.cultures.core.social_welfare import SocialWelfare
-        from gameplay.cultures.core.civil_liberties import CivilLiberties
-        from gameplay.cultures.core.global_cooperation import GlobalCooperation
-        from openciv.engine.requires import RequiresCivicComplete
+        from system.requires import RequiresCivicComplete
 
         individual_rights = IndividualRights()
         self.add_civic(individual_rights)

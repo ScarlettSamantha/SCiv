@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +15,13 @@ class Communism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.class_abolition import ClassAbolition
-        from gameplay.cultures.core.communal_living import CommunalLiving
         from gameplay.cultures.core.centralized_economy import CentralizedEconomy
-        from gameplay.cultures.core.proletarian_dictatorship import ProletarianDictatorship
+        from gameplay.cultures.core.class_abolition import ClassAbolition
         from gameplay.cultures.core.collectivized_agriculture import CollectivizedAgriculture
+        from gameplay.cultures.core.communal_living import CommunalLiving
         from gameplay.cultures.core.international_solidarity import InternationalSolidarity
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.proletarian_dictatorship import ProletarianDictatorship
+        from system.requires import RequiresCivicComplete
 
         class_abolition = ClassAbolition()
         self.add_civic(class_abolition)

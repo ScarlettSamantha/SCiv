@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -12,13 +13,13 @@ class Unionism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.cooperative_governance import CooperativeGovernance
-        from gameplay.cultures.core.shared_sovereignty import SharedSovereignty
-        from gameplay.cultures.core.economic_integration import EconomicIntegration
-        from gameplay.cultures.core.cultural_exchange import CulturalExchange
         from gameplay.cultures.core.collective_security import CollectiveSecurity
+        from gameplay.cultures.core.cooperative_governance import CooperativeGovernance
+        from gameplay.cultures.core.cultural_exchange import CulturalExchange
+        from gameplay.cultures.core.economic_integration import EconomicIntegration
+        from gameplay.cultures.core.shared_sovereignty import SharedSovereignty
         from gameplay.cultures.core.unified_policy import UnifiedPolicy
-        from openciv.engine.requires import RequiresCivicComplete
+        from system.requires import RequiresCivicComplete
 
         cooperative_governance = CooperativeGovernance()
         self.add_civic(cooperative_governance)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -12,13 +13,13 @@ class Oligarchy(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.elite_rule import EliteRule
         from gameplay.cultures.core.economic_control import EconomicControl
-        from gameplay.cultures.core.limited_participation import LimitedParticipation
-        from gameplay.cultures.core.wealth_accumulation import WealthAccumulation
+        from gameplay.cultures.core.elite_rule import EliteRule
         from gameplay.cultures.core.exclusive_networks import ExclusiveNetworks
+        from gameplay.cultures.core.limited_participation import LimitedParticipation
         from gameplay.cultures.core.political_manipulation import PoliticalManipulation
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.wealth_accumulation import WealthAccumulation
+        from system.requires import RequiresCivicComplete
 
         elite_rule = EliteRule()
         self.add_civic(elite_rule)
