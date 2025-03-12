@@ -99,8 +99,9 @@ class UnitBaseClass(BaseEntity, ABC):
 
     def register_actions(self): ...
 
-    def get_tile(self) -> BaseTile:
-        return self.tile
+    def get_tile(self) -> BaseTile | None:
+        if self.tile is not None:
+            return self.tile
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -342,6 +343,9 @@ class UnitBaseClass(BaseEntity, ABC):
 
         # Remove from the units lookup dictionary if it exists
         self.unregister()
+
+        if self.tile is None:
+            raise AssertionError(f"Unit {self.key} has no tile assigned.")
 
         # Nullify references to break cyclic dependencies
         self.tile.units.remove_unit(self)
