@@ -1,18 +1,18 @@
 from heapq import heappop, heappush
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
-from gameplay.tiles.base_tile import BaseTile
 from managers.world import World
+
+if TYPE_CHECKING:
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class TileRepository:
-    instance_ref_grid: World = World.get_instance()
-
     def __init__(self) -> None:
         pass
 
     @classmethod
-    def get_tile(cls, x: int, y: int) -> Optional[BaseTile]:
+    def get_tile(cls, x: int, y: int) -> Optional["BaseTile"]:
         """
         Retrieve the tile at the given (x, y) coordinate from the world's grid.
 
@@ -26,7 +26,14 @@ class TileRepository:
         return None
 
     @classmethod
-    def get_tiles_in_radius(cls, tile: BaseTile, radius: int) -> List[BaseTile]:
+    def is_near_map_edge(cls, map_dimensions: Tuple[int, int], tile: "BaseTile", threshold: int = 3) -> bool:
+        """Returns True if the tile is too close to the edge of the map."""
+        x, y = tile.get_map_cords()
+        map_width, map_height = map_dimensions
+        return x < threshold or y < threshold or x >= map_width - threshold or y >= map_height - threshold
+
+    @classmethod
+    def get_tiles_in_radius(cls, tile: "BaseTile", radius: int) -> List["BaseTile"]:
         r"""
         Retrieves all tiles within a given hexagonal radius from the specified tile.
 
@@ -111,7 +118,7 @@ class TileRepository:
         return cube_x, cube_y, cube_z
 
     @classmethod
-    def heuristic(cls, tile_a: BaseTile, tile_b: BaseTile) -> float:
+    def heuristic(cls, tile_a: "BaseTile", tile_b: "BaseTile") -> float:
         r"""
         Computes the hex distance between two tiles by converting them to cube coordinates.
 
@@ -189,7 +196,7 @@ class TileRepository:
         """
         from collections import deque
 
-        if cls.instance_ref_grid is None:
+        if World.get_instance() is None:
             raise ValueError("instance_ref_grid must be set before calling get_neighbors")
 
         directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
@@ -209,7 +216,7 @@ class TileRepository:
                 curr_directions = directions_even if current_tile.x % 2 == 0 else directions_odd
                 for dx, dy in curr_directions:
                     nx, ny = current_tile.x + dx, current_tile.y + dy
-                    neighbor = cls.instance_ref_grid.grid.get((nx, ny))
+                    neighbor = World.get_instance().grid.get((nx, ny))
                     if neighbor and neighbor not in visited:
                         # Apply passable or climbable checks
                         if check_passable and not neighbor.is_passable():
@@ -359,8 +366,8 @@ class TileRepository:
         err = dx - dy
 
         while (x0, y0) != (x1, y1):
-            if (x0, y0) in cls.instance_ref_grid.grid:
-                tile: "BaseTile" = cls.instance_ref_grid.grid[(x0, y0)]
+            if (x0, y0) in World.get_instance().grid:
+                tile: "BaseTile" = World.get_instance().grid[(x0, y0)]
                 if tile.movement_cost > 10:  # Threshold for impassable terrain.
                     return False
 
@@ -513,6 +520,6 @@ class TileRepository:
         return None  # No path found
 
     @staticmethod
-    def hex_distance(tile1: BaseTile, tile2: BaseTile) -> int:
+    def hex_distance(tile1: "BaseTile", tile2: "BaseTile") -> int:
         """Calculate the hex grid distance between two tiles."""
         return (abs(tile1.x - tile2.x) + abs(tile1.y - tile2.y)) // 2
