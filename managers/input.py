@@ -56,7 +56,7 @@ class Input(Singleton):
         from managers.world import World
 
         self.base = base
-        self.map = World.get_instance(self.base)
+        self.map = World.get_instance()
 
         return super().__setup__(*args, **kwargs)
 

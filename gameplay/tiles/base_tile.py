@@ -7,14 +7,12 @@ from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
 
 from gameplay._units import Units
-from gameplay.city import City
 from gameplay.combat.damage import DamageMode
 from gameplay.improvement import Improvement
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile_yield_modifier import TileYieldModifier, Yields
-from gameplay.units.unit_base import UnitBaseClass
 from gameplay.weather import BaseWeather
 from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
@@ -27,6 +25,8 @@ from world.features._base_feature import BaseFeature
 from world.items._base_item import BaseItem
 
 if TYPE_CHECKING:
+    from gameplay.city import City
+    from gameplay.units.unit_base import UnitBaseClass
     from main import Openciv
 
 
@@ -146,13 +146,13 @@ class BaseTile(BaseEntity):
         self.states: List[Any] = []
 
         # Does this contain a city?
-        self.city: Optional[City] = None
+        self.city: Optional["City"] = None
         # Who, if anybody, is the owner of this tile?
         self.owner: Optional[Player] = None
         # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
         # is this city being worked by a city?
-        self.city_owner: Optional[City] = None
+        self.city_owner: Optional["City"] = None
 
         self.texture_card: Optional[NodePath] = None
         self.texture_card_texture: Optional[NodePath] = None
@@ -274,7 +274,7 @@ class BaseTile(BaseEntity):
         self.tile_icon_group.reparentTo(self.models[0])
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))
 
-    def is_visisted_by(self, unit: UnitBaseClass) -> bool:
+    def is_visisted_by(self, unit: "UnitBaseClass") -> bool:
         messenger.send("unit.action.move.visiting_tile", [unit, self])
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
@@ -690,13 +690,11 @@ class BaseTile(BaseEntity):
     def build(self, improvement: Improvement) -> None:
         self._improvements.add(improvement)
 
-    def add_unit(self, unit: UnitBaseClass) -> None:
+    def add_unit(self, unit: "UnitBaseClass") -> None:
         unit.tile = self
-        if unit.base is None:
-            unit.base = self.base
         self.units.add_unit(unit)
 
-    def remove_unit(self, unit: UnitBaseClass) -> None:
+    def remove_unit(self, unit: "UnitBaseClass") -> None:
         del unit.tile
         # Assuming the intent is to remove the unit.
         self.units.remove_unit(unit)
@@ -789,6 +787,7 @@ class BaseTile(BaseEntity):
 
         The messeging system is used to inform the player of the city being founded via the action(gameplay.actions.unit.found) that calls this mostly.
         """
+        from gameplay.city import City
         from gameplay.terrain.city import City as CityTerrain
 
         if player is None:
@@ -820,6 +819,9 @@ class BaseTile(BaseEntity):
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
+
+    def get_map_cords(self) -> Tuple[int, int]:
+        return self.x, self.y
 
     def instance_resource(self, resource: Type[BaseResource]):
         """Just here to decouplel it from enrich from extra data as it will be gone soon."""
