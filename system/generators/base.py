@@ -62,12 +62,26 @@ class BaseGenerator(ABC):
             raise ValueError("Number of enemies not set")
 
         players = []
+        civs_ingame = []
 
         for i in range(self.config.num_enemies + 1):  # +1 for the player
-            if i == 0:
+            if i == 0:  # Player
                 chosen_civilization: Type[Civilization] = player_civilization
-            else:
+                civs_ingame.append(chosen_civilization)
+            else:  # AI
                 chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
+                while True:
+                    chosen_civilization = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
+                    already_ingame = False
+
+                    if chosen_civilization in civs_ingame:
+                        already_ingame = True
+                    else:
+                        civs_ingame.append(chosen_civilization)
+
+                    if already_ingame is False:  # We try to avoid having the same civilization twice
+                        break
+
             chosen_personality: Type[Personality] = PersonalityRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
 
             if isinstance(chosen_civilization, list):
