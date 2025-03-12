@@ -54,6 +54,11 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.gameplay.city.request_start_building_improvement` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
+
+- `game.gameplay.city.request_start_building_unit` (E: ui-part-city | L: city)
+- `game.gameplay.city.starts_building_unit` (E: ui-part-city | L: city)
+- `game.gameplay.city.finishes_building_unit` (E: ui-part-city | L: city)
+
 - `game.gameplay.city.population_grow` (E: city)
 - `game.gameplay.city.population_starve` (E: city | L: manager-ui)
 - `game.gameplay.city.requests_tile` (E: city | L: manager-world)
@@ -74,7 +79,10 @@ These are used by the UI manager to controll some debug actions these may disape
 
 - `ui.update.ui.hide_city_ui` (L: ui-part-city)
 - `ui.update.ui.show_city_ui` (L: ui-part-city)
+
 - `ui.update.ui.refresh_city_ui` (E: manager-ui | L: ui-part-city)
+- `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
+- `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
 
 - `ui.update.ui.debug_ui_toggle` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)

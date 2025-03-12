@@ -434,6 +434,18 @@
             "city_founded": {
               "title": "City founded",
               "message": "You have founded an city."
+            },
+            "city_already_exists": {
+              "title": "City already exists",
+              "message": "A city already exists on this tile."
+            },
+            "city_already_owned": {
+              "title": "Tile is owned by a other player",
+              "message": "You cant found cities on tiles that are not neuteral or yours."
+            },
+            "tile_not_passable": {
+              "title": "Tile is not passable",
+              "message": "You cant found cities on tiles that are not passable."
             }
           }
         }
@@ -2310,8 +2322,8 @@
                 "name": "Settler",
                 "description": "Unit that founds new cities"
               },
-              "worker": {
-                "name": "Worker",
+              "builder": {
+                "name": "Builder",
                 "description": "Unit that constructs improvements"
               },
               "trader": {

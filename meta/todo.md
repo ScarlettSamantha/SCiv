@@ -20,6 +20,7 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Remove old classes from old engine.
 - [ ] Move more logic from main into the game manager of possible.
 - [ ] Rename tileyield to something more generic as its used as the generic resource container
+- [ ] Promotion system rework as it has to many properties.
 
 ## Improvements
 
@@ -28,3 +29,5 @@ These are not features more things that exist right now and needs to be done som
 - [x] Colidable mixin should not calculate geometry of ui elements every tick but every few ticks
 - [ ] Refactor class file into a non-colision and better named.
 - [ ] Cities need to check if they are buildable and not to close to other cities.
+- [ ] Units loose focus to often
+- [ ] UI sometimes mostly the first clicks are not registered.
