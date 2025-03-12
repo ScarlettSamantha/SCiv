@@ -11,7 +11,6 @@ from gameplay.repositories.personality import (
 )
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
-from helpers.tiles import TileHelper
 from managers.i18n import T_TranslationOrStrOrNone, _t, get_i18n
 from managers.player import PlayerManager
 from managers.unit import Unit
@@ -135,7 +134,7 @@ class BaseGenerator(ABC):
                         continue
 
                     distance_ok = all(
-                        TileHelper.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles
+                        TileRepository.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles
                     )
 
                     # **Check if any of the tile's neighbors are coastal**
