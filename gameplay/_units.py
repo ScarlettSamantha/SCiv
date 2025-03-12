@@ -22,3 +22,9 @@ class Units(Generic[T]):
 
     def all(self) -> List[T]:
         return self.units
+
+    def has(self, unit: T) -> bool:
+        return unit in self.units
+
+    def has_any(self) -> bool:
+        return len(self.units) > 0
