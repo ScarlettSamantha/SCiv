@@ -11,6 +11,7 @@ class Civilization:
     name: T_TranslationOrStr = ""
     description: T_TranslationOrStr = ""
     city_names: List[T_TranslationOrStr] = []
+    city_name_index: int = 0
 
     def __init__(
         self,
@@ -22,7 +23,6 @@ class Civilization:
 
         self._effects: Effects = Effects()
         self.leader: Leader | None = None
-        self.city_name_index: int = 0
 
         # Init registers
         self.register_effects()
@@ -61,10 +61,10 @@ class Civilization:
 
     def get_city_name_translation(self) -> T_TranslationOrStr:
         city_name = self.city_names[self.city_name_index]
-        if self.city_name_index < len(self.city_names) - 1:
-            self.city_name_index = 0  # Reset to 0 as we have reached the end of the list
-        else:
+        if self.city_name_index + 1 < len(self.city_names):
             self.city_name_index += 1
+        else:
+            self.city_name_index = 0  # Reset to 0 as we have reached the end of the list
         return city_name
 
     def __str__(self) -> str:
