@@ -11,6 +11,9 @@ from kivy.uix.scrollview import ScrollView
 
 from gameplay.city import City
 from gameplay.repositories.improvements import BaseCityImprovement
+from gameplay.repositories.unit import UnitRepository
+from gameplay.units.core.classes.civilian._base import CivilianBaseClass
+from gameplay.units.core.classes.mililtary._base import MilitaryBaseClass
 from gameplay.yields import Yields
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
@@ -61,6 +64,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         self.buildable_buttons: Dict[str, Button] = {}
         self.buildable_improvements: Dict[str, BaseCityImprovement] = {}
+        self.buildable_units: Dict[str, CivilianBaseClass | MilitaryBaseClass] = {}
 
         self.add_widget(self.build())
         self.register()
@@ -144,31 +148,48 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.buildable_buttons = {}
         buttons = {}
 
-        def format_button_text(instance: BaseCityImprovement) -> str:
+        def format_button_text(instance: BaseCityImprovement | CivilianBaseClass | MilitaryBaseClass) -> str:
             return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
 
-        for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
-            class_instance = class_ref()
-            if self.city is None:
-                continue
+        def buildings():
+            for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
+                class_instance: BaseCityImprovement = class_ref()
+                if self.city is None:
+                    continue
 
-            if not class_instance.conditions.are_met():
-                continue
+                if not class_instance.conditions.are_met():
+                    continue
 
-            if type(class_instance) in self.city._improvements:  # We already have this improvement
-                continue
+                if type(class_instance) in self.city._improvements:  # We already have this improvement
+                    continue
 
-            if type(class_instance) == type(self.city.building):  # We are already building this
-                continue
+                if type(class_instance) == type(self.city.building):  # We are already building this
+                    continue
 
-            button = ButtonValue(
-                text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
-            )
-            button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
-            buttons[class_name] = button
+                button = ButtonValue(
+                    text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
+                )
+                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
+                buttons[class_name] = button
 
-            self.buildable_improvements[class_name] = class_instance
-            self.buildable_buttons[class_name] = button
+                self.buildable_improvements[class_name] = class_instance
+                self.buildable_buttons[class_name] = button
+
+        def units():
+            for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
+                class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref() # type: ignore
+
+                button = ButtonValue(
+                    text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
+                )
+                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
+                buttons[class_name] = button
+
+                self.buildable_units[class_name] = class_instance
+                self.buildable_buttons[class_name] = button
+
+        buildings()
+        units()
 
         return buttons
 

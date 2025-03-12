@@ -12,6 +12,7 @@ from gameplay.resource import BaseResource
 from gameplay.yields import Yields
 from managers.log import LogManager
 from system.entity import BaseEntity
+from system.generators.base import TileRepository
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
@@ -86,6 +87,9 @@ class City(BaseEntity):
             f"game.gameplay.city.request_start_building_improvement_{self.tag}",
             self.on_request_start_building_improvement,
         )
+        self.base.accept(
+            f"game.gameplay.city.request_start_building_unit_{self.tag}", self.on_request_start_building_unit
+        )
 
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
@@ -114,11 +118,10 @@ class City(BaseEntity):
         """Process production: add resources and check if improvement is complete."""
         production = tile_yield.only(["production"])
         self.resource_collected += production
+        from gameplay.units.unit_base import UnitBaseClass
 
         if self.resource_collected.only(["production"]) >= self.resource_required_amount and self.building is not None:
-            self.logger.debug(
-                f"City {self.name} has collected enough resources to build improvement {self.building.name}."
-            )
+            self.logger.debug(f"City {self.name} has collected enough resources to build {self.building.name}.")
             # Save current building reference before resetting it.
             building = self.building
 
@@ -131,6 +134,38 @@ class City(BaseEntity):
             if isinstance(building, BaseCityImprovement):
                 self._improvements.add(building)
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_improvement", [self, building])
+            elif isinstance(building, UnitBaseClass):
+                if self.player is not None:
+                    self.player.units.add_unit(building)
+
+                tile_to_spawn = None
+                if not self.tile.units.has_any():  # If there are no units on the tile, spawn the unit on the city tile.
+                    tile_to_spawn = self.tile
+                else:
+                    radius: List[int] = [1, 2, 3, 4]
+                    for r in radius:  # Check for a tile to spawn the unit on. We check in a radius of 1, 2, 3, 4 tiles.
+                        tiles = TileRepository.get_neighbors(self.tile, r)
+                        for tile in tiles:
+                            if (
+                                not tile.units.has_any()
+                                and tile.is_passable()
+                                and tile.is_occupied() is False
+                                and tile.is_water is False
+                            ):
+                                tile_to_spawn = tile
+                                break
+                        if tile_to_spawn is not None:
+                            break
+
+                if tile_to_spawn is None:
+                    raise AssertionError("Could not find a tile to spawn the unit on.")
+
+                unit: UnitBaseClass = building
+                unit.tile = tile_to_spawn
+                unit.owner = self.player
+                unit.spawn()
+
+                MessengerGlobal.messenger.send("game.gameplay.city.finish_building_unit", [self, building])
             self.logger.debug(f"City {self.name} has finished building improvement.")
 
     def _process_food(self) -> None:
@@ -187,6 +222,7 @@ class City(BaseEntity):
     def on_request_start_building_improvement(self, city: "City", improvement: "BaseCityImprovement"):
         if city != self:  # This does not concern us
             return
+        from gameplay.units.unit_base import UnitBaseClass
 
         self.logger.debug(f"City {city.name} got request to build improvement {improvement.name}.")
 
@@ -207,6 +243,20 @@ class City(BaseEntity):
 
         self.logger.debug(f"City {self.name} is starting to build improvement {improvement.name}. sending message.")
         MessengerGlobal.messenger.send("game.gameplay.city.starts_building_improvement", [self, improvement])
+
+    def on_request_start_building_unit(self, city: "City", unit: "UnitBaseClass"):
+        if city != self:
+            return
+
+        self.logger.debug(f"City {city.name} got request to build unit {unit.name}.")
+
+        self.is_building = True
+        self.resource_required = unit.resource_needed
+        self.resource_required_amount = unit.amount_resource_needed
+        self.resource_collected = Yields.nullYield()
+        self.building = unit
+
+        MessengerGlobal.messenger.send("game.gameplay.city.starts_building_unit", [self, unit])
 
     def on_turn_change_stage_city(self, city: "City", turn: int):
         if city != self:

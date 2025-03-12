@@ -1,41 +1,84 @@
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
-from gameplay.units.unit_base import UnitBaseClass
 from managers.i18n import t_
+from system.requires import Condition
 
 if TYPE_CHECKING:
     from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.core.classes.civilian.settler import Settler
 
 
+class CantFoundReasons(Enum):
+    COULD_FOUND = 0
+    TILE_IS_CITY = 1
+    TILE_IS_OWNED = 2
+    TILE_IS_NOT_PASSABLE = 3
+
+
 class FoundAction(BaseUnitAction):
-    def __init__(self, instance: "UnitBaseClass | Settler"):
+    def __init__(self, instance: "Settler"):
         # Dynamically import Settler class to avoid circular import issues
-        from gameplay.units.core.classes.civilian.settler import Settler
-
-        if not isinstance(instance, Settler) and not issubclass(type(instance), Settler):
-            raise TypeError("instance must be of type Settler or derivative")
-
-        if isinstance(instance, UnitBaseClass) and not isinstance(
-            instance, Settler
-        ):  # This is a type hint, not a real check
-            raise TypeError("instance must be of type Settler or derivative")
-
-        self.unit: "Settler" = instance
-        self.tile: "BaseTile | None" = None
 
         super().__init__(
             name=t_("actions.unit.found_city"),
             action=self.found_action_wrapper,
-            condition=instance.founding_conditions,  # type: ignore
+            condition=self.founding_conditions,  # type: ignore
             on_success=self.on_success,
+            on_failure=self.on_failure,
         )
-
+        self.unit: "Settler" = instance
+        self.tile: "BaseTile | None" = instance.get_tile()
         self.on_the_spot_action = True
         self.targeting_tile_action = False
+
+    def founding_conditions(self, _: Condition) -> bool:
+        tile = self.unit.get_tile()
+        if tile is None:
+            return False
+
+        if tile.is_city() is True:
+            self.failure_reason = CantFoundReasons.TILE_IS_CITY
+            return False
+        if tile.owner is not None:
+            self.failure_reason = CantFoundReasons.TILE_IS_OWNED
+            return False
+        if not tile.is_passable():
+            self.failure_reason = CantFoundReasons.TILE_IS_NOT_PASSABLE
+            return False
+        return True
+
+    def on_failure(self, *args, **kwargs) -> None:
+        if self.failure_reason == CantFoundReasons.TILE_IS_CITY:
+            messenger.send(
+                "ui.request.open.popup",
+                [
+                    "city_already_exists",
+                    t_("ui.dialogs.unit.found_city.city_already_exists.title"),
+                    t_("ui.dialogs.unit.found_city.city_already_exists.message"),
+                ],
+            )
+        elif self.failure_reason == CantFoundReasons.TILE_IS_OWNED:
+            messenger.send(
+                "ui.request.open.popup",
+                [
+                    "tile_already_owned",
+                    t_("ui.dialogs.unit.found_city.tile_already_owned.title"),
+                    t_("ui.dialogs.unit.found_city.tile_already_owned.message"),
+                ],
+            )
+        elif self.failure_reason == CantFoundReasons.TILE_IS_NOT_PASSABLE:
+            messenger.send(
+                "ui.request.open.popup",
+                [
+                    "tile_not_passable",
+                    t_("ui.dialogs.unit.found_city.tile_not_passable.title"),
+                    t_("ui.dialogs.unit.found_city.tile_not_passable.message"),
+                ],
+            )
 
     def on_success(self, *args, **kwargs) -> bool:
         from managers.player import PlayerManager
@@ -74,7 +117,7 @@ class FoundAction(BaseUnitAction):
 
     def found_action_wrapper(self, *args, **kwargs) -> bool:
         self.tile = self.unit.tile  # This has to be done before the unit is destroyed otherwise the tile will be None.
-        if not self.unit.tile.found(self.unit.owner):
+        if self.unit.tile is None or not self.unit.tile.found(self.unit.owner):
             return False
 
         self.unit.destroy()
