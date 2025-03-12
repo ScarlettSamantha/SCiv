@@ -9,6 +9,7 @@ from gameplay.repositories.civilization import Civilization as CivilizationRepos
 from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
+from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
 from helpers.tiles import TileHelper
 from managers.i18n import T_TranslationOrStrOrNone, _t, get_i18n
@@ -124,6 +125,7 @@ class BaseGenerator(ABC):
             unit = Settler(base=self.base)
             unit.owner = player
             spawn_tile: Optional[BaseTile] = None
+            fallback_tile: Optional[BaseTile] = None  # Store a fallback tile if needed
 
             for min_distance in min_distances:
                 for _ in range(max_attempts):  # Limit attempts to prevent infinite loops
@@ -132,13 +134,29 @@ class BaseGenerator(ABC):
                     if not _spawn_tile or not _spawn_tile.is_spawnable_upon() or not _spawn_tile.is_passable():
                         continue
 
-                    # Ensure distance from existing spawns
-                    if all(TileHelper.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles):
+                    distance_ok = all(
+                        TileHelper.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles
+                    )
+
+                    # **Check if any of the tile's neighbors are coastal**
+                    neighbors = TileRepository.get_neighbors(_spawn_tile, radius=1)
+                    has_coastal_neighbor = any(n.is_water and n.is_coast for n in neighbors)
+
+                    # **Prioritize tiles with coastal neighbors**
+                    if has_coastal_neighbor and distance_ok:
                         spawn_tile = _spawn_tile
-                        break
+                        break  # Stop looking if we find a valid tile near the coast
+
+                    # **Store a fallback tile if we don't find a coastal-adjacent one**
+                    if distance_ok and fallback_tile is None:
+                        fallback_tile = _spawn_tile  # Store the first valid non-coastal-adjacent tile
 
                 if spawn_tile:
-                    break  # Stop trying lower distances if we found a valid tile
+                    break  # Stop lowering distance if we found a suitable coastal-adjacent tile
+
+            # **Fallback to the non-coastal-adjacent tile if no valid coastal-adjacent tile was found**
+            if spawn_tile is None:
+                spawn_tile = fallback_tile
 
             if spawn_tile is None:
                 raise Exception("No suitable spawn location found for a player")
