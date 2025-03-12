@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from direct.showbase.MessengerGlobal import messenger
 
+from helpers.cache import Cache
 from managers.log import LogManager
 from managers.player import Player, PlayerManager
 from mixins.singleton import Singleton
@@ -18,8 +19,8 @@ if TYPE_CHECKING:
 class World(Singleton):
     logger: Logger = LogManager.get_instance().gameplay.getChild("world")
 
-    def __setup__(self, base):
-        self.base = base
+    def __setup__(self):
+        self.base = Cache.get_showbase_instance()
         self.hex_radius: float = 0.5
         self.col_spacing: float = 1.4
         self.cols: int = 5
@@ -37,10 +38,13 @@ class World(Singleton):
         self.base = base
 
     def register(self):
-        self.base.accept(
+        self.base.accept( # type: ignore
             "game.gameplay.city.requests_tile",
             self.on_city_requests_tile,
         )
+
+    def get_size(self) -> Tuple[int, int]:
+        return self.cols, self.rows
 
     def generate(self, cols: int, rows: int, radius: float, spacing: float = 1.5):
         self.hex_radius = radius
@@ -120,7 +124,7 @@ class World(Singleton):
             self.set_ownership_of_tile(tile, city.player, city)
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
-            self.base.messenger.send(
+            self.base.messenger.send( # type: ignore
                 f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],
             )
