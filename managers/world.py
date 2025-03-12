@@ -8,11 +8,11 @@ from direct.showbase.MessengerGlobal import messenger
 from managers.log import LogManager
 from managers.player import Player, PlayerManager
 from mixins.singleton import Singleton
-from system.generators.base import BaseGenerator
 
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
+    from system.generators.base import BaseGenerator
 
 
 class World(Singleton):
@@ -30,7 +30,7 @@ class World(Singleton):
         self.map: Dict[str, "BaseTile"] = {}
         # Key is the (col, row) tuple, value is the tile.
         self.grid: Dict[Tuple[int, int], "BaseTile"] = {}
-        self.generator: Optional[Type[BaseGenerator]] = None
+        self.generator: Optional[Type["BaseGenerator"]] = None
         self.register()
 
     def __init__(self, base):
@@ -56,7 +56,9 @@ class World(Singleton):
     def lookup_on_tag(self, tag: str) -> Optional["BaseTile"]:
         return self.map.get(tag, None)
 
-    def get_generator(self) -> Optional[Type[BaseGenerator]]:
+    def get_generator(self) -> Optional[Type["BaseGenerator"]]:
+        from system.generators.base import BaseGenerator
+
         if self.generator and issubclass(self.generator, BaseGenerator):
             return self.generator
         return None
