@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Any
-from managers.i18n import t_
 
-from gameplay.units.core.classes.mililtary._base import CoreMilitaryBaseClass
+from typing import Any
+
 from gameplay.promotion import Promotion, PromotionTree
-from openciv.engine.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
+from gameplay.units.core.classes.mililtary._base import CoreMilitaryBaseClass
+from managers.i18n import t_
+from system.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
 
 
 class ScoutPromotion(Promotion):
