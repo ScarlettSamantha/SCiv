@@ -114,7 +114,13 @@ class BaseGenerator(ABC):
             PlayerManager.add(player, i == 0)
         return players
 
-    def place_starting_units(self, max_attempts: int = 50) -> bool:
+    def place_starting_units(
+        self,
+        max_attempts: int = 50,
+        land_ratio_threshold: float = 0.6,
+        land_check_radius: int = 4,
+        map_edge_buffer: int = 3,
+    ) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
 
         unit_manager: Unit = Unit.get_instance()
@@ -123,8 +129,14 @@ class BaseGenerator(ABC):
 
         min_distances: List[int] = [5, 4, 3]  # Distances to attempt
 
+        def has_sufficient_land(tile: BaseTile, radius: int, threshold: float) -> bool:
+            """Checks if the tile has at least the given ratio of land within the radius."""
+            neighbors: List[BaseTile] = TileRepository.get_neighbors(tile, radius=radius)
+            land_tiles = sum(1 for n in neighbors if not n.is_water)
+            return (land_tiles / max(1, len(neighbors))) >= threshold
+
         for player in PlayerManager.players().values():
-            unit: Settler = Settler(base=self.base)
+            unit: Settler = Settler()
             unit.owner = player
             spawn_tile: Optional[BaseTile] = None
             fallback_tile: Optional[BaseTile] = None  # Store a fallback tile if needed
@@ -140,23 +152,31 @@ class BaseGenerator(ABC):
                         TileRepository.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles
                     )
 
-                    # Check if any of the tile's neighbors are coastal
+                    # Check if the tile has coastal neighbors
                     neighbors: List[BaseTile] = TileRepository.get_neighbors(_spawn_tile, radius=1)
                     has_coastal_neighbor: bool = any(n.is_water and n.is_coast for n in neighbors)
+                    near_map_edge: bool = TileRepository.is_near_map_edge(
+                        self.base.world.get_size(), _spawn_tile, map_edge_buffer
+                    )
+                    sufficient_land: bool = has_sufficient_land(_spawn_tile, land_check_radius, land_ratio_threshold)
 
-                    # Prioritize tiles with coastal neighbors
-                    if has_coastal_neighbor and distance_ok:
+                    # Prefer coastal-adjacent tiles that are not near the map edge and have sufficient land
+                    if has_coastal_neighbor and not near_map_edge and sufficient_land and distance_ok:
                         spawn_tile = _spawn_tile
-                        break  # Stop looking if we find a valid tile near the coast
+                        break  # Stop looking if we find a valid tile
 
-                    # Store a fallback tile if we don't find a coastal-adjacent one
+                    # Store a fallback tile that avoids map edges and has enough land if possible
+                    if distance_ok and not near_map_edge and sufficient_land and fallback_tile is None:
+                        fallback_tile = _spawn_tile  # Store the first valid inland tile
+
+                    # Secondary fallback: Accept a tile near the edge if necessary
                     if distance_ok and fallback_tile is None:
-                        fallback_tile = _spawn_tile  # Store the first valid non-coastal-adjacent tile
+                        fallback_tile = _spawn_tile
 
                 if spawn_tile:
-                    break  # Stop lowering distance if we found a suitable coastal-adjacent tile
+                    break  # Stop lowering distance if we found a good tile
 
-            # Fallback to the non-coastal-adjacent tile if no valid coastal-adjacent tile was found
+            # Fallback if no preferred tile was found
             if spawn_tile is None:
                 spawn_tile = fallback_tile
 
