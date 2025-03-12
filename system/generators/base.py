@@ -10,7 +10,7 @@ from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit_base import UnitBaseClass
+from helpers.tiles import TileHelper
 from managers.i18n import T_TranslationOrStrOrNone, _t, get_i18n
 from managers.player import PlayerManager
 from managers.unit import Unit
@@ -111,34 +111,43 @@ class BaseGenerator(ABC):
             PlayerManager.add(player, i == 0)
         return players
 
-    def place_starting_units(self) -> bool:
+    def place_starting_units(self, max_attempts: int = 50) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
 
         unit_manager: Unit = Unit.get_instance()
-        units: List[UnitBaseClass] = []
+        units: List["Settler"] = []
+        occupied_tiles: List[BaseTile] = []  # Track placed player locations
+
+        min_distances = [5, 4, 3]  # Distances to attempt
+
         for player in PlayerManager.players().values():
-            unit: Settler = Settler(base=self.base)
+            unit = Settler(base=self.base)
             unit.owner = player
             spawn_tile: Optional[BaseTile] = None
-            # We need to find a tile to spawn the unit on
-            while True:
-                _spawn_tile: Optional[BaseTile] = self.base.world.random_tile()
 
-                if _spawn_tile is None:
-                    raise Exception("No tiles found to spawn unit on")
+            for min_distance in min_distances:
+                for _ in range(max_attempts):  # Limit attempts to prevent infinite loops
+                    _spawn_tile: Optional[BaseTile] = self.base.world.random_tile()
 
-                if _spawn_tile.is_spawnable_upon() is False or not _spawn_tile.is_passable():
-                    continue
+                    if not _spawn_tile or not _spawn_tile.is_spawnable_upon() or not _spawn_tile.is_passable():
+                        continue
 
-                spawn_tile = _spawn_tile
-                break
+                    # Ensure distance from existing spawns
+                    if all(TileHelper.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles):
+                        spawn_tile = _spawn_tile
+                        break
+
+                if spawn_tile:
+                    break  # Stop trying lower distances if we found a valid tile
+
+            if spawn_tile is None:
+                raise Exception("No suitable spawn location found for a player")
 
             units.append(unit)
             spawn_tile.add_unit(unit)
+            occupied_tiles.append(spawn_tile)  # Track this tile as occupied
 
-            # Spawn first otherwise the unit will not have a tag
             unit.spawn()
-
             player.units.add_unit(unit)
             unit_manager.add_unit(unit)
 
