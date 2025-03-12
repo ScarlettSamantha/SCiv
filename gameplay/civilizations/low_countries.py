@@ -39,7 +39,7 @@ class LowCountries(Civilization):
 
     def register_leaders(self) -> None:
         from gameplay.leaders.ambiorix import Ambiorix
-        from gameplay.leaders.willem import Willem
+        from gameplay.leaders.willem import William
 
-        self.add_leader(leader=Willem())
+        self.add_leader(leader=William())
         self.add_leader(leader=Ambiorix())
