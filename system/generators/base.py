@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
@@ -16,16 +16,19 @@ from managers.player import PlayerManager
 from managers.unit import Unit
 from system.game_settings import GameSettings
 
+if TYPE_CHECKING:
+    from main import Openciv
+
 
 class BaseGenerator(ABC):
     NAME = _t("generic.unimplemented")
     DESCRIPTION = _t("generic.unimplemented")
 
-    def __init__(self, config: GameSettings, base: Any) -> None:
+    def __init__(self, config: GameSettings, base: "Openciv") -> None:
         from managers.world import World
 
         self.config: GameSettings = config
-        self.base: Any = base
+        self.base: "Openciv" = base
         self.world: World = World.get_instance()
 
     @abstractmethod
@@ -39,7 +42,7 @@ class BaseGenerator(ABC):
         name: T_TranslationOrStrOrNone = None,
         turn_order: int = 0,
         leader: Optional[Leader] = None,
-    ):
+    ) -> Player:
         if leader is None:
             leader = civilization.random_leader()
 
@@ -51,7 +54,7 @@ class BaseGenerator(ABC):
         else:
             _name: str = get_i18n().lookup(name)
 
-        player = Player(_name, turn_order, personality, civilization, leader)
+        player: Player = Player(_name, turn_order, personality, civilization, leader)
         if player.is_registered is False:
             player.register()
 
@@ -61,8 +64,8 @@ class BaseGenerator(ABC):
         if self.config.num_enemies is None:
             raise ValueError("Number of enemies not set")
 
-        players = []
-        civs_ingame = []
+        players: List[Player] = []
+        civs_ingame: List[Type[Civilization]] = []
 
         for i in range(self.config.num_enemies + 1):  # +1 for the player
             if i == 0:  # Player
@@ -72,7 +75,7 @@ class BaseGenerator(ABC):
                 chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
                 while True:
                     chosen_civilization = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
-                    already_ingame = False
+                    already_ingame: bool = False
 
                     if chosen_civilization in civs_ingame:
                         already_ingame = True
@@ -99,7 +102,7 @@ class BaseGenerator(ABC):
             else:
                 civ = CivilizationRepository.get(chosen_civilization)()
 
-            player = self.generate_player(
+            player: Player = self.generate_player(
                 personality=chosen_personality(),
                 civilization=civ,
                 leader=None,  # None means it will pick from its own list of registered leaders
@@ -118,10 +121,10 @@ class BaseGenerator(ABC):
         units: List["Settler"] = []
         occupied_tiles: List[BaseTile] = []  # Track placed player locations
 
-        min_distances = [5, 4, 3]  # Distances to attempt
+        min_distances: List[int] = [5, 4, 3]  # Distances to attempt
 
         for player in PlayerManager.players().values():
-            unit = Settler(base=self.base)
+            unit: Settler = Settler(base=self.base)
             unit.owner = player
             spawn_tile: Optional[BaseTile] = None
             fallback_tile: Optional[BaseTile] = None  # Store a fallback tile if needed
@@ -137,23 +140,23 @@ class BaseGenerator(ABC):
                         TileRepository.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles
                     )
 
-                    # **Check if any of the tile's neighbors are coastal**
-                    neighbors = TileRepository.get_neighbors(_spawn_tile, radius=1)
-                    has_coastal_neighbor = any(n.is_water and n.is_coast for n in neighbors)
+                    # Check if any of the tile's neighbors are coastal
+                    neighbors: List[BaseTile] = TileRepository.get_neighbors(_spawn_tile, radius=1)
+                    has_coastal_neighbor: bool = any(n.is_water and n.is_coast for n in neighbors)
 
-                    # **Prioritize tiles with coastal neighbors**
+                    # Prioritize tiles with coastal neighbors
                     if has_coastal_neighbor and distance_ok:
                         spawn_tile = _spawn_tile
                         break  # Stop looking if we find a valid tile near the coast
 
-                    # **Store a fallback tile if we don't find a coastal-adjacent one**
+                    # Store a fallback tile if we don't find a coastal-adjacent one
                     if distance_ok and fallback_tile is None:
                         fallback_tile = _spawn_tile  # Store the first valid non-coastal-adjacent tile
 
                 if spawn_tile:
                     break  # Stop lowering distance if we found a suitable coastal-adjacent tile
 
-            # **Fallback to the non-coastal-adjacent tile if no valid coastal-adjacent tile was found**
+            # Fallback to the non-coastal-adjacent tile if no valid coastal-adjacent tile was found
             if spawn_tile is None:
                 spawn_tile = fallback_tile
 
