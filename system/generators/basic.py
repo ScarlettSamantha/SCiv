@@ -194,7 +194,7 @@ class Basic(BaseGenerator):
                 return "SeaIce"
 
             elif (
-                hex_tile.biome.id in (4, 7) and hex_tile.is_coast
+                hex_tile.is_coast and hex_tile.geoform_type.id != 2
             ):  # Shallow water, For some reason water is dessert or grassland
                 return "Coast"
             elif hex_tile.geoform_type.id == 2:
@@ -210,7 +210,7 @@ class Basic(BaseGenerator):
                     return "MountainSnow"
                 return "Mountain"
 
-            if hex_tile.altitude > 165:
+            if hex_tile.altitude > 145:
                 if hex_tile.biome.id in (7,):
                     return "HillsGrassland"
                 elif hex_tile.biome.id in (6, 4):
