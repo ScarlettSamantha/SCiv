@@ -260,7 +260,7 @@ class ui(Singleton):
     def get_game_ui(self):
         # If we don't have an active Game, create one
         if self.game is None:
-            messenger.send("system.game.start_load")
+            messenger.send("system.game.start")
         else:
             # If we do, we're just resuming it
             messenger.send("system.game.resume")
