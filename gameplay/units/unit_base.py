@@ -217,6 +217,7 @@ class UnitBaseClass(BaseEntity, ABC):
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
         result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
+        self.tile.units.remove_unit(self)  # Remove from the current tile
         for tile in tiles_to_move:
             tile: BaseTile = tile  # this is a type hint
             cords: Tuple[float, float, float] = tile.get_cords()
