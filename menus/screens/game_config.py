@@ -37,7 +37,7 @@ class GameConfigMenu(Screen):
         self.size_popup: Optional[ScrollablePopup] = None
         self.size_popup_button: Optional[Button] = None
 
-        self.selected_size: Tuple[int, int] = (25, 25)
+        self.selected_size: Optional[Tuple[int, int]] = None
         self.selected_civilization: Optional[Type[BaseCivilization]] = None
         self.player_count: int = 4
 
@@ -169,14 +169,16 @@ class GameConfigMenu(Screen):
         if self.size_popup_button is None:
             raise AssertionError("Size popup button is not initialized")
 
-        size = self.size_popup_button.text.split("x")
+        size = self.size_popup_button.text.split(" ")[0].split("x")
         self.selected_size = (int(size[0]), int(size[1]))
 
     def start_game(self):
         from direct.showbase.MessengerGlobal import messenger
 
-        self.update_selected_size()  # To ensure the size is up to date
-        size: Tuple[int, int] = self.selected_size
+        if self.selected_size is None:
+            self.update_selected_size()  # To ensure the size is up to date
+
+        size: Tuple[int, int] = self.selected_size  # type: ignore
 
         if self.selected_civilization is None:
             civ: Type[BaseCivilization] = Civilization.random(1)  # type: ignore
