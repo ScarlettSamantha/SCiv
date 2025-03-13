@@ -97,7 +97,7 @@ class GameConfigMenu(Screen):
         self.size_section = BoxLayout(orientation="vertical", size_hint=(1, None), spacing=5, padding=(0, 0.2))
         self.size_section.add_widget(Label(text="Map Size"))
 
-        self.size_popup_button = ButtonValue(text="50x90", value=(50, 90), size_hint=(1, None), height=50)
+        self.size_popup_button = ButtonValue(text="25x25", value=(25, 25), size_hint=(1, None), height=50)
         self.size_popup_button.bind(on_release=self.open_size_popup)  # type: ignore
         self.size_section.add_widget(self.size_popup_button)
 
