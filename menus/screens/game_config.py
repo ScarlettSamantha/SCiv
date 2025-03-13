@@ -37,7 +37,7 @@ class GameConfigMenu(Screen):
         self.size_popup: Optional[ScrollablePopup] = None
         self.size_popup_button: Optional[Button] = None
 
-        self.selected_resolution: Tuple[int, int] = (25, 25)
+        self.selected_size: Tuple[int, int] = (25, 25)
         self.selected_civilization: Optional[Type[BaseCivilization]] = None
         self.player_count: int = 4
 
@@ -88,7 +88,7 @@ class GameConfigMenu(Screen):
 
         self.civilization_section.add_widget(Label(text="Civilization"))
 
-        self.dropdown_button = Button(text="Rome", size_hint=(1, None), height=50)
+        self.dropdown_button = Button(text="Random", size_hint=(1, None), height=50)
         self.dropdown_button.bind(on_release=self.open_civilization_popup)  # type: ignore
         self.civilization_section.add_widget(self.dropdown_button)
 
@@ -156,7 +156,7 @@ class GameConfigMenu(Screen):
 
     def select_size(self, size, _value):
         """Updates the resolution selection button"""
-        self.selected_resolution = _value
+        self.selected_size = _value
         self.size_popup_button.text = size  # type: ignore
 
     def select_civilization(self, civilization, _value: Type[BaseCivilization]):
@@ -165,10 +165,18 @@ class GameConfigMenu(Screen):
         print(f"{civilization}, {_value}")
         self.dropdown_button.text = civilization
 
+    def update_selected_size(self):
+        if self.size_popup_button is None:
+            raise AssertionError("Size popup button is not initialized")
+
+        size = self.size_popup_button.text.split("x")
+        self.selected_size = (int(size[0]), int(size[1]))
+
     def start_game(self):
         from direct.showbase.MessengerGlobal import messenger
 
-        size: Tuple[int, int] = self.selected_resolution
+        self.update_selected_size()  # To ensure the size is up to date
+        size: Tuple[int, int] = self.selected_size
 
         if self.selected_civilization is None:
             civ: Type[BaseCivilization] = Civilization.random(1)  # type: ignore
