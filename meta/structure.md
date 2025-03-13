@@ -67,7 +67,8 @@
 | [./gameplay/rules.py](./gameplay/rules.py)                | Contains the base rule class and the sciv rule definitions                                    |
 | [./gameplay/terrain/_base_terrain.py](./gameplay/terrain/_base_terrain.py) | Contains BaseTerrain, the parent class for all terrains, managing generic terrain logic.       |
 | [./system/generators/basic.py](./system/generators/basic.py)   | Implements the main world generator using a modified hexgen.                                  |
-| [./system/pyload.py](./system/pyload.py)                  | Dynamic loader for repositories; loads classes dynamically from given paths.                  |
+| [./system/pyload.py](./system/pyload.py)                  | Dynamic loader for repositories; loads classes dynamically from given paths
+| [./system/actions.py](./system/actions.py)                | Contains the action systems base class and executor
 | [./main.py](./main.py)                                    | Entry point; boots managers, sets up the application, and provides a lean showbase.             |
 | [./camera.py](./camera.py)                                | Contains the camera object; a generic civ-like camera (planned to be moved).                    |
 | [./lights.py](./lights.py)                                | Contains the main game light; simple lighting setup (planned to be moved).                      |
@@ -84,3 +85,26 @@ Rules are classes with class methods, implementing a common interface base class
 Each rule set (e.g., SCIVRules) extends this interface and defines concrete values. Since rules are class-based, future overrides (e.g., player-defined rules) can be implemented easily by subclassing.
 
 All rules should be predefined in the interface and registered in the get_rules method, which returns a dictionary mapping rule names to their current values.
+#### Actions
+
+> Source [system/actions.py](./system/actions.py)
+
+The Action system provides a generic, stateless way to handle actions in the game. Actions are used for units, buildings, and other game objects that perform temporary operations.
+
+Actions cannot be stateful—they execute once and do not persist. They can have conditions to determine if they can run and callbacks for success or failure. While active, they may have properties that influence execution, but they should not store state.
+
+Actions are not registered in the entity manager and are not saved. They are used as one-off actions that execute and then disappear.
+
+Ideal Use Cases:
+
+* Direct UI actions (e.g., move unit, found city, attack)
+* Triggering effects based on conditions without modifying game state
+* Handling UI-related logic without cluttering entity files
+
+Execution Flow:
+
+* Check condition (if defined)
+* Run action if allowed
+* Trigger success or failure callback (if defined)
+
+Actions are best for immediate UI interactions where state persistence is not required.

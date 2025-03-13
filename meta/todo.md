@@ -21,6 +21,7 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Move more logic from main into the game manager of possible.
 - [ ] Rename tileyield to something more generic as its used as the generic resource container
 - [ ] Promotion system rework as it has to many properties.
+- [ ] Move system/generators to gameplay meaby as they contain spawning logic which is gameplay or meaby split them?
 
 ## Improvements
 
