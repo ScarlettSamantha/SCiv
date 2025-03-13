@@ -64,6 +64,7 @@
 | [./i18n/en_EN.json](./i18n/en_EN.json)                    | Contains the base game language data; English acts as the fallback language.                  |
 | [./gameplay/units/unit_base.py](./gameplay/units/unit_base.py) | Base class for units, containing the generic unit logic (UnitBaseClass).                       |
 | [./gameplay/tiles/base_tile.py](./gameplay/tiles/base_tile.py) | Base class for tiles, including core tile logic and data management.                           |
+| [./gameplay/rules.py](./gameplay/rules.py)                | Contains the base rule class and the sciv rule definitions                                    |
 | [./gameplay/terrain/_base_terrain.py](./gameplay/terrain/_base_terrain.py) | Contains BaseTerrain, the parent class for all terrains, managing generic terrain logic.       |
 | [./system/generators/basic.py](./system/generators/basic.py)   | Implements the main world generator using a modified hexgen.                                  |
 | [./system/pyload.py](./system/pyload.py)                  | Dynamic loader for repositories; loads classes dynamically from given paths.                  |
@@ -71,3 +72,15 @@
 | [./camera.py](./camera.py)                                | Contains the camera object; a generic civ-like camera (planned to be moved).                    |
 | [./lights.py](./lights.py)                                | Contains the main game light; simple lighting setup (planned to be moved).                      |
 | [./config.prc](./config.prc)                              | Panda config file loaded at startup for bootstrap and engine configuration.                   |
+
+### Workings
+
+#### Rules
+
+> Source [gameplay/rules.py](./gameplay/rules.py)
+
+Rules are classes with class methods, implementing a common interface base class that provides stubs for all rule methods.
+
+Each rule set (e.g., SCIVRules) extends this interface and defines concrete values. Since rules are class-based, future overrides (e.g., player-defined rules) can be implemented easily by subclassing.
+
+All rules should be predefined in the interface and registered in the get_rules method, which returns a dictionary mapping rule names to their current values.

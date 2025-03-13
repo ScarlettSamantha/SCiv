@@ -31,3 +31,5 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Cities need to check if they are buildable and not to close to other cities.
 - [ ] Units loose focus to often
 - [ ] UI sometimes mostly the first clicks are not registered.
+- [ ] Better resource spawner thats not just a random percentage pick but is more region and tile type aware. also make sure that critical resources that are needed for gameplay flow are always spawned. and based on map size and on the type of resource.
+- [ ] Rule customizer

@@ -8,6 +8,7 @@ from camera import CivCamera
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.repositories.generators import GeneratorRepository
+from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from managers.config import ConfigManager
 from managers.entity import EntityManager
 from managers.input import Input
@@ -40,6 +41,11 @@ class Game(Singleton):
         self.players: PlayerManager = PlayerManager()
         self.config: ConfigManager = ConfigManager.get_instance()
         self.entities: EntityManager = EntityManager.get_instance(base=self.base)
+
+        self._rules: Optional[Type[GameRules]] = SCIVRules
+        self.rules: GameRules = self._rules()
+
+        set_game_rules(self.rules)
 
         self.active_generator: BaseGenerator | None = None
 
