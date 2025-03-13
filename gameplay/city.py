@@ -90,6 +90,7 @@ class City(BaseEntity):
         self.base.accept(
             f"game.gameplay.city.request_start_building_unit_{self.tag}", self.on_request_start_building_unit
         )
+        self.base.accept(f"game.gameplay.city.request_cancel_building_improvement_{self.tag}", self.on_cancel_building)
 
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
@@ -273,6 +274,18 @@ class City(BaseEntity):
             self.assign_tile(tile)  # We now own this tile.
         elif city == self and tile in self.owned_tiles:
             self.deassign_tile(tile)  # We are being told that we no longer own this tile.
+
+    def on_cancel_building(self, city: "City"):
+        if city != self:
+            return
+
+        self.logger.debug(f"City {city.name} is being told to cancel building.")
+        self.is_building = False
+        self.building = None
+        self.resource_required = None
+        self.resource_required_amount = Yields.nullYield()
+        self.resource_collected = Yields.nullYield()
+        MessengerGlobal.messenger.send("game.gameplay.city.canceled_production", [self])
 
     def grow_population(self):
         self.population += 1

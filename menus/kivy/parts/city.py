@@ -75,6 +75,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.base.accept("ui.update.ui.hide_city_ui", self.hide)
         self.base.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
         self.base.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
+        self.base.accept("game.gameplay.city.canceled_production", self.on_cancel_current_build)
 
     def set_city(self, city: City):
         self.city = city
@@ -177,7 +178,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         def units():
             for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
-                class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref() # type: ignore
+                class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref()  # type: ignore
 
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
@@ -217,6 +218,20 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         if self.city is None:
             return
         self.update()
+
+    def on_cancel_current_build(self, city: City):
+        if city != self.city:
+            return
+        self.update()
+
+    def on_cancel_current_build_btn_click(self, instance):
+        if self.city is None:
+            raise AssertionError("City is None")
+
+        self.logger.debug(f"Requesting to cancel current build in city: {self.city.name}")
+        MessengerGlobal.messenger.send(
+            f"game.gameplay.city.request_cancel_building_improvement_{self.city.tag}", [self.city]
+        )
 
     def build(self) -> BoxLayout:
         self.logger.debug("Building City UI")
@@ -268,6 +283,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.current_layout = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40, spacing=5)
         self.current_label = Label(text="Current", size_hint=(0.3, None), height=30, font_size=16)
         self.current_button = Button(text="Idle", size_hint=(0.65, None), height=30)
+        self.current_button.bind(on_press=self.on_cancel_current_build_btn_click)
+
         self.current_layout.add_widget(self.current_label)
         self.current_layout.add_widget(self.current_button)
 

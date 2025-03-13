@@ -51,9 +51,11 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
 - `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
 
-- `game.gameplay.city.request_start_building_improvement` (E: ui-part-city | L: city)
+- `game.gameplay.city.request_cancel_building_improvement_{tag}` (E:E ui-part-city | L: city)
+- `game.gameplay.city.request_start_building_improvement_{tag}` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
+- `game.gameplay.city.canceled_production` (E: city | L: ui-part-city)
 
 - `game.gameplay.city.request_start_building_unit` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_unit` (E: ui-part-city | L: city)
