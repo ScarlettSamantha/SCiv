@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from managers.world import World
 
 if TYPE_CHECKING:
+    from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
 
 
@@ -24,6 +25,10 @@ class TileRepository:
         if _tile:
             return _tile
         return None
+
+    @classmethod
+    def get_cities_in_radius(cls, tile: "BaseTile", radius: int) -> List["City"]:
+        return [tile.city for tile in cls.get_tiles_in_radius(tile, radius) if tile.city is not None]
 
     @classmethod
     def is_near_map_edge(cls, map_dimensions: Tuple[int, int], tile: "BaseTile", threshold: int = 3) -> bool:
