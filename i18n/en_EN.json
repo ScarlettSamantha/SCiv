@@ -440,12 +440,18 @@
               "message": "A city already exists on this tile."
             },
             "city_already_owned": {
-              "title": "Tile is owned by a other player",
-              "message": "You cant found cities on tiles that are not neuteral or yours."
+              "title": "Tile is owned by a player",
+              "message": "You cant found cities on tiles that are not neuteral or yours {rule_text})",
+              "game_rule": "\r\n\r\nRule: city_founding_in_own_territory is false, otherwise you can found cities on your own territory."
             },
             "tile_not_passable": {
               "title": "Tile is not passable",
               "message": "You cant found cities on tiles that are not passable."
+            },
+            "city_too_close": {
+              "title": "City is too close",
+              "message": "You cant found cities that are too close to other cities. {distance_rule_text}",
+              "game_rule": "\n\nRule: city_founding_distance_rule is \"{distance}\", otherwise you can found cities that are closer."
             }
           }
         }
