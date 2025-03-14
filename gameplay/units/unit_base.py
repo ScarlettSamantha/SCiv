@@ -1,16 +1,22 @@
 import random
+import uuid
 from abc import ABC
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
 
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
-from direct.showbase.ShowBase import ShowBase
 from panda3d.core import BitMask32, LVector3, NodePath
 
+from gameplay.city import Yields
 from gameplay.combat.stats import Stats
+from gameplay.condition import Condition
+from gameplay.improvement import BasicBaseResource
+from gameplay.resources.core.basic.production import Production
+from gameplay.tiles.base_tile import BaseTile
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
+from managers.unit import Unit
 from system.actions import Action
 from system.entity import BaseEntity
 
@@ -38,34 +44,24 @@ class CantMoveReason(Enum):
 class UnitBaseClass(BaseEntity, ABC):
     _model: Optional[str] = None
 
-    def __init__(
-        self,
-        key: str,
-        name: T_TranslationOrStr,
-        description: T_TranslationOrStr,
-        base: ShowBase,
-        icon: str | None,
-        promotion_tree: Type["PromotionTree"],
-        owner: Optional["Player"] = None,
-        model: Optional[NodePath] = None,
-        model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        model_size: float = 1.0,
-        model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        *args: Any,
-        **kwargs: Any,
-    ):
-        self.key: str = key
-        self.name: T_TranslationOrStr = name
-        self.description: T_TranslationOrStr = description
-        self.icon: str | None = icon
-        self.promotion_tree: Type[PromotionTree] = promotion_tree
-        self.owner: Player | None = owner
-        self.tile: BaseTile  # Tile must be set before spawning
-        self.model: Optional[NodePath] = model  # Will hold the Panda3D model
-        self.model_size: float = model_size  # Default size of the model
-        self.model_rotation: Tuple[float, float, float] = model_rotation  # Default rotation of the model
-        self.model_position_offset: Tuple[float, float, float] = model_position_offset
-        self.base: ShowBase = base
+    buildable: bool = False
+    build_conditions: Dict[str, Condition] = {}
+    name: T_TranslationOrStr
+    description: T_TranslationOrStr
+    icon: str | None
+    promotion_tree: Type["PromotionTree"]
+    model: Optional[NodePath] = None
+    model_size: float = 1.0
+
+    def __init__(self, key: Optional[str] = None):
+        super().__init__()
+
+        self.key: str = key if key else uuid.uuid4().hex
+
+        self.owner: Player | None = None
+        self.tile: Optional[BaseTile] = None  # Tile must be set before spawning
+        self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
+        self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
         self.tag: Optional[str] = None
         self.actions: List[Action] = []
@@ -96,9 +92,16 @@ class UnitBaseClass(BaseEntity, ABC):
         self.can_heal: bool = True
         self.can_pillage: bool = True
 
+        self.resource_needed: Type[BasicBaseResource] = Production
+        self.amount_resource_needed: Yields = Yields(production=10)
+
         self.register_actions()
 
     def register_actions(self): ...
+
+    def get_tile(self) -> BaseTile | None:
+        if self.tile is not None:
+            return self.tile
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -109,6 +112,8 @@ class UnitBaseClass(BaseEntity, ABC):
 
         if self.owner is not None:
             self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
+
+        Unit.get_instance().add_unit(self)
 
     @overload
     def set_pos(self, pos: Tuple[float, float, float], maintain_z: bool = True) -> None: ...
@@ -155,6 +160,9 @@ class UnitBaseClass(BaseEntity, ABC):
         if not isinstance(self._model, str):
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
+        if self.tag is None:
+            self.tag = self.generate_unit_tag()
+
         # Load the Panda3D model and position it at the tile
         self.model = self.load_model(self._model)
 
@@ -193,18 +201,23 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.model is None:
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
+        tiles_to_move = []
         # Attempt pathfinding
-        if (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is None:
+        if self.tile is not None and (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is None:
             return CantMoveReason.NO_PATH
 
         # This was a bug for a while, but it was fixed
         if (len(tiles_to_move) - 1) == 0:
             return CantMoveReason.SAME_TILE
 
+        if self.tile is None:
+            raise AssertionError(f"Unit {self.key} has no tile assigned.")
+
         if tiles_to_move[0] == self.tile:
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
         result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
+        self.tile.units.remove_unit(self)  # Remove from the current tile
         for tile in tiles_to_move:
             tile: BaseTile = tile  # this is a type hint
             cords: Tuple[float, float, float] = tile.get_cords()
@@ -331,6 +344,9 @@ class UnitBaseClass(BaseEntity, ABC):
 
         # Remove from the units lookup dictionary if it exists
         self.unregister()
+
+        if self.tile is None:
+            raise AssertionError(f"Unit {self.key} has no tile assigned.")
 
         # Nullify references to break cyclic dependencies
         self.tile.units.remove_unit(self)

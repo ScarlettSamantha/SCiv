@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Any
-from managers.i18n import t_
 
-from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
+from typing import Any
+
 from gameplay.promotion import Promotion, PromotionTree
-from openciv.engine.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
+from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
+from managers.i18n import t_
+from system.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
 
 
 class BuilderPromotion(Promotion):
@@ -119,12 +120,24 @@ class BuilderPromotionTree(PromotionTree):
 
 
 class Builder(CoreCivilianBaseClass):
+    _model = "assets/models/units/pessent.glb"
+    buildable = True
+    key = "core.unit.class.builder"
+    name = t_("content.units.core.units.civilian.builder.name")
+    description = t_("content.units.core.units.civilian.builder.description")
+    model_size = 0.2
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.builder",
-            name=t_("content.units.classes.core.builder.name"),
-            description=t_("content.units.classes.core.builder.description"),
-            icon=None,
             *args,
             **kwargs,
         )
+        self.model_rotation = (0, 0, 0)
+        self.model_position_offset = (0, 0, 0.1)
+
+    def register_actions(self):
+        from gameplay.actions.unit.move import WalkAction
+
+        self.add_action(WalkAction(self))
+
+        return super().register_actions()

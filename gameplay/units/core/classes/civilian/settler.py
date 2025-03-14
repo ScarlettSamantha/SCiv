@@ -58,31 +58,21 @@ class SettlerPromotionTree(PromotionTree):
 
 class Settler(CoreCivilianBaseClass):
     _model = "assets/models/units/pessent.glb"
+    buildable = True
+    key = "core.unit.class.settler"
+    name = t_("content.units.core.units.civilian.settler.name")
+    description = t_("content.units.core.units.civilian.settler.description")
+    icon = None
+    promotion_tree = SettlerPromotionTree
+    model_size = 0.2
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.settler",
-            name="content.units.core.units.civilian.settler.name",
-            description=t_("content.units.core.units.civilian.settler.description"),
-            icon=None,
-            promotion_tree=SettlerPromotionTree(),
-            model_rotation=(0, 0, 0),
-            model_size=0.2,
-            model_position_offset=(0, 0, 0.1),
             *args,
             **kwargs,
         )
-
-    def founding_conditions(self, _) -> bool:
-        if (
-            self.tile.is_city() is True
-            or (
-                self.tile.owner != self.owner and self.tile.owner is not None
-            )  # We need to check if the tile is owned by the player or nobody we can't found a city on an enemy tile
-            or not self.tile.is_passable()  # We need to check if the tile is passable cant found a city on a mountain (tech meaby? @TODO)
-        ):
-            return False
-        return True
+        self.model_rotation = (0, 0, 0)
+        self.model_position_offset = (0, 0, 0.1)
 
     def register_actions(self):
         from gameplay.actions.unit.found import FoundAction

@@ -53,6 +53,7 @@ class Action:
         self.targeting_unit_action: bool = False
 
         self.remove_actions_after_use: bool = False
+        self.failure_reason: Any = None
 
         self.action_result: Optional[Any] = None
 
@@ -68,7 +69,9 @@ class Action:
             elif isinstance(self.condition, Callable):
                 condition_met = self.condition(self)
 
-            if self.condition is None and condition_met is False:
+            if self.condition is not None and condition_met is False:
+                if self.on_failure is not None:
+                    self.on_failure(self, self.action_args, self.action_kwargs)
                 return
 
             # We actually run the action here

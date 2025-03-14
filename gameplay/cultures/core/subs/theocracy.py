@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +15,13 @@ class Theocracy(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.religious_law import ReligiousLaw
         from gameplay.cultures.core.clerical_rule import ClericalRule
-        from gameplay.cultures.core.moral_policing import MoralPolicing
-        from gameplay.cultures.core.faith_based_education import FaithBasedEducation
         from gameplay.cultures.core.divine_governance import DivineGovernance
+        from gameplay.cultures.core.faith_based_education import FaithBasedEducation
+        from gameplay.cultures.core.moral_policing import MoralPolicing
+        from gameplay.cultures.core.religious_law import ReligiousLaw
         from gameplay.cultures.core.religious_unity import ReligiousUnity
-        from openciv.engine.requires import RequiresCivicComplete
+        from system.requires import RequiresCivicComplete
 
         religious_law = ReligiousLaw()
         self.add_civic(religious_law)

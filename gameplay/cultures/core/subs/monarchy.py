@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -12,13 +13,13 @@ class Monarchy(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.hereditary_rule import HereditaryRule
-        from gameplay.cultures.core.divine_right import DivineRight
-        from gameplay.cultures.core.nobility_system import NobilitySystem
-        from gameplay.cultures.core.feudal_obligations import FeudalObligations
         from gameplay.cultures.core.centralized_authority import CentralizedAuthority
+        from gameplay.cultures.core.divine_right import DivineRight
+        from gameplay.cultures.core.feudal_obligations import FeudalObligations
+        from gameplay.cultures.core.hereditary_rule import HereditaryRule
+        from gameplay.cultures.core.nobility_system import NobilitySystem
         from gameplay.cultures.core.royal_patronage import RoyalPatronage
-        from openciv.engine.requires import RequiresCivicComplete
+        from system.requires import RequiresCivicComplete
 
         hereditary_rule = HereditaryRule()
         self.add_civic(hereditary_rule)

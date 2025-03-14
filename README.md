@@ -130,6 +130,7 @@ This should be the first real "playable" version that should be some level of fu
 - [ ] Barbarians
 - [ ] Rivers (navigable ?)
 - [ ] City renaming/manual naming
+- [ ] Rule customizer
 
 </details>
 
@@ -141,6 +142,7 @@ This should be the first real "playable" version that should be some level of fu
 - [File Structure](meta/structure.md) - The project structure
 - [Todo](meta/todo.md) - Things that still need to be done in current codebase.
 - [Signals](meta/technical/signals.md) - Signals used to send to other elements of the code
+- [Rules](meta/technical/rules.md) - The rules that are customizable for the players. (customizer in later version ~0.3)
 
 ### Vision
 

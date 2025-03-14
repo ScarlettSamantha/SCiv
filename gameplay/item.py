@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from managers.i18n import T_TranslationOrStr
-from system.saving import SaveAble
-from gameplay.effect import Effects
+from typing import Any, Iterator, List
+
 from gameplay.combat.stats import Stats
-from openciv.engine.requires import Requires
-from typing import Iterator, List, Any
+from gameplay.effect import Effects
+from managers.i18n import T_TranslationOrStr
+from system.requires import Requires
+from system.saving import SaveAble
 
 
 class Item(SaveAble):

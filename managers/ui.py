@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
@@ -28,11 +29,11 @@ if TYPE_CHECKING:
 class ui(Singleton):
     current_menu = None
 
-    def __init__(self, base):
+    def __init__(self, base: "Openciv"):
         from managers.game import Game
 
         self.menus = []
-        self._base: Openciv = base
+        self._base: "Openciv" = base
         self.current_menu = None
         self.game: Optional["Game"] = Game.get_instance()
         self.map: World = World.get_instance()
@@ -112,6 +113,7 @@ class ui(Singleton):
         self._base.accept("x", self.toggle_big_tile_icons)
         self._base.accept("c", self.toggle_little_tile_icons)
         self._base.accept("game.state.true_game_start", self.post_game_start)
+        self._base.accept("game.turn.end_process", self.on_turn_change)
         return True
 
     def get_main_game_ui(self) -> GameUIScreen:
@@ -123,6 +125,12 @@ class ui(Singleton):
             self.current_unit = None
         if unit == self.previous_unit:
             self.previous_unit = None
+
+    def on_turn_change(self, turn: int):
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_player_turn_control", [turn])
+        return True
 
     def show_draggable_popup(
         self,
@@ -252,7 +260,7 @@ class ui(Singleton):
     def get_game_ui(self):
         # If we don't have an active Game, create one
         if self.game is None:
-            messenger.send("system.game.start_load")
+            messenger.send("system.game.start")
         else:
             # If we do, we're just resuming it
             messenger.send("system.game.resume")

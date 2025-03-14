@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +15,13 @@ class Capitalism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.private_property import PrivateProperty
+        from gameplay.cultures.core.capital_accumulation import CapitalAccumulation
         from gameplay.cultures.core.entrepreneurship import Entrepreneurship
         from gameplay.cultures.core.free_trade import FreeTrade
-        from gameplay.cultures.core.minimal_regulation import MinimalRegulation
-        from gameplay.cultures.core.capital_accumulation import CapitalAccumulation
         from gameplay.cultures.core.market_competition import MarketCompetition
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.minimal_regulation import MinimalRegulation
+        from gameplay.cultures.core.private_property import PrivateProperty
+        from system.requires import RequiresCivicComplete
 
         private_property = PrivateProperty()
         self.add_civic(private_property)

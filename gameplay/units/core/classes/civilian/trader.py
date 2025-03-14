@@ -1,10 +1,9 @@
-from __future__ import annotations
 from typing import Any
-from managers.i18n import t_
 
-from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from gameplay.promotion import Promotion, PromotionTree
-from openciv.engine.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
+from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
+from managers.i18n import t_
+from system.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
 
 
 class TraderPromotion(Promotion):

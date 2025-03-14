@@ -71,10 +71,6 @@ class Openciv(ShowBase):
         self.engine_logger.info("Setting up lights")
         setup_lights(self)
 
-        self.engine_logger.info("Setting up world")
-        self.world = World.get_instance()
-        self.world.__setup__(self)
-
         # Init game base system
         self.engine_logger.info("Setting up game manager")
         self.game_manager_instance = Game(self, self.civ_camera)
@@ -85,6 +81,10 @@ class Openciv(ShowBase):
         self.ui_manager.kivy_setup()
         self.ui_manager.register()
         ui._set_instance(self.ui_manager)
+
+        self.engine_logger.info("Setting up world")
+        self.world = World.get_instance()
+        self.world.__setup__()
 
         self.ui_manager.map = self.world
 

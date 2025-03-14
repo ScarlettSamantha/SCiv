@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +15,13 @@ class Rationalism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.reason_and_logic import ReasonAndLogic
-        from gameplay.cultures.core.scientific_inquiry import ScientificInquiry
-        from gameplay.cultures.core.secular_governance import SecularGovernance
         from gameplay.cultures.core.education_reform import EducationReform
         from gameplay.cultures.core.evidence_based_policy import EvidenceBasedPolicy
         from gameplay.cultures.core.philosophical_discourse import PhilosophicalDiscourse
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.reason_and_logic import ReasonAndLogic
+        from gameplay.cultures.core.scientific_inquiry import ScientificInquiry
+        from gameplay.cultures.core.secular_governance import SecularGovernance
+        from system.requires import RequiresCivicComplete
 
         reason_and_logic = ReasonAndLogic()
         self.add_civic(reason_and_logic)

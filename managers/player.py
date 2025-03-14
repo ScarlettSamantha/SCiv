@@ -1,9 +1,11 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
-from gameplay.city import City
 from gameplay.player import Player
 from managers.base import BaseManager
+
+if TYPE_CHECKING:
+    from gameplay.city import City
 
 
 class PlayerManager(BaseManager):
@@ -39,6 +41,10 @@ class PlayerManager(BaseManager):
         return cls._players[turn]
 
     @classmethod
+    def all(cls) -> Dict[int, Player]:
+        return cls._players
+
+    @classmethod
     def players(cls) -> Dict[int, Player]:
         return cls._players
 
@@ -70,7 +76,7 @@ class PlayerManager(BaseManager):
         return len(player.cities) > 0
 
     @classmethod
-    def get_capital(cls, player: Optional[Player] = None) -> City | None:
+    def get_capital(cls, player: Optional[Player] = None) -> "City | None":
         if player is None:
             player = cls.player()
         for city in player.cities:

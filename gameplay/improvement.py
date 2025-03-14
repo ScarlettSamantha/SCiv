@@ -1,52 +1,48 @@
-from __future__ import annotations
+from enum import Enum
+from typing import TYPE_CHECKING, Callable, Optional, Tuple, Type
 
-from typing import TYPE_CHECKING, Callable, Tuple
-
-from gameplay.conditions import Conditions
+from gameplay.condition import Conditions
 from gameplay.effect import Effects
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
-from gameplay.tile_yield import TileYield
+from gameplay.player import Player
+from gameplay.resources.core.basic._base import BasicBaseResource
+from gameplay.resources.core.basic.production import Production
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
-from managers.tags import Taggable
 from mixins.callbacks import CallbacksMixin
 from system.entity import BaseEntity
-from system.saving import SaveAble
 
 if TYPE_CHECKING:
     from gameplay.tiles.base_tile import BaseTile
 
 
-class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
-    # Will always finish in 1 turn.
+class ImprovementBuildTurnMode(Enum):
     SINGLE_TURN = 0
-    # Will finish in a fixed amount of turns.
     MULTI_TURN_FIXED = 1
-    # Will finish when an certain production resource is used.
-    MULTI_TURN_PRODUCTION = 2
+    MULTI_TURN_RESOURCE = 2
+
+
+class Improvement(CallbacksMixin, BaseEntity):
+    name: T_TranslationOrStr
+    description: T_TranslationOrStrOrNone
+    _model = None
 
     def __init__(
         self,
-        key: str,
-        name: str,
-        tile: BaseTile,
-        health: int = 100,
-        max_health: int = 100,
         *args,
         **kwargs,
     ):
         CallbacksMixin.__init__(self, *args, **kwargs)
-        Taggable.__init__(self, *args, **kwargs)
-        SaveAble.__init__(self, *args, **kwargs)
 
-        self.key: str = key
         self.active: bool = True
         self.destroyed: bool = False
 
-        self.health: int = health
-        self.max_health: int = max_health
+        self.health: int = 100
+        self.max_health: int = 100
 
         self.upgradable: bool = False
-        self.upgrade_into: Improvement | None = None
+        self.upgrade_into: Type[Improvement] | None = None
+        self.upgrade_conditions: Conditions = Conditions()
 
         self.constructable_builder: bool = True
         self.constructable_on_tile: bool = True
@@ -58,28 +54,29 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
 
         self.player_enabled: bool = True
 
-        self.name: T_TranslationOrStr = name
-        self.description: T_TranslationOrStrOrNone = None
-
-        self.multi_turn_mode = self.SINGLE_TURN
-        self.tile: BaseTile = tile
+        self.multi_turn_mode: ImprovementBuildTurnMode = ImprovementBuildTurnMode.SINGLE_TURN
+        self.tile: Optional[BaseTile] = None
 
         # Following 3 are not needed in single turn mode.
-        self.production_needed = None
-        self.turns_needed = None
-        self.build_progress = None
-        self.cost = TileYield.nullYield()
+        self.amount_resource_needed: Yields = Yields.nullYield()
+        self.resource_needed: type[BasicBaseResource] = Production
 
-        self.tile_yield_improvement: TileYield = TileYield.nullYield()
-        self.effects: Effects = Effects(name)
+        # Dynamic value, will be set by the game.
+        self.turns_needed: float | int | None = None
+        self.build_progress: float | int | None = None
+
+        self.tile_yield_improvement: Yields = Yields.nullYield()
+        self.effects: Effects = Effects()
         self.conditions: Conditions = Conditions()
 
-        self._model = None
-        self._model_offset: Tuple[int, int, int] = (0, 0, 0)
-        self._mesh = None
-        self._texture = None
-        self._owner = None
-        self._tile_ref = None
+        self.maintenance_cost: Yields = Yields.nullYield()
+
+        self._model_offset: Tuple[int, int, int] = (
+            0,
+            0,
+            0,
+        )  # This is not static due to the fact that the model can be rotated. and moved on the tile itself.
+        self.owner: Optional[Player] = None
 
     def _validate_state(self) -> bool:
         return True
@@ -93,22 +90,6 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
         self._model = value
 
     @property
-    def mesh(self):
-        return self._mesh
-
-    @mesh.setter
-    def mesh(self, value):
-        self._mesh = value
-
-    @property
-    def owner(self):
-        return self._owner
-
-    @owner.setter
-    def owner(self, data):
-        self._owner = data
-
-    @property
     def tile_ref(self):
         return self._tile_ref
 
@@ -117,17 +98,17 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
         self._tile_ref = value
 
     @property
-    def tile_yield(self) -> TileYield:
+    def tile_yield(self) -> Yields:
         return self._tile_yield_improvement
 
     @tile_yield.setter
-    def tile_yield(self, value: TileYield) -> None:
-        if not isinstance(value, TileYield):
+    def tile_yield(self, value: Yields) -> None:
+        if not isinstance(value, Yields):
             raise TypeError(f"Tileyield cannot be type {type(value)}")
         self._tile_yield_improvement = value
 
     def set_price_free(self):
-        self.cost = TileYield.nullYield()
+        self.amount_resource_needed = Yields.nullYield()
 
     def on_construct(self, callback: Callable):
         self.register_callback("on_construct", callback)
@@ -152,20 +133,32 @@ class Improvement(CallbacksMixin, SaveAble, Taggable, BaseEntity):
             raise ImprovementUpgradeException("Cant upgrade into a null object. needs to be an improvement effect")
         self.replace(self.upgrade_into)
 
-    def replace(self, _with: Improvement):
+    def replace(self, _with: Type["Improvement"]):
         pass
+
+    def set_tile(self, tile: "BaseTile"):
+        self.tile = tile
+
+    def get_tile(self) -> "BaseTile | None":
+        return self.tile
+
+    def set_owner(self, owner: Player):
+        self.owner = owner
+
+    def get_owner(self) -> Player | None:
+        return self.owner
 
     @staticmethod
     def basic_resource_improvement(
         name: str,
-        tile: BaseTile,
+        tile: "BaseTile",
         property: str,
         delta: float,
-        mode: int = TileYield.ADDITIVE,
+        mode: int = Yields.ADDITIVE,
         health: int = 100,
-    ) -> Improvement:
+    ) -> "Improvement":
         ref = Improvement(key=name, name=name, tile=tile, health=health)
-        _yield = TileYield(f"{name} yield")
+        _yield = Yields(f"{name} yield")
         _yield.mode = mode
         _yield.set_prop(property, delta)
         ref.tile_yield = _yield

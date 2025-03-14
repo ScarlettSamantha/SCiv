@@ -434,6 +434,24 @@
             "city_founded": {
               "title": "City founded",
               "message": "You have founded an city."
+            },
+            "city_already_exists": {
+              "title": "City already exists",
+              "message": "A city already exists on this tile."
+            },
+            "city_already_owned": {
+              "title": "Tile is owned by a player",
+              "message": "You cant found cities on tiles that are not neuteral or yours {rule_text})",
+              "game_rule": "\r\n\r\nRule: city_founding_in_own_territory is false, otherwise you can found cities on your own territory."
+            },
+            "tile_not_passable": {
+              "title": "Tile is not passable",
+              "message": "You cant found cities on tiles that are not passable."
+            },
+            "city_too_close": {
+              "title": "City is too close",
+              "message": "You cant found cities that are too close to other cities. {distance_rule_text}",
+              "game_rule": "\n\nRule: city_founding_distance_rule is \"{distance}\", otherwise you can found cities that are closer."
             }
           }
         }
@@ -2137,6 +2155,20 @@
               "name": "Wind Farm",
               "description": "Facility for wind energy production"
             }
+          },
+          "city": {
+            "barracks": {
+              "name": "Barracks",
+              "description": "Military training facility"
+            },
+            "granary": {
+              "name": "Granary",
+              "description": "Food storage building"
+            },
+            "monument": {
+              "name": "Monument",
+              "description": "Cultural heritage site"
+            }
           }
         }
       },
@@ -2296,8 +2328,8 @@
                 "name": "Settler",
                 "description": "Unit that founds new cities"
               },
-              "worker": {
-                "name": "Worker",
+              "builder": {
+                "name": "Builder",
                 "description": "Unit that constructs improvements"
               },
               "trader": {
