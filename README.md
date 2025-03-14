@@ -80,13 +80,15 @@ A POC/Demo state would be best case senario but that might wait till version 0.2
 - [x] Spawn units
 - [x] Unit actions
 - [x] Process a minimal turn
-- [ ] Cities that can build something (WIP)
+- [X] Cities that can build something
 - [x] Basic player ownership and city being aware of tiles around it
 - [x] UI city show ownership of tiles around it.
 - [ ] Basic UI element (WIP)
 - [x] Movement for units both pathfinded and weighted + UI
 - [x] Basic backend system integration like managers, systems, logging
 - [x] Proper Implementation UI system (kivy)
+- [ ] Effects implementation (WIP)
+- [ ] Improvements on Tiles (WIP)
 
 ### (Provisional) 0.2.0 Goals - Dev
 
