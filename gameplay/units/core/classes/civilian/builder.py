@@ -125,9 +125,19 @@ class Builder(CoreCivilianBaseClass):
     key = "core.unit.class.builder"
     name = t_("content.units.core.units.civilian.builder.name")
     description = t_("content.units.core.units.civilian.builder.description")
+    model_size = 0.2
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             *args,
             **kwargs,
         )
+        self.model_rotation = (0, 0, 0)
+        self.model_position_offset = (0, 0, 0.1)
+
+    def register_actions(self):
+        from gameplay.actions.unit.move import WalkAction
+
+        self.add_action(WalkAction(self))
+
+        return super().register_actions()
