@@ -133,6 +133,7 @@ class EntityManager(Singleton):
             "total_players": 0,
             "total_units": 0,
             "total_tiles": 0,
+            "total_effects": 0,
         }
 
         return super().__setup__(*args, **kwargs)
@@ -155,6 +156,7 @@ class EntityManager(Singleton):
         self.stats["total_players"] = len(self._entities[EntityType.PLAYER])
         self.stats["total_units"] = len(self._entities[EntityType.UNIT])
         self.stats["total_tiles"] = len(self._entities[EntityType.TILE])
+        self.stats["total_effects"] = len(self._entities[EntityType.EFFECT])
 
     def object_type_to_storage(self, type: EntityType) -> Dict[str, BaseEntity]:
         return self._entities[type]

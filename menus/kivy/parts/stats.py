@@ -39,6 +39,7 @@ class StatsPanel(FloatLayout):
             "entity_manager_total_players": 0,
             "entity_manager_total_units": 0,
             "entity_manager_total_tiles": 0,
+            "entity_manager_total_effects": 0,
         }
 
         self.register()
@@ -74,6 +75,7 @@ class StatsPanel(FloatLayout):
         self._periodicals["entity_manager_total_players"] = entity_stats["total_players"]
         self._periodicals["entity_manager_total_units"] = entity_stats["total_units"]
         self._periodicals["entity_manager_total_tiles"] = entity_stats["total_tiles"]
+        self._periodicals["entity_manager_total_effects"] = entity_stats["total_effects"]
 
     def build(self) -> FloatLayout:
         # --- Camera Panel (Top-Right Corner) ---
@@ -130,5 +132,6 @@ class StatsPanel(FloatLayout):
             f"Players: {str(self._periodicals['entity_manager_total_players'])}",
             f"Units: {str(self._periodicals['entity_manager_total_units'])}",
             f"Tiles: {str(self._periodicals['entity_manager_total_tiles'])}",
+            f"Effects: {str(self._periodicals['entity_manager_total_effects'])}",
         )
         self.label.text = "\n".join(text)  # type: ignore # We know it exists because it's initialized in build_screen
