@@ -35,3 +35,4 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Better resource spawner thats not just a random percentage pick but is more region and tile type aware. also make sure that critical resources that are needed for gameplay flow are always spawned. and based on map size and on the type of resource.
 - [ ] Rule customizer
 - [ ] Conditions that check actual state dynamically of objects and can influence gameplay based on this.
+- [ ] Look into making turn processing async to let rendering continue for bigger games where turn processing will become a second(s) situation.

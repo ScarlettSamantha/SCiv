@@ -19,6 +19,7 @@ from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, _t, get_i18n
 from managers.player import Player, PlayerManager
+from system.effects import Effects
 from system.entity import BaseEntity
 from system.subsystems.hexgen.hex import Hex
 from world.features._base_feature import BaseFeature
@@ -179,6 +180,9 @@ class BaseTile(BaseEntity):
         self._showing_small_icons: bool = False
         self._showing_large_icons: bool = False
 
+        self.effects: Effects = Effects(self)
+        self.needs_tile_proecessing: bool = False
+
     @property
     def tile_terrain(self) -> BaseTerrain:
         return self._tile_terrain
@@ -278,6 +282,14 @@ class BaseTile(BaseEntity):
         messenger.send("unit.action.move.visiting_tile", [unit, self])
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
+
+    def on_turn_end(self, turn: int) -> None:
+        """Will only be called by the world manager. when the tile has an effect, unit, city or player."""
+        if len(self.effects) > 0:
+            self.effects.on_turn_end(turn)
+            self.calculate_tile_yield(False)
+        else:
+            self.calculate_tile_yield(True)
 
     def add_city_name(self) -> None:
         if self.city is None:
@@ -514,8 +526,8 @@ class BaseTile(BaseEntity):
         if self.city is not None:
             self.add_city_name()
 
-    def calculate_tile_yield(self) -> None:
-        self.tile_yield.calculate()
+    def calculate_tile_yield(self, cache: bool = True) -> None:
+        self.tile_yield.calculate(cache)
 
     def _render_default_terrain(self) -> None:
         if self.tile_terrain is None:
@@ -700,7 +712,7 @@ class BaseTile(BaseEntity):
         self.units.remove_unit(unit)
 
     def is_occupied(self) -> bool:
-        return len(self.units.units) > 0 or self.city is not None
+        return len(self.units._units) > 0 or self.city is not None
 
     def to_gui(self) -> dict[str, Any]:
         terrain = self.get_terrain()
@@ -714,7 +726,7 @@ class BaseTile(BaseEntity):
             _improvements.append(get_i18n().lookup(improvement.name))
 
         _units = []
-        for unit in self.units.units:
+        for unit in self.units._units:
             data = unit.to_gui()
             _units.append(f"{data['tag']} {data['name']}")
 

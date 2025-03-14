@@ -1,10 +1,12 @@
 import weakref
+from datetime import datetime
 from enum import Enum
 from logging import Logger
 from typing import TYPE_CHECKING
 
 from direct.showbase.MessengerGlobal import messenger
 
+from gameplay.improvement import Player
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
@@ -68,30 +70,41 @@ class Turn(Singleton):
         messenger.send("game.turn.start_process", [self.turn])
 
         def world():
+            from managers.world import World
+
+            _timer_world = datetime.now()
             self.logger.info("Processing world turn changes.")
             self.turn_stage = TurnStage.TURN_WORLD
+            World.get_instance().on_turn_end(self.turn)  # World manager will forward the signal to all tiles
+            self.logger.debug(
+                f"Turn {self.turn} processing for world took: {round((datetime.now() - _timer_world).total_seconds() * 1000, 4)} miliseconds."
+            )
 
         def players():
             self.logger.info("Processing player turn changes.")
+            _timer_players = datetime.now()
 
-            def cities():
+            def cities(player: Player):
                 self.logger.info("Processing player city turn changes.")
                 self.turn_stage = TurnStage.TURN_PLAYERS_CITIES
-                for player in PlayerManager.all().values():
-                    for city in player.cities:
-                        city: "City" = city  # this is a type hint
-                        self.logger.info(f"Processing city {city.name} turn changes.")
-                        city.process_turn(self.turn)
+                for city in player.cities:
+                    city: "City" = city  # this is a type hint
+                    self.logger.info(f"Processing city {city.name} turn changes.")
+                    city.on_turn_end(self.turn)
 
-            def player_units():
-                self.logger.info("Processing player unit turn changes.")
-                self.turn_stage = TurnStage.TURN_PLAYERS_UNITS
+            for player in PlayerManager.all().values():
+                player: "Player" = player
+                self.logger.info(f"Processing player {player.name} turn changes.")
+                player.on_turn_end(self.turn)
+                cities(player)
 
-            cities()
-            player_units()
+            self.logger.debug(
+                f"Turn {self.turn} processing for players took: {round((datetime.now() - _timer_players).total_seconds() * 1000, 4)} miliseconds."
+            )
 
         def units():
             self.logger.info("Processing unit turn changes.")
+            _timer_units = datetime.now()
             self.turn_stage = TurnStage.TURN_UNITS
 
             def restore_all_movement_points():
@@ -112,6 +125,9 @@ class Turn(Singleton):
 
             self.logger.info("Restoring all movement points for all units.")
             restore_all_movement_points()
+            self.logger.debug(
+                f"Turn {self.turn} processing for units took: {round((datetime.now() - _timer_units).total_seconds() * 1000, 4)} miliseconds."
+            )
 
         world()
         players()

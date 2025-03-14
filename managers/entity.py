@@ -5,10 +5,20 @@ from typing import Any, Dict, Optional, Type, TypeVar
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
-from main import Openciv
+from git import TYPE_CHECKING
+
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 from system.save_file import BaseSaver, SavePickleFile
+
+if TYPE_CHECKING:
+    from gameplay.city import City
+    from gameplay.improvement import Improvement
+    from gameplay.player import Player
+    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.units.unit_base import UnitBaseClass
+    from main import Openciv
+    from system.effects import Effect
 
 
 class EntityType(Enum):
@@ -17,13 +27,16 @@ class EntityType(Enum):
     IMPROVEMENT = ("_improvements_", None)
     CITY = ("_cities_", None)
     PLAYER = ("_players_", None)
+    EFFECT = ("_effects_", None)
 
     def __init__(self, storage_key: str, base_type: Type["BaseEntity"] | None):
         self.storage_key = storage_key
         self._base_type = base_type  # Store it privately
 
     @property
-    def base_type(self):
+    def base_type(
+        self,
+    ) -> "type[BaseTile] | type[UnitBaseClass] | type[Improvement] | type[City] | type[Player] | type[Effect] | Type[BaseEntity]":
         """Lazy import to avoid circular dependencies."""
         if self._base_type is None:
             if self == EntityType.TILE:
@@ -46,6 +59,13 @@ class EntityType(Enum):
                 from gameplay.player import Player
 
                 self._base_type = Player
+            elif self == EntityType.EFFECT:
+                from system.effects import Effect
+
+                self._base_type = Effect
+            else:
+                raise NotImplementedError(f"Entity type {self} not implemented.")
+
         return self._base_type
 
 

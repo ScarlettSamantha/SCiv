@@ -18,6 +18,7 @@ from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.unit import Unit
 from system.actions import Action
+from system.effects import Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -94,6 +95,8 @@ class UnitBaseClass(BaseEntity, ABC):
 
         self.resource_needed: Type[BasicBaseResource] = Production
         self.amount_resource_needed: Yields = Yields(production=10)
+
+        self.effects: Effects = Effects(self)
 
         self.register_actions()
 

@@ -11,6 +11,7 @@ from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource
 from gameplay.yields import Yields
 from managers.log import LogManager
+from system.effects import Effects
 from system.entity import BaseEntity
 from system.generators.base import TileRepository
 
@@ -71,6 +72,8 @@ class City(BaseEntity):
         if self.player is not None:
             self._register_object()
 
+        self.effects: Effects = Effects(self)
+
         self.generate_tag()
         self.register()
 
@@ -100,8 +103,10 @@ class City(BaseEntity):
             food=(self.population * self.population_food_usage)
         )
 
-    def process_turn(self, turn: int) -> None:
+    def on_turn_end(self, turn: int) -> None:
         self.logger.debug(f"City {self.name} is processing turn {turn}.")
+
+        self.effects.on_turn_end(turn)  # Execute before yields are calculated as effects can modify yields.
 
         # Calculate yield once per turn
         yields: Yields = self.calculate_yield_from_tiles()
@@ -263,7 +268,7 @@ class City(BaseEntity):
         if city != self:
             return
 
-        self.process_turn(turn)
+        self.on_turn_end(turn)
 
     def on_tile_ownership_changed(self, city: "City", tile: "BaseTile"):
         self.logger.debug(f"City {city.name} is being told that tile {tile.tag} has changed ownership.")
