@@ -96,6 +96,7 @@ The goal is to have an actual semi playable and resumable game and improved buil
 
 - [ ] Saving/Loading + GUI
 - [ ] Map regeneration
+- [ ] Barbarians + Nature player
 - [ ] Map gen parameters in GUI
 - [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for
 this.
@@ -129,7 +130,6 @@ This should be the first real "playable" version that should be some level of fu
 - [ ] Battle result calculation UI
 - [ ] Basic ingame codex UI (not fully implemented)
 - [ ] Better looking tiles
-- [ ] Barbarians
 - [ ] Rivers (navigable ?)
 - [ ] City renaming/manual naming
 - [ ] Rule customizer
@@ -145,6 +145,7 @@ This should be the first real "playable" version that should be some level of fu
 - [Todo](meta/todo.md) - Things that still need to be done in current codebase.
 - [Signals](meta/technical/signals.md) - Signals used to send to other elements of the code
 - [Rules](meta/technical/rules.md) - The rules that are customizable for the players. (customizer in later version ~0.3)
+- [Workings](meta/technical/workings.md) - How the systems work in a abstract way.
 
 ### Vision
 
