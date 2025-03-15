@@ -1,4 +1,5 @@
 # Lake class
+from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain.traits.water import open_water_lake
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
@@ -18,3 +19,5 @@ class Lake(BaseTerrain):
         self.movement_modifier = 0.5
 
         self.add_modifiers(open_water_lake)
+
+        self.add_supported_improvement(Mine)

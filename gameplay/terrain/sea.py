@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gameplay.yields import Yields
 from gameplay.tile_yield_modifier import TileYieldModifier
 from managers.i18n import T_TranslationOrStr

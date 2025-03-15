@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gameplay.terrain.traits.land import mountain
 from managers.i18n import T_TranslationOrStr
 
