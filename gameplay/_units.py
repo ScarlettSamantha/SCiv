@@ -18,7 +18,7 @@ class Units(Generic[T]):
     def remove_unit(self, unit: T):
         if unit in self._units:
             self._units.remove(unit)
-        self._num_units -= 1
+            self._num_units -= 1
 
     def __len__(self) -> int:
         return self._num_units
