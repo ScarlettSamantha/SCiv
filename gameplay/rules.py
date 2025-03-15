@@ -14,6 +14,10 @@ class GameRules(ABC):
     def get_city_founding_in_own_territory_rule(cls) -> bool: ...
 
     @classmethod
+    @abstractmethod
+    def get_unit_looses_movement_after_building_rule(cls) -> bool: ...
+
+    @classmethod
     def get_rules(cls) -> Dict[str, int]:
         return {
             "city_founding_distance": cls.get_city_founding_distance_rule(),
@@ -28,6 +32,10 @@ class SCIVRules(GameRules):
 
     @classmethod
     def get_city_founding_in_own_territory_rule(cls) -> bool | Literal[True]:
+        return True
+
+    @classmethod
+    def get_unit_looses_movement_after_building_rule(cls) -> bool | Literal[True]:
         return True
 
 
