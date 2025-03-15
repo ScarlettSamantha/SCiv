@@ -1,6 +1,7 @@
+from enum import Enum
 from logging import Logger
 from os.path import dirname, join, realpath
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase.MessengerGlobal import messenger
@@ -8,6 +9,7 @@ from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodeP
 
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
+from gameplay.condition import Conditions
 from gameplay.improvement import Improvement
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource, Resources
@@ -17,7 +19,7 @@ from gameplay.weather import BaseWeather
 from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
-from managers.i18n import T_TranslationOrStr, _t, get_i18n
+from managers.i18n import T_TranslationOrStr, _t
 from managers.player import Player, PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -28,7 +30,20 @@ from world.items._base_item import BaseItem
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.units.unit_base import UnitBaseClass
-    from main import Openciv
+
+
+class CantBuildReason(Enum):
+    COULD_BUILD = 0
+    NO_TECH = 1
+    NO_RESOURCE = 2
+    NOT_PLACEABLE_UPON_TILES = 3  # This is an error in the code, PLACEABLE_ON_TILES should be true if this is the case.
+    NOT_PLACEABLE_UPON_CITY = 4
+    NOT_PLACEABLE_UPON_CONDITION = 5
+    NOT_PLACEABLE_BY_PLAYER = 6
+    NOT_PLACEABLE_UPON_ENEMEY_TILE = 7
+    NOT_CONSTRUCTABLE_BUILDER = 8
+    IMPROVEMENT_ALREADY_EXISTS = 9
+    IMPROVEMENT_TILE_NOT_PASSABLE = 10
 
 
 class BaseTile(BaseEntity):
@@ -36,7 +51,6 @@ class BaseTile(BaseEntity):
 
     def __init__(
         self,
-        base: Any,
         x: int = 0,
         y: int = 0,
         pos_x: float = 0.0,
@@ -46,8 +60,8 @@ class BaseTile(BaseEntity):
     ) -> None:
         self.id: int = id(self)
         self.x: int = x
-        self.base: "Openciv" = base
         self.y: int = y
+        super().__init__()
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
@@ -283,14 +297,6 @@ class BaseTile(BaseEntity):
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
 
-    def on_turn_end(self, turn: int) -> None:
-        """Will only be called by the world manager. when the tile has an effect, unit, city or player."""
-        if len(self.effects) > 0:
-            self.effects.on_turn_end(turn)
-            self.calculate_tile_yield(False)
-        else:
-            self.calculate_tile_yield(True)
-
     def add_city_name(self) -> None:
         if self.city is None:
             return
@@ -512,12 +518,16 @@ class BaseTile(BaseEntity):
 
         if render_all:
             self.unrender_all()
+            self._render_improvements()
             self._render_default_terrain()
+
             # (Additional models could be re-added here if needed.)
         elif model_index is not None:
             self.unrender_model(model_index)
             if model_index == 0:
                 self._render_default_terrain()
+            elif model_index == 1:
+                self._render_improvements()
             # Custom logic for re-rendering other models can be added here.
         else:
             self._render_default_terrain()
@@ -525,6 +535,17 @@ class BaseTile(BaseEntity):
 
         if self.city is not None:
             self.add_city_name()
+
+    def on_turn_end(self, turn: int) -> None:
+        """Will only be called by the world manager. when the tile has an effect, unit, city or player."""
+        if len(self._improvements) > 0:  # We only process improvements if we have any.
+            self._improvements.on_turn_end(turn)
+
+        if len(self.effects) > 0:
+            self.effects.on_turn_end(turn)
+            self.calculate_tile_yield(False)
+        else:
+            self.calculate_tile_yield(True)
 
     def calculate_tile_yield(self, cache: bool = True) -> None:
         self.tile_yield.calculate(cache)
@@ -556,6 +577,16 @@ class BaseTile(BaseEntity):
             self.models[0] = node
         else:
             self.models.append(node)
+
+    def _render_improvements(self) -> None:
+        improvements: List[Improvement] = self.improvements().get_all()
+        for improvement in improvements:
+            model_path = improvement.get_model_path()
+
+            if model_path is None:
+                continue
+
+            self.add_model(model_path, improvement._model_offset, improvement._model_scale, improvement._model_hpr)
 
     def add_model(
         self,
@@ -617,8 +648,7 @@ class BaseTile(BaseEntity):
         Refresh the tile's visual representation by unrendering and then rendering.
         """
         self.unrender_all()
-        self._render_default_terrain()
-        # (Additional models can be re-added using add_model() if required.)
+        self.render()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
         """
@@ -699,9 +729,6 @@ class BaseTile(BaseEntity):
     def is_city(self) -> bool:
         return self.city is not None
 
-    def build(self, improvement: Improvement) -> None:
-        self._improvements.add(improvement)
-
     def add_unit(self, unit: "UnitBaseClass") -> None:
         unit.tile = self
         self.units.add_unit(unit)
@@ -723,7 +750,7 @@ class BaseTile(BaseEntity):
 
         _improvements = []
         for improvement in self._improvements.get_all():
-            _improvements.append(get_i18n().lookup(improvement.name))
+            _improvements.append(str(improvement.name))
 
         _units = []
         for unit in self.units._units:
@@ -735,12 +762,12 @@ class BaseTile(BaseEntity):
             "x": self.x,
             "y": self.y,
             "terrain": terrain_name,
-            "model": self.model,
+            "model": self.model(),
             "passable": f"{str(self.passable)}, {str(self.passable_without_tech)}",
             "movement_cost": self.movement_cost,
             "texture": self.texture(),
             "class": self.__class__.__name__,
-            "owner": self.owner if self.owner else _t("civilization.nature.name"),
+            "owner": str(self.owner.name) if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
             "tile_yield": str(self.tile_yield.get_yield()),
@@ -828,6 +855,32 @@ class BaseTile(BaseEntity):
         self._render_default_terrain()
         self.add_city_name()
         return True
+
+    def build(self, improvement: Improvement) -> Literal[True] | CantBuildReason:
+        if not improvement.placeable_on_tiles:
+            return CantBuildReason.NOT_PLACEABLE_UPON_TILES
+        if self.city is not None:
+            return CantBuildReason.NOT_PLACEABLE_UPON_CITY
+        if improvement.placeable_on_condition and isinstance(improvement.placeable_on_condition, Conditions):
+            condition_check_result: bool = improvement.placeable_on_condition.are_met(
+                {"tile": self, "improvement": improvement}
+            )
+            if condition_check_result is False:
+                return CantBuildReason.NOT_PLACEABLE_UPON_CONDITION
+
+        improvement.set_tile(self)
+        improvement.on_construct()
+        self._improvements.add(improvement)
+        self.get_terrain().on_build_upon(improvement)
+        self.rerender()
+        return True
+
+    def destroy_improvement(self, improvement: Improvement) -> None:
+        self._improvements.remove(improvement)
+        improvement.on_destroy()
+
+    def get_buildable_improvements(self) -> List[Type[Improvement]]:
+        return self.get_terrain().supported_improvements()
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z

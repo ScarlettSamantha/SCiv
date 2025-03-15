@@ -7,12 +7,12 @@ from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
 from panda3d.core import PStatClient
 
-from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from helpers.colors import Colors
 from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType
+from managers.i18n import T_TranslationOrStr, Translation
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
@@ -135,12 +135,17 @@ class ui(Singleton):
     def show_draggable_popup(
         self,
         id: str,
-        title: str,
-        message: str,
+        title: T_TranslationOrStr,
+        message: T_TranslationOrStr,
         confirm: bool = False,
         on_confirm: Optional[Callable] = None,
         on_cancel: Optional[Callable] = None,
     ):
+        if isinstance(title, Translation):
+            title = str(title)
+        if isinstance(message, Translation):
+            message = str(message)
+
         if confirm:
             popup = PopupOverride(
                 title=title, message=message, on_confirm=on_confirm, cancel_callback=on_cancel, width=400, height=200
@@ -269,6 +274,14 @@ class ui(Singleton):
         self.get_gui().get_screen_manager().current = "game_ui" if self.get_game().is_paused else "pause_menu"
         self.get_game().is_paused = not self.get_game().is_paused
 
+    def clear_selected_unit(self):
+        if self.current_unit is None:
+            return
+
+        self.current_unit.set_color(Colors.RESTORE)
+        self.current_unit = None
+        self.previous_unit = None
+
     def clear_selection(self):
         self.current_tiles[0].set_color(Colors.RESTORE)
         self.current_tiles = []
@@ -310,9 +323,6 @@ class ui(Singleton):
         self.previous_tile = self.current_tile
         self.current_tile = tile
 
-        # Colors for selected tile and neighbors
-        colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
-
         self.previous_tiles = self.neighbours_tiles
         self.neighbours_tiles = []
         self.neighbours_tiles = TileRepository.get_neighbors(tile, check_passable=False)
@@ -324,6 +334,7 @@ class ui(Singleton):
             if self.show_resources_in_radius:
                 self.toggle_tile_icons(neighbor, small=True, large=True)
             if self.show_resources_in_radius:
+                colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
                 self.color_tile(neighbor, colors_neighbours)
 
     def color_tile(
@@ -421,6 +432,8 @@ class ui(Singleton):
                 hex.set_color(Colors.RESTORE)
 
     def show_colors_for_resources(self):
+        from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
+
         for _, hex in self.map.map.items():
             if len(hex.resources) > 0:
                 is_strategic: bool = len(hex.resources.resources[ResourceTypeStrategic]) > 0

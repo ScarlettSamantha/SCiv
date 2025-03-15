@@ -49,7 +49,9 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
 
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
-- `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
+- `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
+- `game.gameplay.unit.build_improvement_success` (E: action-build)
+- `game.gameplay.unit.build_improvement_failure` (E: action-build)
 
 - `game.gameplay.city.request_cancel_building_improvement_{tag}` (E:E ui-part-city | L: city)
 - `game.gameplay.city.request_start_building_improvement_{tag}` (E: ui-part-city | L: city)

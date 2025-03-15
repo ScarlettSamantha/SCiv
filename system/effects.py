@@ -10,6 +10,7 @@ from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
@@ -21,9 +22,11 @@ class EffectType(Enum):
     CITY = 1
     PLAYER = 2
     GLOBAL = 3
+    UNIT = 4
+    IMPROVEMENT = 5
 
 
-parent_types = Union["City", "BaseTile", "Player", "World", "UnitBaseClass"]
+parent_types = Union["City", "BaseTile", "Player", "World", "UnitBaseClass", "Improvement"]
 
 
 class Effects:
@@ -64,6 +67,10 @@ class Effects:
             effect.player = self.parent
         elif isinstance(self.parent, World) and effect.world is None:
             effect.world = self.parent
+        elif isinstance(self.parent, UnitBaseClass) and effect.unit is None:
+            effect.unit = self.parent
+        elif isinstance(self.parent, Improvement) and effect.improvement is None:
+            effect.improvement = self.parent
 
     def _remove_parent_from_effect(self, effect: "Effect") -> None:
         if isinstance(self.parent, BaseTile) and effect.tile is not None:
@@ -74,6 +81,10 @@ class Effects:
             effect.player = None
         elif isinstance(self.parent, World) and effect.world is not None:
             effect.world = None
+        elif isinstance(self.parent, UnitBaseClass) and effect.unit is not None:
+            effect.unit = None
+        elif isinstance(self.parent, Improvement) and effect.improvement is not None:
+            effect.improvement = None
 
     def remove_effect(
         self,
@@ -163,6 +174,14 @@ def _place_on_world(world: "World", effect: "Effect") -> None:
     world.effects.add_effect(effect)
 
 
+def _place_on_improvement(improvement: "Improvement", effect: "Effect") -> None:
+    improvement.effects.add_effect(effect)
+
+
+def _place_on_unit(unit: "UnitBaseClass", effect: "Effect") -> None:
+    unit.effects.add_effect(effect)
+
+
 class EffectPlacers(Enum):
     PLACE_ON_TILE = 0
     PLACE_ON_PLAYERS_TILE = 1
@@ -170,6 +189,8 @@ class EffectPlacers(Enum):
     PLACE_ON_CITY = 3
     PLACE_ON_PLAYER = 4
     PLACE_ON_WORLD = 5
+    PLACE_ON_UNIT = 6
+    PLACE_ON_IMPROVEMENT = 7
 
     def place(self, base_object: "BaseTile | City | Player | World", effect: "Effect") -> None:
         if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, BaseTile):
@@ -184,6 +205,10 @@ class EffectPlacers(Enum):
             _place_on_player(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_WORLD and isinstance(base_object, World):
             _place_on_world(base_object, effect)
+        elif self == EffectPlacers.PLACE_ON_IMPROVEMENT and isinstance(base_object, "Improvement"):
+            _place_on_improvement(base_object, effect)
+        elif self == EffectPlacers.PLACE_ON_UNIT and isinstance(base_object, "UnitBaseClass"):
+            _place_on_unit(base_object, effect)
         else:
             raise ValueError("Invalid place method.")
 
@@ -210,6 +235,8 @@ class Effect(BaseEntity, ABC):
         self.city: "City | None" = None
         self.player: "Player | None" = None
         self.world: "World | None" = None
+        self.improvement: "Improvement | None" = None
+        self.unit: "UnitBaseClass | None" = None
 
         self.yield_impact: Yields = Yields.nullYield()  # Will be read on turn change
         self.maintenance_impact: Yields = (
@@ -287,6 +314,10 @@ class Effect(BaseEntity, ABC):
             self.on_player_turn_end()
         if EffectType.GLOBAL in self.effect_types:
             self.on_global_turn_end()
+        if EffectType.IMPROVEMENT in self.effect_types:
+            self.on_improvement_turn_end()
+        if EffectType.UNIT in self.effect_types:
+            self.on_unit_turn_end()
 
     def is_expired(self) -> bool:
         return self.turns_left <= 0
@@ -299,6 +330,10 @@ class Effect(BaseEntity, ABC):
     def on_player_turn_end(self) -> None: ...  # If the object has a player effect, this will be called on turn end.
     @abstractmethod
     def on_global_turn_end(self) -> None: ...  # If the object has a global effect, this will be called on turn end.
+    @abstractmethod
+    def on_improvement_turn_end(self) -> None: ...
+    @abstractmethod
+    def on_unit_turn_end(self) -> None: ...
 
     @abstractmethod
     def on_activate(self) -> None: ...  # Will be called when the effect is activated.

@@ -1,6 +1,6 @@
 from functools import partial
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 from weakref import ReferenceType
 
 from direct.showbase.MessengerGlobal import messenger
@@ -13,6 +13,7 @@ from kivy.uix.screenmanager import Screen
 
 from camera import CivCamera
 from gameplay.city import City
+from gameplay.improvement import Improvement
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from managers.entity import EntityManager, EntityType
@@ -41,12 +42,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
     def __init__(self, **kwargs: Any):
         if "base" not in kwargs:
             raise ValueError("GameUIScreen requires a 'base' keyword argument.")
-        self._base: "Openciv" = kwargs.get("base", None)
+        self._base: "Openciv" = kwargs.pop("base", None)
 
         if self._base is None:
             raise AssertionError("Base is not initialized.")
 
-        del kwargs["base"]
         from managers.ui import ui
 
         super().__init__(base=self._base, **kwargs)
@@ -240,6 +240,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
         return self.top_bar.build()
 
+    def clear_selected_unit(self):
+        self.clear_action_bar()
+        self.ui_manager.clear_selected_unit()
+
     def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
         if self.debug_actions is None or self.debug_frame is None or self.stats_frame is None:
             raise AssertionError("Debug actions, debug panel, or stats panel is not initialized.")
@@ -285,21 +289,26 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def process_tile_click(self, tile: str):
         _tile: Optional[BaseTile] = self.world_manager.lookup_on_tag(tile)
+        if _tile is None:
+            return
 
-        if _tile is not None and _tile.city is None:
+        if _tile.city is None:
             self.get_city_ui().hide()
             self.showing_city = None
 
-        self.clear_action_bar()
+        self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _tile.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
 
-        if _tile is not None:
-            self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _tile.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
+        if self.wait_for_next_input_of_user is None or self.wait_for_next_input_of_user is False:
+            self.clear_selected_unit()  # Clear the action bar
 
-            # If we are waiting for an action, execute it now
-            if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
-                self.wait_for_action_of_user(_tile)  # Call the stored action with the tile
-                self.wait_for_next_input_of_user = False
-                self.wait_for_action_of_user = None  # Reset state
+        # If we are waiting for an action, execute it now
+        if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
+            self.wait_for_action_of_user(_tile)  # Call the stored action with the tile
+            self.wait_for_next_input_of_user = False
+            self.wait_for_action_of_user = None  # Reset state
+
+        if (unit := self.ui_manager.current_unit) is not None:
+            self.generate_buttons_for_unit_actions(unit)  # Update
 
     def process_unit_click(self, unit: str):
         _unit: ReferenceType[BaseEntity] = EntityManager.get_instance().get_ref_weak(EntityType.UNIT, unit)
@@ -315,11 +324,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         if _unit is not None:
             self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
 
-    def generate_buttons_for_unit_actions(self, unit: str):
+    def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         if self.action_bar_frame is None:
             raise AssertionError("Action bar is not initialized.")
 
-        _unit: Optional[UnitBaseClass] = self.unit_manager.find_unit(unit)
+        _unit: Optional[UnitBaseClass] = None
+        if isinstance(unit, str):
+            _unit: Optional[UnitBaseClass] = self.unit_manager.find_unit(unit)
+        elif isinstance(unit, BaseEntity):
+            _unit: Optional[UnitBaseClass] = unit if isinstance(unit, UnitBaseClass) else None
+
         if _unit is not None:
             self.action_bar_frame.clear_buttons()
 
@@ -333,11 +347,43 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
                 button.bind(on_press=partial(self.prepare_action, action, _unit))
                 self.action_bar_frame.add_button(button)
 
+            if _unit.can_build is True and _unit.tile is not None:
+                improvements: List[Type[Improvement]] = _unit.tile.get_buildable_improvements()
+                for _improvement in improvements:
+                    if _improvement.placeable_on_tiles is True and (
+                        (
+                            isinstance(_improvement.placeable_on_condition, bool)
+                            and _improvement.placeable_on_condition is True
+                        )
+                        or (
+                            isinstance(_improvement.placeable_on_condition, Callable)
+                            and _improvement.placeable_on_condition() is True
+                        )
+                    ):
+                        button = Button(
+                            text=str(_improvement.name),
+                            size_hint=(None, None),
+                            width=100,
+                            height=75,
+                        )
+                        button.bind(
+                            on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, _unit)
+                        )
+                        self.action_bar_frame.add_button(button)
+
     def clear_action_bar(self):
         if self.action_bar_frame is None:
             raise AssertionError("Action bar is not initialized.")
 
         self.action_bar_frame.clear_buttons()
+
+    def prepare_build_action(self, improvement: Type[Improvement], unit: UnitBaseClass):
+        from gameplay.actions.unit.build import BuildAction
+
+        action = BuildAction(improvement, unit)
+        action.action_kwargs["unit"] = unit
+        action.action_kwargs["improvement"] = improvement
+        action.run()
 
     def prepare_action(self, action: Action, unit: UnitBaseClass, _instance):
         """Prepares an action and waits for the next tile click before executing."""

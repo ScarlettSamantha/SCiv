@@ -134,6 +134,7 @@ class Builder(CoreCivilianBaseClass):
         )
         self.model_rotation = (0, 0, 0)
         self.model_position_offset = (0, 0, 0.1)
+        self.can_build = True
 
     def register_actions(self):
         from gameplay.actions.unit.move import WalkAction

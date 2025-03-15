@@ -123,6 +123,9 @@ class Turn(Singleton):
                     else:
                         self.logger.warning(f"Unit entity {entity} was None, skipping.")
 
+                    if entity_instance is not None:
+                        entity_instance.effects.on_turn_end(self.turn)
+
             self.logger.info("Restoring all movement points for all units.")
             restore_all_movement_points()
             self.logger.debug(

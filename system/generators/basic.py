@@ -288,7 +288,7 @@ class Basic(BaseGenerator):
                     render_y = row * self.world.row_spacing  # Even columns align normally
 
                 # Instantiate the tile object
-                obj_instance: BaseTile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
+                obj_instance: BaseTile = tile_class(x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.register()
 
                 def inject_resource():

@@ -11,7 +11,6 @@ from panda3d.core import BitMask32, LVector3, NodePath
 from gameplay.city import Yields
 from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
-from gameplay.improvement import BasicBaseResource
 from gameplay.resources.core.basic.production import Production
 from gameplay.tiles.base_tile import BaseTile
 from managers.i18n import T_TranslationOrStr
@@ -22,6 +21,7 @@ from system.effects import Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.improvement import BasicBaseResource
     from gameplay.player import Player
     from gameplay.promotion import PromotionTree
     from gameplay.tiles.base_tile import BaseTile
@@ -92,8 +92,9 @@ class UnitBaseClass(BaseEntity, ABC):
         self.can_attack: bool = True
         self.can_heal: bool = True
         self.can_pillage: bool = True
+        self.can_build: bool = False
 
-        self.resource_needed: Type[BasicBaseResource] = Production
+        self.resource_needed: Type["BasicBaseResource"] = Production
         self.amount_resource_needed: Yields = Yields(production=10)
 
         self.effects: Effects = Effects(self)
@@ -306,6 +307,12 @@ class UnitBaseClass(BaseEntity, ABC):
     def restore_movement_points(self) -> None:
         """Resets the unit's movement points to the maximum value. Called by the Turn manager."""
         self.moves_left = self.max_moves
+
+    def drain_movement_points(self, cost_or_zero: float | None = None) -> None:
+        if cost_or_zero is None:
+            self.moves_left = 0
+        else:
+            self.moves_left -= cost_or_zero
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
         if isinstance(self.model, str) and not isinstance(self.model, NodePath):

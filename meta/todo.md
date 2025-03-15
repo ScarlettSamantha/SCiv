@@ -36,3 +36,7 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Rule customizer
 - [ ] Conditions that check actual state dynamically of objects and can influence gameplay based on this.
 - [ ] Look into making turn processing async to let rendering continue for bigger games where turn processing will become a second(s) situation.
+
+## Features
+
+- [ ] Upgradable buildings, the skeleton is in there but its not yet working.

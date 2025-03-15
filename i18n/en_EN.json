@@ -453,6 +453,24 @@
               "message": "You cant found cities that are too close to other cities. {distance_rule_text}",
               "game_rule": "\n\nRule: city_founding_distance_rule is \"{distance}\", otherwise you can found cities that are closer."
             }
+          },
+          "build_improvement": {
+            "improvement_already_exists": {
+              "title": "Improvement already exists",
+              "message": "An improvement already exists on this tile."
+            },
+            "improvement_not_passable": {
+              "title": "Tile is not passable",
+              "message": "You cant build improvements on tiles that are not pass"
+            },
+            "improvement_not_owned": {
+              "title": "Tile is not owned",
+              "message": "You cant build improvements on tiles that are not owned by you."
+            },
+            "unit_cant_build": {
+              "title": "Unit can't build (error)",
+              "message": "This unit can't build improvements, this is a bug. (Please report this issue)"
+            }
           }
         }
       },
@@ -2002,6 +2020,40 @@
       },
       "improvements": {
         "core": {
+          "basic": {
+            "mine": {
+              "name": "Mine",
+              "description": "Extracts valuable minerals from the ground."
+            },
+            "farm": {
+              "name": "Farm",
+              "description": "Cultivates crops for food production."
+            },
+            "lumber_mill": {
+              "name": "Lumber Mill",
+              "description": "Processes timber for construction and industry."
+            },
+            "quarry": {
+              "name": "Quarry",
+              "description": "Extracts stone and minerals for construction."
+            },
+            "camp": {
+              "name": "Camp",
+              "description": "Gathers resources from the surrounding area."
+            },
+            "pasture": {
+              "name": "Pasture",
+              "description": "Raises livestock for food and resources."
+            },
+            "plantation": {
+              "name": "Plantation",
+              "description": "Cultivates cash crops for trade and export."
+            },
+            "fishing_boat": {
+              "name": "Fishing Boat",
+              "description": "Harvests fish and seafood from the ocean."
+            }
+          },
           "general": {
             "beach_resort": {
               "name": "Beach Resort",
