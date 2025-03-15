@@ -14,7 +14,6 @@ from gameplay.moods import Moods
 from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
-from gameplay.resource import Resources
 from gameplay.trades import Trades
 from gameplay.votes import Votes
 from gameplay.yields import Yields
@@ -39,6 +38,7 @@ class Player(BaseEntity):
     ) -> None:
         super().__init__()
         from gameplay._units import Units
+        from gameplay.resource import Resources
 
         self.name: str = name
         self.id: str | None = None
