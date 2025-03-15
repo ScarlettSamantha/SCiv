@@ -6,11 +6,12 @@ from managers.i18n import _t
 
 
 class Foundry(Improvement):
+    name = _t("content.improvements.core.resources.foundry.name")
+    description = _t("content.improvements.core.resources.foundry.description")
+    placeable_on_tiles = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.resource.foundry",
-            _t("content.improvements.core.resource.foundry.name"),
-            _t("content.improvements.core.resource.foundry.description"),
             *args,
             **kwargs,
         )
@@ -18,4 +19,4 @@ class Foundry(Improvement):
         self.health = 50
         self.max_health = 50
 
-        self.tile_yield_improvement = Yields(name="foundry", food=1.0, mode=Yields.ADDITIVE)
+        self.tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)
