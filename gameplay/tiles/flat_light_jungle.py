@@ -10,4 +10,4 @@ class FlatLightJungle(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatLightJungleTerrain())
+        self.set_terrain(FlatLightJungleTerrain())

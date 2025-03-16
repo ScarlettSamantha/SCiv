@@ -9,4 +9,4 @@ class FlatHeavyForest(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatHeavyForestTerrain())
+        self.set_terrain(FlatHeavyForestTerrain())

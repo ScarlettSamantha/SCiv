@@ -10,4 +10,4 @@ class FlatDesert(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatDesertTerrain())
+        self.set_terrain(FlatDesertTerrain())

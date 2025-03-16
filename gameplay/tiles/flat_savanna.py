@@ -10,4 +10,4 @@ class FlatSavanna(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatSavannaTerrain())
+        self.set_terrain(FlatSavannaTerrain())

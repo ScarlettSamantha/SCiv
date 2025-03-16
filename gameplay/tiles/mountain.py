@@ -13,4 +13,4 @@ class Mountain(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(self._terrain())
+        self.set_terrain(self._terrain())
