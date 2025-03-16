@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.tech import Tech
 from managers.i18n import _t
 
