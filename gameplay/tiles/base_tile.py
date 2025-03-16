@@ -1,3 +1,4 @@
+from copy import deepcopy
 from enum import Enum
 from logging import Logger
 from os.path import dirname, join, realpath
@@ -16,8 +17,8 @@ from gameplay.improvement import Improvement
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tile_yield_modifier import TileYieldModifier, Yields
 from gameplay.weather import BaseWeather
+from gameplay.yields import Yields
 from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
@@ -180,16 +181,14 @@ class BaseTile(BaseEntity):
         self.inherit_passability_from_terrain: bool = True
 
         # We configure base tile yield mostly just for debugging.
-        self.tile_yield: TileYieldModifier = TileYieldModifier(
-            values=Yields(
-                gold=0.0,
-                production=1.0,
-                science=0.0,
-                food=1.0,
-                culture=0.0,
-                housing=0.0,
-            ),
-            mode=TileYieldModifier.MODE_ADDITIVE,
+        self.tile_yield: Yields = Yields(
+            gold=0.0,
+            production=1.0,
+            science=0.0,
+            food=1.0,
+            culture=0.0,
+            housing=0.0,
+            mode=Yields.BASE,
         )
         self.meshCollider: bool = True
 
@@ -198,6 +197,10 @@ class BaseTile(BaseEntity):
 
         self.effects: Effects = Effects(self)
         self.needs_tile_proecessing: bool = False
+
+        self.tile_icon_group: Optional[NodePath] = None
+        self.mini_icons_card: Optional[NodePath] = None
+        self.text_card: Optional[NodePath] = None
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -212,20 +215,20 @@ class BaseTile(BaseEntity):
                 True if self.tile_terrain is None or self.tile_terrain.passable_without_tech is True else False
             )
 
-    def add_data_to_tileyield(self):
-        # Add terrain modifiers to the tile yield
-        terrain_modifiers: TileYieldModifier = self.get_terrain().tile_yield_modifiers
-        self.tile_yield.add(terrain_modifiers)
-
-        # Add resource modifiers from the resources on the tile
-        for _, resource in self.resources.flatten_non_mechanic().items():
-            self.tile_yield.add(resource.get_yield_modifier())
-
-        self.tile_yield.calculate()
-
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
         return f"tile_{x}_{y}"
+
+    def calculate(self):
+        base = deepcopy(self._tile_terrain.get_tile_yield())  # This is to prevent modifying the base yield.
+
+        for improvement in self._improvements.get_all():
+            base += improvement.tile_yield
+
+        for effect in self.effects.get_effects().values():
+            base += effect.yield_impact
+
+        self.tile_yield = base
 
     def get_pos(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
@@ -249,38 +252,29 @@ class BaseTile(BaseEntity):
         """
         Remove the main texture icon from the tile.
         """
-        if hasattr(self, "tile_icon_group"):
+        if self.tile_icon_group is not None:
             self.tile_icon_group.removeNode()
-            del self.tile_icon_group
+            self.tile_icon_group = None
             self._showing_large_icons = False
 
     def clear_small_icons(self) -> None:
         """
         Remove all small icons and text overlays from the tile.
         """
-        if hasattr(self, "mini_icons_card"):
+        if self.mini_icons_card is not None:
             self.mini_icons_card.removeNode()
-            del self.mini_icons_card
+            self.mini_icons_card = None
             self._showing_small_icons = False
-        if hasattr(self, "text_card"):
+        if self.text_card is not None:
             self.text_card.removeNode()
-            del self.text_card
+            self.text_card = None
 
     def clear_all_icons(self) -> None:
         """
         Remove all icons from the tile.
         """
-        if hasattr(self, "tile_icon_group"):
-            self.tile_icon_group.removeNode()
-            del self.tile_icon_group
-            self._showing_large_icons = False
-        if hasattr(self, "mini_icons_card"):
-            self.mini_icons_card.removeNode()
-            del self.mini_icons_card
-            self._showing_small_icons = False
-        if hasattr(self, "text_card"):
-            self.text_card.removeNode()
-            del self.text_card
+        self.clear_large_icons()
+        self.clear_small_icons()
 
     def create_root_ui_node(self) -> None:
         self.texture_card = CardMaker(f"resource_icon_{self.id}")
@@ -303,7 +297,7 @@ class BaseTile(BaseEntity):
         if self.city is None:
             return
 
-        if not hasattr(self, "tile_icon_group"):
+        if self.tile_icon_group is None:
             self.create_root_ui_node()
 
         if self.city_name_group is None:
@@ -395,7 +389,7 @@ class BaseTile(BaseEntity):
         resources: Dict[str, BaseResource] = self.resources.flatten()
         resource = list(resources.values())[0] if resources else None
 
-        if not hasattr(self, "tile_icon_group"):
+        if self.tile_icon_group is None:
             self.create_root_ui_node()
 
         if resource is not None:
@@ -421,23 +415,23 @@ class BaseTile(BaseEntity):
             self.texture_card_texture.setScale(6.0)
             self.texture_card_texture.setTransparency(True)
 
-        self._showing_large_icons = True
+            self._showing_large_icons = True
 
-    def add_small_icons(self) -> None:
-        basic_resources: List[BaseResource] = self.tile_yield.get_yield().export_basic()
+    def add_small_icons(self, force: bool = False) -> None:
+        basic_resources: List[BaseResource] = self.tile_yield.export_basic()
         if len(basic_resources) == 0:
             return
 
-        if not hasattr(self, "tile_icon_group"):
+        if self.tile_icon_group is None:
             self.create_root_ui_node()
 
         # Create a separate node for mini icons if not already created.
-        if not hasattr(self, "mini_icons_card"):
+        if self.mini_icons_card is None or force:
             self.mini_icons_card = NodePath("mini_icons_card")
             self.mini_icons_card.reparentTo(self.tile_icon_group)
 
         # Create a separate node for text overlays if not already created.
-        if not hasattr(self, "text_card"):
+        if self.text_card is None or force:
             self.text_card = NodePath("text_card")
             self.text_card.reparentTo(self.tile_icon_group)
 
@@ -512,14 +506,15 @@ class BaseTile(BaseEntity):
         if not self.tile_terrain:
             print(f"Tile {self} has no terrain set, not rendering.")
             return
+        self.set_color(Colors.RESTORE)
+        self.calculate()
 
         # If no models exist, render the default terrain.
-        if not self.models:
+        if not self.models and len(self.improvements()) == 0:
             self._render_default_terrain()
             return
 
         if render_all:
-            self.unrender_all()
             self._render_improvements()
             self._render_default_terrain()
 
@@ -533,8 +528,13 @@ class BaseTile(BaseEntity):
             # Custom logic for re-rendering other models can be added here.
         else:
             self._render_default_terrain()
-        self.calculate_tile_yield()
 
+        if self._showing_large_icons:
+            self.clear_large_icons()
+            self.add_icon_to_tile()
+        if self._showing_small_icons:
+            self.clear_small_icons()
+            self.add_small_icons()
         if self.city is not None:
             self.add_city_name()
 
@@ -545,12 +545,6 @@ class BaseTile(BaseEntity):
 
         if len(self.effects) > 0:
             self.effects.on_turn_end(turn)
-            self.calculate_tile_yield(False)
-        else:
-            self.calculate_tile_yield(True)
-
-    def calculate_tile_yield(self, cache: bool = True) -> None:
-        self.tile_yield.calculate(cache)
 
     def _render_default_terrain(self) -> None:
         if self.tile_terrain is None:
@@ -588,7 +582,12 @@ class BaseTile(BaseEntity):
             if model_path is None:
                 continue
 
-            self.add_model(model_path, improvement._model_offset, improvement._model_scale, improvement._model_hpr)
+            self.add_model(
+                model_path=model_path,
+                pos_offset=improvement._model_offset,
+                scale=improvement._model_scale,
+                hpr=improvement._model_hpr,
+            )
 
     def add_model(
         self,
@@ -628,10 +627,12 @@ class BaseTile(BaseEntity):
         """
         self.unrender_all()
 
-    def unrender_all(self) -> None:
+    def unrender_all(self, icons: bool = False) -> None:
         """
         Remove all models from the scene.
         """
+        if icons:
+            self.clear_all_icons()
         for node in self.models:
             node.removeNode()
         self.models.clear()
@@ -650,7 +651,6 @@ class BaseTile(BaseEntity):
         """
         Refresh the tile's visual representation by unrendering and then rendering.
         """
-        self.unrender_all()
         self.render()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
@@ -706,15 +706,10 @@ class BaseTile(BaseEntity):
     def texture(self) -> T_TranslationOrStr:
         return self.tile_terrain.texture() if self.tile_terrain else ""
 
-    def setTerrain(self, terrain: BaseTerrain) -> None:
-        self.tile_terrain = terrain
-
     def addTileYield(self, tileYield: Yields) -> None:
         self.tile_yield.values += tileYield  # type: ignore
 
-    def get_tile_yield(self, calculate_yield: bool = False) -> TileYieldModifier:
-        if calculate_yield:
-            self.calculate_tile_yield()
+    def get_tile_yield(self) -> Yields:
         return self.tile_yield
 
     def get_resources(self) -> Resources:
@@ -744,7 +739,7 @@ class BaseTile(BaseEntity):
     def is_occupied(self) -> bool:
         return len(self.units._units) > 0 or self.city is not None
 
-    def to_gui(self) -> dict[str, Any]:
+    def to_gui(self) -> Dict[str, Any]:
         terrain = self.get_terrain()
         if terrain is not None:
             terrain_name: T_TranslationOrStr = terrain.name
@@ -773,7 +768,7 @@ class BaseTile(BaseEntity):
             "owner": str(self.owner.name) if self.owner else _t("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
-            "tile_yield": str(self.tile_yield.get_yield()),
+            "tile_yield": str(self.tile_yield),
             "resources": self.resources.flatten(),
             "features": self.features,
             "units": ",".join(_units),
@@ -781,6 +776,7 @@ class BaseTile(BaseEntity):
             "damage": self.damage,
             "pos": (self.pos_x, self.pos_y, self.pos_z),
             "Hpr": (),
+            "effects": ",".join(self.effects.get_effects().keys()),
         }
 
         if isinstance(self.extra_data, Hex):
@@ -848,7 +844,7 @@ class BaseTile(BaseEntity):
         )
 
         self.unrender_model(0)
-        self.setTerrain(CityTerrain())
+        self.set_terrain(CityTerrain())
         self.owner = player
         self.owner.tiles.add_tile(self)
         if self.owner.capital is not None:  # we have a capital

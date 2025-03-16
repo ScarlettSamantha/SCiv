@@ -1,5 +1,5 @@
 import uuid
-from abc import ABC, abstractmethod
+from abc import ABC
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Dict, Tuple, Union
 
@@ -56,6 +56,13 @@ class Effects:
         self._effects_num += 1
 
     def _add_parent_to_effect(self, effect: "Effect") -> None:
+        from gameplay.city import City
+        from gameplay.improvement import Improvement
+        from gameplay.player import Player
+        from gameplay.tiles.base_tile import BaseTile
+        from gameplay.units.unit_base import UnitBaseClass
+        from managers.world import World
+
         if isinstance(self.parent, BaseTile) and effect.tile is None:
             effect.tile = self.parent
             if effect.tile.city is not None:
@@ -73,17 +80,17 @@ class Effects:
             effect.improvement = self.parent
 
     def _remove_parent_from_effect(self, effect: "Effect") -> None:
-        if isinstance(self.parent, BaseTile) and effect.tile is not None:
+        if isinstance(self.parent, "BaseTile") and effect.tile is not None:
             effect.tile = None
-        elif isinstance(self.parent, City) and effect.city is not None:
+        elif isinstance(self.parent, "City") and effect.city is not None:
             effect.city = None
-        elif isinstance(self.parent, Player) and effect.player is not None:
+        elif isinstance(self.parent, "Player") and effect.player is not None:
             effect.player = None
-        elif isinstance(self.parent, World) and effect.world is not None:
+        elif isinstance(self.parent, "World") and effect.world is not None:
             effect.world = None
-        elif isinstance(self.parent, UnitBaseClass) and effect.unit is not None:
+        elif isinstance(self.parent, "UnitBaseClass") and effect.unit is not None:
             effect.unit = None
-        elif isinstance(self.parent, Improvement) and effect.improvement is not None:
+        elif isinstance(self.parent, "Improvement") and effect.improvement is not None:
             effect.improvement = None
 
     def remove_effect(
@@ -107,14 +114,12 @@ class Effects:
         self._effects_num -= 1
 
     def register_to_entity_manager(self, effect: "Effect") -> None:
-        from managers.entity import EntityManager
-
-        EntityManager.get_instance().register(EntityType.EFFECT, effect)
+        effect.register()
 
     def unregister_from_entity_manager(self, effect: "Effect") -> None:
         from managers.entity import EntityManager
 
-        EntityManager.get_instance().register(EntityType.EFFECT, effect)
+        EntityManager.get_instance().unregister(EntityType.EFFECT, effect)
 
     def get_effect(self, tag: str) -> "Effect":
         return self._effects[tag]
@@ -193,6 +198,11 @@ class EffectPlacers(Enum):
     PLACE_ON_IMPROVEMENT = 7
 
     def place(self, base_object: "BaseTile | City | Player | World", effect: "Effect") -> None:
+        from gameplay.city import City
+        from gameplay.player import Player
+        from gameplay.tiles.base_tile import BaseTile
+        from managers.world import World
+
         if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, BaseTile):
             _place_on_tile(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_PLAYERS_TILE and isinstance(base_object, Player):
@@ -250,7 +260,6 @@ class Effect(BaseEntity, ABC):
         self.active: bool = True
 
         self.tag: str = self.generate_tag()
-        self.register()
 
     def __del__(self) -> None:
         if self.is_registered:
@@ -259,7 +268,13 @@ class Effect(BaseEntity, ABC):
     def register(self):
         from managers.entity import EntityManager
 
-        EntityManager.get_instance().register(EntityType.EFFECT, self)
+        if self.is_registered:
+            return
+
+        self.id = uuid.uuid4().hex
+        self.tag = self.generate_tag()
+
+        EntityManager.get_instance().register(EntityType.EFFECT, self, self.id)
         self.is_registered = True
 
     def unregister(self):
@@ -283,6 +298,8 @@ class Effect(BaseEntity, ABC):
             self.place_method(base_object, self)
         else:
             raise ValueError("Invalid place method.")
+
+        self.on_place()
 
     def activate(self, execute_on_activate: bool = True) -> None:
         self.active = True
@@ -322,28 +339,17 @@ class Effect(BaseEntity, ABC):
     def is_expired(self) -> bool:
         return self.turns_left <= 0
 
-    @abstractmethod
     def on_city_turn_end(self) -> None: ...  # If the object has a city effect, this will be called on turn end.
-    @abstractmethod
     def on_tile_turn_end(self) -> None: ...  # If the object has a tile effect, this will be called on turn end.
-    @abstractmethod
     def on_player_turn_end(self) -> None: ...  # If the object has a player effect, this will be called on turn end.
-    @abstractmethod
     def on_global_turn_end(self) -> None: ...  # If the object has a global effect, this will be called on turn end.
-    @abstractmethod
     def on_improvement_turn_end(self) -> None: ...
-    @abstractmethod
     def on_unit_turn_end(self) -> None: ...
 
-    @abstractmethod
+    def on_place(self) -> None: ...
     def on_activate(self) -> None: ...  # Will be called when the effect is activated.
-    @abstractmethod
     def on_deactivate(self) -> None: ...  # Will be called when the effect is deactivated.
-    @abstractmethod
     def on_effect_applied(self) -> None: ...  # Will be called when the effect is applied.
-    @abstractmethod
     def on_effect_expire(self) -> None: ...  # Will be called when the effect expires.
-    @abstractmethod
     def on_clear(self) -> None: ...  # Will be called when a clear has been called on the parent.
-    @abstractmethod
     def on_remove(self) -> None: ...  # Will be called when the effect is removed from the parent.

@@ -95,6 +95,12 @@ class BuildAction(BaseUnitAction):
         if self.unit_looses_movement_after_building_rule:
             self.unit.drain_movement_points(None)  # Will set the unit to 0 movement points.
 
+        if self.unit.build_charges != 0:
+            self.unit.build_charges_left -= 1
+
+        if self.unit.build_charges_left == 0:
+            self.unit.destroy()
+
     def on_fail(self, action: Action, *args, **kwargs):
         result = action.get_result()
         MessengerGlobal.messenger.send(

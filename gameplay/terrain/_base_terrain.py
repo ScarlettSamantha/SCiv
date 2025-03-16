@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List, Tuple, Type
 
 from panda3d.core import LRGBColor
 
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
@@ -14,8 +15,7 @@ def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
 
 
 if TYPE_CHECKING:
-    from gameplay.tile_modifiers import TileModifier, TileModifiers
-    from gameplay.tile_yield_modifier import TileYieldModifier
+    pass
 
 
 class BaseTerrain(ABC):
@@ -29,9 +29,6 @@ class BaseTerrain(ABC):
     _warn_user_before_build_title: T_TranslationOrStr = ""
 
     def __init__(self):
-        from gameplay.tile_modifiers import TileModifiers
-        from gameplay.tile_yield_modifier import TileYieldModifier
-
         self.fallback_color: LRGBColor | Tuple[float, float, float] = rgb(225, 0, 255)
 
         self.name: T_TranslationOrStr = "" if self._name is None else self._name
@@ -42,8 +39,8 @@ class BaseTerrain(ABC):
         self.water_availability: float = 1.0
         self.radatiation: float = 0.0
 
-        self.tile_modifiers: TileModifiers = TileModifiers()
-        self.tile_yield_modifiers: TileYieldModifier = TileYieldModifier()
+        self.tile_modifiers: Yields = Yields.nullYield()
+        self.tile_yield_base: Yields = Yields.nullYield()
 
         self.passable: bool = True
         self.passable_without_tech: bool = True
@@ -56,19 +53,20 @@ class BaseTerrain(ABC):
     def texture(self) -> T_TranslationOrStr:
         return self._texture
 
-    def add_modifiers(self, modifiers: List["TileModifier"] | Tuple["TileModifier", ...]):
+    def get_tile_yield(self) -> "Yields":
+        return self.tile_yield_base
+
+    def add_modifiers(self, modifiers: List["Yields"] | Tuple["Yields", ...]):
         for item in modifiers:
-            self.tile_modifiers.append(item)
+            self.tile_modifiers += item
 
-    def add_modifier(self, modifier: "TileModifier"):
-        self.tile_modifiers.append(modifier)
+    def add_modifier(self, modifier: "Yields"):
+        self.tile_modifiers += modifier
 
-    def add_tile_yield_modifier(self, tile_yield_modifier: "TileYieldModifier", auto_calculate: bool = True):
-        self.tile_yield_modifiers.add(tile_yield_modifier)
-        if auto_calculate:
-            tile_yield_modifier.calculate()
+    def add_tile_yield_modifier(self, yields: "Yields"):
+        self.tile_yield_base.add(yields)
 
-    def get_modifiers(self) -> "TileModifiers":
+    def get_modifiers(self) -> "Yields":
         return self.tile_modifiers
 
     def color(self) -> LRGBColor | Tuple[float, float, float]:

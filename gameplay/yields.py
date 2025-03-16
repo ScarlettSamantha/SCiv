@@ -3,6 +3,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Self
 
 if TYPE_CHECKING:
     from gameplay.resource import BaseResource
+    from gameplay.resources.core.basic.culture import Culture
+    from gameplay.resources.core.basic.faith import Faith
+    from gameplay.resources.core.basic.food import Food
+    from gameplay.resources.core.basic.gold import Gold
+    from gameplay.resources.core.basic.housing import Housing
+    from gameplay.resources.core.basic.production import Production
+    from gameplay.resources.core.basic.science import Science
 
 
 class Yields:
@@ -36,47 +43,26 @@ class Yields:
         self._name: str | None = name
         self.mode: int = mode
 
-        from gameplay.resources.core.basic.culture import Culture
-        from gameplay.resources.core.basic.faith import Faith
-        from gameplay.resources.core.basic.food import Food
-        from gameplay.resources.core.basic.gold import Gold
-        from gameplay.resources.core.basic.housing import Housing
-        from gameplay.resources.core.basic.production import Production
-        from gameplay.resources.core.basic.science import Science
-        from gameplay.resources.core.mechanics.angre import Angre
-        from gameplay.resources.core.mechanics.contentment import Contentment
-        from gameplay.resources.core.mechanics.greats import (
-            GreatArtist,
-            GreatCommerece,
-            GreatEngineer,
-            GreatHero,
-            GreatHoly,
-            GreatMilitary,
-            GreatScientist,
-        )
-        from gameplay.resources.core.mechanics.revolt import Revolt
-        from gameplay.resources.core.mechanics.stability import Stability
+        self._gold: float | int = gold
+        self._production: float | int = production
+        self._science: float | int = science
+        self._food: float | int = food
+        self._culture: float | int = culture
+        self._housing: float | int = housing
+        self._faith: float | int = faith
 
-        self.gold = Gold(value=gold)
-        self.production = Production(value=production)
-        self.science = Science(value=science)
-        self.food = Food(value=food)
-        self.culture = Culture(value=culture)
-        self.housing = Housing(value=housing)
-        self.faith = Faith(value=faith)
+        self._contentment: float | int = 0.0
+        self._angre: float | int = 0.0
+        self._revolt: float | int = 0.0
+        self._stability: float | int = 0.0
 
-        self.contentment = Contentment(value=0.0)
-        self.angre = Angre(value=0.0)
-        self.revolt = Revolt(value=0.0)
-        self.stability = Stability(value=0.0)
-
-        self.great_person_science = GreatScientist(value=0.0)
-        self.great_person_production = GreatEngineer(value=0.0)
-        self.great_person_artist = GreatArtist(value=0.0)
-        self.great_person_military = GreatMilitary(value=0.0)
-        self.great_person_commerce = GreatCommerece(value=0.0)
-        self.great_person_hero = GreatHero(value=0.0)
-        self.great_person_holy = GreatHoly(value=0.0)
+        self._great_person_science: float | int = 0.0
+        self._great_person_production: float | int = 0.0
+        self._great_person_artist: float | int = 0.0
+        self._great_person_military: float | int = 0.0
+        self._great_person_commerce: float | int = 0.0
+        self._great_person_hero: float | int = 0.0
+        self._great_person_holy: float | int = 0.0
 
         self._calculatable_properties: List[str] = [
             "gold",
@@ -107,6 +93,125 @@ class Yields:
     @name.setter
     def name(self, value: str) -> None:
         self._name = value
+
+    @property
+    def gold(self) -> "BaseResource":
+        from gameplay.resources.core.basic.gold import Gold
+
+        return Gold(value=self._gold)
+
+    @gold.setter
+    def gold(self, value: "float | Yields | Gold") -> None:
+        from gameplay.resources.core.basic.gold import Gold
+
+        if isinstance(value, Gold):
+            self._gold = value.value
+        elif isinstance(value, (int, float)):
+            self._gold = value
+        elif isinstance(value, Yields):
+            self._gold = value.gold.value
+
+    @property
+    def production(self) -> "BaseResource":
+        from gameplay.resources.core.basic.production import Production
+
+        return Production(value=self._production)
+
+    @production.setter
+    def production(self, value: "float | Yields | Production") -> None:
+        from gameplay.resources.core.basic.production import Production
+
+        if isinstance(value, Production):
+            self._production = value.value
+        elif isinstance(value, (int, float)):
+            self._production = value
+        elif isinstance(value, Yields):
+            self._production = value.production.value
+
+    @property
+    def science(self) -> "BaseResource":
+        from gameplay.resources.core.basic.science import Science
+
+        return Science(value=self._science)
+
+    @science.setter
+    def science(self, value: "float | Yields | Science") -> None:
+        from gameplay.resources.core.basic.science import Science
+
+        if isinstance(value, Science):
+            self._science = value.value
+        elif isinstance(value, (int, float)):
+            self._science = value
+        elif isinstance(value, Yields):
+            self._science = value.science.value
+
+    @property
+    def food(self) -> "BaseResource":
+        from gameplay.resources.core.basic.food import Food
+
+        return Food(value=self._food)
+
+    @food.setter
+    def food(self, value: "float | Yields | Food") -> None:
+        from gameplay.resources.core.basic.food import Food
+
+        if isinstance(value, Food):
+            self._food = value.value
+        elif isinstance(value, (int, float)):
+            self._food = value
+        elif isinstance(value, Yields):
+            self._food = value.food.value
+
+    @property
+    def culture(self) -> "BaseResource":
+        from gameplay.resources.core.basic.culture import Culture
+
+        return Culture(value=self._culture)
+
+    @culture.setter
+    def culture(self, value: "float | Yields | Culture") -> None:
+        from gameplay.resources.core.basic.culture import Culture
+
+        if isinstance(value, Culture):
+            self._culture = value.value
+        elif isinstance(value, (int, float)):
+            self._culture = value
+        elif isinstance(value, Yields):
+            self._culture = value.culture.value
+
+    @property
+    def housing(self) -> "BaseResource":
+        from gameplay.resources.core.basic.housing import Housing
+
+        return Housing(value=self._housing)
+
+    @housing.setter
+    def housing(self, value: "float | Yields | Housing") -> None:
+        from gameplay.resources.core.basic.housing import Housing
+
+        if isinstance(value, Housing):
+            self._housing = value.value
+        elif isinstance(value, (int, float)):
+            self._housing = value
+        elif isinstance(value, Yields):
+            self._housing = value.housing.value
+
+    @property
+    def faith(self) -> "BaseResource":
+        from gameplay.resources.core.basic.faith import Faith
+
+        return Faith(value=self._faith)
+
+    @faith.setter
+    def faith(self, value: "float | Yields | Faith") -> None:
+        from gameplay.resources.core.basic.faith import Faith
+
+        if isinstance(value, Faith):
+            self._faith = value.value
+        elif isinstance(value, (int, float)):
+            self._faith = value
+        elif isinstance(value, Yields):
+            self._faith = value.faith.value
 
     def clone(self) -> "Yields":
         # Create a deep copy of the TileYield instance.
@@ -140,22 +245,22 @@ class Yields:
         for prop in self.calculatable_properties():
             current = getattr(self, prop)
             addition = getattr(tile_yield, prop)
-            new_val = current.value + addition.value
-            setattr(self, prop, type(current)(value=new_val))
+            new_val = current + addition
+            setattr(self, prop, new_val)
 
         # Process mechanic resources similarly
-        for prop in self.mechanic_resources():
-            current = getattr(self, prop)
-            addition = getattr(tile_yield, prop)
-            new_val = current.value + addition.value
-            setattr(self, prop, type(current)(value=new_val))
+        # for prop in self.mechanic_resources():
+        # current = getattr(self, prop)
+        # addition = getattr(tile_yield, prop)
+        # new_val = current.value + addition.value
+        # setattr(self, prop, type(current)(value=new_val))
 
         # Process great people yields
-        for prop in self.calculatable_great_people():
-            current = getattr(self, f"great_person_{prop}")
-            addition = getattr(tile_yield, f"great_person_{prop}")
-            new_val = current.value + addition.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))
+        # for prop in self.calculatable_great_people():
+        # current = getattr(self, f"great_person_{prop}")
+        # addition = getattr(tile_yield, f"great_person_{prop}")
+        # new_val = current.value + addition.value
+        # setattr(self, f"great_person_{prop}", type(current)(value=new_val))
 
         # Process other mechanics if available
         for key, mechanic in self.other_mechnics.items():
@@ -179,7 +284,7 @@ class Yields:
             new_val = current.value * multiplicative.value
             setattr(self, prop, type(current)(value=new_val))
 
-        # Multiply mechanic resources
+        """Multiply mechanic resources
         for prop in self.mechanic_resources():
             multiplicative = getattr(tile_yield, prop)
             current = getattr(self, prop)
@@ -200,7 +305,7 @@ class Yields:
             multiplicative = getattr(tile_yield, str(mechanic))
             current = mechanic
             new_val = current.value * multiplicative.value
-            self.other_mechnics[key] = type(current)(value=new_val)
+            self.other_mechnics[key] = type(current)(value=new_val) """
 
         return self
 
@@ -212,7 +317,7 @@ class Yields:
             new_val = current.value - subtraction.value
             setattr(self, prop, type(current)(value=new_val))
         # Process mechanic resources similarly
-        for prop in self.mechanic_resources():
+        """ for prop in self.mechanic_resources():
             current = getattr(self, prop)
             subtraction = getattr(tile_yield, prop)
             new_val = current.value - subtraction.value
@@ -230,7 +335,7 @@ class Yields:
             current = mechanic
             subtraction = getattr(tile_yield, str(mechanic))
             new_val = current.value - subtraction.value
-            self.other_mechnics[key] = type(current)(value=new_val)
+            self.other_mechnics[key] = type(current)(value=new_val) """
         return self
 
     def divide(self, tile_yield: "Yields") -> Self:
@@ -243,7 +348,7 @@ class Yields:
             current = getattr(self, prop)
             new_val = current.value / divisor.value
             setattr(self, prop, type(current)(value=new_val))
-        # Process mechanic resources similarly
+        """ # Process mechanic resources similarly
         for prop in self.mechanic_resources():
             divisor = getattr(tile_yield, prop)
             if divisor.value in {0.0, 1.0, -1.0}:
@@ -268,7 +373,7 @@ class Yields:
                 continue
             current = mechanic
             new_val = current.value / divisor.value
-            self.other_mechnics[key] = type(current)(value=new_val)
+            self.other_mechnics[key] = type(current)(value=new_val) """
         return self
 
     def __eq__(self, other: object) -> bool:
@@ -341,17 +446,17 @@ class Yields:
             "culture": self.culture,
             "housing": self.housing,
             "faith": self.faith,
-            "contentment": self.contentment,
-            "angre": self.angre,
-            "revolt": self.revolt,
-            "stability": self.stability,
-            "great_person_science": self.great_person_science,
-            "great_person_production": self.great_person_production,
-            "great_person_artist": self.great_person_artist,
-            "great_person_military": self.great_person_military,
-            "great_person_commerce": self.great_person_commerce,
-            "great_person_hero": self.great_person_hero,
-            "great_person_holy": self.great_person_holy,
+            "contentment": self._contentment,
+            "angre": self._angre,
+            "revolt": self._revolt,
+            "stability": self._stability,
+            "great_person_science": self._great_person_science,
+            "great_person_production": self._great_person_production,
+            "great_person_artist": self._great_person_artist,
+            "great_person_military": self._great_person_military,
+            "great_person_commerce": self._great_person_commerce,
+            "great_person_hero": self._great_person_hero,
+            "great_person_holy": self._great_person_holy,
         }
 
     def export_basic(self) -> List["BaseResource"]:
@@ -392,13 +497,13 @@ class Yields:
             setattr(self, prop, type(current)(value=final_val))
 
         # Also round mechanic resources.
-        for prop in self.mechanic_resources():
-            current = getattr(self, prop)
-            setattr(self, prop, type(current)(value=round(current.value)))
+        # for prop in self.mechanic_resources():
+        # current = getattr(self, prop)
+        # setattr(self, prop, type(current)(value=round(current.value)))
         # Round great people yields.
-        for prop in self.calculatable_great_people():
-            current = getattr(self, f"great_person_{prop}")
-            setattr(self, f"great_person_{prop}", type(current)(value=round(current.value)))
+        # for prop in self.calculatable_great_people():
+        # current = getattr(self, f"great_person_{prop}")
+        # setattr(self, f"great_person_{prop}", type(current)(value=round(current.value)))
 
     def props(self, only_non_nul: bool = False) -> Dict[Any, Any]:
         a: Dict[Any, Any] = {}

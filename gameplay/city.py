@@ -53,7 +53,7 @@ class City(BaseEntity):
 
         self.tax_level: float = 0.0
         self.population_food_usage: float = 1.0
-        self.population_food_required: Yields = Yields(
+        self.new_population_food_required: Yields = Yields(
             food=population_curve(self.population, self.FOOD_EXPONENT, self.FOOD_BASE_REQUIREMENT)
         )
         self.food_collected: Yields = Yields.nullYield()
@@ -98,9 +98,9 @@ class City(BaseEntity):
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
 
-    def calculate_food_surplus(self):
-        return self.calculate_yield_from_tiles().only(["food"]) - Yields(
-            food=(self.population * self.population_food_usage)
+    def calculate_food_surplus(self) -> float:
+        return self.calculate_yield_from_tiles().only(["food"]).food.value - (
+            self.population_food_usage * self.population
         )
 
     def on_turn_end(self, turn: int) -> None:
@@ -176,21 +176,21 @@ class City(BaseEntity):
 
     def _process_food(self) -> None:
         """Process food consumption and production to manage population changes."""
-        self.population_food_required = Yields(
+        self.new_population_food_required = Yields(
             food=population_curve(self.population, self.FOOD_EXPONENT, self.FOOD_BASE_REQUIREMENT)
         )
-        food_surplus = self.calculate_food_surplus()
+        food_surplus = Yields(food=self.calculate_food_surplus())
 
         if food_surplus.food.value < 0:
             # When the total food (storage + surplus) is negative, population starves.
-            if (food_surplus + self.food_collected) <= Yields.nullYield():
+            if (self.food_collected + food_surplus) <= Yields.nullYield():
                 self.starve_population()
             else:
                 self.food_collected -= food_surplus
         elif food_surplus.food.value > 0:
             # If food storage plus surplus meets/exceeds the required food, grow population.
             food_stored: Yields = self.food_collected.only(["food"])
-            if (food_stored + food_surplus) >= self.population_food_required:
+            if (food_stored + food_surplus) >= self.new_population_food_required:
                 self.grow_population()
             else:
                 self.food_collected += food_surplus
@@ -294,17 +294,19 @@ class City(BaseEntity):
 
     def grow_population(self):
         self.population += 1
-        self.population_food_required = Yields(food=population_curve(self.population))
+        self.new_population_food_required = Yields(food=population_curve(self.population))
         self.food_collected = Yields.nullYield()
         MessengerGlobal.messenger.send("game.gameplay.city.grows_population", [self])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
 
     def starve_population(self):
         self.population -= 1
-        self.population_food_required = Yields(food=population_curve(self.population))
+        self.new_population_food_required = Yields(food=population_curve(self.population))
         self.food_collected = (
-            self.population_food_required - Yields(food=1)
+            self.new_population_food_required - Yields(food=1)
         )  # We take the requirement for the lower population and subtract 1 this is to prevent the city from starving again next turn.
         MessengerGlobal.messenger.send("game.gameplay.city.population_starve", [self])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
 
     @classmethod
     def found_new(
@@ -342,7 +344,7 @@ class City(BaseEntity):
         tile_yields = Yields()
 
         for tile in self.owned_tiles:
-            tile_yields += tile.get_tile_yield(calculate_yield=True).calculate()
+            tile_yields += tile.get_tile_yield()
 
         for improvement in self._improvements.get_all():
             tile_yields += improvement.tile_yield_improvement

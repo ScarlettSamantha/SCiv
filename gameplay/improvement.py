@@ -29,6 +29,7 @@ class Improvement(BaseEntity):
     _model: str | None = None
     _model_scale: float = 1.0
     _model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.09)  # to rise above the tile
 
     placeable_on_condition: Conditions | bool = True
     placeable_by_player: bool = False
@@ -69,17 +70,16 @@ class Improvement(BaseEntity):
         self.turns_needed: float | int | None = None
         self.build_progress: float | int | None = None
 
-        self.tile_yield_improvement: Yields = Yields.nullYield()
         self.effects: Effects = Effects(self)
         self.conditions: Conditions = Conditions()
 
+        self.tile_yield_improvement: Yields = Yields.nullYield()
         self.maintenance_cost: Yields = Yields.nullYield()
 
-        self._model_offset: Tuple[int, int, int] = (
-            0,
-            0,
-            0,
-        )  # This is not static due to the fact that the model can be rotated. and moved on the tile itself.
+        self._model_offset: Tuple[float, float, float] = (
+            (0.0, 0.0, 0.0) if self._model_default_offset is None else self._model_default_offset
+        )
+
         self.owner: Optional[Player] = None
         self.tag: str = ""
 
@@ -123,24 +123,33 @@ class Improvement(BaseEntity):
 
     @property
     def tile_yield(self) -> Yields:
-        return self._tile_yield_improvement
+        return self.tile_yield_improvement
 
     @tile_yield.setter
     def tile_yield(self, value: Yields) -> None:
         if not isinstance(value, Yields):
             raise TypeError(f"Tileyield cannot be type {type(value)}")
-        self._tile_yield_improvement = value
+        self.tile_yield_improvement = value
 
     def set_price_free(self):
         self.amount_resource_needed = Yields.nullYield()
 
     def on_construct(self):
+        if self.tile is None:
+            raise ValueError("Tile is not set for the improvement")
+
         if self.is_registered is False:
             self.register()
+
+        for effect in self.effects.get_effects().values():
+            effect.apply(self.tile)
 
     def on_destroy(self):
         if self.is_registered is True:
             self.unregister()
+
+        for effect in self.effects.get_effects().values():
+            effect.on_deactivate()
 
     def on_remove(self):
         if self.is_registered is True:
