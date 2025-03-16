@@ -310,9 +310,10 @@ class ui(Singleton):
         from gameplay.repositories.tile import TileRepository
 
         tile = self.map.map.get(tile_coords[0])
-
         if tile is None:
             return
+
+        tile.calculate()
 
         if tile.city is not None and tile.city.player is not None:
             if PlayerManager.is_session_player(tile.city.player):
