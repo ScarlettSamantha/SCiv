@@ -196,11 +196,8 @@ class UnitBaseClass(BaseEntity, ABC):
         if target_tile.passable is False:
             return CantMoveReason.IMPASSABLE
 
-        if target_tile.is_occupied() is True:
+        if len(target_tile.units) > 0:
             return CantMoveReason.OTHER_UNIT_ON_TILE
-
-        if target_tile.is_occupied() or not self.tile_is_occupiable(target_tile):
-            return CantMoveReason.OTHER_OWNER
 
         if self.model is None:
             raise ValueError(f"Unit {self.key} has no model assigned.")
@@ -302,7 +299,7 @@ class UnitBaseClass(BaseEntity, ABC):
             return f"unit_{self.key}_{random.randint(0, 1000000)}"
 
     def tile_is_occupiable(self, tile: "BaseTile") -> bool:
-        return tile.is_passable()
+        return tile.is_passable() and len(tile.units) == 0
 
     def restore_movement_points(self) -> None:
         """Resets the unit's movement points to the maximum value. Called by the Turn manager."""
