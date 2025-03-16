@@ -20,7 +20,7 @@ These are not features more things that exist right now and needs to be done som
 - [x] Remove old classes from old engine.
 - [ ] Move more logic from main into the game manager of possible.
 - [x] Rename tile yield to something more generic as its used as the generic resource container
-- [ ] Promotion system rework as it has to many properties.
+- [ ] Promotion system rework as it has to many properties. (can do this at implementation time)
 - [ ] Move system/generators to gameplay maybe as they contain spawning logic which is gameplay or maybe split them?
 
 ## Improvements
