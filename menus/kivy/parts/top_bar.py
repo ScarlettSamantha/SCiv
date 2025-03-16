@@ -11,16 +11,16 @@ from managers.turn import Turn
 
 if TYPE_CHECKING:
     from gameplay.player import Player
-    from main import Openciv
+    from main import SCIV
 
 
 class TopBar(AnchorLayout):
-    def __init__(self, base: "Openciv", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), **kwargs):
+    def __init__(self, base: "SCIV", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), **kwargs):
         self.background_color = background_color
         self.border = border
         self.background_image = None
         super().__init__(**kwargs)
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
 
         self.frame: Optional[BoxLayout] = None
         self.gold_label: Optional[Label] = None

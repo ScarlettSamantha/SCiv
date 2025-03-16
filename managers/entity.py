@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
-    from main import Openciv
+    from main import SCIV
     from system.effects import Effect
 
 
@@ -103,14 +103,14 @@ class EntityManager(Singleton):
 
     def __setup__(
         self,
-        base: "Openciv",
+        base: "SCIV",
         serializer: Optional[Type["BaseEntityManagerSerializer"]] = None,
         saver: Optional[Type["BaseSaver"]] = None,
         session_name: Optional[str] = None,
         *args,
         **kwargs,
     ):
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
         self.serializer: BaseEntityManagerSerializer = (
             serializer() if serializer is not None else self._default_serializer()
         )

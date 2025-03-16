@@ -12,13 +12,13 @@ from managers.entity import EntityManager
 if TYPE_CHECKING:
     from direct.showbase.ShowBase import ShowBase
 
-    from main import Openciv
+    from main import SCIV
 
 
 class StatsPanel(FloatLayout):
-    def __init__(self, base: "Openciv | ShowBase", **kwargs):
+    def __init__(self, base: "SCIV | ShowBase", **kwargs):
         super().__init__(**kwargs)
-        self.base: "Openciv | ShowBase" = base
+        self.base: "SCIV | ShowBase" = base
         self.camera: CivCamera = CivCamera.get_instance()
 
         self.frame: Optional[FloatLayout] = None

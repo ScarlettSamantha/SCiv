@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Tuple
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class CivCamera(Singleton):
@@ -19,8 +19,8 @@ class CivCamera(Singleton):
       - WASD/arrow keys => optional panning
     """
 
-    def __init__(self, base: "Openciv"):
-        self.base: "Openciv" = base
+    def __init__(self, base: "SCIV"):
+        self.base: "SCIV" = base
         self.active = True
         self.logger: Logger = self.base.logger.engine.getChild("camera")
 

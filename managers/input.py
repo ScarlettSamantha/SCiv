@@ -13,12 +13,12 @@ from panda3d.core import (
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class Input(Singleton):
-    def __init__(self, base: "Openciv"):
-        self.base: "Openciv" = base
+    def __init__(self, base: "SCIV"):
+        self.base: "SCIV" = base
         self.active: bool = False
         self.sequence: Optional[Sequence] = None
 

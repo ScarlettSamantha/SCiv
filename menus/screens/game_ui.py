@@ -31,7 +31,7 @@ from system.actions import Action
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class GameUIScreen(Screen, CollisionPreventionMixin):
@@ -42,7 +42,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
     def __init__(self, **kwargs: Any):
         if "base" not in kwargs:
             raise ValueError("GameUIScreen requires a 'base' keyword argument.")
-        self._base: "Openciv" = kwargs.pop("base", None)
+        self._base: "SCIV" = kwargs.pop("base", None)
 
         if self._base is None:
             raise AssertionError("Base is not initialized.")

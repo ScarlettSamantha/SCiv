@@ -21,7 +21,7 @@ from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
     from managers.game import Game
     from menus.kivy.core import SCivGUI
 
@@ -29,11 +29,11 @@ if TYPE_CHECKING:
 class ui(Singleton):
     current_menu = None
 
-    def __init__(self, base: "Openciv"):
+    def __init__(self, base: "SCIV"):
         from managers.game import Game
 
         self.menus = []
-        self._base: "Openciv" = base
+        self._base: "SCIV" = base
         self.current_menu = None
         self.game: Optional["Game"] = Game.get_instance()
         self.map: World = World.get_instance()

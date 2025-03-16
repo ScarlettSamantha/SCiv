@@ -22,7 +22,7 @@ from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class Game(Singleton):
@@ -30,7 +30,7 @@ class Game(Singleton):
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")
 
         self.ui: ui = ui.get_instance(base=self.base)

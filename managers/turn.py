@@ -15,7 +15,7 @@ from system.entity import BaseEntity
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.units.unit_base import UnitBaseClass  # Prevent circular import
-    from main import Openciv
+    from main import SCIV
 
 
 class TurnStage(Enum):
@@ -35,14 +35,14 @@ class Turn(Singleton):
 
     turn: int = PREPARE_FOR_GAME
 
-    def __init__(self, base: "Openciv"):
-        self.base: "Openciv" = base
+    def __init__(self, base: "SCIV"):
+        self.base: "SCIV" = base
         self.active = False
         self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
         self.turn_stage: TurnStage = TurnStage.NO_TURN_CHANGE
 
     def __setup__(self, base, *args, **kwargs):
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
         return super().__setup__(*args, **kwargs)
 

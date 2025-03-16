@@ -16,7 +16,7 @@ from managers.log import LogManager
 from managers.unit import Unit
 
 
-class Openciv(ShowBase):
+class SCIV(ShowBase):
     def __init__(
         self,
     ):
@@ -100,7 +100,7 @@ class Openciv(ShowBase):
 
 if __name__ == "__main__":
     load_prc_file("config.prc")
-    app = Openciv()
+    app = SCIV()
 
     try:
         app.run()
