@@ -30,12 +30,13 @@ These are not features more things that exist right now and needs to be done som
 - [x] Colidable mixin should not calculate geometry of ui elements every tick but every few ticks
 - [ ] Refactor class file into a non-colision and better named.
 - [ ] Cities need to check if they are buildable and not to close to other cities.
-- [ ] Units loose focus to often
+- [x] Units loose focus to often
 - [ ] UI sometimes mostly the first clicks are not registered.
 - [ ] Better resource spawner thats not just a random percentage pick but is more region and tile type aware. also make sure that critical resources that are needed for gameplay flow are always spawned. and based on map size and on the type of resource.
 - [ ] Rule customizer
 - [ ] Conditions that check actual state dynamically of objects and can influence gameplay based on this.
 - [ ] Look into making turn processing async to let rendering continue for bigger games where turn processing will become a second(s) situation.
+- [ ] Make sure previous waiting ui action (eg: move) is canceld when clicking a other action so we have no phantom actions by units that have already been destroyed.
 
 ## Features
 
