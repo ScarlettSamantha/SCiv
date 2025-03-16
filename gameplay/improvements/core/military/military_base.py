@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class MilitaryBase(Improvement):
+    name = _t("content.improvements.core.military.military_base.name")
+    description = _t("content.improvements.core.military.military_base.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.military.military_base",
-            _t("content.improvements.core.military.military_base.name"),
-            _t("content.improvements.core.military.military_base.description"),
             *args,
             **kwargs,
         )

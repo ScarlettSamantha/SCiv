@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import WindowProperties
 
-from camera import CivCamera
+from system.camera import Camera
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.repositories.generators import GeneratorRepository
@@ -22,22 +22,22 @@ from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class Game(Singleton):
-    def __init__(self, base, camera: CivCamera):
+    def __init__(self, base, camera: Camera):
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")
 
         self.ui: ui = ui.get_instance(base=self.base)
         self.world: World = World.get_instance()
         self.input: Input = Input.get_instance()
         self.turn: Turn = Turn.get_instance(base=self.base)
-        self.camera: CivCamera = camera
+        self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
         self.config: ConfigManager = ConfigManager.get_instance()
         self.entities: EntityManager = EntityManager.get_instance(base=self.base)

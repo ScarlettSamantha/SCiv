@@ -7,12 +7,12 @@ from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
 from panda3d.core import PStatClient
 
-from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from helpers.colors import Colors
 from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType
+from managers.i18n import T_TranslationOrStr, Translation
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
@@ -21,7 +21,7 @@ from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
     from managers.game import Game
     from menus.kivy.core import SCivGUI
 
@@ -29,11 +29,11 @@ if TYPE_CHECKING:
 class ui(Singleton):
     current_menu = None
 
-    def __init__(self, base: "Openciv"):
+    def __init__(self, base: "SCIV"):
         from managers.game import Game
 
         self.menus = []
-        self._base: "Openciv" = base
+        self._base: "SCIV" = base
         self.current_menu = None
         self.game: Optional["Game"] = Game.get_instance()
         self.map: World = World.get_instance()
@@ -41,7 +41,7 @@ class ui(Singleton):
         self.current_tile: Optional[BaseTile] = None
         self.previous_tile: Optional[BaseTile] = None
 
-        self.neighbours_tiles: List[BaseTile] = []
+        self.neighboring_tiles: List[BaseTile] = []
         self.previous_tiles: List[BaseTile] = []
 
         self.current_unit: Optional[UnitBaseClass] = None
@@ -135,12 +135,17 @@ class ui(Singleton):
     def show_draggable_popup(
         self,
         id: str,
-        title: str,
-        message: str,
+        title: T_TranslationOrStr,
+        message: T_TranslationOrStr,
         confirm: bool = False,
         on_confirm: Optional[Callable] = None,
         on_cancel: Optional[Callable] = None,
     ):
+        if isinstance(title, Translation):
+            title = str(title)
+        if isinstance(message, Translation):
+            message = str(message)
+
         if confirm:
             popup = PopupOverride(
                 title=title, message=message, on_confirm=on_confirm, cancel_callback=on_cancel, width=400, height=200
@@ -269,6 +274,14 @@ class ui(Singleton):
         self.get_gui().get_screen_manager().current = "game_ui" if self.get_game().is_paused else "pause_menu"
         self.get_game().is_paused = not self.get_game().is_paused
 
+    def clear_selected_unit(self):
+        if self.current_unit is None:
+            return
+
+        self.current_unit.set_color(Colors.RESTORE)
+        self.current_unit = None
+        self.previous_unit = None
+
     def clear_selection(self):
         self.current_tiles[0].set_color(Colors.RESTORE)
         self.current_tiles = []
@@ -297,34 +310,33 @@ class ui(Singleton):
         from gameplay.repositories.tile import TileRepository
 
         tile = self.map.map.get(tile_coords[0])
-
         if tile is None:
             return
+
+        tile.calculate()
 
         if tile.city is not None and tile.city.player is not None:
             if PlayerManager.is_session_player(tile.city.player):
                 messenger.send("ui.update.user.city_clicked", [tile.city])
             else:
-                messenger.send("ui.update.user.enemey_city_clicked", [tile.city])
+                messenger.send("ui.update.user.enemy_city_clicked", [tile.city])
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
 
-        # Colors for selected tile and neighbors
-        colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
-
-        self.previous_tiles = self.neighbours_tiles
-        self.neighbours_tiles = []
-        self.neighbours_tiles = TileRepository.get_neighbors(tile, check_passable=False)
+        self.previous_tiles = self.neighboring_tiles
+        self.neighboring_tiles = []
+        self.neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False)
 
         if self.show_resources_in_radius:
             self.toggle_tile_icons(tile, small=True, large=True)
 
-        for neighbor in self.neighbours_tiles:
+        for neighbor in self.neighboring_tiles:
             if self.show_resources_in_radius:
                 self.toggle_tile_icons(neighbor, small=True, large=True)
             if self.show_resources_in_radius:
-                self.color_tile(neighbor, colors_neighbours)
+                neighbor_tile_colors: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
+                self.color_tile(neighbor, neighbor_tile_colors)
 
     def color_tile(
         self,
@@ -421,6 +433,8 @@ class ui(Singleton):
                 hex.set_color(Colors.RESTORE)
 
     def show_colors_for_resources(self):
+        from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
+
         for _, hex in self.map.map.items():
             if len(hex.resources) > 0:
                 is_strategic: bool = len(hex.resources.resources[ResourceTypeStrategic]) > 0

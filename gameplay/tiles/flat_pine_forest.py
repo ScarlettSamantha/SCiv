@@ -9,4 +9,4 @@ class FlatPineForest(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatPineForestTerrain())
+        self.set_terrain(FlatPineForestTerrain())

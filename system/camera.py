@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Tuple
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
-class CivCamera(Singleton):
+class Camera(Singleton):
     """
     Modified camera controller:
       - Left-drag => rotate around pivot (slower)
@@ -19,8 +19,8 @@ class CivCamera(Singleton):
       - WASD/arrow keys => optional panning
     """
 
-    def __init__(self, base: "Openciv"):
-        self.base: "Openciv" = base
+    def __init__(self, base: "SCIV"):
+        self.base: "SCIV" = base
         self.active = True
         self.logger: Logger = self.base.logger.engine.getChild("camera")
 
@@ -92,7 +92,7 @@ class CivCamera(Singleton):
     #  Setup Controls
     # -------------------------------------------------------------------------
     def setup_controls(self):
-        """Bind keys/mouse for panning, zooming, rotating, recentering, etc."""
+        """Bind keys/mouse for panning, zooming, rotating, re-centering, etc."""
 
         # WASD / arrow keys for panning
         self.base.accept("arrow_up", self.set_key, ["up", True])

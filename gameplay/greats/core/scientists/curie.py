@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.greats.core.scientists._base import CoreBaseGreatScientist
 from managers.i18n import _t
 

@@ -17,18 +17,18 @@ from managers.unit import Unit
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class BaseGenerator(ABC):
     NAME = _t("generic.unimplemented")
     DESCRIPTION = _t("generic.unimplemented")
 
-    def __init__(self, config: GameSettings, base: "Openciv") -> None:
+    def __init__(self, config: GameSettings, base: "SCIV") -> None:
         from managers.world import World
 
         self.config: GameSettings = config
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
         self.world: World = World.get_instance()
 
     @abstractmethod

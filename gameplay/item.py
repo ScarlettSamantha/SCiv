@@ -1,22 +1,17 @@
-from __future__ import annotations
-
 from typing import Any, Iterator, List
 
 from gameplay.combat.stats import Stats
-from gameplay.effect import Effects
 from managers.i18n import T_TranslationOrStr
 from system.requires import Requires
-from system.saving import SaveAble
 
 
-class Item(SaveAble):
+class Item:
     def __init__(
         self,
         key: str,
         name: T_TranslationOrStr,
         description: T_TranslationOrStr,
         icon: str,
-        effects: Effects = Effects(),
         requires: Requires = Requires(),
         *args: Any,
         **kwargs: Any,
@@ -28,12 +23,11 @@ class Item(SaveAble):
 
         self.active: bool = False
 
-        self.effects: Effects = effects
         self.requires: Requires = requires
         self.combat_stats: Stats = Stats()
 
 
-class Items(SaveAble):
+class Items:
     def __init__(
         self,
         key: str | None = None,
@@ -43,7 +37,6 @@ class Items(SaveAble):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        SaveAble.__init__(self, *args, **kwargs)
         self.key: str | None = key
         self.name: T_TranslationOrStr | None = name
         self.description: T_TranslationOrStr | None = description
@@ -51,15 +44,15 @@ class Items(SaveAble):
 
         self.items: List[Item] = []
 
-    def add_item(self, item: Item) -> Items:
+    def add_item(self, item: Item) -> "Items":
         self.items.append(item)
         return self
 
-    def remove_item(self, item: Item) -> Items:
+    def remove_item(self, item: Item) -> "Items":
         self.items.remove(item)
         return self
 
-    def __add__(self, b: Items | Item) -> Items:
+    def __add__(self, b: "Items | Item") -> "Items":
         # Add item to items
         if isinstance(b, Item):
             self.items.append(b)
@@ -68,10 +61,10 @@ class Items(SaveAble):
             self.items.extend(b.items)
         return self
 
-    def __radd__(self, b: Items | Item) -> Items:
+    def __radd__(self, b: "Items | Item") -> "Items":
         return self.__add__(b)
 
-    def __sub__(self, b: Items | Item) -> Items:
+    def __sub__(self, b: "Items | Item") -> "Items":
         # Remove item from items
         if isinstance(b, Item):
             self.items.remove(b)
@@ -81,7 +74,7 @@ class Items(SaveAble):
                 self.items.remove(item)
         return self
 
-    def __rsub__(self, b: Items | Item) -> Items:
+    def __rsub__(self, b: "Items | Item") -> "Items":
         return self.__sub__(b)
 
     def __getitem__(self, key: int) -> Item:

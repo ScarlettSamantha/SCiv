@@ -7,7 +7,7 @@ from git import TYPE_CHECKING
 from helpers.cache import Cache
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class BaseEntity(ABC, DirectObject):
@@ -20,7 +20,7 @@ class BaseEntity(ABC, DirectObject):
         if Cache._instance is None:
             raise AssertionError("Cache instance is not set.")
 
-        self.base: "Openciv" = Cache._instance
+        self.base: "SCIV" = Cache._instance
 
     def get_registered_status(self) -> bool:
         return self.is_registered

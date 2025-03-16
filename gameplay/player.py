@@ -7,7 +7,6 @@ from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
 from gameplay.civilization import Civilization
 from gameplay.claims import Claims
-from gameplay.effect import Effect, Effects
 from gameplay.goverment import Goverment
 from gameplay.leader import Leader
 from gameplay.mood import Mood
@@ -15,11 +14,11 @@ from gameplay.moods import Moods
 from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
-from gameplay.resource import Resources
 from gameplay.trades import Trades
 from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.colors import Colors, Tuple4f
+from system.effects import Effect, Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -39,6 +38,7 @@ class Player(BaseEntity):
     ) -> None:
         super().__init__()
         from gameplay._units import Units
+        from gameplay.resource import Resources
 
         self.name: str = name
         self.id: str | None = None
@@ -103,7 +103,7 @@ class Player(BaseEntity):
         self.resources: Resources = Resources()
         # self.greats: Greats = Greats()
 
-        self.effects: Effects = Effects()
+        self.effects: Effects = Effects(self)
 
         self.science: Yields = Yields(science=0)
         self.culture: Yields = Yields(culture=0)
@@ -158,19 +158,22 @@ class Player(BaseEntity):
         if city_loop_needed:
             _city_loop(self=self)
 
-    def getEffect(self, key: str) -> Effect | None:
-        return self.effects.get(key=key)
+    def get_effect(self, key: str) -> Effect | None:
+        return self.effects.get_effect(key)
 
-    def getEffects(self) -> Effects:
+    def get_effects(self) -> Effects:
         return self.effects
 
-    def addEffect(self, key: str, effect: Effect) -> None:
-        self.effects.add(effect=effect, key_or_auto=key)
+    def add_effect(self, effect: Effect) -> None:
+        self.effects.add_effect(effect)
 
-    def addUnit(self, unit: "UnitBaseClass") -> None:
+    def remove_effect(self, effect: Effect) -> None:
+        self.effects.remove_effect(effect)
+
+    def add_unit(self, unit: "UnitBaseClass") -> None:
         self.units.add_unit(unit)
 
-    def removeUnit(self, unit: "UnitBaseClass") -> None:
+    def remove_unit(self, unit: "UnitBaseClass") -> None:
         self.units.remove_unit(unit)
 
     def destroy(self):
@@ -188,3 +191,6 @@ class Player(BaseEntity):
 
     def remove_city(self, city: "City") -> None:
         self.cities.remove(city)
+
+    def on_turn_end(self, turn: int):
+        self.effects.on_turn_end(turn)

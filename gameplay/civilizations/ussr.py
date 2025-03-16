@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gameplay.civilization import Civilization
 from managers.i18n import t_
 
@@ -39,10 +37,10 @@ class Ussr(Civilization):
         pass
 
     def register_leaders(self):
-        from gameplay.leaders.gorbashov import Gorbashov
+        from gameplay.leaders.gorbatsjov import Gorbatsjov
         from gameplay.leaders.lenin import Lenin
         from gameplay.leaders.peter import Peter
 
         self.add_leader(Lenin())
-        self.add_leader(Gorbashov())
+        self.add_leader(Gorbatsjov())
         self.add_leader(Peter())

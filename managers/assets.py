@@ -8,7 +8,7 @@ from panda3d.core import NodePath, TextFont, Texture
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class AssetManager(Singleton):
@@ -16,7 +16,7 @@ class AssetManager(Singleton):
     font_cache: Dict[str, TextFont] = {}
     model_cache: Dict[str, NodePath] = {}
 
-    base: Optional["Openciv"] = None
+    base: Optional["SCIV"] = None
     _logger: Optional[Logger] = None
 
     def __setup__(self):
@@ -124,7 +124,7 @@ class AssetManager(Singleton):
         return image
 
     @classmethod
-    def set_base(cls, base: "Openciv") -> None:
+    def set_base(cls, base: "SCIV") -> None:
         cls.base = base
 
     @classmethod

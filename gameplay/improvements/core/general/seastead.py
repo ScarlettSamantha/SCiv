@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class Seastead(Improvement):
+    name = _t("content.improvements.core.general.seastead.name")
+    description = _t("content.improvements.core.general.seastead.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.seastead",
-            _t("content.improvements.core.general.seastead.name"),
-            _t("content.improvements.core.general.seastead.description"),
             *args,
             **kwargs,
         )

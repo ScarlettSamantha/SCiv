@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from gameplay.yields import Yields
-from gameplay.tile_yield_modifier import TileYieldModifier
 from managers.i18n import T_TranslationOrStr
 
 from ._base_terrain import BaseTerrain, rgb
@@ -22,6 +19,4 @@ class Sea(BaseTerrain):
         self.passable: bool = False
         self.passable_without_tech: bool = False
 
-        modifier = TileYieldModifier(Yields(food=1))
-        modifier.add(Yields(gold=3))
-        self.tile_yield_modifiers.add(modifier)
+        self.tile_yield_base.add(Yields(food=1, gold=1))

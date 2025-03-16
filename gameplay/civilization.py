@@ -2,9 +2,9 @@ from abc import abstractmethod
 from random import choice
 from typing import List, Self
 
-from gameplay.effect import Effect, Effects
 from gameplay.leader import Leader
 from managers.i18n import T_TranslationOrStr
+from system.effects import Effect
 
 
 class Civilization:
@@ -21,18 +21,18 @@ class Civilization:
         self._loadable = False
         self._leaders: List[Leader] = []
 
-        self._effects: Effects = Effects()
+        self._effects: List[Effect] = []
         self.leader: Leader | None = None
 
         # Init registers
         self.register_effects()
         self.register_leaders()
 
-    def effects(self) -> Effects:
+    def effects(self) -> List[Effect]:
         return self._effects
 
     def add_effect(self, effect: Effect) -> None:
-        self._effects.add(effect=effect, key_or_auto=str(effect.name))
+        self._effects.append(effect)
 
     def add_leader(self, leader: Leader) -> None:
         self.leaders.append(leader)

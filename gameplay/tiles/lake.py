@@ -10,4 +10,4 @@ class Lake(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(LakeTerrain())
+        self.set_terrain(LakeTerrain())

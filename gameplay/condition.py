@@ -54,12 +54,20 @@ class Conditions:
         self.conditional_type: ConditionalTypes = ConditionalTypes.AND
         self.condition_params: Dict[str, Any] = {}
 
-    def are_met(self) -> bool:
+    def are_met(self, params: Dict[str, Any] = {}) -> bool:
+        self.condition_params.update(params)
         """Evaluate all conditions based on the conditional type."""
         if self.conditional_type == ConditionalTypes.AND:
-            return all(condition() for condition in self._conditions)
+            for condition in self._conditions:
+                if not condition(**self.condition_params):
+                    return False
+            return True
         elif self.conditional_type == ConditionalTypes.OR:
-            return any(condition() for condition in self._conditions)
+            for condition in self._conditions:
+                if condition(**self.condition_params):
+                    return True
+            return False
+
         else:
             raise ValueError("Invalid conditional type")
 
@@ -87,3 +95,9 @@ class Conditions:
     def no_conditions(cls) -> Self:
         """Return a no-op conditions group."""
         return cls()
+
+
+class BuildCondition(Condition):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.required_params = ["tile", "improvement"]

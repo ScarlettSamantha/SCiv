@@ -1,16 +1,16 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class Cache:
-    _instance: Optional["Openciv"] = None
+    _instance: Optional["SCIV"] = None
 
     @classmethod
-    def set_showbase_instance(cls, instance: "Openciv"):
+    def set_showbase_instance(cls, instance: "SCIV"):
         cls._instance = instance
 
     @classmethod
-    def get_showbase_instance(cls) -> "Openciv | None":
+    def get_showbase_instance(cls) -> "SCIV | None":
         return cls._instance

@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class HotWaterSprings(Improvement):
+    name = _t("content.improvements.core.general.hot_water_springs.name")
+    description = _t("content.improvements.core.general.hot_water_springs.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.hot_water_springs",
-            _t("content.improvements.core.general.hot_water_springs.name"),
-            _t("content.improvements.core.general.hot_water_springs.description"),
             *args,
             **kwargs,
         )

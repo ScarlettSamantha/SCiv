@@ -1,4 +1,5 @@
-from gameplay.terrain.traits.land import buildable_flat_land
+from gameplay.improvements.core.resources.farm import Farm
+from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 
 from ._base_terrain import BaseTerrain
 
@@ -12,4 +13,6 @@ class FlatJungle(BaseTerrain):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_modifiers(buildable_flat_land)
+
+        self.add_supported_improvement(Farm)
+        self.add_supported_improvement(LoggingCamp)

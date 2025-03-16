@@ -1,4 +1,7 @@
-from gameplay.terrain.traits.land import buildable_flat_land
+from gameplay.improvements.core.resources.farm import Farm
+from gameplay.improvements.core.resources.mine import Mine
+from gameplay.improvements.core.resources.pasture import Pasture
+from gameplay.yields import Yields
 
 from ._base_terrain import BaseTerrain
 
@@ -12,4 +15,9 @@ class FlatGrass(BaseTerrain):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_modifiers(buildable_flat_land)
+
+        self.add_supported_improvement(Mine)
+        self.add_supported_improvement(Farm)
+        self.add_supported_improvement(Pasture)
+
+        self.tile_yield_base = Yields(food=1)

@@ -288,7 +288,7 @@ class Basic(BaseGenerator):
                     render_y = row * self.world.row_spacing  # Even columns align normally
 
                 # Instantiate the tile object
-                obj_instance: BaseTile = tile_class(self.base, x, y, render_x, render_y, extra_data=hex_tile)
+                obj_instance: BaseTile = tile_class(x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.register()
 
                 def inject_resource():
@@ -299,7 +299,6 @@ class Basic(BaseGenerator):
 
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
-                obj_instance.add_data_to_tileyield()
 
                 # Generate a unique tag for mapping
                 tag = obj_instance.generate_tag(x, y)

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 
 from gameplay.promotion import Promotion, PromotionTree
@@ -120,7 +118,7 @@ class BuilderPromotionTree(PromotionTree):
 
 
 class Builder(CoreCivilianBaseClass):
-    _model = "assets/models/units/pessent.glb"
+    _model = "assets/models/units/peasant.glb"
     buildable = True
     key = "core.unit.class.builder"
     name = t_("content.units.core.units.civilian.builder.name")
@@ -134,6 +132,10 @@ class Builder(CoreCivilianBaseClass):
         )
         self.model_rotation = (0, 0, 0)
         self.model_position_offset = (0, 0, 0.1)
+        self.can_build = True
+
+        self.build_charges: int = 3
+        self.build_charges_left: int = 3
 
     def register_actions(self):
         from gameplay.actions.unit.move import WalkAction

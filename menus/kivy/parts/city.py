@@ -21,11 +21,11 @@ from menus.kivy.elements.image_label import ImageLabel
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class CityUI(BoxLayout, CollisionPreventionMixin):
-    def __init__(self, base: "Openciv", name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
+    def __init__(self, base: "SCIV", name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
         super().__init__(base=base, disable_zoom=True, orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
         self.pos_hint = {"x": 0, "center_y": 0.75}  # Align left & center vertically
         self.size_hint = (0.45, 0.2)  # type: ignore # Ensure fixed width and height
@@ -35,7 +35,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
         self.logger = base.logger.gameplay.getChild("ui.city_ui")
         self.frame: Optional[BoxLayout] = None
         self.hidden: bool = False
@@ -92,7 +92,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         if self.population_label is not None:
             food_collected = str(floor(self.city.food_collected.food.value))
-            food_required = str(floor(self.city.population_food_required.food.value))
+            food_required = str(floor(self.city.new_population_food_required.food.value))
 
             self.population_label.text = f"Pop: {self.city.population}({food_collected}/{food_required})"
 
@@ -116,7 +116,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
             self.gold_label.set_text(f"Gold: {tile_yield.gold.value}")
             self.production_label.set_text(f"Production: {tile_yield.production.value}")
-            self.food_label.set_text(f"Food: {tile_yield.food.value}")
+            self.food_label.set_text(
+                f"Food: {tile_yield.food.value} (-{self.city.population_food_usage * self.city.population})"
+            )
             self.science_label.set_text(f"Science: {tile_yield.science.value}")
             self.culture_label.set_text(f"Culture: {tile_yield.culture.value}")
 

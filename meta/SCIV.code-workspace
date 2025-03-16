@@ -3,14 +3,9 @@
 		{
 			"path": ".."
 		},
-		{
-			"path": "../../kivy-panda3d-stubs"
-		},
-		{
-			"path": "../../panda3d-kivy-fork"
-		}
 	],
 	"settings": {
-		"kvlang.pythonPath": "python"
+		"kvlang.pythonPath": "python",
+		"python.analysis.stubPath": "~/Code/Stubs"
 	}
 }

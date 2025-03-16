@@ -11,16 +11,17 @@ from panda3d.core import BitMask32, LVector3, NodePath
 from gameplay.city import Yields
 from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
-from gameplay.improvement import BasicBaseResource
 from gameplay.resources.core.basic.production import Production
 from gameplay.tiles.base_tile import BaseTile
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.unit import Unit
 from system.actions import Action
+from system.effects import Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.improvement import BasicBaseResource
     from gameplay.player import Player
     from gameplay.promotion import PromotionTree
     from gameplay.tiles.base_tile import BaseTile
@@ -37,7 +38,7 @@ class CantMoveReason(Enum):
     NO_OWNER = 5  # This is when the unit has no owner
     OTHER_OWNER = 6  # This is when the target tile is owned by another player this can integrate with the other owner in some way.
     NO_UNIT = 7  # This is when the unit has no unit to move this is a bug.
-    UNIT_TRAPPED_WIDWAY = 8  # This is when the unit is trapped midway through the path as the tiles have an on_visit check which can be used to trap the unit this can be used to do partial logic.
+    UNIT_TRAPPED_MIDWAY = 8  # This is when the unit is trapped midway through the path as the tiles have an on_visit check which can be used to trap the unit this can be used to do partial logic.
     OTHER_UNIT_ON_TILE = 9  # This might have to integrate with the other owner in some way ether being it attacking or being attacked or just not being able to move.
 
 
@@ -91,9 +92,15 @@ class UnitBaseClass(BaseEntity, ABC):
         self.can_attack: bool = True
         self.can_heal: bool = True
         self.can_pillage: bool = True
+        self.can_build: bool = False
 
-        self.resource_needed: Type[BasicBaseResource] = Production
+        self.resource_needed: Type["BasicBaseResource"] = Production
         self.amount_resource_needed: Yields = Yields(production=10)
+
+        self.effects: Effects = Effects(self)
+
+        self.build_charges: int = 0
+        self.build_charges_left: int = 0
 
         self.register_actions()
 
@@ -192,11 +199,8 @@ class UnitBaseClass(BaseEntity, ABC):
         if target_tile.passable is False:
             return CantMoveReason.IMPASSABLE
 
-        if target_tile.is_occupied() is True:
+        if len(target_tile.units) > 0:
             return CantMoveReason.OTHER_UNIT_ON_TILE
-
-        if target_tile.is_occupied() or not self.tile_is_occupiable(target_tile):
-            return CantMoveReason.OTHER_OWNER
 
         if self.model is None:
             raise ValueError(f"Unit {self.key} has no model assigned.")
@@ -236,7 +240,7 @@ class UnitBaseClass(BaseEntity, ABC):
                 self.moves_left -= tile.movement_cost
                 self.set_pos((cords[0], cords[1], self.pos_z))
                 self.tile = tile
-                return CantMoveReason.UNIT_TRAPPED_WIDWAY
+                return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             # If we got here, we can step onto tile
             result_tile = tile
@@ -298,11 +302,17 @@ class UnitBaseClass(BaseEntity, ABC):
             return f"unit_{self.key}_{random.randint(0, 1000000)}"
 
     def tile_is_occupiable(self, tile: "BaseTile") -> bool:
-        return tile.is_passable()
+        return tile.is_passable() and len(tile.units) == 0
 
     def restore_movement_points(self) -> None:
         """Resets the unit's movement points to the maximum value. Called by the Turn manager."""
         self.moves_left = self.max_moves
+
+    def drain_movement_points(self, cost_or_zero: float | None = None) -> None:
+        if cost_or_zero is None:
+            self.moves_left = 0
+        else:
+            self.moves_left -= cost_or_zero
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
         if isinstance(self.model, str) and not isinstance(self.model, NodePath):

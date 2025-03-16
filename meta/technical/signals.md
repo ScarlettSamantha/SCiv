@@ -1,6 +1,6 @@
 # Signals
 
-This document is about the signals that are send in the application and where they are send and listend to and to keep naming somewhat consistent.
+This document is about the signals that are send in the application and where they are send and listened to and to keep naming somewhat consistent.
 
 ## Keys
 
@@ -23,7 +23,7 @@ These are all used by the camera system and are used for mainly controlling the 
 
 ### Debugging keys
 
-These are used by the UI manager to controll some debug actions these may disapear.
+These are used by the UI manager to control some debug actions these may disappear.
 
 - `f7` (E: engine | L: manager-ui)
 - `p` (E: engine | L: manager-ui)
@@ -44,12 +44,14 @@ These are used by the UI manager to controll some debug actions these may disape
 - `game.state.true_game_start` (E: manager-game | L: manager-ui)
 
 - `game.turn.request_end` (E:ui-player-turn-control | L:manager-turn)
-- `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
+- `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-control)
 - `game.turn.process_city` (E:manager-turn | L: city)
-- `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-controll)
+- `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-control)
 
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
-- `game.gameplay.unit.destroyed` (E: unit-base | L:screen-game-ui)
+- `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
+- `game.gameplay.unit.build_improvement_success` (E: action-build)
+- `game.gameplay.unit.build_improvement_failure` (E: action-build)
 
 - `game.gameplay.city.request_cancel_building_improvement_{tag}` (E:E ui-part-city | L: city)
 - `game.gameplay.city.request_start_building_improvement_{tag}` (E: ui-part-city | L: city)
@@ -75,7 +77,7 @@ These are used by the UI manager to controll some debug actions these may disape
 - `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
 - `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
 - `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
-- `ui.update.user.enemey_city_clicked` (E: manager-ui | L: screen-game-ui)
+- `ui.update.user.enemy_city_clicked` (E: manager-ui | L: screen-game-ui)
 
 - `ui.update.ui.unit_unselected` (E: manager-ui | L: screen-game-ui)
 
@@ -92,7 +94,7 @@ These are used by the UI manager to controll some debug actions these may disape
 
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 
-## Sytem
+## System
 
 - `system.input.user.tile_clicked` (E: manager-input | L: manager-game)
 - `system.input.user.unit_clicked` (E: manager-input | L: manager-game)

@@ -68,7 +68,8 @@ class WalkAction(BaseUnitAction):
             messenger.send(
                 "ui.request.open.popup",
                 [
-                    t_("ui.dialogs.unit.move_errors.unknown_issue.message"),
+                    "error_in_movement",
+                    t_("ui.dialogs.unit.move_errors.unknown_issue.title"),
                     t_("ui.dialogs.unit.move_errors.unknown_issue.message", suffix=str(result)),
                 ],
             )

@@ -1,8 +1,8 @@
-from typing import List, Any, Union, Iterable, TYPE_CHECKING
-from exceptions.condition_exception import ConditionObjectPropertyDoesNotExist
-from system.saving import SaveAble
-from mixins.callbacks import CallbacksMixin
 from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Iterable, List, Union
+
+from exceptions.condition_exception import ConditionObjectPropertyDoesNotExist
+from mixins.callbacks import CallbacksMixin
 
 if TYPE_CHECKING:
     from gameplay.culture import Civic, CultureSubtree
@@ -10,9 +10,8 @@ if TYPE_CHECKING:
     from system.requires import Requires, RequiresMultiple
 
 
-class Condition(SaveAble, CallbacksMixin):
+class Condition(CallbacksMixin):
     def __init__(self, obj: object, property: str, required_value: Any, *args: Any, **kwargs: Any) -> None:
-        SaveAble.__init__(self, *args, **kwargs)
         CallbacksMixin.__init__(self, *args, **kwargs)
 
         self.obj: object = obj

@@ -10,4 +10,4 @@ class FlatTundra(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatTundraTerrain())
+        self.set_terrain(FlatTundraTerrain())

@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from gameplay.leader import Leader
-from gameplay.effect import Effects
 from managers.i18n import t_
 
 
@@ -13,4 +10,3 @@ class Kamehameha(Leader):
             description=t_("civilization.american_empire.leaders.kamehameha.description"),
             icon="civilization/american_empire/leaders/kamehameha/leader_icon.png",
         )
-        self._effects = Effects()

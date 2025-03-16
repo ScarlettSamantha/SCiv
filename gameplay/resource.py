@@ -1,15 +1,10 @@
-from __future__ import annotations
-
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, Self, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Self, Tuple, Type, TypeVar, Union
 
 from exceptions.resource_exception import ResourceTypeException
 from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, t_
-
-if TYPE_CHECKING:
-    from gameplay.yields import Yields
-    from gameplay.tile_yield_modifier import TileYieldModifier
 
 
 class ResourceType(Enum):
@@ -140,24 +135,13 @@ class BaseResource(Generic[T_ResourceType]):
         super().__init__()
         self.value: Union[float, int] = value
         self.value_storage: ResourceValueType = self.configure_as_float_or_int
-        self._tile_yield_modifier: Optional[TileYieldModifier] = None
+        self._tile_yield_modifier: Yields = Yields.nullYield()
 
-    def setup(self):
-        from gameplay.tile_yield_modifier import TileYieldModifier
-
-        self._tile_yield_modifier = TileYieldModifier()
-
-    def get_yield_modifier(self) -> "TileYieldModifier":
-        # This is a lazy setup to avoid circular imports
-        if self._tile_yield_modifier is None:
-            self.setup()
+    def get_yield_modifier(self) -> "Yields":
         return self._tile_yield_modifier  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
-    def add_to_yield_modifier(self, tile_yield_modifier: "TileYieldModifier | Yields") -> None:
-        # This is a lazy setup to avoid circular imports
-        if self._tile_yield_modifier is None:
-            self.setup()
-        self._tile_yield_modifier.add(tile_yield_modifier)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
+    def add_to_yield_modifier(self, yields: "Yields") -> None:
+        self._tile_yield_modifier.add(yields)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
     def _check_same_type(self, other: "BaseResource") -> None:
         if not isinstance(other, BaseResource) or type(self) != type(other):
@@ -232,33 +216,33 @@ class BaseResource(Generic[T_ResourceType]):
             return self.value**other.value
         return self.value**other
 
-    def __rpow__(self, other: Union[BaseResource, float, int]) -> Union[float, int]:
+    def __rpow__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
         return self.__pow__(other)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, BaseResource):
+        if isinstance(other, "BaseResource"):
             return self.value == other.value
         return False
 
     def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
 
-    def __lt__(self, other: Union[BaseResource, float, int]) -> bool:
+    def __lt__(self, other: Union["BaseResource", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value < other.value
         return self.value < other
 
-    def __le__(self, other: Union[BaseResource, float, int]) -> bool:
+    def __le__(self, other: Union["BaseResource", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value <= other.value
         return self.value <= other
 
-    def __gt__(self, other: Union[BaseResource, float, int]) -> bool:
+    def __gt__(self, other: Union["BaseResource", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value > other.value
         return self.value > other
 
-    def __ge__(self, other: Union[BaseResource, float, int]) -> bool:
+    def __ge__(self, other: Union["BaseResource", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value >= other.value
         return self.value >= other
@@ -267,23 +251,23 @@ class BaseResource(Generic[T_ResourceType]):
         return f"{self.key}: {self.value}"
 
     @classmethod
-    def strategic(cls, *args: Any, **kwargs: Any) -> BaseResource:
+    def strategic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
         return cls(*args, **kwargs, type_=ResourceTypeStrategic)
 
     @classmethod
-    def luxury(cls, *args: Any, **kwargs: Any) -> BaseResource:
+    def luxury(cls, *args: Any, **kwargs: Any) -> "BaseResource":
         return cls(*args, **kwargs, type_=ResourceTypeLuxury)
 
     @classmethod
-    def bonus(cls, *args: Any, **kwargs: Any) -> BaseResource:
+    def bonus(cls, *args: Any, **kwargs: Any) -> "BaseResource":
         return cls(*args, **kwargs, type_=ResourceTypeBonus)
 
     @classmethod
-    def basic(cls, *args: Any, **kwargs: Any) -> BaseResource:
+    def basic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
         return cls(*args, **kwargs, type_=ResourceTypeBasic)
 
     @classmethod
-    def mechanic(cls, *args: Any, **kwargs: Any) -> BaseResource:
+    def mechanic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
         return cls(*args, **kwargs, type_=ResourceTypeMechanic)
 
 

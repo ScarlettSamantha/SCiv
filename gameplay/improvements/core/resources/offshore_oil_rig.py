@@ -1,16 +1,15 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class OffshoreOilRig(Improvement):
+    name = _t("content.improvements.core.resources.offshore_oil_rig.name")
+    description = _t("content.improvements.core.resources.offshore_oil_rig.description")
+    placeable_on_tiles = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.resource.offshore_oil_rig",
-            _t("content.improvements.core.resource.offshore_oil_rig.name"),
-            _t("content.improvements.core.resource.offshore_oil_rig.description"),
             *args,
             **kwargs,
         )

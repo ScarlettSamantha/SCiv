@@ -1,15 +1,15 @@
-from system.saving import SaveAble
+from abc import abstractmethod
+from typing import TYPE_CHECKING, List
+
 from managers.i18n import T_TranslationOrStr
 from mixins.callbacks import CallbacksMixin
-from typing import List, TYPE_CHECKING
 from system.requires import Requires
-from abc import abstractmethod
 
 if TYPE_CHECKING:
     from gameplay.culture import Civic
 
 
-class Civic(SaveAble, CallbacksMixin):
+class Civic(CallbacksMixin):
     def __init__(
         self,
         key: str,
@@ -19,7 +19,6 @@ class Civic(SaveAble, CallbacksMixin):
         *args,
         **kwargs,
     ) -> None:
-        SaveAble.__init__(self, *args, **kwargs)
         CallbacksMixin.__init__(self, *args, **kwargs)
 
         self.key: str = key

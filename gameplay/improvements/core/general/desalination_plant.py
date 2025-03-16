@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class DesalinationPlant(Improvement):
+    name = _t("content.improvements.core.general.desalination_plant.name")
+    description = _t("content.improvements.core.general.desalination_plant.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.desalination_plant",
-            _t("content.improvements.core.general.desalination_plant.name"),
-            _t("content.improvements.core.general.desalination_plant.description"),
             *args,
             **kwargs,
         )

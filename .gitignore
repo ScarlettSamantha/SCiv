@@ -4,3 +4,4 @@ logs/
 config.json
 test.py
 stubs/direct/
+stubs/

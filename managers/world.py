@@ -5,10 +5,12 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from direct.showbase.MessengerGlobal import messenger
 
+from gameplay.tiles.base_tile import BaseTile
 from helpers.cache import Cache
 from managers.log import LogManager
 from managers.player import Player, PlayerManager
 from mixins.singleton import Singleton
+from system.effects import Effects
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -32,13 +34,14 @@ class World(Singleton):
         # Key is the (col, row) tuple, value is the tile.
         self.grid: Dict[Tuple[int, int], "BaseTile"] = {}
         self.generator: Optional[Type["BaseGenerator"]] = None
+        self.effects: Effects = Effects(self)
         self.register()
 
     def __init__(self, base):
         self.base = base
 
     def register(self):
-        self.base.accept( # type: ignore
+        self.base.accept(  # type: ignore
             "game.gameplay.city.requests_tile",
             self.on_city_requests_tile,
         )
@@ -67,7 +70,7 @@ class World(Singleton):
             return self.generator
         return None
 
-    def lookup(self, tag):
+    def lookup(self, tag) -> BaseTile:
         return self.map[tag]
 
     def random_tile(self) -> "BaseTile":
@@ -75,6 +78,20 @@ class World(Singleton):
 
     def get_grid(self) -> Dict[Tuple[int, int], "BaseTile"]:
         return self.grid
+
+    def on_turn_end(self, turn: int):  # We process the world on turn end. and we process the tiles.
+        for tile in self.map.values():
+            if (
+                tile.player is not None
+                or tile.city is not None
+                or len(tile.units) > 0
+                or len(tile.effects) > 0
+                or len(tile._improvements) > 0
+                or tile.needs_tile_proecessing is True
+            ):  # We dont want to process tiles that have no player, city, units, effects or need tile processing this saves seconds of turn time.
+                self.logger.debug(f"Processing tile {tile.tag} on turn end.")
+                tile.on_turn_end(turn)
+        self.effects.on_turn_end(turn)
 
     def set_ownership_of_tile(self, tile: "BaseTile", player: Player, city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
@@ -124,7 +141,7 @@ class World(Singleton):
             self.set_ownership_of_tile(tile, city.player, city)
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
-            self.base.messenger.send( # type: ignore
+            self.base.messenger.send(  # type: ignore
                 f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],
             )

@@ -10,4 +10,4 @@ class HillsSnow(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(HillSnowTerrain())
+        self.set_terrain(HillSnowTerrain())

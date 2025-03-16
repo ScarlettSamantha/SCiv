@@ -9,4 +9,4 @@ class FlatSchrubland(BaseTile):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.setTerrain(FlatSchrublandTerrain())
+        self.set_terrain(FlatSchrublandTerrain())

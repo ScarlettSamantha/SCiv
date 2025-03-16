@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class MountainTunnel(Improvement):
+    name = _t("content.improvements.core.general.mountain_tunnel.name")
+    description = _t("content.improvements.core.general.mountain_tunnel.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.mountain_tunnel",
-            _t("content.improvements.core.general.mountain_tunnel.name"),
-            _t("content.improvements.core.general.mountain_tunnel.description"),
             *args,
             **kwargs,
         )
