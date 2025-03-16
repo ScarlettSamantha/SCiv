@@ -92,7 +92,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         if self.population_label is not None:
             food_collected = str(floor(self.city.food_collected.food.value))
-            food_required = str(floor(self.city.population_food_required.food.value))
+            food_required = str(floor(self.city.new_population_food_required.food.value))
 
             self.population_label.text = f"Pop: {self.city.population}({food_collected}/{food_required})"
 
@@ -116,7 +116,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
             self.gold_label.set_text(f"Gold: {tile_yield.gold.value}")
             self.production_label.set_text(f"Production: {tile_yield.production.value}")
-            self.food_label.set_text(f"Food: {tile_yield.food.value}")
+            self.food_label.set_text(
+                f"Food: {tile_yield.food.value} (-{self.city.population_food_usage * self.city.population})"
+            )
             self.science_label.set_text(f"Science: {tile_yield.science.value}")
             self.culture_label.set_text(f"Culture: {tile_yield.culture.value}")
 
