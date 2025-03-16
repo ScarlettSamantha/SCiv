@@ -99,6 +99,9 @@ class UnitBaseClass(BaseEntity, ABC):
 
         self.effects: Effects = Effects(self)
 
+        self.build_charges: int = 0
+        self.build_charges_left: int = 0
+
         self.register_actions()
 
     def register_actions(self): ...
