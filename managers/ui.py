@@ -41,7 +41,7 @@ class ui(Singleton):
         self.current_tile: Optional[BaseTile] = None
         self.previous_tile: Optional[BaseTile] = None
 
-        self.neighbours_tiles: List[BaseTile] = []
+        self.neighboring_tiles: List[BaseTile] = []
         self.previous_tiles: List[BaseTile] = []
 
         self.current_unit: Optional[UnitBaseClass] = None
@@ -324,19 +324,19 @@ class ui(Singleton):
         self.previous_tile = self.current_tile
         self.current_tile = tile
 
-        self.previous_tiles = self.neighbours_tiles
-        self.neighbours_tiles = []
-        self.neighbours_tiles = TileRepository.get_neighbors(tile, check_passable=False)
+        self.previous_tiles = self.neighboring_tiles
+        self.neighboring_tiles = []
+        self.neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False)
 
         if self.show_resources_in_radius:
             self.toggle_tile_icons(tile, small=True, large=True)
 
-        for neighbor in self.neighbours_tiles:
+        for neighbor in self.neighboring_tiles:
             if self.show_resources_in_radius:
                 self.toggle_tile_icons(neighbor, small=True, large=True)
             if self.show_resources_in_radius:
-                colors_neighbours: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
-                self.color_tile(neighbor, colors_neighbours)
+                neighbor_tile_colors: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
+                self.color_tile(neighbor, neighbor_tile_colors)
 
     def color_tile(
         self,
