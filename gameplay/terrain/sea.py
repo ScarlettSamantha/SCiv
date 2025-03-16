@@ -19,4 +19,4 @@ class Sea(BaseTerrain):
         self.passable: bool = False
         self.passable_without_tech: bool = False
 
-        self.tile_yield_base.add(Yields(food=1, gold=3))
+        self.tile_yield_base.add(Yields(food=1, gold=1))
