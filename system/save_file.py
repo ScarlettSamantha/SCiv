@@ -1,10 +1,11 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List
-import zlib
 import gzip
 import json
 import sys
+import zlib
+from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, Dict, List
+
 from system.vars import APPLICATION_NAME
 
 
@@ -21,7 +22,7 @@ class BaseSaver(ABC):
         self.meta_data: Dict[str, Any]  # Will be converted to json
         self.identifier: str
         self.hash: str
-        self.incrementer: int
+        self.counter: int
         self.inject_metadata: bool = True
 
     def set_identifier(self, identifier: str):
@@ -37,8 +38,8 @@ class BaseSaver(ABC):
     def set_hash(self, hash: str):
         self.hash = hash
 
-    def set_incrementer(self, incrementer: int) -> None:
-        self.incrementer = incrementer
+    def set_session_incrementor(self, counter_increment_value: int) -> None:
+        self.counter = counter_increment_value
 
     def get_identifier(self) -> str:
         return self.identifier
@@ -52,12 +53,12 @@ class BaseSaver(ABC):
     def get_hash(self) -> str:
         return self.hash
 
-    def get_incrementer(self) -> int:
-        return self.incrementer
+    def get_session_incrementor(self) -> int:
+        return self.counter
 
-    def cycle_incrementer(self, amount: int = 1) -> int:
-        self.incrementer += amount
-        return self.incrementer
+    def cycle_incrementor(self, amount: int = 1) -> int:
+        self.counter += amount
+        return self.counter
 
     def register_modifications_metadata(self) -> Dict[str, str] | None:
         if not self.inject_metadata:
@@ -157,7 +158,7 @@ class SavePickleFile(BaseSaver):
             return False
 
     def load(self) -> str | bool:
-        save_dir = Path(self.base_path) / self.identifier / str(self.incrementer)
+        save_dir = Path(self.base_path) / self.identifier / str(self.counter)
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"

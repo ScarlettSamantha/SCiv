@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from logging import Logger
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
 from uuid import uuid4
 from weakref import ReferenceType, ref
-
-from git import TYPE_CHECKING
 
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
@@ -116,7 +114,7 @@ class EntityManager(Singleton):
         )
         self.saver: Type[BaseSaver] = saver if saver is not None else self._default_savefile_handler
         self.session: Optional[str] = session_name if session_name is not None else str(uuid4().hex)
-        self.session_incrementer: int = 0  # Used to keep track of how many times the session has been loaded
+        self.session_incrementor: int = 0  # Used to keep track of how many times the session has been loaded
         self.logger: Logger = self.base.logger.engine.getChild("manager.entity")
 
         # Stats
@@ -263,7 +261,7 @@ class EntityManager(Singleton):
         saver_instance = self.saver()
         saver_instance.set_data(data)
         saver_instance.set_identifier(self.session)
-        saver_instance.set_incrementer(self.session_incrementer)
+        saver_instance.set_session_incrementor(self.session_incrementor)
 
         # Add meta data before saving to the file to keep track of the state of the game, keep these as late as possible
         self.add_default_meta_data()
@@ -284,7 +282,7 @@ class EntityManager(Singleton):
         saver_instance.set_identifier(self.session)
         loaded_data: str = saver_instance.load()
 
-        self.session_incrementer = saver_instance.get_incrementer()
+        self.session_incrementor = saver_instance.get_session_incrementor()
         self._meta_data = saver_instance.get_saved_meta_data()
 
         unserialized_data: Dict[EntityType, Dict[str, BaseEntity]] = self.serializer.load(loaded_data)
