@@ -1,4 +1,3 @@
-from gameplay.terrain.traits.water import open_water_lake
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 from ._base_terrain import BaseTerrain, rgb
@@ -15,5 +14,3 @@ class Lake(BaseTerrain):
 
         self.fallback_color = self._fallback_color
         self.movement_modifier = 0.5
-
-        self.add_modifiers(open_water_lake)

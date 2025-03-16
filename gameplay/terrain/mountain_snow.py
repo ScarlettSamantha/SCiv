@@ -1,4 +1,3 @@
-from gameplay.terrain.traits.land import mountain
 from managers.i18n import T_TranslationOrStr
 
 from ._base_terrain import BaseTerrain, rgb
@@ -19,5 +18,3 @@ class MountainSnow(BaseTerrain):
 
         self.passable: bool = False
         self.passable_without_tech: bool = False
-
-        self.add_modifiers(mountain)
