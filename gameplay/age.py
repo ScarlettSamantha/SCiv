@@ -1,6 +1,6 @@
-from __future__ import annotations
-from managers.i18n import T_TranslationOrStrOrNone
 from typing import Tuple
+
+from managers.i18n import T_TranslationOrStrOrNone
 
 
 class Age:
