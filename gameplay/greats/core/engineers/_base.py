@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.greats.core._base import CoreGreat
 
 
