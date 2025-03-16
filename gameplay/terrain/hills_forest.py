@@ -1,3 +1,4 @@
+from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain.traits.land import buildable_flat_land
 
@@ -16,3 +17,4 @@ class HillsForest(BaseTerrain):
         self.add_modifiers(buildable_flat_land)
 
         self.add_supported_improvement(Mine)
+        self.add_supported_improvement(LoggingCamp)

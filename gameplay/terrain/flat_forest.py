@@ -1,4 +1,5 @@
 from gameplay.improvements.core.resources.farm import Farm
+from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain.traits.land import buildable_flat_land
 
@@ -18,3 +19,4 @@ class FlatForest(BaseTerrain):
 
         self.add_supported_improvement(Mine)
         self.add_supported_improvement(Farm)
+        self.add_supported_improvement(LoggingCamp)
