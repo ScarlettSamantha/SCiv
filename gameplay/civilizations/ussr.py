@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gameplay.civilization import Civilization
 from managers.i18n import t_
 
