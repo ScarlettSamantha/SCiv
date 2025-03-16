@@ -1,6 +1,8 @@
 from enum import Enum
 from logging import Logger
 from os.path import dirname, join, realpath
+from pathlib import Path
+from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from direct.gui.OnscreenImage import OnscreenImage
@@ -598,7 +600,8 @@ class BaseTile(BaseEntity):
         """
         Add an additional model on top of the tile.
         """
-        extra_model: NodePath = self.base.loader.loadModel(model_path)
+        base_path: Path = self.base.get_base_path()
+        extra_model: NodePath = self.base.loader.loadModel(abspath(join(base_path, model_path)))
 
         if extra_model is None:
             raise AssertionError(f"Model not found: {model_path}")
