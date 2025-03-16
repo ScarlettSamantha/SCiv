@@ -1,15 +1,13 @@
-from __future__ import annotations
-from typing import List, NoReturn, ForwardRef, Tuple
-from managers.i18n import T_TranslationOrStr
+from typing import List, Tuple
+
 from exceptions.great_exception import GreatPersonTreeNotLoaded
-from system.saving import SaveAble
-from managers.log import LogManager
-from gameplay.effect import Effects
 from gameplay.resource import BaseResource
-from gameplay.resources.core.mechanics._base import BaseGreatMechanicResource
+from gameplay.resources.core.mechanics.greats import BaseGreatMechanicResource
+from managers.i18n import T_TranslationOrStr
+from managers.log import LogManager
 
 
-class Great(SaveAble):
+class Great:
     def __init__(
         self,
         key: str,
@@ -27,13 +25,12 @@ class Great(SaveAble):
         self.cost: float = cost
         self.bought: bool = False
         self.on_map: bool = False
-        self.effects: Effects = Effects()
         self.resource_type_required: BaseResource | None | Tuple | BaseGreatMechanicResource | List = (
             resource_type_required
         )
 
 
-class GreatsTree(SaveAble):
+class GreatsTree:
     def __init__(
         self,
         key: str,
@@ -50,22 +47,21 @@ class GreatsTree(SaveAble):
         self.points: float = points
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
-        self.effects_on_finish: Effects = Effects()
 
     def buy_great(self, great: Great) -> Great:
-        self.points -= great.points
-        LogManager.get_instance().gameplay.debug(f"Bought Great {great.__class__.__name__} for {great.points} points")
+        self.points -= great.cost
+        LogManager.get_instance().gameplay.debug(f"Bought Great {great.__class__.__name__} for {great.cost} points")
         return great
 
-    def add_great(self, great: Great) -> NoReturn:
+    def add_great(self, great: Great):
         self.greats.append(great)
         LogManager.get_instance().gameplay.debug(f"Added Great {great.__class__.__name__} to {self.name}")
 
-    def remove_great(self, great: Great) -> NoReturn:
+    def remove_great(self, great: Great):
         self.greats.remove(great)
         LogManager.get_instance().gameplay.debug(f"Removed Great {great.__class__.__name__} from {self.name}")
 
-    def __add__(self, b: int | float | Great) -> ForwardRef("GreatsTree"):
+    def __add__(self, b: int | float | Great):
         if isinstance(b, Great):
             self.add_great(b)
             return self
@@ -73,10 +69,10 @@ class GreatsTree(SaveAble):
         self.points += float(b)
         return self
 
-    def __radd__(self, b: int | float | Great) -> ForwardRef("GreatsTree"):
+    def __radd__(self, b: int | float | Great):
         return self.__add__(b)
 
-    def __sub__(self, b: int | float | Great) -> ForwardRef("GreatsTree"):
+    def __sub__(self, b: int | float | Great):
         if isinstance(b, Great):
             self.remove_great(b)
             return self
@@ -84,7 +80,7 @@ class GreatsTree(SaveAble):
         self.points -= float(b)
         return self
 
-    def __rsub__(self, b: int | float | Great) -> ForwardRef("GreatsTree"):
+    def __rsub__(self, b: int | float | Great):
         return self.__sub__(b)
 
 
@@ -93,24 +89,33 @@ class Greats:
         self.loaded_trees: List[GreatsTree] = loaded_great_trees
 
     def _check_tree_exists(self, tree: str, exception_on_fail: bool = True):
-        if tree not in self.categories:
+        if not any(great_tree.key == tree for great_tree in self.loaded_trees):
             if exception_on_fail:
                 raise GreatPersonTreeNotLoaded(f"Great Person Tree {tree} not loaded")
             return False
         return True
 
-    def addTree(self, tree: str):
-        self._check_tree_exists(tree, True)
+    def addTree(self, tree: GreatsTree):
+        self._check_tree_exists(tree.key, True)
         self.loaded_trees.append(tree)
 
     def addPoint(self, tree: str, amount: int | float):
         self._check_tree_exists(tree, True)
-        self.loaded_trees[tree] += amount
+        for great_tree in self.loaded_trees:
+            if great_tree.key == tree:
+                great_tree.points += amount
+                break
 
     def decreasePoints(self, tree: str, amount: int | float):
         self._check_tree_exists(tree, True)
-        self.loaded_trees[tree] -= amount
+        for great_tree in self.loaded_trees:
+            if great_tree.key == tree:
+                great_tree.points -= amount
+                break
 
     def setPoints(self, tree: str, amount: int | float):
         self._check_tree_exists(tree, True)
-        self.loaded_trees[tree] = amount
+        for great_tree in self.loaded_trees:
+            if great_tree.key == tree:
+                great_tree.points = amount
+                break
