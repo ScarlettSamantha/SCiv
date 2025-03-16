@@ -1,13 +1,10 @@
-from __future__ import annotations
-
 from typing import List, Optional
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from system.effects import Effect
-from system.saving import SaveAble
 
 
-class Leader(SaveAble):
+class Leader:
     def __init__(
         self,
         key: Optional[str],
@@ -15,7 +12,6 @@ class Leader(SaveAble):
         description: T_TranslationOrStrOrNone,
         icon: Optional[str] = None,
     ) -> None:
-        super().__init__()
         self.key: str = key if key is not None else ""
         self.name: T_TranslationOrStr = name if name is not None else ""
         self.icon: str | None = icon if icon is not None else None
