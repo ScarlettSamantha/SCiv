@@ -1,10 +1,12 @@
 from typing import Any, Dict, Type
-from kivy.uix.spinner import Spinner as BaseSpinner
-from menus.kivy.elements.dropdown import DropDown
-from menus.kivy.elements.button_value import ButtonValue
-from kivy.properties import ObjectProperty, DictProperty
-from kivy.factory import Factory
+
 from kivy.compat import string_types
+from kivy.factory import Factory
+from kivy.properties import DictProperty, ObjectProperty
+from kivy.uix.spinner import Spinner as BaseSpinner
+
+from menus.kivy.elements.button_value import ButtonValue
+from menus.kivy.elements.dropdown import DropDown
 
 
 class SpinnerOption(ButtonValue):
@@ -43,6 +45,6 @@ class ValueSpinner(BaseSpinner):
         if text_autoupdate:
             if values:
                 if not self.text or self.text not in values:
-                    self.text = values[0]
+                    self.text = next(iter(values.keys()))
             else:
                 self.text = ""
