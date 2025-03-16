@@ -161,7 +161,7 @@ class EntityManager(Singleton):
     def object_type_to_storage(self, type: EntityType) -> Dict[str, BaseEntity]:
         return self._entities[type]
 
-    def register(self, type: EntityType, entity: BaseEntity, key: str = str(uuid4().hex)):
+    def register(self, type: EntityType, entity: BaseEntity, key: str):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
 
