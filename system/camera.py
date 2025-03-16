@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class CivCamera(Singleton):
+class Camera(Singleton):
     """
     Modified camera controller:
       - Left-drag => rotate around pivot (slower)
@@ -92,7 +92,7 @@ class CivCamera(Singleton):
     #  Setup Controls
     # -------------------------------------------------------------------------
     def setup_controls(self):
-        """Bind keys/mouse for panning, zooming, rotating, recentering, etc."""
+        """Bind keys/mouse for panning, zooming, rotating, re-centering, etc."""
 
         # WASD / arrow keys for panning
         self.base.accept("arrow_up", self.set_key, ["up", True])

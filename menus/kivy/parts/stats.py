@@ -6,7 +6,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties
 
-from camera import CivCamera
+from system.camera import Camera
 from managers.entity import EntityManager
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class StatsPanel(FloatLayout):
     def __init__(self, base: "SCIV | ShowBase", **kwargs):
         super().__init__(**kwargs)
         self.base: "SCIV | ShowBase" = base
-        self.camera: CivCamera = CivCamera.get_instance()
+        self.camera: Camera = Camera.get_instance()
 
         self.frame: Optional[FloatLayout] = None
         self.label: Optional[Label] = None

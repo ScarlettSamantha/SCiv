@@ -15,8 +15,8 @@ These are not features more things that exist right now and needs to be done som
 
 ## Refactors
 
-- [ ] Move lights.py to a system type class?
-- [ ] Move camera.py to a system type class?
+- [x] Move lights.py to a system type class?
+- [x] Move camera.py to a system type class?
 - [x] Remove old classes from old engine.
 - [ ] Move more logic from main into the game manager of possible.
 - [x] Rename tile yield to something more generic as its used as the generic resource container

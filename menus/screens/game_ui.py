@@ -11,7 +11,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
-from camera import CivCamera
+from system.camera import Camera
 from gameplay.city import City
 from gameplay.improvement import Improvement
 from gameplay.tiles.base_tile import BaseTile
@@ -52,7 +52,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         super().__init__(base=self._base, **kwargs)
 
         self.world_manager = World.get_instance()
-        self.camera: CivCamera = CivCamera.get_instance()
+        self.camera: Camera = Camera.get_instance()
         self.unit_manager: Unit = Unit.get_instance()
         self.ui_manager: ui = ui.get_instance()
 

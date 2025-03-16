@@ -6,9 +6,9 @@ from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import load_prc_file
 
-from camera import CivCamera
+from system.camera import Camera
 from helpers.cache import Cache
-from lights import setup_lights
+from system.lights import setup_lights
 from managers.config import ConfigManager
 from managers.i18n import _i18n, set_i18n
 from managers.input import Input
@@ -65,8 +65,8 @@ class SCIV(ShowBase):
         self.asset_manager.set_base(self)
 
         self.engine_logger.info("Setting up camera")
-        self.civ_camera = CivCamera(self)
-        CivCamera._set_instance(self.civ_camera)
+        self.civ_camera = Camera(self)
+        Camera._set_instance(self.civ_camera)
         self.civ_camera.register()
 
         self.engine_logger.info("Setting up lights")
