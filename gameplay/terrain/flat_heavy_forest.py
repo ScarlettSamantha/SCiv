@@ -1,6 +1,7 @@
 from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
+from gameplay.yields import Yields
 
 from ._base_terrain import BaseTerrain
 
@@ -18,3 +19,5 @@ class FlatHeavyForest(BaseTerrain):
         self.add_supported_improvement(Mine)
         self.add_supported_improvement(Farm)
         self.add_supported_improvement(LoggingCamp)
+
+        self.tile_yield_base = Yields(production=1)

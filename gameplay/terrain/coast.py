@@ -1,3 +1,5 @@
+from gameplay.yields import Yields
+
 from ._base_terrain import BaseTerrain
 
 
@@ -13,3 +15,5 @@ class Coast(BaseTerrain):
 
         self.passable: bool = False
         self.passable_without_tech: bool = False
+
+        self.tile_yield_base = Yields(food=1)
