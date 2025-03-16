@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class NationalPark(Improvement):
+    name = _t("content.improvements.core.general.national_park.name")
+    description = _t("content.improvements.core.general.national_park.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.national_park",
-            _t("content.improvements.core.general.national_park.name"),
-            _t("content.improvements.core.general.national_park.description"),
             *args,
             **kwargs,
         )

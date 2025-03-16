@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class Corporation(Improvement):
+    name = _t("content.improvements.core.general.corporation.name")
+    description = _t("content.improvements.core.general.corporation.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.corporation",
-            _t("content.improvements.core.general.corporation.name"),
-            _t("content.improvements.core.general.corporation.description"),
             *args,
             **kwargs,
         )

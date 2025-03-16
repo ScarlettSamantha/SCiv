@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class MissileSilo(Improvement):
+    name = _t("content.improvements.core.military.missile_silo.name")
+    description = _t("content.improvements.core.military.missile_silo.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.military.missile_silo",
-            _t("content.improvements.core.military.missile_silo.name"),
-            _t("content.improvements.core.military.missile_silo.description"),
             *args,
             **kwargs,
         )
