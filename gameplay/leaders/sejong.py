@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-from gameplay.effect import Effects
 from gameplay.leader import Leader
 from managers.i18n import t_
 
@@ -13,4 +10,3 @@ class Sejong(Leader):
             description=t_("civilization.korea.leaders.sejong.description"),
             icon="civilization/korea/leaders/sejong/leader_icon.png",
         )
-        self._effects = Effects()

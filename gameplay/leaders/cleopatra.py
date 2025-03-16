@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-from gameplay.effect import Effects
 from gameplay.leader import Leader
 from managers.i18n import t_
 
@@ -13,4 +10,3 @@ class Cleopatra(Leader):
             description=t_("civilization.egypt.leaders.cleopatra.description"),
             icon="civilization/egypt/leaders/cleopatra/leader_icon.png",
         )
-        self._effects = Effects()

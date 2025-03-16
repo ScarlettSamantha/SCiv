@@ -1,7 +1,4 @@
-from __future__ import annotations
-
 from gameplay.leader import Leader
-from gameplay.effect import Effects
 from managers.i18n import t_
 
 
@@ -13,4 +10,3 @@ class AbrahamLincoln(Leader):
             description=t_("civilization.american_empire.leaders.abraham_lincoln.description"),
             icon="civilization/american_empire/leaders/abraham_lincoln/leader_icon.png",
         )
-        self._effects = Effects()
