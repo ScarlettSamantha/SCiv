@@ -30,6 +30,7 @@ class Openciv(ShowBase):
         self.disableMouse()
         Cache.set_showbase_instance(self)
 
+        self.base_path = pathlib.Path(__file__).parent.absolute()
         # Base messenger object from panda3d
         self.messenger: Messenger = Messenger()
 
@@ -92,6 +93,9 @@ class Openciv(ShowBase):
         self.unit_manager = Unit(self)
         Unit._set_instance(self.unit_manager)
         self.messenger.send("system.main.ready")
+
+    def get_base_path(self) -> pathlib.Path:
+        return self.base_path
 
 
 if __name__ == "__main__":
