@@ -57,7 +57,7 @@ class SettlerPromotionTree(PromotionTree):
 
 
 class Settler(CoreCivilianBaseClass):
-    _model = "assets/models/units/pessent.glb"
+    _model = "assets/models/units/peasant.glb"
     buildable = True
     key = "core.unit.class.settler"
     name = t_("content.units.core.units.civilian.settler.name")

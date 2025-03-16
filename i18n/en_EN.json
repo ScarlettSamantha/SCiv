@@ -2332,8 +2332,8 @@
                 "name": "Commando",
                 "description": "Special forces unit"
               },
-              "corvete": {
-                "name": "Corvete",
+              "corvette": {
+                "name": "Corvette",
                 "description": "Small naval vessel"
               },
               "frigate": {
@@ -2466,8 +2466,8 @@
                 "name": "Escort Duty",
                 "description": "Increases defense of nearby friendly units"
               },
-              "agile_manoeuvring": {
-                "name": "Agile Manoeuvring",
+              "agile_manoeuvering": {
+                "name": "Agile Manoeuvering",
                 "description": "Can evade mines."
               }
             },
@@ -2518,15 +2518,15 @@
                 "name": "Torpedoes",
                 "description": "Increases damage to naval units"
               },
-              "fire_supression": {
-                "name": "Fire Supression",
+              "fire_suppression": {
+                "name": "Fire Suppression",
                 "description": "Reduces damage taken"
               }
             },
             "heavy_cavalry": {
               "heavy_raiders": {
                 "name": "Heavy Raiders",
-                "description": "Increases civilian causalties during raids but increases gold"
+                "description": "Increases civilian casualties during raids but increases gold"
               },
               "armored": {
                 "name": "Armored",
@@ -2534,7 +2534,7 @@
               },
               "defensive_tactics": {
                 "name": "Lance",
-                "description": "Incrases units defences when attacked while stationary"
+                "description": "Increases units defenses when attacked while stationary"
               },
               "shield_wall": {
                 "name": "Shield Wall",
@@ -2780,16 +2780,16 @@
               }
             },
             "fighter": {
-              "dogfighting": {
-                "name": "Dogfighting",
+              "dog_fighting": {
+                "name": "Dog fighting",
                 "description": "Increases air unit's combat strength against other air units"
               },
               "flares": {
                 "name": "Flares",
                 "description": "Reduces damage taken from air defenses"
               },
-              "multirole": {
-                "name": "Multirole",
+              "multi_role": {
+                "name": "Multi_role",
                 "description": "Reduces air unit's combat strength against other air units"
               },
               "air_repair": {
@@ -2810,8 +2810,8 @@
                 "name": "Jet Engine",
                 "description": "Increases air unit's range"
               },
-              "upgraded_bombbays": {
-                "name": "Upgraded Bombbays",
+              "upgraded_bomb_bays": {
+                "name": "Upgraded Bomb bays",
                 "description": "Allows the unit to attack twice"
               },
               "flares": {

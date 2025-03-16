@@ -128,7 +128,7 @@ class Improvement(BaseEntity):
     @tile_yield.setter
     def tile_yield(self, value: Yields) -> None:
         if not isinstance(value, Yields):
-            raise TypeError(f"Tileyield cannot be type {type(value)}")
+            raise TypeError(f"Tile yield cannot be type {type(value)}")
         self.tile_yield_improvement = value
 
     def set_price_free(self):

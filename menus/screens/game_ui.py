@@ -96,7 +96,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
         self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
         self._base.accept("ui.update.user.city_clicked", self.process_city_click)
-        self._base.accept("ui.update.user.enemey_city_clicked", self.process_enemy_city_click)
+        self._base.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
 
         self._base.accept("ui.update.ui.unit_unselected", self.clear_action_bar)
 
@@ -389,7 +389,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         action.action_kwargs["improvement"] = improvement
         action.run()
 
-        # this is to prevent the action bar having acctions that are not valid anymore.
+        # this is to prevent the action bar having actions that are not valid anymore.
         self.clear_action_bar()
         self.generate_buttons_for_unit_actions(unit)
 

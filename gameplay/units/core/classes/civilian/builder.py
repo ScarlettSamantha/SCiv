@@ -118,7 +118,7 @@ class BuilderPromotionTree(PromotionTree):
 
 
 class Builder(CoreCivilianBaseClass):
-    _model = "assets/models/units/pessent.glb"
+    _model = "assets/models/units/peasant.glb"
     buildable = True
     key = "core.unit.class.builder"
     name = t_("content.units.core.units.civilian.builder.name")

@@ -38,7 +38,7 @@ class CantMoveReason(Enum):
     NO_OWNER = 5  # This is when the unit has no owner
     OTHER_OWNER = 6  # This is when the target tile is owned by another player this can integrate with the other owner in some way.
     NO_UNIT = 7  # This is when the unit has no unit to move this is a bug.
-    UNIT_TRAPPED_WIDWAY = 8  # This is when the unit is trapped midway through the path as the tiles have an on_visit check which can be used to trap the unit this can be used to do partial logic.
+    UNIT_TRAPPED_MIDWAY = 8  # This is when the unit is trapped midway through the path as the tiles have an on_visit check which can be used to trap the unit this can be used to do partial logic.
     OTHER_UNIT_ON_TILE = 9  # This might have to integrate with the other owner in some way ether being it attacking or being attacked or just not being able to move.
 
 
@@ -240,7 +240,7 @@ class UnitBaseClass(BaseEntity, ABC):
                 self.moves_left -= tile.movement_cost
                 self.set_pos((cords[0], cords[1], self.pos_z))
                 self.tile = tile
-                return CantMoveReason.UNIT_TRAPPED_WIDWAY
+                return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             # If we got here, we can step onto tile
             result_tile = tile

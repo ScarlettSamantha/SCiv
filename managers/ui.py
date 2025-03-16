@@ -319,7 +319,7 @@ class ui(Singleton):
             if PlayerManager.is_session_player(tile.city.player):
                 messenger.send("ui.update.user.city_clicked", [tile.city])
             else:
-                messenger.send("ui.update.user.enemey_city_clicked", [tile.city])
+                messenger.send("ui.update.user.enemy_city_clicked", [tile.city])
 
         self.previous_tile = self.current_tile
         self.current_tile = tile

@@ -86,7 +86,7 @@ class BuildAction(BaseUnitAction):
                     t_("ui.dialogs.unit.build_improvement.improvement_not_owned.message"),
                 ],
             )
-            self._condition_result = CantBuildReason.NOT_PLACEABLE_UPON_ENEMEY_TILE
+            self._condition_result = CantBuildReason.NOT_PLACEABLE_ON_ENEMY_TILE
             return False
         return self.unit.can_build
 
