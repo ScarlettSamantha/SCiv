@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from gameplay.improvement import Improvement
 
@@ -26,6 +26,11 @@ class ImprovementsSet:
     def remove(self, value: Improvement):
         self._improvements.remove(value)
         self._num_improvements -= 1
+
+    def has(self, value: Improvement | Type[Improvement]) -> bool:
+        if isinstance(value, type):
+            return any(isinstance(i, value) for i in self._improvements)
+        return value in self._improvements
 
     def __contains__(self, a) -> bool:
         if isinstance(a, type):

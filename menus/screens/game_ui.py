@@ -350,14 +350,18 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             if _unit.can_build is True and _unit.tile is not None:
                 improvements: List[Type[Improvement]] = _unit.tile.get_buildable_improvements()
                 for _improvement in improvements:
-                    if _improvement.placeable_on_tiles is True and (
-                        (
-                            isinstance(_improvement.placeable_on_condition, bool)
-                            and _improvement.placeable_on_condition is True
-                        )
-                        or (
-                            isinstance(_improvement.placeable_on_condition, Callable)
-                            and _improvement.placeable_on_condition() is True
+                    if (
+                        _improvement.placeable_on_tiles is True
+                        and not _unit.tile.improvements().has(_improvement)
+                        and (
+                            (
+                                isinstance(_improvement.placeable_on_condition, bool)
+                                and _improvement.placeable_on_condition is True
+                            )
+                            or (
+                                isinstance(_improvement.placeable_on_condition, Callable)
+                                and _improvement.placeable_on_condition() is True
+                            )
                         )
                     ):
                         button = Button(
@@ -384,6 +388,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         action.action_kwargs["unit"] = unit
         action.action_kwargs["improvement"] = improvement
         action.run()
+
+        # this is to prevent the action bar having acctions that are not valid anymore.
+        self.clear_action_bar()
+        self.generate_buttons_for_unit_actions(unit)
 
     def prepare_action(self, action: Action, unit: UnitBaseClass, _instance):
         """Prepares an action and waits for the next tile click before executing."""
