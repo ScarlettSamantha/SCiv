@@ -89,7 +89,10 @@ class _i18n:
 
         def format_result(result: str) -> str:
             if formatting_parameters is not None:
-                return result.format(**formatting_parameters)
+                try:
+                    return result.format(**formatting_parameters)
+                except KeyError:
+                    raise I18NTranslationNotFound(f"String formatting key[{key}] not found")
             return prefix + result + suffix
 
         if key in self._lookup_cache:
@@ -148,7 +151,7 @@ class Translation:
     def __str__(self) -> str:
         if i18n is None:
             raise I18NNotLoadedException(
-                "I18n not loaded, there is probibly not an instance of the manager earlie enough in your load order."
+                "I18n not loaded, there is probably not an instance of the manager earle enough in your load order."
             )
         try:
             # We want to handle the fail in the translation object so we can handle it on a higher level.
