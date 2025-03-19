@@ -100,7 +100,7 @@ At this stage, I want the core gameplay loop to work at a basic level, meaning:
 
 </details>
 
-### (Provisional) 0.2.0 Goals - Dev
+### 0.2.0 Goals - Dev
 
 The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
 
