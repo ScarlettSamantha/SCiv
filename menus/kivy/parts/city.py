@@ -27,11 +27,11 @@ if TYPE_CHECKING:
 class CityUI(BoxLayout, CollisionPreventionMixin):
     def __init__(self, base: "SCIV", name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
         super().__init__(base=base, disable_zoom=True, orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
-        self.pos_hint = {"x": 0, "center_y": 0.75}  # Align left & center vertically
-        self.size_hint = (0.45, 0.2)  # type: ignore # Ensure fixed width and height
+        self.pos_hint = {"x": 0, "center_y": 0.65}  # Align left & center vertically
+        self.size_hint = (0.50, 0.2)  # type: ignore # Ensure fixed width and height
         self.background_color = (0, 0, 0, 1)  # Black background
         self.width = 400  # Explicitly set width
-        self.height = 800  # Explicitly set height
+        self.height = 900  # Explicitly set height
         self.background_color = background_color
         self.border = border
         self.background_image = None
@@ -245,12 +245,12 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         # Main container (background black box)
         self.frame = BoxLayout(
             orientation="vertical",
-            size_hint=(0.15, 0.55),
+            size_hint=(0.15, 0.680),
             width=400,
-            height=800,
+            height=950,
             padding=10,
             spacing=10,
-            pos_hint={"right": 1, "center_y": 0.45},
+            pos_hint={"right": 1, "center_y": 0.415},
         )
 
         with self.frame.canvas.before:  # type: ignore
