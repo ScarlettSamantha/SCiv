@@ -457,8 +457,8 @@ class Yields:
             current = getattr(self, prop)
             setattr(self, prop, type(current)(value=final_val))
 
-    def props(self, only_non_nul: bool = False) -> Dict[Any, Any]:
-        a: Dict[Any, Any] = {}
+    def props(self, only_non_nul: bool = False) -> Dict[str, Any]:
+        a: Dict[str, Any] = {}
         for item in self.calculatable_properties():
             attr = getattr(self, item)
             if only_non_nul and attr.value == 0.0:
