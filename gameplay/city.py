@@ -220,7 +220,7 @@ class City(BaseEntity):
     def assign_tile(self, tile: "BaseTile"):
         self.owned_tiles.append(tile)
 
-    def deassign_tile(self, tile: "BaseTile"):
+    def remove_owned_tile(self, tile: "BaseTile"):
         self.owned_tiles.remove(tile)
 
     def destroy(self): ...
@@ -278,7 +278,7 @@ class City(BaseEntity):
         elif city == self and tile not in self.owned_tiles:
             self.assign_tile(tile)  # We now own this tile.
         elif city == self and tile in self.owned_tiles:
-            self.deassign_tile(tile)  # We are being told that we no longer own this tile.
+            self.remove_owned_tile(tile)  # We are being told that we no longer own this tile.
 
     def on_cancel_building(self, city: "City"):
         if city != self:
@@ -329,14 +329,16 @@ class City(BaseEntity):
         if auto_claim_radius > 0:
             from gameplay.repositories.tile import TileRepository
 
-            neighbours: List[BaseTile] = TileRepository.get_neighbors(
+            adjacent_tiles: List[BaseTile] = TileRepository.get_neighbors(
                 tile,
                 auto_claim_radius,
                 check_passable=False,
             )
-            for neighbour in neighbours:
-                cls.logger.debug(f"City {instance.name} is requesting claiming tile {neighbour.tag}, sending message.")
-                messenger.send("game.gameplay.city.requests_tile", [instance, neighbour])
+            for adjacent_tile in adjacent_tiles:
+                cls.logger.debug(
+                    f"City {instance.name} is requesting claiming tile {adjacent_tile.tag}, sending message."
+                )
+                messenger.send("game.gameplay.city.requests_tile", [instance, adjacent_tile])
 
         return instance
 
