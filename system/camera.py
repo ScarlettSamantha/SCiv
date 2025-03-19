@@ -2,13 +2,15 @@ from logging import Logger
 from math import cos, pi, sin
 from typing import TYPE_CHECKING, Tuple
 
+from direct.showbase.DirectObject import DirectObject
+
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from main import SCIV
 
 
-class Camera(Singleton):
+class Camera(Singleton, DirectObject):
     """
     Modified camera controller:
       - Left-drag => rotate around pivot (slower)
@@ -95,44 +97,44 @@ class Camera(Singleton):
         """Bind keys/mouse for panning, zooming, rotating, re-centering, etc."""
 
         # WASD / arrow keys for panning
-        self.base.accept("arrow_up", self.set_key, ["up", True])
-        self.base.accept("arrow_up-up", self.set_key, ["up", False])
-        self.base.accept("arrow_down", self.set_key, ["down", True])
-        self.base.accept("arrow_down-up", self.set_key, ["down", False])
-        self.base.accept("arrow_left", self.set_key, ["left", True])
-        self.base.accept("arrow_left-up", self.set_key, ["left", False])
-        self.base.accept("arrow_right", self.set_key, ["right", True])
-        self.base.accept("arrow_right-up", self.set_key, ["right", False])
+        self.accept("arrow_up", self.set_key, ["up", True])
+        self.accept("arrow_up-up", self.set_key, ["up", False])
+        self.accept("arrow_down", self.set_key, ["down", True])
+        self.accept("arrow_down-up", self.set_key, ["down", False])
+        self.accept("arrow_left", self.set_key, ["left", True])
+        self.accept("arrow_left-up", self.set_key, ["left", False])
+        self.accept("arrow_right", self.set_key, ["right", True])
+        self.accept("arrow_right-up", self.set_key, ["right", False])
 
-        self.base.accept("w", self.set_key, ["up", True])
-        self.base.accept("w-up", self.set_key, ["up", False])
-        self.base.accept("s", self.set_key, ["down", True])
-        self.base.accept("s-up", self.set_key, ["down", False])
-        self.base.accept("a", self.set_key, ["left", True])
-        self.base.accept("a-up", self.set_key, ["left", False])
-        self.base.accept("d", self.set_key, ["right", True])
-        self.base.accept("d-up", self.set_key, ["right", False])
+        self.accept("w", self.set_key, ["up", True])
+        self.accept("w-up", self.set_key, ["up", False])
+        self.accept("s", self.set_key, ["down", True])
+        self.accept("s-up", self.set_key, ["down", False])
+        self.accept("a", self.set_key, ["left", True])
+        self.accept("a-up", self.set_key, ["left", False])
+        self.accept("d", self.set_key, ["right", True])
+        self.accept("d-up", self.set_key, ["right", False])
 
         # Q/E for rotation
-        self.base.accept("q", self.set_key, ["rotate_left", True])
-        self.base.accept("q-up", self.set_key, ["rotate_left", False])
-        self.base.accept("e", self.set_key, ["rotate_right", True])
-        self.base.accept("e-up", self.set_key, ["rotate_right", False])
+        self.accept("q", self.set_key, ["rotate_left", True])
+        self.accept("q-up", self.set_key, ["rotate_left", False])
+        self.accept("e", self.set_key, ["rotate_right", True])
+        self.accept("e-up", self.set_key, ["rotate_right", False])
 
         # Mouse wheel for zoom
-        self.base.accept("wheel_up", self.zoom_in)
-        self.base.accept("wheel_down", self.zoom_out)
+        self.accept("wheel_up", self.zoom_in)
+        self.accept("wheel_down", self.zoom_out)
 
         # Recenter pivot
-        self.base.accept("r", self.recenter)
+        self.accept("r", self.recenter)
 
         # Left mouse => rotate
-        self.base.accept("mouse1", self.start_left_drag)
-        self.base.accept("mouse1-up", self.stop_left_drag)
+        self.accept("mouse1", self.start_left_drag)
+        self.accept("mouse1-up", self.stop_left_drag)
 
         # Right mouse => pan (drag to move)
-        self.base.accept("mouse3", self.start_right_drag)
-        self.base.accept("mouse3-up", self.stop_right_drag)
+        self.accept("mouse3", self.start_right_drag)
+        self.accept("mouse3-up", self.stop_right_drag)
 
         self.base.accept("system.input.disable_zoom", self.disable_zoom)
         self.base.accept("system.input.enable_zoom", self.enable_zoom)

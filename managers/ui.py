@@ -2,6 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from menus.kivy.core import SCivGUI
 
 
-class ui(Singleton):
+class ui(Singleton, DirectObject):
     current_menu = None
 
     def __init__(self, base: "SCIV"):
@@ -93,27 +94,31 @@ class ui(Singleton):
         self.game_gui.run()
 
     def register(self) -> bool:
-        self._base.accept("ui.update.user.tile_clicked", self.select_tile)
-        self._base.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
-        self._base.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
-        self._base.accept("ui.update.ui.lense_change", self.on_lense_change)
-        self._base.accept("unit.action.move.visiting_tile", self.leave_trail)
+        self.accept("ui.update.user.tile_clicked", self.select_tile)
+        self.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
+        self.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
+        self.accept("ui.update.ui.lense_change", self.on_lense_change)
+        self.accept("ui.update.ui.show_save", self.on_show_save)
+        self.accept("ui.update.ui.show_load", self.on_show_load)
+        self.accept("ui.update.ui.hide_save", self.on_hide_save)
+        self.accept("ui.update.ui.hide_load", self.on_hide_load)
+        self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
-        self._base.accept("ui.request.open.popup", self.show_draggable_popup)
+        self.accept("ui.request.open.popup", self.show_draggable_popup)
 
-        self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
-        self._base.accept("f7", self.trigger_render_analyze)
-        self._base.accept("p", self.activate_pstat)
-        self._base.accept("l", self.deactivate_pstat)
-        self._base.accept("n", self.show_colors_for_resources)
-        self._base.accept("m", self.show_colors_for_water)
-        self._base.accept("b", self.show_colors_for_units)
+        self.accept("game.input.user.escape_pressed", self.get_escape_menu)
+        self.accept("f7", self.trigger_render_analyze)
+        self.accept("p", self.activate_pstat)
+        self.accept("l", self.deactivate_pstat)
+        self.accept("n", self.show_colors_for_resources)
+        self.accept("m", self.show_colors_for_water)
+        self.accept("b", self.show_colors_for_units)
 
-        self._base.accept("z", self.calculate_icons_for_tiles)
-        self._base.accept("x", self.toggle_big_tile_icons)
-        self._base.accept("c", self.toggle_little_tile_icons)
-        self._base.accept("game.state.true_game_start", self.post_game_start)
-        self._base.accept("game.turn.end_process", self.on_turn_change)
+        self.accept("z", self.calculate_icons_for_tiles)
+        self.accept("x", self.toggle_big_tile_icons)
+        self.accept("c", self.toggle_little_tile_icons)
+        self.accept("game.state.true_game_start", self.post_game_start)
+        self.accept("game.turn.end_process", self.on_turn_change)
         return True
 
     def get_main_game_ui(self) -> GameUIScreen:
