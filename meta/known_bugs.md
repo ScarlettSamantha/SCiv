@@ -4,9 +4,9 @@
 
 - [X] Units can teleport to random tiles
 - [x] Units don't respect not climbing over mountains (without tech)
-- [ ] Issues with the dropdowns
-- [ ] Cant keep selection of unit properly internally when a tile is clicked.
-- [ ] Window drifts up and right very slightly over time (maybe because of write-back system?)
+- [x] Issues with the dropdowns
+- [x] Cant keep selection of unit properly internally when a tile is clicked.
+- [x] Window drifts up and right very slightly over time (maybe because of write-back system?)
 - [X] Unit action bar does not clear properly.
 
 ### Things that seem like bugs

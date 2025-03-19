@@ -50,7 +50,7 @@
 |-----------------------------------------------------------|-----------------------------------------------------------------------------------------------|
 | [./system/entity.py](./system/entity.py)                  | Registers all saveable non-manager entities present in the game world.                        |
 | [./managers/action.py](./managers/action.py)              | Contains the generic action system for triggering actions without custom integration.         |
-| [./managers/entity.py](./managers/entity.py)              | Main entity manager responsible for managing, registering/deregistering entities and saving.    |
+| [./managers/entity.py](./managers/entity.py)              | Main entity manager responsible for managing, registering/de-registering entities and saving.    |
 | [./managers/game.py](./managers/game.py)                  | Main game controller; acts as the Game Master after initialization.                         |
 | [./managers/input.py](./managers/input.py)                | Parses and generates events processed by the game.                                            |
 | [./managers/log.py](./managers/log.py)                    | Contains the logging system for the project.                                                  |
@@ -60,17 +60,16 @@
 | [./managers/unit.py](./managers/unit.py)                  | Manages unit registration; all units must register here.                                      |
 | [./managers/world.py](./managers/world.py)                | Wraps tile-related functionalities; intended for world-changing operations.                   |
 | [./mixins/singleton.py](./mixins/singleton.py)            | Provides a singleton mixin used by managers and other classes |
-| [./menus/kivy/core.py](./menus/kivy/core.py)                    | Contains the kivy app and the registerations for the screens, handles switching UI screens |
+| [./menus/kivy/core.py](./menus/kivy/core.py)                    | Contains the kivy app and the registrations for the screens, handles switching UI screens |
 | [./i18n/en_EN.json](./i18n/en_EN.json)                    | Contains the base game language data; English acts as the fallback language.                  |
 | [./gameplay/units/unit_base.py](./gameplay/units/unit_base.py) | Base class for units, containing the generic unit logic (UnitBaseClass).                       |
 | [./gameplay/tiles/base_tile.py](./gameplay/tiles/base_tile.py) | Base class for tiles, including core tile logic and data management.                           |
 | [./gameplay/rules.py](./gameplay/rules.py)                | Contains the base rule class and the sciv rule definitions                                    |
 | [./gameplay/terrain/_base_terrain.py](./gameplay/terrain/_base_terrain.py) | Contains BaseTerrain, the parent class for all terrains, managing generic terrain logic.       |
 | [./system/generators/basic.py](./system/generators/basic.py)   | Implements the main world generator using a modified hexgen.                                  |
-| [./system/pyload.py](./system/pyload.py)                  | Dynamic loader for repositories; loads classes dynamically from given paths
-| [./system/actions.py](./system/actions.py)                | Contains the action systems base class and executor
+| [./system/pyload.py](./system/pyload.py)                  | Dynamic loader for repositories; loads classes dynamically from given paths |
+| [./system/actions.py](./system/actions.py)                | Contains the action systems base class and executor |
 | [./main.py](./main.py)                                    | Entry point; boots managers, sets up the application, and provides a lean showbase.             |
 | [./camera.py](./camera.py)                                | Contains the camera object; a generic civ-like camera (planned to be moved).                    |
 | [./lights.py](./lights.py)                                | Contains the main game light; simple lighting setup (planned to be moved).                      |
 | [./config.prc](./config.prc)                              | Panda config file loaded at startup for bootstrap and engine configuration.                   |
-

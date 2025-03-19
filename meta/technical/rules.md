@@ -2,7 +2,7 @@
 
 ## SCiv (Default)
 
-The rules system is just a housing for generic values and should be classmethods, this way we dont have to deal with instancing and passing around the correct instance. And as the values should be fixed or at worse at some point configurable at game start.
+The rules system is just a housing for generic values and should be classmethods, this way we don't have to deal with instancing and passing around the correct instance. And as the values should be fixed or at worse at some point configurable at game start.
 
 ### Actions
 
