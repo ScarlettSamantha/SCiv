@@ -15,6 +15,7 @@ from gameplay.repositories.unit import UnitRepository
 from gameplay.units.core.classes.civilian._base import CivilianBaseClass
 from gameplay.units.core.classes.military._base import MilitaryBaseClass
 from gameplay.yields import Yields
+from managers.i18n import t_
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
 from menus.kivy.elements.image_label import ImageLabel
@@ -94,16 +95,27 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             food_collected = str(floor(self.city.food_collected.food.value))
             food_required = str(floor(self.city.new_population_food_required.food.value))
 
-            self.population_label.text = f"Pop: {self.city.population}({food_collected}/{food_required})"
+            self.population_label.text = str(
+                t_(
+                    "ui.player_ui.city.population_label",
+                    {
+                        "population": self.city.population,
+                        "food_collected": food_collected,
+                        "food_required": food_required,
+                    },
+                )
+            )
 
         if self.is_capital_label is not None:
-            self.is_capital_label.text = f"Capital: {'Yes' if self.city.is_capital else 'No'}"
+            self.is_capital_label.text = str(
+                t_("ui.player_ui.city.is_capital_label", {"yes_no": "Yes" if self.city.is_capital else "No"})
+            )
 
         if self.tiles_label is not None:
-            self.tiles_label.text = f"Tiles: {len(self.city.owned_tiles)}"
+            self.tiles_label.text = str(t_("ui.player_ui.city.tiles_label", {"tiles": len(self.city.owned_tiles)}))
 
         if self.player_label is not None and self.city.player is not None:
-            self.player_label.text = f"Player: {str(self.city.player.name)}"
+            self.player_label.text = str(t_("ui.player_ui.city.player_label", {"player": self.city.player.name}))
 
         if (
             self.gold_label is not None
@@ -114,13 +126,17 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         ):
             tile_yield: Yields = self.city.calculate_yield_from_tiles()
 
-            self.gold_label.set_text(f"Gold: {tile_yield.gold.value}")
-            self.production_label.set_text(f"Production: {tile_yield.production.value}")
-            self.food_label.set_text(
-                f"Food: {tile_yield.food.value} (-{self.city.population_food_usage * self.city.population})"
+            self.gold_label.set_text(str(t_("ui.player_ui.city.gold_label", {"gold": tile_yield.gold.value})))
+            self.production_label.set_text(
+                str(t_("ui.player_ui.city.production_label", {"production": tile_yield.production.value}))
             )
-            self.science_label.set_text(f"Science: {tile_yield.science.value}")
-            self.culture_label.set_text(f"Culture: {tile_yield.culture.value}")
+            self.food_label.set_text(str(t_("ui.player_ui.city.food_label", {"food": tile_yield.food.value})))
+            self.science_label.set_text(
+                str(t_("ui.player_ui.city.science_label", {"science": tile_yield.science.value}))
+            )
+            self.culture_label.set_text(
+                str(t_("ui.player_ui.city.culture_label", {"culture": tile_yield.culture.value}))
+            )
 
         if self.current_button is not None and self.city.is_building and self.city.building is not None:
             resource_required = list(self.city.resource_required_amount.props(True).values())
@@ -132,11 +148,19 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
             resource_got = 0.0 if resource_got is None or len(resource_got) == 0 else resource_got[0].value
             resource_required = resource_required[0].value
-            text = f"Building: {self.city.building.name} {str(floor(resource_got))}/{str(floor(resource_required))}"
-
+            text = str(
+                t_(
+                    "ui.player_ui.city.current_button_building",
+                    {
+                        "building": self.city.building.name,
+                        "resources_got": str(floor(resource_got)),
+                        "resources_required": str(floor(resource_required)),
+                    },
+                )
+            )
             self.current_button.text = text
         elif self.current_button is not None and not self.city.is_building:
-            self.current_button.text = "Idle"
+            self.current_button.text = str(t_("ui.player_ui.city.current_button_idle"))
 
         if self.button_container is not None:
             self.generate_buttons()
@@ -286,8 +310,12 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.frame.add_widget(self.stats_grid)
 
         self.current_layout = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40, spacing=5)
-        self.current_label = Label(text="Current", size_hint=(0.3, None), height=30, font_size=16)
-        self.current_button = Button(text="Idle", size_hint=(0.65, None), height=30)
+        self.current_label = Label(
+            text=str(t_("ui.player_ui.city.current_button_label")), size_hint=(0.3, None), height=30, font_size=16
+        )
+        self.current_button = Button(
+            text=str(t_("ui.player_ui.city.current_button_idle")), size_hint=(0.65, None), height=30
+        )
         self.current_button.bind(on_press=self.on_cancel_current_build_btn_click)
 
         self.current_layout.add_widget(self.current_label)
@@ -295,7 +323,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         self.frame.add_widget(self.current_layout)
 
-        self.actions_label = Label(text="Actions", size_hint=(1, None), height=30, font_size=16)
+        self.actions_label = Label(
+            text=str(t_("ui.player_ui.city.actions_label")), size_hint=(1, None), height=30, font_size=16
+        )
         self.frame.add_widget(self.actions_label)
 
         # ScrollView Clipping Container

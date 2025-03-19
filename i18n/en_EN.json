@@ -484,9 +484,33 @@
         "decline": "Decline"
       },
       "player_ui": {
+        "generics": {
+          "food": "Food",
+          "production": "Production",
+          "gold": "Gold",
+          "science": "Science",
+          "culture": "Culture",
+          "faith": "Faith"
+        },
         "turn_button": {
           "end_turn": "End Turn {turn}",
           "on_turn": "Processing Turn {turn}"
+        },
+        "city": {
+          "current_button_label": "Current",
+          "current_button_idle": "Idle",
+          "actions_label": "Actions",
+          "population_label": "Pop: {population}({food_collected}/{food_required})",
+          "is_capital_label": "Capital: {yes_no}",
+          "tiles_label": "Tiles: {tiles}",
+          "player_label": "Player: {player}",
+          "gold_label": "Gold: {gold}",
+          "production_label": "Production: {production}",
+          "food_label": "Food: {food}",
+          "science_label": "Science: {science}",
+          "culture_label": "Culture: {culture}",
+          "faith_label": "Faith: {faith}",
+          "current_button_building": "Building: {building} {resources_got}/{resources_required}"
         }
       }
     },
