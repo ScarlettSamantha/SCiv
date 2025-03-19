@@ -76,6 +76,9 @@ class Game(Singleton):
         timers()
         messenger()
 
+    def save(self, filename: str):
+        self.entities.dump(filename)
+
     def is_paused(self) -> bool:
         return self._is_paused
 
@@ -143,13 +146,13 @@ class Game(Singleton):
     def unpause(self):
         self._is_paused = False
 
-    def handle_tile_click(self, tiles: Union[list[str], str]):
+    def handle_tile_click(self, tiles: Union[List[str], str]):
         if isinstance(tiles, str):
             tiles = [tiles]
         messenger.send("ui.update.user.tile_clicked", tiles)
         self.ui.select_tile(tiles)
 
-    def handle_unit_click(self, units: Union[list[str], str]):
+    def handle_unit_click(self, units: Union[List[str], str]):
         if isinstance(units, str):
             units = [units]
         messenger.send("ui.update.user.unit_clicked", units)

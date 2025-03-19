@@ -18,7 +18,7 @@ class BaseSaver(ABC):
     def __init__(
         self,
     ):
-        self.data: str
+        self.data: bytes
         self.meta_data: Dict[str, Any]  # Will be converted to json
         self.identifier: str
         self.hash: str
@@ -28,9 +28,9 @@ class BaseSaver(ABC):
     def set_identifier(self, identifier: str):
         self.identifier = identifier
 
-    def set_data(self, data: str):
+    def set_data(self, data: bytes):
         self.data = data
-        self.hash = str(zlib.crc32(data.encode("utf-8")))
+        self.hash = str(zlib.crc32(data))
 
     def set_meta_data(self, meta_data: Dict[str, Any]):
         self.meta_data = meta_data
@@ -44,7 +44,7 @@ class BaseSaver(ABC):
     def get_identifier(self) -> str:
         return self.identifier
 
-    def get_data(self, data: str) -> str:
+    def get_data(self) -> bytes:
         return self.data
 
     def get_meta_data(self) -> Dict[str, Any]:
@@ -140,7 +140,7 @@ class SavePickleFile(BaseSaver):
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"
 
-        compressed_data: bytes = self.compress_and_inject_data(self.data.encode("utf-8"))
+        compressed_data: bytes = self.compress_and_inject_data(self.data)
 
         try:
             with open(data_path, "wb") as file:
@@ -157,7 +157,7 @@ class SavePickleFile(BaseSaver):
             print(f"Error saving data: {e}")
             return False
 
-    def load(self) -> str | bool:
+    def load(self) -> bytes | bool:
         save_dir = Path(self.base_path) / self.identifier / str(self.counter)
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
@@ -166,7 +166,7 @@ class SavePickleFile(BaseSaver):
         try:
             with open(data_path, "rb") as file:
                 data = file.read()
-                self.data = self.decompress_data(data).decode("utf-8")
+                self.data = self.decompress_data(data)
 
             with open(metadata_path, "r", encoding="utf-8") as file:
                 self.meta_data = json.load(file)
@@ -174,7 +174,7 @@ class SavePickleFile(BaseSaver):
             with open(hash_path, "r", encoding="utf-8") as file:
                 self.hash = file.read().strip()
 
-            if not self.compare_hash(self.data):
+            if not self.compare_hash(self.data.decode("utf-8")):
                 print("Warning: Data integrity check failed!")
                 return False
 

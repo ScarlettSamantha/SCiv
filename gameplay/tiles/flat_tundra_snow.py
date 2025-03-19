@@ -3,11 +3,10 @@ from gameplay.tiles.base_tile import BaseTile
 
 
 class FlatTundraSnow(BaseTile):
-    _terrain = FlatTundraSnowTerrain
-    _model = _terrain.model
+    _model = FlatTundraSnowTerrain.model
     _cache_name = "FlatTundraSnow"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.set_terrain(self._terrain())
+        self.set_terrain(FlatTundraSnowTerrain())

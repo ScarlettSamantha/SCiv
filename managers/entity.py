@@ -82,13 +82,17 @@ class BaseEntityManagerSerializer(ABC):
 
 
 class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
-    import pickle
-
     def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
-        return self.pickle.dumps(data)
+        import dill as pickle
+        import dill.detect
+
+        with dill.detect.trace():
+            return pickle.dumps(data)
 
     def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
-        return self.pickle.loads(data)
+        import dill as pickle
+
+        return pickle.loads(data)
 
 
 class EntityManager(Singleton):
@@ -149,6 +153,9 @@ class EntityManager(Singleton):
         if type.base_type is None:
             return False
         return isinstance(entity, type.base_type)
+
+    def __getstate__(self):
+        return {}
 
     def calculate_stats(self):
         self.stats["total_players"] = len(self._entities[EntityType.PLAYER])
@@ -246,11 +253,14 @@ class EntityManager(Singleton):
     def register_serializer(self, serializer: "BaseEntityManagerSerializer"):
         self.serializer = serializer
 
-    def dump(self):
+    def dump(self, session_name=""):
         if not self.serializer:
             raise ValueError("No serializer registered.")
 
-        data = self.serializer.dump(self._entities)
+        if session_name == "" or len(session_name) == 0:
+            session_name = None
+
+        data: bytes = self.serializer.dump(self._entities)
 
         if self.saver is None:
             raise ValueError("No saver registered.")

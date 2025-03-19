@@ -98,6 +98,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.lense_change` (E: ui-debug-actions | L: manager-ui)
 
+- `ui.request.save_game` (E: ui-part-save | L: manager-ui)
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 
 ## System

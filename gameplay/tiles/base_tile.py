@@ -1,3 +1,4 @@
+import pprint
 from copy import deepcopy
 from enum import Enum
 from logging import Logger
@@ -73,8 +74,6 @@ class BaseTile(BaseEntity):
         self._entity_manager = EntityManager.get_instance()
         self.logger: Logger = self.base.logger.gameplay.getChild("map.tile")
 
-        self.extra_data: Optional[dict] = extra_data
-
         self.destroyed: bool = False
         self.grid_position: Optional[Any] = None
         self.raw_position: Optional[Any] = None
@@ -82,7 +81,6 @@ class BaseTile(BaseEntity):
         # Instead of a single node, we keep a list of NodePaths.
 
         self.models: List[NodePath] = []
-        self.extra_data: Optional[dict] = extra_data
 
         self.is_coast: bool = False
         self.is_water: bool = False
@@ -229,6 +227,34 @@ class BaseTile(BaseEntity):
             base += effect.yield_impact
 
         self.tile_yield = base
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        if "base" in state:
+            del state["base"]
+        if "logger" in state:
+            del state["logger"]
+        if "texture_card" in state:
+            del state["texture_card"]
+        if "texture_card_texture" in state:
+            del state["texture_card_texture"]
+        if "city_name_group" in state:
+            del state["city_name_group"]
+        if "city_name_texture_card_texture" in state:
+            del state["city_name_texture_card_texture"]
+        if "tile_icon_group" in state:
+            del state["tile_icon_group"]
+        if "mini_icons_card" in state:
+            del state["mini_icons_card"]
+        if "text_card" in state:
+            del state["text_card"]
+        if "_model" in state:
+            del state["_model"]
+        if "_entity_manager" in state:
+            del state["_entity_manager"]
+        if "models" in state:
+            del state["models"]
+        return state
 
     def get_pos(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
@@ -788,25 +814,23 @@ class BaseTile(BaseEntity):
             "effects": ",".join(self.effects.get_effects().keys()),
         }
 
-        if isinstance(self.extra_data, Hex):
-            data["hex_data"] = {
-                "altitude": self.altitude,
-                "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
-                "moisture": self.moisture,
-                "temperature": f"{self.extra_data.base_temperature[0]}, {self.extra_data.base_temperature[1]}",
-                "is_coast": self.is_coast,
-                "is_water": self.is_water,
-                "is_land": self.is_land,
-                "is_lake": self.is_lake,
-                "is_city": self.is_city(),
-                "terrain": self.terrain,
-                "zone": self.zone,
-                "hemisphere": self.hemisphere,
-                "resource['rating']": self.resource["rating"] if self.resource else None,
-                "resource['type']": self.resource["type"] if self.resource else None,
-            }
+        data["hex_data"] = {
+            "altitude": self.altitude,
+            "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
+            "moisture": self.moisture,
+            "is_coast": self.is_coast,
+            "is_water": self.is_water,
+            "is_land": self.is_land,
+            "is_lake": self.is_lake,
+            "is_city": self.is_city(),
+            "terrain": self.terrain,
+            "zone": self.zone,
+            "hemisphere": self.hemisphere,
+            "resource['rating']": self.resource["rating"] if self.resource else None,
+            "resource['type']": self.resource["type"] if self.resource else None,
+        }
 
-            data["hex_data"] = "\n".join(f"{k}: {v}" for k, v in data["hex_data"].items())
+        data["hex_data"] = "\n".join(f"{k}: {v}" for k, v in data["hex_data"].items())
 
         if self.city is not None:
             data["city"] = {
@@ -901,7 +925,6 @@ class BaseTile(BaseEntity):
         self.resources.add(resource(3), auto_instance=True)
 
     def enrich_from_extra_data(self, hex: Hex) -> None:
-        self.extra_data = hex  # type: ignore
         self.altitude = hex.altitude
         self.biome = hex.biome  # type: ignore
         self.moisture = hex.moisture

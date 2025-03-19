@@ -124,7 +124,10 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.main_layout.add_widget(self.footer_save_button)
         self.main_layout.add_widget(self.footer_cancel_button)
 
-    def on_save_game(self, instance): ...
+    def on_save_game(self, instance):
+        if self.name_input is None:
+            return
+        MessengerGlobal.messenger.send("ui.request.save_game", [self.name_input.text])
 
     def on_name_input_press(self, instance):
         if self.name_input is None:

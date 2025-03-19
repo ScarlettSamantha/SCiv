@@ -104,6 +104,7 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.ui.show_load", self.on_show_load)
         self.accept("ui.update.ui.hide_save", self.on_hide_save)
         self.accept("ui.update.ui.hide_load", self.on_hide_load)
+        self.accept("ui.request.save_game", self.on_request_save_game)
         self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
@@ -140,6 +141,9 @@ class ui(Singleton, DirectObject):
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_player_turn_control", [turn])
         return True
+
+    def on_request_save_game(self, save_name: str):
+        self.get_game().save(save_name)
 
     def on_main_ready(self):
         self.get_gui().set_screen("main_menu")
