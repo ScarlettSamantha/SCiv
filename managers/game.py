@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import WindowProperties
 
-from system.camera import Camera
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.repositories.generators import GeneratorRepository
@@ -17,6 +16,7 @@ from managers.turn import Turn
 from managers.ui import ui
 from managers.world import World
 from mixins.singleton import Singleton
+from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
@@ -60,7 +60,7 @@ class Game(Singleton):
             difficulty=1,
         )
 
-        self.is_paused: bool = False
+        self._is_paused: bool = False
         self.debug: bool = False
 
         self.configure_environment()
@@ -75,6 +75,9 @@ class Game(Singleton):
 
         timers()
         messenger()
+
+    def is_paused(self) -> bool:
+        return self._is_paused
 
     def configure_environment(self):
         self.base.disableMouse()
@@ -132,7 +135,13 @@ class Game(Singleton):
             return
 
     def toggle_pause_game(self) -> None:
-        self.is_paused = not self.is_paused
+        self._is_paused = not self._is_paused
+
+    def pause(self):
+        self._is_paused = True
+
+    def unpause(self):
+        self._is_paused = False
 
     def handle_tile_click(self, tiles: Union[list[str], str]):
         if isinstance(tiles, str):
