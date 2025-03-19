@@ -15,14 +15,14 @@ if TYPE_CHECKING:
 class Yields:
     BASE: int = 0
     ADDITIVE: int = 1
-    PERCENTAGE_CUMMULATIVE: int = 2
-    PERCENTAGE_ADDATIVE: int = 3
+    PERCENTAGE_CUMULATIVE: int = 2
+    PERCENTAGE_ADDITIVE: int = 3
 
     MODE_STR: Dict[int, str] = {
         BASE: "BASE",
-        ADDITIVE: "ADDATIVE",
-        PERCENTAGE_CUMMULATIVE: "PERCENTAGE_CUMMULATIVE",
-        PERCENTAGE_ADDATIVE: "PERCENTAGE_ADDATIVE",
+        ADDITIVE: "ADDITIVE",
+        PERCENTAGE_CUMULATIVE: "PERCENTAGE_CUMULATIVE",
+        PERCENTAGE_ADDITIVE: "PERCENTAGE_ADDITIVE",
     }
 
     # Percentages: 0.0 = 0% change, 1.0 = +100%, -1.0 = -100%
@@ -83,8 +83,6 @@ class Yields:
             "hero",
             "holy",
         ]
-
-        self.other_mechnics: Dict[str, "BaseResource"] = {}
 
     @property
     def name(self) -> None | str:
@@ -261,16 +259,6 @@ class Yields:
         # addition = getattr(tile_yield, f"great_person_{prop}")
         # new_val = current.value + addition.value
         # setattr(self, f"great_person_{prop}", type(current)(value=new_val))
-
-        # Process other mechanics if available
-        for key, mechanic in self.other_mechnics.items():
-            if key not in tile_yield.other_mechnics:
-                continue
-            current = mechanic
-            # Here we assume that str(mechanic) uniquely identifies the resource on the other yield as well.
-            addition = getattr(tile_yield, str(mechanic))
-            new_val = current.value + addition.value
-            self.other_mechnics[key] = type(current)(value=new_val)
 
         return self
 
