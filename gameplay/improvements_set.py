@@ -1,4 +1,4 @@
-from typing import List, Optional, Type
+from typing import Iterator, List, Optional, Type
 
 from gameplay.improvement import Improvement
 
@@ -39,6 +39,9 @@ class ImprovementsSet:
 
     def __len__(self) -> int:
         return self._num_improvements
+
+    def __iter__(self) -> Iterator[Improvement]:
+        return iter(self._improvements)
 
     def on_turn_end(self, turn: int):
         for item in self._improvements:
