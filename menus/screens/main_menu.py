@@ -1,10 +1,12 @@
 from typing import Optional
-from kivy.uix.screenmanager import Screen
+
+from direct.showbase.MessengerGlobal import messenger
+from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-from kivy.graphics import Color, Rectangle
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
 
 
 class MainMenuScreen(Screen):
@@ -22,7 +24,7 @@ class MainMenuScreen(Screen):
 
         self.add_widget(self.build_screen())
 
-    def switch_to_game_config_screen(self):
+    def switch_to_game_config_screen(self, _):
         self.manager.current = "game_config_screen"
 
     def build_screen(self):
@@ -65,10 +67,11 @@ class MainMenuScreen(Screen):
 
         self.new_button = Button(text="New", size_hint=(None, None), height=50, width=button_width)
         self.new_button.pos_hint = {"center_x": 0.5}
-        self.new_button.on_press = self.switch_to_game_config_screen
+        self.new_button.bind(on_release=self.switch_to_game_config_screen)
 
         self.load_button = Button(text="Load", size_hint=(None, None), height=50, width=button_width)
         self.load_button.pos_hint = {"center_x": 0.5}
+        self.load_button.bind(on_release=self.switch_to_load_screen)
 
         self.options_button = Button(text="Options", size_hint=(None, None), height=50, width=button_width)
         self.options_button.pos_hint = {"center_x": 0.5}
@@ -95,10 +98,14 @@ class MainMenuScreen(Screen):
         float_layout.add_widget(container)
         return float_layout
 
-    def to_config_screen(self):
+    def to_config_screen(self, _):
         self.manager.current = "options_screen"
 
-    def exit(self):
-        from direct.showbase.MessengerGlobal import messenger
+    def switch_to_load_screen(self, _):
+        messenger.send("ui.update.ui.show_load")
 
+    def switch_to_save_screen(self, _):
+        messenger.send("ui.update.ui.show_save")
+
+    def exit(self):
         messenger.send("game.input.user.quit_game")

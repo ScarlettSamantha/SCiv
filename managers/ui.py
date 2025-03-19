@@ -62,6 +62,8 @@ class ui(Singleton, DirectObject):
         self.debug_show: Dict[str, bool] = {"actions": False, "stats": False, "debug": False}
 
         self.popups: Dict[str, Popup] = {}
+        self.previous_screen_name: Optional[str] = ""
+        self.showing_escape: bool = False
 
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
@@ -106,7 +108,8 @@ class ui(Singleton, DirectObject):
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
 
-        self.accept("game.input.user.escape_pressed", self.get_escape_menu)
+        self.accept("escape", self.get_escape_menu)
+
         self.accept("f7", self.trigger_render_analyze)
         self.accept("p", self.activate_pstat)
         self.accept("l", self.deactivate_pstat)
@@ -119,6 +122,7 @@ class ui(Singleton, DirectObject):
         self.accept("c", self.toggle_little_tile_icons)
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
+        self.accept("system.main.ready", self.on_main_ready)
         return True
 
     def get_main_game_ui(self) -> GameUIScreen:
@@ -136,6 +140,25 @@ class ui(Singleton, DirectObject):
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_player_turn_control", [turn])
         return True
+
+    def on_main_ready(self):
+        self.get_gui().set_screen("main_menu")
+
+    def on_show_save(self):
+        self.set_screen("save_load_screen")
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_save_menu()
+
+    def on_show_load(self):
+        self.set_screen("save_load_screen")
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_load_menu()
+
+    def on_hide_save(self, go_back_to_previous: bool = True):
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_save_menu()
+        self.get_gui().get_screen_manager().current = "game_ui"
+
+    def on_hide_load(self, go_back_to_previous: bool = True):
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_load_menu()
+        self.get_gui().get_screen_manager().current = "game_ui" if go_back_to_previous else "main_menu"
 
     def show_draggable_popup(
         self,
@@ -168,6 +191,7 @@ class ui(Singleton, DirectObject):
 
     def post_game_start(self):
         self.calculate_icons_for_tiles(small=False, large=True)
+        self.get_gui().set_screen("game_ui")
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
@@ -275,9 +299,19 @@ class ui(Singleton, DirectObject):
             # If we do, we're just resuming it
             messenger.send("system.game.resume")
 
+    def set_screen(self, screen_name: str):
+        self.get_gui().get_screen_manager().current = screen_name
+
     def get_escape_menu(self):
-        self.get_gui().get_screen_manager().current = "game_ui" if self.get_game().is_paused else "pause_menu"
-        self.get_game().is_paused = not self.get_game().is_paused
+        if self.showing_escape:
+            self.set_screen("game_ui")
+            self.showing_escape = False
+            self.get_game().unpause()
+            return
+
+        self.showing_escape = True
+        self.set_screen("pause_menu")
+        self.get_game().pause()
 
     def clear_selected_unit(self):
         if self.current_unit is None:
