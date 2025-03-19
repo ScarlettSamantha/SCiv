@@ -34,6 +34,8 @@ class Camera(Singleton, DirectObject):
 
         self.zoom_enabled: bool = True
 
+        self.lock: bool = False
+
         # Optional pitch
         self.pitch = 45.0  # We'll keep a fixed pitch at 45 degrees
 
@@ -132,21 +134,47 @@ class Camera(Singleton, DirectObject):
         self.accept("mouse1", self.start_left_drag)
         self.accept("mouse1-up", self.stop_left_drag)
 
+        # Disable/enable zoom
+        self.accept("system.input.disable_zoom", self.disable_zoom)
+        self.accept("system.input.enable_zoom", self.enable_zoom)
+
         # Right mouse => pan (drag to move)
         self.accept("mouse3", self.start_right_drag)
         self.accept("mouse3-up", self.stop_right_drag)
 
-        self.base.accept("system.input.disable_zoom", self.disable_zoom)
-        self.base.accept("system.input.enable_zoom", self.enable_zoom)
+        # Disable/enable camera control
+        self.accept("system.input.disable_control", self.disable_control)
+        self.accept("system.input.enable_control", self.enable_control)
+
+        # Lock/unlock camera
+        self.accept("system.input.camera_lock", self.lock_camera)
+        self.accept("system.input.camera_unlock", self.unlock_camera)
 
     def set_key(self, key, value):
         self.keys[key] = value
 
+    def lock_camera(self):
+        self.lock = True
+
+    def unlock_camera(self):
+        self.lock = False
+
+    def disable_control(self):
+        self.active = False
+
+    def enable_control(self):
+        self.active = True
+
     def disable_zoom(self):
+        if self.lock is True:
+            return
         self.logger.debug("Disabling zoom")
         self.zoom_enabled = False
 
     def enable_zoom(self):
+        if self.lock is True:
+            return
+
         self.logger.debug("Enabling zoom")
         self.zoom_enabled = True
 
