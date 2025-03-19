@@ -7,7 +7,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
-from kivy.uix.scrollview import ScrollView
 
 from gameplay.city import City
 from gameplay.repositories.improvements import BaseCityImprovement
@@ -54,8 +53,11 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.current_label: Optional[Label] = None
         self.current_button: Optional[Button] = None
 
-        self.actions_scroll: Optional[ScrollView] = None
+        self.actions_scroll: Optional[ClippingScrollList] = None
         self.actions_label: Optional[Label] = None
+
+        self.improvement_list_scroll: Optional[ClippingScrollList] = None
+        self.improvement_list_label: Optional[Label] = None
 
         self.gold_label: Optional[ImageLabel] = None
         self.production_label: Optional[ImageLabel] = None
@@ -167,6 +169,20 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             self.button_container.clear_widgets()
             for button in self.buildable_buttons.values():
                 self.button_container.add_widget(button)
+
+        if self.improvement_list_scroll is not None:
+            self.improvement_list_scroll.clear_widgets()
+            for improvement in self.city._improvements:
+                label = Label(
+                    text=str(improvement.name),
+                    size_hint_y=None,
+                    height=30,
+                    font_size=12,
+                )
+                self.improvement_list_scroll.add_widget(label)
+
+            self.improvement_list_scroll._apply_clipping()
+            self.improvement_list_scroll.scroll_to_top()
 
     def generate_buttons(self) -> Dict[str, Button]:
         from gameplay.repositories.improvements import ImprovementsRepository
@@ -338,6 +354,13 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
 
         # Add ScrollView inside the clipping container
         self.frame.add_widget(self.button_container)
+
+        self.improvement_list_label = Label(text="Improvements", size_hint=(1, None), height=30, font_size=16)
+        self.frame.add_widget(self.improvement_list_label)
+
+        # Improvements List
+        self.improvement_list_scroll = ClippingScrollList(size_hint=(1, None), height=100, cols=3)
+        self.frame.add_widget(self.improvement_list_scroll)
 
         # Footer (Bottom section)
         self.footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
