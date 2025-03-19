@@ -11,7 +11,6 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
-from system.camera import Camera
 from gameplay.city import City
 from gameplay.improvement import Improvement
 from gameplay.tiles.base_tile import BaseTile
@@ -28,6 +27,7 @@ from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from system.actions import Action
+from system.camera import Camera
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         "state": "Playing",
     }
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, *args, **kwargs: Any):
         if "base" not in kwargs:
             raise ValueError("GameUIScreen requires a 'base' keyword argument.")
         self._base: "SCIV" = kwargs.pop("base", None)
@@ -49,7 +49,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
         from managers.ui import ui
 
-        super().__init__(base=self._base, **kwargs)
+        super().__init__(base=self._base, *args, **kwargs)
 
         self.world_manager = World.get_instance()
         self.camera: Camera = Camera.get_instance()
