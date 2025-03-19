@@ -6,77 +6,12 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tiles.base_tile import BaseTile
 from system.generators.base import BaseGenerator
 from system.pyload import PyLoad
-from system.subsystems.hexgen.enums import MapType, OceanType, SuperEnum
+from system.subsystems.hexgen.enums import MapType, OceanType
 from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.mapgen import MapGen
 
 if TYPE_CHECKING:
     from system.game_settings import GameSettings
-
-
-class HexResourceRating(SuperEnum):
-    """((1 + 1) * 60/1000 ) / (60 ^ 2) * 10000"""
-
-    __keys__ = ["id", "title", "rarity", "multiplier"]
-
-    poor = (1, "Poor", 10, 4)
-    average = (2, "Average", 6, 3)
-    rich = (3, "Rich", 3, 2)
-    abundant = (4, "Abundant", 1, 1)
-
-
-class HexResourceType(SuperEnum):
-    __keys__ = ["id", "rarity", "title", "material", "yield", "color"]
-
-    iron_vein = (1, 15, "Iron Vein", 1000, "commonmetals", (100, 0, 0))
-    copper_vein = (2, 15, "Copper Vein", 1000, "commonmetals", (0, 100, 0))
-    silver_vein = (3, 15, "Silver Vein", 1000, "commonmetals", (0, 0, 100))
-    lead_vein = (4, 15, "Lead Vein", 1000, "commonmetals", (100, 0, 100))
-    aluminum_vein = (5, 15, "Aluminum Vein", 1000, "commonmetals", (50, 150, 50))
-    tin_vein = (6, 15, "Tin Vein", 1000, "commonmetals", (150, 50, 50))
-    titanium_vein = (7, 15, "Titanium Vein", 1000, "commonmetals", (200, 50, 200))
-    magnesium_vein = (8, 15, "Magnesium Vein", 1000, "commonmetals", (50, 200, 50))
-
-    gold_ore_deposit = (9, 1, "Gold Ore Deposit", 500, "preciousmetals", (255, 0, 0))
-    chromite_ore_deposit = (
-        10,
-        3,
-        "Chromite Ore Deposit",
-        500,
-        "preciousmetals",
-        (255, 255, 0),
-    )
-    monazite_ore_deposit = (
-        11,
-        5,
-        "Monazite Ore Deposit",
-        500,
-        "preciousmetals",
-        (0, 0, 255),
-    )
-    bastnasite_ore_deposit = (
-        12,
-        4,
-        "Bastnasite Ore Deposit",
-        500,
-        "preciousmetals",
-        (0, 125, 200),
-    )
-    xenotime_ore_deposit = (
-        13,
-        1,
-        "Xenotime Ore Deposit",
-        500,
-        "preciousmetals",
-        (200, 125, 0),
-    )
-
-    graphite_deposit = (14, 10, "Graphite Deposit", 1500, "carbon", (0, 0, 0))
-    coal_deposit = (15, 30, "Coal Deposit", 1500, "carbon", (255, 255, 255))
-
-    quartz_deposit = (16, 7, "Quartz Vein", 1000, "silicon", (80, 80, 80))
-
-    uranium_ore_deposit = (17, 1, "Uranium Ore Deposit", 10, "uranium", (255, 50, 50))
 
 
 class Basic(BaseGenerator):
@@ -124,7 +59,7 @@ class Basic(BaseGenerator):
             "axial_tilt": 18,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
             # features
             "craters": True,
-            "volanoes": True,
+            "volcanoes": True,
             "num_rivers": 50,
             # territories
             "num_territories": 0,
@@ -175,7 +110,7 @@ class Basic(BaseGenerator):
         # tundra =               (2, 'u', 'Tundra')
         # alpine_tundra =        (3, 'p', 'Alpine Tundra')
         # desert =               (4, 'd', 'Desert')
-        # shrubland =            (5, 's', 'Shrubland')
+        # scrubland =            (5, 's', 'Scrubland')
         # savanna =              (6, 'S', 'Savanna')
         # grasslands =           (7, 'g', 'Grasslands')
         # boreal_forest =        (8, 'b', 'Boreal Forest')
@@ -185,7 +120,7 @@ class Basic(BaseGenerator):
         # tropical_rainforest =  (12, 'R', 'Tropical Rainforest')
 
         desert_temperature_threshold = 35
-        moistoire_threshold_mangrove_jungle = 13
+        moisture_threshold_mangrove_jungle = 13
         light_jungle_temperature_threshold = 25
         cold_forrest_temperature_threshold = 3
 
@@ -223,14 +158,14 @@ class Basic(BaseGenerator):
             ):  # Dessert or savannah, keep this high as it needs to be checked first before grassland
                 return "FlatDesert"
             elif (
-                hex_tile.biome.id in (7, 11) and hex_tile.moisture > moistoire_threshold_mangrove_jungle
+                hex_tile.biome.id in (7, 11) and hex_tile.moisture > moisture_threshold_mangrove_jungle
             ):  # Virtual Mangrove Actual grassland with high moister
                 return "FlatJungle"
             elif hex_tile.biome.id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
                 return "FlatLightJungle"
             elif hex_tile.biome.id in (5,):  # Virtual Mangrove Actual scrubland with low moister
-                return "FlatSchrubland"
-            elif hex_tile.biome.id in (6,):  # Savana
+                return "FlatScrubland"
+            elif hex_tile.biome.id in (6,):  # Savanna
                 return "FlatSavanna"
             elif hex_tile.biome.id in (7,) or (
                 hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
@@ -254,8 +189,8 @@ class Basic(BaseGenerator):
             ):  # forest
                 return "FlatForrest"
 
-            elif hex_tile.biome.id in (5,):  # Shrubland
-                return "FlatSchrubland"
+            elif hex_tile.biome.id in (5,):  # Scrubland
+                return "FlatScrubland"
             elif hex_tile.biome.id in (1,):  # Arctic / Ice
                 return "FlatIce"
             elif hex_tile.biome.id in (2, 3):  # 2 Tundra, 3 Alpine Tundra
@@ -417,7 +352,7 @@ class Basic(BaseGenerator):
         Handles clustering of resources around the initially placed tile.
         """
 
-        # Determine maximum cluster radius and dropoff rate
+        # Determine maximum cluster radius and drop off rate
         max_radius = (
             resource.cluster_max_radius
             if isinstance(resource.cluster_max_radius, int)
@@ -429,7 +364,7 @@ class Basic(BaseGenerator):
             else random.uniform(resource.cluster_dropoff_amount_rate[0], resource.cluster_dropoff_amount_rate[1])
         )
 
-        # Use bubble function to get all hexes within clusterable radius
+        # Use bubble function to get all hexes within cluster able radius
         cluster_hexes = center_tile.bubble(max_radius)
 
         for hex_tile in cluster_hexes:
