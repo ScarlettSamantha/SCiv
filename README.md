@@ -88,7 +88,7 @@ At this stage, I want the core gameplay loop to work at a basic level, meaning:
 - [x] Spawn units
 - [x] Unit actions
 - [x] Process a minimal turn
-- [X] Cities that can build something
+- [x] Cities that can build something
 - [x] Basic player ownership and city being aware of tiles around it
 - [x] UI city show ownership of tiles around it.
 - [x] Basic UI element
@@ -105,17 +105,15 @@ At this stage, I want the core gameplay loop to work at a basic level, meaning:
 The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
 
 - [ ] Saving/Loading + GUI
-- [ ] Map regeneration
-- [ ] Barbarians + Nature player
-- [ ] Map gen parameters in GUI
-- [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), maybe UI for
-this.
 - [ ] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
+- [ ] Map regeneration
 - [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
-- [ ] City/Empire borders drawn
-- [ ] Change log generation + Auto versioning
+- [ ] Barbarians + Nature player
 - [ ] Working research
-- [ ] Civic system implementation
+- [ ] City/Empire borders drawn
+- [ ] Civic system implementation + city borders
+- [ ] Map gen parameters in GUI
+- [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), maybe UI for this.
 - [ ] Hide development things behind a toggle.
 - [ ] Settings menu
 - [ ] Basic documentation
