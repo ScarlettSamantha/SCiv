@@ -2220,6 +2220,10 @@
             "monument": {
               "name": "Monument",
               "description": "Cultural heritage site"
+            },
+            "palace": {
+              "name": "Palace",
+              "description": "Seat of government and residence"
             }
           }
         }

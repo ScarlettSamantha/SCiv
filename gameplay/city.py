@@ -7,6 +7,7 @@ from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.citizens import Citizens, population_curve
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
+from gameplay.improvements.core.city.palace import Palace
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource
 from gameplay.yields import Yields
@@ -308,6 +309,9 @@ class City(BaseEntity):
         MessengerGlobal.messenger.send("game.gameplay.city.population_starve", [self])
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
 
+    def get_improvements(self) -> ImprovementsSet:
+        return self._improvements
+
     @classmethod
     def found_new(
         cls,
@@ -325,6 +329,9 @@ class City(BaseEntity):
         instance.player.add_city(instance)
         tile.city = instance
         tile.city_owner = instance
+
+        if is_capital:
+            instance.build(Palace())
 
         if auto_claim_radius > 0:
             from gameplay.repositories.tile import TileRepository
