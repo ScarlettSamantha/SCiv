@@ -13,7 +13,7 @@ from gameplay.city import City
 from gameplay.repositories.improvements import BaseCityImprovement
 from gameplay.repositories.unit import UnitRepository
 from gameplay.units.core.classes.civilian._base import CivilianBaseClass
-from gameplay.units.core.classes.mililtary._base import MilitaryBaseClass
+from gameplay.units.core.classes.military._base import MilitaryBaseClass
 from gameplay.yields import Yields
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList

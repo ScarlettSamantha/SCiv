@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.promotion import Promotion, PromotionTree
-from gameplay.units.core.classes.mililtary._base import CoreMilitaryBaseClass
+from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
 from system.requires import RequiresPromotionComplete, RequiresPromotionTreeUnlocked
 
