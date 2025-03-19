@@ -223,12 +223,12 @@ class MapGen:
 
                 last_altitude = 0
                 for hex in hexes[: round(len(hexes) / 2)]:
-                    for serounding_hex in hex.surrounding:
-                        if serounding_hex.has_feature(HexFeature.volcano) is False:
-                            serounding_hex.add_feature(HexFeature.volcano)
-                            serounding_hex.altitude += 5
-                            serounding_hex.altitude = min(serounding_hex.altitude, 255)
-                            last_altitude = serounding_hex.altitude
+                    for surrounding_hex in hex.surrounding:
+                        if surrounding_hex.has_feature(HexFeature.volcano) is False:
+                            surrounding_hex.add_feature(HexFeature.volcano)
+                            surrounding_hex.altitude += 5
+                            surrounding_hex.altitude = min(surrounding_hex.altitude, 255)
+                            last_altitude = surrounding_hex.altitude
                 center_hex.altitude += last_altitude + 5
 
                 # lava flow
@@ -429,7 +429,7 @@ class MapGen:
             base_pressure = self.hex_grid.params.get("surface_pressure")
 
             with Timer("    calculating pressure zones", self.debug):
-                # calcualte pressure caused by pressure zones
+                # calculate pressure caused by pressure zones
                 pressure_diff = random.randint(3, 5)
                 for y, row in enumerate(self.hex_grid.grid):
                     for x, col in enumerate(row):
