@@ -284,16 +284,7 @@ class Yields:
             multiplicative = getattr(tile_yield, f"great_person_{prop}")
             current = getattr(self, f"great_person_{prop}")
             new_val = current.value * multiplicative.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))
-
-        # Multiply other mechanics if available
-        for key, mechanic in self.other_mechnics.items():
-            if key not in tile_yield.other_mechnics:
-                continue
-            multiplicative = getattr(tile_yield, str(mechanic))
-            current = mechanic
-            new_val = current.value * multiplicative.value
-            self.other_mechnics[key] = type(current)(value=new_val) """
+            setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
 
         return self
 
@@ -315,15 +306,7 @@ class Yields:
             current = getattr(self, f"great_person_{prop}")
             subtraction = getattr(tile_yield, f"great_person_{prop}")
             new_val = current.value - subtraction.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))
-        # Process other mechanics if available
-        for key, mechanic in self.other_mechnics.items():
-            if key not in tile_yield.other_mechnics:
-                continue
-            current = mechanic
-            subtraction = getattr(tile_yield, str(mechanic))
-            new_val = current.value - subtraction.value
-            self.other_mechnics[key] = type(current)(value=new_val) """
+            setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
         return self
 
     def divide(self, tile_yield: "Yields") -> Self:
@@ -351,17 +334,7 @@ class Yields:
                 continue
             current = getattr(self, f"great_person_{prop}")
             new_val = current.value / divisor.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))
-        # Process other mechanics if available
-        for key, mechanic in self.other_mechnics.items():
-            if key not in tile_yield.other_mechnics:
-                continue
-            divisor = getattr(tile_yield, str(mechanic))
-            if divisor.value in {0.0, 1.0, -1.0}:
-                continue
-            current = mechanic
-            new_val = current.value / divisor.value
-            self.other_mechnics[key] = type(current)(value=new_val) """
+            setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
         return self
 
     def __eq__(self, other: object) -> bool:
@@ -459,39 +432,30 @@ class Yields:
 
     # Calculate final yield based on a base yield (self) and optional modifiers.
     # For each calculatable property, the final yield is:
-    #   final = round((base + additive) * (1 + perc_add) * (1 + perc_cum))
+    #   final = round((base + additive) * (1 + percentage_add) * (1 + percentage_cum))
     # This method modifies self in place.
     def calculate(
         self,
         additive: "Yields | None" = None,
-        perc_add: "Yields | None" = None,
-        perc_cum: "Yields | None" = None,
+        percentage_add: "Yields | None" = None,
+        percentage_cum: "Yields | None" = None,
     ) -> None:
         # Use null yields if modifiers aren't provided.
         additive = additive or Yields.nullYield()
-        perc_add = perc_add or Yields.nullYield()
-        perc_cum = perc_cum or Yields.nullYield()
+        percentage_add = percentage_add or Yields.nullYield()
+        percentage_cum = percentage_cum or Yields.nullYield()
 
         for prop in self.calculatable_properties():
             base_val = getattr(self, prop).value
             add_val = getattr(additive, prop).value
-            perc_add_val = getattr(perc_add, prop).value
-            perc_cum_val = getattr(perc_cum, prop).value
+            percentage_add_val = getattr(percentage_add, prop).value
+            percentage_cum_val = getattr(percentage_cum, prop).value
             # Combine values: negative additive will subtract, negative percentages reduce yield.
-            final_val = (base_val + add_val) * (1 + perc_add_val) * (1 + perc_cum_val)
+            final_val = (base_val + add_val) * (1 + percentage_add_val) * (1 + percentage_cum_val)
             # Round final yield as yields should be integers.
             final_val = round(final_val)
             current = getattr(self, prop)
             setattr(self, prop, type(current)(value=final_val))
-
-        # Also round mechanic resources.
-        # for prop in self.mechanic_resources():
-        # current = getattr(self, prop)
-        # setattr(self, prop, type(current)(value=round(current.value)))
-        # Round great people yields.
-        # for prop in self.calculatable_great_people():
-        # current = getattr(self, f"great_person_{prop}")
-        # setattr(self, f"great_person_{prop}", type(current)(value=round(current.value)))
 
     def props(self, only_non_nul: bool = False) -> Dict[Any, Any]:
         a: Dict[Any, Any] = {}
