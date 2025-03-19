@@ -429,12 +429,12 @@ class Yields:
 
     def set_prop(self, name: str, value: Any):
         if name in self.calculatable_great_people() + self.calculatable_properties():
-            raise ValueError(f"cannot set property[{name}] as it does not exist or is accessable")
+            raise ValueError(f"cannot set property[{name}] as it does not exist or is accessible")
         setattr(self, name, value)
 
     def get_prop(self, name: str) -> Any:
         if name not in self.calculatable_great_people() + self.calculatable_properties():
-            raise ValueError(f"cannot get property[{name}] as it does not exist or is accessable")
+            raise ValueError(f"cannot get property[{name}] as it does not exist or is accessible")
         return getattr(self, name)
 
     def toDict(self, only_non_null: bool = False) -> Dict[str, Any]:
