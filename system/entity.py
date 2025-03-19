@@ -1,8 +1,7 @@
 from abc import ABC
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from direct.showbase.DirectObject import DirectObject
-from git import TYPE_CHECKING
 
 from helpers.cache import Cache
 
