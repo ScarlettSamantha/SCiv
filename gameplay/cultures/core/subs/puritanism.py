@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -12,13 +11,13 @@ class Puritanism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.religious_discipline import ReligiousDiscipline
-        from gameplay.cultures.core.moral_purity import MoralPurity
         from gameplay.cultures.core.community_surveillance import CommunitySurveillance
-        from gameplay.cultures.core.simplified_living import SimplifiedLiving
-        from gameplay.cultures.core.religious_governance import ReligiousGovernance
         from gameplay.cultures.core.moral_legislation import MoralLegislation
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.moral_purity import MoralPurity
+        from gameplay.cultures.core.religious_discipline import ReligiousDiscipline
+        from gameplay.cultures.core.religious_governance import ReligiousGovernance
+        from gameplay.cultures.core.simplified_living import SimplifiedLiving
+        from system.requires import RequiresCivicComplete
 
         religious_discipline = ReligiousDiscipline()
         self.add_civic(religious_discipline)

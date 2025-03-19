@@ -1,42 +1,51 @@
-from typing import Any, Optional, Tuple, Type, Union, List, TYPE_CHECKING
+from logging import Logger
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union
 
+from direct.showbase.MessengerGlobal import messenger
+from panda3d.core import WindowProperties
+
+from system.camera import Camera
 from gameplay.civilization import Civilization
+from gameplay.civilizations.rome import Rome
 from gameplay.repositories.generators import GeneratorRepository
+from gameplay.rules import GameRules, SCIVRules, set_game_rules
+from managers.config import ConfigManager
 from managers.entity import EntityManager
+from managers.input import Input
 from managers.player import PlayerManager
 from managers.turn import Turn
-from mixins.singleton import Singleton
-from direct.showbase.MessengerGlobal import messenger
-from managers.config import ConfigManager
 from managers.ui import ui
 from managers.world import World
-from managers.input import Input
-from camera import CivCamera
-from panda3d.core import WindowProperties
-from system.generators.base import BaseGenerator
-from gameplay.civilizations.rome import Rome
-from system.generators.basic import Basic
+from mixins.singleton import Singleton
 from system.game_settings import GameSettings
+from system.generators.base import BaseGenerator
+from system.generators.basic import Basic
 
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class Game(Singleton):
-    def __init__(self, base, camera: CivCamera):
+    def __init__(self, base, camera: Camera):
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
-        self.base: "Openciv" = base
+        self.base: "SCIV" = base
+        self.logger: Logger = self.base.logger.engine.getChild("manager.game")
 
         self.ui: ui = ui.get_instance(base=self.base)
         self.world: World = World.get_instance()
         self.input: Input = Input.get_instance()
-        self.turn: Optional[Turn] = None
-        self.camera: CivCamera = camera
+        self.turn: Turn = Turn.get_instance(base=self.base)
+        self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
         self.config: ConfigManager = ConfigManager.get_instance()
         self.entities: EntityManager = EntityManager.get_instance(base=self.base)
+
+        self._rules: Optional[Type[GameRules]] = SCIVRules
+        self.rules: GameRules = self._rules()
+
+        set_game_rules(self.rules)
 
         self.active_generator: BaseGenerator | None = None
 
@@ -61,7 +70,11 @@ class Game(Singleton):
         def timers():
             self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)
 
+        def messenger():
+            self.base.accept("game.turn.request_end", self.process_turn)
+
         timers()
+        messenger()
 
     def configure_environment(self):
         self.base.disableMouse()
@@ -78,17 +91,26 @@ class Game(Singleton):
 
         self.base.win.requestProperties(props)
 
-    def environment_writeback(self):
+    def environment_writeback(self) -> bool:
+        self.logger.info("Writing back window properties to config")
         props = self.base.win.getProperties()
         win_size = (props.getXSize(), props.getYSize())  # Get current window size
         win_origin = (props.getXOrigin(), props.getYOrigin())  # Get window position
 
+        old_win_size = tuple(self.config.get_by_key("window", "win-size"))
+        old_win_origin = tuple(self.config.get_by_key("window", "win-origin"))
+
+        if old_win_size == win_size and old_win_origin == win_origin:
+            self.logger.info("No changes to write back")
+            return False
+
         self.config.set_by_key([win_size[0], win_size[1]], "window", "win-size")
         self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
+        return True
 
     def config_saveback(self, task):
-        self.environment_writeback()
-        self.config.save_config()
+        if self.environment_writeback() is True:
+            self.config.save_config()
         return task.again
 
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
@@ -98,7 +120,7 @@ class Game(Singleton):
         def register_callback_inputs():
             self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
             self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
-            self.base.accept("system.game.start", self.on_game_start)
+            self.base.accept("system.game.start_load", self.on_game_start)
             self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
             self.base.accept("game.input.user.quit_game", self.quit_game)
             self.base.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
@@ -191,6 +213,7 @@ class Game(Singleton):
     def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Civilization, num_players):
         if self.properties is None:
             raise AssertionError("Game properties not set")
+        self.logger.info("Game start requested")
 
         self.properties.num_enemies = num_players
         self.properties.player = Civilization.get(civilization) if isinstance(civilization, str) else civilization  # type: ignore
@@ -200,19 +223,37 @@ class Game(Singleton):
         self.game_active = True
 
         self.active_generator = self.world.get_generator()  # type: ignore
+        self.logger.info(f"Game start requested with {self.properties}")
+        self.logger.info("Starting generating the world sequence")
         self.generate_world()
+        self.logger.info("World generation complete")
+        self.logger.info(f"Setting up players({self.properties.num_enemies})")
         self.setup_players()
+        self.logger.info("Players setup complete")
 
         if self.active_generator is None:
             raise AssertionError("No generator was found, should have been set in generate_world")
 
         self.turn = Turn.get_instance(self.base)
+        self.logger.info("Activating turn")
         self.turn.activate()
 
+        self.logger.info("Setting up camera")
         self.camera_setup()
 
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
+        self.base.messenger.send("game.state.load_complete")
+        self.base.messenger.send("game.state.true_game_start")
+        self.logger.info("Game start complete")
+        self.ui.post_game_start()
+        self.camera.recenter()
+
+    def process_turn(self):
+        if self.turn is None:
+            raise AssertionError("Turn is not set")
+
+        self.turn.end_turn()
 
     def on_game_end(self):
         self.game_active = False

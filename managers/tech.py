@@ -1,8 +1,8 @@
-from __future__ import annotations
-from managers.base import BaseManager
 from collections import OrderedDict
-from gameplay.tech import Tech
 from typing import List
+
+from gameplay.tech import Tech
+from managers.base import BaseManager
 from mixins.callbacks import CallbacksMixin
 from system.pyload import PyLoad
 
@@ -62,15 +62,11 @@ class TechManager(BaseManager, CallbacksMixin):
         self.trigger_callback("on_tech_queue_updated")
 
     def reorder(self) -> None:
-        self.queue = OrderedDict(
-            (i, tech) for i, tech in enumerate(self.queue.values())
-        )
+        self.queue = OrderedDict((i, tech) for i, tech in enumerate(self.queue.values()))
         self.trigger_callback("on_tech_reorder")
 
     def do_first_queue(self, tech: Tech) -> None:
-        self.queue = OrderedDict(
-            [(0, tech)] + [(i + 1, t) for i, t in enumerate(self.queue.values())]
-        )
+        self.queue = OrderedDict([(0, tech)] + [(i + 1, t) for i, t in enumerate(self.queue.values())])
         self.trigger_callback("on_tech_queue_updated")
 
     def delete_tech(self, tech: Tech) -> None:
@@ -105,11 +101,7 @@ class TechManager(BaseManager, CallbacksMixin):
         self._current_science_pool += science
         self.trigger_callback("on_science_added")
 
-        while (
-            auto_complete_tech
-            and self._current_science_pool >= self._needed_science
-            and self.queue
-        ):
+        while auto_complete_tech and self._current_science_pool >= self._needed_science and self.queue:
             self.complete_research(auto_complete_tech=auto_complete_tech)
 
     def remove_science(self, science: int):

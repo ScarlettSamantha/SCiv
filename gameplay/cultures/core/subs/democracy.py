@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -13,12 +12,12 @@ class Democracy(BaseCoreSubtree):
 
     def register_civics(self):
         from gameplay.cultures.core.electoral_process import ElectoralProcess
-        from gameplay.cultures.core.rule_of_law import RuleOfLaw
-        from gameplay.cultures.core.separation_of_powers import SeparationOfPowers
         from gameplay.cultures.core.human_rights import HumanRights
         from gameplay.cultures.core.participatory_governance import ParticipatoryGovernance
+        from gameplay.cultures.core.rule_of_law import RuleOfLaw
+        from gameplay.cultures.core.separation_of_powers import SeparationOfPowers
         from gameplay.cultures.core.transparent_government import TransparentGovernment
-        from openciv.engine.requires import RequiresCivicComplete
+        from system.requires import RequiresCivicComplete
 
         electoral_process = ElectoralProcess()
         self.add_civic(electoral_process)

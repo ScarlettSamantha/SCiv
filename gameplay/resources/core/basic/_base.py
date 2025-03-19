@@ -1,7 +1,13 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceValueType, ResourceTypeBasic
+from typing import Type, TypeVar
+
+from gameplay.resource import BaseResource
 
 
-class BasicBaseResource(Resource):
-    def __init__(self, *args, **kwargs):
-        super().__init__(configure_as_float_or_int=ResourceValueType.FLOAT, type=ResourceTypeBasic, *args, **kwargs)
+class BasicBaseResource(BaseResource):
+    from gameplay.resource import ResourceTypeBonus, ResourceValueType
+
+    type: Type[ResourceTypeBonus] = ResourceTypeBonus
+    configure_as_float_or_int: ResourceValueType = ResourceValueType.FLOAT
+
+
+BasicResourceType = TypeVar("BasicResourceType", bound=BasicBaseResource)

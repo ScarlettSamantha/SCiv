@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -13,12 +12,12 @@ class Dictatorship(BaseCoreSubtree):
 
     def register_civics(self):
         from gameplay.cultures.core.autocratic_rule import AutocraticRule
-        from gameplay.cultures.core.state_surveillance import StateSurveillance
         from gameplay.cultures.core.censorship import Censorship
-        from gameplay.cultures.core.repression import Repression
-        from gameplay.cultures.core.propaganda import Propaganda
         from gameplay.cultures.core.centralized_power import CentralizedPower
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.propaganda import Propaganda
+        from gameplay.cultures.core.repression import Repression
+        from gameplay.cultures.core.state_surveillance import StateSurveillance
+        from system.requires import RequiresCivicComplete
 
         autocratic_rule = AutocraticRule()
         self.add_civic(autocratic_rule)

@@ -1,23 +1,25 @@
-from typing import Any, Dict, Optional, TYPE_CHECKING
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
-from kivy.graphics import Color, Rectangle
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from kivy.clock import Clock
-from camera import CivCamera
-from managers.entity import EntityManager
+from kivy.graphics import Color, Rectangle
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties
 
+from system.camera import Camera
+from managers.entity import EntityManager
+
 if TYPE_CHECKING:
-    from main import Openciv
     from direct.showbase.ShowBase import ShowBase
+
+    from main import SCIV
 
 
 class StatsPanel(FloatLayout):
-    def __init__(self, base: "Openciv | ShowBase", **kwargs):
+    def __init__(self, base: "SCIV | ShowBase", **kwargs):
         super().__init__(**kwargs)
-        self.base: "Openciv | ShowBase" = base
-        self.camera: CivCamera = CivCamera.get_instance()
+        self.base: "SCIV | ShowBase" = base
+        self.camera: Camera = Camera.get_instance()
 
         self.frame: Optional[FloatLayout] = None
         self.label: Optional[Label] = None
@@ -37,9 +39,15 @@ class StatsPanel(FloatLayout):
             "entity_manager_total_players": 0,
             "entity_manager_total_units": 0,
             "entity_manager_total_tiles": 0,
+            "entity_manager_total_effects": 0,
         }
 
         self.register()
+
+    def get_frame(self) -> FloatLayout:
+        if self.frame is None:
+            self.frame = self.build()
+        return self.frame
 
     def register(self):
         def clocks():
@@ -47,6 +55,10 @@ class StatsPanel(FloatLayout):
             Clock.schedule_interval(self.periodicals, 1)
 
         clocks()
+
+    def hide(self):
+        if self.frame is not None:
+            self.frame.opacity = 0
 
     def periodicals(self, dt):
         self._periodicals["window_size"] = (f"{self.base.win.getXSize()},{self.base.win.getYSize()}",)
@@ -63,6 +75,7 @@ class StatsPanel(FloatLayout):
         self._periodicals["entity_manager_total_players"] = entity_stats["total_players"]
         self._periodicals["entity_manager_total_units"] = entity_stats["total_units"]
         self._periodicals["entity_manager_total_tiles"] = entity_stats["total_tiles"]
+        self._periodicals["entity_manager_total_effects"] = entity_stats["total_effects"]
 
     def build(self) -> FloatLayout:
         # --- Camera Panel (Top-Right Corner) ---
@@ -70,18 +83,21 @@ class StatsPanel(FloatLayout):
             size_hint=(None, None),
             width=200,
             height=300,
-            pos_hint={"right": 1, "top": 1},
+            pos_hint={"right": 1, "top": 0.975},
         )
 
         with self.frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.5)  # Black background with 50% opacity
+            Color(0, 0, 0, 0.8)
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
 
         def update_camera_rect(instance, value):
-            self.rect.size = instance.size  # type: ignore
-            self.rect.pos = instance.pos  # type: ignore
+            if self.rect is None:
+                return
 
-        self.frame.bind(size=update_camera_rect, pos=update_camera_rect)  # type: ignore
+            self.rect.size = instance.size
+            self.rect.pos = instance.pos
+
+        self.frame.bind(size=update_camera_rect, pos=update_camera_rect)
 
         self.label = Label(
             text="Camera Info:\nZoom: 1.0\nAngle: 45°",
@@ -94,6 +110,7 @@ class StatsPanel(FloatLayout):
             text_size=(200, 300),
             pos_hint={"right": 1, "top": 1},
             color=(1, 1, 1, 1),
+            padding=10,
         )
 
         self.frame.add_widget(self.label)
@@ -115,5 +132,6 @@ class StatsPanel(FloatLayout):
             f"Players: {str(self._periodicals['entity_manager_total_players'])}",
             f"Units: {str(self._periodicals['entity_manager_total_units'])}",
             f"Tiles: {str(self._periodicals['entity_manager_total_tiles'])}",
+            f"Effects: {str(self._periodicals['entity_manager_total_effects'])}",
         )
         self.label.text = "\n".join(text)  # type: ignore # We know it exists because it's initialized in build_screen

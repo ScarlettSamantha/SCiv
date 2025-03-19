@@ -1,13 +1,11 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
-from typing import Type, TypeVar, Optional, Any, cast
+from typing import Any, Optional, Type, TypeVar, cast
 
 T = TypeVar("T", bound="Singleton")
 
 
 class Singleton(ABC):
-    __instance: Optional[Singleton] = None
+    __instance: Optional["Singleton"] = None
 
     @abstractmethod
     def __setup__(self, *args: Any, **kwargs: Any) -> None:
@@ -16,8 +14,9 @@ class Singleton(ABC):
 
     def __new__(cls: Type[T], *args: Any, **kwargs: Any) -> T:
         if cls.__instance is None or not isinstance(cls.__instance, cls):
-            cls.__instance = super(Singleton, cls).__new__(cls)  # type: ignore
-            cls.__instance.__setup__(*args, **kwargs)
+            instance = super(Singleton, cls).__new__(cls)  # type: ignore
+            cls.__instance = instance
+            instance.__setup__(*args, **kwargs)
         return cast(T, cls.__instance)
 
     @classmethod

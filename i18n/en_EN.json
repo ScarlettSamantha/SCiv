@@ -1,5 +1,519 @@
 {
   "en_EN": {
+    "cities": {
+      "akkadian": {
+        "agade": "Agade",
+        "ur": "Ur",
+        "uruk": "Uruk",
+        "nippur": "Nippur",
+        "kish": "Kish",
+        "lagash": "Lagash",
+        "eridu": "Eridu",
+        "sippar": "Sippar",
+        "shuruppak": "Shuruppak",
+        "isin": "Isin",
+        "larsa": "Larsa",
+        "adab": "Adab",
+        "eshnunna": "Eshnunna",
+        "mari": "Mari",
+        "der": "Der",
+        "bad_tibira": "Bad Tibira",
+        "umma": "Umma",
+        "zabala": "Zabala",
+        "akkad": "Akkad",
+        "akshak": "Akshak"
+      },
+      "american_empire": {
+        "new_york": "New York",
+        "los_angeles": "Los Angeles",
+        "chicago": "Chicago",
+        "houston": "Houston",
+        "phoenix": "Phoenix",
+        "philadelphia": "Philadelphia",
+        "san_antonio": "San Antonio",
+        "san_diego": "San Diego",
+        "dallas": "Dallas",
+        "san_jose": "San Jose",
+        "austin": "Austin",
+        "jacksonville": "Jacksonville",
+        "fort_worth": "Fort Worth",
+        "columbus": "Columbus",
+        "charlotte": "Charlotte",
+        "san_francisco": "San Francisco",
+        "indianapolis": "Indianapolis",
+        "seattle": "Seattle",
+        "denver": "Denver",
+        "washington": "Washington"
+      },
+      "byzantine": {
+        "constantinople": "Constantinople",
+        "antioch": "Antioch",
+        "alexandria": "Alexandria",
+        "thessalonica": "Thessalonica",
+        "nicaea": "Nicaea",
+        "trebizond": "Trebizond",
+        "ephesus": "Ephesus",
+        "nicomedia": "Nicomedia",
+        "athens": "Athens",
+        "smyrna": "Smyrna",
+        "philippopolis": "Philippopolis",
+        "adrianople": "Adrianople",
+        "caesarea": "Caesarea",
+        "laodicea": "Laodicea",
+        "sinope": "Sinope",
+        "chersonesus": "Chersonesus",
+        "mistra": "Mistra",
+        "sardis": "Sardis",
+        "seleucia": "Seleucia",
+        "hierapolis": "Hierapolis"
+      },
+      "china": {
+        "shanghai": "Shanghai",
+        "beijing": "Beijing",
+        "chongqing": "Chongqing",
+        "tianjin": "Tianjin",
+        "guangzhou": "Guangzhou",
+        "shenzhen": "Shenzhen",
+        "chengdu": "Chengdu",
+        "nanjing": "Nanjing",
+        "wuhan": "Wuhan",
+        "xian": "Xian",
+        "hangzhou": "Hangzhou",
+        "harbin": "Harbin",
+        "suzhou": "Suzhou",
+        "shenyang": "Shenyang",
+        "qingdao": "Qingdao",
+        "dalian": "Dalian",
+        "zhengzhou": "Zhengzhou",
+        "jinan": "Jinan",
+        "changsha": "Changsha",
+        "kunming": "Kunming"
+      },
+      "egypt": {
+        "cairo": "Cairo",
+        "alexandria": "Alexandria",
+        "giza": "Giza",
+        "shubra_el_kheima": "Shubra El Kheima",
+        "port_said": "Port Said",
+        "suez": "Suez",
+        "mansoura": "Mansoura",
+        "tanta": "Tanta",
+        "asyut": "Asyut",
+        "fayoum": "Fayoum",
+        "zagazig": "Zagazig",
+        "ismailia": "Ismailia",
+        "kafr_el_sheikh": "Kafr El Sheikh",
+        "damietta": "Damietta",
+        "luxor": "Luxor",
+        "qena": "Qena",
+        "sohag": "Sohag",
+        "beni_suef": "Beni Suef",
+        "minya": "Minya",
+        "aswan": "Aswan"
+      },
+      "england": {
+        "london": "London",
+        "birmingham": "Birmingham",
+        "manchester": "Manchester",
+        "leeds": "Leeds",
+        "sheffield": "Sheffield",
+        "liverpool": "Liverpool",
+        "bristol": "Bristol",
+        "newcastle": "Newcastle",
+        "sunderland": "Sunderland",
+        "wolverhampton": "Wolverhampton",
+        "nottingham": "Nottingham",
+        "leicester": "Leicester",
+        "coventry": "Coventry",
+        "kingston_upon_hull": "Kingston Upon Hull",
+        "stoke_on_trent": "Stoke On Trent",
+        "bradford": "Bradford",
+        "plymouth": "Plymouth",
+        "southampton": "Southampton",
+        "reading": "Reading",
+        "derby": "Derby"
+      },
+      "france": {
+        "paris": "Paris",
+        "marseille": "Marseille",
+        "lyon": "Lyon",
+        "toulouse": "Toulouse",
+        "nice": "Nice",
+        "nantes": "Nantes",
+        "strasbourg": "Strasbourg",
+        "montpellier": "Montpellier",
+        "bordeaux": "Bordeaux",
+        "lille": "Lille",
+        "rennes": "Rennes",
+        "reims": "Reims",
+        "le_havre": "Le Havre",
+        "saint_etienne": "Saint Etienne",
+        "toulon": "Toulon",
+        "grenoble": "Grenoble",
+        "dijon": "Dijon",
+        "angers": "Angers",
+        "nimes": "Nimes",
+        "villeurbanne": "Villeurbanne"
+      },
+      "germany": {
+        "berlin": "Berlin",
+        "hamburg": "Hamburg",
+        "munich": "Munich",
+        "cologne": "Cologne",
+        "frankfurt": "Frankfurt",
+        "stuttgart": "Stuttgart",
+        "dusseldorf": "Dusseldorf",
+        "leipzig": "Leipzig",
+        "dortmund": "Dortmund",
+        "essen": "Essen",
+        "bremen": "Bremen",
+        "dresden": "Dresden",
+        "hanover": "Hanover",
+        "nuremberg": "Nuremberg",
+        "duisburg": "Duisburg",
+        "bochum": "Bochum",
+        "wuppertal": "Wuppertal",
+        "bielefeld": "Bielefeld",
+        "bonn": "Bonn",
+        "munster": "Munster"
+      },
+      "greece": {
+        "athens": "Athens",
+        "thessaloniki": "Thessaloniki",
+        "patras": "Patras",
+        "heraklion": "Heraklion",
+        "larissa": "Larissa",
+        "volos": "Volos",
+        "rhodes": "Rhodes",
+        "ioannina": "Ioannina",
+        "chania": "Chania",
+        "agrinio": "Agrinio",
+        "chalcis": "Chalcis",
+        "katerini": "Katerini",
+        "trikala": "Trikala",
+        "serres": "Serres",
+        "lamia": "Lamia",
+        "alexandroupoli": "Alexandroupoli",
+        "xanthi": "Xanthi",
+        "kavala": "Kavala",
+        "kalamata": "Kalamata",
+        "veria": "Veria"
+      },
+      "japan": {
+        "tokyo": "Tokyo",
+        "yokohama": "Yokohama",
+        "osaka": "Osaka",
+        "nagoya": "Nagoya",
+        "sapporo": "Sapporo",
+        "fukuoka": "Fukuoka",
+        "kobe": "Kobe",
+        "kyoto": "Kyoto",
+        "kawasaki": "Kawasaki",
+        "saitama": "Saitama",
+        "hiroshima": "Hiroshima",
+        "sendai": "Sendai",
+        "kitakyushu": "Kitakyushu",
+        "chiba": "Chiba",
+        "sakai": "Sakai",
+        "niigata": "Niigata",
+        "hamamatsu": "Hamamatsu",
+        "kumamoto": "Kumamoto",
+        "sagamihara": "Sagamihara",
+        "shizuoka": "Shizuoka"
+      },
+      "korea": {
+        "seoul": "Seoul",
+        "busan": "Busan",
+        "incheon": "Incheon",
+        "daegu": "Daegu",
+        "daejeon": "Daejeon",
+        "gwangju": "Gwangju",
+        "suwon": "Suwon",
+        "ulsan": "Ulsan",
+        "changwon": "Changwon",
+        "goyang": "Goyang",
+        "yongin": "Yongin",
+        "cheongju": "Cheongju",
+        "jeonju": "Jeonju",
+        "ansan": "Ansan",
+        "cheonan": "Cheonan",
+        "namyangju": "Namyangju",
+        "hwaseong": "Hwaseong",
+        "bucheon": "Bucheon",
+        "gyeongju": "Gyeongju",
+        "chuncheon": "Chuncheon"
+      },
+      "low_countries": {
+        "amsterdam": "Amsterdam",
+        "brussels": "Brussels",
+        "rotterdam": "Rotterdam",
+        "the_hague": "The Hague",
+        "antwerp": "Antwerp",
+        "ghent": "Ghent",
+        "utrecht": "Utrecht",
+        "eindhoven": "Eindhoven",
+        "tilburg": "Tilburg",
+        "liege": "Liege",
+        "groningen": "Groningen",
+        "charleroi": "Charleroi",
+        "namur": "Namur",
+        "breda": "Breda",
+        "nijmegen": "Nijmegen",
+        "apeldoorn": "Apeldoorn",
+        "haarlem": "Haarlem",
+        "mons": "Mons",
+        "luxembourg_city": "Luxembourg City",
+        "enschede": "Enschede"
+      },
+      "ottoman": {
+        "constantinople": "Constantinople",
+        "cairo": "Cairo",
+        "baghdad": "Baghdad",
+        "damascus": "Damascus",
+        "aleppo": "Aleppo",
+        "bursa": "Bursa",
+        "izmir": "Izmir",
+        "salonica": "Salonica",
+        "adrianople": "Adrianople",
+        "tripoli": "Tripoli",
+        "mecca": "Mecca",
+        "medina": "Medina",
+        "jerusalem": "Jerusalem",
+        "mosul": "Mosul",
+        "belgrade": "Belgrade",
+        "tunis": "Tunis",
+        "algiers": "Algiers",
+        "sarajevo": "Sarajevo",
+        "skopje": "Skopje",
+        "tabriz": "Tabriz"
+      },
+      "persia": {
+        "tehran": "Tehran",
+        "mashhad": "Mashhad",
+        "isfahan": "Isfahan",
+        "karaj": "Karaj",
+        "tabriz": "Tabriz",
+        "shiraz": "Shiraz",
+        "qom": "Qom",
+        "ahvaz": "Ahvaz",
+        "kermanshah": "Kermanshah",
+        "urmia": "Urmia",
+        "zahedan": "Zahedan",
+        "rasht": "Rasht",
+        "hamadan": "Hamadan",
+        "arak": "Arak",
+        "yazd": "Yazd",
+        "ardabil": "Ardabil",
+        "bandar_abbas": "Bandar Abbas",
+        "zanjan": "Zanjan",
+        "sanandaj": "Sanandaj",
+        "kerman": "Kerman"
+      },
+      "rome": {
+        "rome": "Rome",
+        "alexandria": "Alexandria",
+        "antioch": "Antioch",
+        "carthage": "Carthage",
+        "constantinople": "Constantinople",
+        "ephesus": "Ephesus",
+        "pergamum": "Pergamum",
+        "smyrna": "Smyrna",
+        "mediolanum": "Mediolanum",
+        "thessalonica": "Thessalonica",
+        "lugdunum": "Lugdunum",
+        "londinium": "Londinium",
+        "colonia_agrippina": "Colonia Agrippina",
+        "gades": "Gades",
+        "hispalis": "Hispalis",
+        "tarraco": "Tarraco",
+        "massilia": "Massilia",
+        "brundisium": "Brundisium",
+        "arelate": "Arelate",
+        "emerita_augusta": "Emerita Augusta"
+      },
+      "spain": {
+        "madrid": "Madrid",
+        "barcelona": "Barcelona",
+        "valencia": "Valencia",
+        "seville": "Seville",
+        "zaragoza": "Zaragoza",
+        "malaga": "Malaga",
+        "murcia": "Murcia",
+        "palma": "Palma",
+        "las_palmas": "Las Palmas",
+        "bilbao": "Bilbao",
+        "alicante": "Alicante",
+        "cordoba": "Cordoba",
+        "valladolid": "Valladolid",
+        "vigo": "Vigo",
+        "gijon": "Gijon",
+        "lhospitalet_de_llobregat": "L'Hospitalet de Llobregat",
+        "acoruna": "A Coruña",
+        "vitoria_gasteiz": "Vitoria-Gasteiz",
+        "granada": "Granada",
+        "elche": "Elche"
+      },
+      "ussr": {
+        "moscow": "Moscow",
+        "leningrad": "Leningrad",
+        "tashkent": "Tashkent",
+        "baku": "Baku",
+        "minsk": "Minsk",
+        "kharkov": "Kharkov",
+        "gorky": "Gorky",
+        "novosibirsk": "Novosibirsk",
+        "sverdlovsk": "Sverdlovsk",
+        "tbilisi": "Tbilisi",
+        "kuibyshev": "Kuibyshev",
+        "omsk": "Omsk",
+        "donetsk": "Donetsk",
+        "alma_ata": "Alma Ata",
+        "chelyabinsk": "Chelyabinsk",
+        "yerevan": "Yerevan",
+        "dnepropetrovsk": "Dnepropetrovsk",
+        "kazan": "Kazan",
+        "perm": "Perm"
+      },
+      "vikings": {
+        "hedeby": "Hedeby",
+        "kaupang": "Kaupang",
+        "birka": "Birka",
+        "ribe": "Ribe",
+        "dublin": "Dublin",
+        "jelling": "Jelling",
+        "york": "York",
+        "roskilde": "Roskilde",
+        "lejre": "Lejre",
+        "trelleborg": "Trelleborg",
+        "uppsala": "Uppsala",
+        "trondheim": "Trondheim",
+        "oslo": "Oslo",
+        "sigtuna": "Sigtuna",
+        "aarhus": "Aarhus",
+        "lund": "Lund",
+        "vasteras": "Vasteras",
+        "viborg": "Viborg",
+        "stavanger": "Stavanger",
+        "reykjavik": "Reykjavik"
+      }
+    },
+    "ui": {
+      "dialogs": {
+        "unit": {
+          "move_errors": {
+            "no_moves": {
+              "title": "Unit can't move",
+              "message": "This unit does not have any movement points left. Please go to next turn."
+            },
+            "move_impassable": {
+              "title": "Unit can't move",
+              "message": "This unit can't move to this tile. It is impassable."
+            },
+            "move_path": {
+              "title": "Unit can't move",
+              "message": "This unit can't move to this tile. There is no path."
+            },
+            "other_unit": {
+              "title": "Unit can't move",
+              "message": "This unit can't move to this tile. There is another unit on it."
+            },
+            "unknown_issue": {
+              "title": "Unit can't move (bug)",
+              "message": "This unit can't move to this tile. There is an unknown issue. (Please report this issue): \n"
+            }
+          },
+          "found_city": {
+            "city_founded_by_other": {
+              "title": "A player has founded a city",
+              "message": "A player has founded a city."
+            },
+            "founded_own_capital": {
+              "title": "City founded",
+              "message": "You have founded an city, its now your capital."
+            },
+            "city_founded": {
+              "title": "City founded",
+              "message": "You have founded an city."
+            },
+            "city_already_exists": {
+              "title": "City already exists",
+              "message": "A city already exists on this tile."
+            },
+            "city_already_owned": {
+              "title": "Tile is owned by a player",
+              "message": "You cant found cities on tiles that are not neuteral or yours {rule_text})",
+              "game_rule": "\r\n\r\nRule: city_founding_in_own_territory is false, otherwise you can found cities on your own territory."
+            },
+            "tile_not_passable": {
+              "title": "Tile is not passable",
+              "message": "You cant found cities on tiles that are not passable."
+            },
+            "city_too_close": {
+              "title": "City is too close",
+              "message": "You cant found cities that are too close to other cities. {distance_rule_text}",
+              "game_rule": "\n\nRule: city_founding_distance_rule is \"{distance}\", otherwise you can found cities that are closer."
+            }
+          },
+          "build_improvement": {
+            "improvement_already_exists": {
+              "title": "Improvement already exists",
+              "message": "An improvement already exists on this tile."
+            },
+            "improvement_not_passable": {
+              "title": "Tile is not passable",
+              "message": "You cant build improvements on tiles that are not pass"
+            },
+            "improvement_not_owned": {
+              "title": "Tile is not owned",
+              "message": "You cant build improvements on tiles that are not owned by you."
+            },
+            "unit_cant_build": {
+              "title": "Unit can't build (error)",
+              "message": "This unit can't build improvements, this is a bug. (Please report this issue)"
+            }
+          }
+        }
+      },
+      "buttons": {
+        "accept": "Accept",
+        "cancel": "Cancel",
+        "close": "Close",
+        "next": "Next",
+        "previous": "Previous",
+        "ok": "OK",
+        "decline": "Decline"
+      },
+      "player_ui": {
+        "generics": {
+          "food": "Food",
+          "production": "Production",
+          "gold": "Gold",
+          "science": "Science",
+          "culture": "Culture",
+          "faith": "Faith"
+        },
+        "turn_button": {
+          "end_turn": "End Turn {turn}",
+          "on_turn": "Processing Turn {turn}"
+        },
+        "city": {
+          "current_button_label": "Current",
+          "current_button_idle": "Idle",
+          "actions_label": "Actions",
+          "population_label": "Pop: {population}({food_collected}/{food_required})",
+          "is_capital_label": "Capital: {yes_no}",
+          "tiles_label": "Tiles: {tiles}",
+          "player_label": "Player: {player}",
+          "gold_label": "Gold: {gold}",
+          "production_label": "Production: {production}",
+          "food_label": "Food: {food}",
+          "science_label": "Science: {science}",
+          "culture_label": "Culture: {culture}",
+          "faith_label": "Faith: {faith}",
+          "current_button_building": "Building: {building} {resources_got}/{resources_required}"
+        }
+      }
+    },
     "actions": {
       "unit": {
         "move": "Move",
@@ -314,8 +828,8 @@
             "name": "Lenin",
             "description": "Founder of Soviet Union"
           },
-          "gorbachev": {
-            "name": "Gorbachev",
+          "gorbatsjov": {
+            "name": "Gorbatsjov",
             "description": "Reformer, ended Cold War"
           },
           "peter": {
@@ -762,7 +1276,50 @@
               "description": "Internal game mechanics resource"
             }
           },
-
+          "chicken": {
+            "name": "Chicken",
+            "description": "A domesticated bird raised for meat and eggs."
+          },
+          "gems": {
+            "name": "Gems",
+            "description": "Precious stones used in jewelry and decoration."
+          },
+          "unions": {
+            "name": "Unions",
+            "description": "A union resource"
+          },
+          "sheep": {
+            "name": "Sheep",
+            "description": "Domesticated animals raised for wool and meat."
+          },
+          "clay": {
+            "name": "Clay",
+            "description": "A natural material used for pottery and construction."
+          },
+          "berries": {
+            "name": "Berries",
+            "description": "Small, edible fruits gathered from bushes."
+          },
+          "wood": {
+            "name": "Wood",
+            "description": "A fibrous material from trees used for construction and fuel."
+          },
+          "cotton": {
+            "name": "Cotton",
+            "description": "A soft, fluffy fiber used for textiles."
+          },
+          "stone": {
+            "name": "Stone",
+            "description": "A hard, solid mineral used for construction and tools."
+          },
+          "iron": {
+            "name": "Iron",
+            "description": "A strong, magnetic metal used for tools and construction."
+          },
+          "dyes": {
+            "name": "Dye",
+            "description": "A coloring material used for fabrics and other materials."
+          },
           "bison": {
             "name": "Bison",
             "description": "A large wild animal of the bovine family, important for food and raw materials."
@@ -834,6 +1391,14 @@
           "whales": {
             "name": "Whales",
             "description": "Large marine mammals hunted for their oil and meat."
+          },
+          "clams": {
+            "name": "Clams",
+            "description": "Marine bivalve mollusks, harvested for food."
+          },
+          "lobster": {
+            "name": "Lobster",
+            "description": "A large marine crustacean with a hard shell, prized for its meat."
           },
           "wheat": {
             "name": "Wheat",
@@ -1479,6 +2044,40 @@
       },
       "improvements": {
         "core": {
+          "basic": {
+            "mine": {
+              "name": "Mine",
+              "description": "Extracts valuable minerals from the ground."
+            },
+            "farm": {
+              "name": "Farm",
+              "description": "Cultivates crops for food production."
+            },
+            "lumber_mill": {
+              "name": "Lumber Mill",
+              "description": "Processes timber for construction and industry."
+            },
+            "quarry": {
+              "name": "Quarry",
+              "description": "Extracts stone and minerals for construction."
+            },
+            "camp": {
+              "name": "Camp",
+              "description": "Gathers resources from the surrounding area."
+            },
+            "pasture": {
+              "name": "Pasture",
+              "description": "Raises livestock for food and resources."
+            },
+            "plantation": {
+              "name": "Plantation",
+              "description": "Cultivates cash crops for trade and export."
+            },
+            "fishing_boat": {
+              "name": "Fishing Boat",
+              "description": "Harvests fish and seafood from the ocean."
+            }
+          },
           "general": {
             "beach_resort": {
               "name": "Beach Resort",
@@ -1632,6 +2231,24 @@
               "name": "Wind Farm",
               "description": "Facility for wind energy production"
             }
+          },
+          "city": {
+            "barracks": {
+              "name": "Barracks",
+              "description": "Military training facility"
+            },
+            "granary": {
+              "name": "Granary",
+              "description": "Food storage building"
+            },
+            "monument": {
+              "name": "Monument",
+              "description": "Cultural heritage site"
+            },
+            "palace": {
+              "name": "Palace",
+              "description": "Seat of government and residence"
+            }
           }
         }
       },
@@ -1743,8 +2360,8 @@
                 "name": "Commando",
                 "description": "Special forces unit"
               },
-              "corvete": {
-                "name": "Corvete",
+              "corvette": {
+                "name": "Corvette",
                 "description": "Small naval vessel"
               },
               "frigate": {
@@ -1791,8 +2408,8 @@
                 "name": "Settler",
                 "description": "Unit that founds new cities"
               },
-              "worker": {
-                "name": "Worker",
+              "builder": {
+                "name": "Builder",
                 "description": "Unit that constructs improvements"
               },
               "trader": {
@@ -1877,8 +2494,8 @@
                 "name": "Escort Duty",
                 "description": "Increases defense of nearby friendly units"
               },
-              "agile_manoeuvring": {
-                "name": "Agile Manoeuvring",
+              "agile_manoeuvering": {
+                "name": "Agile Manoeuvering",
                 "description": "Can evade mines."
               }
             },
@@ -1929,15 +2546,15 @@
                 "name": "Torpedoes",
                 "description": "Increases damage to naval units"
               },
-              "fire_supression": {
-                "name": "Fire Supression",
+              "fire_suppression": {
+                "name": "Fire Suppression",
                 "description": "Reduces damage taken"
               }
             },
             "heavy_cavalry": {
               "heavy_raiders": {
                 "name": "Heavy Raiders",
-                "description": "Increases civilian causalties during raids but increases gold"
+                "description": "Increases civilian casualties during raids but increases gold"
               },
               "armored": {
                 "name": "Armored",
@@ -1945,7 +2562,7 @@
               },
               "defensive_tactics": {
                 "name": "Lance",
-                "description": "Incrases units defences when attacked while stationary"
+                "description": "Increases units defenses when attacked while stationary"
               },
               "shield_wall": {
                 "name": "Shield Wall",
@@ -2191,16 +2808,16 @@
               }
             },
             "fighter": {
-              "dogfighting": {
-                "name": "Dogfighting",
+              "dog_fighting": {
+                "name": "Dog fighting",
                 "description": "Increases air unit's combat strength against other air units"
               },
               "flares": {
                 "name": "Flares",
                 "description": "Reduces damage taken from air defenses"
               },
-              "multirole": {
-                "name": "Multirole",
+              "multi_role": {
+                "name": "Multi_role",
                 "description": "Reduces air unit's combat strength against other air units"
               },
               "air_repair": {
@@ -2221,8 +2838,8 @@
                 "name": "Jet Engine",
                 "description": "Increases air unit's range"
               },
-              "upgraded_bombbays": {
-                "name": "Upgraded Bombbays",
+              "upgraded_bomb_bays": {
+                "name": "Upgraded Bomb bays",
                 "description": "Allows the unit to attack twice"
               },
               "flares": {

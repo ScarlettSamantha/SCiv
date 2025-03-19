@@ -1,17 +1,19 @@
-from typing import Dict, List, Tuple, Optional
-from data.tiles.base_tile import BaseTile
-from managers.world import World
 from heapq import heappop, heappush
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+from managers.world import World
+
+if TYPE_CHECKING:
+    from gameplay.city import City
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class TileRepository:
-    instance_ref_grid: World = World.get_instance()
-
     def __init__(self) -> None:
         pass
 
     @classmethod
-    def get_tile(cls, x: int, y: int) -> Optional[BaseTile]:
+    def get_tile(cls, x: int, y: int) -> Optional["BaseTile"]:
         """
         Retrieve the tile at the given (x, y) coordinate from the world's grid.
 
@@ -25,7 +27,18 @@ class TileRepository:
         return None
 
     @classmethod
-    def get_tiles_in_radius(cls, tile: BaseTile, radius: int) -> List[BaseTile]:
+    def get_cities_in_radius(cls, tile: "BaseTile", radius: int) -> List["City"]:
+        return [tile.city for tile in cls.get_tiles_in_radius(tile, radius) if tile.city is not None]
+
+    @classmethod
+    def is_near_map_edge(cls, map_dimensions: Tuple[int, int], tile: "BaseTile", threshold: int = 3) -> bool:
+        """Returns True if the tile is too close to the edge of the map."""
+        x, y = tile.get_map_cords()
+        map_width, map_height = map_dimensions
+        return x < threshold or y < threshold or x >= map_width - threshold or y >= map_height - threshold
+
+    @classmethod
+    def get_tiles_in_radius(cls, tile: "BaseTile", radius: int) -> List["BaseTile"]:
         r"""
         Retrieves all tiles within a given hexagonal radius from the specified tile.
 
@@ -110,7 +123,7 @@ class TileRepository:
         return cube_x, cube_y, cube_z
 
     @classmethod
-    def heuristic(cls, tile_a: BaseTile, tile_b: BaseTile) -> float:
+    def heuristic(cls, tile_a: "BaseTile", tile_b: "BaseTile") -> float:
         r"""
         Computes the hex distance between two tiles by converting them to cube coordinates.
 
@@ -153,12 +166,16 @@ class TileRepository:
         return abs(tile_a.x - tile_b.x) + abs(tile_a.y - tile_b.y)
 
     @classmethod
-    def get_neighbors(cls, tile: "BaseTile", check_passable: bool = True, climbable: bool = False) -> List["BaseTile"]:
+    def get_neighbors(
+        cls, tile: "BaseTile", radius: int = 1, check_passable: bool = False, climbable: bool = False
+    ) -> List["BaseTile"]:
         r"""
-        Returns neighboring tiles in an offset hex grid (q-odd layout) using cls.instance_ref_grid.grid.
+        Returns all tiles within the specified radius in an offset hex grid (q-odd layout) using cls.instance_ref_grid.grid.
+
+        For a radius of 1, neighbors are the 6 adjacent tiles. For larger radii, any tile within that many steps is included.
 
         For even x-coordinates, the neighbor directions are:
-            (+1,  0), (+1, -1), (0, -1), (-1, -1), (-1,  0), (0, +1)
+            (+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)
 
         For odd x-coordinates, the directions are:
             (+1,  0), (0, -1), (-1,  0), (-1, +1), (0, +1), (+1, +1)
@@ -173,31 +190,48 @@ class TileRepository:
                     /     \
                (0,+1)   (+1,-1)
 
-        The method also optionally filters tiles based on whether they are passable or climbable.
+        The method optionally filters tiles based on whether they are passable or climbable.
 
         :param tile: The tile whose neighbors are to be fetched.
+        :param radius: The maximum distance from the tile to be included. Default is 1.
         :param check_passable: If True, only include passable tiles.
         :param climbable: If True, only include tiles that are climbable.
-        :return: List of neighboring Tile objects.
+        :return: List of neighboring Tile objects within the specified radius.
         :raises ValueError: If the global grid reference is not set.
         """
-        if cls.instance_ref_grid is None:
+        from collections import deque
+
+        if World.get_instance() is None:
             raise ValueError("instance_ref_grid must be set before calling get_neighbors")
 
         directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
         directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
-        directions = directions_even if tile.x % 2 == 0 else directions_odd
 
-        neighbors = []
-        for dx, dy in directions:
-            neighbor: BaseTile | None = cls.instance_ref_grid.grid.get((tile.x + dx, tile.y + dy))
-            if neighbor:
-                if check_passable and not neighbor.is_passable():
-                    continue
-                if climbable and not neighbor.get_climbable():
-                    continue
-                neighbors.append(neighbor)
-        return neighbors
+        visited = set([tile])
+        result = []
+        queue = deque([(tile, 0)])
+
+        while queue:
+            current_tile, dist = queue.popleft()
+            # Include tiles that are within [1, radius] steps, but not the original tile
+            if 0 < dist <= radius:
+                result.append(current_tile)
+            if dist < radius:
+                # Determine neighbor directions based on odd/even x of current tile
+                curr_directions = directions_even if current_tile.x % 2 == 0 else directions_odd
+                for dx, dy in curr_directions:
+                    nx, ny = current_tile.x + dx, current_tile.y + dy
+                    neighbor = World.get_instance().grid.get((nx, ny))
+                    if neighbor and neighbor not in visited:
+                        # Apply passable or climbable checks
+                        if check_passable and not neighbor.is_passable():
+                            continue
+                        if climbable and not neighbor.get_climbable():
+                            continue
+                        visited.add(neighbor)
+                        queue.append((neighbor, dist + 1))
+
+        return result
 
     @classmethod
     def astar(cls, start: "BaseTile", goal: "BaseTile", movement_speed: float) -> Optional[List["BaseTile"]]:
@@ -232,13 +266,13 @@ class TileRepository:
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
         open_set = []
-        heappush(open_set, (0, start))
+        heappush(open_set, (0, id(start), start))  # Use id(start) for unique sorting
         came_from: Dict["BaseTile", "BaseTile"] = {}
         g_score: Dict["BaseTile", float] = {start: 0.0}
         f_score: Dict["BaseTile", float] = {start: cls.heuristic_tiles(start, goal)}
 
         while open_set:
-            _, current = heappop(open_set)
+            _, __, current = heappop(open_set)  # Extract current safely
 
             if current == goal:
                 path = []
@@ -248,14 +282,14 @@ class TileRepository:
                 path.append(start)
                 return path[::-1]
 
-            for neighbor in cls.get_neighbors(current):
-                tentative_g_score = g_score[current] + neighbor.movement_cost / movement_speed
+            for neighbor in cls.get_neighbors(current, check_passable=True):
+                tentative_g_score = g_score[current] + (neighbor.movement_cost / movement_speed)
 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score[neighbor] = tentative_g_score + cls.heuristic_tiles(neighbor, goal)
-                    heappush(open_set, (f_score[neighbor], neighbor))
+                    heappush(open_set, (f_score[neighbor], id(neighbor), neighbor))  # Use id() for tie-breaking
 
         return None  # No path found
 
@@ -337,8 +371,8 @@ class TileRepository:
         err = dx - dy
 
         while (x0, y0) != (x1, y1):
-            if (x0, y0) in cls.instance_ref_grid.grid:
-                tile: "BaseTile" = cls.instance_ref_grid.grid[(x0, y0)]
+            if (x0, y0) in World.get_instance().grid:
+                tile: "BaseTile" = World.get_instance().grid[(x0, y0)]
                 if tile.movement_cost > 10:  # Threshold for impassable terrain.
                     return False
 
@@ -489,3 +523,8 @@ class TileRepository:
                 heappush(open_set, (f_score[neighbor], neighbor))
 
         return None  # No path found
+
+    @staticmethod
+    def hex_distance(tile1: "BaseTile", tile2: "BaseTile") -> int:
+        """Calculate the hex grid distance between two tiles."""
+        return (abs(tile1.x - tile2.x) + abs(tile1.y - tile2.y)) // 2

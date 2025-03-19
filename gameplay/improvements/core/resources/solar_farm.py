@@ -1,15 +1,15 @@
-from __future__ import annotations
 from gameplay.improvement import Improvement
-from gameplay.tile_yield import TileYield
+from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class SolarFarm(Improvement):
+    name = _t("content.improvements.core.resources.solar_farm.name")
+    description = _t("content.improvements.core.resources.solar_farm.description")
+    placeable_on_tiles = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.resource.solar_farm",
-            _t("content.improvements.core.resource.solar_farm.name"),
-            _t("content.improvements.core.resource.solar_farm.description"),
             *args,
             **kwargs,
         )
@@ -17,4 +17,4 @@ class SolarFarm(Improvement):
         self.health = 50
         self.max_health = 50
 
-        self.tile_yield_improvement = TileYield(name="solar_farm", food=1.0, mode=TileYield.ADDITIVE)
+        self.tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)

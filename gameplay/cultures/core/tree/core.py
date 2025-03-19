@@ -1,13 +1,11 @@
-from __future__ import annotations
 from gameplay.culture import CultureTree
 from managers.i18n import _t
-
-from openciv.engine.additions.pyload import PyLoad
+from system.pyload import PyLoad
 
 
 class CoreCultureTree(CultureTree):
     def __init__(self, *args, **kwargs):
-        super(*args, **kwargs).__init__(
+        super().__init__(
             key="core.culture.tree",
             name=_t("content.culture.tree.core.name"),
             description=_t("content.culture.tree.core.name"),

@@ -1,100 +1,93 @@
-from __future__ import annotations
-from gameplay.resources.core.mechanics._base import BaseGreatMechanicResource
-from managers.i18n import _t
-from typing import Union
+from typing import Dict, Tuple, Type
+
+from gameplay.resources.core.mechanics.mechanic_resource import BaseGreatMechanicResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, _t
 
 
 class GreatScientist(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_science",
-            _t("content.resources.great_person_science.name"),
-            _t("content.resources.great_person_science.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great.scientist"
+    name: T_TranslationOrStr = _t("content.greats.core.trees.scientists.name")
+    description: T_TranslationOrStr = _t("content.greats.core.trees.scientists.description")
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
+    spawn_amount: float | Tuple[float, float] = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatArtist(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_culture",
-            _t("content.resources.great_person_culture.name"),
-            _t("content.resources.great_person_culture.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_artist"
+    name = _t("content.resources.great_person_culture.name")
+    description = _t("content.resources.great_person_culture.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatHero(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_hero",
-            _t("content.resources.great_person_hero.name"),
-            _t("content.resources.great_person_hero.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_hero"
+    name = _t("content.resources.great_person_hero.name")
+    description = _t("content.resources.great_person_hero.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatHoly(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_faith",
-            _t("content.resources.great_person_faith.name"),
-            _t("content.resources.great_person_faith.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_holy"
+    name = _t("content.resources.great_person_faith.name")
+    description = _t("content.resources.great_person_faith.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatMilitary(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_military",
-            _t("content.resources.great_person_military.name"),
-            _t("content.resources.great_person_military.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_military"
+    name = _t("content.resources.great_person_military.name")
+    description = _t("content.resources.great_person_military.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatEngineer(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_engineer",
-            _t("content.resources.great_person_engineer.name"),
-            _t("content.resources.great_person_engineer.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_engineer"
+    name = _t("content.resources.great_person_engineer.name")
+    description = _t("content.resources.great_person_engineer.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatCommerece(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_commerece",
-            _t("content.resources.great_person_commerece.name"),
-            _t("content.resources.great_person_commerece.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_commerece"
+    name = _t("content.resources.great_person_commerece.name")
+    description = _t("content.resources.great_person_commerece.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
 
 
 class GreatExplorer(BaseGreatMechanicResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.great_person_explorer",
-            _t("content.resources.great_person_explorer.name"),
-            _t("content.resources.great_person_explorer.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.great_person_explorer"
+    name = _t("content.resources.great_person_explorer.name")
+    description = _t("content.resources.great_person_explorer.description")
+    spawn_chance = 0
+    spawn_amount = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)

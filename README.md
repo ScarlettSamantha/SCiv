@@ -6,167 +6,174 @@
 
 ## Running it
 
-At the moment it will run *something* and I will attempt to keep the main branch booting into the "game" at the least.
+> Known Bugs: [Known Bugs](meta/known_bugs.md)
+
+At the moment it will run a basic POC as of version 0.1 it contains some gameplay but is still more about implementation.
 
 ### How to run it
 
-Its not that hard to actually run it as its panda3d now.
+Its not that hard to actually run it as its panda3d now. Please do checkout the development branch for now as the main branch will be very outdated and the dev benches should work semi ok as most features are made in feature branches.
 
+#### Ubuntu
+
+It might give you the standard error when trying to install python packages but ether pip or venv are required. or you need to pull your own packages from the distro's repository (eg: apt install python packages). This is why I have provided a venv route, you can choose to just system install the packages.
+
+```bash
+sudo apt install git python3-pip python3-venv
 ```
-git clone git@github.com:ScarlettSamantha/SCiv.git
+
+```bash
+git clone https://github.com/ScarlettSamantha/SCiv.git
 cd SCiv
 python3 -m venv .
+source bin/activate
 bin/pip install -r requirements.txt
 python3 main.py
 ```
 
+#### Requirements
+
+It requires (*for now*) a unix OS, Python3.11 or greater and hardware spec wise it depends on map size I can run a 150x150 map at zoom levels with a *7800XT* when using normal map sizes eg: *90x120* ish requires about `750MB` ram and I expect this to grow to about `2-4GB` ram required. VRAM it seems to use around `500MB` I expect this to row to some `3-6GB` In the end depending on the textures and models. its mostly single core usage so a strong single core performing cpu should be better. its also at normal zoom levels at the moment of writing on my pc cpu bound (Intel 13th gen i5).
+
 ### Debugging
+
+I don't have windows or used it in a while so I cant help with windows debugging.
 
 You can connect it to pstats you need to have it listening on the default port `5185` then you press `p` to activate pstats broadcasting and `l` to stop it again.
 
 In the `config.prc` is defined it will also debug GPU data but if this is causing issues you can disable it there.
 
+#### Lenses
+
+There are also lenses for debugging or you can use the buttons in the debug ui they will trigger the same functions.
+Beware the menu and button states don't update each other tough
+
+- `b`: Highlights units in `blue` while tiles that have no units in `red`
+- `n`: Highlights resources and their types on the map `yellow` for strategic, `green`/`yellow` for bonus, `red` for none. please note colors might look different
+- `m`: Highlights water and different types of it, `tiel` is coastal and shallow, `blue` deeper and sea
+- `z`: Calculates and toggles major icons on tiles
+- `x`: Toggles big buttons on tiles
+- `c`: Toggles small icons on tiles
+
 #### Issues
 
-* Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
-* Why venv: Because if I tell you to break system packages and something goes wrong people get mad.
+- Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
+- Why venv: Because if I tell you to break system packages and something goes wrong people get mad.
 
 ## Project
 
-### 0.1.0 Goals
+> Structure [Project Structure](meta/structure.md)
 
-* [x] Have world render
-* [ ] Have resource system
-* [x] Have ok atleast map generator
-* [x] Manage entities
-* [x] Spawn units
-* [ ] Unit actions
-* [ ] Process a turn
-* [ ] Cities that can build something
-* [ ] Basic UI element
-* [ ] Movement for units both pathfinded and weighted + UI
-* [x] Basic backend system integration like managers, systems, logging
-* [x] Proper Implementation UI system (kivy)
-* [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), meaby UI for this.
+> Improvements/ToDo's [TODO](meta/todo.md)
 
-### Other information
+### 0.1.0 Goals - Poc/Demo
 
-* [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
-* [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
-* [Changelog](CHANGELOG.md) - Automatically generated changelog.
-* [File Structure](https://github.com/ScarlettSamantha/openciv-meta/blob/main/File%20Structure.md) - The project structure
+The aim of the 0.1.0 release is to have core systems (engine, managers, rendering, and world mechanics) functional and testable.
+
+#### Key Objective
+
+At this stage, I want the core gameplay loop to work at a basic level, meaning:
+
+- A city can build a builder unit.
+- The builder can construct an improvement on a tile.
+- The improvement will modify tile yields, affecting production.
+- A playable PoC or demo would be ideal, but this might be pushed to 0.2.0 since saving/loading mechanics are not planned for 0.1.0 but are a priority for 0.2.0.
 
 <details>
 
-<summary> <b>Progress</b> on systems: </summary>
+- [x] Have world render
+- [x] Have resource system
+- [x] Have ok at least map generator
+- [x] Manage entities
+- [x] Spawn units
+- [x] Unit actions
+- [x] Process a minimal turn
+- [X] Cities that can build something
+- [x] Basic player ownership and city being aware of tiles around it
+- [x] UI city show ownership of tiles around it.
+- [x] Basic UI element
+- [x] Movement for units both path find-ed and weighted + UI
+- [x] Basic backend system integration like managers, systems, logging
+- [x] Proper Implementation UI system (kivy)
+- [x] Effects implementation
+- [x] Improvements on Tiles
 
-|  System  |       Docs       |                             Name                              | Priority |             Expected Version Implementation              |    Thought out     |      Skeleton      | Basic Implementation |    Integration     |  UI   | Play  | Final Implementation | Balance |
-| :------: | :--------------: | :-----------------------------------------------------------: | :------: | :------------------------------------------------------: | :----------------: | :----------------: | :------------------: | :----------------: | :---: | :---: | :------------------: | :-----: |
-|  engine  | [\[doc\]](meta/) |             [Logging](openciv/engine/loading.py)              |          |         [v0.1 - PoC](./versions/0.0.1-poc.md)         | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  | :heavy_check_mark: |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |        [Resource Maths](openciv/gameplay/resource.py)         |          |         [v0.1 - PoC](./versions/0.0.1-poc.md)         | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |                [Ages](openciv/gameplay/age.py)                |          |         [v0.2 - PoC](./versions/0.0.1-poc.md)         |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |              [Saving](openciv/engine/saving.py)               |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |              [Loading](openciv/engine/saving.py)              |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |              [Tiles](openciv/gameplay/tiles.py)               |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |           [Yields](openciv/gameplay/tile_yield.py)            |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |            [Turn](openciv/engine/managers/turn.py)            |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |             [Combat](openciv/gameplay/combat.py)              |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |         [tile layers](openciv/engine/tile_layers.py)          |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |        [Graphics](openciv/engine/managers/graphics.py)        |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |          [Sounds](openciv/engine/managers/sound.py)           |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |        [Mod Support](openciv/engine/managers/mods.py)         |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |         [Land Plane](openciv/gameplay/planes/land.py)         |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |                [CPU AI](openciv/engine/ai.py)                 |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |        [Space Plane](openciv/gameplay/planes/space.py)        |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |         [Air Plane](openciv/gameplay/planes/land.py)          |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |        [Naval Plane](openciv/gameplay/planes/naval.py)        |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|  engine  | [\[doc\]](meta/) |     [Multiplayer](openciv/engine/managers/multiplayer.py)     |          | [1.1 - Multiplayer](./versions/1.1.0-multiplayer.md)  |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|    UI    | [\[doc\]](meta/) |    [Main Menu and Systems](openciv/engine/UI/main_menu.py)    |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|    UI    | [\[doc\]](meta/) | [Yield Overview](openciv/engine/UI/screens/yield_overview.py) |          |    [v0.4 - Alpha](./versions/0.2.0-development.md)    |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-|    UI    | [\[doc\]](meta/) |       [Options Menu](openciv/engine/UI/options_menu.py)       |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |            [Tech](openciv/engine/managers/tech.py)            |          |         [v0.1 - PoC](./versions/0.0.1-poc.md)         | :heavy_check_mark: | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |           [Textures](openciv/gameplay/textures.py)            |          |         [v0.1 - PoC](./versions/0.0.1-poc.md)         |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |   [Culture \(Civics\)](openciv/engine/managers/culture.py)    |          |         [v0.1 - PoC](./versions/0.0.1-poc.md)         | :heavy_check_mark: | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |              [Greats](openciv/gameplay/great.py)              |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |        [Victory Conditions](openciv/gameplay/victory)         |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |             [Leaders](openciv/gameplay/leader.py)             |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |           [Civs](openciv/gameplay/civilization.py)            |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |             [Effects](openciv/gameplay/effect.py)             |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |                [Tax](openciv/gameplay/tax.py)                 |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |          [Happiness](openciv/gameplay/happiness.py)           |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |         [Tile yields](openciv/gameplay/tile_yield.py)         |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |             [Cities](openciv/gameplay/cities.py)              |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |               [Units](openciv/gameplay/unit.py)               |          | [v0.2 - Development](./versions/0.2.0-development.md) | :heavy_check_mark: | :heavy_check_mark: |  :heavy_check_mark:  |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |          [Events](openciv/gameplay/events/event.py)           |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |             [Wonders](openciv/gameplay/wonder.py)             |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |           [Buildings](openciv/gameplay/building.py)           |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |            [Citizens](openciv/gameplay/citizen.py)            |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |                [Map](openciv/gameplay/map.py)                 |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |      [Goverments+Anarchy](openciv/gameplay/goverment.py)      |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |      [Ground Combat](openciv/gameplay/combat/ground.py)       |          | [v0.2 - Development](./versions/0.2.0-development.md) |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |               [Moods](openciv/gameplay/mood.py)               |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |       [Personalities](openciv/gameplay/personality.py)        |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |             [Empire](openciv/gameplay/empire.py)              |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |              [Trade](openciv/gameplay/trade.py)               |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |              [Rivers](openciv/gameplay/river.py)              |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |        [Electricity](openciv/gameplay/electricity.py)         |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |          [Border Growth](openciv/gameplay/border.py)          |          |   [v0.3 - Pre-Alpha](./versions/0.3.0-pre-alpha.md)   |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |            [Climate](openciv/gameplay/climate.py)             |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |             [Gossip](openciv/gameplay/gossip.py)              |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |           [Alliances](openciv/gameplay/alliance.py)           |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |               [Spying](openciv/gameplay/spy.py)               |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |     [World Congress](openciv/gameplay/world_congress.py)      |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |            [Unit Items](openciv/gameplay/item.py)             |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |          [Influence](openciv/gameplay/influence.py)           |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |         [Air Combat](openciv/gameplay/combat/air.py)          |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |       [Naval Combat](openciv/gameplay/combat/naval.py)        |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |           [Satelites](openciv/gameplay/satelite.py)           |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |      [Advanced Diplomacy](openciv/gameplay/diplomacy.py)      |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |        [Unit Promotion](openciv/gameplay/promotion.py)        |          |       [v0.4 - Alpha](./versions/0.4.0-alpha.md)       |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-| gameplay | [\[doc\]](meta/) |     [Dynamic Naming](openciv/gameplay/dynamic_naming.py)      |          |     [1.0 - Release](./versions/1.0.0-release.md)      |                    | :heavy_check_mark: |                      |                    |       |       |                      |         |
-
-\*:Ready - Meaning that its in a state where I dont think it will need major work anymore just adjustments.
-</div>
 </details>
 
-### Vision
+### 0.2.0 Goals - Dev
 
-> [Main document](meta/vision.md)
+The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
 
-SCiv aims to create a larger and more complex game than Civilization VI, featuring a greater number of civilizations and deeper gameplay mechanics. Our goal is to build a game that retains the fun and engaging core gameplay of Civ6 while enhancing its complexity and mod-ability from the ground up. My aim is to create a more Stellaris-style Civ with more interesting things to do.
+- [ ] Saving/Loading + GUI
+- [ ] Map regeneration
+- [ ] Barbarians + Nature player
+- [ ] Map gen parameters in GUI
+- [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), maybe UI for
+this.
+- [ ] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
+- [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
+- [ ] City/Empire borders drawn
+- [ ] Change log generation + Auto versioning
+- [ ] Working research
+- [ ] Civic system implementation
+- [ ] Hide development things behind a toggle.
+- [ ] Settings menu
+- [ ] Basic documentation
+- [ ] Dynamic spawning of models when buildings/improvements get build
 
-### Pitfalls
+### (Provisional) 0.3.0 Goals - Alpha
 
-This is a lot of work, and the scale of the systems is significant. The main challenge might come from the lack of relevant game development experience. Currently, performance is acceptable, but we may need to revisit some aspects in the future. With careful planning and foresight, we hope to avoid major issues. But reality is almost never this good.
+Adding more functionality to already existing systems and flushing out the combat system and working on units that can inhabit a other plane eg: air, water and space(satellites) units.
+
+This should be the first real "playable" version that should be some level of fun.
+
+<details>
+
+- [ ] Unit embarkation/disembarkation.
+- [ ] Sea/Air units
+- [ ] Show result before moving
+- [ ] Wonders
+- [ ] (?) Basic enemy AI
+- [ ] Unit promotions and exp
+- [ ] Auto move if a move action is to far to do it at the end of the next turn
+- [ ] Build queue
+- [ ] Battle result calculation UI
+- [ ] Basic in-game codex UI (not fully implemented)
+- [ ] Better looking tiles
+- [ ] Rivers (navigable ?)
+- [ ] City renaming/manual naming
+- [ ] Rule customizer
+
+</details>
+
+### Other information
+
+- [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
+- [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
+- [Changelog](CHANGELOG.md) - Automatically generated changelog.
+- [File Structure](meta/structure.md) - The project structure
+- [Todo](meta/todo.md) - Things that still need to be done in current codebase.
+- [Signals](meta/technical/signals.md) - Signals used to send to other elements of the code
+- [Rules](meta/technical/rules.md) - The rules that are customizable for the players. (customizer in later version ~0.3)
+- [Workings](meta/technical/workings.md) - How the systems work in a abstract way.
 
 ## Game
 
 ### Mechanics
 
-* [Ages](./ideas/gameplay/age.md)
-* [Climate](./ideas/gameplay/climate.md)
-* [Disease](./ideas/gameplay/disease.md)
-* [Yields](./ideas/gameplay/yields.md)
-* [Movement](./ideas/gameplay/mechanics/movement.md)
-* [Religion](./ideas/gameplay/mechanics/religion.md)
+> @todo
 
 ### Wonders
 
-* [Early](./ideas/wonders/early.md)
-* [Mid](./ideas/wonders/mid.md)
-* [Late](./ideas/wonders/late.md)
+> @todo
 
 ### Greats
 
-* [Artists](./ideas/gameplay/greats/artist.md)
-* [Commercial](./ideas/gameplay/greats/commercial.md)
-* [Folk Hero](./ideas/gameplay/greats/hero.md)
-* [Holy](./ideas/gameplay/greats/faith.md)
-* [Generals & Admirals](./ideas/gameplay/greats/military.md)
-* [Engineers](./ideas/gameplay/greats/production.md)
-* [Scientists](./ideas/gameplay/greats/science.md)
+> @todo
 
 ### Resources
+
+<details>
 
 | Resource          | Type                                                    | Code                                                  | Docs                                               |
 | ----------------- | ------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------- |
@@ -206,7 +213,11 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | Rare Earth Metals | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/rare_earth_metals.py) | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
 | Uranium           | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/uranium.py)           | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
 
+</details>
+
 ### Civilizations
+
+<details>
 
 | Civilization                                                  | Wikipedia Link                                                         | Code                                                     |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
@@ -229,61 +240,46 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | [USSR](./ideas/civs/ussr.md)                       | [Soviet Union](https://en.wikipedia.org/wiki/Soviet_Union)             | [code](openciv/gameplay/civilization/ussr.py)            |
 | [Vikings](./ideas/civs/vikings.md)                 | [Vikings](https://en.wikipedia.org/wiki/Vikings)                       | [code](openciv/gameplay/civilization/vikings.py)         |
 
+</details>
+
 ### Leaders
 
-| Leader                                                                         | Wikipedia Link                                                                                       | Code                                                        |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| [Abraham Lincoln](./ideas/gameplay/leaders/abraham_lincoln.md)                 | [Abraham Lincoln (American Empire)](https://en.wikipedia.org/wiki/Abraham_Lincoln)                   | [code](openciv/gameplay/leaders/abraham_lincoln.py)         |
-| [Alexander](./ideas/gameplay/leaders/alexander.md)                             | [Alexander the Great (Greece)](https://en.wikipedia.org/wiki/Alexander_the_Great)                    | [code](openciv/gameplay/leaders/alexander.py)               |
-| [Ambiorix](./ideas/gameplay/leaders/ambiorix.md)                               | [Ambiorix (Low Countries)](https://en.wikipedia.org/wiki/Ambiorix)                                   | [code](openciv/gameplay/leaders/ambiorix.py)                |
-| [Atatürk](./ideas/gameplay/leaders/attaturk.md)                                | [Mustafa Kemal Atatürk (Ottoman)](https://en.wikipedia.org/wiki/Mustafa_Kemal_Atat%C3%BCrk)          | [code](openciv/gameplay/leaders/attaturk.py)                |
-| [Augustus](./ideas/gameplay/leaders/augustus.md)                               | [Augustus (Rome)](https://en.wikipedia.org/wiki/Augustus)                                            | [code](openciv/gameplay/leaders/augustus.py)                |
-| [Caesar](./ideas/gameplay/leaders/caesar.md)                                   | [Julius Caesar (Rome)](https://en.wikipedia.org/wiki/Julius_Caesar)                                  | [code](openciv/gameplay/leaders/caesar.py)                  |
-| [Charlemagne](./ideas/gameplay/leaders/charlemagne.md)                         | [Charlemagne (France)](https://en.wikipedia.org/wiki/Charlemagne)                                    | [code](openciv/gameplay/leaders/charlemagne.py)             |
-| [Charles III](./ideas/gameplay/leaders/charles_iii.md)                         | [Charles III (Spain)](https://en.wikipedia.org/wiki/Charles_III_of_Spain)                            | [code](openciv/gameplay/leaders/charles_iii.py)             |
-| [Charles V](./ideas/gameplay/leaders/charles_v.md)                             | [Charles V (Holy Roman Empire)](https://en.wikipedia.org/wiki/Charles_V,_Holy_Roman_Emperor)         | [code](openciv/gameplay/leaders/charles_v.py)               |
-| [Cleopatra](./ideas/gameplay/leaders/cleopatra.md)                             | [Cleopatra (Egypt)](https://en.wikipedia.org/wiki/Cleopatra)                                         | [code](openciv/gameplay/leaders/cleopatra.py)               |
-| [Cnut](./ideas/gameplay/leaders/cnut.md)                                       | [Cnut the Great (Vikings)](https://en.wikipedia.org/wiki/Cnut)                                       | [code](openciv/gameplay/leaders/cnut.py)                    |
-| [Constantine](./ideas/gameplay/leaders/constantine.md)                         | [Constantine the Great (Byzantine)](https://en.wikipedia.org/wiki/Constantine_the_Great)             | [code](openciv/gameplay/leaders/constantine.py)             |
-| [Darius](./ideas/gameplay/leaders/darius.md)                                   | [Darius the Great (Persia)](https://en.wikipedia.org/wiki/Darius_the_Great)                          | [code](openciv/gameplay/leaders/darius.py)                  |
-| [De Gaulle](./ideas/gameplay/leaders/de_gaulle.md)                             | [Charles de Gaulle (France)](https://en.wikipedia.org/wiki/Charles_de_Gaulle)                        | [code](openciv/gameplay/leaders/de_gaulle.py)               |
-| [Elizabeth](./ideas/gameplay/leaders/elizabeth.md)                             | [Elizabeth I (England)](https://en.wikipedia.org/wiki/Elizabeth_I)                                   | [code](openciv/gameplay/leaders/elizabeth.py)               |
-| [FDR](./ideas/gameplay/leaders/fdr.md)                                         | [Franklin D. Roosevelt (American Empire)](https://en.wikipedia.org/wiki/Franklin_D._Roosevelt)       | [code](openciv/gameplay/leaders/fdr.py)                     |
-| [Giovanni di Bicci de' Medici](./ideas/gameplay/leaders/goi.md)                | [Giovanni di Bicci de' Medici (Italy)](https://en.wikipedia.org/wiki/Giovanni_di_Bicci_de%27_Medici) | [code](openciv/gameplay/leaders/goi.py)                     |
-| [Gorbachev](./ideas/gameplay/leaders/gorbashov.md)                             | [Mikhail Gorbachev (USSR)](https://en.wikipedia.org/wiki/Mikhail_Gorbachev)                          | [code](openciv/gameplay/leaders/gorbashov.py)               |
-| [Herald](./ideas/gameplay/leaders/herald.md)                                   | [Herald of the Great Danelaw (Vikings)](https://en.wikipedia.org/wiki/Herald_of_the_Great_Danelaw)   | [code](openciv/gameplay/leaders/herald.py)                  |
-| [Isabella](./ideas/gameplay/leaders/isabella.md)                               | [Isabella I of Castile (Spain)](https://en.wikipedia.org/wiki/Isabella_I_of_Castile)                 | [code](openciv/gameplay/leaders/isabella.py)                |
-| [James](./ideas/gameplay/leaders/james.md)                                     | [James VI and I (England)](https://en.wikipedia.org/wiki/James_VI_and_I)                             | [code](openciv/gameplay/leaders/james.py)                   |
-| [Joan van Oldenbarnevelt](./ideas/gameplay/leaders/joan_van_oldenbarnevelt.md) | [Johan van Oldenbarnevelt (Low Countries)](https://en.wikipedia.org/wiki/Johan_van_Oldenbarnevelt)   | [code](openciv/gameplay/leaders/joan_van_oldenbarnevelt.py) |
-| [Justinian](./ideas/gameplay/leaders/justinian.md)                             | [Justinian I (Byzantine)](https://en.wikipedia.org/wiki/Justinian_I)                                 | [code](openciv/gameplay/leaders/justinian.py)               |
-| [Kamehameha](./ideas/gameplay/leaders/kamehameha.md)                           | [Kamehameha I (Hawaii)](https://en.wikipedia.org/wiki/Kamehameha_I)                                  | [code](openciv/gameplay/leaders/kamehameha.py)              |
-| [Kublai](./ideas/gameplay/leaders/kublai.md)                                   | [Kublai Khan (Mongolia)](https://en.wikipedia.org/wiki/Kublai_Khan)                                  | [code](openciv/gameplay/leaders/kublai.py)                  |
-| [Lenin](./ideas/gameplay/leaders/lenin.md)                                     | [Vladimir Lenin (USSR)](https://en.wikipedia.org/wiki/Vladimir_Lenin)                                | [code](openciv/gameplay/leaders/lenin.py)                   |
-| [Leonidas](./ideas/gameplay/leaders/leonidas.md)                               | [Leonidas I (Greece)](https://en.wikipedia.org/wiki/Leonidas_I)                                      | [code](openciv/gameplay/leaders/leonidas.py)                |
-| [Louis XIV](./ideas/gameplay/leaders/louis.md)                                 | [Louis XIV (France)](https://en.wikipedia.org/wiki/Louis_XIV)                                        | [code](openciv/gameplay/leaders/louis.py)                   |
-| [Meiji](./ideas/gameplay/leaders/meiji.md)                                     | [Meiji Emperor (Japan)](https://en.wikipedia.org/wiki/Meiji_(emperor))                               | [code](openciv/gameplay/leaders/meiji.py)                   |
-| [Napoleon](./ideas/gameplay/leaders/napoleon.md)                               | [Napoleon Bonaparte (France)](https://en.wikipedia.org/wiki/Napoleon)                                | [code](openciv/gameplay/leaders/napoleon.py)                |
-| [Naram-Sin](./ideas/gameplay/leaders/naram_sin.md)                             | [Naram-Sin (Akkadian)](https://en.wikipedia.org/wiki/Naram-Sin_of_Akkad)                             | [code](openciv/gameplay/leaders/naram_sin.py)               |
-| [Nebuchadnezzar](./ideas/gameplay/leaders/nebuchadnezzar.md)                   | [Nebuchadnezzar II (Babylon)](https://en.wikipedia.org/wiki/Nebuchadnezzar_II)                       | [code](openciv/gameplay/leaders/nebuchadnezzar.py)          |
-| [Otto](./ideas/gameplay/leaders/otto.md)                                       | [Otto von Bismarck (Germany)](https://en.wikipedia.org/wiki/Otto_von_Bismarck)                       | [code](openciv/gameplay/leaders/otto.py)                    |
-| [Peter](./ideas/gameplay/leaders/peter.md)                                     | [Peter the Great (Russia)](https://en.wikipedia.org/wiki/Peter_the_Great)                            | [code](openciv/gameplay/leaders/peter.py)                   |
-| [Philip II](./ideas/gameplay/leaders/phillip.md)                               | [Philip II of Spain (Spain)](https://en.wikipedia.org/wiki/Philip_II_of_Spain)                       | [code](openciv/gameplay/leaders/phillip.py)                 |
-| [Qin Shi Huang](./ideas/gameplay/leaders/qin_shi_huang.md)                     | [Qin Shi Huang (China)](https://en.wikipedia.org/wiki/Qin_Shi_Huang)                                 | [code](openciv/gameplay/leaders/qin_shi_huang.py)           |
-| [Ragnar](./ideas/gameplay/leaders/ragnar.md)                                   | [Ragnar Lodbrok (Vikings)](https://en.wikipedia.org/wiki/Ragnar_Lodbrok)                             | [code](openciv/gameplay/leaders/ragnar.py)                  |
-| [Ramesses](./ideas/gameplay/leaders/ramesses.md)                               | [Ramesses II (Egypt)](https://en.wikipedia.org/wiki/Ramesses_II)                                     | [code](openciv/gameplay/leaders/ramesses.py)                |
-| [Sargon](./ideas/gameplay/leaders/sargon.md)                                   | [Sargon of Akkad (Akkadian)](https://en.wikipedia.org/wiki/Sargon_of_Akkad)                          | [code](openciv/gameplay/leaders/sargon.py)                  |
-| [Sejong](./ideas/gameplay/leaders/sejon.md)                                    | [Sejong the Great (Korea)](https://en.wikipedia.org/wiki/Sejong_the_Great)                           | [code](openciv/gameplay/leaders/sejon.py)                   |
-| [Sitting Bull](./ideas/gameplay/leaders/sitting_bull.md)                       | [Sitting Bull (Sioux)](https://en.wikipedia.org/wiki/Sitting_Bull)                                   | [code](openciv/gameplay/leaders/sitting_bull.py)            |
-| [Suleiman](./ideas/gameplay/leaders/suleiman.md)                               | [Suleiman the Magnificent (Ottoman)](https://en.wikipedia.org/wiki/Suleiman_the_Magnificent)         | [code](openciv/gameplay/leaders/suleiman.py)                |
-| [Taisho](./ideas/gameplay/leaders/taisho.md)                                   | [Taishō Emperor (Japan)](https://en.wikipedia.org/wiki/Taish%C5%8D_Emperor)                          | [code](openciv/gameplay/leaders/taisho.py)                  |
-| [Tokugawa](./ideas/gameplay/leaders/tokugawa.md)                               | [Tokugawa Ieyasu (Japan)](https://en.wikipedia.org/wiki/Tokugawa_Ieyasu)                             | [code](openciv/gameplay/leaders/tokugawa.py)                |
-| [Victoria](./ideas/gameplay/leaders/victoria.md)                               | [Queen Victoria (England)](https://en.wikipedia.org/wiki/Queen_Victoria)                             | [code](openciv/gameplay/leaders/victoria.py)                |
-| [Wilhelm](./ideas/gameplay/leaders/wilhelm.md)                                 | [Wilhelm II (Germany)](https://en.wikipedia.org/wiki/Wilhelm_II,_German_Emperor)                     | [code](openciv/gameplay/leaders/wilhelm.py)                 |
-| [William the Silent](./ideas/gameplay/leaders/willem.md)                       | [William the Silent (Low Countries)](https://en.wikipedia.org/wiki/William_the_Silent)               | [code](openciv/gameplay/leaders/willem.py)                  |
-| [Wu Zetian](./ideas/gameplay/leaders/wu_zetian.md)                             | [Wu Zetian (China)](https://en.wikipedia.org/wiki/Wu_Zetian)                                         | [code](openciv/gameplay/leaders/wu_zetian.py)               |
-| [Xerxes](./ideas/gameplay/leaders/xerxes.md)                                   | [Xerxes I (Persia)](https://en.wikipedia.org/wiki/Xerxes_I)                                          | [code](openciv/gameplay/leaders/xerxes.py)                  |
+<details>
+
+| Leader                                                        | Wikipedia Link                                                                                   | Code                                                        |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| [Abraham Lincoln](./ideas/gameplay/leaders/abraham_lincoln.md) | [Abraham Lincoln (American Empire)](https://en.wikipedia.org/wiki/Abraham_Lincoln)             | [code](openciv/gameplay/leaders/abraham_lincoln.py)         |
+| [Alexander the Great](./ideas/gameplay/leaders/alexander.md) | [Alexander the Great (Greece)](https://en.wikipedia.org/wiki/Alexander_the_Great)             | [code](openciv/gameplay/leaders/alexander.py)               |
+| [Ambiorix](./ideas/gameplay/leaders/ambiorix.md)            | [Ambiorix (Low Countries)](https://en.wikipedia.org/wiki/Ambiorix)                            | [code](openciv/gameplay/leaders/ambiorix.py)                |
+| [Mustafa Kemal Atatürk](./ideas/gameplay/leaders/ataturk.md) | [Mustafa Kemal Atatürk (Ottoman)](https://en.wikipedia.org/wiki/Mustafa_Kemal_Atat%C3%BCrk)   | [code](openciv/gameplay/leaders/ataturk.py)                 |
+| [Augustus Caesar](./ideas/gameplay/leaders/augustus.md)     | [Augustus (Rome)](https://en.wikipedia.org/wiki/Augustus)                                     | [code](openciv/gameplay/leaders/augustus.py)                |
+| [Julius Caesar](./ideas/gameplay/leaders/caesar.md)         | [Julius Caesar (Rome)](https://en.wikipedia.org/wiki/Julius_Caesar)                           | [code](openciv/gameplay/leaders/caesar.py)                  |
+| [Charlemagne](./ideas/gameplay/leaders/charlemagne.md)      | [Charlemagne (France)](https://en.wikipedia.org/wiki/Charlemagne)                             | [code](openciv/gameplay/leaders/charlemagne.py)             |
+| [Charles III of Spain](./ideas/gameplay/leaders/charles_iii.md) | [Charles III of Spain](https://en.wikipedia.org/wiki/Charles_III_of_Spain)                 | [code](openciv/gameplay/leaders/charles_iii.py)             |
+| [Charles V, Holy Roman Emperor](./ideas/gameplay/leaders/charles_v.md) | [Charles V, Holy Roman Emperor](https://en.wikipedia.org/wiki/Charles_V,_Holy_Roman_Emperor) | [code](openciv/gameplay/leaders/charles_v.py)               |
+| [Cleopatra VII](./ideas/gameplay/leaders/cleopatra.md)      | [Cleopatra (Egypt)](https://en.wikipedia.org/wiki/Cleopatra)                                 | [code](openciv/gameplay/leaders/cleopatra.py)               |
+| [Cnut the Great](./ideas/gameplay/leaders/cnut.md)         | [Cnut the Great (Vikings)](https://en.wikipedia.org/wiki/Cnut)                              | [code](openciv/gameplay/leaders/cnut.py)                    |
+| [Constantine the Great](./ideas/gameplay/leaders/constantine.md) | [Constantine the Great (Byzantine)](https://en.wikipedia.org/wiki/Constantine_the_Great) | [code](openciv/gameplay/leaders/constantine.py)             |
+| [Darius I](./ideas/gameplay/leaders/darius.md)             | [Darius the Great (Persia)](https://en.wikipedia.org/wiki/Darius_the_Great)                  | [code](openciv/gameplay/leaders/darius.py)                  |
+| [Charles de Gaulle](./ideas/gameplay/leaders/de_gaulle.md) | [Charles de Gaulle (France)](https://en.wikipedia.org/wiki/Charles_de_Gaulle)               | [code](openciv/gameplay/leaders/de_gaulle.py)               |
+| [Elizabeth I](./ideas/gameplay/leaders/elizabeth.md)       | [Elizabeth I (England)](https://en.wikipedia.org/wiki/Elizabeth_I)                          | [code](openciv/gameplay/leaders/elizabeth.py)               |
+| [Franklin D. Roosevelt](./ideas/gameplay/leaders/fdr.md)   | [Franklin D. Roosevelt (American Empire)](https://en.wikipedia.org/wiki/Franklin_D._Roosevelt) | [code](openciv/gameplay/leaders/fdr.py)                     |
+| [Giovanni di Bicci de' Medici](./ideas/gameplay/leaders/goi.md) | [Giovanni di Bicci de' Medici (Italy)](https://en.wikipedia.org/wiki/Giovanni_di_Bicci_de%27_Medici) | [code](openciv/gameplay/leaders/goi.py) |
+| [Mikhail Gorbachev](./ideas/gameplay/leaders/gorbachev.md) | [Mikhail Gorbachev (USSR)](https://en.wikipedia.org/wiki/Mikhail_Gorbachev)                 | [code](openciv/gameplay/leaders/gorbachev.py)               |
+| [Harald Fairhair](./ideas/gameplay/leaders/harald.md)      | [Harald Fairhair (Vikings)](https://en.wikipedia.org/wiki/Harald_Fairhair)                  | [code](openciv/gameplay/leaders/harald.py)                  |
+| [Isabella I of Castile](./ideas/gameplay/leaders/isabella.md) | [Isabella I of Castile (Spain)](https://en.wikipedia.org/wiki/Isabella_I_of_Castile)       | [code](openciv/gameplay/leaders/isabella.py)                |
+| [James VI and I](./ideas/gameplay/leaders/james.md)       | [James VI and I (England)](https://en.wikipedia.org/wiki/James_VI_and_I)                   | [code](openciv/gameplay/leaders/james.py)                   |
+| [Joan van Oldenbarnevelt](./ideas/gameplay/leaders/joan_van_oldenbarnevelt.md) | [Johan van Oldenbarnevelt (Low Countries)](https://en.wikipedia.org/wiki/Johan_van_Oldenbarnevelt) | [code](openciv/gameplay/leaders/joan_van_oldenbarnevelt.py) |
+| [Justinian I](./ideas/gameplay/leaders/justinian.md)      | [Justinian I (Byzantine)](https://en.wikipedia.org/wiki/Justinian_I)                        | [code](openciv/gameplay/leaders/justinian.py)               |
+| [Kamehameha I](./ideas/gameplay/leaders/kamehameha.md)    | [Kamehameha I (Hawaii)](https://en.wikipedia.org/wiki/Kamehameha_I)                         | [code](openciv/gameplay/leaders/kamehameha.py)              |
+| [Kublai Khan](./ideas/gameplay/leaders/kublai.md)         | [Kublai Khan (Mongolia)](https://en.wikipedia.org/wiki/Kublai_Khan)                         | [code](openciv/gameplay/leaders/kublai.py)                  |
+| [Vladimir Lenin](./ideas/gameplay/leaders/lenin.md)       | [Vladimir Lenin (USSR)](https://en.wikipedia.org/wiki/Vladimir_Lenin)                       | [code](openciv/gameplay/leaders/lenin.py)                   |
+
+</details>
 
 ### Win Conditions
+
+<details>
 
 | Condition                                        | Mechanic                              | Meta-Docs                                           | Code |
 | ------------------------------------------------ | ------------------------------------- | --------------------------------------------------- | ---- |
@@ -294,7 +290,4 @@ This is a lot of work, and the scale of the systems is significant. The main cha
 | [Science](./ideas/gameplay/victory/science.md)   | State Building/Diplomacy              | [science.md](./ideas/gameplay/victory/science.md)   | code |
 | [Culture](./ideas/gameplay/victory/culture.md)   | Culture/Tourism/Archaeology/Diplomacy | [culture.md](./ideas/gameplay/victory/culture.md)   | code |
 
-> ⚖️ **Disclaimer:** This game and its associated code are provided for educational and informational purposes only. The author assumes no responsibility for any errors, omissions, or inaccuracies in the code. Users are strongly advised to thoroughly review, test, the code. The author makes no guarantees regarding the security, reliability, or performance of the game. By using this code, you agree that the author shall not be held liable for any damages, losses, or other consequences arising from its use, misuse, or inability to use the game, including but not limited to any unintended or harmful actions caused by the game. Use this game at your own risk and ensure that all necessary precautions are taken.
-
-> 🌍 **Historical Context and Point of View Disclaimer:**
-> OpenCiv includes civilizations, leaders, and events inspired by real-world history but real history is complex. While I strive to create a neutral point of view, the game may simplify or alter historical events for gameplay purposes. These portrayals try to not reflect any political or cultural stance but should not be taken as any kind of truth. The content reflects my personal view and understanding from a (inherently limited) Western perspective, and I try to avoid contentious topics I am uncomfortable with dealing with. I acknowledge that many events depicted were horrible and should never be repeated. This game is for entertainment. Please don't cancel me; I want to create a fun game for everyone. 🙏
+</details>

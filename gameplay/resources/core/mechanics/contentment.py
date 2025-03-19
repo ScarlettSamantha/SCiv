@@ -1,16 +1,16 @@
-from __future__ import annotations
-from gameplay.resources.core.mechanics._base import MechanicBaseResource
-from managers.i18n import _t
-from typing import Union
+from typing import Dict, Tuple, Type
+
+from gameplay.resources.core.mechanics.mechanic_resource import MechanicBaseResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, _t
 
 
 class Contentment(MechanicBaseResource):
-    def __init__(self, value: Union[float | int], *args, **kwargs):
-        super().__init__(
-            "core.mechanic.contentment",
-            _t("content.resources.contentment.name"),
-            _t("content.resources.contentment.description"),
-            value,
-            *args,
-            **kwargs,
-        )
+    key: str = "resource.core.mechanic.contentment"
+    name: T_TranslationOrStr = _t("content.resources.core.contentment.name")
+    description: T_TranslationOrStr = _t("content.resources.core.contentment.description")
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
+    spawn_amount: float | Tuple[float, float] = 0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)

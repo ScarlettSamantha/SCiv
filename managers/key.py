@@ -1,9 +1,9 @@
-from __future__ import annotations
+from typing import Dict
+from uuid import uuid4
+
+from exceptions.key_exception import KeyNotFoundException
 from managers.base import BaseManager
 from mixins.singleton import Singleton
-from exceptions.key_exception import KeyNotFoundException
-from uuid import uuid4
-from typing import Dict
 
 
 class Keyable:

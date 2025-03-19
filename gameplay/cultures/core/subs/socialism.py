@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -15,12 +14,12 @@ class Socialism(BaseCoreSubtree):
 
     def register_civics(self):
         from gameplay.cultures.core.collective_ownership import CollectiveOwnership
-        from gameplay.cultures.core.workers_rights import WorkersRights
-        from gameplay.cultures.core.universal_healthcare import UniversalHealthcare
         from gameplay.cultures.core.free_education import FreeEducation
         from gameplay.cultures.core.social_equality import SocialEquality
         from gameplay.cultures.core.state_planning import StatePlanning
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.universal_healthcare import UniversalHealthcare
+        from gameplay.cultures.core.workers_rights import WorkersRights
+        from system.requires import RequiresCivicComplete
 
         collective_ownership = CollectiveOwnership()
         self.add_civic(collective_ownership)

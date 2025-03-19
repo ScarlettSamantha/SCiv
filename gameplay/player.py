@@ -1,33 +1,28 @@
-from gameplay.civilization import Civilization
-from gameplay.leader import Leader
-from gameplay.personality import Personality
-from gameplay.effect import Effect, Effects
-from gameplay.goverment import Goverment
+import weakref
+from typing import TYPE_CHECKING, Literal, Optional, Self
+
+from gameplay._units import Units
+from gameplay.cities import Cities
 from gameplay.citizen import Citizen
+from gameplay.citizens import Citizens
+from gameplay.civilization import Civilization
+from gameplay.claims import Claims
+from gameplay.goverment import Goverment
+from gameplay.leader import Leader
 from gameplay.mood import Mood
 from gameplay.moods import Moods
-
+from gameplay.personality import Personality
+from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
-
-from gameplay.cities import Cities
-from gameplay.city import City
-from gameplay.tiles import Tiles
-from gameplay.claims import Claims
-
-
-from gameplay.votes import Votes
-from gameplay.citizens import Citizens
-
-from gameplay.resource import Resources
-from gameplay.great import Greats
-
 from gameplay.trades import Trades
-
-from typing import Literal, Self, TYPE_CHECKING
-
+from gameplay.votes import Votes
+from gameplay.yields import Yields
+from helpers.colors import Colors, Tuple4f
+from system.effects import Effect, Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.city import City
     from gameplay.units.unit_base import UnitBaseClass
 
 
@@ -39,13 +34,16 @@ class Player(BaseEntity):
         personality: Personality,
         civilization: Civilization,
         leader: Leader,
+        color: Optional[Tuple4f] = None,
     ) -> None:
         super().__init__()
         from gameplay._units import Units
+        from gameplay.resource import Resources
 
         self.name: str = name
         self.id: str | None = None
         self.identifier: str | None = None
+        self.color: Tuple4f = color if color else Colors.sequence()
 
         self.turn_order: int = turn_order
 
@@ -94,10 +92,8 @@ class Player(BaseEntity):
         self.goverment: Goverment = Goverment()
 
         self.cities: Cities = Cities()
-        self.capital: City | None = (
-            None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
-        )
-        self.tiles: Tiles = Tiles()
+        self.capital: "City | None" = None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
+        self.tiles: PlayerTiles = PlayerTiles()
         self.claims: Claims = Claims()
         self.units: Units = Units()
         self.votes: Votes = Votes()
@@ -105,9 +101,14 @@ class Player(BaseEntity):
         self.trades: Trades = Trades()
 
         self.resources: Resources = Resources()
-        self.greats: Greats = Greats()
+        # self.greats: Greats = Greats()
 
-        self.effects: Effects = Effects()
+        self.effects: Effects = Effects(self)
+
+        self.science: Yields = Yields(science=0)
+        self.culture: Yields = Yields(culture=0)
+        self.faith: Yields = Yields(faith=0)
+        self.gold: Yields = Yields(gold=0)
 
         self._register_callbacks()
 
@@ -127,6 +128,12 @@ class Player(BaseEntity):
     # @todo make citizens seperate thing.
     def on_citizen_birth(self, citizen: Citizen) -> None:
         self.population += 1
+
+    def contribute(self, yield_: Yields) -> None:
+        self.science += yield_
+        self.culture += yield_
+        self.faith += yield_
+        self.gold += yield_
 
     def _recalculate(self) -> None:
         properties: tuple[
@@ -151,21 +158,39 @@ class Player(BaseEntity):
         if city_loop_needed:
             _city_loop(self=self)
 
-    def getEffect(self, key: str) -> Effect | None:
-        return self.effects.get(key=key)
+    def get_effect(self, key: str) -> Effect | None:
+        return self.effects.get_effect(key)
 
-    def getEffects(self) -> Effects:
+    def get_effects(self) -> Effects:
         return self.effects
 
-    def addEffect(self, key: str, effect: Effect) -> None:
-        self.effects.add(effect=effect, key_or_auto=key)
+    def add_effect(self, effect: Effect) -> None:
+        self.effects.add_effect(effect)
 
-    def addUnit(self, unit: "UnitBaseClass") -> None:
+    def remove_effect(self, effect: Effect) -> None:
+        self.effects.remove_effect(effect)
+
+    def add_unit(self, unit: "UnitBaseClass") -> None:
         self.units.add_unit(unit)
 
-    def removeUnit(self, unit: "UnitBaseClass") -> None:
+    def remove_unit(self, unit: "UnitBaseClass") -> None:
         self.units.remove_unit(unit)
 
     def destroy(self):
         """Player is destroyed or wiped out."""
         self.unregister()
+
+    def get_units(self) -> Units:
+        return self.units
+
+    def get_all_units(self) -> list[weakref.ReferenceType["UnitBaseClass"]]:
+        return self.get_units().all()
+
+    def add_city(self, city: "City") -> None:
+        self.cities.add(city)
+
+    def remove_city(self, city: "City") -> None:
+        self.cities.remove(city)
+
+    def on_turn_end(self, turn: int):
+        self.effects.on_turn_end(turn)

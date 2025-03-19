@@ -1,15 +1,17 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeBonus, ResourceValueType
+from typing import Dict, Tuple, Type
 
-from managers.i18n import _t
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, _t
 
 
-class Rice(Resource):
-    def __init__(self, value: int = 0):
-        super().__init__(
-            "core.bonus.rice",
-            _t("content.resources.core.rice"),
-            value,
-            ResourceTypeBonus,
-            ResourceValueType.INT,
-        )
+class Rice(BaseBonusResource):
+    key: str = "resource.core.bonus.rice"
+    name: T_TranslationOrStr = _t("content.resources.core.rice.name")
+    description: T_TranslationOrStr = _t("content.resources.core.rice.description")
+    icon: str = "assets/icons/resources/core/bonus/hex_border_rice.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 10.0
+    spawn_amount: float | Tuple[float, float] = 5.0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)

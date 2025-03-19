@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +13,13 @@ class Technocracy(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.expert_governance import ExpertGovernance
-        from gameplay.cultures.core.scientific_management import ScientificManagement
-        from gameplay.cultures.core.innovation_focus import InnovationFocus
         from gameplay.cultures.core.data_driven_policy import DataDrivenPolicy
         from gameplay.cultures.core.efficient_administration import EfficientAdministration
+        from gameplay.cultures.core.expert_governance import ExpertGovernance
+        from gameplay.cultures.core.innovation_focus import InnovationFocus
         from gameplay.cultures.core.meritocracy import Meritocracy
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.scientific_management import ScientificManagement
+        from system.requires import RequiresCivicComplete
 
         expert_governance = ExpertGovernance()
         self.add_civic(expert_governance)

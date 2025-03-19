@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +13,13 @@ class Nationalism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.patriotic_education import PatrioticEducation
         from gameplay.cultures.core.cultural_preservation import CulturalPreservation
         from gameplay.cultures.core.economic_nationalism import EconomicNationalism
         from gameplay.cultures.core.military_strength import MilitaryStrength
         from gameplay.cultures.core.national_sovereignty import NationalSovereignty
         from gameplay.cultures.core.national_unity import NationalUnity
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.patriotic_education import PatrioticEducation
+        from system.requires import RequiresCivicComplete
 
         patriotic_education = PatrioticEducation()
         self.add_civic(patriotic_education)

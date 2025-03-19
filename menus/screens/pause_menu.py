@@ -1,25 +1,27 @@
-from kivy.uix.screenmanager import Screen
-from kivy.uix.popup import Popup
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.graphics import Color, Rectangle
-from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from typing import TYPE_CHECKING
 
+from kivy.graphics import Color, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.screenmanager import Screen
+
+from menus.kivy.mixins.collidable import CollisionPreventionMixin
+
 if TYPE_CHECKING:
-    from main import Openciv
+    from main import SCIV
 
 
 class PauseMenu(Popup, CollisionPreventionMixin):
-    def __init__(self, base: "Openciv", **kwargs):
+    def __init__(self, base: "SCIV", **kwargs):
         CollisionPreventionMixin.__init__(self, base=base, **kwargs)
         Popup.__init__(self, base=base, **kwargs)
 
         self.title = "Paused"
         self.size_hint = (0.5, 0.6)
         self.auto_dismiss = False
-        self._base: "Openciv" = base
+        self._base: "SCIV" = base
 
     def build_widget(self):
         self.container: BoxLayout = BoxLayout(
@@ -93,7 +95,7 @@ class PauseMenu(Popup, CollisionPreventionMixin):
 
 
 class PauseScreen(Screen):
-    def __init__(self, base: "Openciv", **kwargs):
+    def __init__(self, base: "SCIV", **kwargs):
         super().__init__(**kwargs)
         self.pause_menu = PauseMenu(base=base)
         self.build: bool = False

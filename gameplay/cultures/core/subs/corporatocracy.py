@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +13,13 @@ class Corporatocracy(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.corporate_influence import CorporateInfluence
-        from gameplay.cultures.core.lobbying_power import LobbyingPower
         from gameplay.cultures.core.business_privileges import BusinessPrivileges
-        from gameplay.cultures.core.economic_focus import EconomicFocus
-        from gameplay.cultures.core.regulatory_capture import RegulatoryCapture
         from gameplay.cultures.core.corporate_governance import CorporateGovernance
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.corporate_influence import CorporateInfluence
+        from gameplay.cultures.core.economic_focus import EconomicFocus
+        from gameplay.cultures.core.lobbying_power import LobbyingPower
+        from gameplay.cultures.core.regulatory_capture import RegulatoryCapture
+        from system.requires import RequiresCivicComplete
 
         corporate_influence = CorporateInfluence()
         self.add_civic(corporate_influence)

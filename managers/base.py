@@ -1,10 +1,9 @@
-from __future__ import annotations
-from typing import Optional, TypeVar, Generic
+from typing import Generic, Optional, TypeVar
 
 TBaseManager = TypeVar("TBaseManager", bound="BaseManager")
 
-class BaseManager(Generic[TBaseManager]):
 
+class BaseManager(Generic[TBaseManager]):
     def __init__(self, parent: Optional[TBaseManager] = None):
         self._parent: Optional[TBaseManager] = parent
 

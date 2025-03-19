@@ -1,15 +1,17 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeLuxury, ResourceValueType
+from typing import Dict, Tuple, Type
 
-from managers.i18n import _t
+from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, _t
 
 
-class Jade(Resource):
-    def __init__(self, value: int = 0):
-        super().__init__(
-            "core.luxury.jade",
-            _t("content.resources.core.jade"),
-            value,
-            ResourceTypeLuxury,
-            ResourceValueType.INT,
-        )
+class Jade(BaseLuxuryResource):
+    key: str = "resource.core.luxury.jade"
+    name: T_TranslationOrStr = _t("content.resources.core.jade.name")
+    description: T_TranslationOrStr = _t("content.resources.core.jade.description")
+    icon: str = "assets/icons/resources/core/luxury/bordered_emerald.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
+    spawn_amount: float | Tuple[float, float] = 5.0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)

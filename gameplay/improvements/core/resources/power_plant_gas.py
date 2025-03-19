@@ -1,15 +1,15 @@
-from __future__ import annotations
 from gameplay.improvement import Improvement
-from gameplay.tile_yield import TileYield
+from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class PowerPlantGas(Improvement):
+    name = _t("content.improvements.core.resources.power_plant_gas.name")
+    description = _t("content.improvements.core.resources.power_plant_gas.description")
+    placeable_on_tiles = True
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.resource.power_plant_gas",
-            _t("content.improvements.core.resource.power_plant_gas.name"),
-            _t("content.improvements.core.resource.power_plant_gas.description"),
             *args,
             **kwargs,
         )
@@ -17,4 +17,4 @@ class PowerPlantGas(Improvement):
         self.health = 50
         self.max_health = 50
 
-        self.tile_yield_improvement = TileYield(name="power_plant_gas", food=1.0, mode=TileYield.ADDITIVE)
+        self.tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)

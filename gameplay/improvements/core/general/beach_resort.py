@@ -1,15 +1,14 @@
-from __future__ import annotations
 from gameplay.improvement import Improvement
-from gameplay.tile_yield import TileYield
+from gameplay.yields import Yields
 from managers.i18n import _t
 
 
 class BeachResort(Improvement):
+    name = _t("content.improvements.core.general.beach_resort.name")
+    description = _t("content.improvements.core.general.beach_resort.description")
+
     def __init__(self, *args, **kwargs):
         super().__init__(
-            "core.improvement.general.beach_resort",
-            _t("content.improvements.core.general.beach_resort.name"),
-            _t("content.improvements.core.general.beach_resort.description"),
             *args,
             **kwargs,
         )
@@ -17,4 +16,4 @@ class BeachResort(Improvement):
         self.health = 50
         self.max_health = 50
 
-        self.tile_yield_improvement = TileYield(name="beach_resort", food=1.0, mode=TileYield.ADDITIVE)
+        self.tile_yield_improvement = Yields(name="beach_resort", food=1.0, mode=Yields.ADDITIVE)

@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +13,13 @@ class Fascism(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.totalitarian_control import TotalitarianControl
-        from gameplay.cultures.core.state_propaganda import StatePropaganda
-        from gameplay.cultures.core.militarization import Militarization
         from gameplay.cultures.core.corporate_state import CorporateState
-        from gameplay.cultures.core.national_purity import NationalPurity
         from gameplay.cultures.core.leader_worship import LeaderWorship
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.militarization import Militarization
+        from gameplay.cultures.core.national_purity import NationalPurity
+        from gameplay.cultures.core.state_propaganda import StatePropaganda
+        from gameplay.cultures.core.totalitarian_control import TotalitarianControl
+        from system.requires import RequiresCivicComplete
 
         totalitarian_control = TotalitarianControl()
         self.add_civic(totalitarian_control)

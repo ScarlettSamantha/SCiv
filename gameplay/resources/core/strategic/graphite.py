@@ -1,15 +1,17 @@
-from __future__ import annotations
-from gameplay.resource import Resource, ResourceTypeStrategic, ResourceValueType
+from typing import Dict, Tuple, Type
 
-from managers.i18n import _t
+from gameplay.resources.core.strategic.strategic_resource import BaseStrategyResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, _t
 
 
-class Graphite(Resource):
-    def __init__(self, value: int = 0):
-        super().__init__(
-            "core.strategic.graphite",
-            _t("content.resources.core.graphite"),
-            value,
-            ResourceTypeStrategic,
-            ResourceValueType.INT,
-        )
+class Graphite(BaseStrategyResource):
+    key: str = "resource.core.strategic.graphite"
+    name: T_TranslationOrStr = _t("content.resources.core.graphite.name")
+    description: T_TranslationOrStr = _t("content.resources.core.graphite.description")
+    icon: str = "assets/icons/resources/core/strategic/bordered_thorium.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
+    spawn_amount: float | Tuple[float, float] = 3.0
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)

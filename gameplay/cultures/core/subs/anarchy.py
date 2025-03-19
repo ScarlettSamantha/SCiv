@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
 from managers.i18n import _t
 
@@ -14,13 +13,13 @@ class Anarchy(BaseCoreSubtree):
         )
 
     def register_civics(self):
-        from gameplay.cultures.core.self_governance import SelfGovernance
-        from gameplay.cultures.core.mutual_aid import MutualAid
-        from gameplay.cultures.core.direct_action import DirectAction
-        from gameplay.cultures.core.decentralization import Decentralization
-        from gameplay.cultures.core.voluntary_associations import VoluntaryAssociations
         from gameplay.cultures.core.autonomy import Autonomy
-        from openciv.engine.requires import RequiresCivicComplete
+        from gameplay.cultures.core.decentralization import Decentralization
+        from gameplay.cultures.core.direct_action import DirectAction
+        from gameplay.cultures.core.mutual_aid import MutualAid
+        from gameplay.cultures.core.self_governance import SelfGovernance
+        from gameplay.cultures.core.voluntary_associations import VoluntaryAssociations
+        from system.requires import RequiresCivicComplete
 
         self_governance = SelfGovernance()
         self.add_civic(self_governance)

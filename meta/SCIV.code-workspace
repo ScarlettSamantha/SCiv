@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+	],
+	"settings": {
+		"kvlang.pythonPath": "python",
+		"python.analysis.stubPath": "~/Code/Stubs"
+	}
+}

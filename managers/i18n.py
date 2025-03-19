@@ -1,20 +1,15 @@
-from __future__ import annotations
-
 import io
-import pathlib
 import json
-
+import pathlib
 from os import PathLike
 from pathlib import Path
-
-from typing import Union, Dict, Any
-from system.saving import SaveAble
+from typing import Any, Dict, Optional, Union
 
 from exceptions.i18n_exception import (
-    I18NLoadException,
     I18NDecodeException,
-    I18NTranslationNotFound,
+    I18NLoadException,
     I18NNotLoadedException,
+    I18NTranslationNotFound,
 )
 
 
@@ -44,11 +39,7 @@ class _i18n:
         self._lookup_cache.clear()
 
     def generate_path(self, path: PathLike[Any] | str) -> Path:
-        base_path = (
-            Path(self.base_path)
-            if not isinstance(self.base_path, Path)
-            else self.base_path
-        )
+        base_path = Path(self.base_path) if not isinstance(self.base_path, Path) else self.base_path
         return base_path / Path(path)
 
     def language_exists(self, language: str) -> bool:
@@ -85,16 +76,27 @@ class _i18n:
 
     def lookup(
         self,
-        key: str | T_TranslationOrStr,
+        key: "str | T_TranslationOrStr",
         default: Any | None = None,
         fail_on_not_found: bool = True,
+        formatting_parameters: Optional[Dict[str, Any]] = None,
+        prefix: str = "",
+        suffix: str = "",
     ) -> str:
         # Check if the key is in the cache
         if isinstance(key, Translation):
             key = str(key)
 
+        def format_result(result: str) -> str:
+            if formatting_parameters is not None:
+                try:
+                    return result.format(**formatting_parameters)
+                except KeyError:
+                    raise I18NTranslationNotFound(f"String formatting key[{key}] not found")
+            return prefix + result + suffix
+
         if key in self._lookup_cache:
-            return self._lookup_cache[key]
+            return format_result(self._lookup_cache[key])
 
         data = self._data[self.language]
         splits: list[str] = str(key).split(sep=".")
@@ -102,20 +104,22 @@ class _i18n:
             if level in data:
                 data = data[level]
                 if i == (len(splits) - 1):
-                    result = str(data)
-                    self._lookup_cache[key] = result
-                    return result
+                    return format_result(data)
             else:
                 if fail_on_not_found:
                     raise I18NTranslationNotFound(f"Key {key} not found")
                 result = key
                 self._lookup_cache[key] = result
-                return result
+                if formatting_parameters is not None:
+                    result = result.format(**formatting_parameters)
+                return prefix + result + suffix
         if default is None and fail_on_not_found:
             raise I18NTranslationNotFound(f"Key {key} not found")
         result = key if default is None else default
+        # Cache the result, we do it here as we dont want to store the formatting parameters
         self._lookup_cache[key] = result
-        return result
+
+        return format_result(result)
 
 
 i18n: None | _i18n = None
@@ -133,11 +137,12 @@ def get_i18n() -> _i18n:
     return i18n
 
 
-class Translation(SaveAble):
-    def __init__(self, key: str) -> None:
-        SaveAble.__init__(self)
+class Translation:
+    def __init__(
+        self, key: str, parameters: Optional[Dict[str, Any]] = None, suffix: str = "", prefix: str = ""
+    ) -> None:
         self.key: str = key
-        self._setup_saveable()
+        self.formatting_parameters: Optional[Dict[str, Any]] = parameters
 
     def __repr__(self) -> str:
         self_str: str = str(self) if i18n else "[!unloaded i18n engine!]"
@@ -146,19 +151,25 @@ class Translation(SaveAble):
     def __str__(self) -> str:
         if i18n is None:
             raise I18NNotLoadedException(
-                "I18n not loaded, there is probibly not an instance of the manager earlie enough in your load order."
+                "I18n not loaded, there is probably not an instance of the manager earle enough in your load order."
             )
         try:
             # We want to handle the fail in the translation object so we can handle it on a higher level.
-            return i18n.lookup(key=self.key, fail_on_not_found=True)
+            return i18n.lookup(key=self.key, fail_on_not_found=True, formatting_parameters=self.formatting_parameters)
         except I18NTranslationNotFound:
             return self.key
 
     def __hash__(self) -> int:
         return hash(self.key)
 
-    def __eq__(self, other: Translation) -> bool:
+    def __eq__(self, other: "Translation | object") -> bool:
+        if not isinstance(other, Translation):
+            return False
         return self.key == other.key
+
+    def __len__(self) -> int:
+        """Return the length of the string representation of the translation."""
+        return len(self.__str__())
 
 
 _t = Translation

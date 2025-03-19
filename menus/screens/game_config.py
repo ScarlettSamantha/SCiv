@@ -1,21 +1,20 @@
 from typing import Optional, Tuple, Type
 
-from anyio import value
-from kivy.uix.screenmanager import Screen
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.slider import Slider
-from kivy.uix.checkbox import CheckBox
-from kivy.uix.widget import Widget
-from kivy.uix.popup import Popup
 from kivy.graphics import Color, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
+from kivy.uix.screenmanager import Screen
+from kivy.uix.slider import Slider
+from kivy.uix.widget import Widget
 
-from gameplay.repositories.civilization import Civilization
-from menus.kivy.elements.scrollable_popup import ScrollablePopup
-from menus.kivy.elements.button_value import ButtonValue
 from gameplay.civilization import Civilization as BaseCivilization
+from gameplay.repositories.civilization import Civilization
+from menus.kivy.elements.button_value import ButtonValue
+from menus.kivy.elements.scrollable_popup import ScrollablePopup
 
 
 class GameConfigMenu(Screen):
@@ -38,7 +37,7 @@ class GameConfigMenu(Screen):
         self.size_popup: Optional[ScrollablePopup] = None
         self.size_popup_button: Optional[Button] = None
 
-        self.selected_resolution: Tuple[int, int] = (25, 25)
+        self.selected_size: Optional[Tuple[int, int]] = None
         self.selected_civilization: Optional[Type[BaseCivilization]] = None
         self.player_count: int = 4
 
@@ -89,7 +88,7 @@ class GameConfigMenu(Screen):
 
         self.civilization_section.add_widget(Label(text="Civilization"))
 
-        self.dropdown_button = Button(text="Rome", size_hint=(1, None), height=50)
+        self.dropdown_button = Button(text="Random", size_hint=(1, None), height=50)
         self.dropdown_button.bind(on_release=self.open_civilization_popup)  # type: ignore
         self.civilization_section.add_widget(self.dropdown_button)
 
@@ -98,7 +97,7 @@ class GameConfigMenu(Screen):
         self.size_section = BoxLayout(orientation="vertical", size_hint=(1, None), spacing=5, padding=(0, 0.2))
         self.size_section.add_widget(Label(text="Map Size"))
 
-        self.size_popup_button = ButtonValue(text="50x90", value=(50, 90), size_hint=(1, None), height=50)
+        self.size_popup_button = ButtonValue(text="25x25", value=(25, 25), size_hint=(1, None), height=50)
         self.size_popup_button.bind(on_release=self.open_size_popup)  # type: ignore
         self.size_section.add_widget(self.size_popup_button)
 
@@ -157,19 +156,29 @@ class GameConfigMenu(Screen):
 
     def select_size(self, size, _value):
         """Updates the resolution selection button"""
-        self.selected_resolution = _value
+        self.selected_size = _value
         self.size_popup_button.text = size  # type: ignore
 
     def select_civilization(self, civilization, _value: Type[BaseCivilization]):
         """Updates the civilization selection button"""
         self.selected_civilization = _value
-        print(f"{civilization}, {value}")
+        print(f"{civilization}, {_value}")
         self.dropdown_button.text = civilization
+
+    def update_selected_size(self):
+        if self.size_popup_button is None:
+            raise AssertionError("Size popup button is not initialized")
+
+        size = self.size_popup_button.text.split(" ")[0].split("x")
+        self.selected_size = (int(size[0]), int(size[1]))
 
     def start_game(self):
         from direct.showbase.MessengerGlobal import messenger
 
-        size: Tuple[int, int] = self.selected_resolution
+        if self.selected_size is None:
+            self.update_selected_size()  # To ensure the size is up to date
+
+        size: Tuple[int, int] = self.selected_size  # type: ignore
 
         if self.selected_civilization is None:
             civ: Type[BaseCivilization] = Civilization.random(1)  # type: ignore
@@ -178,7 +187,7 @@ class GameConfigMenu(Screen):
 
         players: int = int(self.player_count)
 
-        messenger.send("system.game.start", [size, civ, players])
+        messenger.send("system.game.start_load", [size, civ, players])
         self.manager.current = "game_ui"
 
     def back_to_main_menu(self):

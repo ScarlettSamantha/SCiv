@@ -1,8 +1,7 @@
-from __future__ import annotations
+from typing import Any
 
 from gameplay.planes.plane import Plane
 from managers.i18n import t_
-from typing import Any
 
 
 class Land(Plane):

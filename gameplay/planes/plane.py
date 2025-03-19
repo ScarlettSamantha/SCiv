@@ -1,11 +1,9 @@
-from __future__ import annotations
-
-from managers.i18n import T_TranslationOrStr
-from system.saving import SaveAble
 from typing import Any
 
+from managers.i18n import T_TranslationOrStr
 
-class Plane(SaveAble):
+
+class Plane:
     def __init__(
         self,
         key: str,
@@ -14,9 +12,6 @@ class Plane(SaveAble):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        SaveAble.__init__(self, *args, **kwargs)
         self.key: str = key
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
-
-        self._setup_saveable()

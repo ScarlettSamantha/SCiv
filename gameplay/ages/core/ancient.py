@@ -1,4 +1,3 @@
-from __future__ import annotations
 from gameplay.age import Age
 from managers.i18n import _t
 

@@ -1,13 +1,13 @@
-from __future__ import annotations
-import os
 import ast
-import re
+import fnmatch
+import importlib
 import importlib.util
 import inspect
-import fnmatch
-from typing import Dict, Type, List, Union, Tuple, Callable, Optional, Any
+import os
+import re
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+
 from managers.log import LogManager
-import importlib
 
 
 def load_class(module_name: str, class_name: str):
@@ -29,21 +29,15 @@ class GenericClassVisitor(ast.NodeVisitor):
 class PyFileProcessor:
     def __init__(
         self,
-        base_classes: Union[
-            Type, List[Type], Optional[Callable[[str, str], bool]]
-        ] = None,
+        base_classes: Union[Type, List[Type], Optional[Callable[[str, str], bool]]] = None,
         properties: Optional[Tuple[str, str]] = None,
         _skip_on_error: bool = False,
     ):
-        self.base_classes: Optional[
-            Union[Type, List[Type], Callable[[str, str], bool]]
-        ] = base_classes
+        self.base_classes: Optional[Union[Type, List[Type], Callable[[str, str], bool]]] = base_classes
         self.properties: Optional[Tuple[str, str]] = properties
         self._skip_on_error: bool = _skip_on_error
 
-    def process_file(
-        self, file: str, name_pattern: Union[str, Callable[[str], bool]]
-    ) -> Dict[str, Type]:
+    def process_file(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> Dict[str, Type]:
         if not self._matches_pattern(file, name_pattern):
             self._log_skip(file, name_pattern)
             return {}
@@ -61,18 +55,14 @@ class PyFileProcessor:
         """
         return pattern.endswith("$")
 
-    def _matches_pattern(
-        self, file: str, name_pattern: Union[str, Callable[[str], bool]]
-    ) -> bool:
+    def _matches_pattern(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> bool:
         """
         Checks if the file matches the specified name pattern.
         Supports both string patterns and callable functions.
         """
         file_name = os.path.basename(file)
         if isinstance(name_pattern, Callable):
-            return re.match(r"^(?!_).*.py$", file_name) is not None and name_pattern(
-                file
-            )
+            return re.match(r"^(?!_).*.py$", file_name) is not None and name_pattern(file)
         elif isinstance(name_pattern, str):
             if self._is_regex_pattern(name_pattern):
                 # Strip the leading 'r' and the quotes from the regex pattern
@@ -83,30 +73,18 @@ class PyFileProcessor:
                         and re.match(regex_pattern, file_name) is not None
                     )
                 except re.error as e:
-                    LogManager.get_instance().engine.error(
-                        f"Invalid regex pattern: {regex_pattern}, error: {e}"
-                    )
+                    LogManager.get_instance().engine.error(f"Invalid regex pattern: {regex_pattern}, error: {e}")
                     return False
             else:
-                return re.match(
-                    r"^(?!_).*.py$", file_name
-                ) is not None and fnmatch.fnmatch(file_name, name_pattern)
+                return re.match(r"^(?!_).*.py$", file_name) is not None and fnmatch.fnmatch(file_name, name_pattern)
         return False
 
-    def _log_skip(
-        self, file: str, name_pattern: Union[str, Callable[[str], bool]]
-    ) -> None:
+    def _log_skip(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> None:
         """
         Logs a message indicating that the file is skipped due to a pattern mismatch.
         """
-        pattern = (
-            name_pattern
-            if isinstance(name_pattern, str)
-            else f"Custom->{name_pattern.__name__}"
-        )
-        LogManager.get_instance().engine.debug(
-            f"Skipping {file} due to name pattern[{pattern}] mismatch"
-        )
+        pattern = name_pattern if isinstance(name_pattern, str) else f"Custom->{name_pattern.__name__}"
+        LogManager.get_instance().engine.debug(f"Skipping {file} due to name pattern[{pattern}] mismatch")
 
     def _read_file(self, file: str) -> Optional[str]:
         """
@@ -118,9 +96,7 @@ class PyFileProcessor:
                 return f.read()
         except IOError as e:
             if self._skip_on_error:
-                LogManager.get_instance().engine.debug(
-                    f"Skipping {file} due to IO error: {e}"
-                )
+                LogManager.get_instance().engine.debug(f"Skipping {file} due to IO error: {e}")
             else:
                 raise e
             return None
@@ -135,9 +111,7 @@ class PyFileProcessor:
 
         filtered_classes: Dict[str, Type] = {}
 
-        def _filter_class(
-            _class: Type, allowed: Union[List[Type], Type, str, None]
-        ) -> bool:
+        def _filter_class(_class: Type, allowed: Union[List[Type], Type, str, None]) -> bool:
             # Check if no base classes are provided
             if allowed is None:
                 return True
@@ -149,9 +123,7 @@ class PyFileProcessor:
                         return True
             # Check if allowed is a string representing a class name
             elif isinstance(allowed, str):
-                if _class.__name__ == allowed or any(
-                    base.__name__ == allowed for base in _class.__bases__
-                ):
+                if _class.__name__ == allowed or any(base.__name__ == allowed for base in _class.__bases__):
                     return True
             # Check if allowed is an inspect class
             elif inspect.isclass(allowed):
@@ -180,24 +152,16 @@ class PyFileProcessor:
         loaded_classes: Dict[str, Type] = {}
         try:
             tree = ast.parse(file_content)
-            visitor = GenericClassVisitor(
-                properties=[self.properties] if self.properties is not None else []
-            )
+            visitor = GenericClassVisitor(properties=[self.properties] if self.properties is not None else [])
             visitor.visit(tree)
-            loaded_classes = self._filter_classes(
-                self._load_classes_from_visitor(visitor, file)
-            )
+            loaded_classes = self._filter_classes(self._load_classes_from_visitor(visitor, file))
         except SyntaxError as e:
             if not self._skip_on_error:
                 raise e
-            LogManager.get_instance().engine.debug(
-                f"Skipping {file} due to syntax error: {e}"
-            )
+            LogManager.get_instance().engine.debug(f"Skipping {file} due to syntax error: {e}")
         return loaded_classes
 
-    def _load_classes_from_visitor(
-        self, visitor: GenericClassVisitor, file: str
-    ) -> Dict[str, Type]:
+    def _load_classes_from_visitor(self, visitor: GenericClassVisitor, file: str) -> Dict[str, Type]:
         """
         Loads classes from the visitor's results using importlib.
         """
@@ -205,9 +169,7 @@ class PyFileProcessor:
         module_name = os.path.splitext(os.path.basename(file))[0]
         spec = importlib.util.spec_from_file_location(module_name, file)
         if spec is None or spec.loader is None:
-            LogManager.get_instance().engine.error(
-                f"Loader not found for module: {module_name}"
-            )
+            LogManager.get_instance().engine.error(f"Loader not found for module: {module_name}")
             return {}
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -243,9 +205,7 @@ class PyLoad:
     ):
         self.directory: Union[str, List[str]] = directory
         self.name_pattern: Union[str, Callable[[str], bool]] = name_pattern
-        self.base_classes: Union[Type, List[Type], Callable[[str, str], bool]] = (
-            base_classes
-        )
+        self.base_classes: Union[Type, List[Type], Callable[[str, str], bool]] = base_classes
         self.properties: Optional[Tuple[str, str]] = properties
         self.processor: PyFileProcessor = PyFileProcessor(base_classes, properties)
 
@@ -289,7 +249,5 @@ class PyLoad:
             if os.path.isdir(file_path):
                 loaded_classes.update(self._process_folder(file_path))
             elif os.path.isfile(file_path):
-                loaded_classes.update(
-                    self.processor.process_file(file_path, self.name_pattern)
-                )
+                loaded_classes.update(self.processor.process_file(file_path, self.name_pattern))
         return loaded_classes

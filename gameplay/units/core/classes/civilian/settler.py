@@ -1,10 +1,8 @@
-from abc import ABCMeta
 from typing import Any
-from managers.i18n import t_
 
-from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from gameplay.promotion import Promotion, PromotionTree
-from system.actions import Action
+from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
+from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
 
@@ -59,40 +57,30 @@ class SettlerPromotionTree(PromotionTree):
 
 
 class Settler(CoreCivilianBaseClass):
-    _model = "assets/models/units/pessent.glb"
+    _model = "assets/models/units/peasant.glb"
+    buildable = True
+    key = "core.unit.class.settler"
+    name = t_("content.units.core.units.civilian.settler.name")
+    description = t_("content.units.core.units.civilian.settler.description")
+    icon = None
+    promotion_tree = SettlerPromotionTree
+    model_size = 0.2
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.settler",
-            name="content.units.core.units.civilian.settler.name",
-            description=t_("content.units.core.units.civilian.settler.description"),
-            icon=None,
-            promotion_tree=SettlerPromotionTree(),
-            model_rotation=(0, 0, 0),
-            model_size=0.2,
-            model_position_offset=(0, 0, 0.1),
             *args,
             **kwargs,
         )
+        self.model_rotation = (0, 0, 0)
+        self.model_position_offset = (0, 0, 0.1)
 
-    def founding_conditions(self, _) -> bool:
-        if self.tile.is_city() is False or self.tile.owner != self.owner or not self.tile.is_passable():
-            return False
-        return True
+    def register_actions(self):
+        from gameplay.actions.unit.found import FoundAction
 
-    def _register(self):
-        found_action = Action(
-            name=t_("actions.unit.found_city"),
-            action=self.found_city,
-            condition=self.founding_conditions,
-            on_failure=lambda action, args, kwargs: None,
-        )
-        found_action.on_the_spot_action = True
-        found_action.remove_actions_after_use = True
-        self.actions.append(found_action)
-        return super()._register()
+        self.actions.append(FoundAction(self))
 
-    def found_city(self, _, *args, **kwargs):
-        self.tile.found(self.owner)
-        self.destroy()
-        return True
+        from gameplay.actions.unit.move import WalkAction
+
+        self.actions.append(WalkAction(self))
+
+        super().register_actions()
