@@ -166,6 +166,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
                 if type(class_instance) in self.city._improvements:  # We already have this improvement
                     continue
 
+                if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city._improvements):
+                    continue  # This is not the best way to check if we are already building this, but there was an issue with the __contains__ method it would not do a type check
+
                 if type(class_instance) == type(self.city.building):  # We are already building this
                     continue
 

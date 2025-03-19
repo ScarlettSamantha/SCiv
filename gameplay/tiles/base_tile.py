@@ -418,7 +418,14 @@ class BaseTile(BaseEntity):
             self._showing_large_icons = True
 
     def add_small_icons(self, force: bool = False) -> None:
-        basic_resources: List[BaseResource] = self.tile_yield.export_basic()
+        city_tile_yields: Yields = Yields.nullYield()
+        if self.city is not None:
+            for improvement in self.city._improvements.get_all():
+                city_tile_yields += improvement.tile_yield_improvement
+
+        yields = self.tile_yield + city_tile_yields
+        basic_resources: List[BaseResource] = yields.export_basic()
+
         if len(basic_resources) == 0:
             return
 
@@ -747,6 +754,8 @@ class BaseTile(BaseEntity):
             terrain_name: T_TranslationOrStr = "civilization.nature.name"
 
         _improvements = []
+        if self.city is not None:  # We add the city improvements to the list of improvements.
+            _improvements += [str(improvement.name) for improvement in self.city.get_improvements()]
         for improvement in self._improvements.get_all():
             _improvements.append(str(improvement.name))
 
