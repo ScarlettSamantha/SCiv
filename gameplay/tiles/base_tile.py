@@ -867,7 +867,7 @@ class BaseTile(BaseEntity):
     def build(self, improvement: Improvement) -> Literal[True] | CantBuildReason:
         if not improvement.placeable_on_tiles:
             return CantBuildReason.NOT_PLACEABLE_UPON_TILES
-        if self.city is not None:
+        if improvement.placeable_on_city is False and self.city is not None:
             return CantBuildReason.NOT_PLACEABLE_UPON_CITY
         if improvement.placeable_on_condition and isinstance(improvement.placeable_on_condition, Conditions):
             condition_check_result: bool = improvement.placeable_on_condition.are_met(
