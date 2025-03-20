@@ -306,9 +306,14 @@ class ui(Singleton, DirectObject):
     def set_screen(self, screen_name: str):
         self.get_gui().get_screen_manager().current = screen_name
 
+    def get_screen(self, screen_name: str):
+        return self.get_gui().get_screen_manager().get_screen(screen_name)
+
     def get_escape_menu(self):
         if self.showing_escape:
             self.set_screen("game_ui")
+            self.get_screen("save_load_screen").hide_load_menu()
+            self.get_screen("save_load_screen").hide_save_menu()
             self.showing_escape = False
             self.get_game().unpause()
             return
