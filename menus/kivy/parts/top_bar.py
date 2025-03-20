@@ -1,6 +1,7 @@
 from math import floor
 from typing import TYPE_CHECKING, Optional
 
+from direct.showbase.DirectObject import DirectObject
 from kivy.graphics import Color, Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -14,12 +15,12 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class TopBar(AnchorLayout):
-    def __init__(self, base: "SCIV", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), **kwargs):
+class TopBar(AnchorLayout, DirectObject):
+    def __init__(self, base: "SCIV", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), *args, **kwargs):
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.base: "SCIV" = base
 
         self.frame: Optional[BoxLayout] = None
@@ -32,7 +33,7 @@ class TopBar(AnchorLayout):
         self.register()
 
     def register(self):
-        self.base.accept("ui.update.ui.refresh_top_bar", self.update)
+        self.accept("ui.update.ui.refresh_top_bar", self.update)
 
     def update(self):
         player: Player = PlayerManager.session_player()
