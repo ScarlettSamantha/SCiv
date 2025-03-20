@@ -2,7 +2,7 @@ from logging import Logger
 from random import randint
 from typing import TYPE_CHECKING, List, Optional
 
-from direct.showbase import MessengerGlobal
+from direct.showbase import DirectObject, MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.citizens import Citizens, population_curve
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from gameplay.units.unit_base import UnitBaseClass
 
 
-class City(BaseEntity):
+class City(BaseEntity, DirectObject.DirectObject):
     logger: Logger = LogManager.get_instance().gameplay.getChild("city")
 
     FOOD_EXPONENT: float = 1.5
@@ -86,15 +86,15 @@ class City(BaseEntity):
             raise AssertionError("Base is not set.")
         self.generate_tag()
 
-        self.base.accept(f"game.gameplay.city.gets_tile_ownership_{self.tag}", self.on_tile_ownership_changed)
-        self.base.accept(
+        self.accept(f"game.gameplay.city.gets_tile_ownership_{self.tag}", self.on_tile_ownership_changed)
+        self.accept(
             f"game.gameplay.city.request_start_building_improvement_{self.tag}",
             self.on_request_start_building_improvement,
         )
-        self.base.accept(
+        self.accept(
             f"game.gameplay.city.request_start_building_unit_{self.tag}", self.on_request_start_building_unit
         )
-        self.base.accept(f"game.gameplay.city.request_cancel_building_improvement_{self.tag}", self.on_cancel_building)
+        self.accept(f"game.gameplay.city.request_cancel_building_improvement_{self.tag}", self.on_cancel_building)
 
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
