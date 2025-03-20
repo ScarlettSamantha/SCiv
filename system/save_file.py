@@ -3,6 +3,7 @@ import json
 import sys
 import zlib
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -24,6 +25,7 @@ class BaseSaver(ABC):
         self.hash: str
         self.counter: int
         self.inject_metadata: bool = True
+        self.loaded_data_length: int = 0
 
     def set_identifier(self, identifier: str):
         self.identifier = identifier
@@ -75,6 +77,8 @@ class BaseSaver(ABC):
         }
 
         self.meta_data["saver"]["meta_checksum_crc32"] = str(zlib.crc32(repr(self.meta_data).encode()))
+        self.meta_data["saver"]["data_size"] = len(self.data)
+        self.meta_data["saver"]["save_time"] = datetime.now().isoformat()
 
     @abstractmethod
     def save(self) -> bool: ...
@@ -82,18 +86,45 @@ class BaseSaver(ABC):
     @abstractmethod
     def load(self) -> Any: ...
 
-    @abstractmethod
-    def get_saved_session(self) -> List[str]: ...
+    def get_saved_session(self) -> List[str]:
+        save_location = Path(self.identify_save_location())
+        if not save_location.exists():
+            return []
+
+        result = []
+        for d in save_location.iterdir():
+            if d.is_dir() and d.name != "metadata.json":
+                result.append(d.name)
+
+        return result
+
+    def get_session_data(self) -> None | Dict[str, Any]:
+        save_location = Path(self.identify_save_location())
+
+        if not save_location.exists():
+            return None
+
+        save_location = save_location / self.identifier
+
+        if not save_location.exists():
+            return None
+
+        if (save_location / "metadata.json").exists():
+            meta_data = json.loads((save_location / "metadata.json").read_text())
+            return meta_data
+
+        return None
 
     @abstractmethod
     def get_saved_meta_data(self) -> Dict[str, Any]: ...
 
     def compress_and_inject_data(self, data: bytes) -> bytes:
         """Compress data using gzip if enabled."""
-        if self.compression_enabled:
-            return gzip.compress(data)
+
         if self.inject_metadata:
             self.register_modifications_metadata()
+        if self.compression_enabled:
+            return gzip.compress(data)
         return data
 
     def decompress_data(self, data: bytes) -> bytes:
@@ -111,7 +142,7 @@ class BaseSaver(ABC):
             elif sys.platform.startswith("linux") or sys.platform.startswith("unix"):
                 return str(Path.home() / ".local" / "share" / self.game_name)  # Standard Linux user data location
         else:
-            return str(Path(self.base_path) / self.game_name)
+            return str((Path(self.base_path)).absolute())
         raise RuntimeError("Unsupported operating system: " + sys.platform)
 
     def generate_save_directory(self) -> str:

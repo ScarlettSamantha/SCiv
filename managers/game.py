@@ -6,6 +6,7 @@ from panda3d.core import WindowProperties
 
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
+from gameplay.player import Player
 from gameplay.repositories.generators import GeneratorRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from managers.config import ConfigManager
@@ -76,8 +77,8 @@ class Game(Singleton):
         timers()
         messenger()
 
-    def save(self, filename: str):
-        self.entities.dump(filename)
+    def save(self, session_name: str):
+        self.entities.dump(session_name)
 
     def is_paused(self) -> bool:
         return self._is_paused
@@ -252,6 +253,9 @@ class Game(Singleton):
 
         self.logger.info("Setting up camera")
         self.camera_setup()
+
+        player: "Player" = PlayerManager.player()
+        self.entities.session = f"{player.name}"
 
         if not self.active_generator.generate():
             raise ValueError("There is no generator")

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
@@ -86,7 +86,7 @@ class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
         import dill as pickle
         import dill.detect
 
-        with dill.detect.trace():
+        with dill.detect.trace():  # type: ignore
             return pickle.dumps(data)
 
     def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
@@ -154,7 +154,7 @@ class EntityManager(Singleton):
             return False
         return isinstance(entity, type.base_type)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[Any, Any]:
         return {}
 
     def calculate_stats(self):
@@ -258,7 +258,9 @@ class EntityManager(Singleton):
             raise ValueError("No serializer registered.")
 
         if session_name == "" or len(session_name) == 0:
-            session_name = None
+            session_name = self.session
+
+        self.session = session_name
 
         data: bytes = self.serializer.dump(self._entities)
 
@@ -270,11 +272,13 @@ class EntityManager(Singleton):
 
         saver_instance = self.saver()
         saver_instance.set_data(data)
+        saver_instance.loaded_data_length = len(data)
         saver_instance.set_identifier(self.session)
         saver_instance.set_session_incrementor(self.session_incrementor)
 
         # Add meta data before saving to the file to keep track of the state of the game, keep these as late as possible
         self.add_default_meta_data()
+        self.add_meta_data("loaded_data_length", saver_instance.loaded_data_length)
         saver_instance.set_meta_data(self._meta_data)
 
         saver_instance.save()
@@ -300,7 +304,7 @@ class EntityManager(Singleton):
         for entity_type, entity_dict in unserialized_data.items():
             self._entities[entity_type].update(entity_dict)
 
-    def get_all_session(self):
+    def get_all_session(self) -> List[str]:
         if self.saver is None:
             raise ValueError("No saver registered.")
 
@@ -309,3 +313,11 @@ class EntityManager(Singleton):
 
         saver_instance = self.saver()
         return saver_instance.get_saved_session()
+
+    def get_session_data(self, session_name: str) -> None | Dict[str, Any]:
+        if self.saver is None:
+            raise ValueError("No saver registered.")
+
+        saver_instance = self.saver()
+        saver_instance.set_identifier(session_name)
+        return saver_instance.get_session_data()

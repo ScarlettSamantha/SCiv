@@ -77,6 +77,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.base.accept("ui.update.ui.show_city_ui", self.show)
         self.base.accept("ui.update.ui.hide_city_ui", self.hide)
         self.base.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
+        self.base.accept("game.gameplay.city.starts_building_unit", self.on_city_start_building_improvement)
         self.base.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
         self.base.accept("game.gameplay.city.canceled_production", self.on_cancel_current_build)
 
@@ -249,6 +250,15 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
             f"game.gameplay.city.request_start_building_improvement_{self.city.tag}", [self.city, instance.value]
         )
 
+    def on_unit_build_button_click(self, instance: ButtonValue):
+        if self.city is None:
+            return
+
+        self.logger.debug(f"Requesting to build unit: {instance.value} in city: {self.city.name}")
+        MessengerGlobal.messenger.send(
+            f"game.gameplay.city.request_start_building_unit_{self.city.tag}", [self.city, instance.value]
+        )
+
     def on_city_start_building_improvement(self, city: City, improvement: BaseCityImprovement):
         if city != self.city:  # We dont have it selected so we dont have to update
             return
@@ -329,9 +339,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.current_label = Label(
             text=str(t_("ui.player_ui.city.current_button_label")), size_hint=(0.3, None), height=30, font_size=16
         )
-        self.current_button = Button(
-            text=str(t_("ui.player_ui.city.current_button_idle")), size_hint=(0.65, None), height=30
-        )
+        self.current_button = Button(text=str("?"), size_hint=(0.65, None), height=30)
         self.current_button.bind(on_press=self.on_cancel_current_build_btn_click)
 
         self.current_layout.add_widget(self.current_label)
