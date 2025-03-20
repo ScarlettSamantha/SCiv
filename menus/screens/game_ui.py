@@ -3,11 +3,13 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 from weakref import ReferenceType
 
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
@@ -34,7 +36,7 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class GameUIScreen(Screen, CollisionPreventionMixin):
+class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     debug_data: Dict[str, str] = {
         "state": "Playing",
     }
@@ -93,15 +95,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
     def register(self):
         self.logger.info("Registering event listeners.")
 
-        self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
-        self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
-        self._base.accept("ui.update.user.city_clicked", self.process_city_click)
-        self._base.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
+        self.accept("ui.update.user.tile_clicked", self.process_tile_click)
+        self.accept("ui.update.user.unit_clicked", self.process_unit_click)
+        self.accept("ui.update.user.city_clicked", self.process_city_click)
+        self.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
 
-        self._base.accept("ui.update.ui.unit_unselected", self.clear_action_bar)
+        self.accept("ui.update.ui.unit_unselected", self.clear_action_bar)
 
-        self._base.accept("system.unit.destroyed", self.clear_action_bar)
-        self._base.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
+        self.accept("system.unit.destroyed", self.clear_action_bar)
+        self.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
@@ -207,8 +209,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
         self.logger.info("Non-collidable UI elements registered.")
         return self.root_layout
 
-    def build_action_bar(self) -> BoxLayout:
-        self.action_bar_frame = ActionBar(base=self._base)
+    def build_action_bar(self) -> GridLayout:
+        self.action_bar_frame = ActionBar()
         return self.action_bar_frame.build()
 
     def build_stats_frame(self) -> FloatLayout:
@@ -266,16 +268,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
         if debug and not self.debug_panels_showing_state["debug"]:
             self.add_widget(self.debug_frame)
-            self._base.accept("ui.update.user.tile_clicked", self.process_tile_click)
-            self._base.accept("ui.update.user.unit_clicked", self.process_unit_click)
             self.register_non_collidable(self.debug_frame.frame)
         else:
             frame = self.get_debug_frame()
             for child in frame.children:  # type: ignore
                 frame.remove_widget(child)
             self.remove_widget(frame)
-            self._base.ignore("ui.update.user.tile_clicked")
-            self._base.ignore("ui.update.user.unit_clicked")
             self.unregister_non_collidable(self.debug_frame.frame)
 
         if stats and not self.debug_panels_showing_state["stats"]:
@@ -311,10 +309,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
             self.generate_buttons_for_unit_actions(unit)  # Update
 
     def process_unit_click(self, unit: str):
+        self.logger.debug(f"Unit clicked: {unit}")
         _unit: ReferenceType[BaseEntity] = EntityManager.get_instance().get_ref_weak(EntityType.UNIT, unit)
 
         if unit != self.ui_manager.current_unit:
-            self.clear_action_bar()
             self.generate_buttons_for_unit_actions(unit)
 
         if self.showing_city is not None:
@@ -326,7 +324,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         if self.action_bar_frame is None:
-            raise AssertionError("Action bar is not initialized.")
+            return
 
         _unit: Optional[UnitBaseClass] = None
         if isinstance(unit, str):
@@ -336,8 +334,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
         if _unit is not None:
             self.action_bar_frame.clear_buttons()
-
-            for action in _unit.get_actions():
+            actions = _unit.get_actions()
+            for action in actions:
                 button = Button(
                     text=str(action.name),
                     size_hint=(None, None),
@@ -377,7 +375,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin):
 
     def clear_action_bar(self):
         if self.action_bar_frame is None:
-            raise AssertionError("Action bar is not initialized.")
+            return
 
         self.action_bar_frame.clear_buttons()
 
