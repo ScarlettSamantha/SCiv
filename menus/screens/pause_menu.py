@@ -92,6 +92,14 @@ class PauseMenu(Popup, CollisionPreventionMixin):
     def quit_game(self, instance):
         messenger.send("game.input.user.quit_game")
 
+    def open(self):
+        self.register_non_collidable(self.container)
+        super().open()
+
+    def dismiss(self):
+        self.unregister_non_collidable(self.container)
+        super().dismiss()
+
 
 class PauseScreen(Screen):
     def __init__(self, base: "SCIV", **kwargs):
