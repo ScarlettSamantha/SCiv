@@ -10,6 +10,7 @@ uuid_path = "saves/{uuid}/data.pickle.gz"
 def save_inspect(path):
     if len(path) == 32 and "/" not in path:
         path = uuid_path.format(uuid=path)
+
     if path.endswith(".gz"):
         with gzip.open(path, "rb") as f:
             pprint(dill.loads(f.read()))
