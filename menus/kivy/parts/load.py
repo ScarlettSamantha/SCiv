@@ -208,7 +208,11 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.main_layout.add_widget(self.footer_load_button)
         self.main_layout.add_widget(self.footer_cancel_button)
 
-    def on_load_game(self, instance): ...
+    def on_load_game(self, instance):
+        if not self.name_input or not self.name_input.text or self.name_input.text == "":
+            return
+
+        MessengerGlobal.messenger.send("game.state.request_load", [self.name_input.text])
 
     def on_cancel(self, instance):
         self.close_popup()

@@ -28,6 +28,9 @@ class Input(Singleton, DirectObject):
 
         self.register()
 
+    def reset(self):
+        self.active = False
+
     def register(self):
         """
         Bind relevant mouse or keyboard events here.

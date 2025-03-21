@@ -42,7 +42,15 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.input.user.escape_pressed` (E: manager-input | L:manager-game, L:manager-ui)
 - `game.input.user.quit_game` (E: ui-main-menu, E: ui-pause-menu | L: manager-game)
 - `game.input.user.wireframe_toggle` (E:NONE | L: manager-game)
+
 - `game.state.true_game_start` (E: manager-game | L: manager-ui)
+- `game.state.request_load`(E: ui-part-load | L: manager-game)
+- `game.state.reset_start` (E: manager-game | )
+- `game.state.reset_finished` (E: manager-game | )
+- `game.state.load_start` (E: manager-game | )
+- `game.state.load_finished` (E: manager-game | )
+- `game.state.save_start` (E: manager-game | )
+- `game.state.save_finished` (E: manager-gamer | )
 
 - `game.turn.request_end` (E:ui-player-turn-control | L:manager-turn)
 - `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-control)

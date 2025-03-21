@@ -23,7 +23,7 @@ class BaseSaver(ABC):
         self.meta_data: Dict[str, Any]  # Will be converted to json
         self.identifier: str
         self.hash: str
-        self.counter: int
+        self.counter: int = 0
         self.inject_metadata: bool = True
         self.loaded_data_length: int = 0
 
@@ -151,8 +151,8 @@ class BaseSaver(ABC):
     def generate_save_path(self, filename: str) -> str:
         return str(Path(self.generate_save_directory()) / filename)
 
-    def compare_hash(self, data: str) -> bool:
-        return self.hash == str(zlib.crc32(data.encode("utf-8")))
+    def compare_hash(self, data: bytes) -> bool:
+        return self.hash == str(zlib.crc32(data))
 
 
 class SavePickleFile(BaseSaver):
@@ -189,7 +189,7 @@ class SavePickleFile(BaseSaver):
             return False
 
     def load(self) -> bytes | bool:
-        save_dir = Path(self.base_path) / self.identifier / str(self.counter)
+        save_dir = Path(self.base_path) / self.identifier
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"
@@ -205,7 +205,7 @@ class SavePickleFile(BaseSaver):
             with open(hash_path, "r", encoding="utf-8") as file:
                 self.hash = file.read().strip()
 
-            if not self.compare_hash(self.data.decode("utf-8")):
+            if not self.compare_hash(self.data):
                 print("Warning: Data integrity check failed!")
                 return False
 

@@ -29,6 +29,9 @@ class SCivGUI(App):
     def set_screen(self, screen_name: str) -> None:
         self.get_screen_manager().current = screen_name
 
+    def get_screen(self, screen_name: str):
+        return self.get_screen_manager().get_screen(screen_name)
+
     def build(self, default_screen: str = "main_menu"):
         screen_manager = ScreenManager()
         screen_manager.add_widget(MainMenuScreen(name="main_menu"))

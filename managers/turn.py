@@ -49,6 +49,10 @@ class Turn(Singleton):
     def register(self):
         pass
 
+    def reset(self):
+        self.turn = self.PREPARE_FOR_GAME
+        self.active = False
+
     def de_activate(self):
         self.active = False
 

@@ -140,6 +140,22 @@ class EntityManager(Singleton):
 
         return super().__setup__(*args, **kwargs)
 
+    def reset(self):
+        self._meta_data = {"system": {}, "game": {}, "stats": {}, "player": {}}
+        self.stats = {
+            "total_entities_registered": 0,
+            "total_entities_unregistered": 0,
+            "total_entities": 0,
+            "total_orphan_entities": 0,
+            "total_players": 0,
+            "total_units": 0,
+            "total_tiles": 0,
+            "total_effects": 0,
+        }
+        self.session = str(uuid4().hex)
+        self.session_incrementor = 0
+        self._entities = {type_: {} for type_ in EntityType}
+
     def add_default_meta_data(self) -> None:
         """
         Call this as late to saving as possible so the most accurate stats gets saved.

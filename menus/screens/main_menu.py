@@ -12,7 +12,8 @@ from kivy.uix.screenmanager import Screen
 class MainMenuScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.layout: Optional[BoxLayout] = None
+        self.layout: Optional[FloatLayout] = None
+        self.container: Optional[BoxLayout] = None
 
         self.continue_button: Optional[Button] = None
         self.new_button: Optional[Button] = None
@@ -29,7 +30,7 @@ class MainMenuScreen(Screen):
 
     def build_screen(self):
         float_layout = FloatLayout()
-
+        self.layout = float_layout
         # Transparent gray background box
         container: BoxLayout = BoxLayout(
             orientation="vertical",
@@ -58,7 +59,7 @@ class MainMenuScreen(Screen):
         )
         container.add_widget(title_label)
 
-        self.layout = container
+        self.container = container
 
         button_width: int = 400
 

@@ -1,6 +1,8 @@
 from logging import Logger
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
+from direct.showbase import MessengerGlobal
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import WindowProperties
 
@@ -9,8 +11,9 @@ from gameplay.civilizations.rome import Rome
 from gameplay.player import Player
 from gameplay.repositories.generators import GeneratorRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
+from gameplay.tiles.base_tile import BaseTile
 from managers.config import ConfigManager
-from managers.entity import EntityManager
+from managers.entity import EntityManager, EntityType
 from managers.input import Input
 from managers.player import PlayerManager
 from managers.turn import Turn
@@ -26,7 +29,7 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class Game(Singleton):
+class Game(Singleton, DirectObject):
     def __init__(self, base, camera: Camera):
         self.game_active: bool = False
         self.game_over: bool = False
@@ -72,13 +75,62 @@ class Game(Singleton):
             self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)
 
         def messenger():
-            self.base.accept("game.turn.request_end", self.process_turn)
+            self.accept("game.turn.request_end", self.process_turn)
+            self.accept("game.state.request_load", self.on_request_load)
 
         timers()
         messenger()
 
     def save(self, session_name: str):
+        MessengerGlobal.messenger.send("game.state.save_start")
         self.entities.dump(session_name)
+        MessengerGlobal.messenger.send("game.state.save_finished")
+
+    def on_request_load(self, session_name: str) -> None:
+        self.load(session_name)
+
+    def load(self, session_name: str):
+        MessengerGlobal.messenger.send("game.state.load_start")
+        self.reset_game()
+        self.entities.session = session_name
+        self.entities.load()
+
+        world_tiles: Dict[Any, "BaseTile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
+        if world_tiles is None:
+            raise ValueError("No world tiles found")
+
+        players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
+        if players is None:
+            raise ValueError("No players found")
+
+        self.world.load(world_tiles)
+        self.players.load(players)
+        self.ui.map = self.world
+        self.camera.recenter()
+        self.turn.activate()
+        self.turn.set_turn(Turn.GAME_BEGIN)
+        self.ui.set_screen("game_ui")
+        self.input.activate()
+
+        self.game_active = True
+        self.ui.post_game_start()
+        MessengerGlobal.messenger.send("game.state.load_finished")
+
+    def reset_game(self):
+        MessengerGlobal.messenger.send("game.state.reset_start")
+
+        self.game_active = False
+        self.game_over = False
+        self.game_won = False
+
+        self.ui.reset()
+        self.world.reset()
+        self.turn.reset()
+        self.camera.reset()
+        self.entities.reset()
+        self.players.reset()
+        self.input.reset()
+        MessengerGlobal.messenger.send("game.state.reset_finished")
 
     def is_paused(self) -> bool:
         return self._is_paused

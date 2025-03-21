@@ -73,6 +73,22 @@ class ui(Singleton, DirectObject):
             self.register()
             self.registered = True
 
+    def reset(self):
+        self.current_tile = None
+        self.previous_tile = None
+        self.neighboring_tiles = []
+        self.previous_tiles = []
+        self.current_unit = None
+        self.previous_unit = None
+        self.game_menu_state = None
+        self.showing_colors = False
+        self.show_resources_in_radius = False
+        self.show_colors_in_radius = False
+        self.debug_show = {"actions": False, "stats": False, "debug": False}
+        self.popups = {}
+        self.previous_screen_name = ""
+        self.showing_escape = False
+
     def get_gui(self) -> "SCivGUI":
         if self.game_gui is None:
             raise ValueError("GUI not initialized")

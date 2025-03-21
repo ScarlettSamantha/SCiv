@@ -1,4 +1,3 @@
-import pprint
 from copy import deepcopy
 from enum import Enum
 from logging import Logger
@@ -20,6 +19,7 @@ from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
+from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
@@ -216,6 +216,26 @@ class BaseTile(BaseEntity):
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
         return f"tile_{x}_{y}"
+
+    def on_load(self) -> None:
+        self.tag = self.generate_tag(self.x, self.y)
+        self.models = []
+        self.base = Cache.get_showbase_instance()
+        self._entity_manager = EntityManager.get_instance()
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
+        self.effects = Effects(self)
+        self._improvements = ImprovementsSet()
+
+        self._render_default_terrain()
+        self.create_root_ui_node()
+
+        self.mini_icons_card = NodePath("mini_icons_card")
+        self.mini_icons_card.reparentTo(self.tile_icon_group)
+
+        self.text_card = NodePath("text_card")
+        self.text_card.reparentTo(self.tile_icon_group)
+
+        self.rerender()
 
     def calculate(self):
         base = deepcopy(self._tile_terrain.get_tile_yield())  # This is to prevent modifying the base yield.

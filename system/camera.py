@@ -81,6 +81,14 @@ class Camera(Singleton, DirectObject):
         self.base.taskMgr.add(self.update, "updateCivCameraTask")
         return True
 
+    def reset(self):
+        self.pivot.setPos(0, 0, 0)
+        self.base.camera.setPos(0, 0, 0)
+        self.base.camera.setHpr(0, 0, 0)
+        self.yaw = 0
+        self.zoom = 20.0
+        self.update_camera_position()
+
     def __setup__(self, *args, **kwargs):
         return super().__setup__(*args, **kwargs)
 

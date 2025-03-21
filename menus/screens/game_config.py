@@ -162,7 +162,6 @@ class GameConfigMenu(Screen):
     def select_civilization(self, civilization, _value: Type[BaseCivilization]):
         """Updates the civilization selection button"""
         self.selected_civilization = _value
-        print(f"{civilization}, {_value}")
         self.dropdown_button.text = civilization
 
     def update_selected_size(self):

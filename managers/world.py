@@ -3,10 +3,12 @@ from logging import Logger
 from math import sqrt
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.tiles.base_tile import BaseTile
 from helpers.cache import Cache
+from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import Player, PlayerManager
 from mixins.singleton import Singleton
@@ -15,18 +17,19 @@ from system.effects import Effects
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
+    from gameplay.units.unit_base import UnitBaseClass
     from system.generators.base import BaseGenerator
 
 
-class World(Singleton):
+class World(Singleton, DirectObject):
     logger: Logger = LogManager.get_instance().gameplay.getChild("world")
 
     def __setup__(self):
         self.base = Cache.get_showbase_instance()
         self.hex_radius: float = 0.5
         self.col_spacing: float = 1.4
-        self.cols: int = 5
-        self.rows: int = 5
+        self.cols: int = 5  # x
+        self.rows: int = 5  # y
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
         # Key is the tag, value is the tile.
@@ -40,8 +43,38 @@ class World(Singleton):
     def __init__(self, base):
         self.base = base
 
+    def reset(self):
+        self.map = {}
+        self.grid = {}
+        self.effects = Effects(self)
+
+        unit: UnitBaseClass
+        for unit in EntityManager.get_instance().get_all(EntityType.UNIT).values():  # type: ignore
+            unit.destroy()
+
+        tile: "BaseTile"
+        for tile in EntityManager.get_instance().get_all(EntityType.TILE).values():  # type: ignore
+            tile.destroy()
+
+    def load(self, data: Dict[str, "BaseTile"]):
+        self.logger.info("Loading world data.")
+        self.map = data
+        self.grid = {(tile.x, tile.y): tile for tile in data.values()}
+        self.logger.info("World data loaded.")
+        self.logger.info("Calculating world size")
+        self.cols = max([tile.x for tile in data.values()]) + 1  # x
+        self.rows = max([tile.y for tile in data.values()]) + 1  # y
+        self.calculate_middle()
+        self.logger.info(f"World size is {self.cols}x{self.rows}")
+        for tile in self.map.values():
+            tile.on_load()
+
+    def calculate_middle(self):
+        self.middle_x = self.cols / 2.0
+        self.middle_y = self.rows / 2.0
+
     def register(self):
-        self.base.accept(  # type: ignore
+        self.accept(  # type: ignore
             "game.gameplay.city.requests_tile",
             self.on_city_requests_tile,
         )
@@ -141,7 +174,7 @@ class World(Singleton):
             self.set_ownership_of_tile(tile, city.player, city)
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
-            self.base.messenger.send(  # type: ignore
+            messenger.send(  # type: ignore
                 f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],
             )
