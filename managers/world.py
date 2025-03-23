@@ -48,12 +48,12 @@ class World(Singleton, DirectObject):
         self.grid = {}
         self.effects = Effects(self)
 
-        unit: UnitBaseClass
-        for unit in EntityManager.get_instance().get_all(EntityType.UNIT).values():  # type: ignore
+        unit: "UnitBaseClass"
+        for unit in list(EntityManager.get_instance().get_all(EntityType.UNIT).values()):  # type: ignore
             unit.destroy()
 
         tile: "BaseTile"
-        for tile in EntityManager.get_instance().get_all(EntityType.TILE).values():  # type: ignore
+        for tile in list(EntityManager.get_instance().get_all(EntityType.TILE).values()):  # type: ignore
             tile.destroy()
 
     def load(self, data: Dict[str, "BaseTile"]):
