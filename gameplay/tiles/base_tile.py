@@ -248,7 +248,7 @@ class BaseTile(BaseEntity):
 
         self.tile_yield = base
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
         if "base" in state:
             del state["base"]
@@ -568,10 +568,9 @@ class BaseTile(BaseEntity):
             return
 
         if render_all:
+            self.unrender_all()
             self._render_improvements()
             self._render_default_terrain()
-
-            # (Additional models could be re-added here if needed.)
         elif model_index is not None:
             self.unrender_model(model_index)
             if model_index == 0:
@@ -622,10 +621,7 @@ class BaseTile(BaseEntity):
         node.setCollideMask(BitMask32.bit(1))
         self.tag = self.generate_tag(self.x, self.y)
         node.setTag("tile_id", self.tag)
-        if self.models:
-            self.models[0] = node
-        else:
-            self.models.append(node)
+        self.models.append(node)
 
     def _render_improvements(self) -> None:
         improvements: List[Improvement] = self.improvements().get_all()
@@ -904,7 +900,7 @@ class BaseTile(BaseEntity):
             self.owner.capital.de_capitalize()  # We tell the current capital to de-capitalize so it can be done with something in the future, for now its just a property set.
         self.owner.capital = self.city
 
-        self._render_default_terrain()
+        self.rerender()
         self.add_city_name()
         return True
 
