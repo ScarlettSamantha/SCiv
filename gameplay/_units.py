@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Generic, List, TypeVar
+from typing import TYPE_CHECKING, Generic, Iterator, List, TypeVar
 
 if TYPE_CHECKING:
     from gameplay.units.unit_base import UnitBaseClass
@@ -31,3 +31,6 @@ class Units(Generic[T]):
 
     def has_any(self) -> bool:
         return len(self._units) > 0
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self._units)

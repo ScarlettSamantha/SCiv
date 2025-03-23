@@ -66,8 +66,14 @@ class World(Singleton, DirectObject):
         self.rows = max([tile.y for tile in data.values()]) + 1  # y
         self.calculate_middle()
         self.logger.info(f"World size is {self.cols}x{self.rows}")
-        for tile in self.map.values():
+
+        for tile in self.map.values():  # Place the tiles
             tile.on_load()
+
+            if len(tile.units) > 0:  # Subload the units
+                unit: "UnitBaseClass"
+                for unit in tile.units:
+                    unit.on_load()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0

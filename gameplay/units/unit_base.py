@@ -13,6 +13,7 @@ from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
 from gameplay.resources.core.basic.production import Production
 from gameplay.tiles.base_tile import BaseTile
+from main import Cache
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.unit import Unit
@@ -105,6 +106,10 @@ class UnitBaseClass(BaseEntity, ABC):
         self.register_actions()
 
     def register_actions(self): ...
+
+    def on_load(self):
+        self.base = Cache.get_showbase_instance()
+        self.spawn()
 
     def get_tile(self) -> BaseTile | None:
         if self.tile is not None:
