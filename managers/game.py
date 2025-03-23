@@ -212,7 +212,6 @@ class Game(Singleton, DirectObject):
         if isinstance(tiles, str):
             tiles = [tiles]
         messenger.send("ui.update.user.tile_clicked", tiles)
-        self.ui.select_tile(tiles)
 
     def handle_unit_click(self, units: Union[List[str], str]):
         if isinstance(units, str):
