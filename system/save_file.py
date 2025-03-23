@@ -228,11 +228,9 @@ class SavePickleFile(BaseSaver):
         if not directory.exists():
             return meta_data_list
 
-        for save_folder in directory.iterdir():
-            if save_folder.is_dir():
-                metadata_path = save_folder / "metadata.json"
-                if metadata_path.exists():
-                    with open(metadata_path, "r", encoding="utf-8") as file:
-                        meta_data_list[save_folder.name] = json.load(file)
+        metadata_path = directory / self.identifier / "metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, "r", encoding="utf-8") as file:
+                meta_data_list = json.load(file)
 
         return meta_data_list
