@@ -2,6 +2,7 @@ from math import floor
 from typing import TYPE_CHECKING, Dict, Optional
 
 from direct.showbase import MessengerGlobal
+from direct.showbase.DirectObject import DirectObject
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class CityUI(BoxLayout, CollisionPreventionMixin):
+class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
     def __init__(self, base: "SCIV", name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
         super().__init__(base=base, disable_zoom=True, orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
         self.pos_hint = {"x": 0, "center_y": 0.65}  # Align left & center vertically
@@ -73,13 +74,13 @@ class CityUI(BoxLayout, CollisionPreventionMixin):
         self.register()
 
     def register(self):
-        self.base.accept("ui.update.ui.refresh_city_ui", self.update)
-        self.base.accept("ui.update.ui.show_city_ui", self.show)
-        self.base.accept("ui.update.ui.hide_city_ui", self.hide)
-        self.base.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
-        self.base.accept("game.gameplay.city.starts_building_unit", self.on_city_start_building_improvement)
-        self.base.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
-        self.base.accept("game.gameplay.city.canceled_production", self.on_cancel_current_build)
+        self.accept("ui.update.ui.refresh_city_ui", self.update)
+        self.accept("ui.update.ui.show_city_ui", self.show)
+        self.accept("ui.update.ui.hide_city_ui", self.hide)
+        self.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
+        self.accept("game.gameplay.city.starts_building_unit", self.on_city_start_building_improvement)
+        self.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
+        self.accept("game.gameplay.city.canceled_production", self.on_cancel_current_build)
 
     def set_city(self, city: City):
         self.city = city
