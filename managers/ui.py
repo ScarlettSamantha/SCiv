@@ -381,6 +381,9 @@ class ui(Singleton, DirectObject):
     def select_tile(self, tile_coords: List[str]):
         from gameplay.repositories.tile import TileRepository
 
+        if not isinstance(tile_coords, list):
+            tile_coords = [tile_coords]
+
         tile = self.map.map.get(tile_coords[0])
         if tile is None:
             return
