@@ -32,6 +32,13 @@ class SCivGUI(App):
     def get_screen(self, screen_name: str):
         return self.get_screen_manager().get_screen(screen_name)
 
+    def load_game_ui(self):
+        if self.screen_manager is None:
+            self.screen_manager = self.build()
+        self.screen_manager.get_screen("save_load_screen").hide_save_menu()
+        self.screen_manager.get_screen("save_load_screen").hide_load_menu()
+        self.screen_manager.current = "game_ui"
+
     def build(self, default_screen: str = "main_menu"):
         screen_manager = ScreenManager()
         screen_manager.add_widget(MainMenuScreen(name="main_menu"))

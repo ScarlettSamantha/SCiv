@@ -96,7 +96,7 @@ class PauseMenu(Popup, CollisionPreventionMixin):
         self.register_non_collidable(self.container)
         super().open()
 
-    def dismiss(self):
+    def dismiss(self, _=None):
         self.unregister_non_collidable(self.container)
         super().dismiss()
 

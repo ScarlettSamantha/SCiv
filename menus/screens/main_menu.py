@@ -65,6 +65,7 @@ class MainMenuScreen(Screen):
 
         self.continue_button = Button(text="Continue", size_hint=(None, None), height=50, width=button_width)
         self.continue_button.pos_hint = {"center_x": 0.5}
+        self.continue_button.bind(on_release=self.destroy)
 
         self.new_button = Button(text="New", size_hint=(None, None), height=50, width=button_width)
         self.new_button.pos_hint = {"center_x": 0.5}
@@ -102,6 +103,9 @@ class MainMenuScreen(Screen):
     def to_config_screen(self, _):
         self.manager.current = "options_screen"
 
+    def to_game_screen(self, _: Optional[Button] = None):
+        self.manager.current = "game_ui"
+
     def switch_to_load_screen(self, _):
         messenger.send("ui.update.ui.show_load")
 
@@ -110,3 +114,12 @@ class MainMenuScreen(Screen):
 
     def exit(self):
         messenger.send("game.input.user.quit_game")
+
+    def hide(self):
+        self.layout.visible = False  # type: ignore
+        self.destroy()
+
+    def destroy(self, _: Optional[Button] = None):
+        if self.layout is not None:
+            self.remove_widget(self.layout)
+            self.to_game_screen()

@@ -88,9 +88,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         }
 
         self.logger.info("Game UI Screen initialized.")
-        self.add_widget(self.build_screen())
-        self.logger.info("Game UI Screen built.")
         self.register()
+        self.build_screen()
+        self.logger.info("Game UI Screen built.")
 
     def register(self):
         self.logger.info("Registering event listeners.")
@@ -207,7 +207,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.register_non_collidable(self.top_bar.frame)
 
         self.logger.info("Non-collidable UI elements registered.")
-        return self.root_layout
+        self.add_widget(self.root_layout)
 
     def build_action_bar(self) -> GridLayout:
         self.action_bar_frame = ActionBar()

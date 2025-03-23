@@ -121,6 +121,7 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.ui.hide_save", self.on_hide_save)
         self.accept("ui.update.ui.hide_load", self.on_hide_load)
         self.accept("ui.request.save_game", self.on_request_save_game)
+        self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
         self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
@@ -160,6 +161,9 @@ class ui(Singleton, DirectObject):
 
     def on_request_save_game(self, save_name: str):
         self.get_game().save(save_name)
+
+    def on_show_game_ui(self):
+        self.get_gui().load_game_ui()
 
     def on_main_ready(self):
         self.get_gui().set_screen("main_menu")
@@ -211,7 +215,7 @@ class ui(Singleton, DirectObject):
 
     def post_game_start(self):
         self.calculate_icons_for_tiles(small=False, large=True)
-        self.get_gui().set_screen("game_ui")
+        self.get_gui().load_game_ui()
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
