@@ -75,10 +75,9 @@ class World(Singleton, DirectObject):
         for tile in self.map.values():  # Place the tiles
             tile.on_load()
 
-            if len(tile.units) > 0:  # Subload the units
-                unit: "UnitBaseClass"
-                for unit in tile.units:
-                    unit.on_load()
+        unit: "UnitBaseClass"
+        for unit in list(EntityManager.get_instance().get_all(EntityType.UNIT).values()):  # type: ignore
+            unit.on_load()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0
