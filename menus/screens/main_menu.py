@@ -105,6 +105,7 @@ class MainMenuScreen(Screen):
 
     def to_game_screen(self, _: Optional[Button] = None):
         self.manager.current = "game_ui"
+        messenger.send("system.input.raycaster_on")
 
     def switch_to_load_screen(self, _):
         messenger.send("ui.update.ui.show_load")
