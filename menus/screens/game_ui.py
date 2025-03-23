@@ -92,6 +92,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_screen()
         self.logger.info("Game UI Screen built.")
 
+    def reset(self):
+        self.logger.info("Resetting game UI screen.")
+        self.clear_action_bar()
+        self.update_ui_geometry_cache()
+        if self.city_ui is not None:
+            self.city_ui.hide()
+        if self.top_bar is not None:
+            self.top_bar.update()
+
     def register(self):
         self.logger.info("Registering event listeners.")
 
