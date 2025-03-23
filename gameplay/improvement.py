@@ -1,4 +1,5 @@
 import random
+import uuid
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Tuple, Type
 
@@ -38,12 +39,14 @@ class Improvement(BaseEntity):
 
     def __init__(
         self,
+        key: Optional[str] = None,
         tile: "BaseTile | None" = None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
+        self.key: str = key if key else uuid.uuid4().hex
         self.active: bool = True
         self.destroyed: bool = False
 
@@ -88,6 +91,8 @@ class Improvement(BaseEntity):
             self.unregister()
 
     def register(self):
+        if self.is_registered is True:
+            return
         EntityManager.get_instance().register(entity=self, type=EntityType.IMPROVEMENT, key=self.tag)
 
     def unregister(self):
