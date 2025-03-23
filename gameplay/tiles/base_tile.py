@@ -223,8 +223,6 @@ class BaseTile(BaseEntity):
         self.base = Cache.get_showbase_instance()
         self._entity_manager = EntityManager.get_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
-        self.effects = Effects(self)
-        self._improvements = ImprovementsSet()
 
         self._render_default_terrain()
         self.create_root_ui_node()
