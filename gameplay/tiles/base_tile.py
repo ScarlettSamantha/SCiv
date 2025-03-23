@@ -237,6 +237,10 @@ class BaseTile(BaseEntity):
 
         self.rerender()
 
+        if self.city is not None:
+            self.city.base = self.base
+            self.city.register()
+
     def calculate(self):
         base = deepcopy(self._tile_terrain.get_tile_yield())  # This is to prevent modifying the base yield.
 
