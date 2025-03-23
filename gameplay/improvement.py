@@ -83,9 +83,6 @@ class Improvement(BaseEntity):
         self.owner: Optional[Player] = None
         self.tag: str = ""
 
-        self.generate_tag()
-        self.register()
-
     def __del__(self):
         if self.is_registered is True:
             self.unregister()
@@ -139,6 +136,7 @@ class Improvement(BaseEntity):
             raise ValueError("Tile is not set for the improvement")
 
         if self.is_registered is False:
+            self.generate_tag()
             self.register()
 
         for effect in self.effects.get_effects().values():
