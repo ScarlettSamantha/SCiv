@@ -80,6 +80,7 @@ These are used by the UI manager to control some debug actions these may disappe
 ### Units
 
 - `unit.action.move.visiting_tile` (E: BaseTile | L: manager-ui)
+- `unit.action.found_city.success` (E: action-found | )
 
 ## UI
 
