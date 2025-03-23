@@ -185,13 +185,13 @@ class EntityManager(Singleton):
     def register(self, type: EntityType, entity: BaseEntity, key: str):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
+        
+        storage = self.object_type_to_storage(type)
+        if key in storage:
+            return
 
         self.stats["total_entities_registered"] += 1
         self.stats["total_entities"] += 1
-
-        storage = self.object_type_to_storage(type)
-        if key in storage:
-            raise ValueError(f"Entity with key {key} already exists.")
 
         entity.entity_key = key
         entity.entity_type_ref = type.storage_key
