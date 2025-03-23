@@ -12,12 +12,14 @@ from gameplay.player import Player
 from gameplay.repositories.generators import GeneratorRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from gameplay.tiles.base_tile import BaseTile
+from gameplay.units.unit_base import UnitBaseClass
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input
 from managers.player import PlayerManager
 from managers.turn import Turn
 from managers.ui import ui
+from managers.unit import Unit
 from managers.world import World
 from mixins.singleton import Singleton
 from system.camera import Camera
@@ -45,6 +47,7 @@ class Game(Singleton, DirectObject):
         self.players: PlayerManager = PlayerManager()
         self.config: ConfigManager = ConfigManager.get_instance()
         self.entities: EntityManager = EntityManager.get_instance(base=self.base)
+        self.unit: Unit = Unit.get_instance(base=self.base)
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -104,8 +107,11 @@ class Game(Singleton, DirectObject):
         if players is None:
             raise ValueError("No players found")
 
+        units: Dict[str, "UnitBaseClass"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
+
         self.world.load(world_tiles)
         self.players.load(players)
+        self.unit.load(units)
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
@@ -139,6 +145,7 @@ class Game(Singleton, DirectObject):
         self.entities.reset()
         self.players.reset()
         self.input.reset()
+        self.unit.reset()
         MessengerGlobal.messenger.send("game.state.reset_finished")
 
     def is_paused(self) -> bool:
