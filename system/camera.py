@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Camera(Singleton, DirectObject):
     """
     Modified camera controller:
-      - Left-drag => rotate around pivot (slower)
+      - Left-drag => rotate around pivot (with a threshold)
       - Right-drag => pan/move
       - Q/E => rotate around pivot by rotation_speed
       - Mouse wheel => zoom
@@ -33,11 +33,10 @@ class Camera(Singleton, DirectObject):
         self.zoom_speed = 2.0
 
         self.zoom_enabled: bool = True
-
         self.lock: bool = False
 
         # Optional pitch
-        self.pitch = 45.0  # We'll keep a fixed pitch at 45 degrees
+        self.pitch = 45.0  # Fixed pitch at 45 degrees
 
         # Pivot rotation (yaw)
         self.yaw = 0.0
@@ -64,7 +63,6 @@ class Camera(Singleton, DirectObject):
             "down": False,
             "left": False,
             "right": False,
-            # For Q/E rotation
             "rotate_left": False,
             "rotate_right": False,
         }
@@ -73,6 +71,8 @@ class Camera(Singleton, DirectObject):
         self.left_dragging = False
         self.right_dragging = False
         self.last_mouse_pos = (0, 0)
+
+        self.drag_threshold = 40  # 40 pixels to trigger rotation, 0 to disable
 
         # Set up controls & add update task
         self.setup_controls()
@@ -105,7 +105,6 @@ class Camera(Singleton, DirectObject):
     # -------------------------------------------------------------------------
     def setup_controls(self):
         """Bind keys/mouse for panning, zooming, rotating, re-centering, etc."""
-
         # WASD / arrow keys for panning
         self.accept("arrow_up", self.set_key, ["up", True])
         self.accept("arrow_up-up", self.set_key, ["up", False])
@@ -174,15 +173,14 @@ class Camera(Singleton, DirectObject):
         self.active = True
 
     def disable_zoom(self):
-        if self.lock is True:
+        if self.lock:
             return
         self.logger.debug("Disabling zoom")
         self.zoom_enabled = False
 
     def enable_zoom(self):
-        if self.lock is True:
+        if self.lock:
             return
-
         self.logger.debug("Enabling zoom")
         self.zoom_enabled = True
 
@@ -192,14 +190,12 @@ class Camera(Singleton, DirectObject):
     def zoom_in(self):
         if not self.zoom_enabled:
             return
-
         self.zoom = max(self.min_zoom, self.zoom - self.zoom_speed)
         self.update_camera_position()
 
     def zoom_out(self):
         if not self.zoom_enabled:
             return
-
         self.zoom = min(self.max_zoom, self.zoom + self.zoom_speed)
         self.update_camera_position()
 
@@ -209,18 +205,10 @@ class Camera(Singleton, DirectObject):
     def update_camera_position(self):
         """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
         rad = self.pitch * (pi / 180.0)
-
-        # Distance "out" in the pivot's -Y direction
         offset_y = -self.zoom * cos(rad)
         offset_z = self.zoom * sin(rad)
-
-        # Move the camera relative to pivot
         self.base.camera.setPos(0, offset_y, offset_z)
-
-        # Turn pivot to yaw
         self.pivot.setH(self.yaw)
-
-        # Make camera look at pivot
         self.base.camera.lookAt(self.pivot)
 
     # -------------------------------------------------------------------------
@@ -241,14 +229,13 @@ class Camera(Singleton, DirectObject):
         from managers.game import PlayerManager
 
         center: Tuple[float, float, float] = (0, 0, 0)
-        # Determine correct center first
         if PlayerManager.if_has_capital():
             capital = PlayerManager.player().capital
             if capital is None:
                 return
             tile = capital.tile.get_pos()
             center = (tile[0], tile[1], 0)
-        elif len((units := PlayerManager.session_player().get_all_units())) > 0:
+        elif units := PlayerManager.session_player().get_all_units():
             unit = units[0]()
             if unit is not None and unit.tile is not None:
                 center = unit.tile.get_pos()
@@ -256,13 +243,10 @@ class Camera(Singleton, DirectObject):
         else:
             center = self.target.getPos() if self.target else (0, 0, 0)
 
-        # Move pivot only once to prevent flickering
         self.pivot.setPos(center)
-
-        # Reset the camera's rotation but keep yaw
-        self.base.camera.setHpr(0, self.pitch, 0)  # Reset heading & roll, keep default pitch
-        self.yaw = 0  # Reset yaw
-        self.zoom = 20.0  # Reset zoom
+        self.base.camera.setHpr(0, self.pitch, 0)
+        self.yaw = 0
+        self.zoom = 20.0
         self.update_camera_position()
 
     # -------------------------------------------------------------------------
@@ -301,16 +285,13 @@ class Camera(Singleton, DirectObject):
             return task.cont
 
         dt = self.base.clock.getDt()
-        move_vec = (0, 0)  # Store movement in X, Y
+        move_vec = (0, 0)
 
         # Convert degrees to radians for rotation
         yaw_rad = self.yaw * (pi / 180.0)
+        forward = (sin(yaw_rad), -cos(yaw_rad))
+        right = (cos(yaw_rad), sin(yaw_rad))
 
-        # Calculate forward and right movement directions based on yaw
-        forward = (sin(yaw_rad), -cos(yaw_rad))  # Forward movement vector
-        right = (cos(yaw_rad), sin(yaw_rad))  # Right movement vector
-
-        # WASD-based movement (relative to camera yaw)
         if self.keys["down"]:
             move_vec = (move_vec[0] + forward[0] * self.pan_speed * dt, move_vec[1] + forward[1] * self.pan_speed * dt)
         if self.keys["up"]:
@@ -320,13 +301,11 @@ class Camera(Singleton, DirectObject):
         if self.keys["right"]:
             move_vec = (move_vec[0] + right[0] * self.pan_speed * dt, move_vec[1] + right[1] * self.pan_speed * dt)
 
-        # Apply movement to the pivot
         if move_vec != (0, 0):
             x0, y0, z0 = self.pivot.getPos()
             self.pivot.setPos(x0 + move_vec[0], y0 + move_vec[1], z0)
             self.update_camera_position()
 
-        # Q/E-based rotation
         if self.keys["rotate_left"]:
             self.yaw += self.rotate_speed * dt
             self.update_camera_position()
@@ -334,7 +313,6 @@ class Camera(Singleton, DirectObject):
             self.yaw -= self.rotate_speed * dt
             self.update_camera_position()
 
-        # Mouse dragging (adjusted for rotation)
         if self.base.mouseWatcherNode.hasMouse():
             md = self.base.win.getPointer(0)
             x = md.getX()
@@ -343,22 +321,23 @@ class Camera(Singleton, DirectObject):
             delta_y = y - self.last_mouse_pos[1]
 
             if self.left_dragging:
-                # Left-drag => rotate around pivot's heading
-                rotation_factor = 0.1  # Slower rotation
-                self.yaw -= delta_x * rotation_factor
-                self.update_camera_position()
-
+                # Only apply rotation if the horizontal movement exceeds the threshold.
+                if abs(delta_x) >= self.drag_threshold:
+                    rotation_factor = 0.1  # Slower rotation factor
+                    self.yaw -= delta_x * rotation_factor
+                    self.update_camera_position()
+                    # Update last position only after a valid rotation to avoid accumulating tiny deltas.
+                    self.last_mouse_pos = (x, y)
             elif self.right_dragging:
-                # Right-drag => pan the pivot relative to rotation
                 pan_factor = 0.02  # Adjust sensitivity
                 move_x = (-delta_x * pan_factor) * cos(yaw_rad) - (delta_y * pan_factor) * sin(yaw_rad)
                 move_y = (-delta_x * pan_factor) * sin(yaw_rad) + (delta_y * pan_factor) * cos(yaw_rad)
-
                 x0, y0, z0 = self.pivot.getPos()
                 self.pivot.setPos(x0 + move_x, y0 + move_y, z0)
                 self.update_camera_position()
-
-            # Store new mouse pos
-            self.last_mouse_pos = (x, y)
+                self.last_mouse_pos = (x, y)
+            else:
+                # Update last_mouse_pos when not dragging
+                self.last_mouse_pos = (x, y)
 
         return task.cont
