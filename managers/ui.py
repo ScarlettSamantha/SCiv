@@ -89,6 +89,10 @@ class ui(Singleton, DirectObject):
         self.previous_screen_name = ""
         self.showing_escape = False
 
+    def reset_game_ui(self):
+        self.get_screen("game_ui").reset()
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
+
     def get_gui(self) -> "SCivGUI":
         if self.game_gui is None:
             raise ValueError("GUI not initialized")

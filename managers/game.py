@@ -115,6 +115,7 @@ class Game(Singleton, DirectObject):
 
         self.game_active = True
         self.ui.post_game_start()
+        self.ui.reset_game_ui()
         MessengerGlobal.messenger.send("game.state.load_finished")
 
     def reset_game(self):

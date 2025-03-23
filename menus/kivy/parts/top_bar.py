@@ -35,6 +35,9 @@ class TopBar(AnchorLayout, DirectObject):
     def register(self):
         self.accept("ui.update.ui.refresh_top_bar", self.update)
 
+    def reset(self):
+        self.build()
+
     def update(self):
         player: Player = PlayerManager.session_player()
         turn: int = Turn.get_instance().turn
