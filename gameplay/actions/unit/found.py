@@ -43,7 +43,7 @@ class FoundAction(BaseUnitAction):
         self.on_the_spot_action = True
         self.targeting_tile_action = False
         self.city_founding_distance_rule = CITY_FOUNDING_DISTANCE_RADIUS_DEFAULT
-        self.city_founding_in_own_terriroty_rule = CITY_FOUNDING_IN_OWN_TERRITORY_DEFAULT
+        self.city_founding_in_own_territory_rule = CITY_FOUNDING_IN_OWN_TERRITORY_DEFAULT
 
     def founding_conditions(self, _: Condition) -> bool:
         tile = self.unit.get_tile()
@@ -60,22 +60,22 @@ class FoundAction(BaseUnitAction):
         self.city_founding_distance_rule: int = (
             rules.get_city_founding_distance_rule() if rules is not None else CITY_FOUNDING_DISTANCE_RADIUS_DEFAULT
         )
-        self.city_founding_in_own_terriroty_rule: bool = (
+        self.city_founding_in_own_territory_rule: bool = (
             rules.get_city_founding_in_own_territory_rule()
             if rules is not None
             else CITY_FOUNDING_IN_OWN_TERRITORY_DEFAULT
         )
 
         if tile.player is None:  # if the tile is not owned by any player
-            city_founding_in_own_terriroty_rule_implementation = True
+            city_founding_in_own_territory_rule_implementation = True
         elif tile.player != self.unit.owner:  # if the tile is owned by another player
-            city_founding_in_own_terriroty_rule_implementation = False
+            city_founding_in_own_territory_rule_implementation = False
         elif tile.player == self.unit.owner:  # if the tile is owned by the player
-            city_founding_in_own_terriroty_rule_implementation = (
-                self.city_founding_in_own_terriroty_rule
+            city_founding_in_own_territory_rule_implementation = (
+                self.city_founding_in_own_territory_rule
             )  #  if the tile is owned by the player, check the rule
         else:  # Catch all
-            city_founding_in_own_terriroty_rule_implementation = False
+            city_founding_in_own_territory_rule_implementation = False
 
         if tile is None:
             return False
@@ -83,7 +83,7 @@ class FoundAction(BaseUnitAction):
         if tile.is_city() is True:
             self.failure_reason = CantFoundReasons.TILE_IS_CITY
             return False
-        elif city_founding_in_own_terriroty_rule_implementation is False:
+        elif city_founding_in_own_territory_rule_implementation is False:
             self.failure_reason = CantFoundReasons.TILE_IS_OWNED
             return False
         elif not tile.is_passable():
@@ -108,7 +108,7 @@ class FoundAction(BaseUnitAction):
         elif self.failure_reason == CantFoundReasons.TILE_IS_OWNED:
             founding_rule_text = (
                 ""
-                if self.city_founding_in_own_terriroty_rule
+                if self.city_founding_in_own_territory_rule
                 else t_("ui.dialogs.unit.found_city.tile_already_owned.game_rule")
             )
             messenger.send(
