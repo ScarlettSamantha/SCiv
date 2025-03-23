@@ -67,7 +67,7 @@ class Turn(Singleton):
         return self.turn
 
     def set_turn(self, turn_num: int):
-        pass
+        self.turn = turn_num
 
     def process(self):
         self.logger.info(f"Processing turn {self.turn}, sending start_process signal.")

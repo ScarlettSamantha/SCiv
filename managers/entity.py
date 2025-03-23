@@ -185,7 +185,7 @@ class EntityManager(Singleton):
     def register(self, type: EntityType, entity: BaseEntity, key: str):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
-        
+
         storage = self.object_type_to_storage(type)
         if key in storage:
             return
@@ -247,6 +247,9 @@ class EntityManager(Singleton):
 
     def add_meta_data(self, key: str, value: Any):
         self._meta_data[key] = value
+
+    def get_meta_data(self, key: str) -> Any:
+        return self._meta_data[key]
 
     def get_all(self, type: Optional[EntityType] = None) -> Dict[str, BaseEntity]:
         if type is None:

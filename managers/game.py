@@ -83,6 +83,7 @@ class Game(Singleton, DirectObject):
 
     def save(self, session_name: str):
         MessengerGlobal.messenger.send("game.state.save_start")
+        self.entities.add_meta_data("turn", self.turn.get_turn())
         self.entities.dump(session_name)
         MessengerGlobal.messenger.send("game.state.save_finished")
 
@@ -108,7 +109,13 @@ class Game(Singleton, DirectObject):
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
-        self.turn.set_turn(Turn.GAME_BEGIN)
+
+        turn = self.entities.get_meta_data("turn")
+        if turn is None:
+            raise ValueError("No turn data found")
+
+        self.turn.set_turn(turn)
+
         self.ui.set_screen("game_ui")
         self.input.activate()
         self.register_callback_inputs()
