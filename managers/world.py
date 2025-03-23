@@ -58,7 +58,12 @@ class World(Singleton, DirectObject):
 
     def load(self, data: Dict[str, "BaseTile"]):
         self.logger.info("Loading world data.")
-        self.map = data
+        for map_item in data.values():
+            item_tag: str | None = map_item.tag
+            if item_tag is None:
+                raise AssertionError(f"Item {map_item} has no tag.")
+            self.map[item_tag] = map_item
+
         self.grid = {(tile.x, tile.y): tile for tile in data.values()}
         self.logger.info("World data loaded.")
         self.logger.info("Calculating world size")

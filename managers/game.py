@@ -111,6 +111,7 @@ class Game(Singleton, DirectObject):
         self.turn.set_turn(Turn.GAME_BEGIN)
         self.ui.set_screen("game_ui")
         self.input.activate()
+        self.register_callback_inputs()
 
         self.game_active = True
         self.ui.post_game_start()
@@ -172,19 +173,19 @@ class Game(Singleton, DirectObject):
             self.config.save_config()
         return task.again
 
+    def register_callback_inputs(self):
+        self.accept("system.input.user.tile_clicked", self.handle_tile_click)
+        self.accept("system.input.user.unit_clicked", self.handle_unit_click)
+        self.accept("system.game.start_load", self.on_game_start)
+        self.accept("game.input.user.escape_pressed", self.toggle_pause_game)
+        self.accept("game.input.user.quit_game", self.quit_game)
+        self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
+
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)
         self.base = base
 
-        def register_callback_inputs():
-            self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
-            self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
-            self.base.accept("system.game.start_load", self.on_game_start)
-            self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
-            self.base.accept("game.input.user.quit_game", self.quit_game)
-            self.base.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
-
-        register_callback_inputs()
+        self.register_callback_inputs()
 
     def toggle_wireframe(self):
         if not self.debug:
