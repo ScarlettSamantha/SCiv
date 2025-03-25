@@ -377,6 +377,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                             width=100,
                             height=75,
                         )
+                        button.disabled = not _unit.can_build or _unit.tile.owner != _unit.owner
                         button.bind(
                             on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, _unit)
                         )
