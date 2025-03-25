@@ -96,7 +96,7 @@ class BaseTile(BaseEntity):
         self.zone: str = "temperate"
         self.hemisphere: str = "north"
 
-        self.resource: Optional[dict] = None
+        self.resource: Optional[Dict] = None
         self.resources: Resources = Resources()
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height: int = 0
@@ -821,6 +821,7 @@ class BaseTile(BaseEntity):
             "city": self.city,
             "improvements": " | ".join(_improvements),
             "tile_yield": str(self.tile_yield),
+            "temperature": self.temperature,
             "resources": self.resources.flatten(),
             "features": self.features,
             "units": ",".join(_units),
