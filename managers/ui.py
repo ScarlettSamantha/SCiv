@@ -17,7 +17,6 @@ from managers.i18n import T_TranslationOrStr, Translation
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
-from menus.screens.game_ui import GameUIScreen
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
     from main import SCIV
     from managers.game import Game
     from menus.kivy.core import SCivGUI
+    from menus.screens.game_ui import GameUIScreen
 
 
 class ui(Singleton, DirectObject):
@@ -151,7 +151,7 @@ class ui(Singleton, DirectObject):
         self.accept("system.main.ready", self.on_main_ready)
         return True
 
-    def get_main_game_ui(self) -> GameUIScreen:
+    def get_main_game_ui(self) -> "GameUIScreen":
         return self.get_gui().get_screen_manager().get_screen("game_ui")
 
     def on_unit_destroyed(self, unit: UnitBaseClass):
