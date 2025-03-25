@@ -95,6 +95,7 @@ class BuildAction(BaseUnitAction):
         if self.unit_looses_movement_after_building_rule:
             self.unit.drain_movement_points(None)  # Will set the unit to 0 movement points.
 
+        # @TODO we might want to move this to the unit class as properties
         if self.unit.build_charges != 0:
             self.unit.build_charges_left -= 1
 
