@@ -259,8 +259,8 @@ class Game(Singleton, DirectObject):
         # Generate the world
         # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
         self.world.generate(
-            self.properties.width,  # type: ignore has already been checked on gmae start if not None
-            self.properties.height,  # type: ignore has already been checked on gmae start if not None
+            self.properties.width,  # type: ignore has already been checked on game start if not None
+            self.properties.height,  # type: ignore has already been checked on game start if not None
             0.482,
             1.5,
         )
