@@ -368,7 +368,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         self.owner = None
         self.actions.clear()
-        self.tag = None
+        del self.tag
 
         if as_system:
             messenger.send("system.unit.destroyed", [self])
