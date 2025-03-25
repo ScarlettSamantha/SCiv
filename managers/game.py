@@ -299,6 +299,8 @@ class Game(Singleton, DirectObject):
             raise AssertionError("Game properties not set")
         self.logger.info("Game start requested")
 
+        self.reset_game()
+
         self.properties.num_enemies = num_players
         self.properties.player = Civilization.get(civilization) if isinstance(civilization, str) else civilization  # type: ignore
         self.properties.width = int(map_size.split("x")[0]) if isinstance(map_size, str) else map_size[0]

@@ -7,6 +7,7 @@ from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
+from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from managers.player import PlayerManager
 from managers.turn import Turn
 
@@ -39,8 +40,16 @@ class TopBar(AnchorLayout, DirectObject):
         self.build()
 
     def update(self):
-        player: Player = PlayerManager.session_player()
-        turn: int = Turn.get_instance().turn
+        try:
+            player: Player = PlayerManager.session_player()
+            turn: int = Turn.get_instance().turn
+        except InvalidPregameCondition:  # this happens when a game is being loaded
+            self.gold_label.text = "Gold: 0"  # type: ignore
+            self.faith_label.text = "Faith: 0"  # type: ignore
+            self.science_label.text = "Science: 0"  # type: ignore
+            self.culture_label.text = "Culture: 0"  # type: ignore
+            self.turn_label.text = "Turn: 0"  # type: ignore
+            return
 
         if (
             self.gold_label is None

@@ -26,6 +26,11 @@ class SCivGUI(App):
             self.build()
         return self.screen_manager  # type: ignore
 
+    def reset(self):
+        if self.screen_manager is None:
+            return
+        self.screen_manager.get_screen("game_ui").reset()
+
     def set_screen(self, screen_name: str) -> None:
         self.get_screen_manager().current = screen_name
 

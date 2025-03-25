@@ -431,4 +431,3 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if action.remove_actions_after_use:
             self.clear_action_bar()
-
