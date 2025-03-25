@@ -80,6 +80,7 @@ class Game(Singleton, DirectObject):
         def messenger():
             self.accept("game.turn.request_end", self.process_turn)
             self.accept("game.state.request_load", self.on_request_load)
+            self.accept("game.state.main_menu", self.on_main_menu)
 
         timers()
         messenger()
@@ -89,6 +90,9 @@ class Game(Singleton, DirectObject):
         self.entities.add_meta_data("turn", self.turn.get_turn())
         self.entities.dump(session_name)
         MessengerGlobal.messenger.send("game.state.save_finished")
+
+    def on_main_menu(self):
+        self.reset_game()
 
     def on_request_load(self, session_name: str) -> None:
         self.load(session_name)

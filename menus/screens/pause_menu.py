@@ -86,8 +86,7 @@ class PauseMenu(Popup, CollisionPreventionMixin):
         print("Opening options...")
 
     def return_to_main_menu(self, instance):
-        print("Returning to main menu")
-        self.dismiss()
+        messenger.send("ui.request_main_menu")
 
     def quit_game(self, instance):
         messenger.send("game.input.user.quit_game")
