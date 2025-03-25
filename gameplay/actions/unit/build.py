@@ -38,7 +38,10 @@ class BuildAction(BaseUnitAction):
         )
 
     def build_wrapper(self, *args, **kwargs) -> CantBuildReason | bool:
-        building: Improvement = self.improvement(self.tile)
+        if self.tile is None:
+            raise ValueError("Unit has no tile")
+
+        building: Improvement = self.improvement(tile=self.tile)
         result = self.tile.build(building)
         self._result = result
         return result
@@ -95,6 +98,7 @@ class BuildAction(BaseUnitAction):
         if self.unit_looses_movement_after_building_rule:
             self.unit.drain_movement_points(None)  # Will set the unit to 0 movement points.
 
+        # @TODO we might want to move this to the unit class as properties
         if self.unit.build_charges != 0:
             self.unit.build_charges_left -= 1
 

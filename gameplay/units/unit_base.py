@@ -1,5 +1,4 @@
 import random
-import uuid
 from abc import ABC
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
@@ -13,6 +12,8 @@ from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
 from gameplay.resources.core.basic.production import Production
 from gameplay.tiles.base_tile import BaseTile
+from main import Cache
+from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.unit import Unit
@@ -57,14 +58,14 @@ class UnitBaseClass(BaseEntity, ABC):
     def __init__(self, key: Optional[str] = None):
         super().__init__()
 
-        self.key: str = key if key else uuid.uuid4().hex
+        self.key: str = key if key else uuid4().hex
 
         self.owner: Player | None = None
         self.tile: Optional[BaseTile] = None  # Tile must be set before spawning
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
-        self.tag: Optional[str] = None
+        self.tag: str = self.generate_unit_tag()
         self.actions: List[Action] = []
 
         self.pos_y: float = 0.0
@@ -106,6 +107,10 @@ class UnitBaseClass(BaseEntity, ABC):
 
     def register_actions(self): ...
 
+    def on_load(self):
+        self.base = Cache.get_showbase_instance()
+        self.spawn(ignore_constraints=True)
+
     def get_tile(self) -> BaseTile | None:
         if self.tile is not None:
             return self.tile
@@ -115,7 +120,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         entity_manager: EntityManager = EntityManager.get_instance()
 
-        entity_manager.register(entity=self, type=EntityType.UNIT, key=self.tag if self.tag else self.key)
+        entity_manager.register(entity=self, type=EntityType.UNIT, key=self.tag)
 
         if self.owner is not None:
             self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
@@ -153,7 +158,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         EntityManager.get_instance().unregister(entity=self, type=EntityType.UNIT)
 
-    def spawn(self) -> bool:
+    def spawn(self, ignore_constraints: bool = False) -> bool:
         """
         Spawns the unit at its assigned tile, loading the model into Panda3D.
         Returns True if successful, False otherwise.
@@ -161,14 +166,14 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
-        if not self.tile.is_occupied():  # Assumed tile method
-            raise ValueError(f"Tile at {self.tile.get_cords()} is not passable.")
+        if not self.tile.is_occupied() and ignore_constraints is False:  # Assumed tile method
+            raise ValueError(f"Tile at {self.tile.get_pos()} is not passable.")
 
         if not isinstance(self._model, str):
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
-        if self.tag is None:
-            self.tag = self.generate_unit_tag()
+        if self.is_registered is False:
+            self.register()
 
         # Load the Panda3D model and position it at the tile
         self.model = self.load_model(self._model)
@@ -287,11 +292,8 @@ class UnitBaseClass(BaseEntity, ABC):
         else:
             model.setCollideMask(BitMask32.allOff())
 
-        self.tag = self.generate_unit_tag()
         model.setTag("tile_id", self.tag)
         model.reparentTo(self.base.render)  # Attach model to scene graph
-
-        self.register()
 
         return model
 
@@ -366,7 +368,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         self.owner = None
         self.actions.clear()
-        self.tag = None
+        del self.tag
 
         if as_system:
             messenger.send("system.unit.destroyed", [self])

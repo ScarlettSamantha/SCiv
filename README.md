@@ -104,9 +104,9 @@ At this stage, I want the core gameplay loop to work at a basic level, meaning:
 
 The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
 
-- [ ] Saving/Loading + GUI
+- [X] Saving/Loading + GUI
 - [ ] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
-- [ ] Map regeneration
+- [ ] Map regeneration/reroll (with same settings)
 - [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
 - [ ] Barbarians + Nature player
 - [ ] Working research

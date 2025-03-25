@@ -3,6 +3,7 @@ import json
 import sys
 import zlib
 from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -18,19 +19,20 @@ class BaseSaver(ABC):
     def __init__(
         self,
     ):
-        self.data: str
+        self.data: bytes
         self.meta_data: Dict[str, Any]  # Will be converted to json
         self.identifier: str
         self.hash: str
-        self.counter: int
+        self.counter: int = 0
         self.inject_metadata: bool = True
+        self.loaded_data_length: int = 0
 
     def set_identifier(self, identifier: str):
         self.identifier = identifier
 
-    def set_data(self, data: str):
+    def set_data(self, data: bytes):
         self.data = data
-        self.hash = str(zlib.crc32(data.encode("utf-8")))
+        self.hash = str(zlib.crc32(data))
 
     def set_meta_data(self, meta_data: Dict[str, Any]):
         self.meta_data = meta_data
@@ -44,7 +46,7 @@ class BaseSaver(ABC):
     def get_identifier(self) -> str:
         return self.identifier
 
-    def get_data(self, data: str) -> str:
+    def get_data(self) -> bytes:
         return self.data
 
     def get_meta_data(self) -> Dict[str, Any]:
@@ -75,6 +77,8 @@ class BaseSaver(ABC):
         }
 
         self.meta_data["saver"]["meta_checksum_crc32"] = str(zlib.crc32(repr(self.meta_data).encode()))
+        self.meta_data["saver"]["data_size"] = len(self.data)
+        self.meta_data["saver"]["save_time"] = datetime.now().isoformat()
 
     @abstractmethod
     def save(self) -> bool: ...
@@ -82,18 +86,45 @@ class BaseSaver(ABC):
     @abstractmethod
     def load(self) -> Any: ...
 
-    @abstractmethod
-    def get_saved_session(self) -> List[str]: ...
+    def get_saved_session(self) -> List[str]:
+        save_location = Path(self.identify_save_location())
+        if not save_location.exists():
+            return []
+
+        result = []
+        for d in save_location.iterdir():
+            if d.is_dir() and d.name != "metadata.json":
+                result.append(d.name)
+
+        return result
+
+    def get_session_data(self) -> None | Dict[str, Any]:
+        save_location = Path(self.identify_save_location())
+
+        if not save_location.exists():
+            return None
+
+        save_location = save_location / self.identifier
+
+        if not save_location.exists():
+            return None
+
+        if (save_location / "metadata.json").exists():
+            meta_data = json.loads((save_location / "metadata.json").read_text())
+            return meta_data
+
+        return None
 
     @abstractmethod
     def get_saved_meta_data(self) -> Dict[str, Any]: ...
 
     def compress_and_inject_data(self, data: bytes) -> bytes:
         """Compress data using gzip if enabled."""
-        if self.compression_enabled:
-            return gzip.compress(data)
+
         if self.inject_metadata:
             self.register_modifications_metadata()
+        if self.compression_enabled:
+            return gzip.compress(data)
         return data
 
     def decompress_data(self, data: bytes) -> bytes:
@@ -111,7 +142,7 @@ class BaseSaver(ABC):
             elif sys.platform.startswith("linux") or sys.platform.startswith("unix"):
                 return str(Path.home() / ".local" / "share" / self.game_name)  # Standard Linux user data location
         else:
-            return str(Path(self.base_path) / self.game_name)
+            return str((Path(self.base_path)).absolute())
         raise RuntimeError("Unsupported operating system: " + sys.platform)
 
     def generate_save_directory(self) -> str:
@@ -120,8 +151,8 @@ class BaseSaver(ABC):
     def generate_save_path(self, filename: str) -> str:
         return str(Path(self.generate_save_directory()) / filename)
 
-    def compare_hash(self, data: str) -> bool:
-        return self.hash == str(zlib.crc32(data.encode("utf-8")))
+    def compare_hash(self, data: bytes) -> bool:
+        return self.hash == str(zlib.crc32(data))
 
 
 class SavePickleFile(BaseSaver):
@@ -140,7 +171,7 @@ class SavePickleFile(BaseSaver):
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"
 
-        compressed_data: bytes = self.compress_and_inject_data(self.data.encode("utf-8"))
+        compressed_data: bytes = self.compress_and_inject_data(self.data)
 
         try:
             with open(data_path, "wb") as file:
@@ -157,8 +188,8 @@ class SavePickleFile(BaseSaver):
             print(f"Error saving data: {e}")
             return False
 
-    def load(self) -> str | bool:
-        save_dir = Path(self.base_path) / self.identifier / str(self.counter)
+    def load(self) -> bytes | bool:
+        save_dir = Path(self.base_path) / self.identifier
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
         hash_path = save_dir / "hash.txt"
@@ -166,7 +197,7 @@ class SavePickleFile(BaseSaver):
         try:
             with open(data_path, "rb") as file:
                 data = file.read()
-                self.data = self.decompress_data(data).decode("utf-8")
+                self.data = self.decompress_data(data)
 
             with open(metadata_path, "r", encoding="utf-8") as file:
                 self.meta_data = json.load(file)
@@ -197,11 +228,9 @@ class SavePickleFile(BaseSaver):
         if not directory.exists():
             return meta_data_list
 
-        for save_folder in directory.iterdir():
-            if save_folder.is_dir():
-                metadata_path = save_folder / "metadata.json"
-                if metadata_path.exists():
-                    with open(metadata_path, "r", encoding="utf-8") as file:
-                        meta_data_list[save_folder.name] = json.load(file)
+        metadata_path = directory / self.identifier / "metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, "r", encoding="utf-8") as file:
+                meta_data_list = json.load(file)
 
         return meta_data_list

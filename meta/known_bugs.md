@@ -8,6 +8,7 @@
 - [x] Cant keep selection of unit properly internally when a tile is clicked.
 - [x] Window drifts up and right very slightly over time (maybe because of write-back system?)
 - [X] Unit action bar does not clear properly.
+- [ ] Sometimes actions are triggered twice or more and should be debounced.
 
 ### Things that seem like bugs
 

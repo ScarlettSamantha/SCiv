@@ -25,3 +25,9 @@ class Unit(Singleton):
 
     def remove_unit(self, unit: "UnitBaseClass"):
         del self.units[str(unit.tag)]
+
+    def reset(self):
+        self.units = {}
+
+    def load(self, data: Dict[str, "UnitBaseClass"]):
+        self.units = data

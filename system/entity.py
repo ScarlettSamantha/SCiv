@@ -19,7 +19,14 @@ class BaseEntity(ABC, DirectObject):
         if Cache._instance is None:
             raise AssertionError("Cache instance is not set.")
 
-        self.base: "SCIV" = Cache._instance
+        self.base: "SCIV" = Cache.get_showbase_instance()
+
+    def __getstate__(self):
+        # Copy the object’s state and remove the attribute(s) you don’t want serialized
+        state = self.__dict__.copy()
+        if "base" in state:
+            del state["base"]
+        return state
 
     def get_registered_status(self) -> bool:
         return self.is_registered

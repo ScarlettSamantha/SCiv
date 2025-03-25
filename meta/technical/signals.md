@@ -20,6 +20,7 @@ These are all used by the camera system and are used for mainly controlling the 
 - `r` (E: engine | L: camera)
 - `mouse1` (E: engine | L: camera)
 - `mouse3` (E: engine | L: camera)
+- `escape` (E: engine | L: ui-part-load, L: ui-part-save, ui-part-pause)
 
 ### Debugging keys
 
@@ -41,7 +42,15 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.input.user.escape_pressed` (E: manager-input | L:manager-game, L:manager-ui)
 - `game.input.user.quit_game` (E: ui-main-menu, E: ui-pause-menu | L: manager-game)
 - `game.input.user.wireframe_toggle` (E:NONE | L: manager-game)
+
 - `game.state.true_game_start` (E: manager-game | L: manager-ui)
+- `game.state.request_load`(E: ui-part-load | L: manager-game)
+- `game.state.reset_start` (E: manager-game | )
+- `game.state.reset_finished` (E: manager-game | )
+- `game.state.load_start` (E: manager-game | )
+- `game.state.load_finished` (E: manager-game | )
+- `game.state.save_start` (E: manager-game | )
+- `game.state.save_finished` (E: manager-gamer | )
 
 - `game.turn.request_end` (E:ui-player-turn-control | L:manager-turn)
 - `game.turn.start_process` (E:manager-turn | L:manager-game, L:ui-player-turn-control)
@@ -71,6 +80,7 @@ These are used by the UI manager to control some debug actions these may disappe
 ### Units
 
 - `unit.action.move.visiting_tile` (E: BaseTile | L: manager-ui)
+- `unit.action.found_city.success` (E: action-found | )
 
 ## UI
 
@@ -84,6 +94,11 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.hide_city_ui` (L: ui-part-city)
 - `ui.update.ui.show_city_ui` (L: ui-part-city)
 
+- `ui.update.ui.show_save` (E: pause-menu-game-ui, E: main-menu-game-ui | L: ui-manager)
+- `ui.update.ui.hide_save` (E: saveload-menu-game-ui | L: ui-manager)
+- `ui.update.ui.show_load` (E: pause-menu-game-ui, E: main-menu-game-ui | L: ui-manager)
+- `ui.update.ui.hide_load` (E: saveload-menu-game-ui | L: ui-manager)
+
 - `ui.update.ui.refresh_city_ui` (E: manager-ui | L: ui-part-city)
 - `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
@@ -92,6 +107,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.lense_change` (E: ui-debug-actions | L: manager-ui)
 
+- `ui.request.save_game` (E: ui-part-save | L: manager-ui)
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 
 ## System
@@ -105,6 +121,12 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `system.input.disable_zoom` (E: collision-mixin | L: camera)
 - `system.input.enable_zoom` (E: collision-mixin | L: camera)
+
+- `system.input.disable_control` (E: ui-part-save, E: ui-part-load | L: camera)
+- `system.input.enable_control` (E: ui-part-save, E: ui-part-load | L: camera)
+
+- `system.input.camera_lock` (E: ui-part-save, E: ui-part-load | L: camera)
+- `system.input.camera_unlock` (E: ui-part-save, E: ui-part-load | L: camera)
 
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
 - `system.unit.destroyed` (E: unit-base)

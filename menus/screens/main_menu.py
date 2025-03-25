@@ -1,16 +1,19 @@
 from typing import Optional
-from kivy.uix.screenmanager import Screen
+
+from direct.showbase.MessengerGlobal import messenger
+from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-from kivy.graphics import Color, Rectangle
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
 
 
 class MainMenuScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.layout: Optional[BoxLayout] = None
+        self.layout: Optional[FloatLayout] = None
+        self.container: Optional[BoxLayout] = None
 
         self.continue_button: Optional[Button] = None
         self.new_button: Optional[Button] = None
@@ -22,12 +25,12 @@ class MainMenuScreen(Screen):
 
         self.add_widget(self.build_screen())
 
-    def switch_to_game_config_screen(self):
+    def switch_to_game_config_screen(self, _):
         self.manager.current = "game_config_screen"
 
     def build_screen(self):
         float_layout = FloatLayout()
-
+        self.layout = float_layout
         # Transparent gray background box
         container: BoxLayout = BoxLayout(
             orientation="vertical",
@@ -56,19 +59,21 @@ class MainMenuScreen(Screen):
         )
         container.add_widget(title_label)
 
-        self.layout = container
+        self.container = container
 
         button_width: int = 400
 
         self.continue_button = Button(text="Continue", size_hint=(None, None), height=50, width=button_width)
         self.continue_button.pos_hint = {"center_x": 0.5}
+        self.continue_button.bind(on_release=self.hide)
 
         self.new_button = Button(text="New", size_hint=(None, None), height=50, width=button_width)
         self.new_button.pos_hint = {"center_x": 0.5}
-        self.new_button.on_press = self.switch_to_game_config_screen
+        self.new_button.bind(on_release=self.switch_to_game_config_screen)
 
         self.load_button = Button(text="Load", size_hint=(None, None), height=50, width=button_width)
         self.load_button.pos_hint = {"center_x": 0.5}
+        self.load_button.bind(on_release=self.switch_to_load_screen)
 
         self.options_button = Button(text="Options", size_hint=(None, None), height=50, width=button_width)
         self.options_button.pos_hint = {"center_x": 0.5}
@@ -95,10 +100,26 @@ class MainMenuScreen(Screen):
         float_layout.add_widget(container)
         return float_layout
 
-    def to_config_screen(self):
+    def to_config_screen(self, _):
         self.manager.current = "options_screen"
 
-    def exit(self):
-        from direct.showbase.MessengerGlobal import messenger
+    def to_game_screen(self, _: Optional[Button] = None):
+        self.manager.current = "game_ui"
+        messenger.send("system.input.raycaster_on")
 
+    def switch_to_load_screen(self, _):
+        messenger.send("ui.update.ui.show_load")
+
+    def switch_to_save_screen(self, _):
+        messenger.send("ui.update.ui.show_save")
+
+    def exit(self):
         messenger.send("game.input.user.quit_game")
+
+    def hide(self, _: Optional[Button] = None):
+        self.layout.visible = False  # type: ignore
+        self.to_game_screen()
+
+    def show(self):
+        self.layout.visible = True
+        

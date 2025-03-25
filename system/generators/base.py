@@ -42,6 +42,7 @@ class BaseGenerator(ABC):
         name: T_TranslationOrStrOrNone = None,
         turn_order: int = 0,
         leader: Optional[Leader] = None,
+        is_player: bool = False,
     ) -> Player:
         if leader is None:
             leader = civilization.random_leader()
@@ -57,6 +58,8 @@ class BaseGenerator(ABC):
         player: Player = Player(_name, turn_order, personality, civilization, leader)
         if player.is_registered is False:
             player.register()
+
+        player.is_human = is_player
 
         return player
 
@@ -107,6 +110,7 @@ class BaseGenerator(ABC):
                 civilization=civ,
                 leader=None,  # None means it will pick from its own list of registered leaders
                 turn_order=i,
+                is_player=i == 0,
             )
             player.id = str(i)
 
