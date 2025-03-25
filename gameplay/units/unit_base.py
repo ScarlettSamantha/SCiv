@@ -109,7 +109,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
     def on_load(self):
         self.base = Cache.get_showbase_instance()
-        self.spawn()
+        self.spawn(ignore_constraints=True)
 
     def get_tile(self) -> BaseTile | None:
         if self.tile is not None:
@@ -158,7 +158,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         EntityManager.get_instance().unregister(entity=self, type=EntityType.UNIT)
 
-    def spawn(self) -> bool:
+    def spawn(self, ignore_constraints: bool = False) -> bool:
         """
         Spawns the unit at its assigned tile, loading the model into Panda3D.
         Returns True if successful, False otherwise.
@@ -166,7 +166,7 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
-        if not self.tile.is_occupied():  # Assumed tile method
+        if not self.tile.is_occupied() and ignore_constraints is False:  # Assumed tile method
             raise ValueError(f"Tile at {self.tile.get_pos()} is not passable.")
 
         if not isinstance(self._model, str):
