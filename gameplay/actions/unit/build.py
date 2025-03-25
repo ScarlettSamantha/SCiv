@@ -38,7 +38,10 @@ class BuildAction(BaseUnitAction):
         )
 
     def build_wrapper(self, *args, **kwargs) -> CantBuildReason | bool:
-        building: Improvement = self.improvement(self.tile)
+        if self.tile is None:
+            raise ValueError("Unit has no tile")
+
+        building: Improvement = self.improvement(tile=self.tile)
         result = self.tile.build(building)
         self._result = result
         return result
