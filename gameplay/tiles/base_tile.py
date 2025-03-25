@@ -559,7 +559,7 @@ class BaseTile(BaseEntity):
         - If model_index is provided, only that model is unrendered and re-rendered.
         """
         if not self.tile_terrain:
-            print(f"Tile {self} has no terrain set, not rendering.")
+            self.logger.warning(f"Tile {self} has no terrain set, not rendering.")
             return
         self.set_color(Colors.RESTORE)
         self.calculate()
@@ -579,7 +579,6 @@ class BaseTile(BaseEntity):
                 self._render_default_terrain()
             elif model_index == 1:
                 self._render_improvements()
-            # Custom logic for re-rendering other models can be added here.
         else:
             self._render_default_terrain()
 
@@ -587,7 +586,7 @@ class BaseTile(BaseEntity):
             self.clear_large_icons()
             self.add_icon_to_tile()
         if self._showing_small_icons:
-            self.clear_small_icons()
+            self.clear_small_icons()  # This will clear the small icon showing flag as well. so make sure to set it again.
             self.add_small_icons()
         if self.city is not None:
             self.add_city_name()
