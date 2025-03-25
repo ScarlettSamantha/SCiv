@@ -2,6 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from menus.kivy.core import SCivGUI
 
 
-class ui(Singleton):
+class ui(Singleton, DirectObject):
     current_menu = None
 
     def __init__(self, base: "SCIV"):
@@ -61,6 +62,8 @@ class ui(Singleton):
         self.debug_show: Dict[str, bool] = {"actions": False, "stats": False, "debug": False}
 
         self.popups: Dict[str, Popup] = {}
+        self.previous_screen_name: Optional[str] = ""
+        self.showing_escape: bool = False
 
     def __setup__(self, base, *args, **kwargs):
         super().__setup__(*args, **kwargs)
@@ -69,6 +72,29 @@ class ui(Singleton):
         if not self.registered:
             self.register()
             self.registered = True
+
+    def reset(self):
+        self.current_tile = None
+        self.previous_tile = None
+        self.neighboring_tiles = []
+        self.previous_tiles = []
+        self.current_unit = None
+        self.previous_unit = None
+        self.game_menu_state = None
+        self.showing_colors = False
+        self.show_resources_in_radius = False
+        self.show_colors_in_radius = False
+        self.debug_show = {"actions": False, "stats": False, "debug": False}
+        self.popups = {}
+        self.previous_screen_name = ""
+        self.showing_escape = False
+
+        if self.game_gui is not None:
+            self.game_gui.reset()  # We reset the game gui so we can start fresh
+
+    def reset_game_ui(self):
+        self.get_screen("game_ui").reset()
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
 
     def get_gui(self) -> "SCivGUI":
         if self.game_gui is None:
@@ -93,27 +119,36 @@ class ui(Singleton):
         self.game_gui.run()
 
     def register(self) -> bool:
-        self._base.accept("ui.update.user.tile_clicked", self.select_tile)
-        self._base.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
-        self._base.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
-        self._base.accept("ui.update.ui.lense_change", self.on_lense_change)
-        self._base.accept("unit.action.move.visiting_tile", self.leave_trail)
+        self.accept("ui.update.user.tile_clicked", self.select_tile)
+        self.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
+        self.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
+        self.accept("ui.update.ui.lense_change", self.on_lense_change)
+        self.accept("ui.update.ui.show_save", self.on_show_save)
+        self.accept("ui.update.ui.show_load", self.on_show_load)
+        self.accept("ui.update.ui.hide_save", self.on_hide_save)
+        self.accept("ui.update.ui.hide_load", self.on_hide_load)
+        self.accept("ui.request.save_game", self.on_request_save_game)
+        self.accept("ui.request_main_menu", self.on_request_main_menu)
+        self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
+        self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
-        self._base.accept("ui.request.open.popup", self.show_draggable_popup)
+        self.accept("ui.request.open.popup", self.show_draggable_popup)
 
-        self._base.accept("game.input.user.escape_pressed", self.get_escape_menu)
-        self._base.accept("f7", self.trigger_render_analyze)
-        self._base.accept("p", self.activate_pstat)
-        self._base.accept("l", self.deactivate_pstat)
-        self._base.accept("n", self.show_colors_for_resources)
-        self._base.accept("m", self.show_colors_for_water)
-        self._base.accept("b", self.show_colors_for_units)
+        self.accept("escape", self.get_escape_menu)
 
-        self._base.accept("z", self.calculate_icons_for_tiles)
-        self._base.accept("x", self.toggle_big_tile_icons)
-        self._base.accept("c", self.toggle_little_tile_icons)
-        self._base.accept("game.state.true_game_start", self.post_game_start)
-        self._base.accept("game.turn.end_process", self.on_turn_change)
+        self.accept("f7", self.trigger_render_analyze)
+        self.accept("p", self.activate_pstat)
+        self.accept("l", self.deactivate_pstat)
+        self.accept("n", self.show_colors_for_resources)
+        self.accept("m", self.show_colors_for_water)
+        self.accept("b", self.show_colors_for_units)
+
+        self.accept("z", self.calculate_icons_for_tiles)
+        self.accept("x", self.toggle_big_tile_icons)
+        self.accept("c", self.toggle_little_tile_icons)
+        self.accept("game.state.true_game_start", self.post_game_start)
+        self.accept("game.turn.end_process", self.on_turn_change)
+        self.accept("system.main.ready", self.on_main_ready)
         return True
 
     def get_main_game_ui(self) -> GameUIScreen:
@@ -131,6 +166,35 @@ class ui(Singleton):
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_player_turn_control", [turn])
         return True
+
+    def on_request_main_menu(self):
+        self.get_gui().load_main_menu()
+        MessengerGlobal.messenger.send("game.state.main_menu")
+
+    def on_request_save_game(self, save_name: str):
+        self.get_game().save(save_name)
+
+    def on_show_game_ui(self):
+        self.get_gui().load_game_ui()
+
+    def on_main_ready(self):
+        self.get_gui().set_screen("main_menu")
+
+    def on_show_save(self):
+        self.set_screen("save_load_screen")
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_save_menu()
+
+    def on_show_load(self):
+        self.set_screen("save_load_screen")
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_load_menu()
+
+    def on_hide_save(self, go_back_to_previous: bool = True):
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_save_menu()
+        self.get_gui().get_screen_manager().current = "game_ui"
+
+    def on_hide_load(self, go_back_to_previous: bool = True):
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_load_menu()
+        self.get_gui().get_screen_manager().current = "game_ui" if go_back_to_previous else "main_menu"
 
     def show_draggable_popup(
         self,
@@ -163,6 +227,7 @@ class ui(Singleton):
 
     def post_game_start(self):
         self.calculate_icons_for_tiles(small=False, large=True)
+        self.get_gui().load_game_ui()
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
@@ -270,9 +335,24 @@ class ui(Singleton):
             # If we do, we're just resuming it
             messenger.send("system.game.resume")
 
+    def set_screen(self, screen_name: str):
+        self.get_gui().get_screen_manager().current = screen_name
+
+    def get_screen(self, screen_name: str):
+        return self.get_gui().get_screen_manager().get_screen(screen_name)
+
     def get_escape_menu(self):
-        self.get_gui().get_screen_manager().current = "game_ui" if self.get_game().is_paused else "pause_menu"
-        self.get_game().is_paused = not self.get_game().is_paused
+        if self.showing_escape:
+            self.set_screen("game_ui")
+            self.get_screen("save_load_screen").hide_load_menu()
+            self.get_screen("save_load_screen").hide_save_menu()
+            self.showing_escape = False
+            self.get_game().unpause()
+            return
+
+        self.showing_escape = True
+        self.set_screen("pause_menu")
+        self.get_game().pause()
 
     def clear_selected_unit(self):
         if self.current_unit is None:
@@ -308,6 +388,9 @@ class ui(Singleton):
 
     def select_tile(self, tile_coords: List[str]):
         from gameplay.repositories.tile import TileRepository
+
+        if not isinstance(tile_coords, list):
+            tile_coords = [tile_coords]
 
         tile = self.map.map.get(tile_coords[0])
         if tile is None:

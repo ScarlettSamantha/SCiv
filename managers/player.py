@@ -16,6 +16,17 @@ class PlayerManager(BaseManager):
     _nature_player: None = None
 
     @classmethod
+    def load(cls, data: Dict[str, Player]) -> None:
+        cls._players = {}
+        for (
+            _,
+            player,
+        ) in data.items():  # We need to find the player that is human and assign them to the session player.
+            if player.is_human:
+                cls._session_player = player
+            cls._players[player.turn_order] = player
+
+    @classmethod
     def reset(cls) -> None:
         cls._players = {}
         cls._session_player = None

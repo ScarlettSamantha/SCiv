@@ -1,4 +1,4 @@
-from ._base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
 
 
 class SeaIce(BaseTerrain):

@@ -95,7 +95,7 @@ class Action:
 
             if (
                 self.action_result is not False
-            ):  # Very important to check for False, as None is a valid return value. has to do with sucess condition check.
+            ):  # Very important to check for False, as None is a valid return value. has to do with success condition check.
                 self.logger.info(f"Action: {self.name} was successful.")
                 if self.on_success is not None:
                     self.logger.info(f"Action: {self.name} has on_success callback, running it.")

@@ -37,6 +37,7 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Conditions that check actual state dynamically of objects and can influence gameplay based on this.
 - [ ] Look into making turn processing async to let rendering continue for bigger games where turn processing will become a second(s) situation.
 - [ ] Make sure previous waiting ui action (eg: move) is canceled when clicking a other action so we have no phantom actions by units that have already been destroyed.
+- [ ] Move builds automatic unit destroy to the unit as a property wrapper maybe ?
 
 ## Features
 

@@ -3,8 +3,7 @@ from gameplay.tiles.base_tile import BaseTile
 
 
 class HillsSnow(BaseTile):
-    _terrain = HillSnowTerrain
-    _model = _terrain.model
+    _model = HillSnowTerrain.model
     _cache_name = "HillsSnow"
 
     def __init__(self, *args, **kwargs):

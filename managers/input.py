@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     BitMask32,
@@ -16,8 +17,9 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class Input(Singleton):
+class Input(Singleton, DirectObject):
     def __init__(self, base: "SCIV"):
+        super().__init__()
         self.base: "SCIV" = base
         self.active: bool = False
         self.sequence: Optional[Sequence] = None
@@ -26,19 +28,22 @@ class Input(Singleton):
 
         self.register()
 
+    def reset(self):
+        self.active = False
+
     def register(self):
         """
         Bind relevant mouse or keyboard events here.
         """
         # Left-click
-        self.base.accept("mouse1", self.pick_object)
+        self.accept("mouse1", self.pick_object)
 
         # Escape key
-        self.base.accept("escape", self.on_escape)
+        self.accept("escape", self.on_escape)
 
-        self.base.accept("system.input.raycaster_on", self.activate)
-        self.base.accept("system.input.raycaster_off", self.de_activate)
-        self.base.accept("system.input.raycaster_on_delay", self.delay_activate)
+        self.accept("system.input.raycaster_on", self.activate)
+        self.accept("system.input.raycaster_off", self.de_activate)
+        self.accept("system.input.raycaster_on_delay", self.delay_activate)
 
     def delay_activate(self, delay: int | float):
         self.sequence = Sequence(Wait(delay), Func(self.activate))

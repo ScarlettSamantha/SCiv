@@ -1,11 +1,13 @@
 from math import floor
 from typing import TYPE_CHECKING, Optional
 
+from direct.showbase.DirectObject import DirectObject
 from kivy.graphics import Color, Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
+from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from managers.player import PlayerManager
 from managers.turn import Turn
 
@@ -14,12 +16,12 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class TopBar(AnchorLayout):
-    def __init__(self, base: "SCIV", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), **kwargs):
+class TopBar(AnchorLayout, DirectObject):
+    def __init__(self, base: "SCIV", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), *args, **kwargs):
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.base: "SCIV" = base
 
         self.frame: Optional[BoxLayout] = None
@@ -32,11 +34,22 @@ class TopBar(AnchorLayout):
         self.register()
 
     def register(self):
-        self.base.accept("ui.update.ui.refresh_top_bar", self.update)
+        self.accept("ui.update.ui.refresh_top_bar", self.update)
+
+    def reset(self):
+        self.build()
 
     def update(self):
-        player: Player = PlayerManager.session_player()
-        turn: int = Turn.get_instance().turn
+        try:
+            player: Player = PlayerManager.session_player()
+            turn: int = Turn.get_instance().turn
+        except InvalidPregameCondition:  # this happens when a game is being loaded
+            self.gold_label.text = "Gold: 0"  # type: ignore
+            self.faith_label.text = "Faith: 0"  # type: ignore
+            self.science_label.text = "Science: 0"  # type: ignore
+            self.culture_label.text = "Culture: 0"  # type: ignore
+            self.turn_label.text = "Turn: 0"  # type: ignore
+            return
 
         if (
             self.gold_label is None

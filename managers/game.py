@@ -1,22 +1,28 @@
 from logging import Logger
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
+from direct.showbase import MessengerGlobal
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import WindowProperties
 
-from system.camera import Camera
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
+from gameplay.player import Player
 from gameplay.repositories.generators import GeneratorRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
+from gameplay.tiles.base_tile import BaseTile
+from gameplay.units.unit_base import UnitBaseClass
 from managers.config import ConfigManager
-from managers.entity import EntityManager
+from managers.entity import EntityManager, EntityType
 from managers.input import Input
 from managers.player import PlayerManager
 from managers.turn import Turn
 from managers.ui import ui
+from managers.unit import Unit
 from managers.world import World
 from mixins.singleton import Singleton
+from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
@@ -25,7 +31,7 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class Game(Singleton):
+class Game(Singleton, DirectObject):
     def __init__(self, base, camera: Camera):
         self.game_active: bool = False
         self.game_over: bool = False
@@ -41,6 +47,7 @@ class Game(Singleton):
         self.players: PlayerManager = PlayerManager()
         self.config: ConfigManager = ConfigManager.get_instance()
         self.entities: EntityManager = EntityManager.get_instance(base=self.base)
+        self.unit: Unit = Unit.get_instance(base=self.base)
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -60,7 +67,7 @@ class Game(Singleton):
             difficulty=1,
         )
 
-        self.is_paused: bool = False
+        self._is_paused: bool = False
         self.debug: bool = False
 
         self.configure_environment()
@@ -71,10 +78,82 @@ class Game(Singleton):
             self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)
 
         def messenger():
-            self.base.accept("game.turn.request_end", self.process_turn)
+            self.accept("game.turn.request_end", self.process_turn)
+            self.accept("game.state.request_load", self.on_request_load)
+            self.accept("game.state.main_menu", self.on_main_menu)
 
         timers()
         messenger()
+
+    def save(self, session_name: str):
+        MessengerGlobal.messenger.send("game.state.save_start")
+        self.entities.add_meta_data("turn", self.turn.get_turn())
+        self.entities.dump(session_name)
+        MessengerGlobal.messenger.send("game.state.save_finished")
+
+    def on_main_menu(self):
+        self.reset_game()
+
+    def on_request_load(self, session_name: str) -> None:
+        self.load(session_name)
+
+    def load(self, session_name: str):
+        MessengerGlobal.messenger.send("game.state.load_start")
+        self.reset_game()
+        self.entities.session = session_name
+        self.entities.load()
+
+        world_tiles: Dict[Any, "BaseTile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
+        if world_tiles is None:
+            raise ValueError("No world tiles found")
+
+        players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
+        if players is None:
+            raise ValueError("No players found")
+
+        units: Dict[str, "UnitBaseClass"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
+
+        self.world.load(world_tiles)
+        self.players.load(players)
+        self.unit.load(units)
+        self.ui.map = self.world
+        self.camera.recenter()
+        self.turn.activate()
+
+        turn = self.entities.get_meta_data("turn")
+        if turn is None:
+            raise ValueError("No turn data found")
+
+        self.turn.set_turn(turn)
+
+        self.ui.set_screen("game_ui")
+        self.input.activate()
+        self.register_callback_inputs()
+
+        self.game_active = True
+        self.ui.post_game_start()
+        self.ui.reset_game_ui()
+        MessengerGlobal.messenger.send("game.state.load_finished")
+
+    def reset_game(self):
+        MessengerGlobal.messenger.send("game.state.reset_start")
+
+        self.game_active = False
+        self.game_over = False
+        self.game_won = False
+
+        self.ui.reset()
+        self.world.reset()
+        self.turn.reset()
+        self.camera.reset()
+        self.entities.reset()
+        self.players.reset()
+        self.input.reset()
+        self.unit.reset()
+        MessengerGlobal.messenger.send("game.state.reset_finished")
+
+    def is_paused(self) -> bool:
+        return self._is_paused
 
     def configure_environment(self):
         self.base.disableMouse()
@@ -113,34 +192,39 @@ class Game(Singleton):
             self.config.save_config()
         return task.again
 
+    def register_callback_inputs(self):
+        self.accept("system.input.user.tile_clicked", self.handle_tile_click)
+        self.accept("system.input.user.unit_clicked", self.handle_unit_click)
+        self.accept("system.game.start_load", self.on_game_start)
+        self.accept("game.input.user.escape_pressed", self.toggle_pause_game)
+        self.accept("game.input.user.quit_game", self.quit_game)
+        self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
+
     def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)
         self.base = base
 
-        def register_callback_inputs():
-            self.base.accept("system.input.user.tile_clicked", self.handle_tile_click)
-            self.base.accept("system.input.user.unit_clicked", self.handle_unit_click)
-            self.base.accept("system.game.start_load", self.on_game_start)
-            self.base.accept("game.input.user.escape_pressed", self.toggle_pause_game)
-            self.base.accept("game.input.user.quit_game", self.quit_game)
-            self.base.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
-
-        register_callback_inputs()
+        self.register_callback_inputs()
 
     def toggle_wireframe(self):
         if not self.debug:
             return
 
     def toggle_pause_game(self) -> None:
-        self.is_paused = not self.is_paused
+        self._is_paused = not self._is_paused
 
-    def handle_tile_click(self, tiles: Union[list[str], str]):
+    def pause(self):
+        self._is_paused = True
+
+    def unpause(self):
+        self._is_paused = False
+
+    def handle_tile_click(self, tiles: Union[List[str], str]):
         if isinstance(tiles, str):
             tiles = [tiles]
         messenger.send("ui.update.user.tile_clicked", tiles)
-        self.ui.select_tile(tiles)
 
-    def handle_unit_click(self, units: Union[list[str], str]):
+    def handle_unit_click(self, units: Union[List[str], str]):
         if isinstance(units, str):
             units = [units]
         messenger.send("ui.update.user.unit_clicked", units)
@@ -179,8 +263,8 @@ class Game(Singleton):
         # Generate the world
         # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
         self.world.generate(
-            self.properties.width,  # type: ignore has already been checked on gmae start if not None
-            self.properties.height,  # type: ignore has already been checked on gmae start if not None
+            self.properties.width,  # type: ignore has already been checked on game start if not None
+            self.properties.height,  # type: ignore has already been checked on game start if not None
             0.482,
             1.5,
         )
@@ -215,6 +299,8 @@ class Game(Singleton):
             raise AssertionError("Game properties not set")
         self.logger.info("Game start requested")
 
+        self.reset_game()
+
         self.properties.num_enemies = num_players
         self.properties.player = Civilization.get(civilization) if isinstance(civilization, str) else civilization  # type: ignore
         self.properties.width = int(map_size.split("x")[0]) if isinstance(map_size, str) else map_size[0]
@@ -240,6 +326,9 @@ class Game(Singleton):
 
         self.logger.info("Setting up camera")
         self.camera_setup()
+
+        player: "Player" = PlayerManager.player()
+        self.entities.session = f"{player.name}"
 
         if not self.active_generator.generate():
             raise ValueError("There is no generator")

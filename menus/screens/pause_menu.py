@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from direct.showbase.MessengerGlobal import messenger
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -76,22 +77,27 @@ class PauseMenu(Popup, CollisionPreventionMixin):
         self.register_non_collidable(self.container)
 
     def save_game(self, instance):
-        print("Saving game...")
+        messenger.send("ui.update.ui.show_save")
 
     def load_game(self, instance):
-        print("Loading game...")
+        messenger.send("ui.update.ui.show_load")
 
     def open_options(self, instance):
         print("Opening options...")
 
     def return_to_main_menu(self, instance):
-        print("Returning to main menu")
-        self.dismiss()
+        messenger.send("ui.request_main_menu")
 
     def quit_game(self, instance):
-        from direct.showbase.MessengerGlobal import messenger
-
         messenger.send("game.input.user.quit_game")
+
+    def open(self):
+        self.register_non_collidable(self.container)
+        super().open()
+
+    def dismiss(self, _=None):
+        self.unregister_non_collidable(self.container)
+        super().dismiss()
 
 
 class PauseScreen(Screen):

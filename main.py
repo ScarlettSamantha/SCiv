@@ -6,14 +6,14 @@ from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import load_prc_file
 
-from system.camera import Camera
 from helpers.cache import Cache
-from system.lights import setup_lights
 from managers.config import ConfigManager
 from managers.i18n import _i18n, set_i18n
 from managers.input import Input
 from managers.log import LogManager
 from managers.unit import Unit
+from system.camera import Camera
+from system.lights import setup_lights
 
 
 class SCIV(ShowBase):
@@ -77,21 +77,21 @@ class SCIV(ShowBase):
         self.game_manager_instance = Game(self, self.civ_camera)
         Game._set_instance(self.game_manager_instance)
 
-        self.engine_logger.info("Setting up UI manager")
-        self.ui_manager = ui(self)
-        self.ui_manager.kivy_setup()
-        self.ui_manager.register()
-        ui._set_instance(self.ui_manager)
-
         self.engine_logger.info("Setting up world")
         self.world = World.get_instance()
         self.world.__setup__()
 
-        self.ui_manager.map = self.world
-
         self.engine_logger.info("Setting up unit manager")
         self.unit_manager = Unit(self)
         Unit._set_instance(self.unit_manager)
+
+        self.engine_logger.info("Setting up UI manager")
+        self.ui_manager = ui(self)
+        self.ui_manager.map = self.world
+        self.ui_manager.kivy_setup()
+        self.ui_manager.register()
+        ui._set_instance(self.ui_manager)
+
         self.messenger.send("system.main.ready")
 
     def get_base_path(self) -> pathlib.Path:

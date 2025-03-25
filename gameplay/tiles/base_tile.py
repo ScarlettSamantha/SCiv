@@ -19,6 +19,7 @@ from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
+from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
@@ -73,8 +74,6 @@ class BaseTile(BaseEntity):
         self._entity_manager = EntityManager.get_instance()
         self.logger: Logger = self.base.logger.gameplay.getChild("map.tile")
 
-        self.extra_data: Optional[dict] = extra_data
-
         self.destroyed: bool = False
         self.grid_position: Optional[Any] = None
         self.raw_position: Optional[Any] = None
@@ -82,7 +81,6 @@ class BaseTile(BaseEntity):
         # Instead of a single node, we keep a list of NodePaths.
 
         self.models: List[NodePath] = []
-        self.extra_data: Optional[dict] = extra_data
 
         self.is_coast: bool = False
         self.is_water: bool = False
@@ -219,6 +217,28 @@ class BaseTile(BaseEntity):
     def generate_tag(cls, x: int, y: int) -> str:
         return f"tile_{x}_{y}"
 
+    def on_load(self) -> None:
+        self.tag = self.generate_tag(self.x, self.y)
+        self.models = []
+        self.base = Cache.get_showbase_instance()
+        self._entity_manager = EntityManager.get_instance()
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
+
+        self._render_default_terrain()
+        self.create_root_ui_node()
+
+        self.mini_icons_card = NodePath("mini_icons_card")
+        self.mini_icons_card.reparentTo(self.tile_icon_group)
+
+        self.text_card = NodePath("text_card")
+        self.text_card.reparentTo(self.tile_icon_group)
+
+        self.rerender()
+
+        if self.city is not None:
+            self.city.base = self.base
+            self.city.register()
+
     def calculate(self):
         base = deepcopy(self._tile_terrain.get_tile_yield())  # This is to prevent modifying the base yield.
 
@@ -229,6 +249,34 @@ class BaseTile(BaseEntity):
             base += effect.yield_impact
 
         self.tile_yield = base
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state = self.__dict__.copy()
+        if "base" in state:
+            del state["base"]
+        if "logger" in state:
+            del state["logger"]
+        if "texture_card" in state:
+            del state["texture_card"]
+        if "texture_card_texture" in state:
+            del state["texture_card_texture"]
+        if "city_name_group" in state:
+            del state["city_name_group"]
+        if "city_name_texture_card_texture" in state:
+            del state["city_name_texture_card_texture"]
+        if "tile_icon_group" in state:
+            del state["tile_icon_group"]
+        if "mini_icons_card" in state:
+            del state["mini_icons_card"]
+        if "text_card" in state:
+            del state["text_card"]
+        if "_model" in state:
+            del state["_model"]
+        if "_entity_manager" in state:
+            del state["_entity_manager"]
+        if "models" in state:
+            del state["models"]
+        return state
 
     def get_pos(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
@@ -511,7 +559,7 @@ class BaseTile(BaseEntity):
         - If model_index is provided, only that model is unrendered and re-rendered.
         """
         if not self.tile_terrain:
-            print(f"Tile {self} has no terrain set, not rendering.")
+            self.logger.warning(f"Tile {self} has no terrain set, not rendering.")
             return
         self.set_color(Colors.RESTORE)
         self.calculate()
@@ -522,17 +570,15 @@ class BaseTile(BaseEntity):
             return
 
         if render_all:
+            self.unrender_all()
             self._render_improvements()
             self._render_default_terrain()
-
-            # (Additional models could be re-added here if needed.)
         elif model_index is not None:
             self.unrender_model(model_index)
             if model_index == 0:
                 self._render_default_terrain()
             elif model_index == 1:
                 self._render_improvements()
-            # Custom logic for re-rendering other models can be added here.
         else:
             self._render_default_terrain()
 
@@ -540,7 +586,7 @@ class BaseTile(BaseEntity):
             self.clear_large_icons()
             self.add_icon_to_tile()
         if self._showing_small_icons:
-            self.clear_small_icons()
+            self.clear_small_icons()  # This will clear the small icon showing flag as well. so make sure to set it again.
             self.add_small_icons()
         if self.city is not None:
             self.add_city_name()
@@ -576,10 +622,7 @@ class BaseTile(BaseEntity):
         node.setCollideMask(BitMask32.bit(1))
         self.tag = self.generate_tag(self.x, self.y)
         node.setTag("tile_id", self.tag)
-        if self.models:
-            self.models[0] = node
-        else:
-            self.models.append(node)
+        self.models.append(node)
 
     def _render_improvements(self) -> None:
         improvements: List[Improvement] = self.improvements().get_all()
@@ -788,25 +831,23 @@ class BaseTile(BaseEntity):
             "effects": ",".join(self.effects.get_effects().keys()),
         }
 
-        if isinstance(self.extra_data, Hex):
-            data["hex_data"] = {
-                "altitude": self.altitude,
-                "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
-                "moisture": self.moisture,
-                "temperature": f"{self.extra_data.base_temperature[0]}, {self.extra_data.base_temperature[1]}",
-                "is_coast": self.is_coast,
-                "is_water": self.is_water,
-                "is_land": self.is_land,
-                "is_lake": self.is_lake,
-                "is_city": self.is_city(),
-                "terrain": self.terrain,
-                "zone": self.zone,
-                "hemisphere": self.hemisphere,
-                "resource['rating']": self.resource["rating"] if self.resource else None,
-                "resource['type']": self.resource["type"] if self.resource else None,
-            }
+        data["hex_data"] = {
+            "altitude": self.altitude,
+            "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
+            "moisture": self.moisture,
+            "is_coast": self.is_coast,
+            "is_water": self.is_water,
+            "is_land": self.is_land,
+            "is_lake": self.is_lake,
+            "is_city": self.is_city(),
+            "terrain": self.terrain,
+            "zone": self.zone,
+            "hemisphere": self.hemisphere,
+            "resource['rating']": self.resource["rating"] if self.resource else None,
+            "resource['type']": self.resource["type"] if self.resource else None,
+        }
 
-            data["hex_data"] = "\n".join(f"{k}: {v}" for k, v in data["hex_data"].items())
+        data["hex_data"] = "\n".join(f"{k}: {v}" for k, v in data["hex_data"].items())
 
         if self.city is not None:
             data["city"] = {
@@ -860,7 +901,7 @@ class BaseTile(BaseEntity):
             self.owner.capital.de_capitalize()  # We tell the current capital to de-capitalize so it can be done with something in the future, for now its just a property set.
         self.owner.capital = self.city
 
-        self._render_default_terrain()
+        self.rerender()
         self.add_city_name()
         return True
 
@@ -901,7 +942,6 @@ class BaseTile(BaseEntity):
         self.resources.add(resource(3), auto_instance=True)
 
     def enrich_from_extra_data(self, hex: Hex) -> None:
-        self.extra_data = hex  # type: ignore
         self.altitude = hex.altitude
         self.biome = hex.biome  # type: ignore
         self.moisture = hex.moisture

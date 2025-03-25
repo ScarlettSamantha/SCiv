@@ -13,3 +13,4 @@ numpy
 panda3d-simplepbr
 pillow
 panda3d-gltf
+dill
