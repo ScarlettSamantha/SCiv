@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Type, Union
+
 from gameplay.resource import BaseResource, ResourceType
 from system.pyload import PyLoad
 
@@ -23,6 +24,16 @@ class ResourceRepository:
             resource_classes: Dict[str, Type[BaseResource]] = PyLoad.load_classes(
                 str(Path(__file__).parent.parent / "resources" / "core" / folder), base_classes=BaseResource
             )
+
+            for _class in list(resource_classes.values()):
+                if _class.__name__ in (
+                    "BaseResource",
+                    "BaseBonusResource",
+                    "BaseLuxuryResource",
+                    "BaseStrategicResource",
+                ):
+                    del resource_classes[_class.__name__]
+
             cls.__cached_resources_classes.extend(resource_classes.values())
 
             if resource_type not in cls.__cached_resources_by_type:
