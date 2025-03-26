@@ -84,10 +84,8 @@ class BaseEntityManagerSerializer(ABC):
 class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
     def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
         import dill as pickle
-        import dill.detect
 
-        with dill.detect.trace():  # type: ignore
-            return pickle.dumps(data)
+        return pickle.dumps(data)
 
     def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
         import dill as pickle
@@ -164,6 +162,8 @@ class EntityManager(Singleton):
         self._meta_data["stats"]["total_orphan_entities"] = (
             self.stats["total_entities_unregistered"] - self.stats["total_entities"]
         )
+        self._meta_data["game"]["version"] = self.base.version
+        self._meta_data["game"]["commit"] = self.base.commit
 
     def check_object_against_type(self, type: EntityType, entity: object) -> bool:
         if type.base_type is None:
