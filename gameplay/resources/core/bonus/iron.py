@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_desert import FlatDessert
@@ -15,6 +16,7 @@ class Iron(BaseBonusResource):
     key: str = "resource.core.bonus.iron"
     name: T_TranslationOrStr = _t("content.resources.core.iron.name")
     description: T_TranslationOrStr = _t("content.resources.core.iron.description")
+    _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_iron.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
@@ -25,6 +27,7 @@ class Iron(BaseBonusResource):
         FlatTundra: 100.0,
         FlatDessert: 100.0,
     }
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_amount = 5.0
     coverage = 0.6
 

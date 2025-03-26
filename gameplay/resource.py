@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generic, Iterator, List, Optional, 
 from exceptions.resource_exception import ResourceTypeException
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
+from helpers.class_property import ClassProperty
 from helpers.colors import Tuple3f
 from managers.i18n import T_TranslationOrStr, t_
 
@@ -101,7 +102,7 @@ class BaseResource(Generic[T_ResourceType], ABC):
     icon: str = "assets/icons/resources/default.png"
     configure_as_float_or_int: ResourceValueType = ResourceValueType.INT
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    color: Tuple3f = (1.0, 1.0, 1.0)
+    _color: Tuple3f = (1.0, 1.0, 1.0)
 
     # Determines the chance that the resource will spawn on a given tile. If a tuple is provided (min, max),
     # If given a dict with terrains, the spawn chance will be different for each terrain.
@@ -284,6 +285,18 @@ class BaseResource(Generic[T_ResourceType], ABC):
     @classmethod
     def on_world_place_tile_filter(cls, resource_allocator: "ResourceAllocator", tile: "BaseTile") -> bool:
         return True
+
+    @ClassProperty
+    def color(self) -> Tuple3f:  # type: ignore
+        return self._color
+
+    @color.setter
+    def color(self, color: Tuple3f) -> None:
+        self._color = color
+
+    @classmethod
+    def get_color(cls) -> Tuple3f:
+        return cls._color
 
 
 mapping: Dict[ResourceType, Type[ResourceTypeBase]] = {

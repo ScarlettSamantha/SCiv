@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.hills_grass import HillsGrass
@@ -11,7 +12,9 @@ class Corn(BaseBonusResource):
     key: str = "resource.core.bonus.corn"
     name: T_TranslationOrStr = _t("content.resources.core.corn.name")
     description: T_TranslationOrStr = _t("content.resources.core.corn.description")
+    _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/bordered_corn.png"
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 100.0,
         HillsGrass: 100.0,

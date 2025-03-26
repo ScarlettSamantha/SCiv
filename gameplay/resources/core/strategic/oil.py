@@ -14,6 +14,7 @@ class Oil(BaseStrategicResource):
     key: str = "resource.core.strategic.oil"
     name: T_TranslationOrStr = _t("content.resources.core.oil.name")
     description: T_TranslationOrStr = _t("content.resources.core.oil.description")
+    _color = (1.0, 0.0, 0.0)
     coverage = 3
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         Sea: 70.0,

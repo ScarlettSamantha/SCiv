@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.hills_desert import HillsDesert
@@ -12,6 +13,8 @@ class Gold(BaseLuxuryResource):
     key: str = "resource.core.luxury.gold"
     name: T_TranslationOrStr = _t("content.resources.core.gold.name")
     description: T_TranslationOrStr = _t("content.resources.core.gold.description")
+    _color = (1.0, 1.0, 0.0)
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/bordered_gold.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,

@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
@@ -12,8 +13,10 @@ from managers.i18n import T_TranslationOrStr, _t
 class Cows(BaseBonusResource):
     key: str = "resource.core.bonus.cows"
     name: T_TranslationOrStr = _t("content.resources.core.cows.name")
+    _color = (1.0, 0.0, 1.0)
     description: T_TranslationOrStr = _t("content.resources.core.cows.description")
     icon: str = "assets/icons/resources/core/bonus/bordered_cow.png"
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatScrubland: 100.0,

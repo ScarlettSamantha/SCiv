@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
@@ -11,6 +12,8 @@ class Wheat(BaseBonusResource):
     key: str = "resource.core.bonus.wheat"
     name: T_TranslationOrStr = _t("content.resources.core.wheat.name")
     description: T_TranslationOrStr = _t("content.resources.core.wheat.description")
+    _color = (1.0, 0.0, 1.0)
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/bordered_wheat.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {FlatGrass: 100.0, HillsGrass: 30.0, BaseTerrain: 0.0}
     coverage = 0.5

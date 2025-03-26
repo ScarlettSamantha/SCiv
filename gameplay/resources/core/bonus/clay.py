@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
@@ -12,6 +13,7 @@ class Clay(BaseBonusResource):
     key: str = "resource.core.bonus.clay"
     name: T_TranslationOrStr = _t("content.resources.core.clay.name")
     description: T_TranslationOrStr = _t("content.resources.core.clay.description")
+    _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_clay.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
@@ -19,6 +21,7 @@ class Clay(BaseBonusResource):
     }
     coverage = 0.4
     spawn_amount = 5.0
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

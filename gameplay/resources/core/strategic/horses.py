@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
@@ -15,6 +16,8 @@ class Horses(BaseStrategicResource):
     key: str = "resource.core.strategic.horses"
     name: T_TranslationOrStr = _t("content.resources.core.horses.name")
     description: T_TranslationOrStr = _t("content.resources.core.horses.description")
+    _color = (1.0, 0.0, 0.0)
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_horse.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 50.0,

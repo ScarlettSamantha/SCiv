@@ -14,6 +14,7 @@ class Lobster(BaseBonusResource):
     key: str = "resource.core.bonus.lobster"
     name: T_TranslationOrStr = _t("content.resources.core.lobster.name")
     description: T_TranslationOrStr = _t("content.resources.core.lobster.description")
+    _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_lobster.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 10.0, Coast: 90.0, SeaIce: 0.0}
     spawn_amount = 3.0
