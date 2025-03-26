@@ -1,20 +1,21 @@
 from typing import Optional
-from kivy.uix.screenmanager import Screen
+
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.spinner import Spinner
 from kivy.uix.checkbox import CheckBox
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
 from kivy.uix.slider import Slider
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
+
+from main import Cache
 from menus.kivy.elements.button_value import ButtonValue
 
 
 class OptionsScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.version = "v0.1.0-alpha"
+        self.version = Cache.get_showbase_instance().version
         self.git_version: str = ""
         self.panda_version: str = ""
         self.kivy_version: str = ""
