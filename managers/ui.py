@@ -127,9 +127,9 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.ui.show_load", self.on_show_load)
         self.accept("ui.update.ui.hide_save", self.on_hide_save)
         self.accept("ui.update.ui.hide_load", self.on_hide_load)
+        self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
         self.accept("ui.request.save_game", self.on_request_save_game)
         self.accept("ui.request_main_menu", self.on_request_main_menu)
-        self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
         self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
