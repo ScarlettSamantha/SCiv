@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Type
+from typing import Dict, Type
 
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
@@ -12,7 +12,7 @@ class Pearls(BaseLuxuryResource):
     description: T_TranslationOrStr = _t("content.resources.core.pearls.description")
     icon: str = "assets/icons/resources/core/luxury/bordered_pearls.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
-    spawn_amount: float | Tuple[float, float] = 5.0
+    spawn_amount = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
 
     def __init__(self, value: int | float = 0):

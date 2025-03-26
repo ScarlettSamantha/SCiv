@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Type
+from typing import Dict, Type
 
 from gameplay.resources.core.basic._base import BasicBaseResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -10,7 +10,7 @@ class Science(BasicBaseResource):
     name: T_TranslationOrStr = _t("content.resources.core.science.name")
     description: T_TranslationOrStr = _t("content.resources.core.science.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
-    spawn_amount: float | Tuple[float, float] = 0
+    spawn_amount = 0
     icon: str = "assets/icons/resources/core/basic/science.png"
 
     def __init__(self, value: int | float = 0):

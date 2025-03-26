@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Type
+from typing import Dict, Type
 
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -10,8 +10,9 @@ class Stone(BaseBonusResource):
     name: T_TranslationOrStr = _t("content.resources.core.stone.name")
     description: T_TranslationOrStr = _t("content.resources.core.stone.description")
     icon: str = "assets/icons/resources/core/bonus/hex_border_stone.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
-    spawn_amount: float | Tuple[float, float] = 5.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 100
+    coverage = 0.4
+    spawn_amount = 5.0
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
