@@ -3,6 +3,7 @@ from gameplay.tiles.base_tile import BaseTile
 
 
 class HillsTundra(BaseTile):
+    _model = HillsTundraTerrain.model
     _cache_name = "HillsTundra"
 
     def __init__(self, *args, **kwargs):
