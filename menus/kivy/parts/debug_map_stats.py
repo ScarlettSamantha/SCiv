@@ -79,7 +79,7 @@ class DebugMapStats(FloatLayout):
         for key, value in sorted_stats_resources:
             # Extract the part after second dot
             simplified_key = key.split(".")[2:]
-            color_hex = Colors.to_hex(self.loaded_resources[key].color)
+            color_hex = Colors.to_hex(self.loaded_resources[key]._color)  # type: ignore
             simplified_key = rf"[color={color_hex.upper()}][[{simplified_key[0][0]}]]{
                 simplified_key[1]
             }[/color]"  # First letter of the first part so b for bonus, l for luxury, s for strategic
