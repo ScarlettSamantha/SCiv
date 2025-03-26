@@ -15,8 +15,9 @@ from menus.kivy.elements.button_value import ButtonValue
 class OptionsScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.version = Cache.get_showbase_instance().version
-        self.git_version: str = ""
+        self.base = Cache.get_showbase_instance()
+        self.version = self.base.version
+        self.git_version: str = self.base.commit
         self.panda_version: str = ""
         self.kivy_version: str = ""
 
