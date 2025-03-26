@@ -176,7 +176,7 @@ class Basic(BaseGenerator):
         grass_temperature_lower_threshold = 10
         moisture_threshold_mangrove_jungle = 13
         light_jungle_temperature_threshold = 25
-        cold_forrest_temperature_threshold = 3
+        cold_forrest_temperature_threshold = 8
         flat_to_hills_threshold = 160
         hills_to_mountains_threshold = 205
 
@@ -228,7 +228,9 @@ class Basic(BaseGenerator):
                 return "FlatJungle"
             elif hex_tile.biome.id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
                 return "FlatLightJungle"
-            elif hex_tile.biome.id in (5,):  # Virtual Mangrove Actual scrubland with low moister
+            elif hex_tile.biome.id in (5,) or (
+                hex_tile.biome.id == 7 and hex_tile.temperature[0] < cold_forrest_temperature_threshold
+            ):  # Virtual Mangrove Actual scrubland with low moister
                 return "FlatScrubland"
             elif hex_tile.biome.id in (6,):  # Savanna
                 return "FlatSavanna"
