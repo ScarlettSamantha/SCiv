@@ -121,5 +121,4 @@ class MainMenuScreen(Screen):
         self.to_game_screen()
 
     def show(self):
-        self.layout.visible = True
-        
+        self.layout.visible = True  # type: ignore
