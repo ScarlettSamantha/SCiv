@@ -109,6 +109,7 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `ui.request.save_game` (E: ui-part-save | L: manager-ui)
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
+- `ui.request.reroll` (E: ui-part-pause-menu | L: manager-ui)
 
 ## System
 

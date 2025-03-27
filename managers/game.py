@@ -91,6 +91,17 @@ class Game(Singleton, DirectObject):
         self.entities.dump(session_name)
         MessengerGlobal.messenger.send("game.state.save_finished")
 
+    def reroll(self):
+        if self.properties is None:
+            raise AssertionError("Game properties not set")
+
+        self.reset_game()
+        self.on_game_start(
+            map_size=f"{self.properties.width}x{self.properties.height}",
+            civilization=self.properties.player,
+            num_players=self.properties.num_enemies,
+        )
+
     def on_main_menu(self):
         self.reset_game()
 
@@ -294,7 +305,7 @@ class Game(Singleton, DirectObject):
         if players is None:
             raise ValueError("No players were setup")
 
-    def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Civilization, num_players):
+    def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Type[Civilization], num_players):
         if self.properties is None:
             raise AssertionError("Game properties not set")
         self.logger.info("Game start requested")

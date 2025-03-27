@@ -65,7 +65,11 @@ class PauseMenu(Popup, CollisionPreventionMixin):
         self.resume_btn.bind(on_release=self.dismiss)
         self.container.add_widget(self.resume_btn)
 
-        self.save_btn = Button(text="Save", size_hint=(1, None), height=50)
+        self.reroll_btn = Button(text=str(t_("ui.player_ui.pause.reroll")), size_hint=(1, None), height=50)
+        self.reroll_btn.bind(on_release=self.on_reroll)
+        self.container.add_widget(self.reroll_btn)
+
+        self.save_btn = Button(text=str(t_("ui.player_ui.pause.save")), size_hint=(1, None), height=50)
         self.save_btn.bind(on_release=self.save_game)
         self.container.add_widget(self.save_btn)
 

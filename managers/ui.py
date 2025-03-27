@@ -130,6 +130,7 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
         self.accept("ui.request.save_game", self.on_request_save_game)
         self.accept("ui.request_main_menu", self.on_request_main_menu)
+        self.accept("ui.request.reroll", self.on_reroll)
         self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
@@ -170,6 +171,9 @@ class ui(Singleton, DirectObject):
     def on_request_main_menu(self):
         self.get_gui().load_main_menu()
         MessengerGlobal.messenger.send("game.state.main_menu")
+
+    def on_reroll(self):
+        self.get_game().reroll()
 
     def on_request_save_game(self, save_name: str):
         self.get_game().save(save_name)
