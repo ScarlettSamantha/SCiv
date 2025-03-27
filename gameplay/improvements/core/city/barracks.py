@@ -15,7 +15,7 @@ class Barracks(BaseCityImprovement):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.amount_resource_needed = Yields(production=50)
+        self.amount_resource_needed = Yields(production=8)
         self.resource_needed: Type["BasicBaseResource"] = Production
 
         self.tile_yield_improvement = Yields.nullYield()  # just unlocks the ability to train units.

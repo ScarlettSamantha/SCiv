@@ -106,7 +106,7 @@ The goal is to have an actual semi playable and resumable game and improved buil
 
 - [X] Saving/Loading + GUI
 - [X] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
-- [ ] Map regeneration/reroll (with same settings)
+- [X] Map regeneration/reroll (with same settings)
 - [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
 - [ ] Barbarians + Nature player
 - [ ] Working research
