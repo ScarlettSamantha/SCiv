@@ -62,7 +62,7 @@ class Basic(BaseGenerator):
             "roughness": 18,
             "height_range": (0, 240),
             "pressure": 1,  # bar
-            "axial_tilt": 18,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
+            "axial_tilt": 15,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
             # features
             "craters": True,
             "volcanoes": True,
@@ -174,7 +174,7 @@ class Basic(BaseGenerator):
         desert_temperature_threshold = 30
         grass_temperature_upper_threshold = 30
         grass_temperature_lower_threshold = 10
-        moisture_threshold_mangrove_jungle = 13
+        moisture_threshold_mangrove_jungle = 12
         light_jungle_temperature_threshold = 25
         cold_forrest_temperature_threshold = 8
         flat_to_hills_threshold = 160
@@ -186,7 +186,7 @@ class Basic(BaseGenerator):
 
             elif (
                 hex_tile.is_coast and hex_tile.geoform_type.id != 2
-            ):  # Shallow water, For some reason water is dessert or grassland
+            ):  # Shallow water, For some reason water is desert or grassland
                 return "Coast"
             elif hex_tile.geoform_type.id == 2:
                 return "Lake"
@@ -220,7 +220,7 @@ class Basic(BaseGenerator):
 
             if (
                 hex_tile.biome.id in (4,) and hex_tile.temperature[0] > desert_temperature_threshold
-            ):  # Dessert or savannah, keep this high as it needs to be checked first before grassland
+            ):  # Desert or savannah, keep this high as it needs to be checked first before grassland
                 return "FlatDesert"
             elif (
                 hex_tile.biome.id in (7, 11) and hex_tile.moisture > moisture_threshold_mangrove_jungle
@@ -236,7 +236,7 @@ class Basic(BaseGenerator):
                 return "FlatSavanna"
             elif hex_tile.biome.id in (7,) or (
                 hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
-            ):  # Grassland and when its a "dessert" but to cold to be a dessert
+            ):  # Grassland and when its a "desert" but to cold to be a desert
                 return "FlatGrass"
             elif hex_tile.biome.id in (
                 8,
