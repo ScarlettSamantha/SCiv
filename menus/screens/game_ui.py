@@ -25,6 +25,7 @@ from menus.kivy.parts.action_bar import ActionBar
 from menus.kivy.parts.city import CityUI
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
+from menus.kivy.parts.debug_map_stats import DebugMapStats
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
@@ -73,6 +74,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.debug_frame: Optional[DebugPanel] = None
         self.stats_frame: Optional[StatsPanel] = None
         self.debug_actions: Optional[DebugActions] = None
+        self.debug_map_stats: Optional[DebugMapStats] = None
         self.player_turn_control: Optional[PlayerTurnControl] = None
         self.city_ui: Optional[CityUI] = None
         self.top_bar: Optional[TopBar] = None
@@ -161,6 +163,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             raise AssertionError("Debug actions is not initialized.")
         return self.debug_actions
 
+    def get_debug_map_stats(self) -> DebugMapStats:
+        if self.debug_map_stats is None:
+            raise AssertionError("Debug map stats is not initialized.")
+        return self.debug_map_stats
+
     def get_turn_control(self) -> PlayerTurnControl:
         if self.player_turn_control is None:
             raise AssertionError("Player turn control is not initialized.")
@@ -189,6 +196,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.root_layout.add_widget(self.build_stats_frame())
         self.root_layout.add_widget(self.build_debug_frame())
         self.root_layout.add_widget(self.build_debug_actions())
+        self.root_layout.add_widget(self.build_debug_map_stats())
         self.root_layout.add_widget(self.build_player_turn_control())
         self.root_layout.add_widget(self.build_city_ui())
         self.root_layout.add_widget(self.build_top_bar())
@@ -198,6 +206,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             or self.debug_frame is None
             or self.stats_frame is None
             or self.debug_actions is None
+            or self.debug_map_stats is None
             or self.player_turn_control is None
             or self.city_ui is None
             or self.top_bar is None
@@ -211,6 +220,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.register_non_collidable(self.debug_frame.frame)
         self.register_non_collidable(self.stats_frame.frame)
         self.register_non_collidable(self.debug_actions.frame)
+        self.register_non_collidable(self.debug_map_stats.frame)
         self.register_non_collidable(self.player_turn_control.frame)
         self.register_non_collidable(self.city_ui.frame)
         self.register_non_collidable(self.top_bar.frame)
@@ -236,6 +246,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.debug_actions = DebugActions(base=self._base, logger=self.logger)
         self.debug_panels_showing_state["actions"] = True
         return self.debug_actions.build()
+
+    def build_debug_map_stats(self) -> GridLayout:
+        self.debug_map_stats = DebugMapStats(base=self._base, logger=self.logger)
+        return self.debug_map_stats.build()
 
     def build_player_turn_control(self) -> FloatLayout:
         self.player_turn_control = PlayerTurnControl(base=self._base)

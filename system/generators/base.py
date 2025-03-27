@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
@@ -30,10 +30,10 @@ class BaseGenerator(ABC):
         self.config: GameSettings = config
         self.base: "SCIV" = base
         self.world: World = World.get_instance()
+        self.world_generation_stats: Dict[str, Any] = {}
 
     @abstractmethod
-    def generate(self) -> bool:
-        pass
+    def generate(self) -> bool: ...
 
     def generate_player(
         self,
@@ -75,9 +75,9 @@ class BaseGenerator(ABC):
                 chosen_civilization: Type[Civilization] = player_civilization
                 civs_ingame.append(chosen_civilization)
             else:  # AI
-                chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
+                chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
                 while True:
-                    chosen_civilization = CivilizationRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
+                    chosen_civilization = CivilizationRepository.random()  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
                     already_ingame: bool = False
 
                     if chosen_civilization in civs_ingame:
@@ -88,7 +88,7 @@ class BaseGenerator(ABC):
                     if already_ingame is False:  # We try to avoid having the same civilization twice
                         break
 
-            chosen_personality: Type[Personality] = PersonalityRepository.random()  # type: ignore # type: ignore, due to the num argument is 1 it will always return a single instance not a list of instances.
+            chosen_personality: Type[Personality] = PersonalityRepository.random()  # type: ignore # due to the num argument is 1 it will always return a single instance not a list of instances.
 
             if isinstance(chosen_civilization, list):
                 raise AssertionError(

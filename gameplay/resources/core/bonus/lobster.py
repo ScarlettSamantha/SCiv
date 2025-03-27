@@ -10,16 +10,16 @@ from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Fish(BaseBonusResource):
-    key: str = "resource.core.bonus.fish"
-    name: T_TranslationOrStr = _t("content.resources.core.fish.name")
+class Lobster(BaseBonusResource):
+    key: str = "resource.core.bonus.lobster"
+    name: T_TranslationOrStr = _t("content.resources.core.lobster.name")
+    description: T_TranslationOrStr = _t("content.resources.core.lobster.description")
     _color = (1.0, 0.0, 1.0)
-    description: T_TranslationOrStr = _t("content.resources.core.fish.description")
-    icon: str = "assets/icons/resources/core/bonus/bordered_fish.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 50.0, Coast: 90.0, SeaIce: 0.0}
-    spawn_amount = 5.0
+    icon: str = "assets/icons/resources/core/bonus/hex_border_lobster.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 10.0, Coast: 90.0, SeaIce: 0.0}
+    spawn_amount = 3.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
-    coverage = 4.5
+    coverage = 2.3
     clusterable = True
     cluster_max_radius = 3
     cluster_dropoff_amount_rate = 1.0

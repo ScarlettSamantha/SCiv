@@ -17,12 +17,15 @@ from system.lights import setup_lights
 
 
 class SCIV(ShowBase):
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         from managers.assets import AssetManager
         from managers.ui import ui
         from managers.world import World
+        from version import __version__
+
+        self.version = __version__
+        # Get the commit hash from git if available, otherwise 'Unknown'
+        self.commit = self._get_git_commit()
 
         # config_mgr must be applied BEFORE ShowBase to set up prc data
         ShowBase.__init__(self)
@@ -93,6 +96,19 @@ class SCIV(ShowBase):
         ui._set_instance(self.ui_manager)
 
         self.messenger.send("system.main.ready")
+
+    def _get_git_commit(self) -> str:
+        """
+        Retrieve the current git commit hash if the git package is available.
+        Returns "Unknown" if git is not installed or the repository isn't available.
+        """
+        try:
+            import git  # type: ignore
+
+            repo = git.Repo(search_parent_directories=True)
+            return repo.head.object.hexsha
+        except Exception:
+            return "Unknown"
 
     def get_base_path(self) -> pathlib.Path:
         return self.base_path

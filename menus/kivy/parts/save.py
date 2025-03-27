@@ -33,6 +33,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
             **kwargs,
         )
         self.base: "SCIV" = base
+        self.manager = self.base.ui_manager
 
         # Use (1, 1) so the layout expands to fill the entire popup
         self.main_layout = GridLayout(orientation="lr-tb", rows=3, cols=2, spacing=10, size_hint=(1, 1))
@@ -240,4 +241,5 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         MessengerGlobal.messenger.send("system.input.enable_zoom")
         MessengerGlobal.messenger.send("system.input.enable_control")
         MessengerGlobal.messenger.send("system.input.raycaster_on")
+        self.manager.set_screen("game_ui")
         self.removeTask("rebuild_label")

@@ -1,9 +1,9 @@
-from gameplay.terrain.flat_desert import FlatDessert
+from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.tiles.base_tile import BaseTile
 
 
 class LandDesert(BaseTile):
-    _terrain = FlatDessert
+    _terrain = FlatDesert
     _model = _terrain.model
     _cache_name = "LandDesert"
 

@@ -1,13 +1,14 @@
-import random
-from typing import TYPE_CHECKING, Dict, List, Type
+from copy import deepcopy
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
-from gameplay.resource import BaseResource, ResourceSpawnablePlace
-from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.resource import BaseResource
 from gameplay.tiles.base_tile import BaseTile
+from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
+from system.generators.resource_allocator import ResourceAllocator
 from system.pyload import PyLoad
 from system.subsystems.hexgen.enums import MapType, OceanType
-from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.mapgen import MapGen
 
 if TYPE_CHECKING:
@@ -21,7 +22,6 @@ class Basic(BaseGenerator):
     def __init__(self, config: "GameSettings", base):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
-        self.map: Dict[str, BaseTile] = self.world.map
         from random import randrange
 
         # Random seed
@@ -29,6 +29,12 @@ class Basic(BaseGenerator):
 
         # Load tile definitions
         self.tiles_dict: Dict[str, Type[BaseTile]] = self.load_tiles()
+        self.grid: Dict[Tuple[int, int], BaseTile] = {}
+        self.map: Dict[str, BaseTile] = self.world.map
+
+        self.resource_allocator: Optional[ResourceAllocator] = None
+
+        self.world_generation_stats: Dict[str, Any] = {}
 
         # Initialize HexGen world parameters
         self.map_params = {
@@ -48,15 +54,15 @@ class Basic(BaseGenerator):
             "year_length": 365,
             "day_length": 24,
             "base_temp": 0,
-            "avg_temp": 12,
+            "avg_temp": 10,
             "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water, OceanType.hydrocarbons],
             "random_seed": self.seed,
             "roughness": 18,
-            "height_range": (0, 245),
+            "height_range": (0, 240),
             "pressure": 1,  # bar
-            "axial_tilt": 18,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
+            "axial_tilt": 15,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
             # features
             "craters": True,
             "volcanoes": True,
@@ -76,10 +82,13 @@ class Basic(BaseGenerator):
     def generate(self) -> bool:
         """Generates the hex map using HexGen and maps it to our tile system."""
         # Step 1: Generate the world using HexGen
+        start_time: datetime = datetime.now()
         self.hexgen_map = MapGen(self.map_params, debug=True)
         self.hex_grid = self.hexgen_map.hex_grid  # Access HexGen's grid
+        end_hexgen_time: datetime = datetime.now()
 
         # Step 2: Convert HexGen's terrain types to our tile names and apply offsets
+        start_conversion_time: datetime = datetime.now()
         for col in range(self.config.height):
             for row in range(self.config.width):
                 # Compute the base x, y positions
@@ -97,12 +106,55 @@ class Basic(BaseGenerator):
                 terrain = self.classify_terrain(hex_tile)
                 hex_tile.terrain = terrain  # Store terrain type
                 hex_tile.render_pos = (x, y)  # Store adjusted render coordinates
+        end_conversion_time: datetime = datetime.now()
 
         # Step 4: Instantiate tiles for rendering
+        start_instantiation_time: datetime = datetime.now()
         self.instantiate_tiles()
+        end_instantiation_time: datetime = datetime.now()
 
-        # Step 5: Place starting units
+        # Step 5: Allocate resources
+        start_resource_allocation_time: datetime = datetime.now()
+        self.grid = self.world.grid
+        self.resource_allocator = ResourceAllocator(self.grid, self.get_all_resources())
+        self.resource_allocator.allocate_resources()
+        end_resource_allocation_time: datetime = datetime.now()
+
+        # Step 6: Place starting units
+        start_unit_placement_time: datetime = datetime.now()
         self.place_starting_units()
+        end_unit_placement_time: datetime = datetime.now()
+
+        self.world_generation_stats["durations"] = {
+            "step_1_hexgen_time": str(round((end_hexgen_time - start_time).total_seconds() * 1000, 2)),
+            "step_2_conversion_time": str(
+                round((end_conversion_time - start_conversion_time).total_seconds() * 1000, 2)
+            ),
+            "step_3_instantiation_time": str(
+                round((end_instantiation_time - start_instantiation_time).total_seconds() * 1000, 2)
+            ),
+            "step_4_resource_allocation_time": str(
+                round((end_resource_allocation_time - start_resource_allocation_time).total_seconds() * 1000, 2)
+            ),
+            "step_5_unit_placement_time": str(
+                round((end_unit_placement_time - start_unit_placement_time).total_seconds() * 1000, 2)
+            ),
+        }
+
+        params = deepcopy(self.map_params)
+        del params["map_type"]  # This is not serializable
+        del params["ocean_type"]  # This is not serializable
+
+        self.world_generation_stats["seed"] = self.seed
+        self.world_generation_stats["map_params"] = params
+        self.world_generation_stats["map_size"] = (self.config.width, self.config.height)
+        self.world_generation_stats["start_time"] = start_time.isoformat()
+        self.world_generation_stats["end_time"] = datetime.now().isoformat()
+
+        EntityManager.get_instance().add_meta_data(
+            "world_generation_stats", self.world_generation_stats
+        )  # we can use this to store the stats in the database
+
         return True
 
     def classify_terrain(self, hex_tile) -> str:
@@ -119,10 +171,14 @@ class Basic(BaseGenerator):
         # tropical_forest =      (11, 'r', 'Tropical Forest')
         # tropical_rainforest =  (12, 'R', 'Tropical Rainforest')
 
-        desert_temperature_threshold = 35
-        moisture_threshold_mangrove_jungle = 13
+        desert_temperature_threshold = 30
+        grass_temperature_upper_threshold = 30
+        grass_temperature_lower_threshold = 10
+        moisture_threshold_mangrove_jungle = 12
         light_jungle_temperature_threshold = 25
-        cold_forrest_temperature_threshold = 3
+        cold_forrest_temperature_threshold = 8
+        flat_to_hills_threshold = 160
+        hills_to_mountains_threshold = 205
 
         if hex_tile.is_water:
             if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < -1:
@@ -130,7 +186,7 @@ class Basic(BaseGenerator):
 
             elif (
                 hex_tile.is_coast and hex_tile.geoform_type.id != 2
-            ):  # Shallow water, For some reason water is dessert or grassland
+            ):  # Shallow water, For some reason water is desert or grassland
                 return "Coast"
             elif hex_tile.geoform_type.id == 2:
                 return "Lake"
@@ -138,24 +194,33 @@ class Basic(BaseGenerator):
                 return "Sea"
         else:
             # Its land
-
             # We ask for the altitude to determine if it's a mountain
-            if hex_tile.altitude > 205:
+            if hex_tile.altitude > hills_to_mountains_threshold:
                 if hex_tile.temperature[0] < -2:
                     return "MountainSnow"
                 return "Mountain"
 
-            if hex_tile.altitude > 145:
-                if hex_tile.biome.id in (7,):
+            if hex_tile.altitude > flat_to_hills_threshold:
+                if (
+                    hex_tile.biome.id in (7, 5)
+                    and hex_tile.temperature[0] > grass_temperature_lower_threshold
+                    and hex_tile.temperature[0] < grass_temperature_upper_threshold
+                ):
                     return "HillsGrassland"
-                elif hex_tile.biome.id in (6, 4):
+                elif hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] > desert_temperature_threshold:
                     return "HillsDesert"
-                elif hex_tile.biome.id in (3,):
+                elif hex_tile.biome.id in (3,) and hex_tile.temperature[0] < 0:
                     return "HillsSnow"
+                elif (
+                    hex_tile.temperature[0] < grass_temperature_lower_threshold
+                    and hex_tile.temperature[0] > 0
+                    and hex_tile.biome.id not in (7, 5, 6, 4)
+                ):
+                    return "HillsTundra"
 
             if (
                 hex_tile.biome.id in (4,) and hex_tile.temperature[0] > desert_temperature_threshold
-            ):  # Dessert or savannah, keep this high as it needs to be checked first before grassland
+            ):  # Desert or savannah, keep this high as it needs to be checked first before grassland
                 return "FlatDesert"
             elif (
                 hex_tile.biome.id in (7, 11) and hex_tile.moisture > moisture_threshold_mangrove_jungle
@@ -163,13 +228,15 @@ class Basic(BaseGenerator):
                 return "FlatJungle"
             elif hex_tile.biome.id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
                 return "FlatLightJungle"
-            elif hex_tile.biome.id in (5,):  # Virtual Mangrove Actual scrubland with low moister
+            elif hex_tile.biome.id in (5,) or (
+                hex_tile.biome.id == 7 and hex_tile.temperature[0] < cold_forrest_temperature_threshold
+            ):  # Virtual Mangrove Actual scrubland with low moister
                 return "FlatScrubland"
             elif hex_tile.biome.id in (6,):  # Savanna
                 return "FlatSavanna"
             elif hex_tile.biome.id in (7,) or (
                 hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
-            ):  # Grassland and when its a "dessert" but to cold to be a dessert
+            ):  # Grassland and when its a "desert" but to cold to be a desert
                 return "FlatGrass"
             elif hex_tile.biome.id in (
                 8,
@@ -193,7 +260,9 @@ class Basic(BaseGenerator):
                 return "FlatScrubland"
             elif hex_tile.biome.id in (1,):  # Arctic / Ice
                 return "FlatIce"
-            elif hex_tile.biome.id in (2, 3):  # 2 Tundra, 3 Alpine Tundra
+            elif hex_tile.biome.id in (2, 3) or (
+                hex_tile.biome.id in (7, 6, 4) and hex_tile.temperature[0] < grass_temperature_lower_threshold
+            ):  # 2 Tundra, 3 Alpine Tundra
                 if hex_tile.temperature[0] < 0 or hex_tile.biome.id in (3,):  # This is a cold tile or alpine
                     return "FlatTundraSnow"
                 return "FlatTundra"  # This is a normal tundra should be just 2 left as 3 is handled above
@@ -226,12 +295,6 @@ class Basic(BaseGenerator):
                 obj_instance: BaseTile = tile_class(x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.register()
 
-                def inject_resource():
-                    self.choose_resource(obj_instance, hex_tile)
-                    return obj_instance
-
-                inject_resource()
-
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
                 obj_instance.render()
 
@@ -247,135 +310,6 @@ class Basic(BaseGenerator):
         instance = ResourceRepository()
         resources = instance.all_by_type([ResourceType.STRATEGIC, ResourceType.BONUS, ResourceType.LUXURY])
         return resources
-
-    def choose_resource(self, _base_tile: BaseTile, hex_tile: Hex) -> Type[BaseResource] | None:
-        """@TODO add stats for the map to show how % of each resource is on the map and what type and average spawn rates"""
-        all_resources: List[Type[BaseResource]] = self.get_all_resources()
-        hex_tile = hex_tile
-
-        def _choose_resource() -> Type[BaseResource] | None:
-            filtered_resource: Type[BaseResource] | None = filter_out_tile_specific_resources(all_resources, _base_tile)
-            return filtered_resource
-
-        def filter_out_tile_specific_resources(
-            _all_resources: List[Type[BaseResource]], base_tile: BaseTile
-        ) -> Type[BaseResource] | None:
-            """
-            Returns a single resource from 'available_resources' that is valid for the given tile.
-            Returns None if no valid resource can be found after 100 attempts.
-            """
-            i = 0
-            while i < 100:
-                resource: Type[BaseResource] = random.choice(_all_resources)
-                i += 1
-
-                def filter_by_type() -> bool:
-                    # If the tile is water, skip land-only resources
-                    if resource.spawn_type == ResourceSpawnablePlace.BOTH:
-                        return True
-                    elif (
-                        (hex_tile.is_water and not hex_tile.is_land)
-                        and (resource.spawn_type is ResourceSpawnablePlace.LAND)
-                    ) or (
-                        (hex_tile.is_land and not hex_tile.is_water)
-                        and (resource.spawn_type is ResourceSpawnablePlace.WATER)
-                    ):
-                        return False
-                    elif (
-                        base_tile.get_terrain().can_spawn_resources is False
-                    ):  # to prevent things like mountains spawning resources
-                        return False
-                    elif hex_tile.temperature[0] < -1.0 and hex_tile.is_water is True:
-                        return False  # No resources on sea ice # Land based can spawn due to migration
-                    elif (hex_tile.is_water is False and hex_tile.is_land is False) and (
-                        resource.spawn_type is ResourceSpawnablePlace.LAND
-                    ):  # Think hexgen has a bug with plains @TODO check this
-                        return True
-                    return True
-
-                def filter_by_terrain() -> bool:
-                    # If the resource requires a specific terrain type, check if it matches
-                    if isinstance(resource.spawn_chance, dict):
-                        if (
-                            base_tile.get_terrain().__class__ not in resource.spawn_chance
-                            and BaseTerrain not in resource.spawn_chance
-                        ):
-                            return False
-
-                    return True
-
-                if filter_by_type() is False:
-                    continue
-                if filter_by_terrain() is False:
-                    continue
-
-                # If we get here, the resource is valid for the tile
-                return resource
-            # If we couldn't find a valid resource in 100 tries, return None
-            return None
-
-        resource: Type[BaseResource] | None = _choose_resource()
-
-        if resource is None:
-            spawn_chance: float = 0.0  # @TODO add a default spawn chance for resources that are not found, This is to prevent mountains from spawning resources
-
-        # Determine the spawn chance for the resource
-        spawn_chance = getattr(resource, "spawn_chance", 0.0)
-        filtered_spawn_chance: float = 0.0
-        if isinstance(spawn_chance, dict):
-            terrain = _base_tile.get_terrain()
-            terrain_type = terrain.__class__
-            if isinstance(spawn_chance, dict) and terrain_type in spawn_chance:
-                filtered_spawn_chance: float = spawn_chance.get(
-                    terrain_type, spawn_chance.get(BaseTerrain, 0.0)
-                )  # base terrain is the default, if it doesn't exist then 0, so you can define to not spawn on a specific terrain.
-            else:
-                filtered_spawn_chance: float = 0.0
-        elif isinstance(spawn_chance, float) or isinstance(spawn_chance, int):
-            filtered_spawn_chance: float = spawn_chance
-        else:
-            raise ValueError(f"Invalid spawn_chance type for resource {resource}")
-
-        # Attempt to place the resource on the tile based on its spawn chance
-        against_chance = random.uniform(0, 100)  # for profiler it makes it easier to see the random call
-        if float(against_chance) <= float(filtered_spawn_chance):
-            if resource is not None:
-                hex_tile.add_gameplay_resource(resource)  # Assign the resource to the tile
-                # used_resources.add(resource)  # Track used resources to increase variety
-
-                # If the resource is clusterable, attempt clustering
-                if resource.clusterable is not None:
-                    self._cluster_resource(hex_tile, resource)
-
-    def _cluster_resource(self, center_tile, resource):
-        """
-        Handles clustering of resources around the initially placed tile.
-        """
-
-        # Determine maximum cluster radius and drop off rate
-        max_radius = (
-            resource.cluster_max_radius
-            if isinstance(resource.cluster_max_radius, int)
-            else random.randint(resource.cluster_max_radius[0], resource.cluster_max_radius[1])
-        )
-        dropoff_rate = (
-            resource.cluster_dropoff_amount_rate
-            if isinstance(resource.cluster_dropoff_amount_rate, float)
-            else random.uniform(resource.cluster_dropoff_amount_rate[0], resource.cluster_dropoff_amount_rate[1])
-        )
-
-        # Use bubble function to get all hexes within cluster able radius
-        cluster_hexes = center_tile.bubble(max_radius)
-
-        for hex_tile in cluster_hexes:
-            if hex_tile.resource is None:
-                # Compute probability based on distance from original tile
-                distance = self._hex_distance(center_tile, hex_tile)
-                new_probability = 1.0 - (dropoff_rate * distance)
-
-                # Ensure probability is above zero before proceeding
-                if new_probability > 0 and random.uniform(0, 1) <= new_probability * resource.clusterable:
-                    hex_tile.resource = resource  # Assign resource to neighboring tile
 
     def _hex_distance(self, hex1, hex2):
         """

@@ -1,10 +1,17 @@
+from abc import ABC
 from enum import Enum
-from typing import Any, Dict, Generic, List, Optional, Self, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, Generic, Iterator, List, Optional, Self, Tuple, Type, TypeVar, Union
 
 from exceptions.resource_exception import ResourceTypeException
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
+from helpers.class_property import ClassProperty
+from helpers.colors import Tuple3f
 from managers.i18n import T_TranslationOrStr, t_
+
+if TYPE_CHECKING:
+    from gameplay.tiles.base_tile import BaseTile
+    from system.generators.resource_allocator import ResourceAllocator
 
 
 class ResourceType(Enum):
@@ -87,7 +94,7 @@ class ResourceSpawnablePlace(Enum):
     BOTH = 2
 
 
-class BaseResource(Generic[T_ResourceType]):
+class BaseResource(Generic[T_ResourceType], ABC):
     key: str
     name: T_TranslationOrStr
     description: T_TranslationOrStr
@@ -95,16 +102,21 @@ class BaseResource(Generic[T_ResourceType]):
     icon: str = "assets/icons/resources/default.png"
     configure_as_float_or_int: ResourceValueType = ResourceValueType.INT
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
+    _color: Tuple3f = (1.0, 1.0, 1.0)
 
     # Determines the chance that the resource will spawn on a given tile. If a tuple is provided (min, max),
     # If given a dict with terrains, the spawn chance will be different for each terrain.
     # If it is a baseTerrain object, the spawn chance will be the same for all terrains.
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = 0.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = 100.0
+
+    # Determines the amount of the resource that will spawn on a given tile. If a tuple is provided (min, max),
+    # This is as a percentage of map that will be covered by the resource.
+    coverage: float | Tuple[float, float] = (1.5, 2.0)
 
     # Determines the amount of the resource that will spawn on a given tile. If a tuple is provided (min, max),
     # the amount will be randomly chosen within this range.
     # These are percentages of the total amount of the resource that can be found on the map.
-    spawn_amount: float | Tuple[float, float] = 1.0
+    spawn_amount: float | Dict[Type[BaseTerrain], float] = 1.0
 
     # Determines if the resource can form clusters. If None, the resource will not be clusterable.
     # If a float value is provided, it represents the probability (0.0 to 1.0) that a neighboring tile
@@ -270,6 +282,22 @@ class BaseResource(Generic[T_ResourceType]):
     def mechanic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
         return cls(*args, **kwargs, type_=ResourceTypeMechanic)
 
+    @classmethod
+    def on_world_place_tile_filter(cls, resource_allocator: "ResourceAllocator", tile: "BaseTile") -> bool:
+        return True
+
+    @ClassProperty
+    def color(self) -> Tuple3f:  # type: ignore
+        return self._color
+
+    @color.setter
+    def color(self, color: Tuple3f) -> None:
+        self._color = color
+
+    @classmethod
+    def get_color(cls) -> Tuple3f:
+        return cls._color
+
 
 mapping: Dict[ResourceType, Type[ResourceTypeBase]] = {
     ResourceType.MECHANIC: ResourceTypeMechanic,
@@ -357,6 +385,9 @@ class Resources:
         if resource is None:
             return bool(self.resources)
         return resource.key in self.resources[resource.type]
+
+    def __iter__(self) -> Iterator[BaseResource]:
+        return iter(self.flatten().values())
 
     def __add__(self, b: BaseResource) -> None:
         self.add(b)

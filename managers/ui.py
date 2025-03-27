@@ -17,7 +17,6 @@ from managers.i18n import T_TranslationOrStr, Translation
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
-from menus.screens.game_ui import GameUIScreen
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
     from main import SCIV
     from managers.game import Game
     from menus.kivy.core import SCivGUI
+    from menus.screens.game_ui import GameUIScreen
 
 
 class ui(Singleton, DirectObject):
@@ -127,9 +127,9 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.ui.show_load", self.on_show_load)
         self.accept("ui.update.ui.hide_save", self.on_hide_save)
         self.accept("ui.update.ui.hide_load", self.on_hide_load)
+        self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
         self.accept("ui.request.save_game", self.on_request_save_game)
         self.accept("ui.request_main_menu", self.on_request_main_menu)
-        self.accept("ui.update.ui.show_game_ui", self.on_show_game_ui)
         self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
@@ -151,7 +151,7 @@ class ui(Singleton, DirectObject):
         self.accept("system.main.ready", self.on_main_ready)
         return True
 
-    def get_main_game_ui(self) -> GameUIScreen:
+    def get_main_game_ui(self) -> "GameUIScreen":
         return self.get_gui().get_screen_manager().get_screen("game_ui")
 
     def on_unit_destroyed(self, unit: UnitBaseClass):

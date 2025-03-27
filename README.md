@@ -1,6 +1,6 @@
 # SCiv
 
-> 🚨 **Warning:** This project is in a very early development phase and is likely not functional yet. It may lack gameplay elements and is currently focused on testing raw system implementations.
+> 🚨 **Warning:** This project is in a very early development phase and is likely fully functional yet. It may lack gameplay elements and is currently focused on testing system implementations.
 
 > ⚠️ **Danger:** This code is highly dynamic and can be vulnerable to arbitrary remote code execution if modified or when using downloaded files. Malicious actors could exploit this to run harmful code(*!There is no sandbox!*). Be extremely cautious and only load trusted, verified sources.
 
@@ -8,7 +8,7 @@
 
 > Known Bugs: [Known Bugs](meta/known_bugs.md)
 
-At the moment it will run a basic POC as of version 0.1 it contains some gameplay but is still more about implementation.
+At the moment it will run a basic POC as of version 0.2 it contains some gameplay elements but is still more about implementation.
 
 ### How to run it
 
@@ -105,11 +105,12 @@ At this stage, I want the core gameplay loop to work at a basic level, meaning:
 The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
 
 - [X] Saving/Loading + GUI
-- [ ] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
+- [X] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
 - [ ] Map regeneration/reroll (with same settings)
 - [ ] CI/CD, Would like a auto builder and checker running on my gitlab instance.
 - [ ] Barbarians + Nature player
 - [ ] Working research
+    - [ ] Resource specific improvements and resource system improvements.
 - [ ] City/Empire borders drawn
 - [ ] Civic system implementation + city borders
 - [ ] Map gen parameters in GUI

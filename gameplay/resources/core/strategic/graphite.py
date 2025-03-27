@@ -1,17 +1,33 @@
-from typing import Dict, Tuple, Type
+from typing import Dict, Type
 
-from gameplay.resources.core.strategic.strategic_resource import BaseStrategyResource
+from gameplay.resource import ResourceSpawnablePlace
+from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.terrain.flat_pine_forest import FlatPineForest
+from gameplay.terrain.hills_desert import HillsDesert
+from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.hills_grass import HillsGrass
+from gameplay.terrain.hills_tundra import HillsTundra
 from managers.i18n import T_TranslationOrStr, _t
 
 
-class Graphite(BaseStrategyResource):
+class Graphite(BaseStrategicResource):
     key: str = "resource.core.strategic.graphite"
     name: T_TranslationOrStr = _t("content.resources.core.graphite.name")
     description: T_TranslationOrStr = _t("content.resources.core.graphite.description")
+    _color = (1.0, 0.0, 0.0)
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_thorium.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
-    spawn_amount: float | Tuple[float, float] = 3.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        BaseTerrain: 0.0,
+        FlatPineForest: 40.0,
+        HillsForest: 90.0,
+        HillsDesert: 70.0,
+        HillsGrass: 70.0,
+        HillsTundra: 70.0,
+    }
+    spawn_amount = 3.0
+    coverage = 0.5
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

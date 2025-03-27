@@ -1400,6 +1400,10 @@
             "name": "Lobster",
             "description": "A large marine crustacean with a hard shell, prized for its meat."
           },
+          "seaweed": {
+            "name": "Seaweed",
+            "description": "Marine algae used for food and other products."
+          },
           "wheat": {
             "name": "Wheat",
             "description": "A cereal grain that is a staple food used to make flour for bread."
