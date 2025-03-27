@@ -10,7 +10,7 @@ class FlatJungle(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0
     _model = "assets/models/tiles/flat_jungle2.glb"
-    _texture = "assets/models/tiles/dessert2.png"
+    _texture = "assets/models/tiles/desert2.png"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

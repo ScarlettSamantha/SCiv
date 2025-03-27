@@ -1,4 +1,4 @@
-from gameplay.terrain.flat_desert import FlatDessert as FlatDesertTerrain
+from gameplay.terrain.flat_desert import FlatDesert as FlatDesertTerrain
 from gameplay.tiles.base_tile import BaseTile
 
 
