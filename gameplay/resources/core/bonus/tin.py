@@ -27,6 +27,7 @@ class Tin(BaseBonusResource):
         FlatPineForest: 50.0,
     }
     spawn_amount = 5.0
+    coverage = 0.5
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

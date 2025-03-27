@@ -6,6 +6,7 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
 from gameplay.terrain.flat_jungle import FlatJungle
+from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.hills_forest import HillsForest
 from managers.i18n import T_TranslationOrStr, _t
 
@@ -21,10 +22,11 @@ class Hardwood(BaseBonusResource):
         FlatForest: 70.0,
         FlatHeavyForest: 70.0,
         FlatJungle: 70.0,
+        FlatPineForest: 70.0,
         HillsForest: 70.0,
     }
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    coverage = 1.0
+    coverage = 1.2
     spawn_amount = 5.0
 
     def __init__(self, value: int | float = 0):

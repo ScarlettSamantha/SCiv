@@ -3,7 +3,7 @@ from typing import Dict, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.terrain.flat_desert import FlatDessert
+from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.flat_savanna import FlatSavanna
@@ -26,7 +26,7 @@ class Aluminium(BaseStrategicResource):
         HillsSnow: 100.0,
         HillsTundra: 100.0,
         FlatForest: 40.0,
-        FlatDessert: 70.0,
+        FlatDesert: 70.0,
         FlatSavanna: 70.0,
         FlatPineForest: 40.0,
     }

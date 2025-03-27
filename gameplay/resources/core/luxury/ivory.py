@@ -3,7 +3,7 @@ from typing import Dict, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.terrain.flat_desert import FlatDessert
+from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_savanna import FlatSavanna
 from managers.i18n import T_TranslationOrStr, _t
 
@@ -18,7 +18,7 @@ class Ivory(BaseLuxuryResource):
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatSavanna: 70.0,
-        FlatDessert: 70.0,
+        FlatDesert: 70.0,
     }
     coverage = 0.3
     spawn_amount = 5.0

@@ -3,7 +3,7 @@ from typing import Dict, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.terrain.flat_desert import FlatDessert
+from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_forest import HillsForest
@@ -25,11 +25,11 @@ class Iron(BaseBonusResource):
         HillsTundra: 100.0,
         HillsDesert: 100.0,
         FlatTundra: 100.0,
-        FlatDessert: 100.0,
+        FlatDesert: 100.0,
     }
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_amount = 5.0
-    coverage = 0.6
+    coverage = 0.4
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

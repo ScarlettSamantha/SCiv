@@ -3,8 +3,9 @@ from typing import Dict, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.terrain.flat_desert import FlatDessert
+from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.flat_tundra import FlatTundra
 from managers.i18n import T_TranslationOrStr, _t
 
@@ -20,7 +21,8 @@ class Onions(BaseBonusResource):
         BaseTerrain: 0.0,
         FlatTundra: 40.0,
         FlatForest: 40.0,
-        FlatDessert: 40.0,
+        FlatDesert: 20.0,
+        FlatScrubland: 20.0,
     }
     coverage = 0.7
     spawn_amount = 5.0

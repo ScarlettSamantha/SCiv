@@ -3,7 +3,7 @@ from typing import Dict, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.terrain.flat_desert import FlatDessert
+from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.hills_desert import HillsDesert
 from managers.i18n import T_TranslationOrStr, _t
 
@@ -16,7 +16,7 @@ class Glass(BaseBonusResource):
     icon: str = "assets/icons/resources/core/bonus/hex_border_glass.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
-        FlatDessert: 70.0,
+        FlatDesert: 70.0,
         HillsDesert: 70.0,
     }
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND

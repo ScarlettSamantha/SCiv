@@ -21,7 +21,7 @@ class Cocoa(BaseLuxuryResource):
         FlatLightJungle: 70.0,
     }
     spawn_amount = 5.0
-    coverage = 0.6
+    coverage = 0.3
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
