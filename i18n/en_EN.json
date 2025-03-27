@@ -511,6 +511,19 @@
           "culture_label": "Culture: {culture}",
           "faith_label": "Faith: {faith}",
           "current_button_building": "Building: {building} {resources_got}/{resources_required}"
+        },
+        "pause": {
+          "popup": {
+            "title": "Game Paused",
+            "message": "The game is paused. You can resume the game by clicking the play button."
+          },
+          "resume": "Resume",
+          "reroll": "Reroll",
+          "save": "Save",
+          "load": "Load",
+          "options": "Options",
+          "main_menu": "Main Menu",
+          "quit": "Quit"
         }
       }
     },
