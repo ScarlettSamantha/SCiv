@@ -1,0 +1,63 @@
+stages:
+  - verify
+
+pyright-check:
+  stage: verify
+  image: python:3.12
+  only:
+    - branches
+    - merge_requests
+  script:
+    - pip install --upgrade pip
+    - pip install pyright
+    - pyright .
+
+lint-check:
+  stage: verify
+  image: python:3.12
+  only:
+    - branches
+    - merge_requests
+  script:
+    - pip install ruff
+    - ruff check .
+
+format-check:
+  stage: verify
+  image: python:3.12
+  only:
+    - branches
+    - merge_requests
+  script:
+    - pip install black
+    - black --check --diff .
+
+security-check:
+  stage: verify
+  image: python:3.12
+  only:
+    - branches
+    - merge_requests
+  script:
+    - pip install bandit
+    - bandit -r .
+
+docstring-check:
+  stage: verify
+  image: python:3.12
+  only:
+    - branches
+    - merge_requests
+  script:
+    - pip install pydocstyle
+    - pydocstyle .
+
+markdown-check:
+  stage: verify
+  image: node:latest
+  only:
+    - branches
+    - merge_requests
+  script:
+    - npm install --global markdownlint-cli
+    - markdownlint '**/*.md'
