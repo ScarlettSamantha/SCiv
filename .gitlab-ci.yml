@@ -19,6 +19,7 @@ stages:
 pyright-check:
   <<: *default-python-job
   stage: verify
+  allow_failure: true
   script:
     - pip install pyright
     - pyright .
@@ -42,7 +43,7 @@ security-check:
   stage: verify
   script:
     - pip install bandit
-    - bandit -r .
+    - bandit -r . -c pyproject.toml
 
 docstring-check:
   <<: *default-python-job

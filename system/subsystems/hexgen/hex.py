@@ -1,17 +1,16 @@
-from typing import Optional, Type
 import uuid
-from system.subsystems.hexgen.edge import Edge
+from typing import Optional, Type
+
 from gameplay.resource import BaseResource
-from system.subsystems.hexgen.constants import *
+from system.subsystems.hexgen.edge import Edge
 from system.subsystems.hexgen.enums import (
     Biome,
-    MapType,
-    HexType,
-    HexFeature,
-    HexSide,
-    Zones,
     Hemisphere,
     HexEdge,
+    HexSide,
+    HexType,
+    MapType,
+    Zones,
 )
 
 

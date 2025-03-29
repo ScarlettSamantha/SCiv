@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 from exceptions.tech_exception import TechNotFoundException
 from gameplay.tech import Tech, TechTree

@@ -4,13 +4,14 @@ import sys
 from system.subsystems.hexgen.enums import (
     GeoformType,
     Hemisphere,
+    HexFeature,
     MapType,
     OceanType,
 )
 from system.subsystems.hexgen.geoform import Geoform
 from system.subsystems.hexgen.grid import Grid
 from system.subsystems.hexgen.heightmap import Heightmap
-from system.subsystems.hexgen.hex import HexFeature, HexSide
+from system.subsystems.hexgen.hex import HexSide
 from system.subsystems.hexgen.river import RiverSegment
 from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.util import (

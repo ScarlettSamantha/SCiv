@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import List
 from system.subsystems.hexgen.constants import TERRAIN_TERRAN
 
 
@@ -21,9 +22,9 @@ class SuperEnum(Enum):
 
     @classmethod
     def get(cls, id_):
-        l = [item for item in list(cls.__members__) if getattr(cls[item], "id") == id_]
-        if l is not None and len(l) > 0:
-            return cls[l[0]]
+        matching_member_names: List[str] = [item for item in list(cls.__members__) if getattr(cls[item], "id") == id_]
+        if len(matching_member_names) > 0:
+            return cls[matching_member_names[0]]
         else:
             return None
 
