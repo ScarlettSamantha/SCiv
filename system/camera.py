@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class Camera(Singleton, DirectObject):
     """
+
     Modified camera controller:
       - Left-drag => rotate around pivot (with a threshold)
       - Right-drag => pan/move

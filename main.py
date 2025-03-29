@@ -100,6 +100,7 @@ class SCIV(ShowBase):
     def _get_git_commit(self) -> str:
         """
         Retrieve the current git commit hash if the git package is available.
+
         Returns "Unknown" if git is not installed or the repository isn't available.
         """
         try:

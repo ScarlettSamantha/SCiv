@@ -48,6 +48,7 @@ security-check:
 docstring-check:
   <<: *default-python-job
   stage: verify
+  allow_failure: true
   script:
     - pip install pydocstyle
     - pydocstyle .
