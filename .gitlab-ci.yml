@@ -1,53 +1,46 @@
 stages:
   - verify
 
-pyright-check:
-  stage: verify
-  image: python:3.12
+.default-python-job: &default-python-job
+  image: python:3.13
   only:
     - branches
     - merge_requests
-  script:
+  before_script:
     - pip install --upgrade pip
+    - pip install -r requirements.txt
+
+pyright-check:
+  <<: *default-python-job
+  stage: verify
+  script:
     - pip install pyright
     - pyright .
 
 lint-check:
+  <<: *default-python-job
   stage: verify
-  image: python:3.12
-  only:
-    - branches
-    - merge_requests
   script:
     - pip install ruff
     - ruff check .
 
 format-check:
+  <<: *default-python-job
   stage: verify
-  image: python:3.12
-  only:
-    - branches
-    - merge_requests
   script:
     - pip install black
     - black --check --diff .
 
 security-check:
+  <<: *default-python-job
   stage: verify
-  image: python:3.12
-  only:
-    - branches
-    - merge_requests
   script:
     - pip install bandit
     - bandit -r .
 
 docstring-check:
+  <<: *default-python-job
   stage: verify
-  image: python:3.12
-  only:
-    - branches
-    - merge_requests
   script:
     - pip install pydocstyle
     - pydocstyle .
