@@ -9,13 +9,13 @@ from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Deer(BaseBonusResource):
     key: str = "resource.core.bonus.deer"
-    name: T_TranslationOrStr = _t("content.resources.core.deer.name")
-    description: T_TranslationOrStr = _t("content.resources.core.deer.description")
+    name: T_TranslationOrStr = t_("content.resources.core.deer.name")
+    description: T_TranslationOrStr = t_("content.resources.core.deer.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_deer.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND

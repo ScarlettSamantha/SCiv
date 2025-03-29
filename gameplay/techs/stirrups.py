@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Stirrups(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.stirrups",
-            _t("tech.stirrups.name"),
-            _t("tech.stirrups.description"),
+            t_("tech.stirrups.name"),
+            t_("tech.stirrups.description"),
             tech_points_required=20,
             *args,
             **kwargs,

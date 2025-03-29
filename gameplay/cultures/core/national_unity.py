@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.culture import Civic
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class NationalUnity(Civic):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.culture.civics.national_unity",
-            name=_t("content.culture.civics.core.national_unity.name"),
-            description=_t("content.culture.civics.core.national_unity.description"),
+            name=t_("content.culture.civics.core.national_unity.name"),
+            description=t_("content.culture.civics.core.national_unity.description"),
             *args,
             **kwargs,
         )

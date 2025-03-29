@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Dict, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 from gameplay.yields import Yields
 from managers.entity import EntityType
@@ -236,7 +236,7 @@ class Effect(BaseEntity, ABC):
     activate_on_add: bool = True
     effect_types: Tuple[EffectType] = tuple()
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self.id: str = uuid.uuid4().hex

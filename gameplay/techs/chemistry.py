@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Chemistry(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.chemistry",
-            _t("tech.chemistry.name"),
-            _t("tech.chemistry.description"),
+            t_("tech.chemistry.name"),
+            t_("tech.chemistry.description"),
             tech_points_required=20,
             *args,
             **kwargs,

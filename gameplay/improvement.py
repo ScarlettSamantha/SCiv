@@ -1,7 +1,7 @@
 import random
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Type
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
@@ -41,8 +41,8 @@ class Improvement(BaseEntity):
         self,
         key: Optional[str] = None,
         tile: "BaseTile | None" = None,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
 
@@ -79,9 +79,7 @@ class Improvement(BaseEntity):
         self.tile_yield_improvement: Yields = Yields.nullYield()
         self.maintenance_cost: Yields = Yields.nullYield()
 
-        self._model_offset: Tuple[float, float, float] = (
-            (0.0, 0.0, 0.0) if self._model_default_offset is None else self._model_default_offset
-        )
+        self._model_offset: Tuple[float, float, float] = self._model_default_offset
 
         self.owner: Optional[Player] = None
         self.tag: str = ""
@@ -116,21 +114,11 @@ class Improvement(BaseEntity):
         self._model = value
 
     @property
-    def tile_ref(self):
-        return self._tile_ref
-
-    @tile_ref.setter
-    def tile_ref(self, value):
-        self._tile_ref = value
-
-    @property
     def tile_yield(self) -> Yields:
         return self.tile_yield_improvement
 
     @tile_yield.setter
     def tile_yield(self, value: Yields) -> None:
-        if not isinstance(value, Yields):
-            raise TypeError(f"Tile yield cannot be type {type(value)}")
         self.tile_yield_improvement = value
 
     def set_price_free(self):

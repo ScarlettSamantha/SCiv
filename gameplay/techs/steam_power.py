@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class SteamPower(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.steam_power",
-            _t("tech.steam_power.name"),
-            _t("tech.steam_power.description"),
+            t_("tech.steam_power.name"),
+            t_("tech.steam_power.description"),
             tech_points_required=20,
             *args,
             **kwargs,

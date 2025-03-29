@@ -1,3 +1,5 @@
+from typing import Any
+
 from gameplay.improvements.core.resources.mine import Mine
 
 from ._base_terrain import BaseTerrain
@@ -10,7 +12,7 @@ class HillsGrass(BaseTerrain):
     movement_modifier = 0.75
     water_availability = 0.75
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Mine)

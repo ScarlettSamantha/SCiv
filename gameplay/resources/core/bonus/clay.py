@@ -5,14 +5,14 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.tiles.base_tile import BaseTile
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 from system.generators.resource_allocator import ResourceAllocator
 
 
 class Clay(BaseBonusResource):
     key: str = "resource.core.bonus.clay"
-    name: T_TranslationOrStr = _t("content.resources.core.clay.name")
-    description: T_TranslationOrStr = _t("content.resources.core.clay.description")
+    name: T_TranslationOrStr = t_("content.resources.core.clay.name")
+    description: T_TranslationOrStr = t_("content.resources.core.clay.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_clay.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

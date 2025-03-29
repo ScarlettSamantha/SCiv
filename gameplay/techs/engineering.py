@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Engineering(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.engineering",
-            _t("tech.engineering.name"),
-            _t("tech.engineering.description"),
+            t_("tech.engineering.name"),
+            t_("tech.engineering.description"),
             tech_points_required=20,
             *args,
             **kwargs,

@@ -8,13 +8,13 @@ from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_forest import HillsForest
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Chicken(BaseBonusResource):
     key: str = "resource.core.bonus.chicken"
-    name: T_TranslationOrStr = _t("content.resources.core.chicken.name")
-    description: T_TranslationOrStr = _t("content.resources.core.chicken.description")
+    name: T_TranslationOrStr = t_("content.resources.core.chicken.name")
+    description: T_TranslationOrStr = t_("content.resources.core.chicken.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_chicken.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

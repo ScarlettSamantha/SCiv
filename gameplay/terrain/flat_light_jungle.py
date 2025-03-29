@@ -1,3 +1,5 @@
+from typing import Any
+
 from gameplay.improvements.core.resources.farm import Farm
 
 from ._base_terrain import BaseTerrain
@@ -10,7 +12,7 @@ class FlatLightJungle(BaseTerrain):
     _model = "assets/models/tiles/flat_light_jungle3.glb"
     _texture = "assets/models/tiles/desert2.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Farm)

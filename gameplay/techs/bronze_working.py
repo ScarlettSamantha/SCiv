@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class BronzeWorking(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.bronze_working",
-            _t("tech.bronze_working.name"),
-            _t("tech.bronze_working.description"),
+            t_("tech.bronze_working.name"),
+            t_("tech.bronze_working.description"),
             tech_points_required=20,
             *args,
             **kwargs,

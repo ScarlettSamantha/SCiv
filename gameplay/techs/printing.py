@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Printing(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.printing",
-            _t("tech.printing.name"),
-            _t("tech.printing.description"),
+            t_("tech.printing.name"),
+            t_("tech.printing.description"),
             tech_points_required=20,
             *args,
             **kwargs,

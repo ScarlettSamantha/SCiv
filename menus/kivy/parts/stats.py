@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class StatsPanel(FloatLayout):
-    def __init__(self, base: "SCIV | ShowBase", **kwargs):
+    def __init__(self, base: "SCIV | ShowBase", **kwargs: Any):
         super().__init__(**kwargs)
         self.base: "SCIV | ShowBase" = base
         self.camera: Camera = Camera.get_instance()

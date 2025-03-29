@@ -11,7 +11,7 @@ from gameplay.repositories.personality import (
 )
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
-from managers.i18n import T_TranslationOrStrOrNone, _t, get_i18n
+from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from managers.unit import Unit
 from system.game_settings import GameSettings
@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 
 
 class BaseGenerator(ABC):
-    NAME = _t("generic.unimplemented")
-    DESCRIPTION = _t("generic.unimplemented")
+    NAME = t_("generic.unimplemented")
+    DESCRIPTION = t_("generic.unimplemented")
 
     def __init__(self, config: GameSettings, base: "SCIV") -> None:
         from managers.world import World

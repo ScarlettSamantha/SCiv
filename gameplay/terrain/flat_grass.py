@@ -1,3 +1,5 @@
+from typing import Any
+
 from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.improvements.core.resources.pasture import Pasture
@@ -13,7 +15,7 @@ class FlatGrass(BaseTerrain):
     _model = "assets/models/tiles/grass.glb"
     _texture = "assets/models/tiles/grass2.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Mine)

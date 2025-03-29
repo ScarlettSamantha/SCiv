@@ -1,3 +1,4 @@
+from typing import Any
 from gameplay.civilization import Civilization
 from managers.i18n import t_
 
@@ -28,7 +29,7 @@ class LowCountries(Civilization):
         t_("cities.low_countries.enschede"),
     ]
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self._loadable = True

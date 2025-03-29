@@ -10,13 +10,13 @@ from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Uranium(BaseStrategicResource):
     key: str = "resource.core.strategic.uranium"
-    name: T_TranslationOrStr = _t("content.resources.core.uranium.name")
-    description: T_TranslationOrStr = _t("content.resources.core.uranium.description")
+    name: T_TranslationOrStr = t_("content.resources.core.uranium.name")
+    description: T_TranslationOrStr = t_("content.resources.core.uranium.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_uranium.png"

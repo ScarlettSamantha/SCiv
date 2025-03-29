@@ -1,6 +1,6 @@
 import copy
 from logging import Logger
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type
 
 from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
@@ -13,10 +13,11 @@ from managers.game import World
 
 if TYPE_CHECKING:
     from gameplay.tiles.base_tile import BaseTile
+    from main import SCIV
 
 
 class DebugMapStats(FloatLayout):
-    def __init__(self, base, logger: Logger, offset=10, **kwargs):
+    def __init__(self, base: "SCIV", logger: Logger, offset: int = 10, **kwargs: Any):
         self.logger = logger
         super().__init__(**kwargs)
         self.base = base
@@ -25,7 +26,7 @@ class DebugMapStats(FloatLayout):
         self.frame = None
         self.map_resource_column: Optional[Label] = None
         self.map_type_column: Optional[Label] = None
-        self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
+        self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
         self.rect = None
 
         self.map: Dict[str, "BaseTile"] = World.get_instance().map
@@ -40,7 +41,7 @@ class DebugMapStats(FloatLayout):
         running_total_resources: Dict[str, float] = {}
         running_total_tile_type: Dict[str, float] = {}
         total_tiles: int = len(self.map)  # Total number of tiles in the map
-        self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
+        self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
 
         # Sum resource counts over all tiles
         for tile in self.map.values():

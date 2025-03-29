@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class SiegeTactics(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.siege_tactics",
-            _t("tech.siege_tactics.name"),
-            _t("tech.siege_tactics.description"),
+            t_("tech.siege_tactics.name"),
+            t_("tech.siege_tactics.description"),
             tech_points_required=20,
             *args,
             **kwargs,

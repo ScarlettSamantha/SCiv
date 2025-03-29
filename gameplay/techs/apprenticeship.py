@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Apprenticeship(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.apprenticeship",
-            _t("tech.apprenticeship.name"),
-            _t("tech.apprenticeship.description"),
+            t_("tech.apprenticeship.name"),
+            t_("tech.apprenticeship.description"),
             tech_points_required=20,
             *args,
             **kwargs,

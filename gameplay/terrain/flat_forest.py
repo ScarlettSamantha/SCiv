@@ -1,3 +1,5 @@
+from typing import Any
+
 from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
@@ -13,7 +15,7 @@ class FlatForest(BaseTerrain):
     _model = "assets/models/tiles/flat_woodlands3.glb"
     _texture = "assets/models/tiles/forrest3.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.tile_yield_base = Yields(production=2)

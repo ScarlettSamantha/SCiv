@@ -5,13 +5,13 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.hills_desert import HillsDesert
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Glass(BaseBonusResource):
     key: str = "resource.core.bonus.glass"
-    name: T_TranslationOrStr = _t("content.resources.core.glass.name")
-    description: T_TranslationOrStr = _t("content.resources.core.glass.description")
+    name: T_TranslationOrStr = t_("content.resources.core.glass.name")
+    description: T_TranslationOrStr = t_("content.resources.core.glass.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_glass.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

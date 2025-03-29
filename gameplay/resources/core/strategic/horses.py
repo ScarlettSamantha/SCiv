@@ -9,13 +9,13 @@ from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.hills_grass import HillsGrass
 from gameplay.tiles.hills_forrest import HillsForestTerrain
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Horses(BaseStrategicResource):
     key: str = "resource.core.strategic.horses"
-    name: T_TranslationOrStr = _t("content.resources.core.horses.name")
-    description: T_TranslationOrStr = _t("content.resources.core.horses.description")
+    name: T_TranslationOrStr = t_("content.resources.core.horses.name")
+    description: T_TranslationOrStr = t_("content.resources.core.horses.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_horse.png"

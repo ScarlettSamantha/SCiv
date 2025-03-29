@@ -1,3 +1,0 @@
-from .AnimMgrBase import AnimMgrBase
-
-class AnimMgr(AnimMgrBase): ...

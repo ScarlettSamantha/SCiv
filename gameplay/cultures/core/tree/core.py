@@ -1,14 +1,16 @@
+from typing import Any
+
 from gameplay.culture import CultureTree
-from managers.i18n import _t
+from managers.i18n import t_
 from system.pyload import PyLoad
 
 
 class CoreCultureTree(CultureTree):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.culture.tree",
-            name=_t("content.culture.tree.core.name"),
-            description=_t("content.culture.tree.core.name"),
+            name=t_("content.culture.tree.core.name"),
+            description=t_("content.culture.tree.core.name"),
         )
 
     def _load_subclasses(self):

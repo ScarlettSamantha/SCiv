@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 from gameplay.terrain.mountain import Mountain as MountainTerrain
 from gameplay.tiles.base_tile import BaseTile
@@ -10,7 +10,7 @@ class Mountain(BaseTile):
     _model: T_TranslationOrStr = _terrain._model
     _cache_name = "Mountain"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.set_terrain(self._terrain())

@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Trapping(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.trapping",
-            _t("tech.trapping.name"),
-            _t("tech.trapping.description"),
+            t_("tech.trapping.name"),
+            t_("tech.trapping.description"),
             tech_points_required=20,
             *args,
             **kwargs,

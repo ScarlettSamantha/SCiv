@@ -5,13 +5,13 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.hills_grass import HillsGrass
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Wheat(BaseBonusResource):
     key: str = "resource.core.bonus.wheat"
-    name: T_TranslationOrStr = _t("content.resources.core.wheat.name")
-    description: T_TranslationOrStr = _t("content.resources.core.wheat.description")
+    name: T_TranslationOrStr = t_("content.resources.core.wheat.name")
+    description: T_TranslationOrStr = t_("content.resources.core.wheat.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/bordered_wheat.png"

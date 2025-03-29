@@ -1,3 +1,0 @@
-from .NonPhysicsWalker import NonPhysicsWalker
-
-class SwimWalker(NonPhysicsWalker): ...

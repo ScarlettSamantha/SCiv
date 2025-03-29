@@ -9,13 +9,13 @@ from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Coal(BaseStrategicResource):
     key: str = "resource.core.strategic.coal"
-    name: T_TranslationOrStr = _t("content.resources.core.coal.name")
-    description: T_TranslationOrStr = _t("content.resources.core.coal.description")
+    name: T_TranslationOrStr = t_("content.resources.core.coal.name")
+    description: T_TranslationOrStr = t_("content.resources.core.coal.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_coal.png"

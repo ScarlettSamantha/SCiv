@@ -1,17 +1,19 @@
+from typing import Any
+
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class LoggingCamp(Improvement):
-    name = _t("content.improvements.core.resources.logging_camp.name")
-    description = _t("content.improvements.core.resources.logging_camp.description")
+    name = t_("content.improvements.core.resources.logging_camp.name")
+    description = t_("content.improvements.core.resources.logging_camp.description")
     placeable_on_tiles = True
     _model = "assets/models/tile_improvements/building_lumbermill_blue.gltf"
     _model_scale = 0.33
     _model_hpr = (45, 0, 0)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             *args,
             **kwargs,

@@ -2,16 +2,16 @@ from typing import Type
 
 from exceptions.tech_exception import TechNotFoundException
 from gameplay.tech import Tech, TechTree
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Core(TechTree):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         TechTree.__init__(
             self,
-            name=_t("content.type[tech].trees.core.name"),
-            description=_t("content.type[tech].trees.core.name"),
-            icon=_t("content.type[tech].trees.core.icon"),
+            name=t_("content.type[tech].trees.core.name"),
+            description=t_("content.type[tech].trees.core.name"),
+            icon=t_("content.type[tech].trees.core.icon"),
             *args,
             **kwargs,
         )

@@ -5,13 +5,13 @@ from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_jungle import FlatJungle
 from gameplay.terrain.flat_light_jungle import FlatLightJungle
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Dyes(BaseLuxuryResource):
     key: str = "resource.core.luxury.dyes"
-    name: T_TranslationOrStr = _t("content.resources.core.dyes.name")
-    description: T_TranslationOrStr = _t("content.resources.core.dyes.description")
+    name: T_TranslationOrStr = t_("content.resources.core.dyes.name")
+    description: T_TranslationOrStr = t_("content.resources.core.dyes.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/hex_border_dyes.png"

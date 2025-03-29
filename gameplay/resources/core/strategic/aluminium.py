@@ -10,13 +10,13 @@ from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Aluminium(BaseStrategicResource):
     key: str = "resource.core.strategic.aluminium"
-    name: T_TranslationOrStr = _t("content.resources.core.aluminium.name")
-    description: T_TranslationOrStr = _t("content.resources.core.aluminium.description")
+    name: T_TranslationOrStr = t_("content.resources.core.aluminium.name")
+    description: T_TranslationOrStr = t_("content.resources.core.aluminium.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_rare_earth_rods.png"

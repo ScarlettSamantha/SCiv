@@ -3,13 +3,13 @@ from typing import Dict, Type
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Furs(BaseLuxuryResource):
     key: str = "resource.core.luxury.furs"
-    name: T_TranslationOrStr = _t("content.resources.core.furs.name")
-    description: T_TranslationOrStr = _t("content.resources.core.furs.description")
+    name: T_TranslationOrStr = t_("content.resources.core.furs.name")
+    description: T_TranslationOrStr = t_("content.resources.core.furs.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/hex_border_furs.png"

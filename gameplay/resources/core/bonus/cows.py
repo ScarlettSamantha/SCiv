@@ -7,14 +7,14 @@ from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_grass import HillsGrass
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Cows(BaseBonusResource):
     key: str = "resource.core.bonus.cows"
-    name: T_TranslationOrStr = _t("content.resources.core.cows.name")
+    name: T_TranslationOrStr = t_("content.resources.core.cows.name")
     _color = (1.0, 0.0, 1.0)
-    description: T_TranslationOrStr = _t("content.resources.core.cows.description")
+    description: T_TranslationOrStr = t_("content.resources.core.cows.description")
     icon: str = "assets/icons/resources/core/bonus/bordered_cow.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

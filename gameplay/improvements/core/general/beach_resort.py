@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class BeachResort(Improvement):
-    name = _t("content.improvements.core.general.beach_resort.name")
-    description = _t("content.improvements.core.general.beach_resort.description")
+    name = t_("content.improvements.core.general.beach_resort.name")
+    description = t_("content.improvements.core.general.beach_resort.description")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             *args,
             **kwargs,

@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class MountainTunnel(Improvement):
-    name = _t("content.improvements.core.general.mountain_tunnel.name")
-    description = _t("content.improvements.core.general.mountain_tunnel.description")
+    name = t_("content.improvements.core.general.mountain_tunnel.name")
+    description = t_("content.improvements.core.general.mountain_tunnel.description")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             *args,
             **kwargs,

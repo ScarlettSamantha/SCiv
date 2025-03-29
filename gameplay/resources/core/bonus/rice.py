@@ -7,13 +7,13 @@ from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Rice(BaseBonusResource):
     key: str = "resource.core.bonus.rice"
-    name: T_TranslationOrStr = _t("content.resources.core.rice.name")
-    description: T_TranslationOrStr = _t("content.resources.core.rice.description")
+    name: T_TranslationOrStr = t_("content.resources.core.rice.name")
+    description: T_TranslationOrStr = t_("content.resources.core.rice.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/hex_border_rice.png"

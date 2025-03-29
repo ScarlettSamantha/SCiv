@@ -8,13 +8,13 @@ from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Tin(BaseBonusResource):
     key: str = "resource.core.bonus.tin"
-    name: T_TranslationOrStr = _t("content.resources.core.tin.name")
-    description: T_TranslationOrStr = _t("content.resources.core.tin.description")
+    name: T_TranslationOrStr = t_("content.resources.core.tin.name")
+    description: T_TranslationOrStr = t_("content.resources.core.tin.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/hex_border_tin.png"

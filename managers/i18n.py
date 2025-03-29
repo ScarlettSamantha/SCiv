@@ -172,7 +172,6 @@ class Translation:
         return len(self.__str__())
 
 
-_t = Translation
 t_ = Translation
 T_TranslationOrStr = Union[Translation, str]
 T_TranslationOrStrOrNone = Union[Translation, str, None]

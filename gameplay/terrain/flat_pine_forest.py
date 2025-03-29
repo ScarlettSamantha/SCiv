@@ -1,3 +1,5 @@
+from typing import Any
+
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 
 from ._base_terrain import BaseTerrain
@@ -10,7 +12,7 @@ class FlatPineForest(BaseTerrain):
     _model = "assets/models/tiles/flat_pine.glb"
     _texture = "assets/models/tiles/forrest3.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(LoggingCamp)

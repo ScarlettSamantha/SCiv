@@ -23,7 +23,7 @@ from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 from managers.player import Player, PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -817,7 +817,7 @@ class BaseTile(BaseEntity):
             "movement_cost": self.movement_cost,
             "texture": self.texture(),
             "class": self.__class__.__name__,
-            "owner": str(self.owner.name) if self.owner else _t("civilization.nature.name"),
+            "owner": str(self.owner.name) if self.owner else t_("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
             "tile_yield": str(self.tile_yield),

@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 from gameplay.terrain.sea import Sea
 from gameplay.tiles.base_tile import BaseTile
@@ -9,7 +9,7 @@ class SeaWater(BaseTile):
     _model = _terrain._model
     _cache_name = "SeaWater"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.set_terrain(self._terrain())

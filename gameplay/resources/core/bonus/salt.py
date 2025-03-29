@@ -5,13 +5,13 @@ from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_savanna import FlatSavanna
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Salt(BaseBonusResource):
     key: str = "resource.core.bonus.salt"
-    name: T_TranslationOrStr = _t("content.resources.core.salt.name")
-    description: T_TranslationOrStr = _t("content.resources.core.salt.description")
+    name: T_TranslationOrStr = t_("content.resources.core.salt.name")
+    description: T_TranslationOrStr = t_("content.resources.core.salt.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/hex_border_salt.png"

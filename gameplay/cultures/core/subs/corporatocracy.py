@@ -1,5 +1,5 @@
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Corporatocracy(BaseCoreSubtree):
@@ -8,8 +8,8 @@ class Corporatocracy(BaseCoreSubtree):
     ):
         super().__init__(
             key="core.culture.subtrees.corporatocracy",
-            name=_t("content.culture.subtrees.core.corporatocracy.name"),
-            description=_t("content.culture.subtrees.core.corporatocracy.description"),
+            name=t_("content.culture.subtrees.core.corporatocracy.name"),
+            description=t_("content.culture.subtrees.core.corporatocracy.description"),
         )
 
     def register_civics(self):

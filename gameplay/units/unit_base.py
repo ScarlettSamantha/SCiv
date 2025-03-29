@@ -348,7 +348,7 @@ class UnitBaseClass(BaseEntity, ABC):
             "can_pillage": self.can_pillage,
         }
 
-    def destroy(self, as_system: bool = False, *args, **kwargs) -> bool:
+    def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> bool:
         """Removes the unit from the scene and cleans up references."""
         if self.model:
             self.model.removeNode()  # Remove from the scene graph

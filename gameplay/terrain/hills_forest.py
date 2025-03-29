@@ -1,3 +1,5 @@
+from typing import Any
+
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
 
@@ -11,7 +13,7 @@ class HillsForest(BaseTerrain):
     _model = "assets/models/tiles/forest.glb"
     _texture = "assets/models/tiles/grass2.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Mine)
