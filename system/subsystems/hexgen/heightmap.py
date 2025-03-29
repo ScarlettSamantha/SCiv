@@ -1,5 +1,6 @@
 import math
 import random
+
 import numpy as np
 
 
@@ -39,7 +40,7 @@ class Heightmap:
         return self.grid[x][y]
 
     def _adjust(self, xa, ya, x, y, xb, yb):
-        """fix the sides of the map"""
+        """Fix the sides of the map"""
         if self.grid[x][y] == 0:
             d = math.fabs(xa - xb) + math.fabs(ya - yb)
             ROUGHNESS = self.params.get("roughness")

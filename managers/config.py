@@ -1,9 +1,11 @@
 import json
 import os
 from typing import Any, Dict
-from system.vars import VERSION_NAME_STRING, APPLICATION_NAME
+
 from panda3d.core import loadPrcFileData
+
 from mixins.singleton import Singleton
+from system.vars import APPLICATION_NAME, VERSION_NAME_STRING
 
 
 class ConfigManager(Singleton):
@@ -123,6 +125,7 @@ class ConfigManager(Singleton):
     def set_screen_mode(self, mode):
         """
         Convenience method to switch screen mode at runtime.
+
         mode = "windowed", "fullscreen", or "borderless"
         """
         self.config_data["window"]["screen-mode"] = mode

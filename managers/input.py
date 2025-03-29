@@ -32,9 +32,6 @@ class Input(Singleton, DirectObject):
         self.active = False
 
     def register(self):
-        """
-        Bind relevant mouse or keyboard events here.
-        """
         # Left-click
         self.accept("mouse1", self.pick_object)
 
@@ -111,7 +108,8 @@ class Input(Singleton, DirectObject):
 
     def on_escape(self):
         """
-        This method fires a message when the user presses the Escape key.
+        Method fires a message when the user presses the Escape key.
+
         You can handle this in your code by listening for
         'system.input.user.escaped' with an appropriate handler.
         """

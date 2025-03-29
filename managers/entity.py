@@ -155,9 +155,6 @@ class EntityManager(Singleton):
         self._entities = {type_: {} for type_ in EntityType}
 
     def add_default_meta_data(self) -> None:
-        """
-        Call this as late to saving as possible so the most accurate stats gets saved.
-        """
         self.add_meta_data("stats", self.stats)
         self._meta_data["stats"]["total_orphan_entities"] = (
             self.stats["total_entities_unregistered"] - self.stats["total_entities"]

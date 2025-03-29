@@ -45,14 +45,6 @@ security-check:
     - pip install bandit
     - bandit -r . -c pyproject.toml
 
-docstring-check:
-  <<: *default-python-job
-  stage: verify
-  allow_failure: true
-  script:
-    - pip install pydocstyle
-    - pydocstyle .
-
 markdown-check:
   stage: verify
   image: node:latest

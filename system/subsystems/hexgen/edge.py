@@ -1,4 +1,5 @@
 import uuid
+
 from system.subsystems.hexgen.enums import EdgeDirection
 
 
@@ -58,6 +59,7 @@ class Edge:
         """
         :param other: Edge
         :return: True if both edges are equal to each other
+
         Eg: A Hex's south-east is equal to the bottom-left's north-west
         """
         return other.one == self.two or (self.one == other.one and self.two == other.two)
