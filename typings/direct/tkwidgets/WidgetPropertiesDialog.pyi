@@ -1,0 +1,33 @@
+__all__ = ['WidgetPropertiesDialog']
+
+import tkinter
+from collections.abc import Iterable
+from typing import Any
+from typing_extensions import Self, TypeAlias
+
+import Pmw  # type: ignore[import-untyped]
+
+_PropertyDict: TypeAlias = dict[str, tuple[Any, Any, Any, bool]]
+
+class WidgetPropertiesDialog(tkinter.Toplevel):
+    propertyDict: _PropertyDict
+    propertyList: Iterable[str]
+    parent: tkinter.Misc | None
+    modifiedDict: _PropertyDict
+    initial_focus: WidgetPropertiesDialog
+    def __init__(
+        self,
+        propertyDict: _PropertyDict,
+        propertyList: Iterable[str] | None = None,
+        parent: tkinter.Misc | None = None,
+        title: str = 'Widget Properties',
+    ) -> None: ...
+    def body(self, master: tkinter.Misc | None) -> Pmw.EntryField | Self: ...
+    def modified(self, widget, entry, property: str, type, fNone: bool) -> None: ...
+    def buttonbox(self) -> None: ...
+    def realOrNone(self, val: str): ...
+    def intOrNone(self, val: str): ...
+    def ok(self, event=None) -> None: ...
+    def cancel(self, event=None) -> None: ...
+    def validateChanges(self) -> None: ...
+    def apply(self) -> None: ...

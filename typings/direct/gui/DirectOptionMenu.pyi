@@ -1,0 +1,29 @@
+__all__ = ['DirectOptionMenu']
+
+from typing import Any, overload
+
+from direct._typing import Unused
+from panda3d.core import NodePath
+
+from .DirectButton import DirectButton
+from .DirectFrame import DirectFrame
+
+class DirectOptionMenu(DirectButton):
+    initFrameSize: tuple[float, float, float, float] | None
+    popupMarker: DirectFrame
+    initPopupMarkerPos: tuple[float, float, float] | None
+    popupMenu: DirectFrame | None
+    selectedIndex: int | None
+    highlightedIndex: int | None
+    cancelFrame: DirectFrame
+    def __init__(self, parent: NodePath | None = None, **kw: Any) -> None: ...
+    def setItems(self) -> None: ...
+    def showPopupMenu(self, event: Unused = None) -> None: ...
+    def hidePopupMenu(self, event: Unused = None) -> None: ...
+    def selectHighlightedIndex(self, event: Unused = None) -> None: ...
+    @overload
+    def index(self, index: int) -> int: ...
+    @overload
+    def index(self, index: object) -> int | None: ...
+    def set(self, index: int, fCommand: bool = ...) -> None: ...
+    def get(self) -> Any: ...

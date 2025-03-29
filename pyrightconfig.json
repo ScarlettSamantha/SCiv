@@ -1,0 +1,5 @@
+{
+  "typeCheckingMode": "strict",
+  "typeStubPath": ["./typings"],
+  "exclude": ["assets", "scripts"]
+}
