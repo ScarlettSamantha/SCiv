@@ -22,7 +22,7 @@ pyright-check:
   allow_failure: true
   script:
     - pip install pyright
-    - pyright .
+    - pyright . -p pyproject.toml
 
 lint-check:
   <<: *default-python-job

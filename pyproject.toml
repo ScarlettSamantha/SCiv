@@ -19,6 +19,8 @@ ignore = ["system/subsystems/"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
+exclude = ["**/stubs", "**/site-packages", "**/*.pyi", "system/subsystems/hexgen/"]
+pythonPlatform = "Linux"
 
 [tool.pyright.diagnosticSeverityOverrides]
 reportUnknownMemberType = "none"
