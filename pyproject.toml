@@ -10,6 +10,9 @@ ignore = ["E501", "F841", "E721"]
 line-length = 120
 select = ["E", "W", "F"]
 
+[tool.bandit]
+skips = ["B311", "B301", "B101"]
+
 [tool.semantic_release]
 changelog_function = "changelog.py:openciv_changelog"
 commit_parser = "emoji"
