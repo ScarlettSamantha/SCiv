@@ -9,6 +9,15 @@ name = "SCiv"
 ignore = ["E501", "F841", "E721"]
 line-length = 120
 select = ["E", "W", "F"]
+exclude = [
+  "stubs",
+]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+
+[tool.pyright.diagnosticSeverityOverrides]
+reportUnknownMemberType = "none"
 
 [tool.bandit]
 skips = ["B311", "B301", "B101"]
