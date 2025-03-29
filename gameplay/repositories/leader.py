@@ -14,9 +14,7 @@ class Leader:
         return list(classes.values())
 
     @classmethod
-    def random(
-        cls, num: int = 1, unique: bool = False
-    ) -> Type[LeaderBaseObject] | List[Type[LeaderBaseObject]]:
+    def random(cls, num: int = 1, unique: bool = False) -> Type[LeaderBaseObject] | List[Type[LeaderBaseObject]]:
         _selected_leader: List[Type[LeaderBaseObject]] = []
 
         for _ in range(num):

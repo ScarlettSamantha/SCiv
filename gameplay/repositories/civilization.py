@@ -13,9 +13,7 @@ class Civilization:
         if cls.raw_cache.__len__() > 0:
             return cls.raw_cache
 
-        classes = PyLoad.load_classes(
-            "gameplay/civilizations", base_classes=BaseCivilization
-        )
+        classes = PyLoad.load_classes("gameplay/civilizations", base_classes=BaseCivilization)
         for key, _class in classes.items():
             # Remove the base class from the list.
             if _class == BaseCivilization:
@@ -26,9 +24,7 @@ class Civilization:
         return list(classes.values())
 
     @classmethod
-    def random(
-        cls, num: int = 1, unique: bool = False
-    ) -> Type[BaseCivilization] | List[Type[BaseCivilization]]:
+    def random(cls, num: int = 1, unique: bool = False) -> Type[BaseCivilization] | List[Type[BaseCivilization]]:
         _selected_civilizations: List[Type[BaseCivilization]] = []
 
         for _ in range(num):

@@ -69,8 +69,7 @@ class PyFileProcessor:
             regex_pattern = name_pattern
             try:
                 return (
-                    re.match(r"^(?!_).*.py$", file_name) is not None
-                    and re.match(regex_pattern, file_name) is not None
+                    re.match(r"^(?!_).*.py$", file_name) is not None and re.match(regex_pattern, file_name) is not None
                 )
             except re.error as e:
                 LogManager.get_instance().engine.error(f"Invalid regex pattern: {regex_pattern}, error: {e}")

@@ -7,7 +7,6 @@ from gameplay.tiles.base_tile import BaseTile
 
 
 class ResourceAllocator:
-
     def __init__(self, grid: Dict[Tuple[int, int], BaseTile], resources: List[Type[BaseResource]]) -> None:
         self.grid: Dict[Tuple[int, int], BaseTile] = grid
         self.grid_width: int = max([t.x for t in grid.values()]) + 1
