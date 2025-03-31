@@ -60,7 +60,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.food_collected: Yields = Yields.nullYield()
 
         self.is_building: bool = False
-        self.resource_required: Optional[type[BaseResource[Any]]] = None
+        self.resource_required: Optional[type[BaseResource]] = None
         self.resource_required_amount: Yields = Yields.nullYield()  # no-op
         self.resource_collected: Yields = Yields.nullYield()  # no-op # This is the amount of resources collected so far
         self.building: BaseCityImprovement | UnitBaseClass | None = None  # can be either improvement or unit

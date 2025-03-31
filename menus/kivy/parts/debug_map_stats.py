@@ -26,7 +26,7 @@ class DebugMapStats(FloatLayout):
         self.frame = None
         self.map_resource_column: Optional[Label] = None
         self.map_type_column: Optional[Label] = None
-        self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
+        self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
         self.rect = None
 
         self.map: Dict[str, "BaseTile"] = World.get_singleton_instance().map
@@ -41,7 +41,7 @@ class DebugMapStats(FloatLayout):
         running_total_resources: Dict[str, float] = {}
         running_total_tile_type: Dict[str, float] = {}
         total_tiles: int = len(self.map)  # Total number of tiles in the map
-        self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
+        self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
 
         # Sum resource counts over all tiles
         for tile in self.map.values():

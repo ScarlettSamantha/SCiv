@@ -93,7 +93,7 @@ class Yields:
         self._name = value
 
     @property
-    def gold(self) -> "BaseResource[Any]":
+    def gold(self) -> "BaseResource":
         from gameplay.resources.core.basic.gold import Gold
 
         return Gold(value=self._gold)
@@ -110,7 +110,7 @@ class Yields:
             self._gold = value.gold.value
 
     @property
-    def production(self) -> "BaseResource[Any]":
+    def production(self) -> "BaseResource":
         from gameplay.resources.core.basic.production import Production
 
         return Production(value=self._production)
@@ -127,7 +127,7 @@ class Yields:
             self._production = value.production.value
 
     @property
-    def science(self) -> "BaseResource[Any]":
+    def science(self) -> "BaseResource":
         from gameplay.resources.core.basic.science import Science
 
         return Science(value=self._science)
@@ -144,7 +144,7 @@ class Yields:
             self._science = value.science.value
 
     @property
-    def food(self) -> "BaseResource[Any]":
+    def food(self) -> "BaseResource":
         from gameplay.resources.core.basic.food import Food
 
         return Food(value=self._food)
@@ -161,7 +161,7 @@ class Yields:
             self._food = value.food.value
 
     @property
-    def culture(self) -> "BaseResource[Any]":
+    def culture(self) -> "BaseResource":
         from gameplay.resources.core.basic.culture import Culture
 
         return Culture(value=self._culture)
@@ -178,7 +178,7 @@ class Yields:
             self._culture = value.culture.value
 
     @property
-    def housing(self) -> "BaseResource[Any]":
+    def housing(self) -> "BaseResource":
         from gameplay.resources.core.basic.housing import Housing
 
         return Housing(value=self._housing)
@@ -195,7 +195,7 @@ class Yields:
             self._housing = value.housing.value
 
     @property
-    def faith(self) -> "BaseResource[Any]":
+    def faith(self) -> "BaseResource":
         from gameplay.resources.core.basic.faith import Faith
 
         return Faith(value=self._faith)
@@ -420,8 +420,8 @@ class Yields:
             "great_person_holy": self._great_person_holy,
         }
 
-    def export_basic(self) -> List["BaseResource[Any]"]:
-        resources: List["BaseResource[Any]"] = [
+    def export_basic(self) -> List["BaseResource"]:
+        resources: List["BaseResource"] = [
             self.gold,
             self.production,
             self.food,

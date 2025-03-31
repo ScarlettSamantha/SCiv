@@ -31,7 +31,7 @@ class Hex:
         self.edge_north_west = None
         self.edge_south_west = None
 
-        self.gameplay_resource: Optional[Type[BaseResource[Any]]] = None
+        self.gameplay_resource: Optional[Type[BaseResource]] = None
 
         self.distance = 0  # distance in hexes to the coast. 0 if no coast
         self.moisture = 0
@@ -68,7 +68,7 @@ class Hex:
     def add_gameplay_resource(self, resource: Type[BaseResource]) -> None:
         self.gameplay_resource = resource
 
-    def get_gameplay_resource(self) -> Type[BaseResource[Any]] | None:
+    def get_gameplay_resource(self) -> Type[BaseResource] | None:
         return self.gameplay_resource
 
     def has_feature(self, feature):
