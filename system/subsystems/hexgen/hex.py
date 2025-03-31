@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type
 
 from gameplay.resource import BaseResource
 from system.subsystems.hexgen.edge import Edge
@@ -12,15 +12,17 @@ from system.subsystems.hexgen.enums import (
     MapType,
     Zones,
 )
-from system.subsystems.hexgen.grid import Grid
+
+if TYPE_CHECKING:
+    from system.subsystems.hexgen.grid import Grid
 
 
 class Hex:
-    def __init__(self, grid: Grid, x: int, y: int, altitude: int):
+    def __init__(self, grid: "Grid", x: int, y: int, altitude: int):
         self.x: int = x
         self.y: int = y
         self.altitude: float | int = altitude
-        self.grid: Grid = grid
+        self.grid: "Grid" = grid
 
         self.edge_east = None
         self.edge_west = None
