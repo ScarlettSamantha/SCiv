@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 class SaveLoadScreen(Screen):
     def __init__(self, base: "SCIV", **kwargs: Any):
-        super().__init__(**kwargs) # type: ignore
+        super().__init__(**kwargs)  # type: ignore
         self.base: "SCIV" = base
 
         self.save_menu = SavePopup(base=base)

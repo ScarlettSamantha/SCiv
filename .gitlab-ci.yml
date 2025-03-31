@@ -28,7 +28,7 @@ pyright-full-check:
     - merge_requests
   script:
     - pip install pyright --root-user-action=ignore
-    - pyright . -p pyproject.toml
+    - pyright . -p pyrightconfig.json
 
 pyright-diff-check:
   <<: *default-python-job

@@ -95,7 +95,7 @@ class ui(Singleton, DirectObject):
             self.game_gui.reset()  # We reset the game gui so we can start fresh
 
     def reset_game_ui(self):
-        self.get_screen("game_ui").reset() # type: ignore
+        self.get_screen("game_ui").reset()  # type: ignore
         MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
 
     def get_gui(self) -> "SCivGUI":

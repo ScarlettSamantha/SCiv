@@ -664,9 +664,9 @@ class BaseTile(BaseEntity):
 
         extra_model.setScale(0.48 * scale)
         extra_model.setHpr(*hpr)
-        node: NodePath = extra_model.copyTo(self.base.render) # type: ignore
+        node: NodePath = extra_model.copyTo(self.base.render)  # type: ignore
         node.setPos(self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2])
-        node.setCollideMask(BitMask32.bit(1)) # type: ignore
+        node.setCollideMask(BitMask32.bit(1))  # type: ignore
         self.models.append(node)
 
         if self.tag is None:

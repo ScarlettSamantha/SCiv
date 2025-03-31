@@ -44,13 +44,13 @@ class SCivGUI(App):
         self.screen_manager.get_screen("save_load_screen").hide_save_menu()  # type: ignore
         self.screen_manager.get_screen("save_load_screen").hide_load_menu()  # type: ignore
         game_ui: GameUIScreen = self.screen_manager.get_screen("game_ui")  # type: ignore
-        game_ui.get_debug_map_stats().update() # type: ignore
+        game_ui.get_debug_map_stats().update()  # type: ignore
         self.screen_manager.current = "game_ui"
 
     def load_main_menu(self):
         if self.screen_manager is None:
             self.screen_manager = self.build()
-        self.screen_manager.get_screen("main_menu").show() # type: ignore
+        self.screen_manager.get_screen("main_menu").show()  # type: ignore
         self.screen_manager.current = "main_menu"
 
     def build(self, default_screen: str = "main_menu"):
@@ -68,4 +68,4 @@ class SCivGUI(App):
 
     def debug_ui_state(self, stats: bool, actions: bool, debug: bool) -> None:
         screen: GameUIScreen = self.get_screen_manager().get_screen("game_ui")  # type: ignore
-        screen.toggle_debug_panels(stats, actions, debug) # type: ignore
+        screen.toggle_debug_panels(stats, actions, debug)  # type: ignore
