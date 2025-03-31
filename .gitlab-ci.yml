@@ -37,7 +37,7 @@ pyright-diff-check:
   except:
     - merge_requests
   script:
-    - pip install pyright
+    - pip install pyright --root-user-action
     - git fetch origin $compare_branch
     - |
       changed_files=$(git diff --diff-filter=ACMR --name-only origin/$compare_branch...HEAD -- '*.py')
