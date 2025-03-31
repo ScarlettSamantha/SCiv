@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from kivy.graphics import Color, Rectangle
 from kivy.uix.button import Button
@@ -7,11 +8,14 @@ from kivy.uix.floatlayout import FloatLayout
 
 from managers.i18n import t_
 
+if TYPE_CHECKING:
+    from main import SCIV
 
-class PlayerTurnControl(FloatLayout):
-    def __init__(self, base, **kwargs):
-        super().__init__(**kwargs)
-        self.base = base
+
+class PlayerTurnControl(FloatLayout, DirectObject):
+    def __init__(self, base: "SCIV", **kwargs: Any):
+        super().__init__(**kwargs)  # type: ignore
+        self.base: "SCIV" = base
 
         self.frame: Optional[FloatLayout] = None
         self.button: Optional[Button] = None
@@ -20,8 +24,8 @@ class PlayerTurnControl(FloatLayout):
         self.register()
 
     def register(self):
-        self.base.accept("game.turn.start_process", self.on_turn_change_start)
-        self.base.accept("ui.update.ui.refresh_player_turn_control", self.on_turn_change_end)
+        self.accept("game.turn.start_process", self.on_turn_change_start)
+        self.accept("ui.update.ui.refresh_player_turn_control", self.on_turn_change_end)
 
     def get_frame(self) -> FloatLayout:
         if self.frame is None:
@@ -41,7 +45,7 @@ class PlayerTurnControl(FloatLayout):
             Color(0, 0, 0, 0.7)  # Black background with 70% opacity
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
 
-        def update_debug_rect(instance, value):
+        def update_debug_rect(instance: FloatLayout, value: Any):
             self.rect.size = instance.size  # type: ignore
             self.rect.pos = instance.pos  # type: ignore
 
@@ -61,10 +65,10 @@ class PlayerTurnControl(FloatLayout):
         )
         self.button.bind(on_press=self.send_end_turn)
 
-        self.frame.add_widget(self.button)
+        self.frame.add_widget(self.button)  # type: ignore
         return self.frame
 
-    def send_end_turn(self, instance):
+    def send_end_turn(self, *args: Any):
         messenger.send("game.turn.request_end")
 
     def on_turn_change_start(self, turn: int):
