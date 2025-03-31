@@ -7,13 +7,13 @@ from gameplay.terrain.coast import Coast
 from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.sea import Sea
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Oil(BaseStrategicResource):
     key: str = "resource.core.strategic.oil"
-    name: T_TranslationOrStr = _t("content.resources.core.oil.name")
-    description: T_TranslationOrStr = _t("content.resources.core.oil.description")
+    name: T_TranslationOrStr = t_("content.resources.core.oil.name")
+    description: T_TranslationOrStr = t_("content.resources.core.oil.description")
     _color = (1.0, 0.0, 0.0)
     coverage = 3
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

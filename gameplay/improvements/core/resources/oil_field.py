@@ -1,14 +1,16 @@
+from typing import Any
+
 from gameplay.improvement import Improvement
 from gameplay.yields import Yields
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class OilField(Improvement):
-    name = _t("content.improvements.core.resources.oil_field.name")
-    description = _t("content.improvements.core.resources.oil_field.description")
+    name = t_("content.improvements.core.resources.oil_field.name")
+    description = t_("content.improvements.core.resources.oil_field.description")
     placeable_on_tiles = True
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             *args,
             **kwargs,

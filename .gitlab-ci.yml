@@ -1,0 +1,81 @@
+variables:
+  compare_branch: dev-v0.2.0
+  GIT_DEPTH: 0
+
+stages:
+  - verify
+
+.default-python-job: &default-python-job
+  image: python:3.13
+  only:
+    - branches
+    - merge_requests
+  cache:
+    key: shared-pip-cache
+    paths:
+      - .cache/pip
+    policy: pull-push
+  before_script:
+    - pip config set global.cache-dir .cache/pip
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+
+pyright-full-check:
+  <<: *default-python-job
+  stage: verify
+  allow_failure: true
+  only:
+    - merge_requests
+  script:
+    - pip install pyright
+    - pyright . -p pyproject.toml
+
+pyright-diff-check:
+  <<: *default-python-job
+  stage: verify
+  allow_failure: true
+  except:
+    - merge_requests
+  script:
+    - pip install pyright --root-user-action
+    - git fetch origin $compare_branch
+    - |
+      changed_files=$(git diff --diff-filter=ACMR --name-only origin/$compare_branch...HEAD -- '*.py')
+      if [ -n "$changed_files" ]; then
+        echo "Changed Python files:"
+        echo "$changed_files"
+        pyright $changed_files -p pyproject.toml
+      else
+        echo "No Python files changed. Skipping pyright."
+      fi
+
+lint-check:
+  <<: *default-python-job
+  stage: verify
+  script:
+    - pip install ruff
+    - ruff check .
+
+format-check:
+  <<: *default-python-job
+  stage: verify
+  script:
+    - pip install ruff
+    - ruff format --check --diff .
+
+security-check:
+  <<: *default-python-job
+  stage: verify
+  script:
+    - pip install bandit
+    - bandit -r . -c pyproject.toml
+
+markdown-check:
+  stage: verify
+  image: node:latest
+  only:
+    - branches
+    - merge_requests
+  script:
+    - npm install --global markdownlint-cli
+    - markdownlint '**/*.md'

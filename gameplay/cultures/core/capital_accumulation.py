@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.culture import Civic
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class CapitalAccumulation(Civic):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.culture.civics.capital_accumulation",
-            name=_t("content.culture.civics.core.capital_accumulation.name"),
-            description=_t("content.culture.civics.core.capital_accumulation.description"),
+            name=t_("content.culture.civics.core.capital_accumulation.name"),
+            description=t_("content.culture.civics.core.capital_accumulation.description"),
             *args,
             **kwargs,
         )

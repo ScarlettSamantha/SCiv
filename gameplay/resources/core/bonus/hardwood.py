@@ -8,13 +8,13 @@ from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
 from gameplay.terrain.flat_jungle import FlatJungle
 from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.hills_forest import HillsForest
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Hardwood(BaseBonusResource):
     key: str = "resource.core.bonus.hardwood"
-    name: T_TranslationOrStr = _t("content.resources.core.hardwood.name")
-    description: T_TranslationOrStr = _t("content.resources.core.hardwood.description")
+    name: T_TranslationOrStr = t_("content.resources.core.hardwood.name")
+    description: T_TranslationOrStr = t_("content.resources.core.hardwood.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_hardwood.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

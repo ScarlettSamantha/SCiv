@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 class World(Singleton, DirectObject):
-    logger: Logger = LogManager.get_instance().gameplay.getChild("world")
+    logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("world")
 
     def __setup__(self):
         self.base = Cache.get_showbase_instance()
@@ -49,11 +49,11 @@ class World(Singleton, DirectObject):
         self.effects = Effects(self)
 
         unit: "UnitBaseClass"
-        for unit in list(EntityManager.get_instance().get_all(EntityType.UNIT).values()):  # type: ignore
+        for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
             unit.destroy()
 
         tile: "BaseTile"
-        for tile in list(EntityManager.get_instance().get_all(EntityType.TILE).values()):  # type: ignore
+        for tile in list(EntityManager.get_singleton_instance().get_all(EntityType.TILE).values()):  # type: ignore
             tile.destroy()
 
     def load(self, data: Dict[str, "BaseTile"]):
@@ -76,7 +76,7 @@ class World(Singleton, DirectObject):
             tile.on_load()
 
         unit: "UnitBaseClass"
-        for unit in list(EntityManager.get_instance().get_all(EntityType.UNIT).values()):  # type: ignore
+        for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
             unit.on_load()
 
     def calculate_middle(self):

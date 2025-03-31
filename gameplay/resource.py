@@ -155,106 +155,106 @@ class BaseResource(Generic[T_ResourceType], ABC):
     def add_to_yield_modifier(self, yields: "Yields") -> None:
         self._tile_yield_modifier.add(yields)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
-    def _check_same_type(self, other: "BaseResource") -> None:
+    def _check_same_type(self, other: "BaseResource[Any]") -> None:
         if not isinstance(other, BaseResource) or type(self) != type(other):
             raise TypeError(
                 f"Operation not supported between instances of {type(self).__name__} and {type(other).__name__}"
             )
 
     # Overloaded operators
-    def __add__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __add__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return self.value + other.value
         return self.value + other
 
-    def __radd__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __radd__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         return self.__add__(other)
 
-    def __sub__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __sub__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return self.value - other.value
         return self.value - other
 
-    def __rsub__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __rsub__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return other.value - self.value
         return other - self.value
 
-    def __mul__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __mul__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return self.value * other.value
         return self.value * other
 
-    def __rmul__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __rmul__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         return self.__mul__(other)
 
-    def __truediv__(self, other: Union["BaseResource", float, int]) -> float:
+    def __truediv__(self, other: Union["BaseResource[Any]", float, int]) -> float:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return self.value / other.value
         return self.value / other
 
-    def __rtruediv__(self, other: Union["BaseResource", float, int]) -> float:
+    def __rtruediv__(self, other: Union["BaseResource[Any]", float, int]) -> float:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return other.value / self.value
         return other / self.value
 
-    def __floordiv__(self, other: Union["BaseResource", float, int]) -> int:
+    def __floordiv__(self, other: Union["BaseResource[Any]", float, int]) -> int:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return int(self.value // other.value)
         return int(self.value // other)
 
-    def __rfloordiv__(self, other: Union["BaseResource", float, int]) -> int:
+    def __rfloordiv__(self, other: Union["BaseResource[Any]", float, int]) -> int:
         return self.__floordiv__(other)
 
-    def __mod__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __mod__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return self.value % other.value
         return self.value % other
 
-    def __rmod__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __rmod__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         return self.__mod__(other)
 
-    def __pow__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __pow__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):
             self._check_same_type(other)
             return self.value**other.value
         return self.value**other
 
-    def __rpow__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
+    def __rpow__(self, other: Union["BaseResource[Any]", float, int]) -> Union[float, int]:
         return self.__pow__(other)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, "BaseResource"):
+        if isinstance(other, "BaseResource[Any]"):
             return self.value == other.value
         return False
 
     def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
 
-    def __lt__(self, other: Union["BaseResource", float, int]) -> bool:
+    def __lt__(self, other: Union["BaseResource[Any]", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value < other.value
         return self.value < other
 
-    def __le__(self, other: Union["BaseResource", float, int]) -> bool:
+    def __le__(self, other: Union["BaseResource[Any]", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value <= other.value
         return self.value <= other
 
-    def __gt__(self, other: Union["BaseResource", float, int]) -> bool:
+    def __gt__(self, other: Union["BaseResource[Any]", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value > other.value
         return self.value > other
 
-    def __ge__(self, other: Union["BaseResource", float, int]) -> bool:
+    def __ge__(self, other: Union["BaseResource[Any]", float, int]) -> bool:
         if isinstance(other, BaseResource):
             return self.value >= other.value
         return self.value >= other
@@ -263,23 +263,23 @@ class BaseResource(Generic[T_ResourceType], ABC):
         return f"{self.key}: {self.value}"
 
     @classmethod
-    def strategic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
+    def strategic(cls, *args: Any, **kwargs: Any) -> "BaseResource[Any]":
         return cls(*args, **kwargs, type_=ResourceTypeStrategic)
 
     @classmethod
-    def luxury(cls, *args: Any, **kwargs: Any) -> "BaseResource":
+    def luxury(cls, *args: Any, **kwargs: Any) -> "BaseResource[Any]":
         return cls(*args, **kwargs, type_=ResourceTypeLuxury)
 
     @classmethod
-    def bonus(cls, *args: Any, **kwargs: Any) -> "BaseResource":
+    def bonus(cls, *args: Any, **kwargs: Any) -> "BaseResource[Any]":
         return cls(*args, **kwargs, type_=ResourceTypeBonus)
 
     @classmethod
-    def basic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
+    def basic(cls, *args: Any, **kwargs: Any) -> "BaseResource[Any]":
         return cls(*args, **kwargs, type_=ResourceTypeBasic)
 
     @classmethod
-    def mechanic(cls, *args: Any, **kwargs: Any) -> "BaseResource":
+    def mechanic(cls, *args: Any, **kwargs: Any) -> "BaseResource[Any]":
         return cls(*args, **kwargs, type_=ResourceTypeMechanic)
 
     @classmethod
@@ -313,7 +313,7 @@ inverted_mapping: Dict[Type[ResourceTypeBase], ResourceType] = {v: k for k, v in
 
 class Resources:
     def __init__(self):
-        self.resources: Dict[Type[ResourceTypeBase], Dict[str, BaseResource]] = {}
+        self.resources: Dict[Type[ResourceTypeBase], Dict[str, BaseResource[Any]]] = {}
         self.define_types()
 
     def define_types(self) -> None:
@@ -322,7 +322,7 @@ class Resources:
             if item not in self.resources.keys():
                 self.resources[item] = {}
 
-    def flatten(self, types: List[ResourceType] = []) -> Dict[str, BaseResource]:
+    def flatten(self, types: List[ResourceType] = []) -> Dict[str, BaseResource[Any]]:
         if types:
             return {
                 key: resource
@@ -331,19 +331,19 @@ class Resources:
             }
         return {key: resource for sub_dict in self.resources.values() for key, resource in sub_dict.items()}
 
-    def flatten_non_mechanic(self) -> Dict[str, BaseResource]:
+    def flatten_non_mechanic(self) -> Dict[str, BaseResource[Any]]:
         # This is a helper method to get all resources that are not mechanic resources.
         # Also to counter the issue of circular imports.
         return self.flatten([ResourceType.BONUS, ResourceType.LUXURY, ResourceType.STRATEGIC])
 
-    def flatten_basics(self) -> Dict[str, BaseResource]:
+    def flatten_basics(self) -> Dict[str, BaseResource[Any]]:
         # This is a helper method to get all resources that are not mechanic resources.
         # Also to counter the issue of circular imports.
         return self.resources[ResourceTypeBasic]
 
     def get(
         self, _type: Type[ResourceTypeBase] | None = None, key: str | None = None
-    ) -> Dict[Type[ResourceTypeBase], Dict[str, BaseResource]] | BaseResource | Dict[str, BaseResource]:
+    ) -> Dict[Type[ResourceTypeBase], Dict[str, BaseResource[Any]]] | BaseResource[Any] | Dict[str, BaseResource[Any]]:
         if _type is None:
             for sub_dict in self.resources.values():
                 for resource in sub_dict.values():
@@ -351,18 +351,18 @@ class Resources:
                         return resource
                 raise KeyError(f"Key {key} not found in resources")
         else:
-            sub: Dict[str, BaseResource] = self.resources[_type]
+            sub: Dict[str, BaseResource[Any]] = self.resources[_type]
             if key is not None:
                 if key not in sub:
                     raise KeyError(f"Key {key} not found in resources")
                 return sub[key]
         return self.resources
 
-    def toDict(self) -> Dict[Type[ResourceTypeBase], Dict[str, BaseResource]]:
+    def toDict(self) -> Dict[Type[ResourceTypeBase], Dict[str, BaseResource[Any]]]:
         return self.resources
 
-    def add(self, resource: Union[BaseResource, List[BaseResource]], auto_instance: bool = True) -> None:
-        def _add(self: Self, tmp_resource: BaseResource) -> None:
+    def add(self, resource: Union[BaseResource[Any], List[BaseResource[Any]]], auto_instance: bool = True) -> None:
+        def _add(self: Self, tmp_resource: BaseResource[Any]) -> None:
             resource_type: Type[ResourceTypeBase] = tmp_resource.type
             if resource_type not in self.resources:
                 self.resources[resource_type] = {}
@@ -376,23 +376,23 @@ class Resources:
         else:
             raise ResourceTypeException(f"Resource must be of type Resource, not {type(resource)}")
 
-    def remove(self, resource: BaseResource) -> None:
+    def remove(self, resource: BaseResource[Any]) -> None:
         resource_type: Type[ResourceTypeBase] = resource.type
         if resource_type in self.resources and resource.key in self.resources[resource_type]:
             del self.resources[resource_type][resource.key]
 
-    def has(self, resource: Optional[BaseResource] = None) -> bool:
+    def has(self, resource: Optional[BaseResource[Any]] = None) -> bool:
         if resource is None:
             return bool(self.resources)
         return resource.key in self.resources[resource.type]
 
-    def __iter__(self) -> Iterator[BaseResource]:
+    def __iter__(self) -> Iterator[BaseResource[Any]]:
         return iter(self.flatten().values())
 
-    def __add__(self, b: BaseResource) -> None:
+    def __add__(self, b: BaseResource[Any]) -> None:
         self.add(b)
 
-    def __getitem__(self, key: str) -> Dict[str, BaseResource] | BaseResource:
+    def __getitem__(self, key: str) -> Dict[str, BaseResource[Any]] | BaseResource[Any]:
         return self.flatten()[key]
 
     def __len__(self) -> int:
@@ -405,5 +405,5 @@ class Resources:
 
 
 class Costs:
-    def __init__(self, costs: List[BaseResource] | BaseResource) -> None:
-        self.costs: List[BaseResource] = costs if isinstance(costs, list) else [costs]
+    def __init__(self, costs: List[BaseResource[Any]] | BaseResource[Any]) -> None:
+        self.costs: List[BaseResource[Any]] = costs if isinstance(costs, list) else [costs]

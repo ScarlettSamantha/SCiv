@@ -11,7 +11,7 @@ from gameplay.repositories.personality import (
 )
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
-from managers.i18n import T_TranslationOrStrOrNone, _t, get_i18n
+from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from managers.unit import Unit
 from system.game_settings import GameSettings
@@ -21,15 +21,15 @@ if TYPE_CHECKING:
 
 
 class BaseGenerator(ABC):
-    NAME = _t("generic.unimplemented")
-    DESCRIPTION = _t("generic.unimplemented")
+    NAME = t_("generic.unimplemented")
+    DESCRIPTION = t_("generic.unimplemented")
 
     def __init__(self, config: GameSettings, base: "SCIV") -> None:
         from managers.world import World
 
         self.config: GameSettings = config
         self.base: "SCIV" = base
-        self.world: World = World.get_instance()
+        self.world: World = World.get_singleton_instance()
         self.world_generation_stats: Dict[str, Any] = {}
 
     @abstractmethod
@@ -64,9 +64,6 @@ class BaseGenerator(ABC):
         return player
 
     def setup_players(self, player_civilization: Type[Civilization]) -> List[Player] | None:
-        if self.config.num_enemies is None:
-            raise ValueError("Number of enemies not set")
-
         players: List[Player] = []
         civs_ingame: List[Type[Civilization]] = []
 
@@ -100,7 +97,7 @@ class BaseGenerator(ABC):
                     "PersonalityRepository.random() returned a list it should be one. as parameter is 1"
                 )
 
-            if isinstance(chosen_civilization, Type):
+            if isinstance(chosen_civilization, Type):  # type: ignore
                 civ = chosen_civilization()
             else:
                 civ = CivilizationRepository.get(chosen_civilization)()
@@ -127,7 +124,7 @@ class BaseGenerator(ABC):
     ) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
 
-        unit_manager: Unit = Unit.get_instance()
+        unit_manager: Unit = Unit.get_singleton_instance()
         units: List["Settler"] = []
         occupied_tiles: List[BaseTile] = []  # Track placed player locations
 

@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Technocracy(BaseCoreSubtree):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.culture.subtrees.technocracy",
-            name=_t("content.culture.subtrees.core.technocracy.name"),
-            description=_t("content.culture.subtrees.core.technocracy.description"),
+            name=t_("content.culture.subtrees.core.technocracy.name"),
+            description=t_("content.culture.subtrees.core.technocracy.description"),
             *args,
             **kwargs,
         )

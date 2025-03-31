@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 from gameplay.condition import Condition
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement, ImprovementBuildTurnMode
@@ -12,7 +12,7 @@ class Barracks(BaseCityImprovement):
     name = t_("content.improvements.core.city.barracks.name")
     description = t_("content.improvements.core.city.barracks.description")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.amount_resource_needed = Yields(production=8)

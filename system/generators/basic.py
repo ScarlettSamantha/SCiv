@@ -151,7 +151,7 @@ class Basic(BaseGenerator):
         self.world_generation_stats["start_time"] = start_time.isoformat()
         self.world_generation_stats["end_time"] = datetime.now().isoformat()
 
-        EntityManager.get_instance().add_meta_data(
+        EntityManager.get_singleton_instance().add_meta_data(
             "world_generation_stats", self.world_generation_stats
         )  # we can use this to store the stats in the database
 

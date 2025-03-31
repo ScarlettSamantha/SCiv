@@ -21,7 +21,7 @@ class TileRepository:
         :param y: y-coordinate
         :return: The Tile at (x, y) if it exists; otherwise, None.
         """
-        _tile = World.get_instance().grid.get((x, y))
+        _tile = World.get_singleton_instance().grid.get((x, y))
         if _tile:
             return _tile
         return None
@@ -201,7 +201,7 @@ class TileRepository:
         """
         from collections import deque
 
-        if World.get_instance() is None:
+        if World.get_singleton_instance() is None:
             raise ValueError("instance_ref_grid must be set before calling get_neighbors")
 
         directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
@@ -221,7 +221,7 @@ class TileRepository:
                 curr_directions = directions_even if current_tile.x % 2 == 0 else directions_odd
                 for dx, dy in curr_directions:
                     nx, ny = current_tile.x + dx, current_tile.y + dy
-                    neighbor = World.get_instance().grid.get((nx, ny))
+                    neighbor = World.get_singleton_instance().grid.get((nx, ny))
                     if neighbor and neighbor not in visited:
                         # Apply passable or climbable checks
                         if check_passable and not neighbor.is_passable():
@@ -371,8 +371,8 @@ class TileRepository:
         err = dx - dy
 
         while (x0, y0) != (x1, y1):
-            if (x0, y0) in World.get_instance().grid:
-                tile: "BaseTile" = World.get_instance().grid[(x0, y0)]
+            if (x0, y0) in World.get_singleton_instance().grid:
+                tile: "BaseTile" = World.get_singleton_instance().grid[(x0, y0)]
                 if tile.movement_cost > 10:  # Threshold for impassable terrain.
                     return False
 

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from gameplay.resource import BaseResource, ResourceType
 from system.pyload import PyLoad
@@ -15,19 +15,19 @@ folder_mapping: Dict[ResourceType, str] = {
 
 class ResourceRepository:
     # This is flattened cache of all resources classes
-    __cached_resources_classes: List[Type[BaseResource]] = []
-    __cached_resources_by_type: Dict[ResourceType, List[Type[BaseResource]]] = {}
+    __cached_resources_classes: List[Type[BaseResource[Any]]] = []
+    __cached_resources_by_type: Dict[ResourceType, List[Type[BaseResource[Any]]]] = {}
 
     @classmethod
     def load_into_cache(cls):
         for resource_type, folder in folder_mapping.items():
-            resource_classes: Dict[str, Type[BaseResource]] = PyLoad.load_classes(
+            resource_classes: Dict[str, Type[BaseResource[Any]]] = PyLoad.load_classes(  # type: ignore
                 str(Path(__file__).parent.parent / "resources" / "core" / folder), base_classes=BaseResource
             )
 
             for _class in list(resource_classes.values()):
                 if _class.__name__ in (
-                    "BaseResource",
+                    "BaseResource[Any]",
                     "BaseBonusResource",
                     "BaseLuxuryResource",
                     "BaseStrategicResource",
@@ -42,7 +42,7 @@ class ResourceRepository:
             cls.__cached_resources_by_type[resource_type].extend(resource_classes.values())
 
     @classmethod
-    def all(cls, types: Optional[List[ResourceType]] = None) -> List[Type[BaseResource]]:
+    def all(cls, types: Optional[List[ResourceType]] = None) -> List[Type[BaseResource[Any]]]:
         if not cls.__cached_resources_classes:
             cls.load_into_cache()
 
@@ -51,12 +51,12 @@ class ResourceRepository:
         return cls.__cached_resources_classes
 
     @classmethod
-    def all_by_type(cls, resource_type: Union[ResourceType, List[ResourceType]]) -> List[Type[BaseResource]]:
+    def all_by_type(cls, resource_type: Union[ResourceType, List[ResourceType]]) -> List[Type[BaseResource[Any]]]:
         if not cls.__cached_resources_classes:
             cls.load_into_cache()
 
         if isinstance(resource_type, list):
-            resources = []
+            resources: List[Type[BaseResource[Any]]] = []
             for r_type in resource_type:
                 resources.extend(cls.__cached_resources_by_type.get(r_type, []))
             return resources
@@ -64,7 +64,7 @@ class ResourceRepository:
         return cls.__cached_resources_by_type.get(resource_type, [])
 
     @classmethod
-    def find(cls, key: str) -> Optional[Type[BaseResource]]:
+    def find(cls, key: str) -> Optional[Type[BaseResource[Any]]]:
         if not cls.__cached_resources_classes:
             cls.load_into_cache()
 

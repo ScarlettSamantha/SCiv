@@ -1,29 +1,27 @@
 import uuid
 
+
 class Geoform:
-    """ A landmass or water feature """
+    """A landmass or water feature"""
+
     def __init__(self, hexes, geotype):
-        self.type = geotype # GeoformType
-        self.hexes = hexes # set
+        self.type = geotype  # GeoformType
+        self.hexes = hexes  # set
         self.size = len(hexes)
-        self.id = uuid.uuid4() # uuid
-        self.neighbors = set() # set
+        self.id = uuid.uuid4()  # uuid
+        self.neighbors = set()  # set
         self.to_delete = False
 
         for h in hexes:
             h.geoform = self
 
     def to_dict(self):
-        """ Dictionary representation """
-        return {
-            "id": self.id.hex,
-            "type": self.type.name,
-            "size": self.size
-        }
+        """Dictionary representation"""
+        return {"id": self.id.hex, "type": self.type.name, "size": self.size}
 
     def neighbor_of_type(self, other_type):
         """
-            Returns all neighbors of a given type
+        Returns all neighbors of a given type
         """
         result = []
         for n in self.neighbors:
@@ -38,7 +36,7 @@ class Geoform:
         return result
 
     def merge(self, other):
-        """ Merge another Geoform into this one """
+        """Merge another Geoform into this one"""
         # add their hexes to mine
         self.hexes.update(other.hexes)
         self.size += len(other.hexes)
@@ -52,7 +50,7 @@ class Geoform:
         other.to_delete = True
 
     def is_geotype(self, geotype):
-        """ Is this geoform this type? """
+        """Is this geoform this type?"""
         return self.type is geotype
 
     def __eq__(self, other):

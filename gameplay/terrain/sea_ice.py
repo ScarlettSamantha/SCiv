@@ -1,3 +1,4 @@
+from typing import Any
 from gameplay.terrain._base_terrain import BaseTerrain
 
 
@@ -8,5 +9,5 @@ class SeaIce(BaseTerrain):
     _model = "assets/models/tiles/sea_ice.glb"
     _texture = "assets/models/tiles/grass2.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

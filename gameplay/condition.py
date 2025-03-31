@@ -8,7 +8,7 @@ class ConditionalTypes(Enum):
 
 
 class Condition:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         self._condition: Optional[Callable[..., bool]] = None
         self.params: Dict[str, Any] = kwargs
         self.required_params: List[str] = []
@@ -49,7 +49,7 @@ class Condition:
 
 
 class Conditions:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         self._conditions: List[Condition] = []
         self.conditional_type: ConditionalTypes = ConditionalTypes.AND
         self.condition_params: Dict[str, Any] = {}
@@ -98,6 +98,6 @@ class Conditions:
 
 
 class BuildCondition(Condition):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.required_params = ["tile", "improvement"]

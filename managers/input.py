@@ -32,9 +32,6 @@ class Input(Singleton, DirectObject):
         self.active = False
 
     def register(self):
-        """
-        Bind relevant mouse or keyboard events here.
-        """
         # Left-click
         self.accept("mouse1", self.pick_object)
 
@@ -46,7 +43,7 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
 
     def delay_activate(self, delay: int | float):
-        self.sequence = Sequence(Wait(delay), Func(self.activate))
+        self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore
         self.sequence.start()
 
     def de_activate(self):
@@ -57,11 +54,11 @@ class Input(Singleton, DirectObject):
         self.logger.info("Activating input raycaster.")
         self.active = True
 
-    def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
+    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any) -> None:
         from managers.world import World
 
         self.base = base
-        self.map = World.get_instance()
+        self.map = World.get_singleton_instance()
 
         return super().__setup__(*args, **kwargs)
 
@@ -111,7 +108,8 @@ class Input(Singleton, DirectObject):
 
     def on_escape(self):
         """
-        This method fires a message when the user presses the Escape key.
+        Method fires a message when the user presses the Escape key.
+
         You can handle this in your code by listening for
         'system.input.user.escaped' with an appropriate handler.
         """

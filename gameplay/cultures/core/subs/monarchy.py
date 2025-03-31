@@ -1,13 +1,13 @@
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Monarchy(BaseCoreSubtree):
     def __init__(self):
         super().__init__(
             key="core.culture.subtrees.monarchy",
-            name=_t("content.culture.subtrees.core.monarchy.name"),
-            description=_t("content.culture.subtrees.core.monarchy.description"),
+            name=t_("content.culture.subtrees.core.monarchy.name"),
+            description=t_("content.culture.subtrees.core.monarchy.description"),
         )
 
     def register_civics(self):

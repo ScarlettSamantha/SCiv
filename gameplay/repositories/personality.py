@@ -7,18 +7,14 @@ from system.pyload import PyLoad
 class PersonalityRepository:
     @classmethod
     def all(cls) -> List[Type[BasePersonality]]:
-        classes = PyLoad.load_classes(
-            "gameplay/personalities", base_classes=BasePersonality
-        )
+        classes = PyLoad.load_classes("gameplay/personalities", base_classes=BasePersonality)
         for key, _class in classes.items():
             if _class == BasePersonality:
                 del classes[key]
         return list(classes.values())
 
     @classmethod
-    def random(
-        cls, num: int = 1, unique: bool = False
-    ) -> Type[BasePersonality] | List[Type[BasePersonality]]:
+    def random(cls, num: int = 1, unique: bool = False) -> Type[BasePersonality] | List[Type[BasePersonality]]:
         _selected_personalities: List[Type[BasePersonality]] = []
 
         for _ in range(num):

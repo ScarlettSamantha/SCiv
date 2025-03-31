@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Anarchy(BaseCoreSubtree):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.culture.subtrees.anarchy",
-            name=_t("content.culture.subtrees.core.anarchy.name"),
-            description=_t("content.culture.subtrees.core.anarchy.description"),
+            name=t_("content.culture.subtrees.core.anarchy.name"),
+            description=t_("content.culture.subtrees.core.anarchy.description"),
             *args,
             **kwargs,
         )

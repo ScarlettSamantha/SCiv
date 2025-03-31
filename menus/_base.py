@@ -7,5 +7,5 @@ class BaseMenu(ShowBase):
         from managers.world import World
 
         self.frame = None
-        self.ui = ui.get_instance()
-        self.world = World.get_instance()
+        self.ui = ui.get_singleton_instance()
+        self.world = World.get_singleton_instance()

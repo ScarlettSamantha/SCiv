@@ -1,6 +1,5 @@
 from typing import Any, Callable, Dict, Optional
 from kivy.uix.dropdown import DropDown
-from kivy.lang import Builder
 from kivy.config import Config
 from menus.kivy.elements.button_value import ButtonValue
 from kivy.uix.gridlayout import GridLayout

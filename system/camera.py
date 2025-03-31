@@ -1,8 +1,10 @@
 from logging import Logger
 from math import cos, pi, sin
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 
 from direct.showbase.DirectObject import DirectObject
+from direct.task import Task
+from panda3d.core import LPoint3f, LVecBase3f, NodePath
 
 from mixins.singleton import Singleton
 
@@ -12,6 +14,7 @@ if TYPE_CHECKING:
 
 class Camera(Singleton, DirectObject):
     """
+
     Modified camera controller:
       - Left-drag => rotate around pivot (with a threshold)
       - Right-drag => pan/move
@@ -27,27 +30,27 @@ class Camera(Singleton, DirectObject):
         self.logger: Logger = self.base.logger.engine.getChild("camera")
 
         # Zoom parameters
-        self.zoom = 20.0
-        self.min_zoom = 2.0
-        self.max_zoom = 50.0
-        self.zoom_speed = 2.0
+        self.zoom: float = 20.0
+        self.min_zoom: float = 2.0
+        self.max_zoom: float = 50.0
+        self.zoom_speed: float = 2.0
 
         self.zoom_enabled: bool = True
         self.lock: bool = False
 
         # Optional pitch
-        self.pitch = 45.0  # Fixed pitch at 45 degrees
+        self.pitch: float = 45.0  # Fixed pitch at 45 degrees
 
         # Pivot rotation (yaw)
-        self.yaw = 0.0
+        self.yaw: float = 0.0
 
         # Pan speed (for WASD/arrow keys)
-        self.pan_speed = 20.0
+        self.pan_speed: float = 20.0
         # Rotation speed for Q/E (degrees/sec)
-        self.rotate_speed = 60.0
+        self.rotate_speed: float = 60.0
 
         # If you have a target NodePath to center on
-        self.target = None
+        self.target: Optional[NodePath] = None
 
         # Create pivot node
         self.pivot = self.base.render.attachNewNode("cameraPivot")
@@ -77,7 +80,7 @@ class Camera(Singleton, DirectObject):
         # Set up controls & add update task
         self.setup_controls()
 
-    def register(self):
+    def register(self) -> Literal[True]:
         self.base.taskMgr.add(self.update, "updateCivCameraTask")
         return True
 
@@ -89,22 +92,16 @@ class Camera(Singleton, DirectObject):
         self.zoom = 20.0
         self.update_camera_position()
 
-    def __setup__(self, *args, **kwargs):
+    def __setup__(self, *args: Any, **kwargs: Any):
         return super().__setup__(*args, **kwargs)
 
-    def getPos(self):
-        """Return the current position of the camera in world space."""
+    def getPos(self) -> LPoint3f:
         return self.base.camera.getPos(self.base.render)
 
-    def getHpr(self):
-        """Return the current orientation (heading, pitch, roll) of the camera."""
+    def getHpr(self) -> LVecBase3f:
         return self.base.camera.getHpr(self.base.render)
 
-    # -------------------------------------------------------------------------
-    #  Setup Controls
-    # -------------------------------------------------------------------------
     def setup_controls(self):
-        """Bind keys/mouse for panning, zooming, rotating, re-centering, etc."""
         # WASD / arrow keys for panning
         self.accept("arrow_up", self.set_key, ["up", True])
         self.accept("arrow_up-up", self.set_key, ["up", False])
@@ -157,7 +154,7 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
-    def set_key(self, key, value):
+    def set_key(self, key: str, value: Any):
         self.keys[key] = value
 
     def lock_camera(self):
@@ -184,9 +181,6 @@ class Camera(Singleton, DirectObject):
         self.logger.debug("Enabling zoom")
         self.zoom_enabled = True
 
-    # -------------------------------------------------------------------------
-    #  Zoom
-    # -------------------------------------------------------------------------
     def zoom_in(self):
         if not self.zoom_enabled:
             return
@@ -199,9 +193,6 @@ class Camera(Singleton, DirectObject):
         self.zoom = min(self.max_zoom, self.zoom + self.zoom_speed)
         self.update_camera_position()
 
-    # -------------------------------------------------------------------------
-    #  Camera Positioning
-    # -------------------------------------------------------------------------
     def update_camera_position(self):
         """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
         rad = self.pitch * (pi / 180.0)
@@ -211,21 +202,14 @@ class Camera(Singleton, DirectObject):
         self.pivot.setH(self.yaw)
         self.base.camera.lookAt(self.pivot)
 
-    # -------------------------------------------------------------------------
-    #  Pivot Position Helpers
-    # -------------------------------------------------------------------------
     def reset_pivot_position(self):
         """Set pivot to target or (0,0,0) if no target."""
-        if self.target:
+        if self.target is not None:
             self.pivot.setPos(self.target.getPos())
         else:
             self.pivot.setPos(0, 0, 0)
 
     def recenter(self):
-        """
-        Recenter camera pivot on target or (0,0,0),
-        and optionally reset yaw/zoom.
-        """
         from managers.game import PlayerManager
 
         center: Tuple[float, float, float] = (0, 0, 0)
@@ -241,7 +225,11 @@ class Camera(Singleton, DirectObject):
                 center = unit.tile.get_pos()
                 center = (center[0], center[1], 0)
         else:
-            center = self.target.getPos() if self.target else (0, 0, 0)
+            result = self.target.getPos() if self.target else (0, 0, 0)
+            if isinstance(result, LPoint3f):  # this is a workaround for the type hinting
+                center = (result[0], result[1], 0)
+            else:
+                center = (result[0], result[1], 0)
 
         self.pivot.setPos(center)
         self.base.camera.setHpr(0, self.pitch, 0)
@@ -249,16 +237,17 @@ class Camera(Singleton, DirectObject):
         self.zoom = 20.0
         self.update_camera_position()
 
-    # -------------------------------------------------------------------------
-    #  Mouse Drag
-    # -------------------------------------------------------------------------
     def start_left_drag(self):
         """Begin left-drag => rotating."""
         if not self.base.mouseWatcherNode.hasMouse():
             return
         self.left_dragging = True
-        md = self.base.win.getPointer(0)
-        self.last_mouse_pos = (md.getX(), md.getY())
+        if self.base.mouseWatcherNode.hasMouse():
+            md = self.base.mouseWatcherNode.getMouse()
+            x = md.getX() * self.base.win.getXSize()
+            y = md.getY() * self.base.win.getYSize()
+            self.last_mouse_pos = (x, y)
+            self.last_mouse_pos = (md.getX(), md.getY())
 
     def stop_left_drag(self):
         """Stop left-drag."""
@@ -269,17 +258,17 @@ class Camera(Singleton, DirectObject):
         if not self.base.mouseWatcherNode.hasMouse():
             return
         self.right_dragging = True
-        md = self.base.win.getPointer(0)
-        self.last_mouse_pos = (md.getX(), md.getY())
+        if self.base.mouseWatcherNode.hasMouse():
+            md = self.base.mouseWatcherNode.getMouse()
+            x = md.getX() * self.base.win.getXSize()
+            y = md.getY() * self.base.win.getYSize()
+            self.last_mouse_pos = (x, y)
+            self.last_mouse_pos = (md.getX(), md.getY())
 
     def stop_right_drag(self):
-        """Stop right-drag."""
         self.right_dragging = False
 
-    # -------------------------------------------------------------------------
-    #  Main Update
-    # -------------------------------------------------------------------------
-    def update(self, task):
+    def update(self, task: Task.Task) -> Literal[1]:
         """Per-frame update for panning with keys, Q/E rotation, and dragging."""
         if not self.active:
             return task.cont
@@ -309,12 +298,13 @@ class Camera(Singleton, DirectObject):
         if self.keys["rotate_left"]:
             self.yaw += self.rotate_speed * dt
             self.update_camera_position()
+
         if self.keys["rotate_right"]:
             self.yaw -= self.rotate_speed * dt
             self.update_camera_position()
 
         if self.base.mouseWatcherNode.hasMouse():
-            md = self.base.win.getPointer(0)
+            md = self.base.mouseWatcherNode.getMouse()
             x = md.getX()
             y = md.getY()
             delta_x = x - self.last_mouse_pos[0]
@@ -328,6 +318,7 @@ class Camera(Singleton, DirectObject):
                     self.update_camera_position()
                     # Update last position only after a valid rotation to avoid accumulating tiny deltas.
                     self.last_mouse_pos = (x, y)
+
             elif self.right_dragging:
                 pan_factor = 0.02  # Adjust sensitivity
                 move_x = (-delta_x * pan_factor) * cos(yaw_rad) - (delta_y * pan_factor) * sin(yaw_rad)
@@ -336,6 +327,7 @@ class Camera(Singleton, DirectObject):
                 self.pivot.setPos(x0 + move_x, y0 + move_y, z0)
                 self.update_camera_position()
                 self.last_mouse_pos = (x, y)
+
             else:
                 # Update last_mouse_pos when not dragging
                 self.last_mouse_pos = (x, y)

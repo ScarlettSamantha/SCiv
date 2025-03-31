@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 from managers.i18n import T_TranslationOrStr
 from mixins.callbacks import CallbacksMixin
@@ -16,8 +16,8 @@ class Civic(CallbacksMixin):
         name: T_TranslationOrStr,
         description: T_TranslationOrStr,
         _cost: int = 0,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         CallbacksMixin.__init__(self, *args, **kwargs)
 
@@ -102,8 +102,8 @@ class CultureSubtree:
         key: str,
         name: T_TranslationOrStr,
         description: T_TranslationOrStr,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         self.key: str = key
         self.name: T_TranslationOrStr = name
@@ -128,8 +128,8 @@ class CultureTree:
         key: str,
         name: T_TranslationOrStr,
         description: T_TranslationOrStr,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         self.key: str = key
         self.name: T_TranslationOrStr = name

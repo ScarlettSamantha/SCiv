@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class GuidanceSystems(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.guidance_systems",
-            _t("tech.guidance_systems.name"),
-            _t("tech.guidance_systems.description"),
+            t_("tech.guidance_systems.name"),
+            t_("tech.guidance_systems.description"),
             tech_points_required=20,
             *args,
             **kwargs,

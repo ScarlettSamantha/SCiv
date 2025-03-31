@@ -118,14 +118,14 @@ class UnitBaseClass(BaseEntity, ABC):
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
 
-        entity_manager: EntityManager = EntityManager.get_instance()
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
         entity_manager.register(entity=self, type=EntityType.UNIT, key=self.tag)
 
         if self.owner is not None:
             self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
 
-        Unit.get_instance().add_unit(self)
+        Unit.get_singleton_instance().add_unit(self)
 
     @overload
     def set_pos(self, pos: Tuple[float, float, float], maintain_z: bool = True) -> None: ...
@@ -156,7 +156,7 @@ class UnitBaseClass(BaseEntity, ABC):
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
 
-        EntityManager.get_instance().unregister(entity=self, type=EntityType.UNIT)
+        EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.UNIT)
 
     def spawn(self, ignore_constraints: bool = False) -> bool:
         """
@@ -348,7 +348,7 @@ class UnitBaseClass(BaseEntity, ABC):
             "can_pillage": self.can_pillage,
         }
 
-    def destroy(self, as_system: bool = False, *args, **kwargs) -> bool:
+    def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> bool:
         """Removes the unit from the scene and cleans up references."""
         if self.model:
             self.model.removeNode()  # Remove from the scene graph
@@ -381,7 +381,7 @@ class UnitBaseClass(BaseEntity, ABC):
     def get_unit_by_tag(cls, tag: str) -> Optional["UnitBaseClass"]:
         from managers.entity import EntityManager, EntityType
 
-        entity: UnitBaseClass | BaseEntity | None = EntityManager.get_instance().get(EntityType.UNIT, tag)
+        entity: UnitBaseClass | BaseEntity | None = EntityManager.get_singleton_instance().get(EntityType.UNIT, tag)
         if isinstance(entity, UnitBaseClass):
             return entity
         return None

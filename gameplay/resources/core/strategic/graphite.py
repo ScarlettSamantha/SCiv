@@ -8,13 +8,13 @@ from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Graphite(BaseStrategicResource):
     key: str = "resource.core.strategic.graphite"
-    name: T_TranslationOrStr = _t("content.resources.core.graphite.name")
-    description: T_TranslationOrStr = _t("content.resources.core.graphite.description")
+    name: T_TranslationOrStr = t_("content.resources.core.graphite.name")
+    description: T_TranslationOrStr = t_("content.resources.core.graphite.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_thorium.png"

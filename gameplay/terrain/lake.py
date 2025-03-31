@@ -1,3 +1,4 @@
+from typing import Any
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 from ._base_terrain import BaseTerrain, rgb
@@ -9,7 +10,7 @@ class Lake(BaseTerrain):
     _texture: T_TranslationOrStr = "assets/models/tiles/water_shallow.png"
     _fallback_color = rgb(0, 119, 255)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.fallback_color = self._fallback_color

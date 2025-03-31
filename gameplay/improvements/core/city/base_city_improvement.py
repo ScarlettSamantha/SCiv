@@ -1,8 +1,9 @@
+from typing import Any
 from gameplay.improvement import Improvement, ImprovementBuildTurnMode
 
 
 class BaseCityImprovement(Improvement):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.constructable_on_tile = False

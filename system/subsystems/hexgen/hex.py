@@ -1,26 +1,28 @@
-from typing import Optional, Type
 import uuid
-from system.subsystems.hexgen.edge import Edge
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type
+
 from gameplay.resource import BaseResource
-from system.subsystems.hexgen.constants import *
+from system.subsystems.hexgen.edge import Edge
 from system.subsystems.hexgen.enums import (
     Biome,
-    MapType,
-    HexType,
-    HexFeature,
-    HexSide,
-    Zones,
     Hemisphere,
     HexEdge,
+    HexSide,
+    HexType,
+    MapType,
+    Zones,
 )
+
+if TYPE_CHECKING:
+    from system.subsystems.hexgen.grid import Grid
 
 
 class Hex:
-    def __init__(self, grid, x, y, altitude):
-        self.x = x
-        self.y = y
-        self.altitude = altitude
-        self.grid = grid
+    def __init__(self, grid: "Grid", x: int, y: int, altitude: int):
+        self.x: int = x
+        self.y: int = y
+        self.altitude: float | int = altitude
+        self.grid: "Grid" = grid
 
         self.edge_east = None
         self.edge_west = None
@@ -29,7 +31,7 @@ class Hex:
         self.edge_north_west = None
         self.edge_south_west = None
 
-        self.gameplay_resource: Optional[Type[BaseResource]] = None
+        self.gameplay_resource: Optional[Type[BaseResource[Any]]] = None
 
         self.distance = 0  # distance in hexes to the coast. 0 if no coast
         self.moisture = 0
@@ -37,9 +39,9 @@ class Hex:
         self.territory = None
         self.marked = False  # marked by the grouping algorithm
 
-        self.bubble_cache = dict()
+        self.bubble_cache: Dict[Any, Any] = dict()
 
-        self.features = set()
+        self.features: Set[Any] = set()
 
         # geoform type
         self.geoform_type = None
@@ -66,7 +68,7 @@ class Hex:
     def add_gameplay_resource(self, resource: Type[BaseResource]) -> None:
         self.gameplay_resource = resource
 
-    def get_gameplay_resource(self) -> Type[BaseResource] | None:
+    def get_gameplay_resource(self) -> Type[BaseResource[Any]] | None:
         return self.gameplay_resource
 
     def has_feature(self, feature):
@@ -167,7 +169,7 @@ class Hex:
     #     )
 
     @property
-    def latitude_ratio(self):
+    def latitude_ratio(self) -> float:
         ratio = self.x / self.grid.size
         if ratio < 0.5:
             ratio /= 0.5
@@ -176,13 +178,13 @@ class Hex:
         return ratio
 
     @property
-    def hemisphere(self):
+    def hemisphere(self) -> Hemisphere:
         if self.x <= round(self.grid.size / 2):
             return Hemisphere.northern
         return Hemisphere.southern
 
     @property
-    def latitude(self):
+    def latitude(self) -> float:
         """Hex's current Latitude. Negative is south, positive is north"""
         ratio = self.x / self.grid.size
         if ratio < 0.5:  # north
@@ -191,7 +193,7 @@ class Hex:
             return ((ratio) / 0.5) * -90 + 90
 
     @property
-    def zone(self):
+    def zone(self) -> None | Zones:
         axial_tilt = abs(self.grid.params.get("axial_tilt"))
 
         # northern polar zone
@@ -220,7 +222,7 @@ class Hex:
             return Zones.antarctic_circle
 
     @property
-    def base_temperature(self):
+    def base_temperature(self) -> tuple[float, float]:
         """
         Computes the temperature of this hex. Takes into account the latitude (x-coord) and
         the altitude (higher is colder)
@@ -235,27 +237,27 @@ class Hex:
         # global avg temperature should be around ratio 0.4 and 0.6
 
         # part1 includes latitude only
-        part1 = (abs(min_temp) + (avg_temp + volitility)) * ratio + min_temp
+        part1: float = (abs(min_temp) + (avg_temp + volitility)) * ratio + min_temp
         # return (part1, part1)
         # print(base_temp, avg_temp, volitility, min_temp, ratio, part1)
         #       43         73          16         57
 
         # part2 includes altitude
-        factor = 7
+        factor: int = 7
         if self.is_water:
             factor = 8
-        part2 = abs(self.altitude - self.grid.sealevel) / factor
+        part2: float = abs(self.altitude - self.grid.sealevel) / factor
         return (round(part1, 2) - round(part2, 2), round(part1, 2) - round(part2, 2))
 
     @property
-    def temperature(self):
+    def temperature(self) -> tuple[float, float]:
         return (
             self.base_temperature[0] + self.wind_temp_effect[0],
             self.base_temperature[1] + self.wind_temp_effect[1],
         )
 
     @property
-    def biome(self):
+    def biome(self) -> Biome:
         """
         Computes the biome
         :return: Biome
@@ -296,7 +298,7 @@ class Hex:
         return Biome.lifeless
 
     @property
-    def max_size(self):
+    def max_size(self) -> int:
         return len(self.grid.grid) - 1
 
     @property
@@ -481,7 +483,7 @@ class Hex:
             return final
 
     @property
-    def is_land(self):
+    def is_land(self) -> bool:
         """
         Determines whether or not this is a land hex. (Altitude over sealevel)
         :return: Boolean
@@ -489,18 +491,18 @@ class Hex:
         return bool(self.altitude >= self.grid.sealevel)
 
     @property
-    def is_water(self):
+    def is_water(self) -> bool:
         return self.is_land is False
 
     @property
-    def type(self):
+    def type(self) -> HexType | HexType:
         if self.is_land:
             return HexType.land
 
         return HexType.ocean
 
     @property
-    def is_inland(self):
+    def is_inland(self) -> bool:
         if self.is_land is False:
             return False
         around = [
@@ -514,10 +516,10 @@ class Hex:
         return all(x.is_land for x in around)
 
     @property
-    def is_coast(self):
+    def is_coast(self) -> bool:
         return any(x.is_land for x in self.surrounding)
 
-    def decide_slope(self, one, two):
+    def decide_slope(self, one, two) -> tuple[Any, Any]:
         """Returns UP, DOWN tuple"""
         if one.altitude < two.altitude:
             return two, one
@@ -533,7 +535,7 @@ class Hex:
         return hash(self.__key())
 
     @property
-    def outer_edges(self):
+    def outer_edges(self) -> List[Any]:
         return [
             self.hex_north_east.edge_west,
             self.hex_north_west.edge_south_west,

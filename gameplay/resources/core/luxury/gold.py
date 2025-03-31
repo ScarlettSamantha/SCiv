@@ -6,13 +6,13 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Gold(BaseLuxuryResource):
     key: str = "resource.core.luxury.gold"
-    name: T_TranslationOrStr = _t("content.resources.core.gold.name")
-    description: T_TranslationOrStr = _t("content.resources.core.gold.description")
+    name: T_TranslationOrStr = t_("content.resources.core.gold.name")
+    description: T_TranslationOrStr = t_("content.resources.core.gold.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/bordered_gold.png"

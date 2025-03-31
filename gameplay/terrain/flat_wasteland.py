@@ -1,3 +1,5 @@
+from typing import Any
+
 from ._base_terrain import BaseTerrain
 
 
@@ -9,5 +11,5 @@ class FlatWasteland(BaseTerrain):
     _model = "assets/models/tiles/wasteland.glb"
     _texture = "assets/models/tiles/grass2.png"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

@@ -7,13 +7,13 @@ from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
 from gameplay.terrain.flat_scrubland import FlatScrubland
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Pigs(BaseBonusResource):
     key: str = "resource.core.bonus.pigs"
-    name: T_TranslationOrStr = _t("content.resources.core.pigs.name")
-    description: T_TranslationOrStr = _t("content.resources.core.pigs.description")
+    name: T_TranslationOrStr = t_("content.resources.core.pigs.name")
+    description: T_TranslationOrStr = t_("content.resources.core.pigs.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/hex_border_pigs.png"

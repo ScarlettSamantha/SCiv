@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 from gameplay.condition import Condition
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement, ImprovementBuildTurnMode
@@ -8,11 +8,11 @@ from gameplay.yields import Yields
 from managers.i18n import t_
 
 
-class granary(BaseCityImprovement):
+class Granary(BaseCityImprovement):
     name = t_("content.improvements.core.city.granary.name")
     description = t_("content.improvements.core.city.granary.description")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.amount_resource_needed = Yields(production=50)

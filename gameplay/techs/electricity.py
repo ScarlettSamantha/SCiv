@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Electricity(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.electricity",
-            _t("tech.electricity.name"),
-            _t("tech.electricity.description"),
+            t_("tech.electricity.name"),
+            t_("tech.electricity.description"),
             tech_points_required=20,
             *args,
             **kwargs,

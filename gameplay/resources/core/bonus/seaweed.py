@@ -7,13 +7,13 @@ from gameplay.terrain.coast import Coast
 from gameplay.terrain.sea import Sea
 from gameplay.terrain.sea_ice import SeaIce
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Seaweed(BaseBonusResource):
     key: str = "resource.core.bonus.seaweed"
-    name: T_TranslationOrStr = _t("content.resources.core.seaweed.name")
-    description: T_TranslationOrStr = _t("content.resources.core.seaweed.description")
+    name: T_TranslationOrStr = t_("content.resources.core.seaweed.name")
+    description: T_TranslationOrStr = t_("content.resources.core.seaweed.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_seaweed.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 30.0, Coast: 90.0, SeaIce: 0.0}

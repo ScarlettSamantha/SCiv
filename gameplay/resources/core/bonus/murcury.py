@@ -6,13 +6,13 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_jungle import FlatJungle
 from gameplay.terrain.flat_savanna import FlatSavanna
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Murcury(BaseBonusResource):
     key: str = "resource.core.bonus.murcury"
-    name: T_TranslationOrStr = _t("content.resources.core.murcury.name")
-    description: T_TranslationOrStr = _t("content.resources.core.murcury.description")
+    name: T_TranslationOrStr = t_("content.resources.core.murcury.name")
+    description: T_TranslationOrStr = t_("content.resources.core.murcury.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/bordered_murcury.png"

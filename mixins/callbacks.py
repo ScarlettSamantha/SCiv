@@ -17,7 +17,7 @@ class CallbacksMixin:
         return [cb["callback"] for cb in self.__callbacks[event]]
 
     def _declare_event(self, event: str) -> None:
-        LogManager.get_instance().engine.debug(msg=f"Declaring event: {event}")
+        LogManager.get_singleton_instance().engine.debug(msg=f"Declaring event: {event}")
         self.__callbacks[event] = []
 
     def _declare_events(self, events: List[str]) -> None:
@@ -40,7 +40,7 @@ class CallbacksMixin:
             *args: Any,
             **kwargs: Any,
         ) -> None:
-            LogManager.get_instance().engine.debug(f"Triggering callback: {item.__name__}")
+            LogManager.get_singleton_instance().engine.debug(f"Triggering callback: {item.__name__}")
             if item_kwargs is None:
                 item_kwargs = {}
             item(self, *args, **item_kwargs, **kwargs)
@@ -58,7 +58,9 @@ class CallbacksMixin:
             _trigger(cb_dict["callback"], item_kwargs=cb_dict.get("kwargs"), *args, **kwargs)
 
     def register_callback(self, event: str, callback: Callable[..., Any], **kwargs: Any) -> None:
-        LogManager.get_instance().engine.debug(f"Registering callback: {callback.__name__} for event: {event}")
+        LogManager.get_singleton_instance().engine.debug(
+            f"Registering callback: {callback.__name__} for event: {event}"
+        )
         if event not in self.__callbacks:
             self._declare_event(event)
         self.__callbacks[event].append({"callback": callback, "kwargs": kwargs if kwargs else None})

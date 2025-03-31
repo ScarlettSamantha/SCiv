@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from direct.showbase.DirectObject import DirectObject
 from kivy.uix.boxlayout import BoxLayout
@@ -7,7 +7,7 @@ from kivy.uix.gridlayout import GridLayout
 
 
 class ActionBar(BoxLayout, DirectObject):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         self.background_color = (0, 0, 0, 1)
         self.border = (1, 1, 1, 1)
         self.background_image = ""

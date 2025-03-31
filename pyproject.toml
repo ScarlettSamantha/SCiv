@@ -9,6 +9,24 @@ name = "SCiv"
 ignore = ["E501", "F841", "E721"]
 line-length = 120
 select = ["E", "W", "F"]
+exclude = [
+  "**/stubs", "**/.pyenv", "**/site-packages", "**/*.pyi"
+]
+
+[tool.pydocstyle]
+add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
+ignore = ["system/subsystems/"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+exclude = ["**/stubs", "**/site-packages", "**/*.pyi", "system/subsystems/hexgen/"]
+pythonPlatform = "Linux"
+
+[tool.pyright.diagnosticSeverityOverrides]
+reportUnknownMemberType = "none"
+
+[tool.bandit]
+skips = ["B311", "B301", "B101", "B403"]
 
 [tool.semantic_release]
 changelog_function = "changelog.py:openciv_changelog"

@@ -7,14 +7,14 @@ from gameplay.terrain.coast import Coast
 from gameplay.terrain.sea import Sea
 from gameplay.terrain.sea_ice import SeaIce
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Fish(BaseBonusResource):
     key: str = "resource.core.bonus.fish"
-    name: T_TranslationOrStr = _t("content.resources.core.fish.name")
+    name: T_TranslationOrStr = t_("content.resources.core.fish.name")
     _color = (1.0, 0.0, 1.0)
-    description: T_TranslationOrStr = _t("content.resources.core.fish.description")
+    description: T_TranslationOrStr = t_("content.resources.core.fish.description")
     icon: str = "assets/icons/resources/core/bonus/bordered_fish.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 50.0, Coast: 90.0, SeaIce: 0.0}
     spawn_amount = 5.0

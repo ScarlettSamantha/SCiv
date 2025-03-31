@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Mathematics(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.mathematics",
-            _t("tech.mathematics.name"),
-            _t("tech.mathematics.description"),
+            t_("tech.mathematics.name"),
+            t_("tech.mathematics.description"),
             tech_points_required=20,
             *args,
             **kwargs,

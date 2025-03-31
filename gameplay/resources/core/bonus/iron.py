@@ -9,13 +9,13 @@ from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Iron(BaseBonusResource):
     key: str = "resource.core.bonus.iron"
-    name: T_TranslationOrStr = _t("content.resources.core.iron.name")
-    description: T_TranslationOrStr = _t("content.resources.core.iron.description")
+    name: T_TranslationOrStr = t_("content.resources.core.iron.name")
+    description: T_TranslationOrStr = t_("content.resources.core.iron.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_iron.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {

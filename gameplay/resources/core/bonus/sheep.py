@@ -6,13 +6,13 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_scrubland import FlatScrubland
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Sheep(BaseBonusResource):
     key: str = "resource.core.bonus.sheep"
-    name: T_TranslationOrStr = _t("content.resources.core.sheep.name")
-    description: T_TranslationOrStr = _t("content.resources.core.sheep.description")
+    name: T_TranslationOrStr = t_("content.resources.core.sheep.name")
+    description: T_TranslationOrStr = t_("content.resources.core.sheep.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/bordered_sheep.png"

@@ -79,7 +79,7 @@ class Turn(Singleton):
             _timer_world = datetime.now()
             self.logger.info("Processing world turn changes.")
             self.turn_stage = TurnStage.TURN_WORLD
-            World.get_instance().on_turn_end(self.turn)  # World manager will forward the signal to all tiles
+            World.get_singleton_instance().on_turn_end(self.turn)  # World manager will forward the signal to all tiles
             self.logger.debug(
                 f"Turn {self.turn} processing for world took: {round((datetime.now() - _timer_world).total_seconds() * 1000, 4)} miliseconds."
             )
@@ -112,7 +112,7 @@ class Turn(Singleton):
             self.turn_stage = TurnStage.TURN_UNITS
 
             def restore_all_movement_points():
-                entity_manager: EntityManager = EntityManager.get_instance()
+                entity_manager: EntityManager = EntityManager.get_singleton_instance()
                 for _, entity in entity_manager.get_all_refs(EntityType.UNIT).items():
                     entity: weakref.ReferenceType["BaseEntity"] = entity
 

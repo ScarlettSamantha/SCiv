@@ -8,13 +8,13 @@ from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_tundra import HillsTundra
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Marble(BaseBonusResource):
     key: str = "resource.core.bonus.marble"
-    name: T_TranslationOrStr = _t("content.resources.core.marble.name")
-    description: T_TranslationOrStr = _t("content.resources.core.marble.description")
+    name: T_TranslationOrStr = t_("content.resources.core.marble.name")
+    description: T_TranslationOrStr = t_("content.resources.core.marble.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_marble.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND

@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Refining(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.refining",
-            _t("tech.refining.name"),
-            _t("tech.refining.description"),
+            t_("tech.refining.name"),
+            t_("tech.refining.description"),
             tech_points_required=20,
             *args,
             **kwargs,

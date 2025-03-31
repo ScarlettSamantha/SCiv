@@ -6,8 +6,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties
 
-from system.camera import Camera
 from managers.entity import EntityManager
+from system.camera import Camera
 
 if TYPE_CHECKING:
     from direct.showbase.ShowBase import ShowBase
@@ -16,16 +16,16 @@ if TYPE_CHECKING:
 
 
 class StatsPanel(FloatLayout):
-    def __init__(self, base: "SCIV | ShowBase", **kwargs):
+    def __init__(self, base: "SCIV | ShowBase", **kwargs: Any):
         super().__init__(**kwargs)
         self.base: "SCIV | ShowBase" = base
-        self.camera: Camera = Camera.get_instance()
+        self.camera: Camera = Camera.get_singleton_instance()
 
         self.frame: Optional[FloatLayout] = None
         self.label: Optional[Label] = None
         self.rect: Optional[Rectangle] = None
 
-        self.entity_manager: EntityManager = EntityManager.get_instance()
+        self.entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
         # These are just for type hinting
         self.window: "GraphicsWindow" = self.base.win

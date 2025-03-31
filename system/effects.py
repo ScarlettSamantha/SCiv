@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC
 from enum import Enum
-from typing import TYPE_CHECKING, Callable, Dict, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 from gameplay.yields import Yields
 from managers.entity import EntityType
@@ -119,7 +119,7 @@ class Effects:
     def unregister_from_entity_manager(self, effect: "Effect") -> None:
         from managers.entity import EntityManager
 
-        EntityManager.get_instance().unregister(EntityType.EFFECT, effect)
+        EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, effect)
 
     def get_effect(self, tag: str) -> "Effect":
         return self._effects[tag]
@@ -236,7 +236,7 @@ class Effect(BaseEntity, ABC):
     activate_on_add: bool = True
     effect_types: Tuple[EffectType] = tuple()
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self.id: str = uuid.uuid4().hex
@@ -274,13 +274,13 @@ class Effect(BaseEntity, ABC):
         self.id = uuid.uuid4().hex
         self.tag = self.generate_tag()
 
-        EntityManager.get_instance().register(EntityType.EFFECT, self, self.id)
+        EntityManager.get_singleton_instance().register(EntityType.EFFECT, self, self.id)
         self.is_registered = True
 
     def unregister(self):
         from managers.entity import EntityManager
 
-        EntityManager.get_instance().unregister(EntityType.EFFECT, self)
+        EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, self)
         self.is_registered = False
 
     def generate_tag(self) -> str:

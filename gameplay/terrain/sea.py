@@ -1,3 +1,4 @@
+from typing import Any
 from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr
 
@@ -10,7 +11,7 @@ class Sea(BaseTerrain):
     _texture: T_TranslationOrStr = "assets/models/tiles/town.png"
     _fallback_color = rgb(0, 119, 255)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.name = "world.terrain.sea_water"

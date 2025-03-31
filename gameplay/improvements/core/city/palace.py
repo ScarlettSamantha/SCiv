@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
 from gameplay.resources.core.basic._base import BasicBaseResource
@@ -13,7 +13,7 @@ class Palace(BaseCityImprovement):
     placeable_on_city = True
     placeable_on_condition = True
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.amount_resource_needed = Yields(production=50)

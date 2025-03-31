@@ -2,13 +2,13 @@ from typing import Dict, Type
 
 from gameplay.resources.core.mechanics.mechanic_resource import MechanicBaseResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from managers.i18n import T_TranslationOrStr, _t
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Revolt(MechanicBaseResource):
     key: str = "resource.core.mechanic.revolt"
-    name: T_TranslationOrStr = _t("content.resources.core.revolt.name")
-    description: T_TranslationOrStr = _t("content.resources.core.revolt.description")
+    name: T_TranslationOrStr = t_("content.resources.core.revolt.name")
+    description: T_TranslationOrStr = t_("content.resources.core.revolt.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 

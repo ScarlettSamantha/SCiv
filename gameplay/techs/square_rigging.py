@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.tech import Tech
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class SquareRigging(Tech):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             "core.square_rigging",
-            _t("tech.square_rigging.name"),
-            _t("tech.square_rigging.description"),
+            t_("tech.square_rigging.name"),
+            t_("tech.square_rigging.description"),
             tech_points_required=20,
             *args,
             **kwargs,

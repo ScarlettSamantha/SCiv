@@ -1,13 +1,15 @@
+from typing import Any
+
 from gameplay.age import Age
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Modern(Age):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="ancient",
-            name=_t("content.ages.core.modern.name"),
-            description=_t("content.ages.core.modern.description"),
+            name=t_("content.ages.core.modern.name"),
+            description=t_("content.ages.core.modern.description"),
             color=(0, 255, 0, 0),
             *args,
             **kwargs,

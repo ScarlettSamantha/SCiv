@@ -42,7 +42,7 @@ class TopBar(AnchorLayout, DirectObject):
     def update(self):
         try:
             player: Player = PlayerManager.session_player()
-            turn: int = Turn.get_instance().turn
+            turn: int = Turn.get_singleton_instance().turn
         except InvalidPregameCondition:  # this happens when a game is being loaded
             self.gold_label.text = "Gold: 0"  # type: ignore
             self.faith_label.text = "Faith: 0"  # type: ignore

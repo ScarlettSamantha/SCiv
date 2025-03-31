@@ -64,12 +64,12 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.build_footer()
 
     def get_save_games(self) -> List[str]:
-        save_game_session: List[str] = EntityManager.get_instance().get_all_session()
+        save_game_session: List[str] = EntityManager.get_singleton_instance().get_all_session()
 
         return save_game_session
 
     def get_save_game(self, name: str) -> Dict[str, Any] | None:
-        return EntityManager.get_instance().get_session_data(name)
+        return EntityManager.get_singleton_instance().get_session_data(name)
 
     def build_left_scroll_view(self):
         # Give the left scroll panel a size_hint_x so it occupies the left portion

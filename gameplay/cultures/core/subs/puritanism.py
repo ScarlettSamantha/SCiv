@@ -1,13 +1,13 @@
 from gameplay.cultures.core.subs._base import BaseCoreSubtree
-from managers.i18n import _t
+from managers.i18n import t_
 
 
 class Puritanism(BaseCoreSubtree):
     def __init__(self):
         super().__init__(
             key="core.culture.subtrees.puritanism",
-            name=_t("content.culture.subtrees.core.puritanism.name"),
-            description=_t("content.culture.subtrees.core.puritanism.description"),
+            name=t_("content.culture.subtrees.core.puritanism.name"),
+            description=t_("content.culture.subtrees.core.puritanism.description"),
         )
 
     def register_civics(self):

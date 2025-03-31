@@ -1,4 +1,5 @@
 # Lake class
+from typing import Any
 from gameplay.improvements.core.resources.mine import Mine
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
@@ -11,7 +12,7 @@ class Lake(BaseTerrain):
     _texture: T_TranslationOrStr = "assets/models/tiles/sea_water.png"
     _fallback_color = rgb(0, 119, 255)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.fallback_color = self._fallback_color
