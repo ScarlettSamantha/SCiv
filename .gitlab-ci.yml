@@ -40,7 +40,7 @@ pyright-diff-check:
     - pip install pyright
     - git fetch origin $compare_branch
     - |
-      changed_files=$(git diff --name-only origin/$compare_branch...HEAD -- '*.py')
+      changed_files=$(git diff --diff-filter=ACMR --name-only origin/$compare_branch...HEAD -- '*.py')
       if [ -n "$changed_files" ]; then
         echo "Changed Python files:"
         echo "$changed_files"
