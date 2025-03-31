@@ -1,14 +1,14 @@
-from typing import Generic, Optional, TypeVar
+from typing import Optional, TypeVar
 
 TBaseManager = TypeVar("TBaseManager", bound="BaseManager")
 
 
-class BaseManager(Generic[TBaseManager]):
-    def __init__(self, parent: Optional[TBaseManager] = None):
-        self._parent: Optional[TBaseManager] = parent
+class BaseManager:
+    def __init__(self, parent: Optional["BaseManager"] = None):
+        self._parent: Optional[BaseManager] = parent
 
-    def getParent(self) -> Optional[TBaseManager]:
+    def getParent(self) -> Optional["BaseManager"]:
         return self._parent
 
-    def setParent(self, parent: TBaseManager) -> None:
+    def setParent(self, parent: "BaseManager") -> None:
         self._parent = parent

@@ -22,8 +22,8 @@ if TYPE_CHECKING:
 
 
 class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
-    def __init__(self, base: "SCIV", auto_dismiss=False, **kwargs):
-        super().__init__(
+    def __init__(self, base: "SCIV", auto_dismiss: bool = False, **kwargs: Any):
+        super().__init__(  # type: ignore
             title="Save Game",
             base=base,
             auto_dismiss=auto_dismiss,
@@ -55,7 +55,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.footer_cancel_button: Optional[ButtonValue] = None
 
         self.build()
-        self.add_widget(self.main_layout)
+        self.add_widget(self.main_layout)  # type: ignore
 
     def build(self):
         self.build_left_scroll_view()
@@ -74,7 +74,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
     def build_left_scroll_view(self):
         self.scroll_view = ClippingScrollList(size_hint=(0.6, 0.95), do_scroll_x=False, do_scroll_y=True)
 
-        for i, save_game in enumerate(self.get_save_games()):
+        for _, save_game in enumerate(self.get_save_games()):
             item_button = ListItem(
                 text=save_game,
                 value=save_game,
@@ -86,7 +86,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
             item_button.bind(on_press=self.on_press)
             self.scroll_view.add_widget(item_button)
 
-        self.main_layout.add_widget(self.scroll_view)
+        self.main_layout.add_widget(self.scroll_view)  # type: ignore
 
     def rebuild(self):
         self.rebuild_left_scroll_view()
@@ -113,7 +113,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.scroll_view.clear_widgets()
 
         # Gather save game items with datetime.
-        save_games_with_dt: List[tuple[datetime, str, Dict]] = []
+        save_games_with_dt: List[tuple[datetime, str, Dict[Any, Any]]] = []
         for save_game in self.get_save_games():
             save_game_data = self.get_save_game(save_game)
             if save_game_data is None:
@@ -138,7 +138,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
             item_button.bind(on_press=self.on_press)
             self.scroll_view.add_widget(item_button)
 
-    def rebuild_label(self, *args, **kwargs):
+    def rebuild_label(self, *args: Any, **kwargs: Any):
         if self.name_input_label is None or self.name_input is None:
             return
 
@@ -157,7 +157,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
 
         self.rebuild_label()
 
-    def on_press(self, instance):
+    def on_press(self, instance: ListItem):
         instance.background_color = (1, 1, 1, 0.5)
 
     def select_item(self, item_value: str):
@@ -173,8 +173,8 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         # Example labels
         self.title_label = Label(text="", size_hint=(1, None), height=40, font_size="18sp")
 
-        self.details_layout.add_widget(self.title_label)
-        self.main_layout.add_widget(self.details_layout)
+        self.details_layout.add_widget(self.title_label)  # type: ignore
+        self.main_layout.add_widget(self.details_layout)  # type: ignore
 
     def build_save_name_input(self):
         self.name_input_container = GridLayout(cols=2, size_hint=(0.6, None), height=40)
@@ -182,41 +182,41 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.name_input_label = Label(text="Save Name:", size_hint=(0.2, None), height=40, halign="left")
 
         self.name_input = StickyTextInput(text="?", size_hint=(0.75, None), height=40)
-        self.name_input.bind(on_press=self.on_name_input_press)
-        self.name_input.bind(on_complete=self.rebuild_label)
-        self.name_input.bind(on_text_validate=self.rebuild_label)
+        self.name_input.bind(on_press=self.on_name_input_press)  # type: ignore
+        self.name_input.bind(on_complete=self.rebuild_label)  # type: ignore
+        self.name_input.bind(on_text_validate=self.rebuild_label)  # type: ignore
 
-        self.name_input_container.add_widget(self.name_input_label)
-        self.name_input_container.add_widget(self.name_input)
+        self.name_input_container.add_widget(self.name_input_label)  # type: ignore
+        self.name_input_container.add_widget(self.name_input)  # type: ignore
 
         self.spacer = Label(size_hint=(0.4, None), height=40)
 
-        self.main_layout.add_widget(self.name_input_container)
-        self.main_layout.add_widget(self.spacer)
+        self.main_layout.add_widget(self.name_input_container)  # type: ignore
+        self.main_layout.add_widget(self.spacer)  # type: ignore
 
     def build_footer(self):
         self.footer_save_button = ButtonValue(text="Save", size_hint=(1, None), height=50)
-        self.footer_save_button.bind(on_release=self.on_save_game)
+        self.footer_save_button.bind(on_release=self.on_save_game)  # type: ignore
 
         self.footer_cancel_button = ButtonValue(text="Cancel", size_hint=(0.35, None), height=50)
-        self.footer_cancel_button.bind(on_release=self.on_cancel)
+        self.footer_cancel_button.bind(on_release=self.on_cancel)  # type: ignore
 
-        self.main_layout.add_widget(self.footer_save_button)
-        self.main_layout.add_widget(self.footer_cancel_button)
+        self.main_layout.add_widget(self.footer_save_button)  # type: ignore
+        self.main_layout.add_widget(self.footer_cancel_button)  # type: ignore
 
-    def on_save_game(self, instance):
+    def on_save_game(self, _):
         if self.name_input is None:
             return
         MessengerGlobal.messenger.send("ui.request.save_game", [self.name_input.text])
 
-        Clock.schedule_once(lambda dt: self.rebuild(), 2)  # 2 second delay to give the disk time to write
+        Clock.schedule_once(lambda dt: self.rebuild(), 2)  # type: ignore # 2 second delay to give the disk time to write
 
-    def on_name_input_press(self, instance):
+    def on_name_input_press(self, _):
         if self.name_input is None:
             return
         self.name_input.focus = True
 
-    def on_cancel(self, instance):
+    def on_cancel(self, _):
         self.close_popup()
 
     def rebuild_label_task(self, task: Task):
@@ -225,7 +225,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
 
     def open_popup(self):
         self.rebuild()
-        self.open()
+        self.open()  # type: ignore
         self.register_non_collidable(self)
         self.accept("escape", self.close_popup)
         MessengerGlobal.messenger.send("system.input.disable_zoom")
@@ -234,7 +234,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.addTask(self.rebuild_label_task, "rebuild_label", delay=2)
 
     def close_popup(self):
-        self.dismiss()
+        self.dismiss()  # type: ignore
         self.unregister_non_collidable(self)
         self.ignore("escape")
         MessengerGlobal.messenger.send("system.input.camera_unlock")  # unlock first

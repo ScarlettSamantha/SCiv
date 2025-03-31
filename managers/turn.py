@@ -2,7 +2,7 @@ import weakref
 from datetime import datetime
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from direct.showbase.MessengerGlobal import messenger
 
@@ -41,9 +41,9 @@ class Turn(Singleton):
         self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
         self.turn_stage: TurnStage = TurnStage.NO_TURN_CHANGE
 
-    def __setup__(self, base, *args, **kwargs):
+    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
         self.base: "SCIV" = base
-        self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
+        self.logger: Logger = self.base.get_child_logger("manager.turn")
         return super().__setup__(*args, **kwargs)
 
     def register(self):

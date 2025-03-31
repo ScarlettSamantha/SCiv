@@ -4,7 +4,7 @@ from logging import Logger
 import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import load_prc_file
+from panda3d.core import load_prc_file  # type: ignore
 
 from helpers.cache import Cache
 from managers.config import ConfigManager
@@ -113,6 +113,9 @@ class SCIV(ShowBase):
 
     def get_base_path(self) -> pathlib.Path:
         return self.base_path
+
+    def get_child_logger(self, name: str) -> Logger:
+        return self.logger.engine.getChild(name)
 
 
 if __name__ == "__main__":

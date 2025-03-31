@@ -20,12 +20,12 @@ class AssetManager(Singleton):
     _logger: Optional[Logger] = None
 
     def __setup__(self):
-        if self._logger is None and self.base is not None and self.base.logger is not None:
+        if self._logger is None and self.base is not None:
             self._logger = self.base.logger.engine.getChild("manager.asset")
 
     @classmethod
     def logger(cls) -> Logger:
-        if cls._logger is None and cls.base is not None and cls.base.logger is not None:
+        if cls._logger is None and cls.base is not None:
             cls._logger = cls.base.logger.engine.getChild("manager.asset")
 
         if cls._logger is None:  # mostly a sanity check and to stop pyright/ruff from complaining.
@@ -75,14 +75,14 @@ class AssetManager(Singleton):
 
         if use_cache and cache_key in cls.model_cache:
             # Return a deep copy of the cached model to ensure independent modification
-            return cls.model_cache[cache_key].copyTo(NodePath())
+            return cls.model_cache[cache_key].copyTo(NodePath())  # type: ignore
 
         cls.logger().debug(f"Loading model {path}")
 
         if cls.base is None:
             raise ValueError("Base not set for AssetManager")
 
-        model: NodePath = cls.base.loader.load_model(path)
+        model: NodePath | None = cls.base.loader.load_model(path)
 
         if model is None:
             raise ValueError(f"Failed to load model from {path}")
@@ -99,26 +99,25 @@ class AssetManager(Singleton):
         cache_key: str = cls._calculate_cache_key(path)
 
         if use_cache and cache_key in cls.texture_cache:
-            texture = cls.texture_cache[cache_key]
+            texture: Texture = cls.texture_cache[cache_key]
         else:
             cls.logger().debug(f"Loading image {path}")
             if cls.base is None:
                 raise ValueError("Base not set for AssetManager")
 
-            texture = cls.base.loader.load_texture(path)
-
-            if texture is None:
-                raise ValueError(f"Failed to load texture from {path}")
+            texture: Texture = cls.base.loader.load_texture(path)
 
             if use_cache:
                 cls.texture_cache[cache_key] = texture
 
         # Create a new OnscreenImage instance with the cached texture
-        image = OnscreenImage(image=texture)
+        image = OnscreenImage(image=texture)  # type: ignore
 
         if resize:
-            image.setScale(
-                resize[0] / image.getTexture().getOrigFileXSize(), 1, resize[1] / image.getTexture().getOrigFileYSize()
+            image.setScale(  # type: ignore
+                resize[0] / image.getTexture().getOrigFileXSize(),  # type: ignore
+                1,
+                resize[1] / image.getTexture().getOrigFileYSize(),  # type: ignore
             )
 
         return image

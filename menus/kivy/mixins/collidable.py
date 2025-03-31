@@ -1,5 +1,9 @@
 from time import time
-from typing import TYPE_CHECKING, Dict, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
+
+from direct.task.Task import Task
+from kivy.uix.layout import Layout
+from kivy.uix.widget import Widget
 
 from gameplay.city import messenger
 from managers.input import Input
@@ -9,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class CollisionPreventionMixin:
-    non_collidable_ui = []
+    non_collidable_ui: List[Widget] = []
     # Cache mapping element -> (ui_x, ui_y, ui_right, ui_top)
     ui_geometry_cache: Dict[object, Tuple[float, float, float, float]] = {}
     has_tracking_enabled: bool = False
@@ -41,16 +45,16 @@ class CollisionPreventionMixin:
     def enable_tracking(self):
         self._base.taskMgr.add(self.track_mouse_movement, "TrackMouseMovement", delay=self.tick_rate)
 
-    def track_mouse_movement(self, task):
-        if self._base.mouseWatcherNode.hasMouse():  # Check if the mouse is detected
-            mouse_pos = self._base.mouseWatcherNode.getMouse()
+    def track_mouse_movement(self, task: Task):
+        if self._base.mouseWatcherNode.hasMouse():  # type: ignore # Check if the mouse is detected
+            mouse_pos = self._base.mouseWatcherNode.getMouse()  # type: ignore
             # Convert Panda3D mouse coords (-1 to 1) to screen space
-            screen_x = (mouse_pos.getX() + 1) / 2 * self._base.win.getXSize()
-            screen_y = (1 - mouse_pos.getY()) / 2 * self._base.win.getYSize()
-            self.on_mouse_move(screen_x, screen_y)  # Call mouse move handler
+            screen_x: int = (mouse_pos.getX() + 1) / 2 * self._base.win.getXSize()  # type: ignore
+            screen_y: int = (1 - mouse_pos.getY()) / 2 * self._base.win.getYSize()  # type: ignore
+            self.on_mouse_move(screen_x, screen_y)  # type: ignore # Call mouse move handler
         return task.cont  # Keep running this task every frame
 
-    def _update_ui_geometry_cache_task(self, task):
+    def _update_ui_geometry_cache_task(self, task: Task):
         self.update_ui_geometry_cache()
         return task.again  # Schedule the next update
 
@@ -64,28 +68,28 @@ class CollisionPreventionMixin:
             if not parent:
                 continue  # Skip orphaned elements
             # Calculate real width and height, handling size_hint if necessary
-            real_width = element.size_hint_x * parent.width if element.size_hint_x else element.width
-            real_height = element.size_hint_y * parent.height if element.size_hint_y else element.height
+            real_width = int(element.size_hint_x * parent.width if element.size_hint_x else element.width)  # type: ignore
+            real_height = int(element.size_hint_y * parent.height if element.size_hint_y else element.height)  # type: ignore
             # Convert to absolute screen-space position
-            ui_x, ui_y = element.to_window(element.x, element.y)
-            ui_right = ui_x + real_width
-            ui_top = ui_y + real_height
+            ui_x, ui_y = element.to_window(element.x, element.y)  # type: ignore
+            ui_right: int = int(ui_x + real_width)  # type: ignore
+            ui_top: int = int(ui_y + real_height)  # type: ignore
             self.ui_geometry_cache[element] = (ui_x, ui_y, ui_right, ui_top)
 
     def force_update_ui_geometry(self):
         """Manually forces an update of the UI geometry cache."""
         self.update_ui_geometry_cache()
 
-    def on_mouse_move(self, x, y):
+    def on_mouse_move(self, x: int | float, y: int | float):
         # Flip Y-axis to match Kivy's coordinate system
-        kivy_window_height = self._base.win.getYSize()
-        y = kivy_window_height - y
+        kivy_window_height: int = self._base.win.getYSize()  # type: ignore
+        _y: int = int(kivy_window_height - y)  # type: ignore
 
         inside_ui = False
         # Use cached geometry if available
-        for element, (ui_x, ui_y, ui_right, ui_top) in self.ui_geometry_cache.items():
+        for _, (ui_x, ui_y, ui_right, ui_top) in self.ui_geometry_cache.items():
             # Check if the mouse is inside the UI element
-            if ui_x <= x <= ui_right and ui_y <= y <= ui_top:
+            if ui_x <= x <= ui_right and ui_y <= _y <= ui_top:
                 inside_ui = True
                 break  # Stop checking after first detected collision
 
@@ -98,14 +102,14 @@ class CollisionPreventionMixin:
         elif not inside_ui and self.in_collision_with_ui:
             self._set_input_state(raycaster=True, zoom_disabled=not self.disable_zoom)
 
-    def register_non_collidable(self, element):
+    def register_non_collidable(self, element: Widget | Layout):
         """Adds a UI element to the list of non-collidable UI elements."""
         if element not in self.non_collidable_ui:
             self.non_collidable_ui.append(element)
             # Optionally update its cache immediately
             self.force_update_ui_geometry()
 
-    def unregister_non_collidable(self, element):
+    def unregister_non_collidable(self, element: Widget):
         """Removes a UI element from the list of non-collidable UI elements."""
         if element in self.non_collidable_ui:
             self.non_collidable_ui.remove(element)

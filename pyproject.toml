@@ -20,10 +20,9 @@ ignore = ["system/subsystems/"]
 [tool.pyright]
 typeCheckingMode = "strict"
 exclude = ["**/stubs", "**/site-packages", "**/*.pyi", "system/subsystems/hexgen/"]
+stubPath = "./typings"
 pythonPlatform = "Linux"
 
-[tool.pyright.diagnosticSeverityOverrides]
-reportUnknownMemberType = "none"
 
 [tool.bandit]
 skips = ["B311", "B301", "B101", "B403"]

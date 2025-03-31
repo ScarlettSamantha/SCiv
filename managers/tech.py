@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List
+from typing import Any, List
 
 from gameplay.tech import Tech
 from managers.base import BaseManager
@@ -8,7 +8,7 @@ from system.pyload import PyLoad
 
 
 class TechManager(BaseManager, CallbacksMixin):
-    def __init__(self, technology_folders: List = [], *args, **kwargs):
+    def __init__(self, technology_folders: List[str] = [], *args: Any, **kwargs: Any):
         BaseManager.__init__(self, *args, **kwargs)
         CallbacksMixin.__init__(self)
 
@@ -46,8 +46,8 @@ class TechManager(BaseManager, CallbacksMixin):
         self._declare_event("on_science_added")
         self._declare_event("on_science_removed")
 
-    def process_folders(self, folders: List):
-        def process_folder(folder):
+    def process_folders(self, folders: List[str]):
+        def process_folder(folder: str):
             classes = PyLoad.load_classes(folder)
             for _class in classes:
                 if not isinstance(_class, Tech):

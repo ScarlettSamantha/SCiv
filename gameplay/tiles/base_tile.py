@@ -229,10 +229,10 @@ class BaseTile(BaseEntity):
             raise AssertionError("Tile icon group not created.")
 
         self.mini_icons_card = NodePath("mini_icons_card")
-        self.mini_icons_card.reparentTo(self.tile_icon_group)
+        self.mini_icons_card.reparentTo(self.tile_icon_group)  # type: ignore
 
         self.text_card = NodePath("text_card")
-        self.text_card.reparentTo(self.tile_icon_group)
+        self.text_card.reparentTo(self.tile_icon_group)  # type: ignore
 
         self.rerender()
 
@@ -302,7 +302,7 @@ class BaseTile(BaseEntity):
         Remove the main texture icon from the tile.
         """
         if self.tile_icon_group is not None:
-            self.tile_icon_group.removeNode()
+            self.tile_icon_group.removeNode()  # type: ignore
             self.tile_icon_group = None
             self._showing_large_icons = False
 
@@ -311,11 +311,11 @@ class BaseTile(BaseEntity):
         Remove all small icons and text overlays from the tile.
         """
         if self.mini_icons_card is not None:
-            self.mini_icons_card.removeNode()
+            self.mini_icons_card.removeNode()  # type: ignore
             self.mini_icons_card = None
             self._showing_small_icons = False
         if self.text_card is not None:
-            self.text_card.removeNode()
+            self.text_card.removeNode()  # type: ignore
             self.text_card = None
 
     def clear_all_icons(self) -> None:
@@ -327,15 +327,15 @@ class BaseTile(BaseEntity):
 
     def create_root_ui_node(self) -> None:
         self.texture_card = CardMaker(f"resource_icon_{self.id}")
-        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)
+        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # type: ignore
 
         self.city_name_group = NodePath("city_name_group")
-        self.city_name_group.reparentTo(self.models[0])
-        self.city_name_group.setCollideMask(BitMask32.bit(0))
+        self.city_name_group.reparentTo(self.models[0])  # type: ignore
+        self.city_name_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
         self.tile_icon_group = NodePath("tile_icon_group")
-        self.tile_icon_group.reparentTo(self.models[0])
-        self.tile_icon_group.setCollideMask(BitMask32.bit(0))
+        self.tile_icon_group.reparentTo(self.models[0])  # type: ignore
+        self.tile_icon_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
     def is_visisted_by(self, unit: "UnitBaseClass") -> bool:
         messenger.send("unit.action.move.visiting_tile", [unit, self])
@@ -353,7 +353,7 @@ class BaseTile(BaseEntity):
             raise AssertionError("City name group not created.")
 
         city_text = TextNode(self.city.name)
-        city_text.setText(self.city.name)  # this is to prevent the text from being empty.
+        city_text.setText(self.city.name)  # type: ignore # this is to prevent the text from being empty.
 
         # Load the font
         font = AssetManager.load_font("assets/fonts/Washington.ttf")
@@ -363,7 +363,7 @@ class BaseTile(BaseEntity):
                 font.setPixelsPerUnit(250)  # type: ignore # Improve clarity
             except AssertionError:
                 pass  # For some reason some letters are not showing up. This is a workaround. they are replaced with []
-            city_text.setFont(font)
+            city_text.setFont(font)  # type: ignore
 
         # Load and verify texture
         texture = AssetManager.load_texture("assets/city_name_border.png")
@@ -374,7 +374,7 @@ class BaseTile(BaseEntity):
         # Set text appearance
         text_color: Tuple4f = Colors.WHITE if self.city.player is None else self.city.player.color
         city_text.setTextColor(*text_color)
-        city_text.setAlign(TextNode.ACenter)
+        city_text.setAlign(TextNode.ACenter)  # type: ignore
         city_text.setCardDecal(True)
 
         if self.city.is_capital:
@@ -405,13 +405,13 @@ class BaseTile(BaseEntity):
 
         # Ensure visibility and proper rendering
         city_np.setTransparency(1)
-        city_np.setCollideMask(BitMask32.bit(0))
+        city_np.setCollideMask(BitMask32.bit(0))  # type: ignore
         city_np.setBin("fixed", 50)
         city_np.setDepthWrite(True)
         city_np.setDepthTest(True)
         city_np.setTwoSided(True)
         city_np.setAntialias(AntialiasAttrib.MAuto)
-        city_np.set_billboard_point_eye()  # Always face the camera.
+        city_np.set_billboard_point_eye()  # type: ignore # Always face the camera.
 
         # If the city is the capital, add an icon before the name
         if self.city.is_capital:
@@ -536,7 +536,7 @@ class BaseTile(BaseEntity):
             small_icon_np.setHpr(0, 270, -90)
             small_icon_np.setScale(3.0)
             small_icon_np.setTransparency(1)
-            small_icon_np.setCollideMask(BitMask32.bit(0))
+            small_icon_np.setCollideMask(BitMask32.bit(0))  # type: ignore
             # Attach mini icon to its dedicated card.
             small_icon_np.reparentTo(self.mini_icons_card)
 
@@ -624,9 +624,9 @@ class BaseTile(BaseEntity):
         hex_model.setScale(0.48)
         hex_model.setHpr(270, 0, 0)
 
-        node: NodePath = hex_model.copyTo(self.base.render)
+        node: NodePath = hex_model.copyTo(self.base.render)  # type: ignore
         node.setPos(self.pos_x, self.pos_y, 0)
-        node.setCollideMask(BitMask32.bit(1))
+        node.setCollideMask(BitMask32.bit(1))  # type: ignore
         self.tag = self.generate_tag(self.x, self.y)
         node.setTag("tile_id", self.tag)
         self.models.append(node)
@@ -664,9 +664,9 @@ class BaseTile(BaseEntity):
 
         extra_model.setScale(0.48 * scale)
         extra_model.setHpr(*hpr)
-        node: NodePath = extra_model.copyTo(self.base.render)
+        node: NodePath = extra_model.copyTo(self.base.render) # type: ignore
         node.setPos(self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2])
-        node.setCollideMask(BitMask32.bit(1))
+        node.setCollideMask(BitMask32.bit(1)) # type: ignore
         self.models.append(node)
 
         if self.tag is None:
@@ -959,6 +959,12 @@ class BaseTile(BaseEntity):
         resource: Type[BaseResource] | None = hex.get_gameplay_resource()
         if resource is not None:
             self.instance_resource(resource)
+
+    def is_showing_small_icons(self) -> bool:
+        return self._showing_small_icons
+
+    def is_showing_large_icons(self) -> bool:
+        return self._showing_large_icons
 
     def destroy(self):
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)

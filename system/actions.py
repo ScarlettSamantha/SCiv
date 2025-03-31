@@ -60,7 +60,7 @@ class Action:
     def get_result(self) -> Optional[Any]:
         return self.action_result
 
-    def run(self):
+    def run(self) -> None:
         self.logger.info(f"Running action: {self.name}")
         condition_met: bool = True
         if isinstance(self.condition, bool):
