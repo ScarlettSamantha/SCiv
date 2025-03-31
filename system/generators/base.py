@@ -64,9 +64,6 @@ class BaseGenerator(ABC):
         return player
 
     def setup_players(self, player_civilization: Type[Civilization]) -> List[Player] | None:
-        if self.config.num_enemies is None:
-            raise ValueError("Number of enemies not set")
-
         players: List[Player] = []
         civs_ingame: List[Type[Civilization]] = []
 
@@ -100,7 +97,7 @@ class BaseGenerator(ABC):
                     "PersonalityRepository.random() returned a list it should be one. as parameter is 1"
                 )
 
-            if isinstance(chosen_civilization, Type):
+            if isinstance(chosen_civilization, Type):  # type: ignore
                 civ = chosen_civilization()
             else:
                 civ = CivilizationRepository.get(chosen_civilization)()

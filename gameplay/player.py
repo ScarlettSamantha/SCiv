@@ -1,5 +1,4 @@
-import weakref
-from typing import TYPE_CHECKING, Literal, Optional, Self
+from typing import TYPE_CHECKING, List, Literal, Optional, Self
 
 from gameplay._units import Units
 from gameplay.cities import Cities
@@ -7,7 +6,7 @@ from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
 from gameplay.civilization import Civilization
 from gameplay.claims import Claims
-from gameplay.goverment import Goverment
+from gameplay.government import Government
 from gameplay.leader import Leader
 from gameplay.mood import Mood
 from gameplay.moods import Moods
@@ -49,7 +48,7 @@ class Player(BaseEntity):
 
         self.is_human: int = 0
         self.is_being_controlled: int = 0
-        self.instanace_controlling: int = 0
+        self.instance_controller: int = 0
 
         self.personality: Personality = personality
         self.civilization: Civilization = civilization
@@ -63,21 +62,21 @@ class Player(BaseEntity):
         self.commitment = 0  # @todo
         self.goal: None = None  # @todo
 
-        self.war_readiness: int = 0  # can be negative and postive.
-        self.war_exaustion: int = 0  # can be negative and postive.
+        self.war_readiness: int = 0  # can be negative and positive.
+        self.war_fatigue: int = 0  # can be negative and positive.
 
         self.size_penalty: float = 0  # 0-3, multiplicative penalty based on the size of the empire.
-        self.population_pentality: float = 0  # 0-3, multiplicative penalty based on the population of the empire.
+        self.population_penalty: float = 0  # 0-3, multiplicative penalty based on the population of the empire.
         self.population: int = 0  # total population of the empire.
         self.citizens: Citizens = (
             Citizens()
-        )  # keeps track of the citizens in the empire, but citizens are primarially stored in cities.
+        )  # keeps track of the citizens in the empire, but citizens are primarily stored in cities.
 
         # Empire stats
         self.revolt: float = 0.0  # revolt is a percentage of the empire that is in revolt. 0-100
         self.anarchy: float = 0.0  # anarchy is a percentage of the empire that is in anarchy. 0-100
-        self.subpression: float = 0.0  # multiplicative bonus on the effectiveness of subpression operations and opression of revolt and anarchy.
-        self.popularity: float = 0.0  # 0-100, percentage of the population that supports the goverment. This is not loyality to the goverment, but support for the empire in general. (not a border mechanic)
+        self.suppression: float = 0.0  # multiplicative bonus on the effectiveness of suppression operations and oppression of revolt and anarchy.
+        self.popularity: float = 0.0  # 0-100, percentage of the population that supports the government. This is not loyalty to the government, but support for the empire in general. (not a border mechanic)
         self.taxes: int = 0  # 0-100, percentage of the civilian income that is taxed.
 
         self.police_effectiveness: float = 0.0  # 0-3 multiplier on the effectiveness of police operations.
@@ -88,8 +87,8 @@ class Player(BaseEntity):
         self.world_standing: float = 0.0  # can be negative or positive, 0 is neutral. range is only implied and not defined. but can be assumed to be -100 to 100
         self.delegates: float = 0.0  # absolute number of delegates the player has in the world congress.
 
-        self.goverment_strength = 0
-        self.goverment: Goverment = Goverment()
+        self.government_strength = 0
+        self.government: Government = Government()
 
         self.cities: Cities = Cities()
         self.capital: "City | None" = None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
@@ -142,9 +141,9 @@ class Player(BaseEntity):
             Literal["citizens"],
             Literal["revolt"],
             Literal["anarchy"],
-            Literal["subpression"],
+            Literal["suppression"],
             Literal["popularity"],
-        ] = ("citizens", "revolt", "anarchy", "subpression", "popularity")
+        ] = ("citizens", "revolt", "anarchy", "suppression", "popularity")
         city_loop_needed: bool = False
         for prop in properties:
             if prop == "citizens":
@@ -185,7 +184,7 @@ class Player(BaseEntity):
     def get_units(self) -> Units:
         return self.units
 
-    def get_all_units(self) -> list[weakref.ReferenceType["UnitBaseClass"]]:
+    def get_all_units(self) -> List["UnitBaseClass"]:
         return self.get_units().all()
 
     def add_city(self, city: "City") -> None:

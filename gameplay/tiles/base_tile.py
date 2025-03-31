@@ -153,7 +153,7 @@ class BaseTile(BaseEntity):
         # What features does this tile contain?
         self.features: List[BaseFeature] = list()
         # Does this have any units?
-        self.units: Units[Any] = Units()
+        self.units: Units = Units()
         # Does this have improvements?
         self._improvements: ImprovementsSet = ImprovementsSet()
         # Does this have items sitting on top of it?
