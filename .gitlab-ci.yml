@@ -17,8 +17,8 @@ stages:
     policy: pull-push
   before_script:
     - pip config set global.cache-dir .cache/pip
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
+    - pip install --upgrade pip --root-user-action=ignore
+    - pip install -r requirements.txt --root-user-action=ignore
 
 pyright-full-check:
   <<: *default-python-job
@@ -27,7 +27,7 @@ pyright-full-check:
   only:
     - merge_requests
   script:
-    - pip install pyright
+    - pip install pyright --root-user-action=ignore
     - pyright . -p pyproject.toml
 
 pyright-diff-check:
@@ -37,7 +37,7 @@ pyright-diff-check:
   except:
     - merge_requests
   script:
-    - pip install pyright --root-user-action
+    - pip install pyright --root-user-action=ignore
     - git fetch origin $compare_branch
     - |
       changed_files=$(git diff --diff-filter=ACMR --name-only origin/$compare_branch...HEAD -- '*.py')
@@ -53,21 +53,21 @@ lint-check:
   <<: *default-python-job
   stage: verify
   script:
-    - pip install ruff
+    - pip install ruff --root-user-action=ignore
     - ruff check .
 
 format-check:
   <<: *default-python-job
   stage: verify
   script:
-    - pip install ruff
+    - pip install ruff --root-user-action=ignore
     - ruff format --check --diff .
 
 security-check:
   <<: *default-python-job
   stage: verify
   script:
-    - pip install bandit
+    - pip install bandit --root-user-action=ignore
     - bandit -r . -c pyproject.toml
 
 markdown-check:
@@ -77,5 +77,5 @@ markdown-check:
     - branches
     - merge_requests
   script:
-    - npm install --global markdownlint-cli
+    - npm install --global markdownlint-cli --root-user-action=ignore
     - markdownlint '**/*.md'
