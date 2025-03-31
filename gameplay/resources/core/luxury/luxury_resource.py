@@ -1,9 +1,7 @@
-from typing import Type
-
-from gameplay.resource import BaseResource, ResourceTypeLuxury, ResourceValueType
+from gameplay.resource import BaseResource, ResourceType, ResourceValueType
 
 
 class BaseLuxuryResource(BaseResource):
-    type: Type[ResourceTypeLuxury] = ResourceTypeLuxury
+    type = ResourceType.LUXURY
     configure_as_float_or_int: ResourceValueType = ResourceValueType.INT
     _color = (1.0, 1.0, 0.0)

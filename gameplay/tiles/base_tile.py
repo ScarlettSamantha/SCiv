@@ -435,7 +435,7 @@ class BaseTile(BaseEntity):
         Append the texture as a separate node instead of replacing existing models,
         then set up the structure to later add mini icons and text overlays as separate cards.
         """
-        resources: Dict[str, BaseResource[Any]] = self.resources.flatten()
+        resources: Dict[str, BaseResource] = self.resources.flatten()
         resource = list(resources.values())[0] if resources else None
 
         if self.tile_icon_group is None:
@@ -476,7 +476,7 @@ class BaseTile(BaseEntity):
                 city_tile_yields += improvement.tile_yield_improvement
 
         yields = self.tile_yield + city_tile_yields
-        basic_resources: List[BaseResource[Any]] = yields.export_basic()
+        basic_resources: List[BaseResource] = yields.export_basic()
 
         if len(basic_resources) == 0:
             return
@@ -770,10 +770,10 @@ class BaseTile(BaseEntity):
     def get_resources(self) -> Resources:
         return self.resources
 
-    def add_resource(self, resource: BaseResource[Any]) -> None:
+    def add_resource(self, resource: BaseResource) -> None:
         self.resources.add(resource)
 
-    def remove_resource(self, resource: BaseResource[Any]) -> None:
+    def remove_resource(self, resource: BaseResource) -> None:
         self.resources.remove(resource)
 
     def improvements(self) -> ImprovementsSet:
@@ -939,7 +939,7 @@ class BaseTile(BaseEntity):
     def get_map_cords(self) -> Tuple[int, int]:
         return self.x, self.y
 
-    def instance_resource(self, resource: Type[BaseResource[Any]]):
+    def instance_resource(self, resource: Type[BaseResource]):
         """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
 
@@ -956,7 +956,7 @@ class BaseTile(BaseEntity):
         self.is_land = hex.is_land
         self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
         self.is_lake = hex.geoform_type.id == 4  # type: ignore # 4 == Lake
-        resource: Type[BaseResource[Any]] | None = hex.get_gameplay_resource()
+        resource: Type[BaseResource] | None = hex.get_gameplay_resource()
         if resource is not None:
             self.instance_resource(resource)
 
