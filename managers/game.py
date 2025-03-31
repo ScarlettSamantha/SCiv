@@ -39,15 +39,15 @@ class Game(Singleton, DirectObject):
         self.base: "SCIV" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")
 
-        self.ui: ui = ui.get_instance(base=self.base)
-        self.world: World = World.get_instance()
-        self.input: Input = Input.get_instance()
-        self.turn: Turn = Turn.get_instance(base=self.base)
+        self.ui: ui = ui.get_singleton_instance(base=self.base)
+        self.world: World = World.get_singleton_instance()
+        self.input: Input = Input.get_singleton_instance()
+        self.turn: Turn = Turn.get_singleton_instance(base=self.base)
         self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
-        self.config: ConfigManager = ConfigManager.get_instance()
-        self.entities: EntityManager = EntityManager.get_instance(base=self.base)
-        self.unit: Unit = Unit.get_instance(base=self.base)
+        self.config: ConfigManager = ConfigManager.get_singleton_instance()
+        self.entities: EntityManager = EntityManager.get_singleton_instance(base=self.base)
+        self.unit: Unit = Unit.get_singleton_instance(base=self.base)
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -331,7 +331,7 @@ class Game(Singleton, DirectObject):
         if self.active_generator is None:
             raise AssertionError("No generator was found, should have been set in generate_world")
 
-        self.turn = Turn.get_instance(self.base)
+        self.turn = Turn.get_singleton_instance(self.base)
         self.logger.info("Activating turn")
         self.turn.activate()
 

@@ -29,7 +29,7 @@ class BaseGenerator(ABC):
 
         self.config: GameSettings = config
         self.base: "SCIV" = base
-        self.world: World = World.get_instance()
+        self.world: World = World.get_singleton_instance()
         self.world_generation_stats: Dict[str, Any] = {}
 
     @abstractmethod
@@ -127,7 +127,7 @@ class BaseGenerator(ABC):
     ) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
 
-        unit_manager: Unit = Unit.get_instance()
+        unit_manager: Unit = Unit.get_singleton_instance()
         units: List["Settler"] = []
         occupied_tiles: List[BaseTile] = []  # Track placed player locations
 

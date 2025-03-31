@@ -64,12 +64,12 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.build_footer()
 
     def get_save_games(self) -> List[str]:
-        save_game_session: List[str] = EntityManager.get_instance().get_all_session()
+        save_game_session: List[str] = EntityManager.get_singleton_instance().get_all_session()
 
         return save_game_session
 
     def get_save_game(self, name: str) -> Dict[str, Any] | None:
-        return EntityManager.get_instance().get_session_data(name)
+        return EntityManager.get_singleton_instance().get_session_data(name)
 
     def build_left_scroll_view(self):
         self.scroll_view = ClippingScrollList(size_hint=(0.6, 0.95), do_scroll_x=False, do_scroll_y=True)

@@ -91,10 +91,10 @@ class Improvement(BaseEntity):
     def register(self):
         if self.is_registered is True:
             return
-        EntityManager.get_instance().register(entity=self, type=EntityType.IMPROVEMENT, key=self.tag)
+        EntityManager.get_singleton_instance().register(entity=self, type=EntityType.IMPROVEMENT, key=self.tag)
 
     def unregister(self):
-        EntityManager.get_instance().unregister(entity=self, type=EntityType.IMPROVEMENT)
+        EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.IMPROVEMENT)
 
     def _validate_state(self) -> bool:
         return True

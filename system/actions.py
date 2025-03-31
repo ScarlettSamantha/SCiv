@@ -34,7 +34,7 @@ class Action:
         self.description: T_TranslationOrStrOrNone = description  # Might be used as a tooltip
         self.icon: str | None = icon
         self.useable: bool = usable
-        self.logger = LogManager.get_instance().engine.getChild("actions")
+        self.logger = LogManager.get_singleton_instance().engine.getChild("actions")
 
         self.condition: Optional[Callable[[Self], bool] | bool] = condition
         self.action: Callable[[Self, List[Any] | Tuple[Any], Dict[Any, Any]], Optional[bool]] = action

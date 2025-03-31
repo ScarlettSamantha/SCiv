@@ -36,8 +36,8 @@ class ui(Singleton, DirectObject):
         self.menus = []
         self._base: "SCIV" = base
         self.current_menu = None
-        self.game: Optional["Game"] = Game.get_instance()
-        self.map: World = World.get_instance()
+        self.game: Optional["Game"] = Game.get_singleton_instance()
+        self.map: World = World.get_singleton_instance()
 
         self.current_tile: Optional[BaseTile] = None
         self.previous_tile: Optional[BaseTile] = None

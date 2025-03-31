@@ -29,7 +29,7 @@ class DebugMapStats(FloatLayout):
         self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
         self.rect = None
 
-        self.map: Dict[str, "BaseTile"] = World.get_instance().map
+        self.map: Dict[str, "BaseTile"] = World.get_singleton_instance().map
 
     def get_frame(self) -> GridLayout:
         if self.frame is None:
@@ -37,7 +37,7 @@ class DebugMapStats(FloatLayout):
         return self.frame
 
     def _calculate_map_stats(self) -> Tuple[Dict[str, float], Dict[str, float], Dict[str, float], Dict[str, float]]:
-        self.map = World.get_instance().map
+        self.map = World.get_singleton_instance().map
         running_total_resources: Dict[str, float] = {}
         running_total_tile_type: Dict[str, float] = {}
         total_tiles: int = len(self.map)  # Total number of tiles in the map

@@ -50,22 +50,24 @@ class GreatsTree:
 
     def buy_great(self, great: Great) -> Great:
         self.points -= great.cost
-        LogManager.get_instance().gameplay.debug(f"Bought Great {great.__class__.__name__} for {great.cost} points")
+        LogManager.get_singleton_instance().gameplay.debug(
+            f"Bought Great {great.__class__.__name__} for {great.cost} points"
+        )
         return great
 
     def add_great(self, great: Great):
         self.greats.append(great)
-        LogManager.get_instance().gameplay.debug(f"Added Great {great.__class__.__name__} to {self.name}")
+        LogManager.get_singleton_instance().gameplay.debug(f"Added Great {great.__class__.__name__} to {self.name}")
 
     def remove_great(self, great: Great):
         self.greats.remove(great)
-        LogManager.get_instance().gameplay.debug(f"Removed Great {great.__class__.__name__} from {self.name}")
+        LogManager.get_singleton_instance().gameplay.debug(f"Removed Great {great.__class__.__name__} from {self.name}")
 
     def __add__(self, b: int | float | Great):
         if isinstance(b, Great):
             self.add_great(b)
             return self
-        LogManager.get_instance().gameplay.debug(f"Adding {b.__class__.__name__} points to {self.name}")
+        LogManager.get_singleton_instance().gameplay.debug(f"Adding {b.__class__.__name__} points to {self.name}")
         self.points += float(b)
         return self
 
@@ -76,7 +78,7 @@ class GreatsTree:
         if isinstance(b, Great):
             self.remove_great(b)
             return self
-        LogManager.get_instance().gameplay.debug(f"Subtracting {b} points from {self.name}")
+        LogManager.get_singleton_instance().gameplay.debug(f"Subtracting {b} points from {self.name}")
         self.points -= float(b)
         return self
 

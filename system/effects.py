@@ -119,7 +119,7 @@ class Effects:
     def unregister_from_entity_manager(self, effect: "Effect") -> None:
         from managers.entity import EntityManager
 
-        EntityManager.get_instance().unregister(EntityType.EFFECT, effect)
+        EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, effect)
 
     def get_effect(self, tag: str) -> "Effect":
         return self._effects[tag]
@@ -274,13 +274,13 @@ class Effect(BaseEntity, ABC):
         self.id = uuid.uuid4().hex
         self.tag = self.generate_tag()
 
-        EntityManager.get_instance().register(EntityType.EFFECT, self, self.id)
+        EntityManager.get_singleton_instance().register(EntityType.EFFECT, self, self.id)
         self.is_registered = True
 
     def unregister(self):
         from managers.entity import EntityManager
 
-        EntityManager.get_instance().unregister(EntityType.EFFECT, self)
+        EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, self)
         self.is_registered = False
 
     def generate_tag(self) -> str:

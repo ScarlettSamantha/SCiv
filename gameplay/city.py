@@ -1,6 +1,6 @@
 from logging import Logger
 from random import randint
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Any
 
 from direct.showbase import DirectObject, MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 class City(BaseEntity, DirectObject.DirectObject):
-    logger: Logger = LogManager.get_instance().gameplay.getChild("city")
+    logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("city")
 
     FOOD_EXPONENT: float = 1.5
     FOOD_BASE_REQUIREMENT: float = 10
@@ -82,9 +82,6 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.tag = f"city_{str(randint(1, 100000000))}"
 
     def register(self):
-        if self.base is None:
-            raise AssertionError("Base is not set.")
-
         self.accept(f"game.gameplay.city.gets_tile_ownership_{self.tag}", self.on_tile_ownership_changed)
         self.accept(
             f"game.gameplay.city.request_start_building_improvement_{self.tag}",
@@ -209,7 +206,7 @@ class City(BaseEntity, DirectObject.DirectObject):
     def _register_callbacks(self):
         self.citizens.register_callback("on_birth", self.on_citizen_birth)
 
-    def on_citizen_birth(self, citizen):
+    def on_citizen_birth(self, citizen: Any): # Placeholder
         self.population += 1
 
     def de_capitalize(self):

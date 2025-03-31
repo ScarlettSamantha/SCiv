@@ -54,10 +54,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         super().__init__(base=self._base, *args, **kwargs)
 
-        self.world_manager = World.get_instance()
-        self.camera: Camera = Camera.get_instance()
-        self.unit_manager: Unit = Unit.get_instance()
-        self.ui_manager: ui = ui.get_instance()
+        self.world_manager = World.get_singleton_instance()
+        self.camera: Camera = Camera.get_singleton_instance()
+        self.unit_manager: Unit = Unit.get_singleton_instance()
+        self.ui_manager: ui = ui.get_singleton_instance()
 
         self.waiting_for_world_input: bool = False
 
@@ -333,7 +333,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def process_unit_click(self, unit: str):
         self.logger.debug(f"Unit clicked: {unit}")
-        _unit: ReferenceType[BaseEntity] = EntityManager.get_instance().get_ref_weak(EntityType.UNIT, unit)
+        _unit: ReferenceType[BaseEntity] = EntityManager.get_singleton_instance().get_ref_weak(EntityType.UNIT, unit)
 
         if unit != self.ui_manager.current_unit:
             self.generate_buttons_for_unit_actions(unit)

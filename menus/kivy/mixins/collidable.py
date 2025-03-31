@@ -18,7 +18,7 @@ class CollisionPreventionMixin:
     ui_geometry_update_interval: float = 5.0  # Seconds between UI geometry cache updates
 
     def __init__(self, base: "SCIV", disable_zoom: bool = False):
-        self._input = Input.get_instance()
+        self._input = Input.get_singleton_instance()
         self._base: "SCIV" = base
 
         self.disable_zoom: bool = disable_zoom

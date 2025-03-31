@@ -115,12 +115,14 @@ class Player(BaseEntity):
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
 
-        EntityManager.get_instance().register(entity=self, type=EntityType.PLAYER, key=f"{self.name}-{self.turn_order}")
+        EntityManager.get_singleton_instance().register(
+            entity=self, type=EntityType.PLAYER, key=f"{self.name}-{self.turn_order}"
+        )
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
 
-        EntityManager.get_instance().unregister(entity=self, type=EntityType.PLAYER)
+        EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.PLAYER)
 
     def _register_callbacks(self) -> None:
         self.citizens.register_callback(event="on_birth", callback=self.on_citizen_birth)
