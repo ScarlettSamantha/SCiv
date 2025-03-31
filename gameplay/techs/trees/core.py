@@ -1,6 +1,7 @@
-from typing import Any, Type
+from typing import Any, Dict, List, Self, Type
 
 from exceptions.tech_exception import TechNotFoundException
+from gameplay.age import Age
 from gameplay.tech import Tech, TechTree
 from managers.i18n import t_
 
@@ -17,36 +18,36 @@ class Core(TechTree):
         )
         self._add_items()
 
-    def _add_items(self):
+    def _add_items(self) -> None:
         from system.pyload import PyLoad
 
         classes = PyLoad.load_classes("openciv/gameplay/techs/")
         ages = PyLoad.load_classes("openciv/gameplay/ages/core/")
 
         # Just a type hint proxy
-        def get_tech(self, classes, key) -> Type[Tech]:
+        def get_tech(self: Self, classes: Dict[str, Type[Tech]], key: str) -> Type[Tech]:
             try:
                 return classes[key]
             except KeyError:
                 raise TechNotFoundException(key)
 
-        def get_age(self, ages, key) -> Type[Tech]:
+        def get_age(self: Self, ages: Dict[str, Type[Age]], key: str) -> Age:
             try:
                 return ages[key]()
             except KeyError:
                 raise TechNotFoundException(key)
 
-        def add_to_space(self, classes, key, age) -> Type[Tech]:
+        def add_to_space(self: Self, classes: Dict[str, Type[Tech]], key: str, age: Age) -> Type[Tech]:
             _class = get_tech(self, classes, key)
             self.add(_class)
             return _class
 
-        def add_age_to_space(self, ages, key) -> Type[Tech]:
+        def add_age_to_space(self: Self, ages: Dict[str, Type[Age]], key: str) -> Age:
             _class = get_age(self, ages, key)
             self._ages.append(_class)
             return _class
 
-        def load_ages(self, ages):
+        def load_ages(self: Self, ages: Dict[str, Type[Age]]) -> None:
             ancient = add_age_to_space(self, ages, "Ancient")
             classical = add_age_to_space(self, ages, "Classical")
             medieval = add_age_to_space(self, ages, "Medieval")
@@ -57,7 +58,7 @@ class Core(TechTree):
             information = add_age_to_space(self, ages, "Information")
             future = add_age_to_space(self, ages, "Future")
 
-            all_ages = [
+            all_ages: List[Age] = [
                 ancient,
                 classical,
                 medieval,
