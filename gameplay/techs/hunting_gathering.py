@@ -4,12 +4,12 @@ from gameplay.tech import Tech
 from managers.i18n import t_
 
 
-class Butress(Tech):
+class HuntingGathering(Tech):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            "core.butress",
-            t_("tech.butress.name"),
-            t_("tech.butress.description"),
+            "core.hunting_gathering",
+            t_("tech.hunting_gathering.name"),
+            t_("tech.hunting_gathering.description"),
             tech_points_required=20,
             *args,
             **kwargs,

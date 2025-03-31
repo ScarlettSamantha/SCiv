@@ -12,6 +12,7 @@
     },
     "ruff.organizeImports": false,
     "cSpell.words": [
+        "ACMR",
         "acoruna",
         "agrinio",
         "Agrinio",

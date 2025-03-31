@@ -74,8 +74,8 @@ class Core(TechTree):
 
         load_ages(self, ages)
 
-        hunting_gethering: Type[Tech] = add_to_space(
-            self, classes, "HuntingGethering", add_age_to_space(self, ages, "Ancient")
+        hunting_gathering: Type[Tech] = add_to_space(
+            self, classes, "HuntingGathering", add_age_to_space(self, ages, "Ancient")
         )
         trapping: Type[Tech] = add_to_space(self, classes, "Trapping", get_age(self, ages, "Ancient"))
         animal_husbandry: Type[Tech] = add_to_space(self, classes, "AnimalHusbandry", get_age(self, ages, "Ancient"))
@@ -107,7 +107,7 @@ class Core(TechTree):
         construction: Type[Tech] = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
 
         apprenticeship: Type[Tech] = add_to_space(self, classes, "Apprenticeship", get_age(self, ages, "Medieval"))
-        butress: Type[Tech] = add_to_space(self, classes, "Butress", get_age(self, ages, "Medieval"))
+        buttress: Type[Tech] = add_to_space(self, classes, "Buttress", get_age(self, ages, "Medieval"))
         education: Type[Tech] = add_to_space(self, classes, "Education", get_age(self, ages, "Medieval"))
         machinery: Type[Tech] = add_to_space(self, classes, "Machinery", get_age(self, ages, "Medieval"))
         stirrups: Type[Tech] = add_to_space(self, classes, "Stirrups", get_age(self, ages, "Medieval"))
@@ -138,7 +138,7 @@ class Core(TechTree):
         )
         mass_production: Type[Tech] = add_to_space(self, classes, "MassProduction", get_age(self, ages, "Industrial"))
         replaceable_parts: Type[Tech] = add_to_space(
-            self, classes, "ReplacableParts", get_age(self, ages, "Industrial")
+            self, classes, "ReplaceableParts", get_age(self, ages, "Industrial")
         )
         refining: Type[Tech] = add_to_space(self, classes, "Refining", get_age(self, ages, "Industrial"))
         steam_power: Type[Tech] = add_to_space(self, classes, "SteamPower", get_age(self, ages, "Industrial"))
@@ -176,14 +176,14 @@ class Core(TechTree):
 
         nanotechnology: Type[Tech] = add_to_space(self, classes, "Nanotechnology", get_age(self, ages, "Information"))
         nuclear_fusion: Type[Tech] = add_to_space(self, classes, "NuclearFusion", get_age(self, ages, "Information"))
-        robotoics: Type[Tech] = add_to_space(self, classes, "Robotics", get_age(self, ages, "Information"))
+        robotics: Type[Tech] = add_to_space(self, classes, "Robotics", get_age(self, ages, "Information"))
 
-        animal_husbandry.requires = [hunting_gethering]
-        pottery.requires = [hunting_gethering]
-        mining.requires = [hunting_gethering]
-        trapping.requires = [hunting_gethering]
+        animal_husbandry.requires = [hunting_gathering]
+        pottery.requires = [hunting_gathering]
+        mining.requires = [hunting_gathering]
+        trapping.requires = [hunting_gathering]
 
-        archery.requires = [hunting_gethering, trapping]
+        archery.requires = [hunting_gathering, trapping]
         writing.requires = [pottery]
         astrology.requires = [pottery]
         masonry.requires = [pottery, mining]
@@ -205,12 +205,12 @@ class Core(TechTree):
         engineering.requires = [construction, mathematics, wheel]
         irrigation.requires = [calendar]
 
-        butress.requires = [ship_building, mathematics]
+        buttress.requires = [ship_building, mathematics]
         military_tactics.requires = [mathematics]
         construction.requires = [masonry]
         engineering.requires = [wheel]
 
-        butress.requires = [ship_building]
+        buttress.requires = [ship_building]
         military_tactics.requires = [mathematics]
         apprenticeship.requires = [currency]
         machinery.requires = [engineering]
@@ -220,7 +220,7 @@ class Core(TechTree):
         military_engineering.requires = [construction]
         castles.requires = [iron_working]
 
-        cartography.requires = [butress]
+        cartography.requires = [buttress]
         mass_production.requires = [military_tactics, education]
         banking.requires = [currency, education, stirrups]
         gunpowder.requires = [stirrups, education]
@@ -268,12 +268,12 @@ class Core(TechTree):
         composites.requires = [synthetic_materials]
         stealth_technology.requires = [synthetic_materials]
 
-        robotics = [computers, satellites, guidance_systems, lasers]
+        robotics.requires = [computers, satellites, guidance_systems, lasers]
         nuclear_fission.requires = [lasers]
         nanotechnology.requires = [composites]
 
         all_techs = [
-            hunting_gethering,
+            hunting_gathering,
             trapping,
             animal_husbandry,
             bronze_working,
@@ -299,7 +299,7 @@ class Core(TechTree):
             iron_working,
             construction,
             apprenticeship,
-            butress,
+            buttress,
             education,
             machinery,
             stirrups,
@@ -349,7 +349,7 @@ class Core(TechTree):
             computers,
             nanotechnology,
             nuclear_fusion,
-            robotoics,
+            robotics,
         ]
 
         self._items = all_techs
