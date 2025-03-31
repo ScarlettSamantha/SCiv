@@ -1,3 +1,6 @@
+variables:
+  compare_branch: dev-v0.2.0
+
 stages:
   - verify
 
@@ -34,9 +37,12 @@ pyright-diff-check:
     - merge_requests
   script:
     - pip install pyright
+    - git fetch origin $compare_branch
     - |
-      changed_files=$(git diff --name-only origin/$CI_COMMIT_BRANCH...HEAD -- '*.py')
+      changed_files=$(git diff --name-only origin/$compare_branch...HEAD -- '*.py')
       if [ -n "$changed_files" ]; then
+        echo "Changed Python files:"
+        echo "$changed_files"
         pyright $changed_files -p pyproject.toml
       else
         echo "No Python files changed. Skipping pyright."
