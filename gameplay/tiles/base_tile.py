@@ -60,7 +60,7 @@ class BaseTile(BaseEntity):
         pos_x: float = 0.0,
         pos_y: float = 0.0,
         pos_z: float = 0.0,
-        extra_data: Optional[dict] = None,
+        extra_data: Optional[Dict[Any, Any]] = None,
     ) -> None:
         self.id: int = id(self)
         self.x: int = x
@@ -71,7 +71,7 @@ class BaseTile(BaseEntity):
         self.pos_z: float = pos_z
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
-        self._entity_manager = EntityManager.get_instance()
+        self._entity_manager = EntityManager.get_singleton_instance()
         self.logger: Logger = self.base.logger.gameplay.getChild("map.tile")
 
         self.destroyed: bool = False
@@ -96,7 +96,7 @@ class BaseTile(BaseEntity):
         self.zone: str = "temperate"
         self.hemisphere: str = "north"
 
-        self.resource: Optional[Dict] = None
+        self.resource: Optional[Dict[str, Any]] = None
         self.resources: Resources = Resources()
         # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height: int = 0
@@ -153,7 +153,7 @@ class BaseTile(BaseEntity):
         # What features does this tile contain?
         self.features: List[BaseFeature] = list()
         # Does this have any units?
-        self.units: Units = Units()
+        self.units: Units[Any] = Units()
         # Does this have improvements?
         self._improvements: ImprovementsSet = ImprovementsSet()
         # Does this have items sitting on top of it?
@@ -170,7 +170,7 @@ class BaseTile(BaseEntity):
         # is this city being worked by a city?
         self.city_owner: Optional["City"] = None
 
-        self.texture_card: Optional[NodePath] = None
+        self.texture_card: Optional[NodePath | CardMaker] = None
         self.texture_card_texture: Optional[NodePath] = None
 
         self.city_name_group: Optional[NodePath] = None
@@ -208,10 +208,8 @@ class BaseTile(BaseEntity):
     def tile_terrain(self, value: BaseTerrain) -> None:
         self._tile_terrain = value
         if self.inherit_passability_from_terrain:
-            self.passable: bool = True if self.tile_terrain is None or self.tile_terrain.passable is True else False
-            self.passable_without_tech: bool = (
-                True if self.tile_terrain is None or self.tile_terrain.passable_without_tech is True else False
-            )
+            self.passable: bool = True if self.tile_terrain.passable is True else False
+            self.passable_without_tech: bool = True if self.tile_terrain.passable_without_tech is True else False
 
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
@@ -221,11 +219,14 @@ class BaseTile(BaseEntity):
         self.tag = self.generate_tag(self.x, self.y)
         self.models = []
         self.base = Cache.get_showbase_instance()
-        self._entity_manager = EntityManager.get_instance()
+        self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
         self._render_default_terrain()
         self.create_root_ui_node()
+
+        if self.tile_icon_group is None:
+            raise AssertionError("Tile icon group not created.")
 
         self.mini_icons_card = NodePath("mini_icons_card")
         self.mini_icons_card.reparentTo(self.tile_icon_group)
@@ -351,15 +352,14 @@ class BaseTile(BaseEntity):
         if self.city_name_group is None:
             raise AssertionError("City name group not created.")
 
-        city_text = TextNode("city_name_text")
-        city_text.setText(self.city.name)
+        city_text = TextNode(self.city.name)
 
         # Load the font
         font = AssetManager.load_font("assets/fonts/Washington.ttf")
         if font:
-            font.setPolyMargin(0.01)  # Improve clarity
+            font.setPolyMargin(0.01)  # type: ignore # Improve clarity
             try:
-                font.setPixelsPerUnit(250)  # Improve clarity
+                font.setPixelsPerUnit(250)  # type: ignore # Improve clarity
             except AssertionError:
                 pass  # For some reason some letters are not showing up. This is a workaround. they are replaced with []
             city_text.setFont(font)
@@ -403,7 +403,7 @@ class BaseTile(BaseEntity):
         city_text.set_glyph_scale(text_scale)  # type: ignore
 
         # Ensure visibility and proper rendering
-        city_np.setTransparency(True)
+        city_np.setTransparency(1)
         city_np.setCollideMask(BitMask32.bit(0))
         city_np.setBin("fixed", 50)
         city_np.setDepthWrite(True)
@@ -418,7 +418,7 @@ class BaseTile(BaseEntity):
             capital_icon.reparentTo(city_np)
             capital_icon.setScale(0.2)  # Adjust size as needed
             capital_icon.set_antialias(AntialiasAttrib.MAuto)  # type: ignore
-            capital_icon.setTransparency(True)
+            capital_icon.setTransparency(1)
 
             capital_icon.setBin("fixed", 51)  # Higher than text
             capital_icon.setDepthWrite(False)
@@ -434,7 +434,7 @@ class BaseTile(BaseEntity):
         Append the texture as a separate node instead of replacing existing models,
         then set up the structure to later add mini icons and text overlays as separate cards.
         """
-        resources: Dict[str, BaseResource] = self.resources.flatten()
+        resources: Dict[str, BaseResource[Any]] = self.resources.flatten()
         resource = list(resources.values())[0] if resources else None
 
         if self.tile_icon_group is None:
@@ -455,24 +455,27 @@ class BaseTile(BaseEntity):
             if not self.models:
                 return
 
+            if self.tile_icon_group is None:
+                raise AssertionError("Tile icon group not created.")
+
             # Reparent the main icon card to the common group.
             self.texture_card_texture.reparentTo(self.tile_icon_group)
             self.texture_card_texture.setTexture(texture, 1)
             self.texture_card_texture.setPos((-0.55, 0, 0.151))
             self.texture_card_texture.setHpr((0, 270, 270))
             self.texture_card_texture.setScale(6.0)
-            self.texture_card_texture.setTransparency(True)
+            self.texture_card_texture.setTransparency(1)
 
             self._showing_large_icons = True
 
     def add_small_icons(self, force: bool = False) -> None:
         city_tile_yields: Yields = Yields.nullYield()
         if self.city is not None:
-            for improvement in self.city._improvements.get_all():
+            for improvement in self.city.get_improvements().get_all():
                 city_tile_yields += improvement.tile_yield_improvement
 
         yields = self.tile_yield + city_tile_yields
-        basic_resources: List[BaseResource] = yields.export_basic()
+        basic_resources: List[BaseResource[Any]] = yields.export_basic()
 
         if len(basic_resources) == 0:
             return
@@ -481,12 +484,12 @@ class BaseTile(BaseEntity):
             self.create_root_ui_node()
 
         # Create a separate node for mini icons if not already created.
-        if self.mini_icons_card is None or force:
+        if (self.mini_icons_card is None or force) and self.tile_icon_group is not None:
             self.mini_icons_card = NodePath("mini_icons_card")
             self.mini_icons_card.reparentTo(self.tile_icon_group)
 
         # Create a separate node for text overlays if not already created.
-        if self.text_card is None or force:
+        if (self.text_card is None or force) and self.tile_icon_group is not None:
             self.text_card = NodePath("text_card")
             self.text_card.reparentTo(self.tile_icon_group)
 
@@ -524,11 +527,14 @@ class BaseTile(BaseEntity):
             if not texture:
                 raise AssertionError(f"Failed to load texture for small icon: {icon_path}")
 
+            if self.mini_icons_card is None:
+                raise AssertionError("Mini icons card not created.")
+
             small_icon_np.setTexture(texture, 1)
             small_icon_np.setPos(grid_positions[i])
             small_icon_np.setHpr(0, 270, -90)
             small_icon_np.setScale(3.0)
-            small_icon_np.setTransparency(True)
+            small_icon_np.setTransparency(1)
             small_icon_np.setCollideMask(BitMask32.bit(0))
             # Attach mini icon to its dedicated card.
             small_icon_np.reparentTo(self.mini_icons_card)
@@ -541,6 +547,9 @@ class BaseTile(BaseEntity):
             text_node.setAlign(TextNode.ACenter)
             text_node.setShadow(0, 0)  # Slight shadow.
             text_node.setShadowColor(0, 0, 0, 1)  # Black shadow.
+
+            if self.text_card is None:
+                raise AssertionError("Text card not created.")
 
             # Attach the text node to the separate text card.
             text_np = self.text_card.attachNewNode(text_node)
@@ -600,17 +609,14 @@ class BaseTile(BaseEntity):
             self.effects.on_turn_end(turn)
 
     def _render_default_terrain(self) -> None:
-        if self.tile_terrain is None:
-            print(f"Tile {self} has no terrain set, cannot render default terrain.")
-            return
-
         # Get the model path from the terrain (kept as a relative path)
         model_path: str = str(self.tile_terrain.model())
         # Resolve the full path to the model file
         full_model_path: str = realpath(join(dirname(__file__), "../..", model_path))
 
         # Load the model using the full path
-        hex_model: NodePath = self.base.loader.loadModel(full_model_path)
+        hex_model: NodePath | None = self.base.loader.loadModel(full_model_path)
+
         if hex_model is None:
             raise AssertionError(f"Model not found: {full_model_path}")
 
@@ -634,9 +640,9 @@ class BaseTile(BaseEntity):
 
             self.add_model(
                 model_path=model_path,
-                pos_offset=improvement._model_offset,
-                scale=improvement._model_scale,
-                hpr=improvement._model_hpr,
+                pos_offset=improvement._model_offset,  # type: ignore
+                scale=improvement._model_scale,  # type: ignore
+                hpr=improvement._model_hpr,  # type: ignore
             )
 
     def add_model(
@@ -650,7 +656,7 @@ class BaseTile(BaseEntity):
         Add an additional model on top of the tile.
         """
         base_path: Path = self.base.get_base_path()
-        extra_model: NodePath = self.base.loader.loadModel(abspath(join(base_path, model_path)))
+        extra_model: NodePath | None = self.base.loader.loadModel(abspath(join(base_path, model_path)))
 
         if extra_model is None:
             raise AssertionError(f"Model not found: {model_path}")
@@ -720,8 +726,6 @@ class BaseTile(BaseEntity):
         self.tile_terrain = terrain
 
     def get_terrain(self) -> BaseTerrain:
-        if self.tile_terrain is None:
-            raise AssertionError("Tile terrain is not set.")
         return self.tile_terrain
 
     def get_climbable(self) -> bool:
@@ -765,10 +769,10 @@ class BaseTile(BaseEntity):
     def get_resources(self) -> Resources:
         return self.resources
 
-    def add_resource(self, resource: BaseResource) -> None:
+    def add_resource(self, resource: BaseResource[Any]) -> None:
         self.resources.add(resource)
 
-    def remove_resource(self, resource: BaseResource) -> None:
+    def remove_resource(self, resource: BaseResource[Any]) -> None:
         self.resources.remove(resource)
 
     def improvements(self) -> ImprovementsSet:
@@ -787,27 +791,23 @@ class BaseTile(BaseEntity):
         self.units.remove_unit(unit)
 
     def is_occupied(self) -> bool:
-        return len(self.units._units) > 0 or self.city is not None
+        return len(self.units._units) > 0 or self.city is not None  # type: ignore
 
     def to_gui(self) -> Dict[str, Any]:
-        terrain = self.get_terrain()
-        if terrain is not None:
-            terrain_name: T_TranslationOrStr = terrain.name
-        else:
-            terrain_name: T_TranslationOrStr = "civilization.nature.name"
+        terrain_name: T_TranslationOrStr = t_("civilization.nature.name")
 
-        _improvements = []
+        _improvements: List[str] = []
         if self.city is not None:  # We add the city improvements to the list of improvements.
             _improvements += [str(improvement.name) for improvement in self.city.get_improvements()]
         for improvement in self._improvements.get_all():
             _improvements.append(str(improvement.name))
 
-        _units = []
-        for unit in self.units._units:
+        _units: List[str] = []
+        for unit in self.units._units:  # type: ignore
             data = unit.to_gui()
             _units.append(f"{data['tag']} {data['name']}")
 
-        data = {
+        data: Dict[str, Any] = {
             "tag": self.tag,
             "x": self.x,
             "y": self.y,
@@ -938,7 +938,7 @@ class BaseTile(BaseEntity):
     def get_map_cords(self) -> Tuple[int, int]:
         return self.x, self.y
 
-    def instance_resource(self, resource: Type[BaseResource]):
+    def instance_resource(self, resource: Type[BaseResource[Any]]):
         """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
 
@@ -955,7 +955,7 @@ class BaseTile(BaseEntity):
         self.is_land = hex.is_land
         self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
         self.is_lake = hex.geoform_type.id == 4  # type: ignore # 4 == Lake
-        resource: Type[BaseResource] | None = hex.get_gameplay_resource()
+        resource: Type[BaseResource[Any]] | None = hex.get_gameplay_resource()
         if resource is not None:
             self.instance_resource(resource)
 

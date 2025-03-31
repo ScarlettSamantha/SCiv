@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from panda3d.core import loadPrcFileData
 
@@ -18,7 +18,7 @@ class ConfigManager(Singleton):
         self.apply_config_to_prc()
         return super().__setup__(*args, **kwargs)
 
-    def _load_config(self):
+    def _load_config(self) -> Any | Dict[str, Dict[str, bool] | Dict[str, str | int] | Dict[str, str | list[int]]]:
         """Internal method: load config from JSON or return default if missing/invalid."""
         if os.path.exists(self.config_file):
             try:
@@ -41,21 +41,21 @@ class ConfigManager(Singleton):
             },
         }
 
-    def get_by_key(self, *args) -> Any:
+    def get_by_key(self, *args: Tuple[str, ...]) -> Any:
         """
         Get a value from the config by key.
         Example: get_by_key("window", "win-size") -> [1280, 720]
         """
         data = self.config_data
         for key in args:
-            data = data.get(key, {})
-        return data
+            data = data.get(key, {})  # type: ignore
+        return data  # type: ignore
 
     def get_config_full(self):
         """Return the full config data."""
         return self.config_data
 
-    def set_by_key(self, value: Any, *args):
+    def set_by_key(self, value: Any, *args: Any):
         """
         Set a value in the config by key.
         Example: set_by_key([1280, 720], "window", "win-size")
@@ -122,7 +122,7 @@ class ConfigManager(Singleton):
         if "show-frame-rate-meter" in window_settings:
             loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")
 
-    def set_screen_mode(self, mode):
+    def set_screen_mode(self, mode: str):
         """
         Convenience method to switch screen mode at runtime.
 
@@ -131,7 +131,7 @@ class ConfigManager(Singleton):
         self.config_data["window"]["screen-mode"] = mode
         self.save_config()
 
-    def update_window_position_size(self, x, y, w, h):
+    def update_window_position_size(self, x: int, y: int, w: int, h: int):
         """
         Update stored window position/size in the JSON config (for windowed or borderless).
         Called typically after the user moves/resizes the window.

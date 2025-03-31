@@ -13,7 +13,7 @@ from exceptions.i18n_exception import (
 )
 
 
-class _i18n:
+class I18nManager:
     def __init__(
         self,
         base_path: str | Path | PathLike[Any],
@@ -122,15 +122,15 @@ class _i18n:
         return format_result(result)
 
 
-i18n: None | _i18n = None
+i18n: None | I18nManager = None
 
 
-def set_i18n(i18n_instance: _i18n) -> None:
+def set_i18n(i18n_instance: I18nManager) -> None:
     global i18n
     i18n = i18n_instance
 
 
-def get_i18n() -> _i18n:
+def get_i18n() -> I18nManager:
     global i18n
     if i18n is None:
         raise I18NNotLoadedException("I18n not loaded")

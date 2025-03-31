@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 from gameplay.resource import BaseResource
 from system.subsystems.hexgen.edge import Edge
@@ -65,7 +65,7 @@ class Hex:
     def add_gameplay_resource(self, resource: Type[BaseResource]) -> None:
         self.gameplay_resource = resource
 
-    def get_gameplay_resource(self) -> Type[BaseResource] | None:
+    def get_gameplay_resource(self) -> Type[BaseResource[Any]] | None:
         return self.gameplay_resource
 
     def has_feature(self, feature):
@@ -219,7 +219,7 @@ class Hex:
             return Zones.antarctic_circle
 
     @property
-    def base_temperature(self):
+    def base_temperature(self) -> tuple[float, float]:
         """
         Computes the temperature of this hex. Takes into account the latitude (x-coord) and
         the altitude (higher is colder)
@@ -234,16 +234,16 @@ class Hex:
         # global avg temperature should be around ratio 0.4 and 0.6
 
         # part1 includes latitude only
-        part1 = (abs(min_temp) + (avg_temp + volitility)) * ratio + min_temp
+        part1: float = (abs(min_temp) + (avg_temp + volitility)) * ratio + min_temp
         # return (part1, part1)
         # print(base_temp, avg_temp, volitility, min_temp, ratio, part1)
         #       43         73          16         57
 
         # part2 includes altitude
-        factor = 7
+        factor: int = 7
         if self.is_water:
             factor = 8
-        part2 = abs(self.altitude - self.grid.sealevel) / factor
+        part2: float = abs(self.altitude - self.grid.sealevel) / factor
         return (round(part1, 2) - round(part2, 2), round(part1, 2) - round(part2, 2))
 
     @property

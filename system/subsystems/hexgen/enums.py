@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import Any, List
 from system.subsystems.hexgen.constants import TERRAIN_TERRAN
 
 
@@ -8,7 +8,7 @@ class SuperEnum(Enum):
 
     __keys__ = []
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         for key, value in enumerate(args):
             for namekey, name in enumerate(self.__keys__):
                 if key == namekey:

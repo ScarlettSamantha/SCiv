@@ -85,12 +85,12 @@ class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
     def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
         import dill as pickle
 
-        return pickle.dumps(data)
+        return pickle.dumps(data)  # type: ignore
 
     def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
         import dill as pickle
 
-        return pickle.loads(data)
+        return pickle.loads(data)  # type: ignore
 
 
 class EntityManager(Singleton):
@@ -107,8 +107,8 @@ class EntityManager(Singleton):
         serializer: Optional[Type["BaseEntityManagerSerializer"]] = None,
         saver: Optional[Type["BaseSaver"]] = None,
         session_name: Optional[str] = None,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         self.base: "SCIV" = base
         self.serializer: BaseEntityManagerSerializer = (
@@ -163,8 +163,6 @@ class EntityManager(Singleton):
         self._meta_data["game"]["commit"] = self.base.commit
 
     def check_object_against_type(self, type: EntityType, entity: object) -> bool:
-        if type.base_type is None:
-            return False
         return isinstance(entity, type.base_type)
 
     def __getstate__(self) -> Dict[Any, Any]:
@@ -269,22 +267,16 @@ class EntityManager(Singleton):
     def register_serializer(self, serializer: "BaseEntityManagerSerializer"):
         self.serializer = serializer
 
-    def dump(self, session_name=""):
+    def dump(self, session_name: str = ""):
         if not self.serializer:
             raise ValueError("No serializer registered.")
 
         if session_name == "" or len(session_name) == 0:
-            session_name = self.session
+            session_name = self.session if self.session is not None else "default_session"
 
         self.session = session_name
 
         data: bytes = self.serializer.dump(self._entities)
-
-        if self.saver is None:
-            raise ValueError("No saver registered.")
-
-        if self.session is None:
-            raise ValueError("No session name set.")
 
         saver_instance = self.saver()
         saver_instance.set_data(data)
@@ -300,9 +292,6 @@ class EntityManager(Singleton):
         saver_instance.save()
 
     def load(self):
-        if self.saver is None:
-            raise ValueError("No saver registered.")
-
         if self.session is None:
             raise ValueError("No session name set.")
 
@@ -321,9 +310,6 @@ class EntityManager(Singleton):
             self._entities[entity_type].update(entity_dict)
 
     def get_all_session(self) -> List[str]:
-        if self.saver is None:
-            raise ValueError("No saver registered.")
-
         if self.session is None:
             raise ValueError("No session name set.")
 
@@ -331,9 +317,6 @@ class EntityManager(Singleton):
         return saver_instance.get_saved_session()
 
     def get_session_data(self, session_name: str) -> None | Dict[str, Any]:
-        if self.saver is None:
-            raise ValueError("No saver registered.")
-
         saver_instance = self.saver()
         saver_instance.set_identifier(session_name)
         return saver_instance.get_session_data()
