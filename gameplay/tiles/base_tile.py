@@ -353,6 +353,7 @@ class BaseTile(BaseEntity):
             raise AssertionError("City name group not created.")
 
         city_text = TextNode(self.city.name)
+        city_text.setText(self.city.name)  # this is to prevent the text from being empty.
 
         # Load the font
         font = AssetManager.load_font("assets/fonts/Washington.ttf")
