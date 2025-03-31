@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 from gameplay.resource import BaseResource
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import BaseTile, Hex
 from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
@@ -12,14 +12,16 @@ from system.subsystems.hexgen.enums import MapType, OceanType
 from system.subsystems.hexgen.mapgen import MapGen
 
 if TYPE_CHECKING:
+    from main import SCIV
     from system.game_settings import GameSettings
+    from system.subsystems.hexgen.grid import Grid
 
 
 class Basic(BaseGenerator):
     NAME = "CivLike"
     DESCRIPTION = "Generates a hex-based map using HexGen."
 
-    def __init__(self, config: "GameSettings", base):
+    def __init__(self, config: "GameSettings", base: "SCIV"):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
         from random import randrange
@@ -84,7 +86,7 @@ class Basic(BaseGenerator):
         # Step 1: Generate the world using HexGen
         start_time: datetime = datetime.now()
         self.hexgen_map = MapGen(self.map_params, debug=True)
-        self.hex_grid = self.hexgen_map.hex_grid  # Access HexGen's grid
+        self.hex_grid: Grid = self.hexgen_map.hex_grid  # Access HexGen's grid
         end_hexgen_time: datetime = datetime.now()
 
         # Step 2: Convert HexGen's terrain types to our tile names and apply offsets
@@ -100,7 +102,7 @@ class Basic(BaseGenerator):
                     y = row * self.world.row_spacing  # Even columns align normally
 
                 # Fetch the corresponding hex tile
-                hex_tile = self.hex_grid.grid[col][row]
+                hex_tile = self.hex_grid.grid[col][row]  # type: ignore
 
                 # Convert HexGen biome to our tile system
                 terrain = self.classify_terrain(hex_tile)
@@ -157,7 +159,7 @@ class Basic(BaseGenerator):
 
         return True
 
-    def classify_terrain(self, hex_tile) -> str:
+    def classify_terrain(self, hex_tile: Hex) -> str:
         # arctic =               (1, 'a', 'Arctic')
         # tundra =               (2, 'u', 'Tundra')
         # alpine_tundra =        (3, 'p', 'Alpine Tundra')
@@ -180,15 +182,16 @@ class Basic(BaseGenerator):
         flat_to_hills_threshold = 160
         hills_to_mountains_threshold = 205
 
+        biome_id: int = hex_tile.biome.id  # type: ignore
+        geoform_id: int = hex_tile.geoform_type.id  # type: ignore
+
         if hex_tile.is_water:
-            if hex_tile.biome.id in (2,) or hex_tile.temperature[0] < -1:
+            if biome_id in (2,) or hex_tile.temperature[0] < -1:
                 return "SeaIce"
 
-            elif (
-                hex_tile.is_coast and hex_tile.geoform_type.id != 2
-            ):  # Shallow water, For some reason water is desert or grassland
+            elif hex_tile.is_coast and geoform_id != 2:  # Shallow water, For some reason water is desert or grassland
                 return "Coast"
-            elif hex_tile.geoform_type.id == 2:
+            elif geoform_id == 2:
                 return "Lake"
             else:
                 return "Sea"
@@ -202,53 +205,53 @@ class Basic(BaseGenerator):
 
             if hex_tile.altitude > flat_to_hills_threshold:
                 if (
-                    hex_tile.biome.id in (7, 5)
+                    biome_id in (7, 5)
                     and hex_tile.temperature[0] > grass_temperature_lower_threshold
                     and hex_tile.temperature[0] < grass_temperature_upper_threshold
                 ):
                     return "HillsGrassland"
-                elif hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] > desert_temperature_threshold:
+                elif biome_id in (6, 4) and hex_tile.temperature[0] > desert_temperature_threshold:
                     return "HillsDesert"
-                elif hex_tile.biome.id in (3,) and hex_tile.temperature[0] < 0:
+                elif biome_id in (3,) and hex_tile.temperature[0] < 0:
                     return "HillsSnow"
                 elif (
                     hex_tile.temperature[0] < grass_temperature_lower_threshold
                     and hex_tile.temperature[0] > 0
-                    and hex_tile.biome.id not in (7, 5, 6, 4)
+                    and biome_id not in (7, 5, 6, 4)
                 ):
                     return "HillsTundra"
 
             if (
-                hex_tile.biome.id in (4,) and hex_tile.temperature[0] > desert_temperature_threshold
+                biome_id in (4,) and hex_tile.temperature[0] > desert_temperature_threshold
             ):  # Desert or savannah, keep this high as it needs to be checked first before grassland
                 return "FlatDesert"
             elif (
-                hex_tile.biome.id in (7, 11) and hex_tile.moisture > moisture_threshold_mangrove_jungle
+                biome_id in (7, 11) and hex_tile.moisture > moisture_threshold_mangrove_jungle
             ):  # Virtual Mangrove Actual grassland with high moister
                 return "FlatJungle"
-            elif hex_tile.biome.id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
+            elif biome_id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
                 return "FlatLightJungle"
-            elif hex_tile.biome.id in (5,) or (
-                hex_tile.biome.id == 7 and hex_tile.temperature[0] < cold_forrest_temperature_threshold
+            elif biome_id in (5,) or (
+                biome_id == 7 and hex_tile.temperature[0] < cold_forrest_temperature_threshold
             ):  # Virtual Mangrove Actual scrubland with low moister
                 return "FlatScrubland"
-            elif hex_tile.biome.id in (6,):  # Savanna
+            elif biome_id in (6,):  # Savanna
                 return "FlatSavanna"
-            elif hex_tile.biome.id in (7,) or (
-                hex_tile.biome.id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
+            elif biome_id in (7,) or (
+                biome_id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
             ):  # Grassland and when its a "desert" but to cold to be a desert
                 return "FlatGrass"
-            elif hex_tile.biome.id in (
+            elif biome_id in (
                 8,
                 12,
             ):  # flat heavy forrest virtual (cold boreal forest)
                 if hex_tile.temperature[0] < cold_forrest_temperature_threshold:
                     return "FlatPineForest"
                 return "FlatHeavyForest"
-            elif hex_tile.biome.id in (12,):  # Fake tile type: Jungle not (Tropical Rainforest)
+            elif biome_id in (12,):  # Fake tile type: Jungle not (Tropical Rainforest)
                 pass
                 # return "FlatJungle"
-            elif hex_tile.biome.id in (
+            elif biome_id in (
                 11,
                 10,
                 9,
@@ -256,17 +259,17 @@ class Basic(BaseGenerator):
             ):  # forest
                 return "FlatForrest"
 
-            elif hex_tile.biome.id in (5,):  # Scrubland
+            elif biome_id in (5,):  # Scrubland
                 return "FlatScrubland"
-            elif hex_tile.biome.id in (1,):  # Arctic / Ice
+            elif biome_id in (1,):  # Arctic / Ice
                 return "FlatIce"
-            elif hex_tile.biome.id in (2, 3) or (
-                hex_tile.biome.id in (7, 6, 4) and hex_tile.temperature[0] < grass_temperature_lower_threshold
+            elif biome_id in (2, 3) or (
+                biome_id in (7, 6, 4) and hex_tile.temperature[0] < grass_temperature_lower_threshold
             ):  # 2 Tundra, 3 Alpine Tundra
-                if hex_tile.temperature[0] < 0 or hex_tile.biome.id in (3,):  # This is a cold tile or alpine
+                if hex_tile.temperature[0] < 0 or biome_id in (3,):  # This is a cold tile or alpine
                     return "FlatTundraSnow"
                 return "FlatTundra"  # This is a normal tundra should be just 2 left as 3 is handled above
-            elif hex_tile.biome.id in (13,):  # Wasteland
+            elif biome_id in (13,):  # Wasteland
                 return "FlatWasteland"
 
         raise ValueError(f"Terrain not found for hex_tile: {hex_tile}{hex_tile.biome}")
@@ -275,7 +278,7 @@ class Basic(BaseGenerator):
         """Creates Tile objects and places them on the grid."""
         for col in range(self.config.height):
             for row in range(self.config.width):
-                hex_tile = self.hex_grid.grid[col][row]
+                hex_tile = self.hex_grid.grid[col][row]  # type: ignore
 
                 x, y = hex_tile.x, hex_tile.y
                 terrain = hex_tile.terrain
@@ -311,7 +314,7 @@ class Basic(BaseGenerator):
         resources = instance.all_by_type([ResourceType.STRATEGIC, ResourceType.BONUS, ResourceType.LUXURY])
         return resources
 
-    def _hex_distance(self, hex1, hex2):
+    def _hex_distance(self, hex1: Hex, hex2: Hex) -> int:
         """
         Calculates the distance between two hex tiles using axial coordinates.
         """
