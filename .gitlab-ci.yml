@@ -16,13 +16,31 @@ stages:
     - pip install --upgrade pip
     - pip install -r requirements.txt
 
-pyright-check:
+pyright-full-check:
   <<: *default-python-job
   stage: verify
   allow_failure: true
+  only:
+    - merge_requests
   script:
     - pip install pyright
     - pyright . -p pyproject.toml
+
+pyright-diff-check:
+  <<: *default-python-job
+  stage: verify
+  allow_failure: true
+  except:
+    - merge_requests
+  script:
+    - pip install pyright
+    - |
+      changed_files=$(git diff --name-only origin/$CI_COMMIT_BRANCH...HEAD -- '*.py')
+      if [ -n "$changed_files" ]; then
+        pyright $changed_files -p pyproject.toml
+      else
+        echo "No Python files changed. Skipping pyright."
+      fi
 
 lint-check:
   <<: *default-python-job
