@@ -1,5 +1,6 @@
 variables:
   compare_branch: dev-v0.2.0
+  GIT_DEPTH: 0
 
 stages:
   - verify
