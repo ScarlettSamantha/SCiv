@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, List, Optional, Set, Type, Dict
+from typing import Any, Dict, List, Optional, Set, Type
 
 from gameplay.resource import BaseResource
 from system.subsystems.hexgen.edge import Edge
@@ -255,7 +255,7 @@ class Hex:
         )
 
     @property
-    def biome(self) -> Biome | Biome | Biome | Biome | Biome | Biome | Biome | Biome | Biome | Biome | Biome | Biome | Biome:
+    def biome(self) -> Biome:
         """
         Computes the biome
         :return: Biome
