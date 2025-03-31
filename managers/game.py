@@ -337,8 +337,8 @@ class Game(Singleton, DirectObject):
 
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
-        self.base.messenger.send("game.state.load_complete")
-        self.base.messenger.send("game.state.true_game_start")
+        MessengerGlobal.messenger.send("game.state.load_complete")
+        MessengerGlobal.messenger.send("game.state.true_game_start")
         self.logger.info("Game start complete")
         self.ui.post_game_start()
         self.camera.recenter()
