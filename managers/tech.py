@@ -1,25 +1,24 @@
 from collections import OrderedDict
-from typing import Any, List
+from typing import Any, List, Optional
 
-from gameplay.tech import Tech
+from gameplay.tech import Tech, TechTree
 from managers.base import BaseManager
-from mixins.callbacks import CallbacksMixin
 from system.pyload import PyLoad
 
 
-class TechManager(BaseManager, CallbacksMixin):
+class TechManager(BaseManager):
     def __init__(self, technology_folders: List[str] = [], *args: Any, **kwargs: Any):
         BaseManager.__init__(self, *args, **kwargs)
-        CallbacksMixin.__init__(self)
 
+        self.researching: Tech | None = None
         self.queue: OrderedDict[int, Tech] = OrderedDict()
         self.registered_techs: List[Tech] = []
+        self.researched_techs: List[Tech] = []
 
         self._needed_science: int = 1
         self._current_science_pool: int = 0
-        self._tech_tree = None
+        self._tech_tree: Optional[TechTree] = None
 
-        self.declare_events()
         self.process_folders(technology_folders)
 
     @property
@@ -38,14 +37,6 @@ class TechManager(BaseManager, CallbacksMixin):
     def current_science(self, value: int):
         self._current_science_pool = value
 
-    def declare_events(self):
-        self._declare_event("on_tech_researched")
-        self._declare_event("on_tech_queue_updated")
-        self._declare_event("on_tech_added")
-        self._declare_event("on_tech_reorder")
-        self._declare_event("on_science_added")
-        self._declare_event("on_science_removed")
-
     def process_folders(self, folders: List[str]):
         def process_folder(folder: str):
             classes = PyLoad.load_classes(folder)
@@ -59,47 +50,59 @@ class TechManager(BaseManager, CallbacksMixin):
 
     def add_tech_to_queue(self, tech: Tech) -> None:
         self.queue[len(self.queue)] = tech
-        self.trigger_callback("on_tech_queue_updated")
 
     def reorder(self) -> None:
         self.queue = OrderedDict((i, tech) for i, tech in enumerate(self.queue.values()))
-        self.trigger_callback("on_tech_reorder")
 
     def do_first_queue(self, tech: Tech) -> None:
         self.queue = OrderedDict([(0, tech)] + [(i + 1, t) for i, t in enumerate(self.queue.values())])
-        self.trigger_callback("on_tech_queue_updated")
 
     def delete_tech(self, tech: Tech) -> None:
         self.registered_techs.remove(tech)
 
     def add_tech(self, tech: Tech) -> None:
         self.registered_techs.append(tech)
-        self.trigger_callback("on_tech_added")
 
     def current_tech(self) -> Tech | None:
-        return self.queue[0] if self.queue else None
+        return self.researching
 
     def next_tech(self) -> Tech | None:
-        return self.queue[1] if len(self.queue) > 1 else None
+        return self.researching
 
-    def process_queue(self) -> None:
+    def cancel_research(self) -> None:
+        if self.researching:
+            self._current_science_pool = 0
+            self._needed_science = 1
+            self.researching = None
+
+    def process_queue(self, complete_research: bool = True) -> None:
         if self.queue:
-            self.queue.pop(0)
+            if self.researching and complete_research:
+                self.researched_techs.append(self.researching)
+                self.researching = None
+            tech: Tech = self.queue.pop(0)
+            self.researching = tech
             self.reorder()
-            self.trigger_callback("on_tech_queue_updated")
 
     def complete_research(self, auto_complete_tech: bool = True) -> None:
         self._current_science_pool -= self._needed_science
         self.process_queue()
-        self.trigger_callback("on_tech_researched")
 
         # We check if we can still complete more for example if the player gets a large amount of science it could complete 1 or more techs.
         if auto_complete_tech and self._current_science_pool >= self._needed_science:
             self.complete_research()
 
+    def currently_researching(self) -> Tech | None:
+        return self.researching
+
+    def research_tech(self, tech: Tech) -> None:
+        if tech in self.registered_techs:
+            self.researching = tech
+            self._needed_science = tech.tech_points_required
+            self._current_science_pool = 0
+
     def add_science(self, science: int, auto_complete_tech: bool = True) -> None:
         self._current_science_pool += science
-        self.trigger_callback("on_science_added")
 
         while auto_complete_tech and self._current_science_pool >= self._needed_science and self.queue:
             self.complete_research(auto_complete_tech=auto_complete_tech)
@@ -108,4 +111,9 @@ class TechManager(BaseManager, CallbacksMixin):
         self._current_science_pool -= science
         if self._current_science_pool < 0:
             self._current_science_pool = 0
-        self.trigger_callback("on_science_removed")
+
+    def set_tech_tree(self, tech_tree: TechTree):
+        self._tech_tree = tech_tree
+
+    def get_tree(self) -> TechTree:
+        return self._tech_tree
