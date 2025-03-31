@@ -6,7 +6,6 @@ from weakref import ReferenceType
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix import widget
-from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -16,9 +15,11 @@ from kivy.uix.screenmanager import Screen
 
 from gameplay.city import City
 from gameplay.improvement import Improvement
+from gameplay.player import Player
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from managers.entity import EntityManager, EntityType
+from managers.player import PlayerManager
 from managers.unit import Unit
 from managers.world import World
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
@@ -28,6 +29,7 @@ from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
+from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from system.actions import Action
@@ -56,6 +58,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.camera: Camera = Camera.get_singleton_instance()
         self.unit_manager: Unit = Unit.get_singleton_instance()
         self.ui_manager: ui = ui.get_singleton_instance()
+        self.player: Optional[Player] = None
 
         self.waiting_for_world_input: bool = False
 
@@ -76,6 +79,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_turn_control: Optional[PlayerTurnControl] = None
         self.city_ui: Optional[CityUI] = None
         self.top_bar: Optional[TopBar] = None
+        self.research: Optional[Research] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -91,6 +95,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.register()
         self.build_screen()
         self.logger.info("Game UI Screen built.")
+
+    def on_game_start(self, *args: Any):
+        self.player = PlayerManager.session_player()
+        self.build_research()
 
     def reset(self):
         self.logger.info("Resetting game UI screen.")
@@ -113,6 +121,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.accept("system.unit.destroyed", self.clear_action_bar)
         self.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
+
+        self.accept("game.state.true_game_start", self.on_game_start)
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
@@ -186,6 +196,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             raise AssertionError("Top bar is not initialized.")
         return self.top_bar
 
+    def get_research(self) -> Research:
+        if self.research is None:
+            raise AssertionError("Research is not initialized.")
+        return self.research
+
     def build_screen(self):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
@@ -221,7 +236,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.register_non_collidable(self.debug_map_stats.frame)  # type: ignore
         self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
         self.register_non_collidable(self.city_ui.frame)  # type: ignore
-        self.register_non_collidable(self.top_bar.frame)  # type: ignore
+        self.register_non_collidable(self.top_bar)  # type: ignore
 
         self.logger.info("Non-collidable UI elements registered.")
         self.add_widget(self.root_layout)
@@ -259,9 +274,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.city_ui.hide()
         return result
 
-    def build_top_bar(self) -> AnchorLayout:
+    def build_top_bar(self) -> TopBar:
         self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
         return self.top_bar.build()
+
+    def build_research(self) -> Research | None:
+        if self.player is None:
+            return
+        self.research = Research(tree=self.player.tech.get_tree())
+        self.research.build()
 
     def clear_selected_unit(self):
         self.clear_action_bar()

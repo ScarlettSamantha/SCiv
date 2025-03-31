@@ -1,4 +1,4 @@
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Line, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 
@@ -12,6 +12,7 @@ class DebugPanel(FloatLayout):
         self.frame = None
         self.panel = None
         self.rect = None
+        self.blue_line = None  # New blue line attribute
 
     def get_frame(self) -> FloatLayout:
         if self.frame is None:
@@ -27,6 +28,7 @@ class DebugPanel(FloatLayout):
             pos_hint={"left": 1, "top": 0.975},
         )
 
+        # Background rectangle (canvas.before)
         with self.frame.canvas.before:  # type: ignore
             Color(0, 0, 0, 0.7)  # Black background with 70% opacity
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
@@ -37,6 +39,26 @@ class DebugPanel(FloatLayout):
 
         self.frame.bind(size=update_debug_rect, pos=update_debug_rect)  # type: ignore
 
+        # Blue line (canvas.after) to test something
+        with self.frame.canvas.after:
+            Color(0, 0, 1, 1)  # Blue color
+            # Draw a horizontal line across the center
+            self.blue_line = Line(
+                points=[self.frame.x, self.frame.center_y, self.frame.right, self.frame.center_y],
+                width=2,
+            )
+
+        def update_blue_line(instance, value):
+            self.blue_line.points = [
+                instance.x,
+                instance.center_y,
+                instance.right,
+                instance.center_y,
+            ]
+
+        self.frame.bind(size=update_blue_line, pos=update_blue_line)
+
+        # Debug panel label
         self.panel = Label(
             text="Debug Info: None Yet",
             size_hint=(None, None),
@@ -57,5 +79,4 @@ class DebugPanel(FloatLayout):
     def update_debug_info(self, text: str):
         if self.panel is None:
             return
-
         self.panel.text = text

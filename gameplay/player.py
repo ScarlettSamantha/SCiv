@@ -17,6 +17,7 @@ from gameplay.trades import Trades
 from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.colors import Colors, Tuple4f
+from managers.tech import TechManager
 from system.effects import Effect, Effects
 from system.entity import BaseEntity
 
@@ -109,6 +110,7 @@ class Player(BaseEntity):
         self.faith: Yields = Yields(faith=0)
         self.gold: Yields = Yields(gold=0)
 
+        self.tech: TechManager = TechManager()
         self._register_callbacks()
 
     def register(self) -> None:
