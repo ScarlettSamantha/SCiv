@@ -6,33 +6,30 @@ from managers.i18n import T_TranslationOrStr, t_
 
 class Tech:
     requires: List[Type["Tech"]] = []
+    key: str
+    name: T_TranslationOrStr | None = None
+    description: T_TranslationOrStr | None = None
+    contributes_to: List["Tech"] = []
+    icon: T_TranslationOrStr | None = None
+    tech_points_required: int = 1
+    age: Age | None = None
+    color: Tuple[int, int, int, int] | None = None
 
-    def __init__(
-        self,
-        key: str,
-        name: T_TranslationOrStr | None = None,
-        description: T_TranslationOrStr | None = None,
-        icon: T_TranslationOrStr | None = None,
-        contributes_to: List["Tech"] | None = None,
-        tech_points_required: int = 1,
-        age: Age | None = None,
-        color: Tuple[int, int, int, int] | None = None,
-    ) -> None:
-        self.key: str = key
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.key: str = self.key
 
-        self.name: T_TranslationOrStr | None = name if name is not None else t_(f"tech.{key}.name")
+        self.name: T_TranslationOrStr | None = self.name if self.name is not None else t_(f"tech.{self.key}.name")
         self.description: T_TranslationOrStr | None = (
-            description if description is not None else t_(f"tech.{key}.description")
+            self.description if self.description is not None else t_(f"tech.{self.key}.description")
         )
-        self.icon: T_TranslationOrStr | None = description if description is not None else t_(f"tech.{key}.description")
-        self.color: Tuple[int, int, int, int] | None = color
-        self.contributes_to: List[Tech] = contributes_to if contributes_to is not None else []
+        self.icon: T_TranslationOrStr | None = (
+            self.description if self.description is not None else t_(f"tech.{self.key}.description")
+        )
+        self.color: Tuple[int, int, int, int] | None = self.color
+        self.contributes_to: List[Tech] = self.contributes_to
         self.completed = False
-        self.tech_points_required: int = tech_points_required
-
-        # Age is not really meant to be set inside this object its suppose to be given by the tech tree object.
-        # so for proper usage, it should be set by the tech tree object.
-        self.age: Age | None = age
+        self.tech_points_required: int = self.tech_points_required
+        self.age: Age | None = self.age
 
     def __repr__(self, recursive: bool = False):
         contributes_to = [tech.__repr__(recursive=recursive) for tech in self.contributes_to]
@@ -49,15 +46,13 @@ class Tech:
 
 
 class TechTree:
-    def __init__(
-        self, name: T_TranslationOrStr, description: T_TranslationOrStr, icon: T_TranslationOrStr | None = None
-    ) -> None:
+    name: T_TranslationOrStr
+    description: T_TranslationOrStr
+    icon: T_TranslationOrStr | None = None
+
+    def __init__(self):
         self._items: List[Type[Tech]] = []
         self._ages: List[Age] = []  # noqa F821
-
-        self.name: T_TranslationOrStr = name
-        self.description: T_TranslationOrStr = description
-        self.icon: T_TranslationOrStr | None = icon
 
     def items(self) -> Generator[Type[Tech], None, None]:
         for item in self._items:
@@ -74,7 +69,7 @@ class TechTree:
         import webcolors
 
         min_colors = {}
-        for key, name in webcolors.CSS3_NAMES_TO_HEX.items():  # type: ignore
+        for _, name in webcolors.CSS3_NAMES_TO_HEX.items():  # type: ignore
             r_c, g_c, b_c = webcolors.hex_to_rgb(name)  # type: ignore
             rd: int = (r_c - requested_color[0]) ** 2
             gd: int = (g_c - requested_color[1]) ** 2

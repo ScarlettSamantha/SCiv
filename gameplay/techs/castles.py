@@ -5,12 +5,13 @@ from managers.i18n import t_
 
 
 class Castles(Tech):
+    key = "core.castles"
+    name = t_("tech.castles.name")
+    description = t_("tech.castles.description")
+    tech_points_required = 20
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            "core.castles",
-            t_("tech.castles.name"),
-            t_("tech.castles.description"),
-            tech_points_required=20,
             *args,
             **kwargs,
         )

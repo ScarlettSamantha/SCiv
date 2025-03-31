@@ -7,12 +7,13 @@ from managers.i18n import t_
 
 
 class Core(TechTree):
+    name = t_("content.type[tech].trees.core.name")
+    description = t_("content.type[tech].trees.core.name")
+    icon = t_("content.type[tech].trees.core.icon")
+
     def __init__(self, *args: Any, **kwargs: Any):
         TechTree.__init__(
             self,
-            name=t_("content.type[tech].trees.core.name"),
-            description=t_("content.type[tech].trees.core.name"),
-            icon=t_("content.type[tech].trees.core.icon"),
             *args,
             **kwargs,
         )
@@ -21,8 +22,8 @@ class Core(TechTree):
     def _add_items(self) -> None:
         from system.pyload import PyLoad
 
-        classes = PyLoad.load_classes("openciv/gameplay/techs/")
-        ages = PyLoad.load_classes("openciv/gameplay/ages/core/")
+        classes = PyLoad.load_classes("gameplay/techs/")
+        ages = PyLoad.load_classes("gameplay/ages/core/")
 
         # Just a type hint proxy
         def get_tech(self: Self, classes: Dict[str, Type[Tech]], key: str) -> Type[Tech]:
@@ -98,13 +99,11 @@ class Core(TechTree):
         celestial_navigation: Type[Tech] = add_to_space(
             self, classes, "CelestialNavigation", get_age(self, ages, "Classical")
         )
-        construction: Type[Tech] = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
         engineering: Type[Tech] = add_to_space(self, classes, "Engineering", get_age(self, ages, "Classical"))
         mathematics: Type[Tech] = add_to_space(self, classes, "Mathematics", get_age(self, ages, "Classical"))
         ship_building: Type[Tech] = add_to_space(self, classes, "ShipBuilding", get_age(self, ages, "Classical"))
         horseback_riding: Type[Tech] = add_to_space(self, classes, "HorsebackRiding", get_age(self, ages, "Classical"))
         iron_working: Type[Tech] = add_to_space(self, classes, "IronWorking", get_age(self, ages, "Classical"))
-        construction: Type[Tech] = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
 
         apprenticeship: Type[Tech] = add_to_space(self, classes, "Apprenticeship", get_age(self, ages, "Medieval"))
         buttress: Type[Tech] = add_to_space(self, classes, "Buttress", get_age(self, ages, "Medieval"))
@@ -183,16 +182,16 @@ class Core(TechTree):
         mining.requires = [hunting_gathering]
         trapping.requires = [hunting_gathering]
 
-        archery.requires = [hunting_gathering, trapping]
+        archery.requires = [trapping]
         writing.requires = [pottery]
         astrology.requires = [pottery]
-        masonry.requires = [pottery, mining]
+        masonry.requires = [mining]
         bronze_working.requires = [mining]
 
         currency.requires = [writing]
-        celestial_navigation.requires = [sailing, writing]
+        celestial_navigation.requires = [sailing]
         clay_tablets.requires = [writing]
-        horseback_riding.requires = [animal_husbandry, archery]
+        horseback_riding.requires = [animal_husbandry]
 
         calendar.requires = [clay_tablets]
         sailing.requires = [astrology]
@@ -205,24 +204,23 @@ class Core(TechTree):
         engineering.requires = [construction, mathematics, wheel]
         irrigation.requires = [calendar]
 
-        buttress.requires = [ship_building, mathematics]
-        military_tactics.requires = [mathematics]
-        construction.requires = [masonry]
-        engineering.requires = [wheel]
-
         buttress.requires = [ship_building]
+        military_tactics.requires = [mathematics]
+        engineering.requires = [wheel]
+        stirrups.requires = [horseback_riding]
+
         military_tactics.requires = [mathematics]
         apprenticeship.requires = [currency]
         machinery.requires = [engineering]
 
         education.requires = [mathematics]
-        stirrups.requires = [horseback_riding]
+
         military_engineering.requires = [construction]
         castles.requires = [iron_working]
 
         cartography.requires = [buttress]
         mass_production.requires = [military_tactics, education]
-        banking.requires = [currency, education, stirrups]
+        banking.requires = [education]
         gunpowder.requires = [stirrups, education]
         printing.requires = [machinery]
 
@@ -276,7 +274,7 @@ class Core(TechTree):
             hunting_gathering,
             trapping,
             animal_husbandry,
-            bronze_working,
+            masonry,
             pottery,
             writing,
             mining,
@@ -284,20 +282,18 @@ class Core(TechTree):
             astrology,
             clay_tablets,
             sailing,
-            masonry,
+            bronze_working,
             calendar,
             wheel,
             irrigation,
             construction,
             currency,
             celestial_navigation,
-            construction,
             engineering,
             mathematics,
             ship_building,
             horseback_riding,
             iron_working,
-            construction,
             apprenticeship,
             buttress,
             education,
