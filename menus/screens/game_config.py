@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
@@ -11,6 +11,7 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.slider import Slider
 from kivy.uix.widget import Widget
 
+from gameplay import civilization
 from gameplay.civilization import Civilization as BaseCivilization
 from gameplay.repositories.civilization import Civilization
 from menus.kivy.elements.button_value import ButtonValue
@@ -18,7 +19,7 @@ from menus.kivy.elements.scrollable_popup import ScrollablePopup
 
 
 class GameConfigMenu(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
         self.layout: Optional[FloatLayout] = None
@@ -55,11 +56,11 @@ class GameConfigMenu(Screen):
 
         with self.container.canvas.before:  # type: ignore
             Color(0.5, 0.5, 0.5, 0.5)
-            self.rect = Rectangle(size=self.container.size, pos=self.container.pos)
+            self.rect = Rectangle(size=self.container.size, pos=self.container.pos)  # type: ignore
 
-        def update_rect(instance, value):
+        def update_rect(instance: Widget, value: Any):
             self.rect.size = instance.size
-            self.rect.pos = instance.pos
+            self.rect.pos = instance.pos  # type: ignore
 
         self.container.bind(size=update_rect, pos=update_rect)  # type: ignore
 
@@ -74,7 +75,7 @@ class GameConfigMenu(Screen):
         self.players_label = Label(text="Players: 4", size_hint=(1, None), height=30)
         self.players = Slider(min=2, max=12, step=1, value=4, size_hint=(1, None), height=50)
 
-        def update_players_label(instance, value):
+        def update_players_label(instance: Widget, value: Any):
             self.players_label.text = f"Players: {int(value)}"  # type: ignore
             self.player_count = int(value)
 
@@ -127,7 +128,7 @@ class GameConfigMenu(Screen):
         self.layout.add_widget(self.container)
         return self.layout
 
-    def open_size_popup(self, instance):
+    def open_size_popup(self, instance: Button):
         if self.size_popup is None:
             self.size_popup = ScrollablePopup(
                 "Map sizes",
@@ -146,20 +147,20 @@ class GameConfigMenu(Screen):
             )
         self.size_popup.open()
 
-    def open_civilization_popup(self, instance):
+    def open_civilization_popup(self, instance: Button):
         if self.civ_popup is None:
-            kv_values = {}
+            kv_values: Dict[str, Type[civilization.Civilization]] = {}
             for civ in Civilization.all():
                 kv_values[str(civ.name)] = civ
             self.civ_popup = ScrollablePopup("Civilizations", kv_values, self.select_civilization)
         self.civ_popup.open()
 
-    def select_size(self, size, _value):
+    def select_size(self, size: str, _value: Tuple[int, int]):
         """Updates the resolution selection button"""
         self.selected_size = _value
         self.size_popup_button.text = size  # type: ignore
 
-    def select_civilization(self, civilization, _value: Type[BaseCivilization]):
+    def select_civilization(self, civilization: str, _value: Type[BaseCivilization]):
         """Updates the civilization selection button"""
         self.selected_civilization = _value
         self.dropdown_button.text = civilization

@@ -4,7 +4,7 @@ from gameplay.improvement import Improvement
 
 
 class ImprovementsSet:
-    def __init__(self, improvements: Optional[List] = None):
+    def __init__(self, improvements: Optional[List[Improvement]] = None):
         self._improvements: List[Improvement] = []
         self._num_improvements: int = 0
 
@@ -32,7 +32,7 @@ class ImprovementsSet:
             return any(isinstance(i, value) for i in self._improvements)
         return value in self._improvements
 
-    def __contains__(self, a) -> bool:
+    def __contains__(self, a: Type[Improvement] | Improvement) -> bool:
         if isinstance(a, type):
             return any(isinstance(i, a) for i in self._improvements)
         return a in self._improvements

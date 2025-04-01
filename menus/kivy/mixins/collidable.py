@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from direct.task.Task import Task
 from kivy.uix.layout import Layout
+from kivy.uix.popup import Popup
 from kivy.uix.widget import Widget
 
 from gameplay.city import messenger
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class CollisionPreventionMixin:
-    non_collidable_ui: List[Widget] = []
+    non_collidable_ui: List[Widget | Layout | Popup] = []
     # Cache mapping element -> (ui_x, ui_y, ui_right, ui_top)
     ui_geometry_cache: Dict[object, Tuple[float, float, float, float]] = {}
     has_tracking_enabled: bool = False
@@ -64,7 +65,7 @@ class CollisionPreventionMixin:
         This method recalculates each element's screen-space bounding box.
         """
         for element in self.non_collidable_ui:
-            parent = element.parent
+            parent = element.parent  # type: ignore
             if not parent:
                 continue  # Skip orphaned elements
             # Calculate real width and height, handling size_hint if necessary
@@ -102,14 +103,14 @@ class CollisionPreventionMixin:
         elif not inside_ui and self.in_collision_with_ui:
             self._set_input_state(raycaster=True, zoom_disabled=not self.disable_zoom)
 
-    def register_non_collidable(self, element: Widget | Layout):
+    def register_non_collidable(self, element: Widget | Layout | Popup):
         """Adds a UI element to the list of non-collidable UI elements."""
         if element not in self.non_collidable_ui:
             self.non_collidable_ui.append(element)
             # Optionally update its cache immediately
             self.force_update_ui_geometry()
 
-    def unregister_non_collidable(self, element: Widget):
+    def unregister_non_collidable(self, element: Widget | Layout | Popup):
         """Removes a UI element from the list of non-collidable UI elements."""
         if element in self.non_collidable_ui:
             self.non_collidable_ui.remove(element)

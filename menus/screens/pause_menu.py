@@ -53,7 +53,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         )
 
         self.container.canvas.before.add(Color(0, 0, 0, 0.7))
-        self.rect = Rectangle(size=self.container.size, pos=self.container.pos)
+        self.rect = Rectangle(size=self.container.size, pos=self.container.pos) # type: ignore
         self.container.canvas.before.add(self.rect)
 
         def update_rect(instance: Widget, value: Any):

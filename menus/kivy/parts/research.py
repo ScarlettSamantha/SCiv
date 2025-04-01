@@ -64,7 +64,7 @@ class Research(FloatLayout, DirectObject):
 
         with self._float_layout.canvas.before:  # type: ignore
             Color(0.2, 0.2, 0.2, 0.8)  # dark gray background
-            self._bg_rect = Rectangle(pos=self._float_layout.pos, size=self._float_layout.size)
+            self._bg_rect = Rectangle(pos=self._float_layout.pos, size=self._float_layout.size)  # type: ignore
         self._float_layout.bind(pos=self._update_rect, size=self._update_rect)  # type: ignore
 
         self.scroll_view.add_widget(self._float_layout)  # type: ignore

@@ -135,7 +135,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             if isinstance(building, BaseCityImprovement):
                 self._improvements.add(building)
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_improvement", [self, building])
-            elif isinstance(building, UnitBaseClass):
+            elif isinstance(building, UnitBaseClass):  # type: ignore
                 if self.player is not None:
                     self.player.units.add_unit(building)
 
@@ -199,8 +199,8 @@ class City(BaseEntity, DirectObject.DirectObject):
             if self.is_capital:
                 self.player.capital = self
 
-    def birth(self, population: int = 1, *args, **kwargs):
-        for i in range(population):
+    def birth(self, population: int = 1, *args: Any, **kwargs: Any):
+        for _ in range(population):
             self.citizens.create(*args, **kwargs)
 
     def _register_callbacks(self):
@@ -227,7 +227,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.logger.debug(f"City {city.name} got request to build improvement {improvement.name}.")
 
-        if not isinstance(improvement, BaseCityImprovement) and not isinstance(improvement, UnitBaseClass):
+        if not isinstance(improvement, BaseCityImprovement) and not isinstance(improvement, UnitBaseClass):  # type: ignore
             self.logger.error("Improvement is not an instance of BaseCityImprovement or UnitBaseClass.")
             return
 

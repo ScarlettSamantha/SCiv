@@ -1,8 +1,9 @@
 from math import floor
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from kivy.app import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -26,7 +27,14 @@ if TYPE_CHECKING:
 
 
 class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
-    def __init__(self, base: "SCIV", name, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
+    def __init__(
+        self,
+        base: "SCIV",
+        name: str,
+        background_color: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        border: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        **kwargs: Any,
+    ):
         super().__init__(base=base, disable_zoom=True, orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
         self.pos_hint = {"x": 0, "center_y": 0.65}  # Align left & center vertically
         self.size_hint = (0.50, 0.2)  # type: ignore # Ensure fixed width and height
@@ -146,11 +154,11 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             resource_required = list(self.city.resource_required_amount.props(True).values())
             resource_got = list(self.city.resource_collected.props(True).values())
 
-            if resource_required is None or len(resource_required) == 0:
+            if len(resource_required) == 0:
                 self.logger.error("Resource required is None or empty.")
                 raise AssertionError("Resource required is None or empty.")
 
-            resource_got = 0.0 if resource_got is None or len(resource_got) == 0 else resource_got[0].value
+            resource_got = 0.0 if len(resource_got) == 0 else resource_got[0].value
             resource_required = resource_required[0].value
             text = str(
                 t_(
@@ -166,15 +174,14 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         elif self.current_button is not None and not self.city.is_building:
             self.current_button.text = str(t_("ui.player_ui.city.current_button_idle"))
 
-        if self.button_container is not None:
-            self.generate_buttons()
-            self.button_container.clear_widgets()
-            for button in self.buildable_buttons.values():
-                self.button_container.add_widget(button)
+        self.generate_buttons()
+        self.button_container.clear_widgets()
+        for button in self.buildable_buttons.values():
+            self.button_container.add_widget(button)
 
         if self.improvement_list_scroll is not None:
             self.improvement_list_scroll.clear_widgets()
-            for improvement in self.city._improvements:
+            for improvement in self.city._improvements:  # type: ignore
                 label = Label(
                     text=str(improvement.name),
                     size_hint_y=None,
@@ -183,7 +190,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
                 )
                 self.improvement_list_scroll.add_widget(label)
 
-            self.improvement_list_scroll._apply_clipping()
+            self.improvement_list_scroll._apply_clipping()  # type: ignore
             self.improvement_list_scroll.scroll_to_top()
 
     def generate_buttons(self) -> Dict[str, Button]:
@@ -191,7 +198,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
         self.buildable_improvements = {}
         self.buildable_buttons = {}
-        buttons = {}
+        buttons: Dict[str, Button] = {}
 
         def format_button_text(instance: BaseCityImprovement | CivilianBaseClass | MilitaryBaseClass) -> str:
             return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
@@ -205,10 +212,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
                 if not class_instance.conditions.are_met():
                     continue
 
-                if type(class_instance) in self.city._improvements:  # We already have this improvement
+                if type(class_instance) in self.city.get_improvements():  # We already have this improvement
                     continue
 
-                if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city._improvements):
+                if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city.get_improvements()):
                     continue  # This is not the best way to check if we are already building this, but there was an issue with the __contains__ method it would not do a type check
 
                 if type(class_instance) == type(self.city.building):  # We are already building this
@@ -217,7 +224,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
                 )
-                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
+                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))  # type: ignore
                 buttons[class_name] = button
 
                 self.buildable_improvements[class_name] = class_instance
@@ -230,7 +237,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
                 )
-                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))
+                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))  # type: ignore
                 buttons[class_name] = button
 
                 self.buildable_units[class_name] = class_instance
@@ -280,7 +287,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             return
         self.update()
 
-    def on_cancel_current_build_btn_click(self, instance):
+    def on_cancel_current_build_btn_click(self, instance: Button):
         if self.city is None:
             raise AssertionError("City is None")
 
@@ -306,9 +313,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
         with self.frame.canvas.before:  # type: ignore
             Color(0, 0, 0, 0.7)  # Black background with 70% opacity
-            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
+            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
-        def update_debug_rect(instance, value):
+        def update_debug_rect(instance: Widget, value: Any):
             self.rect.size = instance.size  # type: ignore
             self.rect.pos = instance.pos  # type: ignore
 

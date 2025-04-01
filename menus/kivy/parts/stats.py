@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from kivy.app import Widget
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
@@ -28,12 +29,12 @@ class StatsPanel(FloatLayout):
         self.entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
         # These are just for type hinting
-        self.window: "GraphicsWindow" = self.base.win
-        self.window_properties: WindowProperties = self.window.properties
+        self.window: "GraphicsWindow" = self.base.win  # type: ignore
+        self.window_properties: WindowProperties = self.window.properties  # type: ignore
 
         self._periodicals: Dict[str, Any] = {
-            "window_size": f"{self.window.getXSize()},{self.base.win.getYSize()}",
-            "window_pos": f"{self.window_properties.getXOrigin()},{self.window_properties.getYOrigin()}",
+            "window_size": f"{self.window.getXSize()},{self.base.win.getYSize()}",  # type: ignore
+            "window_pos": f"{self.window_properties.getXOrigin()},{self.window_properties.getYOrigin()}",  # type: ignore
             "entity_manager_entities_total": 0,
             "entity_manager_entities_orphans": 0,
             "entity_manager_total_players": 0,
@@ -60,10 +61,10 @@ class StatsPanel(FloatLayout):
         if self.frame is not None:
             self.frame.opacity = 0
 
-    def periodicals(self, dt):
-        self._periodicals["window_size"] = (f"{self.base.win.getXSize()},{self.base.win.getYSize()}",)
+    def periodicals(self, dt: float):
+        self._periodicals["window_size"] = (f"{self.base.win.getXSize()},{self.base.win.getYSize()}",)  # type: ignore
         self._periodicals["window_pos"] = (
-            f"{self.base.win.properties.getXOrigin()},{self.base.win.properties.getYOrigin()}",
+            f"{self.base.win.properties.getXOrigin()},{self.base.win.properties.getYOrigin()}",  # type: ignore
         )
 
         self.entity_manager.calculate_stats()
@@ -88,14 +89,14 @@ class StatsPanel(FloatLayout):
 
         with self.frame.canvas.before:  # type: ignore
             Color(0, 0, 0, 0.8)
-            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
+            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
-        def update_camera_rect(instance, value):
+        def update_camera_rect(instance: Widget, value: Any):
             if self.rect is None:
                 return
 
             self.rect.size = instance.size
-            self.rect.pos = instance.pos
+            self.rect.pos = instance.pos  # type: ignore
 
         self.frame.bind(size=update_camera_rect, pos=update_camera_rect)
 
@@ -116,8 +117,8 @@ class StatsPanel(FloatLayout):
         self.frame.add_widget(self.label)
         return self.frame
 
-    def on_update(self, dt):
-        fps = self.base.clock.getAverageFrameRate()
+    def on_update(self, dt: float):
+        fps = self.base.clock.getAverageFrameRate()  # type: ignore
         text = (
             f"FPS: {fps:.2f}",
             f"Yaw: {self.camera.yaw}",

@@ -144,6 +144,9 @@ class BaseResource(ResourceTypeBase, ABC):
         *args: Any,
         **kwargs: Any,
     ) -> None:
+        if self.type is None:
+            raise ResourceTypeException(f"Resource type not set for {self.__class__.__name__}")
+
         super().__init__(self.name, self.description, self.type, *args, **kwargs)
         self.value: Union[float, int] = value
         self.value_storage: ResourceValueType = self.configure_as_float_or_int
@@ -363,7 +366,7 @@ class Resources:
 
     def add(self, resource: Union[BaseResource, List[BaseResource]], auto_instance: bool = True) -> None:
         def _add(self: Self, tmp_resource: BaseResource) -> None:
-            resource_type: Type[ResourceTypeBase] = tmp_resource.type
+            resource_type: Type[ResourceTypeBase] = tmp_resource.type  # type: ignore
             if resource_type not in self.resources:
                 self.resources[resource_type] = {}
             self.resources[resource_type][tmp_resource.key] = tmp_resource
@@ -377,14 +380,16 @@ class Resources:
             raise ResourceTypeException(f"Resource must be of type Resource, not {type(resource)}")
 
     def remove(self, resource: BaseResource) -> None:
-        resource_type: Type[ResourceTypeBase] = resource.type
-        if resource_type in self.resources and resource.key in self.resources[resource_type]:
+        if resource.type is None:
+            return
+        resource_type: ResourceType = resource.type
+        if resource_type in self.resources and resource.key in self.resources[resource_type]:  # type: ignore
             del self.resources[resource_type][resource.key]
 
     def has(self, resource: Optional[BaseResource] = None) -> bool:
         if resource is None:
             return bool(self.resources)
-        return resource.key in self.resources[resource.type]
+        return resource.key in self.resources[resource.type]  # type: ignore
 
     def __iter__(self) -> Iterator[BaseResource]:
         return iter(self.flatten().values())

@@ -43,7 +43,7 @@ class PlayerTurnControl(FloatLayout, DirectObject):
 
         with self.frame.canvas.before:  # type: ignore
             Color(0, 0, 0, 0.7)  # Black background with 70% opacity
-            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
+            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
         def update_debug_rect(instance: FloatLayout, value: Any):
             self.rect.size = instance.size  # type: ignore

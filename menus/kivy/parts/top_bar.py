@@ -69,7 +69,7 @@ class TopBar(BoxLayout, DirectObject):
         # Draw background rectangle
         with self.canvas.before:
             Color(*self.background_color)
-            self.rect = Rectangle(size=self.size, pos=self.pos)
+            self.rect = Rectangle(size=self.size, pos=self.pos)  # type: ignore
 
         self.bind(size=self._update_rect, pos=self._update_rect)  # type: ignore
 
