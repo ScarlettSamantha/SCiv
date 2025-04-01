@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -19,8 +19,8 @@ if TYPE_CHECKING:
 
 
 class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
-    def __init__(self, base: "SCIV", auto_dismiss=False, **kwargs):
-        super().__init__(
+    def __init__(self, base: "SCIV", auto_dismiss: bool = False, **kwargs: Any):
+        super().__init__(  # type: ignore
             title="Load Game",
             base=base,
             auto_dismiss=auto_dismiss,
@@ -55,7 +55,7 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.size_label: Optional[Label] = None
 
         self.build()
-        self.add_widget(self.main_layout)
+        self.add_widget(self.main_layout)  # type: ignore
 
     def build(self):
         self.build_left_scroll_view()
@@ -88,7 +88,7 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
             self.items.append(item_button)
             self.scroll_view.add_widget(item_button)
 
-        self.main_layout.add_widget(self.scroll_view)
+        self.main_layout.add_widget(self.scroll_view)  # type: ignore
 
     def rebuild(self):
         self.rebuild_left_scroll_view()
@@ -101,7 +101,7 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.items = []  # Clear the old list
 
         # Gather save game items with datetime.
-        save_games_with_dt: list[tuple[datetime, str, dict]] = []
+        save_games_with_dt: list[Tuple[datetime, str, Dict[str, Any]]] = []
         for save_game in self.get_save_games():
             save_game_data = self.get_save_game(save_game)
             if save_game_data is None:
@@ -175,12 +175,12 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.entities_label = Label(text="")
         self.size_label = Label(text="")
 
-        self.details_layout.add_widget(self.title_label)
-        self.details_layout.add_widget(self.hash_label)
-        self.details_layout.add_widget(self.entities_label)
-        self.details_layout.add_widget(self.size_label)
+        self.details_layout.add_widget(self.title_label)  # type: ignore
+        self.details_layout.add_widget(self.hash_label)  # type: ignore
+        self.details_layout.add_widget(self.entities_label)  # type: ignore
+        self.details_layout.add_widget(self.size_label)  # type: ignore
 
-        self.main_layout.add_widget(self.details_layout)
+        self.main_layout.add_widget(self.details_layout)  # type: ignore
 
     def build_save_name_input(self):
         self.name_input_container = GridLayout(cols=2, size_hint=(0.6, None), height=40)
@@ -190,13 +190,13 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.name_input = StickyTextInput(size_hint=(0.75, None), height=40)
         self.name_input.disabled = True
 
-        self.name_input_container.add_widget(self.name_input_label)
-        self.name_input_container.add_widget(self.name_input)
+        self.name_input_container.add_widget(self.name_input_label)  # type: ignore
+        self.name_input_container.add_widget(self.name_input)  # type: ignore
 
         self.spacer = Label(size_hint=(0.4, None), height=40)
 
-        self.main_layout.add_widget(self.name_input_container)
-        self.main_layout.add_widget(self.spacer)
+        self.main_layout.add_widget(self.name_input_container)  # type: ignore
+        self.main_layout.add_widget(self.spacer)  # type: ignore
 
     def build_footer(self):
         self.footer_load_button = ButtonValue(text="Load", size_hint=(1, None), height=50)
@@ -205,21 +205,21 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.footer_cancel_button = ButtonValue(text="Cancel", size_hint=(0.35, None), height=50)
         self.footer_cancel_button.bind(on_release=self.on_cancel)
 
-        self.main_layout.add_widget(self.footer_load_button)
-        self.main_layout.add_widget(self.footer_cancel_button)
+        self.main_layout.add_widget(self.footer_load_button)  # type: ignore
+        self.main_layout.add_widget(self.footer_cancel_button)  # type: ignore
 
-    def on_load_game(self, instance):
+    def on_load_game(self, instance: ButtonValue):
         if not self.name_input or not self.name_input.text or self.name_input.text == "":
             return
 
         MessengerGlobal.messenger.send("game.state.request_load", [self.name_input.text])
 
-    def on_cancel(self, instance):
+    def on_cancel(self, instance: ButtonValue):
         self.close_popup()
 
     def open_popup(self):
         self.rebuild()
-        self.open()
+        self.open()  # type: ignore
         self.register_non_collidable(self)
         self.accept("escape", self.close_popup)
         MessengerGlobal.messenger.send("system.input.disable_zoom")
@@ -227,10 +227,11 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         MessengerGlobal.messenger.send("system.input.camera_lock")
 
     def close_popup(self):
-        self.dismiss()
+        self.dismiss()  # type: ignore
         self.unregister_non_collidable(self)
         self.ignore("escape")
         MessengerGlobal.messenger.send("system.input.enable_zoom")
         MessengerGlobal.messenger.send("system.input.enable_control")
         MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.raycaster_on")
+        MessengerGlobal.messenger.send("ui.update.ui.hide_load")
