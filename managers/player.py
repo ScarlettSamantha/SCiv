@@ -25,6 +25,7 @@ class PlayerManager(BaseManager):
             if player.is_human:
                 cls._session_player = player
             cls._players[player.turn_order] = player
+            player.on_game_load()
 
     @classmethod
     def reset(cls) -> None:
