@@ -204,7 +204,6 @@ class Game(Singleton, DirectObject):
         self.accept("system.input.user.tile_clicked", self.handle_tile_click)
         self.accept("system.input.user.unit_clicked", self.handle_unit_click)
         self.accept("system.game.start_load", self.on_game_start)
-        self.accept("game.input.user.escape_pressed", self.toggle_pause_game)
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
 
