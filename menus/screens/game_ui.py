@@ -282,7 +282,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.player is None:
             return
         self.research = Research(tree=self.player.tech.get_tree())
-        self.research.build()
+        self.add_widget(self.research)
 
     def clear_selected_unit(self):
         self.clear_action_bar()
