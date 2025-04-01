@@ -3,7 +3,7 @@
   "typeStubPath": [
     "./typings",
     "/home/scarlett/.pyenv/versions/3.13.2/lib/python3.13/site-packages",
-    "../stubs"
+    "~/Code/Stubs"
   ],
   "exclude": ["assets", "scripts", "system/subsystems/hexgen/**"],
   "stubPath": "./typings",
