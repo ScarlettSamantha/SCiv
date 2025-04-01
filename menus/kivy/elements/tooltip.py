@@ -97,14 +97,12 @@ class TooltipBehavior:
 
     def show_tooltip(self, dt: Any):
         if not self.tooltip_visible:
-
             self.tooltip_label = TooltipLabel(text=self.tooltip_text, opacity=0)
             parent = ui.get_singleton_instance().get_main_game_ui()
 
             if self.tooltip_label in parent.children:
                 parent.remove_widget(self.tooltip_label)  # type: ignore
             parent.add_widget(self.tooltip_label)  # type: ignore
-
 
             if self.base.mouseWatcherNode.hasMouse():  # type: ignore
                 win_size = self.base.win.getSize()  # type: ignore
