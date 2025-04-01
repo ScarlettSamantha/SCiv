@@ -59,11 +59,10 @@ class BaseGenerator(ABC):
             _name: str = get_i18n().lookup(name)
 
         player: Player = Player(_name, turn_order, personality, civilization, leader)
+        player.is_human = is_player
         player.tech.set_tech_tree(tech_tree())
         if player.is_registered is False:
             player.register()
-
-        player.is_human = is_player
 
         return player
 
