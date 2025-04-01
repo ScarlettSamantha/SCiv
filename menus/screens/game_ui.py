@@ -3,6 +3,7 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 from weakref import ReferenceType
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix import widget
@@ -16,6 +17,7 @@ from kivy.uix.screenmanager import Screen
 from gameplay.city import City
 from gameplay.improvement import Improvement
 from gameplay.player import Player
+from gameplay.tech import TechTree
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from managers.entity import EntityManager, EntityType
@@ -32,6 +34,7 @@ from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
+from menus.screens.pause_menu import PauseMenu
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
@@ -99,6 +102,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def on_game_start(self, *args: Any):
         self.player = PlayerManager.session_player()
         self.build_research()
+        self.accept(
+            "escape", self.on_escape
+        )  # this is to prevent the pause menu from being opened before the game starts
+        MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
+
+    def on_game_end(self, *args: Any):
+        self.ignore("escape")
 
     def reset(self):
         self.logger.info("Resetting game UI screen.")
@@ -123,9 +133,25 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
 
         self.accept("game.state.true_game_start", self.on_game_start)
+        self.accept("game.state.load_finished", self.on_game_start)
+        self.accept("game.state.main_menu", self.on_game_end)
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
+
+    def on_escape(self):
+        if (
+            self.research is not None and self.research.is_open
+        ):  # if the research screen is open exit as it is handled in the research screen
+            MessengerGlobal.messenger.send("ui.update.ui.hide_research_ui")
+            return
+
+        screen: PauseMenu | Screen = self.ui_manager.get_screen("pause_menu")
+
+        if screen.pause_menu._is_open:  # type: ignore
+            MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
+        else:
+            MessengerGlobal.messenger.send("ui.update.ui.show_pause")
 
     def on_unit_destroyed(self, unit: BaseEntity):
         self.clear_action_bar()
@@ -281,8 +307,20 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def build_research(self) -> Research | None:
         if self.player is None:
             return
-        self.research = Research(tree=self.player.tech.get_tree())
+
+        tree: None | TechTree = self.player.tech.get_tree()
+        if tree is None:
+            return
+
+        if self.research is not None:
+            self.remove_widget(self.research)  # type: ignore
+        self.research = Research(tree=tree)
         self.add_widget(self.research)
+
+    def refresh_top_bar(self):
+        if self.top_bar is None:
+            raise AssertionError("Top bar is not initialized.")
+        self.top_bar.update()
 
     def clear_selected_unit(self):
         self.clear_action_bar()

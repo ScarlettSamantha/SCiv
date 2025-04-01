@@ -8,11 +8,16 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 
 from gameplay.tech import Tech, TechTree
+from managers.player import PlayerManager
+from managers.tech import TechManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton
 
 
-class ResearchButton(TooltippedButton): ...
+class ResearchButton(TooltippedButton):
+    def __init__(self, value: Type[Tech], *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.value: Type[Tech] = value
 
 
 class Research(FloatLayout, DirectObject):
@@ -21,6 +26,7 @@ class Research(FloatLayout, DirectObject):
         DirectObject.__init__(self, **kwargs)
 
         self.tree: TechTree = tree
+        self.player_tech_manager: TechManager = PlayerManager.session_player().tech
         self._column_width: int = 350
         self._button_width: int = 180
         self._button_height: int = 60
@@ -28,14 +34,18 @@ class Research(FloatLayout, DirectObject):
         self._vertical_spacing: int = 40
         self._box_margin: int = 10  # for routing around boxes if needed
         self._is_build: bool = False
+        self.is_open: bool = False
         self.register()
-        self.build()
-        self.hide_popup()
 
     def register(self) -> None:
         self.accept("ui.update.ui.show_research_ui", self.show_popup)
         self.accept("ui.update.ui.hide_research_ui", self.hide_popup)
+        self.accept("ui.update.ui.refresh_research_ui", self.update)
         self.accept_once("t", self.show_popup)
+
+    def update(self, *args: Any) -> None:
+        if self.is_open:
+            self._calculate_button_state()
 
     def build(self) -> None:
         if self._is_build:
@@ -76,6 +86,19 @@ class Research(FloatLayout, DirectObject):
         self._bg_rect.pos = instance.pos  # type: ignore
         self._bg_rect.size = instance.size  # type: ignore
 
+    def _calculate_button_state(self) -> None:
+        for btn in list(self._buttons.values()):  # type: ignore
+            btn: ResearchButton = btn
+            btn.disabled = self.player_tech_manager.is_tech_researched(
+                btn.value
+            ) or not self.player_tech_manager.are_tech_requirements_met(btn.value)
+            if self.player_tech_manager.is_tech_researched(btn.value):
+                btn.background_color = (0.0, 0.5, 0.0, 1)  # type: ignore
+            elif type(self.player_tech_manager.researching) == btn.value:
+                btn.background_color = (0, 0, 0.5, 1)  # type: ignore
+            else:
+                btn.background_color = (0.5, 0.5, 0.5, 0.7)  # type: ignore
+
     def _calculate_levels(self, techs: List[Type[Tech]]) -> Dict[Type[Tech], int]:
         level_map: Dict[Type[Tech], int] = {}
         changed = True
@@ -97,11 +120,10 @@ class Research(FloatLayout, DirectObject):
         for tech_cls in self._tech_classes:
             lvl: int = self._level_map[tech_cls]
             tech_by_level[lvl].append(tech_cls)
-            
+
         sorted_tech_by_level: Dict[int, List[Type[Tech]]] = {}
         for level in sorted(tech_by_level.keys()):
             if level == 0:
-                
                 sorted_tech_by_level[level] = sorted(tech_by_level[level], key=lambda tech: tech.key)
             else:
                 prev_sorted = sorted_tech_by_level.get(level - 1, [])
@@ -136,12 +158,19 @@ class Research(FloatLayout, DirectObject):
                 y_pos = spacing * (i + 1) + i * self._button_height
 
                 btn = ResearchButton(
-                    text=str(tech_cls.name),
+                    text=f"{str(tech_cls.name)}({str(tech_cls.tech_points_required)})",
                     tooltip_text=str(tech_cls.description),
                     size_hint=(None, None),
                     size=(self._button_width, self._button_height),
                     pos=(x_pos, y_pos),
+                    value=tech_cls,
                 )
+                btn.disabled = self.player_tech_manager.is_tech_researched(
+                    tech_cls
+                ) or not self.player_tech_manager.are_tech_requirements_met(tech_cls)
+
+                btn.bind(on_release=self.on_research_button_click)  # type: ignore
+
                 self._float_layout.add_widget(btn)  # type: ignore
                 self._buttons[tech_cls] = btn
 
@@ -154,6 +183,11 @@ class Research(FloatLayout, DirectObject):
         max_level = max(self._level_map.values()) if self._level_map else 0
         self._float_layout.width = (max_level + 1) * self._column_width + self._padding_left * 2
         self._float_layout.height = total_height
+        self._calculate_button_state()
+
+    def on_research_button_click(self, btn: ResearchButton) -> None:
+        MessengerGlobal.messenger.send("game.gameplay.research.request_start_research_session_player", [btn.value])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_research_ui")
 
     def _draw_dependency_lines(self, *args: Any) -> None:
         if not self._buttons or not self._float_layout.canvas:
@@ -317,6 +351,8 @@ class Research(FloatLayout, DirectObject):
         Line(points=[tipx, tipy, rightx, righty], width=1.5)
 
     def show_popup(self, *_: Any) -> None:
+        if self._is_build is False:
+            self.build()
         self.opacity = 1
         self.disabled = False
         self.accept_once("t", self.hide_popup)
@@ -324,12 +360,14 @@ class Research(FloatLayout, DirectObject):
         MessengerGlobal.messenger.send("system.input.disable_zoom")
         MessengerGlobal.messenger.send("system.input.disable_control")
         MessengerGlobal.messenger.send("system.input.camera_lock")
+        self.is_open = True
 
     def hide_popup(self, *_: Any) -> None:
-        self.opacity = 0
-        self.disabled = True
+        self.clear_widgets()
+        self._is_build = False
         self.accept_once("t", self.show_popup)
         MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.raycaster_on")
         MessengerGlobal.messenger.send("system.input.enable_zoom")
         MessengerGlobal.messenger.send("system.input.enable_control")
+        self.is_open = False

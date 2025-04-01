@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, List, Literal, Optional, Self
+from typing import TYPE_CHECKING, List, Literal, Optional, Self, Type
+
+from direct.showbase import MessengerGlobal
 
 from gameplay._units import Units
 from gameplay.cities import Cities
@@ -13,9 +15,11 @@ from gameplay.moods import Moods
 from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
+from gameplay.tech import Tech
 from gameplay.trades import Trades
 from gameplay.votes import Votes
 from gameplay.yields import Yields
+from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.tech import TechManager
 from system.effects import Effect, Effects
@@ -40,6 +44,7 @@ class Player(BaseEntity):
         from gameplay._units import Units
         from gameplay.resource import Resources
 
+        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
         self.name: str = name
         self.id: str | None = None
         self.identifier: str | None = None
@@ -120,6 +125,17 @@ class Player(BaseEntity):
             entity=self, type=EntityType.PLAYER, key=f"{self.name}-{self.turn_order}"
         )
 
+        if self.is_human:
+            self.accept(
+                "game.gameplay.research.request_start_research_session_player", self.on_request_start_research_session
+            )
+
+    def on_game_load(self) -> None:
+        """This will be called when the game is restored from a save file."""
+        self.register()
+        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
+        self.tech.on_game_load()
+
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
 
@@ -128,7 +144,23 @@ class Player(BaseEntity):
     def _register_callbacks(self) -> None:
         self.citizens.register_callback(event="on_birth", callback=self.on_citizen_birth)
 
-    # @todo make citizens seperate thing.
+    def on_request_start_research_session(self, tech: Type[Tech], add_to_queue: bool = False) -> None:
+        self.logger.debug(f"Player {str(self.name)} requested to start research session for {tech.__name__}")
+        instanced_tech: Tech = tech()
+
+        if add_to_queue:
+            self.tech.add_tech_to_queue(instanced_tech)
+        else:
+            self.tech.research_tech(instanced_tech)
+
+        MessengerGlobal.messenger.send("game.gameplay.research.player_starts_research", [self, tech])
+
+    def on_request_cancel_research_session(self) -> None:
+        self.logger.debug(f"Player {str(self.name)} requested to cancel research session.")
+        self.tech.cancel_research()
+        MessengerGlobal.messenger.send("game.gameplay.research.player_cancels_research", [self])
+
+    # @todo make citizens separate thing.
     def on_citizen_birth(self, citizen: Citizen) -> None:
         self.population += 1
 
@@ -137,6 +169,11 @@ class Player(BaseEntity):
         self.culture += yield_
         self.faith += yield_
         self.gold += yield_
+
+        if self.tech.is_researching():
+            self.tech.add_science(
+                int(yield_.science.value), auto_complete_tech=True
+            )  # Contribute to the current research.
 
     def _recalculate(self) -> None:
         properties: tuple[

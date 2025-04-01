@@ -4,19 +4,24 @@ from typing import TYPE_CHECKING, Any, Optional
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from kivy.app import Widget
-from kivy.graphics import Color, Line, Rectangle
+from kivy.graphics import Color, Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from helpers.colors import Tuple4f
 from managers.player import PlayerManager
 from managers.turn import Turn
+from menus.kivy.elements.button_self_resizable import SelfResizableButton
 
 if TYPE_CHECKING:
     from main import SCIV
+
+
+class ResearchButton(SelfResizableButton):
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
 
 class TopBar(BoxLayout, DirectObject):
@@ -83,7 +88,7 @@ class TopBar(BoxLayout, DirectObject):
             return self
 
         # Create labels
-        self.research_label = Button(
+        self.research_label = ResearchButton(
             text="Researching: None",
             size_hint=(None, 1),
             width=150,
@@ -179,8 +184,10 @@ class TopBar(BoxLayout, DirectObject):
         ):
             raise ValueError("Top Bar labels have not been built yet.")
 
-        current_tech = player.tech.current_tech()
-        self.research_label.text = f"Researching: {current_tech or '?'}"  # type: ignore
+        if (current_tech := player.tech.current_tech()) is None and self.research_label is not None:
+            self.research_label.text = "Researching: None"
+        else:
+            self.research_label.text = f"Researching: {str(current_tech.name)}({str(player.tech.current_science)} / {str(player.tech.needed_science)})"  # type: ignore
         self.gold_label.text = f"Gold: {floor(player.gold.gold.value)}"  # type: ignore
         self.faith_label.text = f"Faith: {floor(player.faith.faith.value)}"  # type: ignore
         self.science_label.text = f"Science: {floor(player.science.science.value)}"  # type: ignore

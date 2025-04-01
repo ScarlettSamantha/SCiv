@@ -9,6 +9,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from panda3d.core import PStatClient
 
+from gameplay.player import Player
+from gameplay.tech import Tech
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from helpers.colors import Colors
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
     from main import SCIV
     from managers.game import Game
     from menus.kivy.core import SCivGUI
+    from menus.screens.game_ui import GameUIScreen
 
 
 class ui(Singleton, DirectObject):
@@ -137,7 +140,7 @@ class ui(Singleton, DirectObject):
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
 
-        self.accept("escape", self.get_escape_menu)
+        self.accept("escape", self.on_escape_press)
 
         self.accept("f7", self.trigger_render_analyze)
         self.accept("p", self.activate_pstat)
@@ -149,13 +152,46 @@ class ui(Singleton, DirectObject):
         self.accept("z", self.calculate_icons_for_tiles)
         self.accept("x", self.toggle_big_tile_icons)
         self.accept("c", self.toggle_little_tile_icons)
+
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
+
+        self.accept("game.gameplay.research.player_starts_research", self.on_start_research_session)
+        self.accept("game.gameplay.research.player_cancels_research", self.on_cancels_research_session)
+
         self.accept("system.main.ready", self.on_main_ready)
         return True
 
-    def get_main_game_ui(self) -> "Screen":
+    def get_main_game_ui(self) -> "Screen | GameUIScreen":
         return self.get_screen("game_ui")
+
+    def on_escape_press(self):
+        if self.game is None:
+            raise ValueError("Game not initialized")
+
+    def on_start_research_session(self, player: Player, tech: Tech):
+        from menus.screens.game_ui import GameUIScreen
+
+        if player != PlayerManager.session_player():
+            return
+
+        ui: GameUIScreen | Screen = self.get_main_game_ui()  # type: ignore
+
+        if not isinstance(ui, GameUIScreen):
+            raise ValueError("UI is not a GameUIScreen")
+
+        ui.refresh_top_bar()
+
+    def on_cancels_research_session(self, player: Player):
+        if player != PlayerManager.session_player():
+            return
+
+        ui: GameUIScreen | Screen = self.get_main_game_ui()
+
+        if not isinstance(ui, GameUIScreen):
+            raise ValueError("UI is not a GameUIScreen")
+
+        ui.refresh_top_bar()
 
     def on_unit_destroyed(self, unit: UnitBaseClass):
         messenger.send("ui.update.ui.unit_unselected", [unit])
@@ -173,6 +209,7 @@ class ui(Singleton, DirectObject):
     def on_request_main_menu(self):
         self.get_gui().load_main_menu()
         MessengerGlobal.messenger.send("game.state.main_menu")
+        MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
 
     def on_reroll(self):
         self.get_game().reroll()
@@ -187,21 +224,27 @@ class ui(Singleton, DirectObject):
         self.get_gui().set_screen("main_menu")
 
     def on_show_save(self):
+        self.previous_screen_name = self.get_gui().get_screen_manager().current  # type: ignore
         self.set_screen("save_load_screen")
         screen: SaveLoadScreen = self.get_gui().get_screen_manager().get_screen("save_load_screen")  # type: ignore
         screen.show_save_menu()  # type: ignore
 
     def on_show_load(self):
+        self.previous_screen_name = self.get_gui().get_screen_manager().current  # type: ignore
         self.set_screen("save_load_screen")
         self.get_gui().get_screen_manager().get_screen("save_load_screen").show_load_menu()  # type: ignore
 
     def on_hide_save(self, go_back_to_previous: bool = True):
-        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_save_menu()  # type: ignore
-        self.get_gui().get_screen_manager().current = "game_ui"
+        if self.previous_screen_name is None or self.previous_screen_name == "":
+            self.previous_screen_name = "game_ui"
+
+        self.get_gui().get_screen_manager().current = self.previous_screen_name
 
     def on_hide_load(self, go_back_to_previous: bool = True):
-        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_load_menu()  # type: ignore
-        self.get_gui().get_screen_manager().current = "game_ui" if go_back_to_previous else "main_menu"
+        if self.previous_screen_name is None or self.previous_screen_name == "":
+            self.previous_screen_name = "game_ui"
+
+        self.get_gui().get_screen_manager().current = self.previous_screen_name
 
     def show_draggable_popup(
         self,
