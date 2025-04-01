@@ -895,9 +895,21 @@
         "name": "Artificial Intelligence",
         "description": "Machines simulating human intelligence and learning."
       },
+      "astronomy": {
+        "name": "Astronomy",
+        "description": "Study of celestial bodies and the universe."
+      },
+      "astrology": {
+        "name": "Astrology",
+        "description": "Study of celestial bodies' influence on human affairs."
+      },
       "banking": {
         "name": "Banking",
         "description": "Management of financial transactions and institutions."
+      },
+      "ballistics": {
+        "name": "Ballistics",
+        "description": "Study of projectile motion and impact."
       },
       "biology": {
         "name": "Biology",
@@ -975,6 +987,10 @@
         "name": "Electronics",
         "description": "Devices using electrical circuits and components."
       },
+      "industrialisation": {
+        "name": "Industrialisation",
+        "description": "Transition to industrial production methods."
+      },
       "engineering": {
         "name": "Engineering",
         "description": "Design and construction of structures and machines."
@@ -1014,6 +1030,10 @@
       "iron_working": {
         "name": "Iron Working",
         "description": "Creating tools and weapons from iron."
+      },
+      "lasers": {
+        "name": "Lasers",
+        "description": "Devices emitting focused light beams."
       },
       "machinery": {
         "name": "Machinery",
@@ -1079,6 +1099,10 @@
         "name": "Printing",
         "description": "Reproduction of text and images on paper."
       },
+      "pottery": {
+        "name": "Pottery",
+        "description": "Crafting objects from clay and ceramics."
+      },
       "radio": {
         "name": "Radio",
         "description": "Wireless communication technology using radio waves."
@@ -1102,6 +1126,10 @@
       "rocketry": {
         "name": "Rocketry",
         "description": "Building rockets for propulsion and space."
+      },
+      "sailing": {
+        "name": "Sailing",
+        "description": "Navigating watercraft using sails."
       },
       "sanitation": {
         "name": "Sanitation",
@@ -1154,6 +1182,10 @@
       "telecommunications": {
         "name": "Telecommunications",
         "description": "Transmission of information over long distances."
+      },
+      "trapping": {
+        "name": "Trapping",
+        "description": "Catching animals for food and resources."
       },
       "wheel": {
         "name": "Wheel",
