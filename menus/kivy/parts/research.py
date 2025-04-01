@@ -10,6 +10,7 @@ from kivy.uix.floatlayout import FloatLayout
 from gameplay.tech import Tech, TechTree
 from managers.player import PlayerManager
 from managers.tech import TechManager
+from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton
 
@@ -351,6 +352,13 @@ class Research(FloatLayout, DirectObject):
         Line(points=[tipx, tipy, rightx, righty], width=1.5)
 
     def show_popup(self, *_: Any) -> None:
+        is_escape_open = ui.get_singleton_instance().get_screen("pause_menu").pause_menu._is_open  # type: ignore
+        if is_escape_open:  # We check if we are in the game screen
+            self.accept_once(
+                "t", self.show_popup
+            )  # This is to re-accept the t key if a popup is not shown so we don't get stuck
+            return
+
         if self._is_build is False:
             self.build()
         self.opacity = 1

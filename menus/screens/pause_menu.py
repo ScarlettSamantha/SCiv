@@ -38,6 +38,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         self.options_btn: Optional[Button] = None
         self.main_menu_btn: Optional[Button] = None
         self.quit_btn: Optional[Button] = None
+        self.is_open: bool = False
         self.register()
 
     def register(self):
@@ -119,6 +120,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         if self.container is None:
             raise ValueError("Container is not built yet.")
 
+        self.is_open = True
         self.register_non_collidable(self.container)
         super().open()  # type: ignore
 
@@ -126,6 +128,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         if self.container is None:
             raise ValueError("Container is not built yet.")
 
+        self.is_open = False
         self.unregister_non_collidable(self.container)
         super().dismiss()  # type: ignore
 
