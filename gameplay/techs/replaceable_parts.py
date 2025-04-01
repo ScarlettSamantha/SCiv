@@ -6,7 +6,7 @@ from managers.i18n import t_
 
 class ReplaceableParts(Tech):
     key = "core.replaceable_parts"
-    name = t_("tech.replaceable.name")
+    name = t_("tech.replaceable_parts.name")
     description = t_("tech.replaceable_parts.description")
     tech_points_required = 20
 
