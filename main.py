@@ -106,8 +106,8 @@ class SCIV(ShowBase):
         try:
             import git  # type: ignore
 
-            repo = git.Repo(search_parent_directories=True)
-            return repo.head.object.hexsha
+            repo = git.Repo(search_parent_directories=True)  # type: ignore
+            return repo.head.object.hexsha  # type: ignore
         except Exception:
             return "Unknown"
 
