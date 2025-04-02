@@ -35,7 +35,6 @@ pyright-full-check:
 pyright-diff-check:
   <<: *default-python-job
   stage: verify
-  allow_failure: true
   except:
     - merge_requests
   script:
