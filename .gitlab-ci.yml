@@ -1,6 +1,7 @@
 variables:
   compare_branch: dev-v0.2.0
   GIT_DEPTH: 0
+  stubs_repo: https://git.scarlettbytes.nl/scarlett/sciv-stubs.git
 
 stages:
   - verify
@@ -19,6 +20,7 @@ stages:
     - pip config set global.cache-dir .cache/pip
     - pip install --upgrade pip --root-user-action=ignore
     - pip install -r requirements.txt --root-user-action=ignore
+    - git clone --depth 1 $stubs_repo ./stubs
 
 pyright-full-check:
   <<: *default-python-job
