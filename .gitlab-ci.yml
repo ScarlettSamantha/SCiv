@@ -46,7 +46,7 @@ pyright-diff-check:
       if [ -n "$changed_files" ]; then
         echo "Changed Python files:"
         echo "$changed_files"
-        pyright $changed_files -p pyproject.toml
+        pyright $changed_files -p pyrightconfig.json
       else
         echo "No Python files changed. Skipping pyright."
       fi
