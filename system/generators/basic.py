@@ -27,7 +27,7 @@ class Basic(BaseGenerator):
         from random import randrange
 
         # Random seed
-        self.seed = randrange(0, 999999)
+        self.seed = randrange(0, 10**12 - 1)
 
         # Load tile definitions
         self.tiles_dict: Dict[str, Type[BaseTile]] = self.load_tiles()
