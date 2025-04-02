@@ -399,8 +399,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.get_city_ui().hide()
             self.showing_city = None
 
-        if _unit is not None:
-            self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
+        self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         if self.action_bar_frame is None:

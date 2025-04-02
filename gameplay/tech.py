@@ -23,7 +23,7 @@ class Tech:
             self.description if self.description is not None else t_(f"tech.{self.key}.description")
         )
         self.icon: T_TranslationOrStr | None = (
-            self.description if self.description is not None else t_(f"tech.{self.key}.description")
+            self.description if self.description is not None else t_(f"tech.{self.key}.description")  # type: ignore
         )
         self.color: Tuple[int, int, int, int] | None = self.color
         self.contributes_to: List[Tech] = self.contributes_to

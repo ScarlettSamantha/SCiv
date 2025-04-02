@@ -115,11 +115,6 @@ class Turn(Singleton):
                 entity_manager: EntityManager = EntityManager.get_singleton_instance()
                 for _, entity in entity_manager.get_all_refs(EntityType.UNIT).items():
                     entity: weakref.ReferenceType["BaseEntity"] = entity
-
-                    if entity is None:
-                        self.logger.warning(f"Entity {entity} was None, skipping.")
-                        continue
-
                     entity_instance: "UnitBaseClass | None" = entity()  # type: ignore
 
                     if entity_instance is not None:

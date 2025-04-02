@@ -262,7 +262,12 @@ class ui(Singleton, DirectObject):
 
         if confirm:
             popup = PopupOverride(
-                title=title, message=message, on_confirm=on_confirm, cancel_callback=on_cancel, width=400, height=200 # type: ignore
+                title=title,
+                message=message,
+                on_confirm=on_confirm,  # type: ignore
+                cancel_callback=on_cancel,
+                width=400,
+                height=200,  # type: ignore
             )
             self.popups[id] = popup
             popup.open()  # type: ignore

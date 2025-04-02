@@ -234,7 +234,7 @@ class Camera(Singleton, DirectObject):
         else:
             result = self.target.getPos() if self.target else (0, 0, 0)
             if isinstance(result, LPoint3f):  # this is a workaround for the type hinting
-                center = (result[0], result[1], 0)
+                center = (result[0], result[1], 0)  # type: ignore
             else:
                 center = (result[0], result[1], 0)
 
@@ -292,16 +292,16 @@ class Camera(Singleton, DirectObject):
         right = (cos(yaw_rad), sin(yaw_rad))
 
         if self.keys["down"]:
-            move_vec: Tuple[float, ...] = (
+            move_vec: Tuple[float, ...] = (  # type: ignore
                 move_vec[0] + forward[0] * self.pan_speed * dt,
                 move_vec[1] + forward[1] * self.pan_speed * dt,
             )
         if self.keys["up"]:
-            move_vec = (move_vec[0] - forward[0] * self.pan_speed * dt, move_vec[1] - forward[1] * self.pan_speed * dt)
+            move_vec = (move_vec[0] - forward[0] * self.pan_speed * dt, move_vec[1] - forward[1] * self.pan_speed * dt)  # type: ignore
         if self.keys["left"]:
-            move_vec = (move_vec[0] - right[0] * self.pan_speed * dt, move_vec[1] - right[1] * self.pan_speed * dt)
+            move_vec = (move_vec[0] - right[0] * self.pan_speed * dt, move_vec[1] - right[1] * self.pan_speed * dt)  # type: ignore
         if self.keys["right"]:
-            move_vec = (move_vec[0] + right[0] * self.pan_speed * dt, move_vec[1] + right[1] * self.pan_speed * dt)
+            move_vec = (move_vec[0] + right[0] * self.pan_speed * dt, move_vec[1] + right[1] * self.pan_speed * dt)  # type: ignore
 
         if move_vec != (0, 0):
             x0, y0, z0 = self.pivot.getPos()  # type: ignore

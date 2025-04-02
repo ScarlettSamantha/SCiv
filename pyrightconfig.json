@@ -6,7 +6,7 @@
     "~/Code/Stubs",
     "./stubs"
   ],
-  "exclude": ["assets", "scripts", "system/subsystems/hexgen/**"],
+  "exclude": ["assets", "scripts", "system/subsystems/hexgen/**", "./stubs"],
   "stubPath": "./stubs",
   "reportMissingTypeStubs": "none",
   "reportUnknownLambdaType": "none"
