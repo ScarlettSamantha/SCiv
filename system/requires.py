@@ -16,7 +16,7 @@ class Condition(CallbacksMixin):
 
         self.obj: object = obj
         self.property: str = property
-        self.required_value = required_value
+        self.required_value: Any = required_value
 
     def checkCondition(self) -> bool:
         if not hasattr(self.obj, self.property):
@@ -24,10 +24,10 @@ class Condition(CallbacksMixin):
                 f"Object[{self.obj.__class__.__name__}] does not have property[{self.property}]"
             )
 
-        _property_ref = getattr(self.obj, self.property)
+        _property_ref: Union[Callable[[], Any], Any] = getattr(self.obj, self.property)
         # If the property is a function, call it and compare the result to the required value
         if isinstance(_property_ref, Callable):
-            return _property_ref() == self.required_value
+            return bool(_property_ref() == self.required_value)  # type: ignore
 
         return _property_ref == self.required_value
 

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -16,13 +16,12 @@ class BaseEntity(ABC, DirectObject):
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False
 
-        if Cache._instance is None:
+        if Cache.has_instance() is False:
             raise AssertionError("Cache instance is not set.")
 
         self.base: "SCIV" = Cache.get_showbase_instance()
 
-    def __getstate__(self):
-        # Copy the object’s state and remove the attribute(s) you don’t want serialized
+    def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
         if "base" in state:
             del state["base"]

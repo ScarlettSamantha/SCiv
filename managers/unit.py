@@ -4,15 +4,16 @@ from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from gameplay.units.unit_base import UnitBaseClass
+    from main import SCIV
 
 
 class Unit(Singleton):
-    def __setup__(self, base):
-        self.base = base
+    def __setup__(self, base: "SCIV"):
+        self.base: "SCIV" = base
         self.units: Dict[str, "UnitBaseClass"] = {}
 
-    def __init__(self, base):
-        self.base = base
+    def __init__(self, base: "SCIV"):
+        self.base: "SCIV" = base
 
     def find_unit(self, tag: str) -> Optional["UnitBaseClass"]:
         return self.units.get(tag, None)

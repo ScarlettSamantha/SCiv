@@ -19,29 +19,32 @@ class SpinnerOption(ButtonValue):
 
 
 class ValueSpinner(BaseSpinner):
-    dropdown_cls = ObjectProperty(DropDown)
-    option_cls = ObjectProperty(SpinnerOption)
-    values = DictProperty()
+    dropdown_cls: ObjectProperty[Type[DropDown]]
+    option_cls: ObjectProperty[Type[SpinnerOption]]
+    values: DictProperty[str, Any]
 
-    def __init__(self, values: Dict[str, Any], **kwargs):
+    def __init__(self, values: Dict[str, Any], **kwargs: Any):
         super(BaseSpinner, self).__init__(**kwargs)
-        self.dropdown_cls = DropDown
-        self.option_cls = SpinnerOption
-        self.values = values
+        self.dropdown_cls: ObjectProperty[Type[DropDown]] = DropDown
+        self.option_cls: ObjectProperty[Type[SpinnerOption]] = SpinnerOption
+        self.values: DictProperty[str, Any] = values
 
-    def _update_dropdown(self, *largs):
-        dp = self._dropdown
-        cls: Type[ButtonValue] = self.option_cls
+    def _update_dropdown(self, *args: Any, **kwargs: Any):
+        dp: DropDown = self._dropdown  # type: ignore
+        _cls: Type[ButtonValue] = self.option_cls
         values = self.values
         text_autoupdate = self.text_autoupdate
-        if isinstance(cls, string_types):
-            cls = Factory.get(cls)
+
+        if isinstance(_cls, string_types):
+            _cls = Factory.get(_cls)  # type: ignore
         dp.clear_widgets()  # type: ignore
+
         for key, value in values.items():
-            item = cls(text=key, value=value)
-            item.height = self.height if self.sync_height else item.height
+            item = _cls(text=key, value=value)  # type: ignore
+            item.height = self.height if self.sync_height else item.height  # type: ignore
             item.bind(on_release=lambda option: dp.select(option.text))  # type: ignore
             dp.add_widget(item)  # type: ignore
+
         if text_autoupdate:
             if values:
                 if not self.text or self.text not in values:

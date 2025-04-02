@@ -32,7 +32,7 @@ parent_types = Union["City", "BaseTile", "Player", "World", "UnitBaseClass", "Im
 class Effects:
     def __init__(self, parent: parent_types) -> None:
         self.parent: parent_types = parent
-        self._effects = {}
+        self._effects: Dict[str, "Effect"] = {}
         self._effects_num: int = 0
 
     def add_effect(
@@ -294,7 +294,7 @@ class Effect(BaseEntity, ABC):
     def apply(self, base_object: "BaseTile | City | Player | World") -> None:
         if isinstance(self.place_method, EffectPlacers):
             self.place_method.place(base_object, self)
-        elif isinstance(self.place_method, Callable) and isinstance(base_object, BaseEntity):
+        elif callable(self.place_method) and isinstance(base_object, BaseEntity):
             self.place_method(base_object, self)
         else:
             raise ValueError("Invalid place method.")

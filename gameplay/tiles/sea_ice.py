@@ -5,7 +5,7 @@ from gameplay.tiles.base_tile import BaseTile
 
 
 class SeaIce(BaseTile):
-    _model = SeaIceTerrain._model
+    _model = SeaIceTerrain.get_model()
     _cache_name = "SeaIce"
 
     def __init__(self, *args: Any, **kwargs: Any):

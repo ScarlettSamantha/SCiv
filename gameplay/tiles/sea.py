@@ -6,7 +6,7 @@ from gameplay.tiles.base_tile import BaseTile
 
 class Sea(BaseTile):
     _terrain = SeaTerrain
-    _model = _terrain._model
+    _model = _terrain.get_model()
     _cache_name = "sea"
 
     def __init__(self, *args: Any, **kwargs: Any):

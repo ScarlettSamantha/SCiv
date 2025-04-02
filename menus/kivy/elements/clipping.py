@@ -79,13 +79,8 @@ class ClippingScrollList(ScrollView):
 
 
 class HorizontalClippingScrollList(ScrollView):
-    """
-    A ScrollView that clips children horizontally. Uses a GridLayout (rows=1)
-    and toggles widget opacity based on whether they are inside the visible viewport.
-    """
-
     def __init__(self, rows: int = 1, smooth_scroll_speed: float = 0.2, **kwargs: Any):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # type: ignore
         self.do_scroll_x = True  # Now we scroll horizontally
         self.do_scroll_y = False
         self.smooth_scroll_speed = smooth_scroll_speed
@@ -96,23 +91,23 @@ class HorizontalClippingScrollList(ScrollView):
 
         # Set up a horizontal GridLayout. We bind its minimum_width -> container.width
         self._container = GridLayout(rows=rows, size_hint_x=None, padding=5, spacing=5)
-        self._container.bind(minimum_width=self._container.setter("width"))
+        self._container.bind(minimum_width=self._container.setter("width"))  # type: ignore
 
         self.add_widget(self._container)
-        Clock.schedule_once(self._apply_clipping, 0)
+        Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
 
     def add_widget(self, widget: Widget, *args: Any, **kwargs: Any):
         # Same logic: if the widget isn't the container, add to container
-        if isinstance(widget, Widget) and widget != self._container:
+        if widget != self._container:
             widget.opacity = 1
             self._container.add_widget(widget)
-            Clock.schedule_once(self._apply_clipping, 0)
+            Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
         else:
-            super().add_widget(widget, *args, **kwargs)
+            super().add_widget(widget, *args, **kwargs)  # type: ignore
 
     def on_scroll_x(self, *args: Any):
         # Whenever the scroll changes, re-check visibility
-        Clock.schedule_once(self._apply_clipping, 0)
+        Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
 
     def force_scroll_to(self, target_widget: Widget):
         """
@@ -120,28 +115,26 @@ class HorizontalClippingScrollList(ScrollView):
         """
         if target_widget not in self._container.children:
             return
-        content_width = self._container.width
+        content_width = self._container.width  # type: ignore
         # We want the left edge of 'target_widget' to align with the left edge of the visible area
         # so we compute the ratio to set 'scroll_x'.
-        target_left = target_widget.x
-        visible_space = max(1, content_width - self.width)
+        target_left: float = target_widget.x  # type: ignore
+        visible_space: int = max(1, content_width - self.width)  # type: ignore
         # Convert absolute X in the container to a 0.0..1.0 scroll_x.
-        new_scroll = target_left / float(visible_space)
-        self.scroll_x = max(0.0, min(1.0, new_scroll))
+        new_scroll: float = target_left / float(visible_space)  # type: ignore
+        self.scroll_x = max(0.0, min(1.0, new_scroll))  # type: ignore
 
     def smooth_scroll_to(self, target_widget: Widget):
-        """
-        Animate scrolling horizontally to 'target_widget'.
-        """
         if target_widget not in self._container.children:
             return
-        content_width = self._container.width
-        target_left = target_widget.x
-        visible_space = max(1, content_width - self.width)
 
-        new_scroll = target_left / float(visible_space)
-        new_scroll = max(0.0, min(1.0, new_scroll))
-        Animation(scroll_x=new_scroll, d=self.smooth_scroll_speed, t="out_quad").start(self)
+        content_width = self._container.width  # type: ignore
+        target_left = target_widget.x  # type: ignore
+        visible_space = max(1, content_width - self.width)  # type: ignore
+
+        new_scroll = target_left / float(visible_space)  # type: ignore
+        new_scroll = max(0.0, min(1.0, new_scroll))  # type: ignore
+        Animation(scroll_x=new_scroll, d=self.smooth_scroll_speed, t="out_quad").start(self)  # type: ignore
 
     def scroll_to_left(self):
         self.scroll_x = 0.0
@@ -151,7 +144,7 @@ class HorizontalClippingScrollList(ScrollView):
 
     def clear_widgets(self, children: List[Widget] | None = None) -> None:
         self._container.clear_widgets(children=children)
-        Clock.schedule_once(self._apply_clipping, 0)
+        Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
 
     def _apply_clipping(self, *args: Any):
         """
@@ -161,23 +154,23 @@ class HorizontalClippingScrollList(ScrollView):
         if not self._container.children:
             return
 
-        self._container.do_layout()
+        self._container.do_layout()  # type: ignore
         self._container.canvas.ask_update()
 
-        content_width = self._container.width
-        viewport_width = self.width
+        content_width = self._container.width  # type: ignore
+        viewport_width = self.width  # type: ignore
 
         # Toggle horizontal scrolling based on total content size
-        self.do_scroll_x = content_width > viewport_width
+        self.do_scroll_x = content_width > viewport_width  # type: ignore
 
         # The left/right edges of the current visible "viewport"
-        viewport_left = self.to_window(self.x, self.y)[0]
-        viewport_right = viewport_left + viewport_width
+        viewport_left = self.to_window(self.x, self.y)[0]  # type: ignore
+        viewport_right = viewport_left + viewport_width  # type: ignore
 
         # For each child, figure out its absolute X coords and see if it's on screen
         for child in self._container.children:
-            child_left = child.to_window(child.x, child.y)[0]
-            child_right = child_left + child.width
+            child_left = child.to_window(child.x, child.y)[0]  # type: ignore
+            child_right = child_left + child.width  # type: ignore
 
             # Check if the widget is within the viewport's horizontal range
             is_visible = not (child_right < viewport_left or child_left > viewport_right)

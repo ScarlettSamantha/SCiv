@@ -24,3 +24,7 @@ class Cache:
             raise AssertionError("Cache instance is not set.")
 
         return ref(cls._instance)
+
+    @classmethod
+    def has_instance(cls) -> bool:
+        return cls._instance is not None

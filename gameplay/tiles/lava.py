@@ -6,7 +6,7 @@ from gameplay.tiles.base_tile import BaseTile
 
 class Mountain(BaseTile):
     _terrain = MountainTerrain
-    _model = _terrain._model
+    _model = _terrain.get_model()
     _cache_name = "Mountain"
 
     def __init__(self, *args: Any, **kwargs: Any):

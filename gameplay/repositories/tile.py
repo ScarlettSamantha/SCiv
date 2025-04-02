@@ -76,7 +76,7 @@ class TileRepository:
         :return: List of Tile objects within the specified radius.
         """
         directions = [(+1, 0), (+1, -1), (0, -1), (-1, 0), (-1, +1), (0, +1)]
-        tiles = []
+        tiles: List[BaseTile] = []
         for r in range(1, radius + 1):
             for dx, dy in directions:
                 x, y = tile.x, tile.y
@@ -201,14 +201,11 @@ class TileRepository:
         """
         from collections import deque
 
-        if World.get_singleton_instance() is None:
-            raise ValueError("instance_ref_grid must be set before calling get_neighbors")
-
         directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
         directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
 
         visited = set([tile])
-        result = []
+        result: List["BaseTile"] = []
         queue = deque([(tile, 0)])
 
         while queue:
@@ -265,7 +262,7 @@ class TileRepository:
         :param movement_speed: Movement speed factor for cost adjustment.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
-        open_set = []
+        open_set: List[Tuple[float, int, "BaseTile"]] = []
         heappush(open_set, (0, id(start), start))  # Use id(start) for unique sorting
         came_from: Dict["BaseTile", "BaseTile"] = {}
         g_score: Dict["BaseTile", float] = {start: 0.0}
@@ -275,7 +272,7 @@ class TileRepository:
             _, __, current = heappop(open_set)  # Extract current safely
 
             if current == goal:
-                path = []
+                path: List["BaseTile"] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
@@ -317,16 +314,16 @@ class TileRepository:
         :param goal: The target Tile.
         :return: List of Tiles representing the path, or None if unreachable.
         """
-        open_set = []
+        open_set: List[Tuple[float, "BaseTile"]] = []
         heappush(open_set, (0, start))
         came_from: Dict["BaseTile", "BaseTile"] = {}
         cost_so_far: Dict["BaseTile", float] = {start: 0.0}
 
         while open_set:
-            current_cost, current = heappop(open_set)
+            _, current = heappop(open_set)
 
             if current == goal:
-                path = []
+                path: List["BaseTile"] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
@@ -410,8 +407,8 @@ class TileRepository:
         :param goal: The target Tile.
         :return: Combined path as a list of Tiles, or None if no path exists.
         """
-        open_start = []
-        open_goal = []
+        open_start: List[Tuple[float, "BaseTile"]] = []
+        open_goal: List[Tuple[float, "BaseTile"]] = []
         heappush(open_start, (0, start))
         heappush(open_goal, (0, goal))
         came_from_start: Dict["BaseTile", "BaseTile"] = {}
@@ -446,7 +443,7 @@ class TileRepository:
             return None  # No meeting point found.
 
         # Reconstruct path from start to meeting node.
-        path_start = []
+        path_start: List["BaseTile"] = []
         current = meeting_node
         while current in came_from_start:
             path_start.append(current)
@@ -455,7 +452,7 @@ class TileRepository:
         path_start.reverse()
 
         # Reconstruct path from meeting node to goal.
-        path_goal = []
+        path_goal: List["BaseTile"] = []
         current = meeting_node
         while current in came_from_goal:
             current = came_from_goal[current]
@@ -492,7 +489,7 @@ class TileRepository:
         :param check_swimmable: If True, only consider swimmable tiles.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
-        open_set = []
+        open_set: List[Tuple[float, "BaseTile"]] = []
         heappush(open_set, (0, start))
         came_from: Dict["BaseTile", "BaseTile"] = {}
         g_score: Dict["BaseTile", float] = {start: 0.0}
@@ -502,7 +499,7 @@ class TileRepository:
             _, current = heappop(open_set)
 
             if current == goal:
-                path = []
+                path: List["BaseTile"] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]

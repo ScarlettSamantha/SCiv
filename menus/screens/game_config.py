@@ -132,7 +132,7 @@ class GameConfigMenu(Screen):
         if self.size_popup is None:
             self.size_popup = ScrollablePopup(
                 "Map sizes",
-                on_select=self.select_size,
+                on_select=self.select_size,  # type: ignore
                 items={
                     "25x25 (UI test)": (25, 25),
                     "50x50 (Small)": (50, 50),
@@ -152,7 +152,7 @@ class GameConfigMenu(Screen):
             kv_values: Dict[str, Type[civilization.Civilization]] = {}
             for civ in Civilization.all():
                 kv_values[str(civ.name)] = civ
-            self.civ_popup = ScrollablePopup("Civilizations", kv_values, self.select_civilization)
+            self.civ_popup = ScrollablePopup("Civilizations", kv_values, self.select_civilization)  # type: ignore
         self.civ_popup.open()
 
     def select_size(self, size: str, _value: Tuple[int, int]):

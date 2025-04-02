@@ -211,6 +211,9 @@ class BaseTile(BaseEntity):
             self.passable: bool = True if self.tile_terrain.passable is True else False
             self.passable_without_tech: bool = True if self.tile_terrain.passable_without_tech is True else False
 
+    def get_tile_terrain(self) -> BaseTerrain:
+        return self._tile_terrain
+
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
         return f"tile_{x}_{y}"

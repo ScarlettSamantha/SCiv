@@ -85,7 +85,7 @@ class TooltipBehavior:
         if not self.tooltip_visible and self.tooltip_text:
             if self._tooltip_trigger is None:  # type: ignore
                 self._tooltip_trigger = Clock.schedule_once(  # type: ignore
-                    self.show_tooltip,
+                    self.show_tooltip,  # type: ignore
                     self.tooltip_delay,
                 )
 
@@ -95,7 +95,7 @@ class TooltipBehavior:
             self._tooltip_trigger = None
         self.hide_tooltip()
 
-    def show_tooltip(self, dt: Any):
+    def show_tooltip(self, dt: float) -> int:
         if not self.tooltip_visible:
             self.tooltip_label = TooltipLabel(text=self.tooltip_text, opacity=0)
             parent = ui.get_singleton_instance().get_main_game_ui()
@@ -113,6 +113,7 @@ class TooltipBehavior:
             # Now reveal the tooltip
             self.tooltip_label.opacity = 1
             self.tooltip_visible = True
+        return 0  # Return an integer as required by schedule_once
 
     def hide_tooltip(self):
         if self.tooltip_label and self.tooltip_visible:

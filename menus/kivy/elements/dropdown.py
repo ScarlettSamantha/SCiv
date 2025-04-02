@@ -1,8 +1,10 @@
 from typing import Any, Callable, Dict, Optional
-from kivy.uix.dropdown import DropDown
+
 from kivy.config import Config
-from menus.kivy.elements.button_value import ButtonValue
+from kivy.uix.dropdown import DropDown
 from kivy.uix.gridlayout import GridLayout
+
+from menus.kivy.elements.button_value import ButtonValue
 
 
 class ValueDropdown(DropDown):
@@ -11,8 +13,8 @@ class ValueDropdown(DropDown):
         text: str = "",
         k_v_pair: Dict[str, Any] = {},
         default_value: Optional[Any] = None,
-        on_select: Optional[Callable] = None,
-        **kwargs,
+        on_select: Optional[Callable[[ButtonValue], None]] = None,
+        **kwargs: Any,
     ):
         self._win = None
         if "min_state_time" not in kwargs:
@@ -30,15 +32,15 @@ class ValueDropdown(DropDown):
                 self.size_hint_x = None
             if "size_hint_y" not in kwargs:
                 self.size_hint_y = None
-        super(DropDown, self).__init__(**kwargs)
+        super(DropDown, self).__init__(**kwargs)  # type: ignore
         if c is not None:
-            super(DropDown, self).add_widget(c)
-            self.on_container(self, c)
+            super(DropDown, self).add_widget(c)  # type: ignore
+            self.on_container(self, c)  # type: ignore
 
-        self.bind(on_key_down=self.on_key_down, size=self._reposition)
+        self.bind(on_key_down=self.on_key_down, size=self._reposition)  # type: ignore
         self.fbind("size", self._reposition)  # type: ignore
 
-        self._on_select: Optional[Callable] = on_select
+        self._on_select: Optional[Callable[[ButtonValue], None]] = on_select
         self.auto_dismiss = False
         self.dismiss_on_select = False
 
@@ -51,7 +53,7 @@ class ValueDropdown(DropDown):
 
         self.setup_main_button()
 
-    def toggle_open(self, *args):
+    def toggle_open(self, *args: Any):
         if self.is_open:
             self.is_open = False
             self.dismiss_all()
@@ -64,7 +66,7 @@ class ValueDropdown(DropDown):
             return
 
         if self.dismiss_on_select:
-            self.dismiss()
+            self.dismiss()  # type: ignore
 
         self.is_open = False
         self.dismiss_all()
@@ -82,7 +84,7 @@ class ValueDropdown(DropDown):
             self.container.add_widget(self.own_button)
 
     def calculate_height(self):
-        self.container.height = sum(child.height for child in self.container.children)
+        self.container.height = sum(child.height for child in self.container.children)  # type: ignore
         self.container.minimum_height = self.container.height
 
     def setup_values(self):
@@ -102,8 +104,8 @@ class ValueDropdown(DropDown):
 
     def open_all(self):
         # Clear current widgets (this removes both own_button and container)
-        self.clear_widgets()
-        self.add_widget(self.own_button)
+        self.clear_widgets()  # type: ignore
+        self.add_widget(self.own_button)  # type: ignore
         # Recreate the option buttons inside the container
         self.setup_values()
         # Optionally update the dropdown size to match the container

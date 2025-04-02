@@ -76,7 +76,7 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
         self.scroll_view = ClippingScrollList(size_hint=(0.6, 0.95), do_scroll_x=False, do_scroll_y=True)
         self.items = []
 
-        for i, save_game in enumerate(self.get_save_games()):
+        for _, save_game in enumerate(self.get_save_games()):
             item_button = ListItem(
                 text=save_game,
                 value=save_game,

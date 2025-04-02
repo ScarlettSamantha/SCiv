@@ -1,14 +1,18 @@
 from enum import Enum
 from logging import Logger
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.spinner import Spinner
 
+from helpers.colors import Tuple4f
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
+
+if TYPE_CHECKING:
+    from main import SCIV
 
 
 class MapActionsValues(Enum):
@@ -41,11 +45,18 @@ class DebugActions(
     BoxLayout,
     CollisionPreventionMixin,
 ):
-    def __init__(self, base, logger: Logger, background_color=(0, 0, 0, 0), border=(0, 0, 0, 0), **kwargs):
+    def __init__(
+        self,
+        base: "SCIV",
+        logger: Logger,
+        background_color: Tuple4f = (0, 0, 0, 0),
+        border: Tuple4f = (0, 0, 0, 0),
+        **kwargs: Any,
+    ):
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        super(BoxLayout).__init__(**kwargs)
+        super(BoxLayout).__init__(**kwargs)  # type: ignore
         super(CollisionPreventionMixin, self).__init__(**kwargs)
         self.base = base
         self.frame: Optional[BoxLayout] = None
@@ -75,10 +86,10 @@ class DebugActions(
             height=80,
         )
 
-        if self.lenses_dropdown._dropdown is None:
+        if self.lenses_dropdown._dropdown is None:  # type: ignore
             raise ValueError("Dropdown is not initialized.")
 
-        self.lenses_dropdown._dropdown.bind(on_select=self.on_lense_change_request)
+        self.lenses_dropdown._dropdown.bind(on_select=self.on_lense_change_request)  # type: ignore
         self.lenses_dropdown.values = [str(v.value) for _, v in LenseOptionsValues.__members__.items()]
         self.frame.add_widget(self.lenses_dropdown)
 
@@ -89,10 +100,10 @@ class DebugActions(
             height=80,
         )
 
-        if self.map_actions._dropdown is None:
+        if self.map_actions._dropdown is None:  # type: ignore
             raise ValueError("Dropdown is not initialized.")
 
-        self.map_actions._dropdown.bind(on_select=self.on_resource_ui_change_request)
+        self.map_actions._dropdown.bind(on_select=self.on_resource_ui_change_request)  # type: ignore
         self.map_actions.values = [str(v.value) for _, v in MapActionsValues.__members__.items()]
         self.frame.add_widget(self.map_actions)
 
@@ -108,13 +119,13 @@ class DebugActions(
 
         self.register_non_collidable(self.debug_ui_spinner)
 
-        if self.debug_ui_spinner._dropdown is None:
+        if self.debug_ui_spinner._dropdown is None:  # type: ignore
             raise ValueError("Dropdown is not initialized.")
 
-        elif self.debug_ui_spinner._dropdown.container is not None:
-            for child in self.debug_ui_spinner._dropdown.container.children:
-                self.register_non_collidable(child)
-            self.debug_ui_spinner._dropdown.bind(on_select=self.on_debug_ui_change_request)
+        elif self.debug_ui_spinner._dropdown.container is not None:  # type: ignore
+            for child in self.debug_ui_spinner._dropdown.container.children:  # type: ignore
+                self.register_non_collidable(child)  # type: ignore
+            self.debug_ui_spinner._dropdown.bind(on_select=self.on_debug_ui_change_request)  # type: ignore
             self.frame.add_widget(self.debug_ui_spinner)
 
         return self.frame

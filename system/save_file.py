@@ -77,7 +77,7 @@ class BaseSaver(ABC):
         }
 
         self.meta_data["saver"]["meta_checksum_crc32"] = str(zlib.crc32(repr(self.meta_data).encode()))
-        self.meta_data["saver"]["data_size"] = len(self.data)
+        self.meta_data["saver"]["data_size"] = str(len(self.data))
         self.meta_data["saver"]["save_time"] = datetime.now().isoformat()
 
     @abstractmethod
@@ -91,7 +91,7 @@ class BaseSaver(ABC):
         if not save_location.exists():
             return []
 
-        result = []
+        result: List[str] = []
         for d in save_location.iterdir():
             if d.is_dir() and d.name != "metadata.json":
                 result.append(d.name)
@@ -134,16 +134,13 @@ class BaseSaver(ABC):
         return data
 
     def identify_save_location(self) -> str:
-        if self.base_path is None:
-            if sys.platform == "win32":
-                return str(Path.home() / "AppData" / "Local" / self.game_name)
-            elif sys.platform == "darwin":
-                return str(Path.home() / "Library" / "Application Support" / self.game_name)
-            elif sys.platform.startswith("linux") or sys.platform.startswith("unix"):
-                return str(Path.home() / ".local" / "share" / self.game_name)  # Standard Linux user data location
-        else:
+        if sys.platform == "win32":
+            return str(Path.home() / "AppData" / "Local" / self.game_name)
+        elif sys.platform == "darwin":
+            return str(Path.home() / "Library" / "Application Support" / self.game_name)
+        elif sys.platform.startswith("linux") or sys.platform.startswith("unix"):
             return str((Path(self.base_path)).absolute())
-        raise RuntimeError("Unsupported operating system: " + sys.platform)
+        return str((Path(self.base_path)).absolute())
 
     def generate_save_directory(self) -> str:
         return str(Path(self.identify_save_location()) / self.identifier)
@@ -161,9 +158,6 @@ class SavePickleFile(BaseSaver):
     extension = "pickle.gz" if compression_enabled else "pickle"
 
     def save(self) -> bool:
-        if self.base_path is None:
-            raise RuntimeError("Base path is not set.")
-
         save_dir = Path(self.base_path) / self.identifier
         save_dir.mkdir(parents=True, exist_ok=True)
 

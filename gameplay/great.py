@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from exceptions.great_exception import GreatPersonTreeNotLoaded
 from gameplay.resource import BaseResource
@@ -13,10 +13,10 @@ class Great:
         key: str,
         name: T_TranslationOrStr,
         description: T_TranslationOrStr,
-        resource_type_required: BaseResource | None | Tuple | BaseGreatMechanicResource | List = None,
+        resource_type_required: BaseResource | None | Tuple[Any] | BaseGreatMechanicResource | List[Any] = None,
         cost: float = 0.0,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
         self.key: str = key
@@ -25,7 +25,7 @@ class Great:
         self.cost: float = cost
         self.bought: bool = False
         self.on_map: bool = False
-        self.resource_type_required: BaseResource | None | Tuple | BaseGreatMechanicResource | List = (
+        self.resource_type_required: BaseResource | None | Tuple[Any] | BaseGreatMechanicResource | List[Any] = (
             resource_type_required
         )
 
@@ -38,8 +38,8 @@ class GreatsTree:
         description: T_TranslationOrStr,
         greats: List[Great] = [],
         points: float = 0.0,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
         self.key: str = key

@@ -12,8 +12,6 @@ from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
 from managers.log import LogManager
 from managers.unit import Unit
-from system.camera import Camera
-from system.lights import setup_lights
 
 
 class SCIV(ShowBase):
@@ -21,6 +19,8 @@ class SCIV(ShowBase):
         from managers.assets import AssetManager
         from managers.ui import ui
         from managers.world import World
+        from system.camera import Camera
+        from system.lights import setup_lights
         from version import __version__
 
         self.version = __version__

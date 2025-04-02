@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
+    from main import SCIV
     from system.generators.base import BaseGenerator
 
 
@@ -40,8 +41,8 @@ class World(Singleton, DirectObject):
         self.effects: Effects = Effects(self)
         self.register()
 
-    def __init__(self, base):
-        self.base = base
+    def __init__(self, base: "SCIV"):
+        self.base: "SCIV" = base
 
     def reset(self):
         self.map = {}
@@ -107,13 +108,11 @@ class World(Singleton, DirectObject):
         return self.map.get(tag, None)
 
     def get_generator(self) -> Optional[Type["BaseGenerator"]]:
-        from system.generators.base import BaseGenerator
-
-        if self.generator and issubclass(self.generator, BaseGenerator):
+        if self.generator:
             return self.generator
         return None
 
-    def lookup(self, tag) -> BaseTile:
+    def lookup(self, tag: str) -> BaseTile:
         return self.map[tag]
 
     def random_tile(self) -> "BaseTile":
@@ -129,7 +128,7 @@ class World(Singleton, DirectObject):
                 or tile.city is not None
                 or len(tile.units) > 0
                 or len(tile.effects) > 0
-                or len(tile._improvements) > 0
+                or len(tile._improvements) > 0  # type: ignore
                 or tile.needs_tile_proecessing is True
             ):  # We dont want to process tiles that have no player, city, units, effects or need tile processing this saves seconds of turn time.
                 self.logger.debug(f"Processing tile {tile.tag} on turn end.")
@@ -149,11 +148,10 @@ class World(Singleton, DirectObject):
         player.tiles.add(tile)
         tile.owner = player
 
-        if city is not None:  # We don't want to add the city twice
-            self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
-            player.cities.add(city)  # Add the city to the player's cities as its a claim on the tile
-            city.player = player
-            city.owned_tiles.append(tile)
+        self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
+        player.cities.add(city)  # Add the city to the player's cities as its a claim on the tile
+        city.player = player
+        city.owned_tiles.append(tile)
 
         self.logger.info(f"Tile {tile} is now owned by {player}, sending message.")
         messenger.send("game.gameplay.tiles.ownership_changed", [tile, player, old_owner])

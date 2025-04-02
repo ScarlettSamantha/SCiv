@@ -493,6 +493,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if tile is not None:
             action.action_kwargs["tile"] = tile  # Assign the selected tile
 
+        action.run()
+
         # Reset waiting state
         self.wait_for_next_input_of_user = False
         self.wait_for_action_of_user = None

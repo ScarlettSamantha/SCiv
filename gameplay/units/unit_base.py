@@ -123,7 +123,7 @@ class UnitBaseClass(BaseEntity, ABC):
         entity_manager.register(entity=self, type=EntityType.UNIT, key=self.tag)
 
         if self.owner is not None:
-            self.owner.units.add_unit(entity_manager.get_ref(EntityType.UNIT, str(self.tag), weak_ref=True))
+            self.owner.units.add_unit(entity_manager.get(EntityType.UNIT, str(self.tag)))  # type: ignore
 
         Unit.get_singleton_instance().add_unit(self)
 
@@ -141,8 +141,7 @@ class UnitBaseClass(BaseEntity, ABC):
                 self.pos_x, self.pos_y, _ = pos
             else:
                 self.pos_x, self.pos_y, self.pos_z = pos
-
-        elif isinstance(pos, BaseTile):
+        else:
             if maintain_z:
                 (self.pos_x, self.pos_y, _) = pos.get_cords()
             else:
@@ -150,8 +149,8 @@ class UnitBaseClass(BaseEntity, ABC):
             if set_as_tile:
                 self.tile = pos
 
-        if self.model is not None:
-            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))
+        if self.model is not None:  # type: ignore
+            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))  # type: ignore
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -207,7 +206,7 @@ class UnitBaseClass(BaseEntity, ABC):
         if len(target_tile.units) > 0:
             return CantMoveReason.OTHER_UNIT_ON_TILE
 
-        if self.model is None:
+        if self.model is None:  # type: ignore
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
         tiles_to_move = []
@@ -225,7 +224,7 @@ class UnitBaseClass(BaseEntity, ABC):
         if tiles_to_move[0] == self.tile:
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
-        result_tile: Optional[BaseTile] = self.tile  # Start off at our current tile
+        result_tile = self.tile  # Start off at our current tile
         self.tile.units.remove_unit(self)  # Remove from the current tile
         for tile in tiles_to_move:
             tile: BaseTile = tile  # this is a type hint
@@ -248,15 +247,13 @@ class UnitBaseClass(BaseEntity, ABC):
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             # If we got here, we can step onto tile
-            result_tile = tile
+            result_tile: BaseTile = tile
             self.moves_left -= tile.movement_cost
             self.set_pos((cords[0], cords[1], self.pos_z))
             self.tile = tile
 
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE
-        elif result_tile is None:
-            return CantMoveReason.NO_PATH
         return CantMoveReason.NO_MOVES
 
     def add_action(self, action: Action) -> None:
@@ -288,12 +285,12 @@ class UnitBaseClass(BaseEntity, ABC):
         self.pos_x, self.pos_y, self.pos_z = pos
 
         if self.collides:
-            model.setCollideMask(BitMask32.bit(1))
+            model.setCollideMask(BitMask32.bit(1))  # type: ignore
         else:
-            model.setCollideMask(BitMask32.allOff())
+            model.setCollideMask(BitMask32.allOff())  # type: ignore
 
         model.setTag("tile_id", self.tag)
-        model.reparentTo(self.base.render)  # Attach model to scene graph
+        model.reparentTo(self.base.render)  # type: ignore # Attach model to scene graph
 
         return model
 
@@ -317,9 +314,9 @@ class UnitBaseClass(BaseEntity, ABC):
             self.moves_left -= cost_or_zero
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
-        if isinstance(self.model, str) and not isinstance(self.model, NodePath):
+        if isinstance(self.model, str) and not isinstance(self.model, NodePath):  # type: ignore
             raise ValueError(f"Unit {self.key} has no model assigned.")
-        if self.model is not None:
+        if self.model is not None:  # type: ignore
             self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
 
     def to_gui(self) -> Dict[str, Any]:
@@ -350,8 +347,8 @@ class UnitBaseClass(BaseEntity, ABC):
 
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> bool:
         """Removes the unit from the scene and cleans up references."""
-        if self.model:
-            self.model.removeNode()  # Remove from the scene graph
+        if self.model:  # type: ignore
+            self.model.removeNode()  # type: ignore # Remove from the scene graph
             self.model = None  # Clear reference
 
         # Remove from the units lookup dictionary if it exists

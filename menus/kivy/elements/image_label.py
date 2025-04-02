@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
@@ -8,15 +8,15 @@ from kivy.uix.label import Label
 class ImageLabel(BoxLayout):
     def __init__(
         self,
-        img_source,
-        text,
+        img_source: str,
+        text: str,
         width: Optional[int] = None,
         spacing: int = 5,
         image_size: Tuple[int, int] = (24, 24),
         keep_ratio: bool = True,
         img_y_offset: float = 0.025,
         font_size: int = 12,
-        **kwargs,
+        **kwargs: Any,
     ):
         super().__init__(orientation="horizontal", spacing=spacing, size_hint_x=None, **kwargs)
 
