@@ -37,6 +37,7 @@ class Basic(BaseGenerator):
         self.resource_allocator: Optional[ResourceAllocator] = None
 
         self.world_generation_stats: Dict[str, Any] = {}
+        self.number_of_tiles: int = self.config.width * self.config.height
 
         # Initialize HexGen world parameters
         self.map_params = {
@@ -47,7 +48,7 @@ class Basic(BaseGenerator):
             "ocean_type": OceanType.water,
             "roughness": 12,  # Controls terrain roughness
             "hydrosphere": True,  # Enables rivers/lakes
-            "num_rivers": 50,  # Number of rivers
+            "num_rivers": self.number_of_tiles // 100,  # Number of rivers
         }
         self.map_params = {
             "map_type": MapType.terran,
@@ -68,7 +69,7 @@ class Basic(BaseGenerator):
             # features
             "craters": True,
             "volcanoes": True,
-            "num_rivers": 50,
+            "num_rivers": self.number_of_tiles // 100,
             # territories
             "num_territories": 0,
         }
