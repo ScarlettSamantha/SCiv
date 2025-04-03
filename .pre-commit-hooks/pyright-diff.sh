@@ -10,7 +10,7 @@ changed_files=$(git diff --diff-filter=ACMR --name-only origin/"$COMPARE_BRANCH"
 if [[ -n "$changed_files" ]]; then
     echo "Running Pyright on changed files:"
     echo "$changed_files"
-    pyright "$changed_files" -p pyrightconfig.json
+    echo "$changed_files" | xargs pyright -p pyrightconfig.json
 else
     echo "No Python files changed. Skipping Pyright."
 fi

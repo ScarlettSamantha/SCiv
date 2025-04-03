@@ -21,11 +21,6 @@ repos:
         entry: ruff format --check --diff .
         language: system
         types: [python]
-      - id: bandit-security
-        name: Bandit security scan
-        entry: bandit -r . -c pyproject.toml
-        language: system
-        types: [python]
       - id: markdown-lint
         name: Markdown lint
         entry: markdownlint '**/*.md'

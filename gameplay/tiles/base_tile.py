@@ -333,11 +333,11 @@ class BaseTile(BaseEntity):
         self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # type: ignore
 
         self.city_name_group = NodePath("city_name_group")
-        self.city_name_group.reparentTo(self.models[0])  # type: ignore
+        self.city_name_group.reparentTo(self.models[-1])  # type: ignore
         self.city_name_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
         self.tile_icon_group = NodePath("tile_icon_group")
-        self.tile_icon_group.reparentTo(self.models[0])  # type: ignore
+        self.tile_icon_group.reparentTo(self.models[-1])  # type: ignore
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
     def is_visisted_by(self, unit: "UnitBaseClass") -> bool:
