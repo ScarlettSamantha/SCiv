@@ -203,6 +203,8 @@ class Game(Singleton, DirectObject):
     def register_callback_inputs(self):
         self.accept("system.input.user.tile_clicked", self.handle_tile_click)
         self.accept("system.input.user.unit_clicked", self.handle_unit_click)
+        self.accept("system.input.user.tile_hovered", self.handle_tile_hover)
+        self.accept("system.input.user.tile_unhovered", self.handle_tile_hover_end)
         self.accept("system.game.start_load", self.on_game_start)
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
@@ -225,6 +227,16 @@ class Game(Singleton, DirectObject):
 
     def unpause(self):
         self._is_paused = False
+
+    def handle_tile_hover(self, tile: Union[List[str], str]):
+        if isinstance(tile, str):
+            tile = [tile]
+        messenger.send("ui.update.user.tile_hover", tile)
+
+    def handle_tile_hover_end(self, tile: Union[List[str], str]):
+        if isinstance(tile, str):
+            tile = [tile]
+        messenger.send("ui.update.user.tile_unhovered", tile)
 
     def handle_tile_click(self, tiles: Union[List[str], str]):
         if isinstance(tiles, str):

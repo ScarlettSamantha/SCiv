@@ -94,6 +94,8 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
 - `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
 - `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
+- `ui.update.user.tile_hover` (E: manager-game | L: manager-ui)
+- `ui.update.user.tile_unhover` (E: manager-game | L: manager-ui)
 - `ui.update.user.enemy_city_clicked` (E: manager-ui | L: screen-game-ui)
 
 - `ui.update.ui.unit_unselected` (E: manager-ui | L: screen-game-ui)
@@ -128,6 +130,8 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `system.input.user.tile_clicked` (E: manager-input | L: manager-game)
 - `system.input.user.unit_clicked` (E: manager-input | L: manager-game)
+- `system.input.user.tile_hover` (E: manager-input | L: manager-game)
+- `system.input.user.tile_unhover` (E: manager-input | L: manager-game)
 
 - `system.input.raycaster_off` (L: manager-input)
 - `system.input.raycaster_on` (L: manager-input)

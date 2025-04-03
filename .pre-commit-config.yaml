@@ -23,6 +23,6 @@ repos:
         types: [python]
       - id: markdown-lint
         name: Markdown lint
-        entry: markdownlint '**/*.md'
+        entry: markdownlint '**/*.md' -c .markdownlint.json -i stubs
         language: system
         types: [markdown]

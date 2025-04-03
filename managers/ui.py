@@ -10,6 +10,7 @@ from kivy.uix.screenmanager import Screen
 from panda3d.core import PStatClient
 
 from gameplay.player import Player
+from gameplay.repositories.tile import TileRepository
 from gameplay.tech import Tech
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
@@ -70,6 +71,9 @@ class ui(Singleton, DirectObject):
         self.previous_screen_name: Optional[str] = ""
         self.showing_escape: bool = False
 
+        self.highlighted_tiles: List[BaseTile] = []
+        self.highlight_tile_radius: int = 2
+
     def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
         super().__setup__(*args, **kwargs)
         self._base = base
@@ -125,6 +129,9 @@ class ui(Singleton, DirectObject):
 
     def register(self) -> bool:
         self.accept("ui.update.user.tile_clicked", self.select_tile)
+        self.accept("ui.update.user.tile_hover", self.on_tile_hover)
+        self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
+
         self.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
         self.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
         self.accept("ui.update.ui.lense_change", self.on_lense_change)
@@ -164,6 +171,26 @@ class ui(Singleton, DirectObject):
 
     def get_main_game_ui(self) -> "Screen | GameUIScreen":
         return self.get_screen("game_ui")
+
+    def on_tile_hover(self, tile_coords: str):
+        if (tile := self.map.map.get(tile_coords)) is None:
+            return
+
+        neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False, radius=self.highlight_tile_radius)
+
+        self.unhighlight_tiles(self.highlighted_tiles, restore_color=False)
+        self.highlight_tiles(neighboring_tiles + [tile])  # We add the tile itself to the list
+
+    def on_tile_unhover(self, tile_coords: List[str]):
+        if (tile := self.map.map.get(tile_coords[0])) is None:
+            return
+
+        if self.show_resources_in_radius:
+            self.toggle_tile_icons(tile, small=False, large=False)
+
+        for neighbor in self.highlighted_tiles:
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(neighbor, small=False, large=False)
 
     def on_escape_press(self):
         if self.game is None:
@@ -245,6 +272,24 @@ class ui(Singleton, DirectObject):
             self.previous_screen_name = "game_ui"
 
         self.get_gui().get_screen_manager().current = self.previous_screen_name
+
+    def highlight_tiles(self, tiles: List[BaseTile], color: Optional[Tuple[float, float, float, float]] = None):
+        for tile in tiles:
+            tile.calculate()
+            if color is not None:
+                tile.set_color(color)
+
+            self.highlighted_tiles.append(tile)
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(tile, small=True, large=True)
+
+    def unhighlight_tiles(self, tiles: List[BaseTile], restore_color: bool = True):
+        for tile in tiles:
+            if restore_color:
+                tile.set_color(Colors.RESTORE)
+
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(tile, small=False, large=False)
 
     def show_draggable_popup(
         self,
@@ -442,8 +487,6 @@ class ui(Singleton, DirectObject):
             tile.set_color(Colors.RESTORE)
 
     def select_tile(self, tile_coords: List[str]):
-        from gameplay.repositories.tile import TileRepository
-
         if isinstance(tile_coords, List):  # type: ignore
             _tile_coords = tile_coords[0]
         else:
@@ -463,20 +506,6 @@ class ui(Singleton, DirectObject):
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
-
-        self.previous_tiles = self.neighboring_tiles
-        self.neighboring_tiles = []
-        self.neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False)
-
-        if self.show_resources_in_radius:
-            self.toggle_tile_icons(tile, small=True, large=True)
-
-        for neighbor in self.neighboring_tiles:
-            if self.show_resources_in_radius:
-                self.toggle_tile_icons(neighbor, small=True, large=True)
-            if self.show_resources_in_radius:
-                neighbor_tile_colors: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
-                self.color_tile(neighbor, neighbor_tile_colors)
 
     def color_tile(
         self,

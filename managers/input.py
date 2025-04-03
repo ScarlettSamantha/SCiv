@@ -1,8 +1,9 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
+from direct.task import Task
 from panda3d.core import (
     BitMask32,
     CollisionHandlerQueue,
@@ -27,6 +28,10 @@ class Input(Singleton, DirectObject):
 
         self.logger = self.base.logger.engine.getChild("manager.input")
 
+        self.hovered_tile_id: Optional[str] = None
+        self._last_mouse_pos: Optional[tuple[float, float]] = None
+        self._hover_frame_skip = 10  # how many frames to skip before checking for hover
+
         self.register()
 
     def reset(self):
@@ -42,6 +47,9 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_on", self.activate)
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
+
+        delay_seconds: float = self._hover_frame_skip / 60
+        self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=delay_seconds)
 
     def delay_activate(self, delay: int | float):
         self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore
@@ -76,6 +84,37 @@ class Input(Singleton, DirectObject):
         self.pickerNP = self.base.camera.attachNewNode(picker_node)  # type: ignore
         self.picker.addCollider(self.pickerNP, self.pq)  # type: ignore
         self.register()  # Ensures key bindings are set
+
+    def hover_task(self, task: Task.Task) -> Literal[1]:
+        if not self.active or not self.base.mouseWatcherNode.hasMouse():  # type: ignore
+            return task.cont
+
+        mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
+        current_pos = (mpos.getX(), mpos.getY())  # type: ignore
+
+        if self._last_mouse_pos == current_pos:
+            return task.cont  # mouse didn't move
+
+        self._last_mouse_pos = current_pos
+
+        self.pickerRay.setFromLens(self.base.camNode, *current_pos)  # type: ignore
+        self.picker.traverse(self.base.render)  # type: ignore
+
+        if self.pq.getNumEntries() > 0:
+            self.pq.sortEntries()
+            entry = self.pq.getEntry(0)
+            picked_obj = entry.getIntoNodePath()
+            tile_id = picked_obj.getNetTag("tile_id")
+
+            if tile_id.startswith("tile") and tile_id != self.hovered_tile_id:
+                self.hovered_tile_id = tile_id
+                messenger.send("system.input.user.tile_hovered", [tile_id])
+        else:
+            if self.hovered_tile_id is not None:
+                messenger.send("system.input.user.tile_unhovered", [self.hovered_tile_id])
+                self.hovered_tile_id = None
+
+        return task.cont
 
     def pick_object(self) -> NodePath | None:
         if not self.active:
