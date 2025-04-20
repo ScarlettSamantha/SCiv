@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any, List, Self, Tuple
 
 from direct.task.Task import Task
 from kivy.clock import Clock
@@ -105,6 +105,8 @@ class TooltipBehavior:
             self.tooltip_label.y = local_y + offset
 
     def on_enter(self, *args: Any):
+        if self._has_disabled_ancestor():
+            return
         if not self.tooltip_visible and self.tooltip_text and not self._suppress_tooltip:
             if "<br>" in self.tooltip_text or "\n" in self.tooltip_text:
                 self.tooltip_multiline = True
@@ -118,27 +120,28 @@ class TooltipBehavior:
         self.hide_tooltip()
 
     def show_tooltip(self, dt: float) -> int:
-        if not self.tooltip_visible:
-            image_src = self.tooltip_image_source or getattr(self, "source", "")
-            self.tooltip_label = TooltipLabel(
-                text=self.tooltip_text,
-                markup=True,
-                image_source=image_src if image_src else None,
-            )
-            parent = ui.get_singleton_instance().get_main_game_ui()
+        if self._has_disabled_ancestor():
+            return 0
+        image_src = self.tooltip_image_source or getattr(self, "source", "")
+        self.tooltip_label = TooltipLabel(
+            text=self.tooltip_text,
+            markup=True,
+            image_source=image_src if image_src else None,
+        )
+        parent = ui.get_singleton_instance().get_main_game_ui()
 
-            if self.tooltip_label in parent.children:
-                parent.remove_widget(self.tooltip_label)
-            parent.add_widget(self.tooltip_label)
+        if self.tooltip_label in parent.children:
+            parent.remove_widget(self.tooltip_label)
+        parent.add_widget(self.tooltip_label)
 
-            if self.base.mouseWatcherNode.hasMouse():  # type: ignore
-                win_size = self.base.win.getSize()  # type: ignore
-                px = (self.base.mouseWatcherNode.getMouseX() + 1) * 0.5 * win_size[0]  # type: ignore
-                py = (self.base.mouseWatcherNode.getMouseY() + 1) * 0.5 * win_size[1]  # type: ignore
-                self.update_tooltip_position(px, py)  # type: ignore
+        if self.base.mouseWatcherNode.hasMouse():  # type: ignore
+            win_size = self.base.win.getSize()  # type: ignore
+            px = (self.base.mouseWatcherNode.getMouseX() + 1) * 0.5 * win_size[0]  # type: ignore
+            py = (self.base.mouseWatcherNode.getMouseY() + 1) * 0.5 * win_size[1]  # type: ignore
+            self.update_tooltip_position(px, py)  # type: ignore
 
-            self.tooltip_label.opacity = 1
-            self.tooltip_visible = True
+        self.tooltip_label.opacity = 1
+        self.tooltip_visible = True
         return 0
 
     def hide_tooltip(self):
@@ -146,6 +149,14 @@ class TooltipBehavior:
             ui.get_singleton_instance().get_main_game_ui().remove_widget(self.tooltip_label)
         self.tooltip_label = None
         self.tooltip_visible = False
+
+    def _has_disabled_ancestor(self) -> bool:
+        widget: Self = self
+        while widget:
+            if hasattr(widget, "popup_disabled"):  # type: ignore
+                return bool(widget.popup_disabled)  # type: ignore
+            widget = widget.parent  # type: ignore
+        return True
 
 
 class TooltippedImage(Image, TooltipBehavior):

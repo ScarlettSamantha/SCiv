@@ -652,6 +652,7 @@ class Research(FloatLayout, DirectObject):
             self.build()
         self.opacity = 1
         self.disabled = False
+        self.popup_disabled = False
         self.accept_once("t", self.hide_popup)
         MessengerGlobal.messenger.send("system.input.raycaster_off")
         MessengerGlobal.messenger.send("system.input.disable_zoom")
@@ -662,6 +663,7 @@ class Research(FloatLayout, DirectObject):
     def hide_popup(self, *_: Any) -> None:
         self.clear_widgets()
         self._is_build = False
+        self.popup_disabled = True
         self.accept_once("t", self.show_popup)
         MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.raycaster_on")
