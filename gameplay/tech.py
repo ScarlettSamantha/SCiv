@@ -54,6 +54,10 @@ class Tech:
     def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
         return [] + cls.contributes_to  # type: ignore
 
+    @classmethod
+    def on_tooltip(cls) -> str:
+        return f"[b]{str(cls.name)}[/b]\n\n[i]Costs:[/i] {cls.tech_points_required} points\n\n{str(cls.description)}"  # type: ignore
+
 
 class TechTree:
     name: T_TranslationOrStr

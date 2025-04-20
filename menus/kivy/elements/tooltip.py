@@ -67,7 +67,7 @@ class TooltipLabel(BoxLayout):
 class TooltipBehavior:
     tooltip_text: StringProperty = StringProperty("")
     tooltip_visible: BooleanProperty = BooleanProperty(False)
-    tooltip_markup: BooleanProperty = BooleanProperty(False)
+    tooltip_markup: BooleanProperty = BooleanProperty(True)
     tooltip_multiline: BooleanProperty = BooleanProperty(False)
     tooltip_image_source: StringProperty = StringProperty("")
     tooltip_delay = 0.4
@@ -122,7 +122,7 @@ class TooltipBehavior:
             image_src = self.tooltip_image_source or getattr(self, "source", "")
             self.tooltip_label = TooltipLabel(
                 text=self.tooltip_text,
-                markup=self.tooltip_markup,
+                markup=True,
                 image_source=image_src if image_src else None,
             )
             parent = ui.get_singleton_instance().get_main_game_ui()
@@ -243,7 +243,7 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
         ):
             kwargs["tooltip_text"] = str(kwargs["tooltip_text"])
         super().__init__(**kwargs)  # type: ignore
-        TooltipBehavior.__init__(self, **kwargs)
+        TooltipBehavior.__init__(self, tooltip_markup=True, **kwargs)
 
         with self.canvas.before:
             self._bg_color_inst = Color(rgba=self.background_color)  # type: ignore

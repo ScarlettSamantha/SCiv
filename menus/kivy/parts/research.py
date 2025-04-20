@@ -72,9 +72,12 @@ class ResearchButton(TooltippedButton):
         )
 
         tech_icon_src = getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
+
+        tooltip_text = value.on_tooltip() if hasattr(value, "on_tooltip") else getattr(value, "name", "Unknown Tech")
+
         tech_icon = TooltippedImage(
             source=tech_icon_src,
-            tooltip_text=value.name,
+            tooltip_text=tooltip_text,
             tooltip_image_source=tech_icon_src,
             tooltip_markup=False,
             tooltip_multiline=True,
@@ -156,9 +159,11 @@ class ResearchButton(TooltippedButton):
             if isinstance(tip, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
                 tip = str(tip)
 
+            tooltip_text = tech_type.on_tooltip() if hasattr(tech_type, "on_tooltip") else tip  # type: ignore
+
             img = TooltippedImage(
                 source=src,
-                tooltip_text=tip,
+                tooltip_text=tooltip_text,
                 tooltip_markup=False,
                 tooltip_multiline=True,
                 tooltip_image_source=src,
