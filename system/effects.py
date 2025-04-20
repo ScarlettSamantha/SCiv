@@ -1,7 +1,7 @@
-from pathlib import Path
 import uuid
 from abc import ABC
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 from gameplay.yields import Yields
@@ -235,7 +235,7 @@ class Effect(BaseEntity, ABC):
     place_method: EffectPlacers | Callable[[BaseEntity, "Effect"], None] = EffectPlacers.PLACE_ON_TILE
 
     activate_on_add: bool = True
-    effect_types: Tuple[EffectType] = tuple()
+    effect_types: Tuple[EffectType] = tuple()  # type: ignore
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
