@@ -1,3 +1,4 @@
+from pathlib import Path
 import random
 from abc import ABC
 from enum import Enum
@@ -12,7 +13,7 @@ from gameplay.condition import Condition
 from gameplay.resources.core.basic.production import Production
 from main import Cache
 from managers.entity import uuid4
-from managers.i18n import T_TranslationOrStr
+from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
 from managers.unit import Unit
 from system.actions import Action
@@ -46,9 +47,9 @@ class UnitBaseClass(BaseEntity, ABC):
 
     buildable: bool = False
     build_conditions: Dict[str, Condition] = {}
-    name: T_TranslationOrStr
-    description: T_TranslationOrStr
-    icon: str | None
+    name: T_TranslationOrStrOrNone
+    description: T_TranslationOrStrOrNone
+    icon: str | Path | None
     promotion_tree: Type["PromotionTree"]
     model: Optional[NodePath] = None
     model_size: float = 1.0

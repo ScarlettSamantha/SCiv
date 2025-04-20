@@ -3,22 +3,213 @@ from typing import Any, Dict, List, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from kivy.animation import Animation
 from kivy.graphics import Color, Line, Rectangle  # type: ignore
+from kivy.metrics import dp  # type: ignore
+from kivy.properties import NumericProperty
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 
+from gameplay.age import T_TranslationOrStrOrNone
 from gameplay.tech import Tech, TechTree
+from helpers.colors import Colors
+from helpers.placeholder import Placeholder
+from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.tech import TechManager
 from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
-from menus.kivy.elements.tooltip import TooltippedButton
+from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
+from system.entity import BaseEntity
 
 
 class ResearchButton(TooltippedButton):
-    def __init__(self, value: Type[Tech], *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    fade_alpha = NumericProperty(0.0)
+
+    def __init__(
+        self,
+        value: Type[Tech],
+        unlocks: List[Type[Tech] | Type["BaseEntity"]] = [],
+        size: Tuple[int, int] = (250, 72),
+        cost: int = 0,
+        *args: Any,
+        **kwargs: Any,
+    ):
         self.value: Type[Tech] = value
+        self.is_researching = PlayerManager.session_player().tech.is_researching(self.value)
+        self.cost = value.tech_points_required
+
+        if self.is_researching:
+            self._cost_text: str = f"{str(PlayerManager.session_player().tech.current_science)}/{str(self.cost)}"
+        else:
+            self._cost_text: str = f"{str(self.cost)}"
+
+        self._unlocks: List[Type[Tech] | Type["BaseEntity"]] = unlocks
+
+        super().__init__(*args, **kwargs)
+        self.width = dp(size[0])
+        self.height = dp(size[1])
+
+        with self.canvas.after:
+            self._fade_color = Color(0, 0, 0, self.fade_alpha)
+            self._fade_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
+
+        self.bind(pos=self._update_fade_rect, size=self._update_fade_rect)  # type: ignore
+        self.bind(fade_alpha=self._update_fade_opacity)  # type: ignore
+
+        self._is_hovered = False
+        self.clear_widgets()
+
+        self._title_row = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(24),
+            spacing=dp(4),  # type: ignore
+            padding=(dp(2), 0, 0, 0),
+        )
+
+        tech_icon_src = getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
+        tech_icon = TooltippedImage(
+            source=tech_icon_src,
+            tooltip_text=value.name,
+            tooltip_image_source=tech_icon_src,
+            tooltip_markup=False,
+            tooltip_multiline=True,
+            size_hint=(None, None),
+            size=(dp(20), dp(20)),
+            allow_stretch=True,
+            keep_ratio=True,
+            spacing=dp(2),
+            border_color=getattr(value, "icon_border_color", (1, 1, 1, 1)),
+        )
+
+        self._name_lbl = Label(
+            text=self.primary_text,
+            size_hint_x=0.65,
+            halign="left",
+            valign="middle",
+            text_size=(None, None),  # type: ignore
+        )
+        self._cost_lbl = Label(
+            text=self._cost_text,
+            size_hint_x=0.3,
+            halign="right",
+            valign="middle",
+            text_size=(None, None),  # type: ignore
+        )
+
+        self._title_row.add_widget(tech_icon)
+        self._title_row.add_widget(self._name_lbl)
+        self._title_row.add_widget(self._cost_lbl)
+
+        self._second_line = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(32),
+            spacing=dp(3),  # type: ignore
+            padding=(dp(2), 0, dp(2), dp(2)),
+        )
+        self._refresh_second_line()
+
+        self.add_widget(self._title_row)
+        spacer = Widget(size_hint_y=None, height=dp(4))  # type: ignore
+        self.add_widget(spacer)
+        self.add_widget(self._second_line)
+
+        self._title_row.bind(minimum_height=self._title_row.setter("height"))  # type: ignore
+        self._second_line.bind(minimum_height=self._second_line.setter("height"))  # type: ignore
+
+    def _update_fade_opacity(self, *args: Any):
+        self._fade_color.a = self.fade_alpha
+
+    def _update_fade_rect(self, *args: Any):
+        self._fade_rect.pos = self.pos  # type: ignore
+        self._fade_rect.size = self.size
+
+    def _on_primary_text(self, _, new: str):
+        if hasattr(self, "_name_lbl"):
+            self._name_lbl.text = new
+
+    def on_enter(self, *args: Any):
+        super().on_enter(*args)  # keeps the tooltip working
+        MessengerGlobal.messenger.send("ui.research.hover_tech", [self.value])
+
+    def on_leave(self, *args: Any):
+        super().on_leave(*args)
+        MessengerGlobal.messenger.send("ui.research.hover_clear")
+
+    def _refresh_second_line(self, *args: Any):
+        self._second_line.clear_widgets()
+
+        icon_size = dp(24)
+        placeholder = Placeholder.getPlaceholderImagePathSmallIcon
+
+        for tech_type in self._unlocks:
+            src = getattr(tech_type, "icon", placeholder())
+            tip = getattr(tech_type, "name", "Unknown Tech Type")
+            border_color = getattr(tech_type, "icon_border_color", (1, 1, 1, 1))
+            if isinstance(src, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
+                src = str(src)
+            if isinstance(tip, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
+                tip = str(tip)
+
+            img = TooltippedImage(
+                source=src,
+                tooltip_text=tip,
+                tooltip_markup=False,
+                tooltip_multiline=True,
+                tooltip_image_source=src,
+                size_hint=(None, None),
+                size=(icon_size, icon_size),
+                allow_stretch=True,
+                keep_ratio=True,
+                border_color=border_color,
+                padding=2,
+                border_size=1,
+            )
+            self._second_line.add_widget(img)
+
+        if not self.secondary_text:
+            self.secondary_text = ""
+
+        lbl = Label(
+            text=self.secondary_text,
+            valign="middle",
+            halign="left",
+            size_hint=(None, None),
+        )
+        lbl.text_size = (None, icon_size)  # type: ignore
+        lbl.height = icon_size
+        lbl.padding = (dp(4), 0)  # type: ignore
+
+        def _update_width(_lbl, size):  # type: ignore
+            lbl.width = size[0]
+
+        lbl.bind(texture_size=_update_width)  # type: ignore
+        self._second_line.add_widget(lbl)
+
+    def _refresh_content(self):
+        self.is_researching = PlayerManager.session_player().tech.is_researching(self.value)
+        if self.is_researching:
+            self.cost_remaining = PlayerManager.session_player().tech.current_science
+            self._cost_text = f"{self.cost_remaining}/{self.cost}"
+        else:
+            self._cost_text = f"{self._cost_text.split('/')[-1]}"
+
+        if hasattr(self, "_cost_lbl"):
+            self._cost_lbl.text = self._cost_text
+
+        if hasattr(self, "_name_lbl"):
+            self._name_lbl.text = self.primary_text
+
+        self._refresh_second_line()
+
+    def on_release(self):
+        super().on_release()
+        self._refresh_content()
 
 
 class Research(FloatLayout, DirectObject):
@@ -28,13 +219,15 @@ class Research(FloatLayout, DirectObject):
 
         self.tree: TechTree = tree
         self.player_tech_manager: TechManager = PlayerManager.session_player().tech
-        self._column_width: int = 350
+        self._column_width: int = 450
         self._button_width: int = 180
         self._button_height: int = 60
         self._padding_left: int = 50
         self._vertical_spacing: int = 40
         self._box_margin: int = 10  # for routing around boxes if needed
         self._is_build: bool = False
+        self._level_colors: Dict[int, Tuple[float, float, float, float]] = {}
+        self._hovered_tech: Type[Tech] | None = None
         self.is_open: bool = False
         self.register()
 
@@ -42,6 +235,8 @@ class Research(FloatLayout, DirectObject):
         self.accept("ui.update.ui.show_research_ui", self.show_popup)
         self.accept("ui.update.ui.hide_research_ui", self.hide_popup)
         self.accept("ui.update.ui.refresh_research_ui", self.update)
+        self.accept("ui.research.hover_tech", self._highlight_tech)
+        self.accept("ui.research.hover_clear", self._clear_highlight)
         self.accept_once("t", self.show_popup)
 
     def update(self, *args: Any) -> None:
@@ -63,7 +258,7 @@ class Research(FloatLayout, DirectObject):
         self._float_layout = FloatLayout(size_hint=(None, 1), pos_hint={"top": 0, "y": 0})
 
         with self._float_layout.canvas.before:  # type: ignore
-            Color(0.2, 0.2, 0.2, 0.8)  # dark gray background
+            Color(0.1, 0.1, 0.1, 1)  # dark gray background
             self._bg_rect = Rectangle(pos=self._float_layout.pos, size=self._float_layout.size)  # type: ignore
         self._float_layout.bind(pos=self._update_rect, size=self._update_rect)  # type: ignore
 
@@ -128,7 +323,6 @@ class Research(FloatLayout, DirectObject):
                 sorted_tech_by_level[level] = sorted(tech_by_level[level], key=lambda tech: tech.key)
             else:
                 prev_sorted = sorted_tech_by_level.get(level - 1, [])
-
                 prev_index = {tech: i for i, tech in enumerate(prev_sorted)}
 
                 def sort_key(tech: Type[Tech]) -> Tuple[float, str]:
@@ -144,25 +338,28 @@ class Research(FloatLayout, DirectObject):
 
         self._tech_by_level = sorted_tech_by_level
 
-        max_count = max((len(lst) for lst in sorted_tech_by_level.values()), default=1)
-        total_height = max_count * self._button_height + (max_count + 1) * self._vertical_spacing
+        layout_height = self.height or 1080  # type: ignore
+        total_height = layout_height  # type: ignore
 
         for level, tech_list in sorted_tech_by_level.items():
             n = len(tech_list)
-            spacing = (total_height - n * self._button_height) / (n + 1) if n > 0 else 0
+            spacing = (total_height - n * self._button_height) / (n + 1) if n > 0 else 0  # type: ignore
 
             col_min_y = float("inf")
             col_max_y = float("-inf")
 
             for i, tech_cls in enumerate(tech_list):
                 x_pos = self._padding_left + level * self._column_width + (self._column_width - self._button_width) / 2
-                y_pos = spacing * (i + 1) + i * self._button_height
+                y_pos = total_height - ((i + 1) * spacing + i * self._button_height + self._button_height)  # type: ignore
 
                 btn = ResearchButton(
-                    text=f"{str(tech_cls.name)}({str(tech_cls.tech_points_required)})",
-                    tooltip_text=str(tech_cls.description),
+                    primary_text=tech_cls.name,
+                    secondary_text="",
+                    cost=tech_cls.tech_points_required,
+                    unlocks=tech_cls.unlocks(),
+                    tooltip_text=tech_cls.description,
                     size_hint=(None, None),
-                    size=(self._button_width, self._button_height),
+                    size=(250, 72),
                     pos=(x_pos, y_pos),
                     value=tech_cls,
                 )
@@ -173,11 +370,11 @@ class Research(FloatLayout, DirectObject):
                 btn.bind(on_release=self.on_research_button_click)  # type: ignore
 
                 self._float_layout.add_widget(btn)  # type: ignore
-                self._buttons[tech_cls] = btn
+                self._buttons[tech_cls] = btn  # type: ignore
 
-                top_y = y_pos + self._button_height
-                col_min_y = min(col_min_y, y_pos)
-                col_max_y = max(col_max_y, top_y)
+                top_y = y_pos + self._button_height  # type: ignore
+                col_min_y = min(col_min_y, y_pos)  # type: ignore
+                col_max_y = max(col_max_y, top_y)  # type: ignore
 
             self._column_bounds[level] = (col_min_y, col_max_y)
 
@@ -185,6 +382,50 @@ class Research(FloatLayout, DirectObject):
         self._float_layout.width = (max_level + 1) * self._column_width + self._padding_left * 2
         self._float_layout.height = total_height
         self._calculate_button_state()
+
+        # Bind to height for live resizing
+        self.bind(height=lambda *_: self._rebuild_layout())
+
+    def _rebuild_layout(self):
+        # Clear previous widgets, reset data
+        self._float_layout.clear_widgets()
+        self._buttons.clear()
+        self._column_bounds.clear()
+
+        self._place_tech_buttons()
+        self._draw_dependency_lines()
+
+    def _highlight_tech(self, tech_cls: Type[Tech]) -> None:
+        if self._hovered_tech == tech_cls:
+            return  # Already hovered, skip update
+
+        self._hovered_tech = tech_cls
+        related = set(tech_cls.requires + tech_cls.unlocks() + [tech_cls])
+
+        for t, btn in self._buttons.items():
+            fade_to = 0.85 if t not in related else 0.0
+            Animation(fade_alpha=fade_to, duration=0.2).start(btn)  # type: ignore
+
+        for ref in getattr(self, "_line_refs", []):
+            a, b = ref["tech_pair"]
+            color = ref["color"]
+            r, g, b_, _ = color.rgba
+            target_a = 1.0 if a in related and b in related else 0.15
+            Animation(rgba=(r, g, b_, target_a), duration=0.2).start(color)  # type: ignore
+
+    def _clear_highlight(self, *args: Any):
+        if self._hovered_tech is None:
+            return  # Already cleared
+
+        self._hovered_tech = None
+
+        for btn in self._buttons.values():
+            Animation(fade_alpha=0.0, duration=0.2).start(btn)  # type: ignore
+
+        for ref in getattr(self, "_line_refs", []):
+            color = ref["color"]
+            r, g, b_, _ = color.rgba
+            Animation(rgba=(r, g, b_, 1.0), duration=0.2).start(color)  # type: ignore
 
     def on_research_button_click(self, btn: ResearchButton) -> None:
         MessengerGlobal.messenger.send("game.gameplay.research.request_start_research_session_player", [btn.value])
@@ -194,11 +435,22 @@ class Research(FloatLayout, DirectObject):
         if not self._buttons or not self._float_layout.canvas:
             return
 
+        self._line_refs = []
+        Colors._sequence_index = 0  # type: ignore
+
+        outgoing_counts: Dict[Type[Tech], int] = defaultdict(int)
+        incoming_counts: Dict[Type[Tech], int] = defaultdict(int)
+        column_lane_counts: Dict[int, int] = defaultdict(int)
+
+        for tech_cls in self._tech_classes:
+            for req_cls in tech_cls.requires:
+                incoming_counts[tech_cls] += 1
+
         with self._float_layout.canvas.before:
-            Color(1, 1, 1)
             for tech_cls in self._tech_classes:
                 if tech_cls not in self._buttons:
                     continue
+
                 to_btn = self._buttons[tech_cls]
                 tgt_level = self._level_map[tech_cls]
 
@@ -206,112 +458,148 @@ class Research(FloatLayout, DirectObject):
                     from_btn = self._buttons.get(req_cls)
                     if not from_btn:
                         continue
-                    sx, sy = from_btn.right, from_btn.center_y
+
+                    out_index = outgoing_counts[req_cls]
+                    total_out = len([t for t in self._tech_classes if req_cls in t.requires])
+                    outgoing_counts[req_cls] += 1
+                    out_spacing = dp(10)
+                    sy = from_btn.center_y + out_spacing * (out_index - total_out / 2)
+
+                    sx = from_btn.right
                     src_level = self._level_map[req_cls]
-                    points = self._build_stepwise_path(src_level, tgt_level, sx, sy, to_btn)
-                    # Draw main line
-                    Color(1, 1, 1, 1)
-                    Line(points=points, width=1.5)
-                    # Draw arrowhead
-                    self._draw_arrowhead(points)
 
-    def _get_route_y_for_column(self, col: int, current_y: float, target_y: float) -> float:
-        """
-        Decide a vertical route for lines in each column to avoid collisions with buttons.
-        """
+                    in_index = incoming_counts[tech_cls] - 1
+                    in_total = incoming_counts[tech_cls]
+                    in_spacing = dp(33)
+                    arrival_y = to_btn.center_y + in_spacing * (in_index - in_total / 2)
+                    incoming_counts[tech_cls] -= 1
+
+                    travel_lanes: Dict[int, float] = {}
+                    for col in range(min(src_level, tgt_level), max(src_level, tgt_level) + 1):
+                        lane_idx = column_lane_counts[col]
+                        lane_offset = dp(12) * (lane_idx - 1)
+                        travel_lanes[col] = lane_offset
+                        column_lane_counts[col] += 1
+
+                    color_val = Colors.sequence()
+                    color_instr = Color(*color_val)
+                    points = self._build_stepwise_path(src_level, tgt_level, sx, sy, to_btn, arrival_y, travel_lanes)
+                    line = Line(points=points, width=1.5)
+
+                    self._line_refs.append(  # type: ignore
+                        {
+                            "line": line,
+                            "color": color_instr,
+                            "tech_pair": (req_cls, tech_cls),
+                        }
+                    )
+
+                    self._draw_arrowhead(points, color_val)
+
+    def _get_route_y_for_column(self, col: int, current_y: float, target_y: float, offset: float = 0.0) -> float:
         if col not in self._tech_by_level:
-            return current_y
+            return current_y + offset
 
-        centers: List[float] = []
+        spans = []
         for tech_cls in self._tech_by_level[col]:
             btn = self._buttons.get(tech_cls)
             if btn:
-                centers.append(btn.center_y)
-        if not centers:
-            return current_y
+                spans.append((btn.y, btn.top))  # type: ignore
 
-        centers.sort()
-        n = len(centers)
-        if n % 2 == 0:
-            # Even number: route through the gap between the two central buttons
-            route_y = (centers[n // 2 - 1] + centers[n // 2]) / 2.0
+        spans.sort()  # type: ignore
+        margin = dp(6)
+
+        for y0, y1 in spans:  # type: ignore
+            if y0 - margin <= current_y <= y1 + margin:
+                break
         else:
-            # Odd: shift up/down from the center button
-            mid = centers[n // 2]
-            offset = (self._button_height / 2) + (self._vertical_spacing / 2)
-            route_y = mid - offset if target_y < mid else mid + offset
-        return route_y
+            return current_y + offset
 
-    def _build_stepwise_path(self, src_level: int, tgt_level: int, sx: float, sy: float, to_btn: Button) -> List[float]:
-        """
-        Build a list of (x,y) points forming a stepwise path from (sx, sy) to 'to_btn',
-        using 90-degree angles. For directly adjacent columns, we simplify the path.
-        """
-        # If the source and target columns differ by exactly 1, make a single L-shaped path.
-        if abs(tgt_level - src_level) == 1:
-            points: List[float] = [sx, sy]
+        step = dp(8)
+        max_y = self._float_layout.height  # type: ignore
 
-            # Are we going left->right or right->left?
-            going_right = tgt_level > src_level
-            if going_right:
-                # 1) horizontal from from_btn.right to just before target's x
-                mid_x: int = to_btn.x - 30  # type: ignore
-            else:
-                # 1) horizontal from from_btn.x to just after target's right
-                mid_x: int = to_btn.right + 10
+        for i in range(1, 100):
+            for direction in [+1, -1]:
+                candidate = current_y + i * step * direction + offset
+                if 0 < candidate < max_y:
+                    blocked = False
+                    for y0, y1 in spans:  # type: ignore
+                        if y0 - margin <= candidate <= y1 + margin:
+                            blocked = True
+                            break
+                    if not blocked:
+                        return candidate
+        return current_y + offset
 
-            # Horizontal leg
-            points.extend([mid_x, sy])  # type: ignore
-            # Vertical leg
-            points.extend([mid_x, to_btn.center_y])  # type: ignore
-
-            # Final small horizontal to the target’s actual x (left->right) or right (right->left)
-            final_x = to_btn.x if going_right else to_btn.right  # type: ignore
-            points.extend([final_x, to_btn.center_y])  # type: ignore
-
-            return points
-
-        # Otherwise, use the multi-step route for multi-column hops.
+    def _build_stepwise_path(
+        self,
+        src_level: int,
+        tgt_level: int,
+        sx: float,
+        sy: float,
+        to_btn: Button,
+        arrival_y: float,
+        travel_lanes: Dict[int, float],
+    ) -> List[float]:
         points: List[float] = [sx, sy]
         current_x, current_y = sx, sy
-        step = 1 if tgt_level >= src_level else -1
+        going_right = tgt_level > src_level
+        step = 1 if going_right else -1
         col = src_level
 
+        # If adjacent (1-column gap), use a basic 3-point bend with lane offset
+        if abs(tgt_level - src_level) == 1:
+            lane_offset = travel_lanes.get(tgt_level, 0.0)
+
+            # Determine safe horizontal mid-point
+            if going_right:
+                max_mid_x = to_btn.x - dp(16)  # type: ignore
+                mid_x = min(sx + dp(40) + lane_offset, max_mid_x)  # type: ignore
+            else:
+                min_mid_x = to_btn.right + dp(16)
+                mid_x = max(sx - dp(40) + lane_offset, min_mid_x)
+
+            points.extend([mid_x, current_y])
+            points.extend([mid_x, arrival_y])
+            points.extend([to_btn.x if going_right else to_btn.right, arrival_y])  # type: ignore
+            return points
+
+        # Multi-column path: horizontal steps, offset vertical lanes
         while col != tgt_level:
             next_col = col + step
-            if step > 0:
-                # move to the next column boundary on the left
-                boundary_x = (
-                    self._padding_left + next_col * self._column_width - 20  # keep it a bit away from the button
-                )
-            else:
-                # move to the next column boundary on the right
-                boundary_x = self._padding_left + next_col * self._column_width + self._button_width + 20
+
+            boundary_x = (
+                self._padding_left + next_col * self._column_width - 20
+                if going_right
+                else self._padding_left + next_col * self._column_width + self._button_width + 20
+            )
+
+            # Inject horizontal offset here for vertical "lane"
+            offset_x = travel_lanes.get(next_col, 0.0)
+            boundary_x += offset_x
 
             # Horizontal step
             if abs(boundary_x - current_x) > 1e-6:
                 points.extend([boundary_x, current_y])
                 current_x = boundary_x
 
-            # Vertical routing to avoid collisions
-            ideal_y = self._get_route_y_for_column(next_col, current_y, to_btn.center_y)
-            if abs(ideal_y - current_y) > 1e-6:
-                points.extend([current_x, ideal_y])
-                current_y = ideal_y
+            # Vertical adjustment (Y)
+            route_y = self._get_route_y_for_column(next_col, current_y, arrival_y)
+            if abs(route_y - current_y) > 1e-6:
+                points.extend([current_x, route_y])
+                current_y = route_y
 
             col = next_col
 
-        # Final approach to the target button
-        final_x = to_btn.x if tgt_level >= src_level else to_btn.right  # type: ignore
-        if abs(to_btn.center_y - current_y) > 1e-6:
-            points.extend([current_x, to_btn.center_y])
-            current_y = to_btn.center_y
+        final_x = to_btn.x if going_right else to_btn.right  # type: ignore
+        if abs(arrival_y - current_y) > 1e-6:
+            points.extend([current_x, arrival_y])
         if abs(final_x - current_x) > 1e-6:  # type: ignore
-            points.extend([final_x, current_y])  # type: ignore
+            points.extend([final_x, arrival_y])  # type: ignore
 
         return points
 
-    def _draw_arrowhead(self, points: List[float]) -> None:
+    def _draw_arrowhead(self, points: List[float], color: Tuple[float, float, float, float]) -> None:
         if len(points) < 4:
             return
 
@@ -323,18 +611,14 @@ class Research(FloatLayout, DirectObject):
         if dist < 1e-6:
             return
 
-        # Unit direction
         ndx, ndy = dx / dist, dy / dist
 
-        # Pull the line end back a bit
         back_offset = 40
         line_end_x = x_last - ndx - back_offset
         line_end_y = y_last - ndy - back_offset
 
-        # Replace the final coordinate in the line
         points[-2], points[-1] = line_end_x, line_end_y
 
-        # Tip (still at x_last, y_last) – we’ll offset it slightly if needed
         tipx, tipy = x_last - 5, y_last
 
         arrow_length = 12
@@ -346,8 +630,8 @@ class Research(FloatLayout, DirectObject):
         rightx = tipx - (ndx * arrow_length) - (ndy * perp_len)
         righty = tipy - (ndy * arrow_length) + (ndx * perp_len) + spacing_arrow_points
 
-        # Two lines for the arrowhead
-        Color(1, 1, 1, 1)
+        # Apply given color
+        Color(*color)
         Line(points=[tipx, tipy, leftx, lefty], width=1.5)
         Line(points=[tipx, tipy, rightx, righty], width=1.5)
 

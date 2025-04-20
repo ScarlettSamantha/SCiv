@@ -11,6 +11,7 @@ from gameplay.improvements.core.city.palace import Palace
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource
 from gameplay.yields import Yields
+from managers.i18n import T_TranslationOrStrOrNone
 from managers.log import LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -33,7 +34,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         super().__init__(*args, **kwargs)
         from gameplay.player import Player
 
-        self.name: str = name
+        self.name: T_TranslationOrStrOrNone = name
         self.player: Optional[Player] = None
         self.tile: BaseTile = tile
         self.owned_tiles: List[BaseTile] = []

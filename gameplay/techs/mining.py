@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Any, List, Type
 
 from gameplay.tech import Tech
+from managers.entity import BaseEntity
 from managers.i18n import t_
 
 
@@ -15,3 +16,9 @@ class Mining(Tech):
             *args,
             **kwargs,
         )
+
+    @classmethod
+    def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
+        from gameplay.improvements.core.resources.mine import Mine
+
+        return [Mine] + super().unlocks()  # type: ignore

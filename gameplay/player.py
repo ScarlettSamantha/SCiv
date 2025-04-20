@@ -21,6 +21,7 @@ from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
+from managers.i18n import T_TranslationOrStrOrNone
 from managers.tech import TechManager
 from system.effects import Effect, Effects
 from system.entity import BaseEntity
@@ -45,7 +46,7 @@ class Player(BaseEntity):
         from gameplay.resource import Resources
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
-        self.name: str = name
+        self.name: T_TranslationOrStrOrNone = name
         self.id: str | None = None
         self.identifier: str | None = None
         self.color: Tuple4f = color if color else Colors.sequence()

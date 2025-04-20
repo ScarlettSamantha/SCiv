@@ -112,7 +112,9 @@ class TechManager(BaseManager):
         self.logger.debug(f"Cancelling research {str(self.researching.name)}")
         self.researching = None
 
-    def is_researching(self) -> bool:
+    def is_researching(self, tech: Optional[Type[Tech]] = None) -> bool:
+        if tech and self.researching is not None:
+            return type(self.researching) == tech
         return self.researching is not None
 
     def process_queue(self, complete_research: bool = True) -> None:

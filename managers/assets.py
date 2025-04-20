@@ -3,6 +3,9 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from zlib import crc32
 
 from direct.gui.OnscreenImage import OnscreenImage
+from kivy.core.image import Image as CoreImage
+from kivy.resources import resource_find  # type: ignore
+from kivy.uix.image import Image as KivyImage
 from panda3d.core import NodePath, TextFont, Texture
 
 from mixins.singleton import Singleton
@@ -15,6 +18,7 @@ class AssetManager(Singleton):
     texture_cache: Dict[str, Texture] = {}
     font_cache: Dict[str, TextFont] = {}
     model_cache: Dict[str, NodePath] = {}
+    kivy_image_cache: Dict[str, CoreImage] = {}
 
     base: Optional["SCIV"] = None
     _logger: Optional[Logger] = None
@@ -121,6 +125,30 @@ class AssetManager(Singleton):
             )
 
         return image
+
+    @classmethod
+    def load_kivy_image(
+        cls, path: str, size_hint_y: Optional[float] = None, height: Optional[float] = None, use_cache: bool = True
+    ) -> KivyImage:
+        resolved_path: str = resource_find(path)  # type: ignore
+        if not resolved_path:
+            raise FileNotFoundError(f"Could not resolve path for Kivy image: {path}")
+
+        cache_key: str = cls._calculate_cache_key(resolved_path)
+
+        if use_cache and cache_key in cls.kivy_image_cache:
+            core_image = cls.kivy_image_cache[cache_key]
+        else:
+            core_image = CoreImage(resolved_path)
+            if use_cache:
+                cls.kivy_image_cache[cache_key] = core_image
+
+        img_widget = KivyImage(texture=core_image.texture, size_hint_y=size_hint_y)  # type: ignore
+
+        if height is not None:
+            img_widget.height = height
+
+        return img_widget
 
     @classmethod
     def set_base(cls, base: "SCIV") -> None:

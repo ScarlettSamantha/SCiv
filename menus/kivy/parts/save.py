@@ -98,7 +98,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         if self.name_input is None:
             return
 
-        self.name_input.text = PlayerManager.player().name
+        self.name_input.text = str(PlayerManager.player().name)
 
     def rebuild_right_info_panel(self):
         if self.title_label is None:

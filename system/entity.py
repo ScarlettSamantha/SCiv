@@ -1,15 +1,25 @@
 from abc import ABC
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from direct.showbase.DirectObject import DirectObject
 
 from helpers.cache import Cache
+from helpers.colors import Colors, Tuple4f
+from helpers.placeholder import Placeholder
+from managers.i18n import T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
     from main import SCIV
 
 
 class BaseEntity(ABC, DirectObject):
+    name: T_TranslationOrStrOrNone = None
+    description: T_TranslationOrStrOrNone = None
+
+    icon: str | Path | None = Placeholder.getPlaceholderImagePathSmallIcon()
+    icon_border_color: Tuple4f = Colors.YELLOW
+
     def __init__(self):
         super().__init__()
         self.entity_key: Optional[str] = None

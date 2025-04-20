@@ -1,7 +1,12 @@
-from typing import Any, Generator, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, Generator, List, Tuple, Type
 
 from gameplay.age import Age
+from helpers.colors import Colors, Tuple4f
+from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr, t_
+
+if TYPE_CHECKING:
+    from system.entity import BaseEntity
 
 
 class Tech:
@@ -9,11 +14,14 @@ class Tech:
     key: str
     name: T_TranslationOrStr | None = None
     description: T_TranslationOrStr | None = None
-    contributes_to: List["Tech"] = []
-    icon: T_TranslationOrStr | None = None
+
+    icon: T_TranslationOrStr | None = Placeholder.getPlaceholderImagePathSmallIcon()
+    icon_border_color: Tuple4f = Colors.TIEL
+
     tech_points_required: int = 1
     age: Age | None = None
     color: Tuple[int, int, int, int] | None = None
+    contributes_to: List[Type["Tech"]] = []
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.key: str = self.key
@@ -26,14 +34,12 @@ class Tech:
             self.description if self.description is not None else t_(f"tech.{self.key}.description")  # type: ignore
         )
         self.color: Tuple[int, int, int, int] | None = self.color
-        self.contributes_to: List[Tech] = self.contributes_to
+
         self.completed = False
         self.tech_points_required: int = self.tech_points_required
         self.age: Age | None = self.age
 
     def __repr__(self, recursive: bool = False):
-        contributes_to = [tech.__repr__(recursive=recursive) for tech in self.contributes_to]
-        contributes_to = f"[{'}, {'.join(contributes_to)}]"
         return f"{self.name}"
 
     def __hash__(self) -> int:
@@ -43,6 +49,10 @@ class Tech:
         if isinstance(other, Tech):
             return self.name == other.name
         return False
+
+    @classmethod
+    def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
+        return [] + cls.contributes_to  # type: ignore
 
 
 class TechTree:

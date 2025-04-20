@@ -101,7 +101,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.city_name = self.city.name
 
         if self.city_label is not None:
-            self.city_label.text = self.city_name
+            self.city_label.text = self.city_name if isinstance(self.city_name, str) else str(self.city_name)
 
         if self.population_label is not None:
             food_collected = str(floor(self.city.food_collected.food.value))
@@ -322,7 +322,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.frame.bind(size=update_debug_rect, pos=update_debug_rect)
 
         # City name label (Top)
-        self.city_label = Label(text=self.city_name, size_hint=(1, None), height=50, bold=True, font_size=24)
+        self.city_label = Label(text=str(self.city_name), size_hint=(1, None), height=50, bold=True, font_size=24)
         self.frame.add_widget(self.city_label)
 
         # City Stats Grid (Middle section)

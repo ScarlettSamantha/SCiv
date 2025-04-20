@@ -1,3 +1,4 @@
+from pathlib import Path
 import uuid
 from abc import ABC
 from enum import Enum
@@ -226,7 +227,7 @@ class EffectPlacers(Enum):
 class Effect(BaseEntity, ABC):
     name: T_TranslationOrStrOrNone = None
     description: T_TranslationOrStrOrNone = None
-    icon: None | str = None
+    icon: None | Path | str = None
     visible_to_user: bool = True
 
     # We can allow both an EffectPlacers enum or a direct Callable as a place_method.

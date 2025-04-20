@@ -11,7 +11,7 @@ from gameplay.units.core.classes.civilian.builder import Builder
 from gameplay.units.unit_base import UnitBaseClass
 from gameplay.yields import Yields
 from managers.entity import EntityManager, EntityType
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
+from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -27,7 +27,7 @@ class ImprovementBuildTurnMode(Enum):
 
 
 class Improvement(BaseEntity):
-    name: T_TranslationOrStr
+    name: T_TranslationOrStrOrNone
     description: T_TranslationOrStrOrNone
     _model: str | None = None
     _model_scale: float = 1.0
