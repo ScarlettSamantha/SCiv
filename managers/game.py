@@ -323,13 +323,28 @@ class Game(Singleton, DirectObject):
         self.properties.height = int(map_size.split("x")[1]) if isinstance(map_size, str) else map_size[1]
 
         self.game_active = True
+        self.logger.info(f"Game start requested with {self.properties}")
+
+        retry_attempts = 3
+        for attempt in range(retry_attempts):
+            try:
+                self._try_game_start()
+                break
+            except Exception as e:
+                self.logger.error(f"Game start failed on attempt {attempt + 1}/{retry_attempts}: {e}")
+                self.reset_game()
+                if attempt == retry_attempts - 1:
+                    raise
+                self.logger.info("Retrying game start after failure...")
+
+    def _try_game_start(self):
+        self.logger.info("Starting world generation sequence")
 
         self.active_generator = self.world.get_generator()  # type: ignore
-        self.logger.info(f"Game start requested with {self.properties}")
-        self.logger.info("Starting generating the world sequence")
         self.generate_world()
         self.logger.info("World generation complete")
-        self.logger.info(f"Setting up players({self.properties.num_enemies})")
+
+        self.logger.info(f"Setting up players({self.properties.num_enemies})")  # type: ignore
         self.setup_players()
         self.logger.info("Players setup complete")
 
@@ -346,13 +361,16 @@ class Game(Singleton, DirectObject):
         player: "Player" = PlayerManager.player()
         self.entities.session = f"{player.name}"
 
+        self.logger.info("Starting map generator")
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
+
+        self.logger.info("Post-generation sequence")
         MessengerGlobal.messenger.send("game.state.load_complete")
         MessengerGlobal.messenger.send("game.state.true_game_start")
-        self.logger.info("Game start complete")
         self.ui.post_game_start()
         self.camera.recenter()
+        self.logger.info("Game start complete")
 
     def process_turn(self):
         self.turn.end_turn()
