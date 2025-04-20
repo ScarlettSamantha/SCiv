@@ -13,7 +13,6 @@ from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodeP
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
 from gameplay.condition import Conditions
-from gameplay.improvement import Improvement
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -33,6 +32,7 @@ from world.items._base_item import BaseItem
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.improvement import Improvement
     from gameplay.units.unit_base import UnitBaseClass
 
 
@@ -288,8 +288,38 @@ class BaseTile(BaseEntity):
     def __repr__(self) -> str:
         return f"{self.id}@{self.x},{self.y}"
 
+    def is_resource_improved(self) -> bool | None:
+        resources = self.resources.flatten()
+        if len(resources) == 0:
+            return None
+
+        for resource in resources.values():
+            if resource.improvement_required is not None:
+                for improvement in self._improvements.get_all():
+                    if resource.improvement_required == improvement.__class__ or (
+                        isinstance(resource.improvement_required, list)
+                        and improvement.__class__ in resource.improvement_required
+                    ):
+                        return True
+        return False
+
+    def get_improved_resources(self) -> List[BaseResource]:
+        resources = self.resources.flatten()
+        if len(resources) == 0:
+            return []
+
+        improved_resources: List[BaseResource] = []
+        for resource in resources.values():
+            if resource.improvement_required is not None:
+                for improvement in self._improvements.get_all():
+                    if resource.improvement_required == improvement.__class__ or (
+                        isinstance(resource.improvement_required, list)
+                        and improvement.__class__ in resource.improvement_required
+                    ):
+                        improved_resources.append(resource)
+        return improved_resources
+
     def register(self):
-        """Registers as a entity in the system."""
         from managers.entity import EntityType  # Prevent circular import
 
         self._entity_manager.register(entity=self, key=str(self.id), type=EntityType.TILE)
@@ -473,12 +503,9 @@ class BaseTile(BaseEntity):
             self._showing_large_icons = True
 
     def add_small_icons(self, force: bool = False) -> None:
-        city_tile_yields: Yields = Yields.nullYield()
-        if self.city is not None:
-            for improvement in self.city.get_improvements().get_all():
-                city_tile_yields += improvement.tile_yield_improvement
+        city_tile_yields = self.city.get_yield() if self.city is not None else Yields.nullYield()
 
-        yields = self.tile_yield + city_tile_yields
+        yields = self.get_tile_yield() + city_tile_yields
         basic_resources: List[BaseResource] = yields.export_basic()
 
         if len(basic_resources) == 0:
@@ -768,7 +795,16 @@ class BaseTile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        return self.tile_yield
+        Yield = self.tile_yield
+        for resource in self.resources.flatten().values():  # We add the resource yield to the tile yield.
+            Yield += resource.tile_yield
+
+        for (
+            resource
+        ) in self.get_improved_resources():  # if the resource is improved, we add the yield from the improvement.
+            Yield += resource.tile_yield_on_improvement
+
+        return Yield
 
     def get_resources(self) -> Resources:
         return self.resources
@@ -834,6 +870,7 @@ class BaseTile(BaseEntity):
             "pos": (self.pos_x, self.pos_y, self.pos_z),
             "Hpr": (),
             "effects": ",".join(self.effects.get_effects().keys()),
+            "resource_improved": "Yes" if self.is_resource_improved() else "No",
         }
 
         data["hex_data"] = {
@@ -910,7 +947,7 @@ class BaseTile(BaseEntity):
         self.add_city_name()
         return True
 
-    def build(self, improvement: Improvement) -> Literal[True] | CantBuildReason:
+    def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:
         if not improvement.placeable_on_tiles:
             return CantBuildReason.NOT_PLACEABLE_UPON_TILES
         if improvement.placeable_on_city is False and self.city is not None:
@@ -929,12 +966,29 @@ class BaseTile(BaseEntity):
         self.rerender()
         return True
 
-    def destroy_improvement(self, improvement: Improvement) -> None:
+    def destroy_improvement(self, improvement: "Improvement") -> None:
         self._improvements.remove(improvement)
         improvement.on_destroy()
 
-    def get_buildable_improvements(self) -> List[Type[Improvement]]:
-        return self.get_terrain().supported_improvements()
+    def get_buildable_improvements(self) -> List[Type["Improvement"]]:
+        def get_buildable_from_resources() -> List[Type["Improvement"]]:
+            buildable_improvements: List[Type["Improvement"]] = []
+            for resource in self.resources.flatten().values():
+                if resource.improvement_required is not None:
+                    improvement_required = (
+                        resource.improvement_required
+                        if isinstance(resource.improvement_required, list)
+                        else [resource.improvement_required]
+                    )
+                    for improvement in improvement_required:
+                        if improvement not in buildable_improvements:
+                            buildable_improvements.append(improvement)
+            return buildable_improvements
+
+        buildable_improvements: List[Type["Improvement"]] = list(
+            set(get_buildable_from_resources() + self.get_terrain().supported_improvements())
+        )
+        return buildable_improvements
 
     def get_cords(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z

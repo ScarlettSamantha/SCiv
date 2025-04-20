@@ -349,3 +349,10 @@ class City(BaseEntity, DirectObject.DirectObject):
             tile_yields -= improvement.maintenance_cost
 
         return tile_yields
+
+    def get_yield(self) -> Yields:
+        _yield = Yields.nullYield()
+        for improvement in self._improvements.get_all():
+            _yield += improvement.tile_yield_improvement
+
+        return _yield

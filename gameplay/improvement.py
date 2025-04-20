@@ -7,6 +7,8 @@ from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
 from gameplay.player import Player
 from gameplay.resources.core.basic.production import Production
+from gameplay.units.core.classes.civilian.builder import Builder
+from gameplay.units.unit_base import UnitBaseClass
 from gameplay.yields import Yields
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
@@ -33,9 +35,13 @@ class Improvement(BaseEntity):
     _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.09)  # to rise above the tile
 
     placeable_on_condition: Conditions | bool = True
+    placeable_by_unit: Type[UnitBaseClass] | None = Builder
+
     placeable_by_player: bool = False
     placeable_on_tiles: bool = False
     placeable_on_city: bool = False
+
+    visible_on_condition: Conditions | bool = True
 
     def __init__(
         self,
@@ -76,6 +82,7 @@ class Improvement(BaseEntity):
         self.effects: Effects = Effects(self)
         self.conditions: Conditions = Conditions()
 
+        # This will be applied when the resource is placed on the tile.
         self.tile_yield_improvement: Yields = Yields.nullYield()
         self.maintenance_cost: Yields = Yields.nullYield()
 

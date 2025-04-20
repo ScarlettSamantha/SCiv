@@ -10,6 +10,7 @@ from helpers.colors import Tuple3f
 from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
+    from gameplay.improvement import Improvement
     from gameplay.tiles.base_tile import BaseTile
     from system.generators.resource_allocator import ResourceAllocator
 
@@ -138,6 +139,10 @@ class BaseResource(ResourceTypeBase, ABC):
     # Has no effect if `clusterable` is None.
     cluster_dropoff_amount_rate: float | Tuple[float, float] = (0.5, 1.0)
 
+    # A resource needs to be improved to be used by a city. This is the improvement that is needed to be built.
+    # This behaves like a or and statement. If a list is provided, the resource will need to be improved by one of the improvements.
+    improvement_required: Optional[Type["Improvement"] | List[Type["Improvement"]]] = None
+
     def __init__(
         self,
         value: Union[float, int] = 0,
@@ -150,13 +155,15 @@ class BaseResource(ResourceTypeBase, ABC):
         super().__init__(self.name, self.description, self.type, *args, **kwargs)
         self.value: Union[float, int] = value
         self.value_storage: ResourceValueType = self.configure_as_float_or_int
-        self._tile_yield_modifier: Yields = Yields.nullYield()
 
-    def get_yield_modifier(self) -> "Yields":
-        return self._tile_yield_modifier  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
+        self.tile_yield_on_improvement: Yields = Yields.nullYield()
+        self.tile_yield: Yields = Yields.nullYield()
+
+    def get_yield(self) -> "Yields":
+        return self.tile_yield_on_improvement  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
     def add_to_yield_modifier(self, yields: "Yields") -> None:
-        self._tile_yield_modifier.add(yields)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
+        self.tile_yield_on_improvement.add(yields)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 
     def _check_same_type(self, other: "BaseResource") -> None:
         if type(self) != type(other):

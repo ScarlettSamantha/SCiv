@@ -85,7 +85,8 @@ class TechManager(BaseManager):
     def is_tech_researched(self, tech: Tech | Type[Tech]) -> bool:
         if isinstance(tech, type):
             for t in self.researched_techs:
-                if isinstance(t, tech):
+                type_class = type(t)
+                if type_class.key == tech.key:
                     return True
         else:
             for t in self.researched_techs:

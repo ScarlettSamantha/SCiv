@@ -1,6 +1,8 @@
 from typing import Any
 
+from gameplay.condition import Conditions, ResearchCondition
 from gameplay.improvement import Improvement
+from gameplay.techs.plastics import Plastics
 from gameplay.yields import Yields
 from managers.i18n import t_
 
@@ -9,6 +11,9 @@ class OilField(Improvement):
     name = t_("content.improvements.core.resources.oil_field.name")
     description = t_("content.improvements.core.resources.oil_field.description")
     placeable_on_tiles = True
+
+    visible_on_condition = Conditions(ResearchCondition(Plastics, None))
+    placeable_on_condition = Conditions(ResearchCondition(Plastics, None))
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(

@@ -234,3 +234,6 @@ class Player(BaseEntity):
 
     def on_turn_end(self, turn: int):
         self.effects.on_turn_end(turn)
+
+    def has_researched_tech(self, tech: Type[Tech]) -> bool:
+        return self.tech.is_tech_researched(tech)
