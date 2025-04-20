@@ -35,6 +35,7 @@ class Improvement(BaseEntity):
     _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.09)  # to rise above the tile
 
     placeable_on_condition: Conditions | bool = True
+
     placeable_by_unit: Type[UnitBaseClass] | None = Builder
 
     placeable_by_player: bool = False

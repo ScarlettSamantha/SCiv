@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
-from gameplay.tiles.base_tile import BaseTile
 from helpers.cache import Cache
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
@@ -112,7 +111,7 @@ class World(Singleton, DirectObject):
             return self.generator
         return None
 
-    def lookup(self, tag: str) -> BaseTile:
+    def lookup(self, tag: str) -> "BaseTile":
         return self.map[tag]
 
     def random_tile(self) -> "BaseTile":

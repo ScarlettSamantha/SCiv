@@ -7,11 +7,9 @@ from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import BitMask32, LVector3, NodePath
 
-from gameplay.city import Yields
 from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
 from gameplay.resources.core.basic.production import Production
-from gameplay.tiles.base_tile import BaseTile
 from main import Cache
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStr
@@ -56,12 +54,14 @@ class UnitBaseClass(BaseEntity, ABC):
     model_size: float = 1.0
 
     def __init__(self, key: Optional[str] = None):
+        from gameplay.city import Yields  # to avoid circular import
+
         super().__init__()
 
         self.key: str = key if key else uuid4().hex
 
         self.owner: Player | None = None
-        self.tile: Optional[BaseTile] = None  # Tile must be set before spawning
+        self.tile: Optional["BaseTile"] = None  # Tile must be set before spawning
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
@@ -111,7 +111,7 @@ class UnitBaseClass(BaseEntity, ABC):
         self.base = Cache.get_showbase_instance()
         self.spawn(ignore_constraints=True)
 
-    def get_tile(self) -> BaseTile | None:
+    def get_tile(self) -> "BaseTile | None":
         if self.tile is not None:
             return self.tile
 
@@ -192,7 +192,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         from gameplay.repositories.tile import TileRepository
 
-        target_tile: BaseTile = kwargs["tile"]
+        target_tile: "BaseTile" = kwargs["tile"]
 
         if not self.can_move:
             return CantMoveReason.IMMOBILE
@@ -227,7 +227,7 @@ class UnitBaseClass(BaseEntity, ABC):
         result_tile = self.tile  # Start off at our current tile
         self.tile.units.remove_unit(self)  # Remove from the current tile
         for tile in tiles_to_move:
-            tile: BaseTile = tile  # this is a type hint
+            tile: "BaseTile" = tile  # this is a type hint
             cords: Tuple[float, float, float] = tile.get_cords()
 
             if (self.moves_left - tile.movement_cost) < 0:
@@ -247,7 +247,7 @@ class UnitBaseClass(BaseEntity, ABC):
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             # If we got here, we can step onto tile
-            result_tile: BaseTile = tile
+            result_tile: "BaseTile" = tile
             self.moves_left -= tile.movement_cost
             self.set_pos((cords[0], cords[1], self.pos_z))
             self.tile = tile
