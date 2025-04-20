@@ -1,6 +1,7 @@
 variables:
   compare_branch: dev-v0.2.0
   GIT_DEPTH: 0
+  stubs_repo: https://git.scarlettbytes.nl/scarlett/sciv-stubs.git
 
 stages:
   - verify
@@ -17,8 +18,9 @@ stages:
     policy: pull-push
   before_script:
     - pip config set global.cache-dir .cache/pip
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
+    - pip install --upgrade pip --root-user-action=ignore
+    - pip install -r requirements.txt --root-user-action=ignore
+    - git clone --depth 1 $stubs_repo ./stubs
 
 pyright-full-check:
   <<: *default-python-job
@@ -27,24 +29,23 @@ pyright-full-check:
   only:
     - merge_requests
   script:
-    - pip install pyright
-    - pyright . -p pyproject.toml
+    - pip install pyright --root-user-action=ignore
+    - pyright . -p pyrightconfig.json
 
 pyright-diff-check:
   <<: *default-python-job
   stage: verify
-  allow_failure: true
   except:
     - merge_requests
   script:
-    - pip install pyright --root-user-action
+    - pip install pyright --root-user-action=ignore
     - git fetch origin $compare_branch
     - |
       changed_files=$(git diff --diff-filter=ACMR --name-only origin/$compare_branch...HEAD -- '*.py')
       if [ -n "$changed_files" ]; then
         echo "Changed Python files:"
         echo "$changed_files"
-        pyright $changed_files -p pyproject.toml
+        pyright $changed_files -p pyrightconfig.json
       else
         echo "No Python files changed. Skipping pyright."
       fi
@@ -53,21 +54,21 @@ lint-check:
   <<: *default-python-job
   stage: verify
   script:
-    - pip install ruff
+    - pip install ruff --root-user-action=ignore
     - ruff check .
 
 format-check:
   <<: *default-python-job
   stage: verify
   script:
-    - pip install ruff
+    - pip install ruff --root-user-action=ignore
     - ruff format --check --diff .
 
 security-check:
   <<: *default-python-job
   stage: verify
   script:
-    - pip install bandit
+    - pip install bandit --root-user-action=ignore
     - bandit -r . -c pyproject.toml
 
 markdown-check:
@@ -77,5 +78,5 @@ markdown-check:
     - branches
     - merge_requests
   script:
-    - npm install --global markdownlint-cli
+    - npm install --global markdownlint-cli --root-user-action=ignore
     - markdownlint '**/*.md'

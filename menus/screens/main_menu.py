@@ -1,20 +1,21 @@
-from typing import Optional
+from typing import Any, Optional
 
 from direct.showbase.MessengerGlobal import messenger
+from kivy.app import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.uix.screenmanager import Screen
+from kivy.uix.screenmanager import Screen, ScreenManager
 
 
 class MainMenuScreen(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self.layout: Optional[FloatLayout] = None
         self.container: Optional[BoxLayout] = None
-
+        self.manager: ScreenManager
         self.continue_button: Optional[Button] = None
         self.new_button: Optional[Button] = None
         self.load_button: Optional[Button] = None
@@ -25,7 +26,7 @@ class MainMenuScreen(Screen):
 
         self.add_widget(self.build_screen())
 
-    def switch_to_game_config_screen(self, _):
+    def switch_to_game_config_screen(self, _: Any):
         self.manager.current = "game_config_screen"
 
     def build_screen(self):
@@ -42,11 +43,11 @@ class MainMenuScreen(Screen):
 
         with container.canvas.before:  # type: ignore # noqa
             Color(0.5, 0.5, 0.5, 0.5)  # Gray with transparency
-            self.rect = Rectangle(size=container.size, pos=container.pos)
+            self.rect = Rectangle(size=container.size, pos=container.pos)  # type: ignore
 
-        def update_rect(instance, value):
-            self.rect.size = instance.size
-            self.rect.pos = instance.pos
+        def update_rect(instance: Widget, value: Any):
+            self.rect.size = instance.size  # type: ignore
+            self.rect.pos = instance.pos  # type: ignore
 
         container.bind(size=update_rect, pos=update_rect)  # type: ignore
 
@@ -100,17 +101,17 @@ class MainMenuScreen(Screen):
         float_layout.add_widget(container)
         return float_layout
 
-    def to_config_screen(self, _):
+    def to_config_screen(self, _: Any):
         self.manager.current = "options_screen"
 
     def to_game_screen(self, _: Optional[Button] = None):
         self.manager.current = "game_ui"
         messenger.send("system.input.raycaster_on")
 
-    def switch_to_load_screen(self, _):
+    def switch_to_load_screen(self, _: Any):
         messenger.send("ui.update.ui.show_load")
 
-    def switch_to_save_screen(self, _):
+    def switch_to_save_screen(self, _: Any):
         messenger.send("ui.update.ui.show_save")
 
     def exit(self):

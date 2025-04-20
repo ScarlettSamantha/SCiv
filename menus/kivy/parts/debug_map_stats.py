@@ -1,7 +1,8 @@
 import copy
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
+from kivy.app import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
@@ -26,7 +27,7 @@ class DebugMapStats(FloatLayout):
         self.frame = None
         self.map_resource_column: Optional[Label] = None
         self.map_type_column: Optional[Label] = None
-        self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
+        self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
         self.rect = None
 
         self.map: Dict[str, "BaseTile"] = World.get_singleton_instance().map
@@ -41,7 +42,7 @@ class DebugMapStats(FloatLayout):
         running_total_resources: Dict[str, float] = {}
         running_total_tile_type: Dict[str, float] = {}
         total_tiles: int = len(self.map)  # Total number of tiles in the map
-        self.loaded_resources: Dict[str, Type["BaseResource[Any]"]] = {}
+        self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
 
         # Sum resource counts over all tiles
         for tile in self.map.values():
@@ -50,8 +51,8 @@ class DebugMapStats(FloatLayout):
                 if resource.__class__ not in list(self.loaded_resources.values()):
                     self.loaded_resources[resource.key] = resource.__class__
 
-            running_total_tile_type[str(tile._tile_terrain.name)] = (
-                running_total_tile_type.get(str(tile._tile_terrain.name), 0) + 1.0
+            running_total_tile_type[str(tile.get_tile_terrain().name)] = (
+                running_total_tile_type.get(str(tile.get_tile_terrain().name), 0) + 1.0
             )
 
         # Divide each resource's total by the number of tiles to get the average
@@ -101,7 +102,7 @@ class DebugMapStats(FloatLayout):
         text = "\n".join(formatted_lines)
         self.map_resource_column.text = text
 
-        formatted_lines = []
+        formatted_lines: List[str] = []
         for key, value in sorted_stats_tile_type:
             simplified_key = key.split(".")[-1]
             # Convert to percentage with 2 decimal places
@@ -124,9 +125,9 @@ class DebugMapStats(FloatLayout):
 
         with self.frame.canvas.before:  # type: ignore
             Color(0, 0, 0, 0.7)  # Black background with 70% opacity
-            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)
+            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
-        def update_debug_rect(instance, value):
+        def update_debug_rect(instance: Widget, value: Any):
             self.rect.size = instance.size  # type: ignore
             self.rect.pos = instance.pos  # type: ignore
 

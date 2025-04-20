@@ -1,52 +1,54 @@
-from typing import Any, Type
+from typing import Any, Dict, List, Self, Type
 
 from exceptions.tech_exception import TechNotFoundException
+from gameplay.age import Age
 from gameplay.tech import Tech, TechTree
 from managers.i18n import t_
 
 
 class Core(TechTree):
+    name = t_("content.type[tech].trees.core.name")
+    description = t_("content.type[tech].trees.core.name")
+    icon = t_("content.type[tech].trees.core.icon")
+
     def __init__(self, *args: Any, **kwargs: Any):
         TechTree.__init__(
             self,
-            name=t_("content.type[tech].trees.core.name"),
-            description=t_("content.type[tech].trees.core.name"),
-            icon=t_("content.type[tech].trees.core.icon"),
             *args,
             **kwargs,
         )
         self._add_items()
 
-    def _add_items(self):
+    def _add_items(self) -> None:
         from system.pyload import PyLoad
 
-        classes = PyLoad.load_classes("openciv/gameplay/techs/")
-        ages = PyLoad.load_classes("openciv/gameplay/ages/core/")
+        classes = PyLoad.load_classes("gameplay/techs/")
+        ages = PyLoad.load_classes("gameplay/ages/core/")
 
         # Just a type hint proxy
-        def get_tech(self, classes, key) -> Type[Tech]:
+        def get_tech(self: Self, classes: Dict[str, Type[Tech]], key: str) -> Type[Tech]:
             try:
                 return classes[key]
             except KeyError:
                 raise TechNotFoundException(key)
 
-        def get_age(self, ages, key) -> Type[Tech]:
+        def get_age(self: Self, ages: Dict[str, Type[Age]], key: str) -> Age:
             try:
                 return ages[key]()
             except KeyError:
                 raise TechNotFoundException(key)
 
-        def add_to_space(self, classes, key, age) -> Type[Tech]:
+        def add_to_space(self: Self, classes: Dict[str, Type[Tech]], key: str, age: Age) -> Type[Tech]:
             _class = get_tech(self, classes, key)
             self.add(_class)
             return _class
 
-        def add_age_to_space(self, ages, key) -> Type[Tech]:
+        def add_age_to_space(self: Self, ages: Dict[str, Type[Age]], key: str) -> Age:
             _class = get_age(self, ages, key)
             self._ages.append(_class)
             return _class
 
-        def load_ages(self, ages):
+        def load_ages(self: Self, ages: Dict[str, Type[Age]]) -> None:
             ancient = add_age_to_space(self, ages, "Ancient")
             classical = add_age_to_space(self, ages, "Classical")
             medieval = add_age_to_space(self, ages, "Medieval")
@@ -57,7 +59,7 @@ class Core(TechTree):
             information = add_age_to_space(self, ages, "Information")
             future = add_age_to_space(self, ages, "Future")
 
-            all_ages = [
+            all_ages: List[Age] = [
                 ancient,
                 classical,
                 medieval,
@@ -73,8 +75,8 @@ class Core(TechTree):
 
         load_ages(self, ages)
 
-        hunting_gethering: Type[Tech] = add_to_space(
-            self, classes, "HuntingGethering", add_age_to_space(self, ages, "Ancient")
+        hunting_gathering: Type[Tech] = add_to_space(
+            self, classes, "HuntingGathering", add_age_to_space(self, ages, "Ancient")
         )
         trapping: Type[Tech] = add_to_space(self, classes, "Trapping", get_age(self, ages, "Ancient"))
         animal_husbandry: Type[Tech] = add_to_space(self, classes, "AnimalHusbandry", get_age(self, ages, "Ancient"))
@@ -97,16 +99,14 @@ class Core(TechTree):
         celestial_navigation: Type[Tech] = add_to_space(
             self, classes, "CelestialNavigation", get_age(self, ages, "Classical")
         )
-        construction: Type[Tech] = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
         engineering: Type[Tech] = add_to_space(self, classes, "Engineering", get_age(self, ages, "Classical"))
         mathematics: Type[Tech] = add_to_space(self, classes, "Mathematics", get_age(self, ages, "Classical"))
         ship_building: Type[Tech] = add_to_space(self, classes, "ShipBuilding", get_age(self, ages, "Classical"))
         horseback_riding: Type[Tech] = add_to_space(self, classes, "HorsebackRiding", get_age(self, ages, "Classical"))
         iron_working: Type[Tech] = add_to_space(self, classes, "IronWorking", get_age(self, ages, "Classical"))
-        construction: Type[Tech] = add_to_space(self, classes, "Construction", get_age(self, ages, "Classical"))
 
         apprenticeship: Type[Tech] = add_to_space(self, classes, "Apprenticeship", get_age(self, ages, "Medieval"))
-        butress: Type[Tech] = add_to_space(self, classes, "Butress", get_age(self, ages, "Medieval"))
+        buttress: Type[Tech] = add_to_space(self, classes, "Buttress", get_age(self, ages, "Medieval"))
         education: Type[Tech] = add_to_space(self, classes, "Education", get_age(self, ages, "Medieval"))
         machinery: Type[Tech] = add_to_space(self, classes, "Machinery", get_age(self, ages, "Medieval"))
         stirrups: Type[Tech] = add_to_space(self, classes, "Stirrups", get_age(self, ages, "Medieval"))
@@ -137,7 +137,7 @@ class Core(TechTree):
         )
         mass_production: Type[Tech] = add_to_space(self, classes, "MassProduction", get_age(self, ages, "Industrial"))
         replaceable_parts: Type[Tech] = add_to_space(
-            self, classes, "ReplacableParts", get_age(self, ages, "Industrial")
+            self, classes, "ReplaceableParts", get_age(self, ages, "Industrial")
         )
         refining: Type[Tech] = add_to_space(self, classes, "Refining", get_age(self, ages, "Industrial"))
         steam_power: Type[Tech] = add_to_space(self, classes, "SteamPower", get_age(self, ages, "Industrial"))
@@ -175,23 +175,23 @@ class Core(TechTree):
 
         nanotechnology: Type[Tech] = add_to_space(self, classes, "Nanotechnology", get_age(self, ages, "Information"))
         nuclear_fusion: Type[Tech] = add_to_space(self, classes, "NuclearFusion", get_age(self, ages, "Information"))
-        robotoics: Type[Tech] = add_to_space(self, classes, "Robotics", get_age(self, ages, "Information"))
+        robotics: Type[Tech] = add_to_space(self, classes, "Robotics", get_age(self, ages, "Information"))
 
-        animal_husbandry.requires = [hunting_gethering]
-        pottery.requires = [hunting_gethering]
-        mining.requires = [hunting_gethering]
-        trapping.requires = [hunting_gethering]
+        animal_husbandry.requires = [hunting_gathering]
+        pottery.requires = [hunting_gathering]
+        mining.requires = [hunting_gathering]
+        trapping.requires = [hunting_gathering]
 
-        archery.requires = [hunting_gethering, trapping]
+        archery.requires = [trapping]
         writing.requires = [pottery]
         astrology.requires = [pottery]
-        masonry.requires = [pottery, mining]
+        masonry.requires = [mining]
         bronze_working.requires = [mining]
 
         currency.requires = [writing]
-        celestial_navigation.requires = [sailing, writing]
+        celestial_navigation.requires = [sailing]
         clay_tablets.requires = [writing]
-        horseback_riding.requires = [animal_husbandry, archery]
+        horseback_riding.requires = [animal_husbandry]
 
         calendar.requires = [clay_tablets]
         sailing.requires = [astrology]
@@ -204,24 +204,23 @@ class Core(TechTree):
         engineering.requires = [construction, mathematics, wheel]
         irrigation.requires = [calendar]
 
-        butress.requires = [ship_building, mathematics]
+        buttress.requires = [ship_building]
         military_tactics.requires = [mathematics]
-        construction.requires = [masonry]
         engineering.requires = [wheel]
+        stirrups.requires = [horseback_riding]
 
-        butress.requires = [ship_building]
         military_tactics.requires = [mathematics]
         apprenticeship.requires = [currency]
         machinery.requires = [engineering]
 
         education.requires = [mathematics]
-        stirrups.requires = [horseback_riding]
+
         military_engineering.requires = [construction]
         castles.requires = [iron_working]
 
-        cartography.requires = [butress]
+        cartography.requires = [buttress]
         mass_production.requires = [military_tactics, education]
-        banking.requires = [currency, education, stirrups]
+        banking.requires = [education]
         gunpowder.requires = [stirrups, education]
         printing.requires = [machinery]
 
@@ -267,15 +266,102 @@ class Core(TechTree):
         composites.requires = [synthetic_materials]
         stealth_technology.requires = [synthetic_materials]
 
-        robotics = [computers, satellites, guidance_systems, lasers]
+        robotics.requires = [computers, satellites, guidance_systems, lasers]
         nuclear_fission.requires = [lasers]
         nanotechnology.requires = [composites]
 
+        hunting_gathering.contributes_to = [animal_husbandry, pottery, mining, trapping]
+        trapping.contributes_to = [archery]
+        animal_husbandry.contributes_to = [horseback_riding]
+        bronze_working.contributes_to = [iron_working]
+        pottery.contributes_to = [writing, astrology]
+        writing.contributes_to = [currency, clay_tablets]
+        mining.contributes_to = [masonry, bronze_working]
+        archery.contributes_to = []
+
+        astrology.contributes_to = [sailing]
+        clay_tablets.contributes_to = [calendar]
+        sailing.contributes_to = [celestial_navigation]
+        masonry.contributes_to = [wheel]
+        calendar.contributes_to = [irrigation]
+        wheel.contributes_to = [construction, engineering]
+        irrigation.contributes_to = []
+        construction.contributes_to = [engineering, military_engineering]
+        currency.contributes_to = [mathematics, apprenticeship]
+        celestial_navigation.contributes_to = [ship_building]
+        engineering.contributes_to = [machinery]
+        mathematics.contributes_to = [engineering, military_tactics, education]
+        ship_building.contributes_to = [buttress]
+        horseback_riding.contributes_to = [construction, stirrups]
+        iron_working.contributes_to = [castles]
+
+        apprenticeship.contributes_to = []
+        buttress.contributes_to = [cartography]
+        education.contributes_to = [mass_production, banking, gunpowder, astronomy]
+        machinery.contributes_to = [printing]
+        stirrups.contributes_to = [gunpowder]
+        castles.contributes_to = [siege_tactics]
+        military_engineering.contributes_to = []
+        military_tactics.contributes_to = [mass_production]
+
+        banking.contributes_to = [scientific_theory, economics]
+        chemistry.contributes_to = [rocketry]
+        composites.contributes_to = [nanotechnology]
+        gunpowder.contributes_to = [metal_casting]
+        scientific_theory.contributes_to = [sanitation, economics]
+        cartography.contributes_to = [square_rigging]
+        mass_production.contributes_to = [industrialisation]
+        printing.contributes_to = [military_science]
+        square_rigging.contributes_to = [industrialisation]
+        astronomy.contributes_to = [scientific_theory]
+        metal_casting.contributes_to = [scientific_theory, ballistics, economics]
+        siege_tactics.contributes_to = [military_science]
+
+        industrialisation.contributes_to = [steam_power, flight]
+        mass_production.contributes_to = []
+        replaceable_parts.contributes_to = [chemistry, advanced_ballistics]
+        refining.contributes_to = [combustion]
+        steam_power.contributes_to = [electricity, radio]
+        steel.contributes_to = [chemistry, combustion, advanced_ballistics, combined_arms]
+        ballistics.contributes_to = [rifling]
+        sanitation.contributes_to = []
+        economics.contributes_to = [replaceable_parts]
+        rifling.contributes_to = [steel, refining]
+
+        flight.contributes_to = [radio]
+        replaceable_parts.contributes_to = [chemistry, advanced_ballistics]
+        steel.contributes_to = [chemistry, combustion, advanced_ballistics, combined_arms]
+        refining.contributes_to = [combustion]
+
+        electricity.contributes_to = [computers]
+        radio.contributes_to = [advanced_flight, rocketry]
+        chemistry.contributes_to = [rocketry]
+        combustion.contributes_to = [combined_arms, plastics]
+
+        advanced_flight.contributes_to = [satellites]
+        rocketry.contributes_to = [nuclear_fusion, satellites, guidance_systems]
+        advanced_ballistics.contributes_to = [nuclear_fusion, guidance_systems, lasers]
+        combined_arms.contributes_to = [nuclear_fusion]
+        plastics.contributes_to = [synthetic_materials]
+
+        computers.contributes_to = [telecommunications, robotics]
+        nuclear_fission.contributes_to = []
+        nanotechnology.contributes_to = []
+        nuclear_fusion.contributes_to = [lasers]
+        robotics.contributes_to = []
+
+        telecommunications.contributes_to = []
+        satellites.contributes_to = [robotics]
+        guidance_systems.contributes_to = [robotics]
+        lasers.contributes_to = [robotics, nuclear_fission]
+        composites.contributes_to = [nanotechnology]
+        stealth_technology.contributes_to = []
+
         all_techs = [
-            hunting_gethering,
+            hunting_gathering,
             trapping,
             animal_husbandry,
-            bronze_working,
+            masonry,
             pottery,
             writing,
             mining,
@@ -283,22 +369,20 @@ class Core(TechTree):
             astrology,
             clay_tablets,
             sailing,
-            masonry,
+            bronze_working,
             calendar,
             wheel,
             irrigation,
             construction,
             currency,
             celestial_navigation,
-            construction,
             engineering,
             mathematics,
             ship_building,
             horseback_riding,
             iron_working,
-            construction,
             apprenticeship,
-            butress,
+            buttress,
             education,
             machinery,
             stirrups,
@@ -348,7 +432,7 @@ class Core(TechTree):
             computers,
             nanotechnology,
             nuclear_fusion,
-            robotoics,
+            robotics,
         ]
 
         self._items = all_techs

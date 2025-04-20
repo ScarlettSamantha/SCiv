@@ -3,9 +3,10 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 from weakref import ReferenceType
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix import widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -15,9 +16,12 @@ from kivy.uix.screenmanager import Screen
 
 from gameplay.city import City
 from gameplay.improvement import Improvement
+from gameplay.player import Player
+from gameplay.tech import TechTree
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from managers.entity import EntityManager, EntityType
+from managers.player import PlayerManager
 from managers.unit import Unit
 from managers.world import World
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
@@ -27,8 +31,10 @@ from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
+from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
+from menus.screens.pause_menu import PauseMenu
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
@@ -42,27 +48,25 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         "state": "Playing",
     }
 
-    def __init__(self, *args, **kwargs: Any):
+    def __init__(self, *args: Any, **kwargs: Any):
         if "base" not in kwargs:
             raise ValueError("GameUIScreen requires a 'base' keyword argument.")
         self._base: "SCIV" = kwargs.pop("base", None)
 
-        if self._base is None:
-            raise AssertionError("Base is not initialized.")
-
         from managers.ui import ui
 
-        super().__init__(base=self._base, *args, **kwargs)
+        super().__init__(base=self._base, *args, **kwargs)  # type: ignore
 
         self.world_manager = World.get_singleton_instance()
         self.camera: Camera = Camera.get_singleton_instance()
         self.unit_manager: Unit = Unit.get_singleton_instance()
         self.ui_manager: ui = ui.get_singleton_instance()
+        self.player: Optional[Player] = None
 
         self.waiting_for_world_input: bool = False
 
         self.wait_for_next_input_of_user: bool = False
-        self.wait_for_action_of_user: Optional[Callable] = None
+        self.wait_for_action_of_user: Optional[partial[Callable[[Optional[BaseTile]], None]]] = None
         self.unit_waiting_for_action: Optional[UnitBaseClass] = None
 
         self.debug_panel: Optional[Label] = None
@@ -78,6 +82,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_turn_control: Optional[PlayerTurnControl] = None
         self.city_ui: Optional[CityUI] = None
         self.top_bar: Optional[TopBar] = None
+        self.research: Optional[Research] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -93,6 +98,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.register()
         self.build_screen()
         self.logger.info("Game UI Screen built.")
+
+    def on_game_start(self, *args: Any):
+        self.player = PlayerManager.session_player()
+        self.build_research()
+        self.accept(
+            "escape", self.on_escape
+        )  # this is to prevent the pause menu from being opened before the game starts
+        MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
+
+    def on_game_end(self, *args: Any):
+        self.ignore("escape")
 
     def reset(self):
         self.logger.info("Resetting game UI screen.")
@@ -116,8 +132,26 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("system.unit.destroyed", self.clear_action_bar)
         self.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
 
+        self.accept("game.state.true_game_start", self.on_game_start)
+        self.accept("game.state.load_finished", self.on_game_start)
+        self.accept("game.state.main_menu", self.on_game_end)
+
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
+
+    def on_escape(self):
+        if (
+            self.research is not None and self.research.is_open
+        ):  # if the research screen is open exit as it is handled in the research screen
+            MessengerGlobal.messenger.send("ui.update.ui.hide_research_ui")
+            return
+
+        screen: PauseMenu | Screen = self.ui_manager.get_screen("pause_menu")
+
+        if screen.pause_menu._is_open:  # type: ignore
+            MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
+        else:
+            MessengerGlobal.messenger.send("ui.update.ui.show_pause")
 
     def on_unit_destroyed(self, unit: BaseEntity):
         self.clear_action_bar()
@@ -188,18 +222,23 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             raise AssertionError("Top bar is not initialized.")
         return self.top_bar
 
+    def get_research(self) -> Research:
+        if self.research is None:
+            raise AssertionError("Research is not initialized.")
+        return self.research
+
     def build_screen(self):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
-        self.root_layout.add_widget(self.build_action_bar())
-        self.root_layout.add_widget(self.build_stats_frame())
-        self.root_layout.add_widget(self.build_debug_frame())
-        self.root_layout.add_widget(self.build_debug_actions())
-        self.root_layout.add_widget(self.build_debug_map_stats())
-        self.root_layout.add_widget(self.build_player_turn_control())
-        self.root_layout.add_widget(self.build_city_ui())
-        self.root_layout.add_widget(self.build_top_bar())
+        self.root_layout.add_widget(self.build_action_bar())  # type: ignore
+        self.root_layout.add_widget(self.build_stats_frame())  # type: ignore
+        self.root_layout.add_widget(self.build_debug_frame())  # type: ignore
+        self.root_layout.add_widget(self.build_debug_actions())  # type: ignore
+        self.root_layout.add_widget(self.build_debug_map_stats())  # type: ignore
+        self.root_layout.add_widget(self.build_player_turn_control())  # type: ignore
+        self.root_layout.add_widget(self.build_city_ui())  # type: ignore
+        self.root_layout.add_widget(self.build_top_bar())  # type: ignore
 
         if (
             self.action_bar_frame is None
@@ -216,14 +255,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger.info("Game UI screen built.")
         self.logger.info("Registering non-collidable UI elements.")
 
-        self.register_non_collidable(self.action_bar_frame.frame)
-        self.register_non_collidable(self.debug_frame.frame)
-        self.register_non_collidable(self.stats_frame.frame)
-        self.register_non_collidable(self.debug_actions.frame)
-        self.register_non_collidable(self.debug_map_stats.frame)
-        self.register_non_collidable(self.player_turn_control.frame)
-        self.register_non_collidable(self.city_ui.frame)
-        self.register_non_collidable(self.top_bar.frame)
+        self.register_non_collidable(self.action_bar_frame.frame)  # type: ignore
+        self.register_non_collidable(self.debug_frame.frame)  # type: ignore
+        self.register_non_collidable(self.stats_frame.frame)  # type: ignore
+        self.register_non_collidable(self.debug_actions.frame)  # type: ignore
+        self.register_non_collidable(self.debug_map_stats.frame)  # type: ignore
+        self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
+        self.register_non_collidable(self.city_ui.frame)  # type: ignore
+        self.register_non_collidable(self.top_bar)  # type: ignore
 
         self.logger.info("Non-collidable UI elements registered.")
         self.add_widget(self.root_layout)
@@ -261,9 +300,27 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.city_ui.hide()
         return result
 
-    def build_top_bar(self) -> AnchorLayout:
+    def build_top_bar(self) -> TopBar:
         self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
         return self.top_bar.build()
+
+    def build_research(self) -> Research | None:
+        if self.player is None:
+            return
+
+        tree: None | TechTree = self.player.tech.get_tree()
+        if tree is None:
+            return
+
+        if self.research is not None:
+            self.remove_widget(self.research)  # type: ignore
+        self.research = Research(tree=tree)
+        self.add_widget(self.research)
+
+    def refresh_top_bar(self):
+        if self.top_bar is None:
+            raise AssertionError("Top bar is not initialized.")
+        self.top_bar.update()
 
     def clear_selected_unit(self):
         self.clear_action_bar()
@@ -280,33 +337,33 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if actions and not self.debug_panels_showing_state["actions"]:
             self.add_widget(self.debug_actions)
-            self.register_non_collidable(self.debug_actions.frame)
+            self.register_non_collidable(self.debug_actions.frame)  # type: ignore
         else:
             frame = self.get_action_bar_frame().get_frame()
             for child in frame.children:  # type: ignore
-                frame.remove_widget(child)
-            self.remove_widget(frame)
-            self.remove_widget(self.debug_actions)
-            self.unregister_non_collidable(self.debug_actions.frame)
+                frame.remove_widget(child)  # type: ignore
+            self.remove_widget(frame)  # type: ignore
+            self.remove_widget(self.debug_actions)  # type: ignore
+            self.unregister_non_collidable(self.debug_actions.frame)  # type: ignore
 
         if debug and not self.debug_panels_showing_state["debug"]:
             self.add_widget(self.debug_frame)
-            self.register_non_collidable(self.debug_frame.frame)
+            self.register_non_collidable(self.debug_frame.frame)  # type: ignore
         else:
             frame = self.get_debug_frame()
             for child in frame.children:  # type: ignore
-                frame.remove_widget(child)
-            self.remove_widget(frame)
-            self.unregister_non_collidable(self.debug_frame.frame)
+                frame.remove_widget(child)  # type: ignore
+            self.remove_widget(frame)  # type: ignore
+            self.unregister_non_collidable(self.debug_frame.frame)  # type: ignore
 
         if stats and not self.debug_panels_showing_state["stats"]:
             frame = self.get_stats_frame().get_frame()
             self.add_widget(frame)
-            self.register_non_collidable(self.stats_frame.frame)
+            self.register_non_collidable(self.stats_frame.frame)  # type: ignore
         else:
             frame = self.get_stats_frame()
             frame.hide()
-            self.register_non_collidable(self.stats_frame.frame)
+            self.register_non_collidable(self.stats_frame.frame)  # type: ignore
 
     def process_tile_click(self, tile: str):
         _tile: Optional[BaseTile] = self.world_manager.lookup_on_tag(tile)
@@ -319,7 +376,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _tile.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
 
-        if self.wait_for_next_input_of_user is None or self.wait_for_next_input_of_user is False:
+        if self.wait_for_next_input_of_user is False:
             self.clear_selected_unit()  # Clear the action bar
 
         # If we are waiting for an action, execute it now
@@ -342,8 +399,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.get_city_ui().hide()
             self.showing_city = None
 
-        if _unit is not None:
-            self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
+        self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         if self.action_bar_frame is None:
@@ -352,7 +408,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         _unit: Optional[UnitBaseClass] = None
         if isinstance(unit, str):
             _unit: Optional[UnitBaseClass] = self.unit_manager.find_unit(unit)
-        elif isinstance(unit, BaseEntity):
+        else:
             _unit: Optional[UnitBaseClass] = unit if isinstance(unit, UnitBaseClass) else None
 
         if _unit is not None:
@@ -365,35 +421,45 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                     width=100,
                     height=75,
                 )
-                button.bind(on_press=partial(self.prepare_action, action, _unit))
+                button.bind(on_press=partial(self.prepare_action, action, _unit))  # type: ignore
                 self.action_bar_frame.add_button(button)
 
             if _unit.can_build is True and _unit.tile is not None:
                 improvements: List[Type[Improvement]] = _unit.tile.get_buildable_improvements()
                 for _improvement in improvements:
+                    # Check if the improvement is placeable on the tile
+                    condition_check = (
+                        isinstance(_improvement.placeable_on_condition, bool)
+                        and _improvement.placeable_on_condition is True
+                    ) or (
+                        isinstance(_improvement.placeable_on_condition, Callable)
+                        and _improvement.placeable_on_condition() is True
+                    )
+
+                    # Check if the improvement is visible or if we don't show the button
+                    visible_condition_check = (
+                        isinstance(_improvement.visible_on_condition, bool)
+                        and _improvement.visible_on_condition is True
+                    ) or (
+                        isinstance(_improvement.visible_on_condition, Callable)
+                        and _improvement.visible_on_condition() is True
+                    )
                     if (
                         _improvement.placeable_on_tiles is True
                         and not _unit.tile.improvements().has(_improvement)
-                        and (
-                            (
-                                isinstance(_improvement.placeable_on_condition, bool)
-                                and _improvement.placeable_on_condition is True
-                            )
-                            or (
-                                isinstance(_improvement.placeable_on_condition, Callable)
-                                and _improvement.placeable_on_condition() is True
-                            )
-                        )
+                        and visible_condition_check
                     ):
-                        button = Button(
+                        button: Button = Button(
                             text=str(_improvement.name),
                             size_hint=(None, None),
                             width=100,
                             height=75,
                         )
-                        button.disabled = not _unit.can_build or _unit.tile.owner != _unit.owner
-                        button.bind(
-                            on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, _unit)
+                        button.disabled = (
+                            not _unit.can_build or _unit.tile.owner != _unit.owner or condition_check is False
+                        )
+                        button.bind(  # type: ignore
+                            on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, _unit)  # type: ignore
                         )
                         self.action_bar_frame.add_button(button)
 
@@ -415,17 +481,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.clear_action_bar()
         self.generate_buttons_for_unit_actions(unit)
 
-    def prepare_action(self, action: Action, unit: UnitBaseClass, _instance):
+    def prepare_action(self, action: Action, unit: UnitBaseClass, _):
         """Prepares an action and waits for the next tile click before executing."""
         if action.on_the_spot_action:
             action.action_kwargs["unit"] = unit
             action.run()
             if action.remove_actions_after_use:
-                self.get_action_bar_frame().clear_widgets()
+                self.get_action_bar_frame().clear_widgets()  # type: ignore
             return
 
         self.wait_for_next_input_of_user = True
-        self.wait_for_action_of_user = partial(self.execute_action, action, unit)
+        self.wait_for_action_of_user = partial(self.execute_action, action, unit)  # type: ignore
         self.unit_waiting_for_action = unit
         self.waiting_for_world_input = True  # type: ignore # We know it exists because it's initialized in build_screen
 
@@ -436,8 +502,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if tile is not None:
             action.action_kwargs["tile"] = tile  # Assign the selected tile
 
-        if action.run() is False:
-            self.debug_panel.text = "Action failed!"  # type: ignore # We know it exists because it's initialized in build_screen
+        action.run()
 
         # Reset waiting state
         self.wait_for_next_input_of_user = False
@@ -446,3 +511,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if action.remove_actions_after_use:
             self.clear_action_bar()
+
+    def add_widget(self, widget: widget.Widget, *args: Any, **kwargs: Any) -> None:
+        return super().add_widget(widget, *args, **kwargs)  # type: ignore

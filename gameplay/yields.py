@@ -93,7 +93,7 @@ class Yields:
         self._name = value
 
     @property
-    def gold(self) -> "BaseResource[Any]":
+    def gold(self) -> "BaseResource":
         from gameplay.resources.core.basic.gold import Gold
 
         return Gold(value=self._gold)
@@ -106,11 +106,11 @@ class Yields:
             self._gold = value.value
         elif isinstance(value, (int, float)):
             self._gold = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._gold = value.gold.value
 
     @property
-    def production(self) -> "BaseResource[Any]":
+    def production(self) -> "BaseResource":
         from gameplay.resources.core.basic.production import Production
 
         return Production(value=self._production)
@@ -123,11 +123,11 @@ class Yields:
             self._production = value.value
         elif isinstance(value, (int, float)):
             self._production = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._production = value.production.value
 
     @property
-    def science(self) -> "BaseResource[Any]":
+    def science(self) -> "BaseResource":
         from gameplay.resources.core.basic.science import Science
 
         return Science(value=self._science)
@@ -140,11 +140,11 @@ class Yields:
             self._science = value.value
         elif isinstance(value, (int, float)):
             self._science = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._science = value.science.value
 
     @property
-    def food(self) -> "BaseResource[Any]":
+    def food(self) -> "BaseResource":
         from gameplay.resources.core.basic.food import Food
 
         return Food(value=self._food)
@@ -157,11 +157,11 @@ class Yields:
             self._food = value.value
         elif isinstance(value, (int, float)):
             self._food = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._food = value.food.value
 
     @property
-    def culture(self) -> "BaseResource[Any]":
+    def culture(self) -> "BaseResource":
         from gameplay.resources.core.basic.culture import Culture
 
         return Culture(value=self._culture)
@@ -174,11 +174,11 @@ class Yields:
             self._culture = value.value
         elif isinstance(value, (int, float)):
             self._culture = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._culture = value.culture.value
 
     @property
-    def housing(self) -> "BaseResource[Any]":
+    def housing(self) -> "BaseResource":
         from gameplay.resources.core.basic.housing import Housing
 
         return Housing(value=self._housing)
@@ -191,11 +191,11 @@ class Yields:
             self._housing = value.value
         elif isinstance(value, (int, float)):
             self._housing = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._housing = value.housing.value
 
     @property
-    def faith(self) -> "BaseResource[Any]":
+    def faith(self) -> "BaseResource":
         from gameplay.resources.core.basic.faith import Faith
 
         return Faith(value=self._faith)
@@ -208,7 +208,7 @@ class Yields:
             self._faith = value.value
         elif isinstance(value, (int, float)):
             self._faith = value
-        elif isinstance(value, Yields):
+        elif isinstance(value, Yields):  # type: ignore
             self._faith = value.faith.value
 
     def clone(self) -> "Yields":
@@ -337,55 +337,37 @@ class Yields:
             setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
         return self
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: "Yields | object") -> bool:
         if not isinstance(other, Yields):
-            return NotImplemented
+            return False
         return self.total_value() == other.total_value()
 
     def __gt__(self, other: "Yields") -> bool:
-        if not isinstance(other, Yields):
-            return NotImplemented
         return self.total_value() > other.total_value()
 
     def __lt__(self, other: "Yields") -> bool:
-        if not isinstance(other, Yields):
-            return NotImplemented
         return self.total_value() < other.total_value()
 
     def __ge__(self, other: "Yields") -> bool:
-        if not isinstance(other, Yields):
-            return NotImplemented
         return self.total_value() >= other.total_value()
 
     def __le__(self, other: "Yields") -> bool:
-        if not isinstance(other, Yields):
-            return NotImplemented
         return self.total_value() <= other.total_value()
 
     def __ne__(self, other: "Yields") -> bool:  # type: ignore
-        if not isinstance(other, Yields):
-            return NotImplemented
         return self.total_value() != other.total_value()
 
     # Reverse arithmetic operators (clone to avoid modifying the left-hand operand)
     def __radd__(self, other: "Yields") -> "Yields":
-        if not isinstance(other, Yields):
-            return NotImplemented
         return other.clone().add(self)
 
     def __rsub__(self, other: "Yields") -> "Yields":
-        if not isinstance(other, Yields):
-            return NotImplemented
         return other.clone().subtract(self)
 
     def __rmul__(self, other: "Yields") -> "Yields":
-        if not isinstance(other, Yields):
-            return NotImplemented
         return other.clone().multiply(self)
 
     def __rtruediv__(self, other: "Yields") -> "Yields":
-        if not isinstance(other, Yields):
-            return NotImplemented
         return other.clone().divide(self)
 
     def set_prop(self, name: str, value: Any):
@@ -420,8 +402,8 @@ class Yields:
             "great_person_holy": self._great_person_holy,
         }
 
-    def export_basic(self) -> List["BaseResource[Any]"]:
-        resources: List["BaseResource[Any]"] = [
+    def export_basic(self) -> List["BaseResource"]:
+        resources: List["BaseResource"] = [
             self.gold,
             self.production,
             self.food,

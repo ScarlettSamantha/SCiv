@@ -1,5 +1,6 @@
+from typing import Dict, Type
+
 from gameplay.player import Player
-from typing import Type, Dict
 
 
 class Players:
@@ -14,7 +15,7 @@ class Players:
         del self._data[player.turn_order]
         self.reorderTurnOrder()
 
-    def __getitem__(self, _, key):
+    def __getitem__(self, _, key: int) -> Player:
         return self._data[key]
 
     def __delitem__(self, _, key: Type[int | Player]):

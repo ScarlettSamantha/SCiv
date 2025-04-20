@@ -1,8 +1,8 @@
 import json
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
-from panda3d.core import loadPrcFileData
+from panda3d.core import loadPrcFileData  # type: ignore
 
 from mixins.singleton import Singleton
 from system.vars import APPLICATION_NAME, VERSION_NAME_STRING
@@ -41,7 +41,7 @@ class ConfigManager(Singleton):
             },
         }
 
-    def get_by_key(self, *args: Tuple[str, ...]) -> Any:
+    def get_by_key(self, *args: Any) -> Any:
         """
         Get a value from the config by key.
         Example: get_by_key("window", "win-size") -> [1280, 720]
@@ -51,7 +51,7 @@ class ConfigManager(Singleton):
             data = data.get(key, {})  # type: ignore
         return data  # type: ignore
 
-    def get_config_full(self):
+    def get_config_full(self) -> Dict[str, Any]:
         """Return the full config data."""
         return self.config_data
 

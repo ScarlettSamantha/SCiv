@@ -1,6 +1,8 @@
 from typing import Any
 
+from gameplay.condition import Conditions, ResearchCondition
 from gameplay.improvement import Improvement
+from gameplay.techs.construction import Construction
 from gameplay.yields import Yields
 from managers.i18n import t_
 
@@ -12,6 +14,10 @@ class LoggingCamp(Improvement):
     _model = "assets/models/tile_improvements/building_lumbermill_blue.gltf"
     _model_scale = 0.33
     _model_hpr = (45, 0, 0)
+    tile_yield_improvement = Yields(production=1.0, gold=1.0, mode=Yields.ADDITIVE)
+
+    placeable_on_condition = Conditions(ResearchCondition(Construction, None))
+    visible_condition = Conditions(ResearchCondition(Construction, None))
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
@@ -21,5 +27,3 @@ class LoggingCamp(Improvement):
 
         self.health = 50
         self.max_health = 50
-
-        self.tile_yield_improvement = Yields(production=1.0, gold=1.0, mode=Yields.ADDITIVE)

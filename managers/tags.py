@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from mixins.singleton import Singleton
 
@@ -20,14 +20,14 @@ class Tag:
 
 class _Tags(Singleton):
     def __setup__(self):
-        self._tags: Dict[str, List[object]] = {}
+        self._tags: Dict[str, List[Any]] = {}
 
     def add(self, tag: Tag):
         if tag.tag() not in self._tags:
             self._tags[tag.tag()] = []
         self._tags[tag.tag()].append(tag.instance())
 
-    def tags(self, tag: Optional[str] = None) -> Dict | List:
+    def tags(self, tag: Optional[str] = None) -> Dict[str, List[Any]] | List[Any]:
         return self._tags[tag] if tag is not None else self._tags
 
 
@@ -40,7 +40,7 @@ class Taggable:
         _Tags.get_singleton_instance().add(tag)
 
     def has_tag(self, tag: str) -> bool:
-        return any(t.tag == tag for t in self.tags)
+        return any(t.tag() == tag for t in self.tags)
 
     def remove_tag(self, tag: str):
         self.tags = [t for t in self.tags if t.tag() != tag]

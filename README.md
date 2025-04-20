@@ -108,7 +108,7 @@ The goal is to have an actual semi playable and resumable game and improved buil
 - [X] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
 - [X] Map regeneration/reroll (with same settings)
 - [X] CI/CD, Would like a auto builder and checker running on my gitlab instance.
-- [ ] Working research
+- [X] Working research
     - [ ] Resource specific improvements and resource system improvements.
 - [ ] Barbarians + Nature player
 - [ ] City/Empire borders drawn
@@ -129,6 +129,7 @@ This should be the first real "playable" version that should be some level of fu
 <details>
 
 - [ ] Unit embarkation/disembarkation.
+- [ ] Fog + Discovery
 - [ ] Sea/Air units
 - [ ] Show result before moving
 - [ ] Wonders

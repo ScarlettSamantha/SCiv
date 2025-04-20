@@ -11,6 +11,7 @@ from gameplay.improvements.core.city.palace import Palace
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.resource import BaseResource
 from gameplay.yields import Yields
+from managers.i18n import T_TranslationOrStrOrNone
 from managers.log import LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -33,7 +34,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         super().__init__(*args, **kwargs)
         from gameplay.player import Player
 
-        self.name: str = name
+        self.name: T_TranslationOrStrOrNone = name
         self.player: Optional[Player] = None
         self.tile: BaseTile = tile
         self.owned_tiles: List[BaseTile] = []
@@ -60,7 +61,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.food_collected: Yields = Yields.nullYield()
 
         self.is_building: bool = False
-        self.resource_required: Optional[type[BaseResource[Any]]] = None
+        self.resource_required: Optional[type[BaseResource]] = None
         self.resource_required_amount: Yields = Yields.nullYield()  # no-op
         self.resource_collected: Yields = Yields.nullYield()  # no-op # This is the amount of resources collected so far
         self.building: BaseCityImprovement | UnitBaseClass | None = None  # can be either improvement or unit
@@ -135,7 +136,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             if isinstance(building, BaseCityImprovement):
                 self._improvements.add(building)
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_improvement", [self, building])
-            elif isinstance(building, UnitBaseClass):
+            elif isinstance(building, UnitBaseClass):  # type: ignore
                 if self.player is not None:
                     self.player.units.add_unit(building)
 
@@ -199,8 +200,8 @@ class City(BaseEntity, DirectObject.DirectObject):
             if self.is_capital:
                 self.player.capital = self
 
-    def birth(self, population: int = 1, *args, **kwargs):
-        for i in range(population):
+    def birth(self, population: int = 1, *args: Any, **kwargs: Any):
+        for _ in range(population):
             self.citizens.create(*args, **kwargs)
 
     def _register_callbacks(self):
@@ -227,7 +228,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.logger.debug(f"City {city.name} got request to build improvement {improvement.name}.")
 
-        if not isinstance(improvement, BaseCityImprovement) and not isinstance(improvement, UnitBaseClass):
+        if not isinstance(improvement, BaseCityImprovement) and not isinstance(improvement, UnitBaseClass):  # type: ignore
             self.logger.error("Improvement is not an instance of BaseCityImprovement or UnitBaseClass.")
             return
 
@@ -349,3 +350,10 @@ class City(BaseEntity, DirectObject.DirectObject):
             tile_yields -= improvement.maintenance_cost
 
         return tile_yields
+
+    def get_yield(self) -> Yields:
+        _yield = Yields.nullYield()
+        for improvement in self._improvements.get_all():
+            _yield += improvement.tile_yield_improvement
+
+        return _yield

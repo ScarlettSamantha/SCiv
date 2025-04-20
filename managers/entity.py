@@ -83,12 +83,12 @@ class BaseEntityManagerSerializer(ABC):
 
 class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
     def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
-        import dill as pickle
+        import dill as pickle  # type: ignore
 
         return pickle.dumps(data)  # type: ignore
 
     def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
-        import dill as pickle
+        import dill as pickle  # type: ignore
 
         return pickle.loads(data)  # type: ignore
 

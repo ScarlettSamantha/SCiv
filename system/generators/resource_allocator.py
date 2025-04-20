@@ -26,10 +26,9 @@ class ResourceAllocator:
         if isinstance(resource_class.coverage, tuple):
             min_coverage, max_coverage = resource_class.coverage
             return random.uniform(min_coverage, max_coverage)
-        elif isinstance(resource_class.coverage, (float, int)):
+        elif isinstance(resource_class.coverage, (float, int)):  # type: ignore This is a false positive
             return resource_class.coverage
-        else:
-            return 0.0
+        return 0.0
 
     def _allocate_single_resource(self, resource_class: Type[BaseResource], coverage_percent: float) -> None:
         # get valid candidate tiles for this resource
@@ -60,7 +59,6 @@ class ResourceAllocator:
 
             # @TODO can add more checks here to determine if a tile is valid
             # if tile.extra_data.temp < -1.0 and resource_class is X: skip
-
             valid_tiles.append(tile)
 
         return valid_tiles
@@ -150,7 +148,7 @@ class ResourceAllocator:
         directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
 
         visited = set([tile])
-        result = []
+        result: List[BaseTile] = []
         queue = deque([(tile, 0)])
 
         while queue:
@@ -178,7 +176,7 @@ class ResourceAllocator:
         return result
 
     def _spread_cluster(
-        self, resource_class: Type[BaseResource], center_tile: BaseTile, remaining_tiles: set, limit: int
+        self, resource_class: Type[BaseResource], center_tile: BaseTile, remaining_tiles: set[BaseTile], limit: int
     ) -> int:
         placed = 0
         if not resource_class.clusterable:

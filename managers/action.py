@@ -1,11 +1,12 @@
 from typing import Dict
 
+from managers.i18n import T_TranslationOrStr
 from system.actions import Action
 
 
 class ActionManager:
-    registered_actions = {}
-    staged_actions = {}
+    registered_actions: Dict[T_TranslationOrStr, Action] = {}
+    staged_actions: Dict[T_TranslationOrStr, Action] = {}
 
     @classmethod
     def add_timed_action(cls, action: Action, run_on_add: bool = True):
@@ -32,11 +33,11 @@ class ActionManager:
         return cls.registered_actions[action_name]
 
     @classmethod
-    def get_all_actions(cls) -> Dict:
+    def get_all_actions(cls) -> Dict[T_TranslationOrStr, Action]:
         return cls.registered_actions
 
     @classmethod
-    def get_staged_actions(cls) -> Dict:
+    def get_staged_actions(cls) -> Dict[T_TranslationOrStr, Action]:
         return cls.staged_actions
 
     @classmethod

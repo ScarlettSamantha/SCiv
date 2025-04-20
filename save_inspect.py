@@ -8,7 +8,7 @@ uuid_path = "saves/{uuid}/data.pickle.gz"  # This might be merged with direct_pa
 direct_path = "saves/{name}/data.pickle.gz"
 
 
-def save_inspect(path):
+def save_inspect(path: str):
     if len(path) == 32 and "/" not in path:
         path = uuid_path.format(uuid=path)
     elif "/" not in path:
@@ -16,10 +16,10 @@ def save_inspect(path):
 
     if path.endswith(".gz"):
         with gzip.open(path, "rb") as f:
-            pprint(dill.loads(f.read()))
+            pprint(dill.loads(f.read()))  # type: ignore
     else:
         with open(path, "rb") as f:
-            pprint(dill.loads(f.read()))
+            pprint(dill.loads(f.read()))  # type: ignore
 
 
 if __name__ == "__main__":

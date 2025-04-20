@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -8,6 +9,7 @@ from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
 from gameplay.terrain.flat_jungle import FlatJungle
 from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.hills_forest import HillsForest
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, t_
 
 
@@ -28,6 +30,9 @@ class Hardwood(BaseBonusResource):
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     coverage = 1.2
     spawn_amount = 5.0
+    improvement_required = [LoggingCamp]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
+
+        self.tile_yield_on_improvement = Yields(production=50.0, mode=Yields.ADDITIVE)

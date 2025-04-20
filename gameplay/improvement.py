@@ -7,9 +7,11 @@ from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
 from gameplay.player import Player
 from gameplay.resources.core.basic.production import Production
+from gameplay.units.core.classes.civilian.builder import Builder
+from gameplay.units.unit_base import UnitBaseClass
 from gameplay.yields import Yields
 from managers.entity import EntityManager, EntityType
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
+from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -25,17 +27,25 @@ class ImprovementBuildTurnMode(Enum):
 
 
 class Improvement(BaseEntity):
-    name: T_TranslationOrStr
+    name: T_TranslationOrStrOrNone
     description: T_TranslationOrStrOrNone
     _model: str | None = None
     _model_scale: float = 1.0
     _model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.09)  # to rise above the tile
 
+    tile_yield_improvement: Yields = Yields.nullYield()
+    maintenance_cost: Yields = Yields.nullYield()
+
     placeable_on_condition: Conditions | bool = True
+
+    placeable_by_unit: Type[UnitBaseClass] | None = Builder
+
     placeable_by_player: bool = False
     placeable_on_tiles: bool = False
     placeable_on_city: bool = False
+
+    visible_on_condition: Conditions | bool = True
 
     def __init__(
         self,
@@ -76,13 +86,36 @@ class Improvement(BaseEntity):
         self.effects: Effects = Effects(self)
         self.conditions: Conditions = Conditions()
 
-        self.tile_yield_improvement: Yields = Yields.nullYield()
-        self.maintenance_cost: Yields = Yields.nullYield()
+        # This will be applied when the resource is placed on the tile.
+        self._tile_yield_improvement: Yields = self.tile_yield_improvement
+        self._maintenance_cost: Yields = self.maintenance_cost
 
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
 
         self.owner: Optional[Player] = None
         self.tag: str = ""
+
+    @classmethod
+    def on_tooltip(cls) -> str:
+        tile_yield_improvement = cls.tile_yield_improvement.props(only_non_nul=True)
+        tile_yield_improvement = ", ".join(
+            f"[{str(value.name)[0]}: {'+' if value.value > 0 else ''}{value.value}]"
+            for value in tile_yield_improvement.values()
+        )
+        maintenance_cost = cls.maintenance_cost.props(only_non_nul=True)
+        maintenance_cost = ", ".join(f"{value.name}: {value.value}" for value in maintenance_cost.values())
+
+        return (
+            str(cls.name)
+            + "\n\n"
+            + str(cls.description)
+            + "\n\n"
+            + "Yield Improvement: "
+            + tile_yield_improvement
+            + "\n\n"
+            + "Maintenance Cost: "
+            + maintenance_cost
+        )
 
     def __del__(self):
         if self.is_registered is True:
@@ -115,11 +148,11 @@ class Improvement(BaseEntity):
 
     @property
     def tile_yield(self) -> Yields:
-        return self.tile_yield_improvement
+        return self._tile_yield_improvement
 
     @tile_yield.setter
     def tile_yield(self, value: Yields) -> None:
-        self.tile_yield_improvement = value
+        self._tile_yield_improvement = value
 
     def set_price_free(self):
         self.amount_resource_needed = Yields.nullYield()

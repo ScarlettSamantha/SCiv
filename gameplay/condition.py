@@ -1,5 +1,9 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Self
+from typing import Any, Callable, Dict, List, Optional, Self, Type
+
+from gameplay.player import Player
+from gameplay.tech import Tech
+from managers.player import PlayerManager
 
 
 class ConditionalTypes(Enum):
@@ -49,10 +53,16 @@ class Condition:
 
 
 class Conditions:
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, conditions: Optional[List[Condition] | Condition] = None, *args: Any, **kwargs: Any):
         self._conditions: List[Condition] = []
         self.conditional_type: ConditionalTypes = ConditionalTypes.AND
         self.condition_params: Dict[str, Any] = {}
+
+        if conditions is not None:
+            if isinstance(conditions, list):
+                self._conditions.extend(conditions)
+            else:
+                self._conditions.append(conditions)
 
     def are_met(self, params: Dict[str, Any] = {}) -> bool:
         self.condition_params.update(params)
@@ -89,7 +99,7 @@ class Conditions:
 
     def __call__(self, *args: Any, **kwargs: Any) -> bool:
         """Invoke the conditions check."""
-        return self.are_met()
+        return self.are_met(params=self.condition_params)
 
     @classmethod
     def no_conditions(cls) -> Self:
@@ -101,3 +111,24 @@ class BuildCondition(Condition):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.required_params = ["tile", "improvement"]
+
+
+class ResearchCondition(Condition):
+    def __init__(self, tech: List[Type[Tech]] | Type[Tech], player: Optional[Player] = None, *args: Any, **kwargs: Any):
+        if not isinstance(tech, list):
+            tech = [tech]
+        super().__init__(*args, **kwargs)
+        self.params["tech"] = tech
+        self.params["player"] = player
+        self.required_params = ["player", "tech"]
+        self._condition = self._research_condition
+
+    def _research_condition(self, player: Optional[Player], tech: List[Type[Tech]]) -> bool:
+        """Check if the player has researched the tech."""
+        if player is None:
+            player = PlayerManager.session_player()
+
+        for t in tech:
+            if not player.has_researched_tech(t):
+                return False
+        return True

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.checkbox import CheckBox
@@ -6,15 +6,15 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.slider import Slider
-from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
+from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem  # type: ignore
 
 from main import Cache
 from menus.kivy.elements.button_value import ButtonValue
 
 
 class OptionsScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)  # type: ignore
         self.base = Cache.get_showbase_instance()
         self.version = self.base.version
         self.git_version: str = self.base.commit
@@ -24,17 +24,17 @@ class OptionsScreen(Screen):
         self.selected_resolution = None
 
         self.layout: Optional[BoxLayout] = None
-        self.add_widget(self.build_screen())
+        self.add_widget(self.build_screen())  # type: ignore
 
     def build_screen(self):
         layout = BoxLayout(orientation="vertical")
-        tab_panel = TabbedPanel(do_default_tab=False)
+        tab_panel: TabbedPanel = TabbedPanel(do_default_tab=False)  # type: ignore
 
         # General Tab
         general_tab = TabbedPanelItem(text="General")
         general_layout = BoxLayout(orientation="vertical")
 
-        general_layout.add_widget(Label(text="1.1 Language"))
+        general_layout.add_widget(Label(text="1.1 Language"))  # type: ignore
 
         # language_spinner = Spinner(text="English (en_EN)", values=["English (en_EN)", "Dutch (nl_NL)"])
         # general_layout.add_widget(language_spinner)
@@ -57,7 +57,7 @@ class OptionsScreen(Screen):
         resolutions = ["720p", "1080p", "1440p", "4K"]
         aspect_ratios = ["16:9", "16:10", "Ultrawide"]
 
-        def select_resolution(button):
+        def select_resolution(button: ButtonValue):
             if self.selected_resolution:
                 self.selected_resolution.background_color = (1, 1, 1, 1)
             self.selected_resolution = button
@@ -116,7 +116,7 @@ class OptionsScreen(Screen):
         video_tab.add_widget(video_layout)
 
         # Developer Tab
-        developer_tab = TabbedPanelItem(text="Developer")
+        developer_tab = TabbedPanelItem(text="Developer")  # type: ignore
         developer_layout = BoxLayout(orientation="vertical")
         developer_layout.add_widget(Label(text="3.1 Developer Mode"))
         developer_layout.add_widget(CheckBox())

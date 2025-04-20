@@ -22,6 +22,7 @@ class BaseTerrain(ABC):
     _name: T_TranslationOrStrOrNone = None
     _model: T_TranslationOrStr = ""
     can_spawn_resources: bool = True
+    _fallback_color: Tuple[float, float, float] = rgb(0, 119, 255)
 
     # This is for things like a forrest, where the terrain is replaced by a new terrain type.
     _warn_user_before_build: bool = False
@@ -29,7 +30,7 @@ class BaseTerrain(ABC):
     _warn_user_before_build_title: T_TranslationOrStr = ""
 
     def __init__(self):
-        self.fallback_color: LRGBColor | Tuple[float, float, float] = rgb(225, 0, 255)
+        self.fallback_color: Tuple[float, float, float] = rgb(225, 0, 255)
 
         self.name: T_TranslationOrStr = "" if self._name is None else self._name
         self.user_title: T_TranslationOrStr = ""
@@ -37,7 +38,7 @@ class BaseTerrain(ABC):
 
         self.movement_modifier: float = 0.0
         self.water_availability: float = 1.0
-        self.radatiation: float = 0.0
+        self.radiation_level: float = 0.0
 
         self.tile_modifiers: Yields = Yields.nullYield()
         self.tile_yield_base: Yields = Yields.nullYield()
@@ -46,6 +47,14 @@ class BaseTerrain(ABC):
         self.passable_without_tech: bool = True
 
         self._supports_improvements: List[Type["Improvement"]] = []
+
+    @classmethod
+    def get_model(cls) -> T_TranslationOrStr:
+        return cls._model
+
+    @classmethod
+    def get_fallback_color(cls) -> LRGBColor | Tuple[float, float, float]:
+        return cls._fallback_color
 
     def model(self) -> T_TranslationOrStr:
         return str(self._model)

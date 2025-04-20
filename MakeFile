@@ -1,0 +1,26 @@
+COMPARE_BRANCH ?= dev-v0.2.0
+
+.PHONY: all pyright-diff pyright-full lint format security markdown precommit
+
+all: pyright-diff lint format security markdown
+
+precommit:
+	pre-commit run --all-files
+
+pyright-full:
+	pyright . -p pyrightconfig.json
+
+pyright-diff:
+	COMPARE_BRANCH=$(COMPARE_BRANCH) bash .pre-commit-hooks/pyright-diff.sh
+
+lint:
+	ruff check .
+
+format:
+	ruff format --check --diff .
+
+security:
+	bandit -r . -c pyproject.toml
+
+markdown:
+	markdownlint '**/*.md'

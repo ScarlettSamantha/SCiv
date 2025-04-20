@@ -34,7 +34,7 @@ class ImprovementsRepository:
         cls, parent_improvement_type: type[Improvement], use_cache: bool = True
     ) -> Dict[str, Type[Improvement]]:
         all_improvements: Dict[str, Type[Improvement]] = cls.all(use_cache=use_cache)
-        result = {}
+        result: Dict[str, Type[Improvement]] = {}
         for name, improvement in all_improvements.items():
             if issubclass(improvement, parent_improvement_type) and not improvement == parent_improvement_type:
                 result[name] = improvement

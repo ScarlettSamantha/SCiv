@@ -1,3 +1,5 @@
+from typing import Any
+
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
@@ -15,27 +17,27 @@ class WalkAction(BaseUnitAction):
             condition=instance.can_move,
             on_success=self.success,
             on_failure=self.show_cant_move_popup,
-            success_condition=self.is_successfull,
+            success_condition=self.is_action_successful,
         )
 
         self.on_the_spot_action = False
         self.targeting_tile_action = True
         self.get_return_as_failure_argument = True
 
-    def move_wrapper(self, *args, **kwargs) -> CantMoveReason:
+    def move_wrapper(self, *args: Any, **kwargs: Any) -> CantMoveReason:
         result = self.unit.move(*args, **kwargs)
         self._result = result
         return result
 
-    def is_successfull(self, action: Action, *args, **kwargs) -> bool:
+    def is_action_successful(self, action: Action, *args: Any, **kwargs: Any) -> bool:
         if action.get_result() == CantMoveReason.COULD_MOVE:
             return True
         return False
 
-    def success(self, *args, **kwargs):
+    def success(self, *args: Any, **kwargs: Any):
         messenger.send("unit.action.move.success", [self.get_result()])
 
-    def show_cant_move_popup(self, action: Action, *args, **kwargs):
+    def show_cant_move_popup(self, action: Action, *args: Any, **kwargs: Any):
         result = action.get_result()
         text, description = "", ""
         if result == CantMoveReason.NO_MOVES:

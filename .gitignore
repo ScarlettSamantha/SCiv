@@ -7,3 +7,4 @@ stubs/direct/
 stubs/
 saves/
 monkeytype.sqlite3
+.ruff_cache

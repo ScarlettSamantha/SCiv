@@ -1,6 +1,7 @@
 import uuid
 from abc import ABC
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 from gameplay.yields import Yields
@@ -32,7 +33,7 @@ parent_types = Union["City", "BaseTile", "Player", "World", "UnitBaseClass", "Im
 class Effects:
     def __init__(self, parent: parent_types) -> None:
         self.parent: parent_types = parent
-        self._effects = {}
+        self._effects: Dict[str, "Effect"] = {}
         self._effects_num: int = 0
 
     def add_effect(
@@ -226,7 +227,7 @@ class EffectPlacers(Enum):
 class Effect(BaseEntity, ABC):
     name: T_TranslationOrStrOrNone = None
     description: T_TranslationOrStrOrNone = None
-    icon: None | str = None
+    icon: None | Path | str = None
     visible_to_user: bool = True
 
     # We can allow both an EffectPlacers enum or a direct Callable as a place_method.
@@ -234,7 +235,7 @@ class Effect(BaseEntity, ABC):
     place_method: EffectPlacers | Callable[[BaseEntity, "Effect"], None] = EffectPlacers.PLACE_ON_TILE
 
     activate_on_add: bool = True
-    effect_types: Tuple[EffectType] = tuple()
+    effect_types: Tuple[EffectType] = tuple()  # type: ignore
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -294,7 +295,7 @@ class Effect(BaseEntity, ABC):
     def apply(self, base_object: "BaseTile | City | Player | World") -> None:
         if isinstance(self.place_method, EffectPlacers):
             self.place_method.place(base_object, self)
-        elif isinstance(self.place_method, Callable) and isinstance(base_object, BaseEntity):
+        elif callable(self.place_method) and isinstance(base_object, BaseEntity):
             self.place_method(base_object, self)
         else:
             raise ValueError("Invalid place method.")

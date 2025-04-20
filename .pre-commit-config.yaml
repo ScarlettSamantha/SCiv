@@ -1,0 +1,28 @@
+repos:
+  - repo: local
+    hooks:
+      - id: pyright-diff
+        name: Pyright on changed files
+        entry: bash .pre-commit-hooks/pyright-diff.sh
+        language: system
+        types: [python]
+      - id: pyright-full
+        name: Full Pyright check
+        entry: pyright .
+        language: system
+        types: [python]
+      - id: ruff-lint
+        name: Ruff lint check
+        entry: ruff check .
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: Ruff format check
+        entry: ruff format --check --diff .
+        language: system
+        types: [python]
+      - id: markdown-lint
+        name: Markdown lint
+        entry: markdownlint '**/*.md' -c .markdownlint.json -i stubs
+        language: system
+        types: [markdown]

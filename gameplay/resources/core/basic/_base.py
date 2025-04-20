@@ -1,13 +1,12 @@
-from typing import Type, TypeVar
+from typing import TypeVar
 
-from gameplay.resource import BaseResource
+from gameplay.resource import BaseResource, ResourceType
+
+BasicResourceType = TypeVar("BasicResourceType", bound="BasicBaseResource")
 
 
 class BasicBaseResource(BaseResource):
-    from gameplay.resource import ResourceTypeBonus, ResourceValueType
+    from gameplay.resource import ResourceValueType
 
-    type: Type[ResourceTypeBonus] = ResourceTypeBonus
+    type = ResourceType.BASIC
     configure_as_float_or_int: ResourceValueType = ResourceValueType.FLOAT
-
-
-BasicResourceType = TypeVar("BasicResourceType", bound=BasicBaseResource)

@@ -4,7 +4,8 @@ from logging import Logger
 import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import load_prc_file
+from panda3d.core import load_prc_file  # type: ignore
+from panda3d_kivy import monkey
 
 from helpers.cache import Cache
 from managers.config import ConfigManager
@@ -12,8 +13,8 @@ from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
 from managers.log import LogManager
 from managers.unit import Unit
-from system.camera import Camera
-from system.lights import setup_lights
+
+monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window
 
 
 class SCIV(ShowBase):
@@ -21,6 +22,8 @@ class SCIV(ShowBase):
         from managers.assets import AssetManager
         from managers.ui import ui
         from managers.world import World
+        from system.camera import Camera
+        from system.lights import setup_lights
         from version import __version__
 
         self.version = __version__
@@ -106,13 +109,16 @@ class SCIV(ShowBase):
         try:
             import git  # type: ignore
 
-            repo = git.Repo(search_parent_directories=True)
-            return repo.head.object.hexsha
+            repo = git.Repo(search_parent_directories=True)  # type: ignore
+            return repo.head.object.hexsha  # type: ignore
         except Exception:
             return "Unknown"
 
     def get_base_path(self) -> pathlib.Path:
         return self.base_path
+
+    def get_child_logger(self, name: str) -> Logger:
+        return self.logger.engine.getChild(name)
 
 
 if __name__ == "__main__":

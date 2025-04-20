@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 class Cities:
     def __init__(self) -> None:
         self._cities: List["City"] = []
+        self.index: int = 0
 
     def add(self, value: "City") -> None:
         if value not in self._cities:

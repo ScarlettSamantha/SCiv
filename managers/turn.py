@@ -2,8 +2,9 @@ import weakref
 from datetime import datetime
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.improvement import Player
@@ -29,7 +30,7 @@ class TurnStage(Enum):
     TURN_CHANGE_END = 6
 
 
-class Turn(Singleton):
+class Turn(Singleton, DirectObject):
     PREPARE_FOR_GAME = -1
     GAME_BEGIN = 0
 
@@ -40,14 +41,17 @@ class Turn(Singleton):
         self.active = False
         self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
         self.turn_stage: TurnStage = TurnStage.NO_TURN_CHANGE
+        super().__init__()
+        self.register()
 
-    def __setup__(self, base, *args, **kwargs):
+    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
         self.base: "SCIV" = base
-        self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
+        self.logger: Logger = self.base.get_child_logger("manager.turn")
+        self.register()
         return super().__setup__(*args, **kwargs)
 
     def register(self):
-        pass
+        self.accept("game.requests.end_turn", self.end_turn)
 
     def reset(self):
         self.turn = self.PREPARE_FOR_GAME
@@ -115,11 +119,6 @@ class Turn(Singleton):
                 entity_manager: EntityManager = EntityManager.get_singleton_instance()
                 for _, entity in entity_manager.get_all_refs(EntityType.UNIT).items():
                     entity: weakref.ReferenceType["BaseEntity"] = entity
-
-                    if entity is None:
-                        self.logger.warning(f"Entity {entity} was None, skipping.")
-                        continue
-
                     entity_instance: "UnitBaseClass | None" = entity()  # type: ignore
 
                     if entity_instance is not None:

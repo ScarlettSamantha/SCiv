@@ -1,10 +1,10 @@
-from typing import Any, Type
+from typing import Any
 
-from gameplay.resource import BaseResource, ResourceTypeMechanic, ResourceValueType
+from gameplay.resource import BaseResource, ResourceType, ResourceValueType
 
 
-class MechanicsStrategyResource(BaseResource[ResourceTypeMechanic]):
-    type: Type[ResourceTypeMechanic] = ResourceTypeMechanic
+class MechanicsStrategyResource(BaseResource):
+    type = ResourceType.MECHANIC
     configure_as_float_or_int: ResourceValueType = ResourceValueType.FLOAT
 
 

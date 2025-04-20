@@ -1,200 +1,216 @@
 from math import floor
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from kivy.app import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
+from helpers.colors import Tuple4f
 from managers.player import PlayerManager
 from managers.turn import Turn
+from menus.kivy.elements.button_self_resizable import SelfResizableButton
 
 if TYPE_CHECKING:
-    from gameplay.player import Player
     from main import SCIV
 
 
-class TopBar(AnchorLayout, DirectObject):
-    def __init__(self, base: "SCIV", background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0), *args, **kwargs):
-        self.background_color = background_color
-        self.border = border
-        self.background_image = None
-        super().__init__(*args, **kwargs)
-        self.base: "SCIV" = base
+class ResearchButton(SelfResizableButton):
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
 
-        self.frame: Optional[BoxLayout] = None
+
+class TopBar(BoxLayout, DirectObject):
+    def __init__(
+        self,
+        base: "SCIV",
+        background_color: Tuple4f = (0, 0, 0, 0.9),
+        border: Tuple4f = (0, 0, 0, 0),
+        *args: Any,
+        **kwargs: Any,
+    ):
+        # Force a horizontal box layout at the root
+        super().__init__(orientation="horizontal", size_hint=(1, None), height=30, *args, **kwargs)
+
+        self.is_build: bool = False
+        self.pos_hint = {"center_x": 0.5, "top": 1}
+        self.base: "SCIV" = base
+        self.background_color: Tuple4f = background_color
+        self.border: Tuple4f = border
+
+        self.research_label: Optional[Label] = None
         self.gold_label: Optional[Label] = None
         self.faith_label: Optional[Label] = None
         self.science_label: Optional[Label] = None
         self.culture_label: Optional[Label] = None
         self.turn_label: Optional[Label] = None
 
+        # Build 3 sub-boxes: left 30%, center 40%, right 30%
+        self.left_container = BoxLayout(size_hint=(0.3, 1), orientation="horizontal", padding=(5, 0))
+        self.add_widget(self.left_container)  # type: ignore
+
+        self.center_anchor = AnchorLayout(size_hint=(0.4, 1), anchor_x="center", anchor_y="center")
+        self.center_container = BoxLayout(orientation="horizontal", spacing=10, size_hint=(None, None))
+        # Let the BoxLayout’s width shrink or grow to fit children
+        self.center_container.bind(  # type: ignore
+            minimum_width=self.center_container.setter("width"),  # type: ignore
+            minimum_height=self.center_container.setter("height"),  # type: ignore
+        )
+        self.center_anchor.add_widget(self.center_container)  # type: ignore
+        self.add_widget(self.center_anchor)  # type: ignore
+
+        self.right_container = BoxLayout(size_hint=(0.3, 1), orientation="horizontal", padding=(5, 0))
+        self.add_widget(self.right_container)  # type: ignore
+
+        # Draw background rectangle
+        with self.canvas.before:
+            Color(*self.background_color)
+            self.rect = Rectangle(size=self.size, pos=self.pos)  # type: ignore
+
+        self.bind(size=self._update_rect, pos=self._update_rect)  # type: ignore
+
+        # Register event and build the bar
         self.register()
+
+    def _update_rect(self, *_):
+        self.rect.size = self.size  # type: ignore
+        self.rect.pos = self.pos  # type: ignore
 
     def register(self):
         self.accept("ui.update.ui.refresh_top_bar", self.update)
 
-    def reset(self):
-        self.build()
+    def build(self):
+        if self.is_build:
+            return self
 
-    def update(self):
-        try:
-            player: Player = PlayerManager.session_player()
-            turn: int = Turn.get_singleton_instance().turn
-        except InvalidPregameCondition:  # this happens when a game is being loaded
-            self.gold_label.text = "Gold: 0"  # type: ignore
-            self.faith_label.text = "Faith: 0"  # type: ignore
-            self.science_label.text = "Science: 0"  # type: ignore
-            self.culture_label.text = "Culture: 0"  # type: ignore
-            self.turn_label.text = "Turn: 0"  # type: ignore
-            return
-
-        if (
-            self.gold_label is None
-            or self.faith_label is None
-            or self.science_label is None
-            or self.culture_label is None
-            or self.turn_label is None
-        ):
-            raise ValueError("Top Bar labels have not been built yet.")
-
-        self.gold_label.text = f"Gold: {str(floor(player.gold.gold.value))}"
-        self.faith_label.text = f"Faith: {str(floor(player.faith.faith.value))}"
-        self.science_label.text = f"Science: {str(floor(player.science.science.value))}"
-        self.culture_label.text = f"Culture: {str(floor(player.culture.culture.value))}"
-        self.turn_label.text = f"Turn: {turn}"
-
-    def build(self) -> AnchorLayout:
-        # --- Top Bar centered layout ---
-        self.anchor_layout = AnchorLayout(
-            anchor_x="center", anchor_y="top", size_hint=(1, None), height=30, pos_hint={"top": 1}
+        # Create labels
+        self.research_label = ResearchButton(
+            text="Researching: None",
+            size_hint=(None, 1),
+            width=150,
+            background_color=(0, 0, 0, 0),
         )
-
-        # Single frame for widgets, growing from the center
-        self.frame = BoxLayout(orientation="horizontal", size_hint=(None, None), height=30, spacing=10)
-        self.frame.bind(children=self.update_frame_width)
-
-        with self.anchor_layout.canvas.before:
-            Color(0, 0, 0, 0.8)  # Black background with 50% opacity
-            self.rect = Rectangle(size=self.anchor_layout.size, pos=self.anchor_layout.pos)
-
-        def update_camera_rect(instance, value):
-            self.rect.size = instance.size  # type: ignore
-            self.rect.pos = instance.pos  # type: ignore
-
-        self.anchor_layout.bind(size=update_camera_rect, pos=update_camera_rect)
+        self.research_label.bind(on_press=self.on_click_research)  # type: ignore
 
         self.gold_label = Label(
             text="Gold: 0",
-            size_hint=(None, None),
-            width=100,
-            height=30,
-            font_size="15sp",
-            valign="middle",
+            size_hint=(None, 1),
+            width=80,
             halign="center",
-            text_size=(100, 30),
+            valign="middle",
             color=(1, 1, 1, 1),
-            padding=(10, 0),
         )
-
         self.faith_label = Label(
             text="Faith: 0",
-            size_hint=(None, None),
-            width=100,
-            height=30,
-            font_size="15sp",
-            valign="middle",
+            size_hint=(None, 1),
+            width=80,
             halign="center",
-            text_size=(100, 30),
+            valign="middle",
             color=(1, 1, 1, 1),
-            padding=(10, 0),
         )
-
         self.science_label = Label(
             text="Science: 0",
-            size_hint=(None, None),
-            width=100,
-            height=30,
-            font_size="15sp",
-            valign="middle",
+            size_hint=(None, 1),
+            width=80,
             halign="center",
-            text_size=(100, 30),
+            valign="middle",
             color=(1, 1, 1, 1),
-            padding=(10, 0),
         )
-
         self.culture_label = Label(
             text="Culture: 0",
-            size_hint=(None, None),
-            width=100,
-            height=30,
-            font_size="15sp",
-            valign="middle",
+            size_hint=(None, 1),
+            width=80,
             halign="center",
-            text_size=(100, 30),
+            valign="middle",
             color=(1, 1, 1, 1),
-            padding=(10, 0),
         )
-
         self.turn_label = Label(
             text="Turn: 0",
-            size_hint=(None, None),
-            width=100,
-            height=30,
-            font_size="15sp",
-            valign="middle",
+            size_hint=(None, 1),
+            width=80,
             halign="center",
-            text_size=(100, 30),
+            valign="middle",
             color=(1, 1, 1, 1),
-            padding=(10, 0),
         )
 
-        # Center label and other widgets in one frame
-        # Order matters here as they will be added in order and be pushed to the right
-        self.frame.add_widget(self.turn_label)
-        self.frame.add_widget(self.culture_label)
-        self.frame.add_widget(self.gold_label)
-        self.frame.add_widget(self.science_label)
-        self.frame.add_widget(self.faith_label)
-        self.anchor_layout.add_widget(self.frame)
+        # Add them to the respective container
+        # Left container can hold your "research" text
+        self.left_container.add_widget(self.research_label)  # type: ignore
 
-        return self.anchor_layout
+        # Center container for turn, culture, gold, etc.
+        self.center_container.add_widget(self.turn_label)  # type: ignore
+        self.center_container.add_widget(self.culture_label)  # type: ignore
+        self.center_container.add_widget(self.gold_label)  # type: ignore
+        self.center_container.add_widget(self.science_label)  # type: ignore
+        self.center_container.add_widget(self.faith_label)  # type: ignore
 
-    def update_frame_width(self, instance, value):
-        if self.frame is None:
+        self.is_build = True
+        return self
+
+    def update(self):
+        """Refresh labels with new values."""
+        try:
+            player = PlayerManager.session_player()
+            turn = Turn.get_singleton_instance().turn
+        except InvalidPregameCondition:
+            if self.research_label is not None:
+                self.research_label.text = "Researching: None"
+            if self.gold_label is not None:
+                self.gold_label.text = "Gold: 0"
+            if self.faith_label is not None:
+                self.faith_label.text = "Faith: 0"
+            if self.science_label is not None:
+                self.science_label.text = "Science: 0"
+            if self.culture_label is not None:
+                self.culture_label.text = "Culture: 0"
+            if self.turn_label is not None:
+                self.turn_label.text = "Turn: 0"
             return
 
-        total_width = sum(child.width for child in self.frame.children) + (10 * (len(self.frame.children) - 1))
-        self.frame.width = total_width
+        if any(
+            label is None
+            for label in (
+                self.research_label,
+                self.gold_label,
+                self.faith_label,
+                self.science_label,
+                self.culture_label,
+                self.turn_label,
+            )
+        ):
+            raise ValueError("Top Bar labels have not been built yet.")
 
-    def get_frame(self) -> BoxLayout:
-        if not self.frame:
-            raise ValueError("Top Bar frame has not been built yet.")
-        return self.frame
+        if (current_tech := player.tech.current_tech()) is None and self.research_label is not None:
+            self.research_label.text = "Researching: None"
+        else:
+            self.research_label.text = f"Researching: {str(current_tech.name)}({str(player.tech.current_science)} / {str(player.tech.needed_science)})"  # type: ignore
+        self.gold_label.text = f"Gold: {floor(player.gold.gold.value)}"  # type: ignore
+        self.faith_label.text = f"Faith: {floor(player.faith.faith.value)}"  # type: ignore
+        self.science_label.text = f"Science: {floor(player.science.science.value)}"  # type: ignore
+        self.culture_label.text = f"Culture: {floor(player.culture.culture.value)}"  # type: ignore
+        self.turn_label.text = f"Turn: {turn}"  # type: ignore
 
-    def add_widget_item(self, widget):
-        if self.frame is None:
-            return
+    def reset(self):
+        """Rebuild the top bar from scratch."""
+        self.clear_widgets()
+        self.build()
 
-        self.frame.add_widget(widget)
-        self.update_frame_width(None, None)
+    def add_widget_item(self, widget: Widget) -> Optional[Widget]:
+        """Add a widget somewhere on the bar if you want."""
+        # Example: add to right container
+        self.right_container.add_widget(widget)  # type: ignore
         return widget
 
-    def remove_widget_item(self, widget):
-        if self.frame is None:
-            return
-
-        if widget in self.frame.children:
-            self.frame.remove_widget(widget)
-            self.update_frame_width(None, None)
+    def remove_widget_item(self, widget: Widget) -> Optional[Widget]:
+        """Remove a widget from the bar."""
+        if widget in self.right_container.children:
+            self.right_container.remove_widget(widget)  # type: ignore
         return widget
 
-    def clear_widgets_items(self) -> BoxLayout | None:
-        if self.frame is None:
-            return
-
-        self.frame.clear_widgets()
-        self.update_frame_width(None, None)
-        return self.frame
+    def on_click_research(self, *args: Any):
+        """Handle clicking the research label."""
+        MessengerGlobal.messenger.send("ui.update.ui.show_research_ui")

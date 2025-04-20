@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -90,7 +90,7 @@ class BuildAction(BaseUnitAction):
             return False
         return self.unit.can_build
 
-    def on_success(self, *args: Any, **kwargs: Any):
+    def on_success(self, _self: Any, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
         MessengerGlobal.messenger.send("game.gameplay.unit.build_improvement_success", [self.improvement, self.unit])
         if self.unit_looses_movement_after_building_rule:
             self.unit.drain_movement_points(None)  # Will set the unit to 0 movement points.

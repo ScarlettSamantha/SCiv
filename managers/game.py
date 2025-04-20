@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
+from direct.task import Task
 from panda3d.core import WindowProperties
 
 from gameplay.civilization import Civilization
@@ -32,12 +33,12 @@ if TYPE_CHECKING:
 
 
 class Game(Singleton, DirectObject):
-    def __init__(self, base, camera: Camera):
+    def __init__(self, base: "SCIV", camera: Camera):
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
         self.base: "SCIV" = base
-        self.logger: Logger = self.base.logger.engine.getChild("manager.game")
+        self.logger: Logger = self.base.logger.engine.getChild("manager.game")  # type: ignore
 
         self.ui: ui = ui.get_singleton_instance(base=self.base)
         self.world: World = World.get_singleton_instance()
@@ -115,12 +116,8 @@ class Game(Singleton, DirectObject):
         self.entities.load()
 
         world_tiles: Dict[Any, "BaseTile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
-        if world_tiles is None:
-            raise ValueError("No world tiles found")
 
         players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
-        if players is None:
-            raise ValueError("No players found")
 
         units: Dict[str, "UnitBaseClass"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
 
@@ -175,17 +172,17 @@ class Game(Singleton, DirectObject):
         win_size: Tuple[int, int] = self.config.get_by_key("window", "win-size")
         win_origin: Tuple[int, int] = self.config.get_by_key("window", "win-origin")
 
-        props.setSize(win_size[0], win_size[1])
-        props.setOrigin(win_origin[0], win_origin[1])
-        props.setTitle(f"{APPLICATION_NAME}<{VERSION_NAME_STRING}>")
+        props.setSize(win_size[0], win_size[1])  # type: ignore
+        props.setOrigin(win_origin[0], win_origin[1])  # type: ignore
+        props.setTitle(f"{APPLICATION_NAME}<{VERSION_NAME_STRING}>")  # type: ignore
 
-        self.base.win.requestProperties(props)
+        self.base.win.requestProperties(props)  # type: ignore
 
     def environment_writeback(self) -> bool:
         self.logger.info("Writing back window properties to config")
-        props = self.base.win.getProperties()
-        win_size = (props.getXSize(), props.getYSize())  # Get current window size
-        win_origin = (props.getXOrigin(), props.getYOrigin())  # Get window position
+        props: WindowProperties = self.base.win.getProperties()  # type: ignore
+        win_size = (props.getXSize(), props.getYSize())  # type: ignore # Get current window size
+        win_origin = (props.getXOrigin(), props.getYOrigin())  # type: ignore # Get window position
 
         old_win_size = tuple(self.config.get_by_key("window", "win-size"))
         old_win_origin = tuple(self.config.get_by_key("window", "win-origin"))
@@ -198,7 +195,7 @@ class Game(Singleton, DirectObject):
         self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
         return True
 
-    def config_saveback(self, task):
+    def config_saveback(self, task: Task.Task):
         if self.environment_writeback() is True:
             self.config.save_config()
         return task.again
@@ -206,12 +203,13 @@ class Game(Singleton, DirectObject):
     def register_callback_inputs(self):
         self.accept("system.input.user.tile_clicked", self.handle_tile_click)
         self.accept("system.input.user.unit_clicked", self.handle_unit_click)
+        self.accept("system.input.user.tile_hovered", self.handle_tile_hover)
+        self.accept("system.input.user.tile_unhovered", self.handle_tile_hover_end)
         self.accept("system.game.start_load", self.on_game_start)
-        self.accept("game.input.user.escape_pressed", self.toggle_pause_game)
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
 
-    def __setup__(self, base, *args: Any, **kwargs: Any) -> None:
+    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)
         self.base = base
 
@@ -229,6 +227,16 @@ class Game(Singleton, DirectObject):
 
     def unpause(self):
         self._is_paused = False
+
+    def handle_tile_hover(self, tile: Union[List[str], str]):
+        if isinstance(tile, str):
+            tile = [tile]
+        messenger.send("ui.update.user.tile_hover", tile)
+
+    def handle_tile_hover_end(self, tile: Union[List[str], str]):
+        if isinstance(tile, str):
+            tile = [tile]
+        messenger.send("ui.update.user.tile_unhovered", tile)
 
     def handle_tile_click(self, tiles: Union[List[str], str]):
         if isinstance(tiles, str):
@@ -283,9 +291,6 @@ class Game(Singleton, DirectObject):
 
         self.active_generator = self.properties.generator(self.properties, self.base)
 
-        if self.active_generator is None:
-            raise AssertionError("No generator was found, should have been set in generate_world")
-
         self.ui.map = self.world
 
     def camera_setup(self):
@@ -305,7 +310,7 @@ class Game(Singleton, DirectObject):
         if players is None:
             raise ValueError("No players were setup")
 
-    def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Type[Civilization], num_players):
+    def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Type[Civilization], num_players: int):
         if self.properties is None:
             raise AssertionError("Game properties not set")
         self.logger.info("Game start requested")
@@ -318,13 +323,28 @@ class Game(Singleton, DirectObject):
         self.properties.height = int(map_size.split("x")[1]) if isinstance(map_size, str) else map_size[1]
 
         self.game_active = True
+        self.logger.info(f"Game start requested with {self.properties}")
+
+        retry_attempts = 3
+        for attempt in range(retry_attempts):
+            try:
+                self._try_game_start()
+                break
+            except Exception as e:
+                self.logger.error(f"Game start failed on attempt {attempt + 1}/{retry_attempts}: {e}")
+                self.reset_game()
+                if attempt == retry_attempts - 1:
+                    raise
+                self.logger.info("Retrying game start after failure...")
+
+    def _try_game_start(self):
+        self.logger.info("Starting world generation sequence")
 
         self.active_generator = self.world.get_generator()  # type: ignore
-        self.logger.info(f"Game start requested with {self.properties}")
-        self.logger.info("Starting generating the world sequence")
         self.generate_world()
         self.logger.info("World generation complete")
-        self.logger.info(f"Setting up players({self.properties.num_enemies})")
+
+        self.logger.info(f"Setting up players({self.properties.num_enemies})")  # type: ignore
         self.setup_players()
         self.logger.info("Players setup complete")
 
@@ -341,18 +361,18 @@ class Game(Singleton, DirectObject):
         player: "Player" = PlayerManager.player()
         self.entities.session = f"{player.name}"
 
+        self.logger.info("Starting map generator")
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
-        self.base.messenger.send("game.state.load_complete")
-        self.base.messenger.send("game.state.true_game_start")
-        self.logger.info("Game start complete")
+
+        self.logger.info("Post-generation sequence")
+        MessengerGlobal.messenger.send("game.state.load_complete")
+        MessengerGlobal.messenger.send("game.state.true_game_start")
         self.ui.post_game_start()
         self.camera.recenter()
+        self.logger.info("Game start complete")
 
     def process_turn(self):
-        if self.turn is None:
-            raise AssertionError("Turn is not set")
-
         self.turn.end_turn()
 
     def on_game_end(self):

@@ -6,8 +6,12 @@ from direct.showbase.DirectObject import DirectObject
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
+from kivy.uix.screenmanager import Screen
 from panda3d.core import PStatClient
 
+from gameplay.player import Player
+from gameplay.repositories.tile import TileRepository
+from gameplay.tech import Tech
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
 from helpers.colors import Colors
@@ -17,6 +21,7 @@ from managers.i18n import T_TranslationOrStr, Translation
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
+from menus.screens.save_load import SaveLoadScreen
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
@@ -41,6 +46,7 @@ class ui(Singleton, DirectObject):
 
         self.current_tile: Optional[BaseTile] = None
         self.previous_tile: Optional[BaseTile] = None
+        self.current_tiles: List[BaseTile] = []
 
         self.neighboring_tiles: List[BaseTile] = []
         self.previous_tiles: List[BaseTile] = []
@@ -65,7 +71,10 @@ class ui(Singleton, DirectObject):
         self.previous_screen_name: Optional[str] = ""
         self.showing_escape: bool = False
 
-    def __setup__(self, base, *args, **kwargs):
+        self.highlighted_tiles: List[BaseTile] = []
+        self.highlight_tile_radius: int = 2
+
+    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
         super().__setup__(*args, **kwargs)
         self._base = base
         self.registered = False
@@ -93,7 +102,7 @@ class ui(Singleton, DirectObject):
             self.game_gui.reset()  # We reset the game gui so we can start fresh
 
     def reset_game_ui(self):
-        self.get_screen("game_ui").reset()
+        self.get_screen("game_ui").reset()  # type: ignore
         MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
 
     def get_gui(self) -> "SCivGUI":
@@ -120,6 +129,9 @@ class ui(Singleton, DirectObject):
 
     def register(self) -> bool:
         self.accept("ui.update.user.tile_clicked", self.select_tile)
+        self.accept("ui.update.user.tile_hover", self.on_tile_hover)
+        self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
+
         self.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
         self.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
         self.accept("ui.update.ui.lense_change", self.on_lense_change)
@@ -135,7 +147,7 @@ class ui(Singleton, DirectObject):
 
         self.accept("ui.request.open.popup", self.show_draggable_popup)
 
-        self.accept("escape", self.get_escape_menu)
+        self.accept("escape", self.on_escape_press)
 
         self.accept("f7", self.trigger_render_analyze)
         self.accept("p", self.activate_pstat)
@@ -147,13 +159,71 @@ class ui(Singleton, DirectObject):
         self.accept("z", self.calculate_icons_for_tiles)
         self.accept("x", self.toggle_big_tile_icons)
         self.accept("c", self.toggle_little_tile_icons)
+
+        self.accept("space", self.on_space_press)
+
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
+
+        self.accept("game.gameplay.research.player_starts_research", self.on_start_research_session)
+        self.accept("game.gameplay.research.player_cancels_research", self.on_cancels_research_session)
+
         self.accept("system.main.ready", self.on_main_ready)
         return True
 
-    def get_main_game_ui(self) -> "GameUIScreen":
-        return self.get_gui().get_screen_manager().get_screen("game_ui")
+    def get_main_game_ui(self) -> "Screen | GameUIScreen":
+        return self.get_screen("game_ui")
+
+    def on_tile_hover(self, tile_coords: str):
+        if (tile := self.map.map.get(tile_coords)) is None:
+            return
+
+        neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False, radius=self.highlight_tile_radius)
+
+        self.unhighlight_tiles(self.highlighted_tiles, restore_color=False)
+        self.highlight_tiles(neighboring_tiles + [tile])  # We add the tile itself to the list
+
+    def on_tile_unhover(self, tile_coords: List[str]):
+        if (tile := self.map.map.get(tile_coords[0])) is None:
+            return
+
+        if self.show_resources_in_radius:
+            self.toggle_tile_icons(tile, small=False, large=False)
+
+        for neighbor in self.highlighted_tiles:
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(neighbor, small=False, large=False)
+
+    def on_space_press(self):
+        MessengerGlobal.messenger.send("game.requests.end_turn")
+
+    def on_escape_press(self):
+        if self.game is None:
+            raise ValueError("Game not initialized")
+
+    def on_start_research_session(self, player: Player, tech: Tech):
+        from menus.screens.game_ui import GameUIScreen
+
+        if player != PlayerManager.session_player():
+            return
+
+        ui: GameUIScreen | Screen = self.get_main_game_ui()  # type: ignore
+
+        if not isinstance(ui, GameUIScreen):
+            raise ValueError("UI is not a GameUIScreen")
+
+        ui.refresh_top_bar()
+
+    def on_cancels_research_session(self, player: Player):
+        if player != PlayerManager.session_player():
+            return
+
+        ui: GameUIScreen | Screen = self.get_main_game_ui()
+
+        if not isinstance(ui, GameUIScreen):
+            raise ValueError("UI is not a GameUIScreen")
+
+        ui.refresh_top_bar()
 
     def on_unit_destroyed(self, unit: UnitBaseClass):
         messenger.send("ui.update.ui.unit_unselected", [unit])
@@ -171,6 +241,7 @@ class ui(Singleton, DirectObject):
     def on_request_main_menu(self):
         self.get_gui().load_main_menu()
         MessengerGlobal.messenger.send("game.state.main_menu")
+        MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
 
     def on_reroll(self):
         self.get_game().reroll()
@@ -185,20 +256,45 @@ class ui(Singleton, DirectObject):
         self.get_gui().set_screen("main_menu")
 
     def on_show_save(self):
+        self.previous_screen_name = self.get_gui().get_screen_manager().current  # type: ignore
         self.set_screen("save_load_screen")
-        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_save_menu()
+        screen: SaveLoadScreen = self.get_gui().get_screen_manager().get_screen("save_load_screen")  # type: ignore
+        screen.show_save_menu()  # type: ignore
 
     def on_show_load(self):
+        self.previous_screen_name = self.get_gui().get_screen_manager().current  # type: ignore
         self.set_screen("save_load_screen")
-        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_load_menu()
+        self.get_gui().get_screen_manager().get_screen("save_load_screen").show_load_menu()  # type: ignore
 
     def on_hide_save(self, go_back_to_previous: bool = True):
-        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_save_menu()
-        self.get_gui().get_screen_manager().current = "game_ui"
+        if self.previous_screen_name is None or self.previous_screen_name == "":
+            self.previous_screen_name = "game_ui"
+
+        self.get_gui().get_screen_manager().current = self.previous_screen_name
 
     def on_hide_load(self, go_back_to_previous: bool = True):
-        self.get_gui().get_screen_manager().get_screen("save_load_screen").hide_load_menu()
-        self.get_gui().get_screen_manager().current = "game_ui" if go_back_to_previous else "main_menu"
+        if self.previous_screen_name is None or self.previous_screen_name == "":
+            self.previous_screen_name = "game_ui"
+
+        self.get_gui().get_screen_manager().current = self.previous_screen_name
+
+    def highlight_tiles(self, tiles: List[BaseTile], color: Optional[Tuple[float, float, float, float]] = None):
+        for tile in tiles:
+            tile.calculate()
+            if color is not None:
+                tile.set_color(color)
+
+            self.highlighted_tiles.append(tile)
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(tile, small=True, large=True)
+
+    def unhighlight_tiles(self, tiles: List[BaseTile], restore_color: bool = True):
+        for tile in tiles:
+            if restore_color:
+                tile.set_color(Colors.RESTORE)
+
+            if self.show_resources_in_radius:
+                self.toggle_tile_icons(tile, small=False, large=False)
 
     def show_draggable_popup(
         self,
@@ -206,8 +302,8 @@ class ui(Singleton, DirectObject):
         title: T_TranslationOrStr,
         message: T_TranslationOrStr,
         confirm: bool = False,
-        on_confirm: Optional[Callable] = None,
-        on_cancel: Optional[Callable] = None,
+        on_confirm: Optional[Callable[[], None]] = None,
+        on_cancel: Optional[Callable[[], None]] = None,
     ):
         if isinstance(title, Translation):
             title = str(title)
@@ -216,18 +312,23 @@ class ui(Singleton, DirectObject):
 
         if confirm:
             popup = PopupOverride(
-                title=title, message=message, on_confirm=on_confirm, cancel_callback=on_cancel, width=400, height=200
+                title=title,
+                message=message,
+                on_confirm=on_confirm,  # type: ignore
+                cancel_callback=on_cancel,
+                width=400,
+                height=200,  # type: ignore
             )
             self.popups[id] = popup
-            popup.open()
+            popup.open()  # type: ignore
         else:
             popup = PopupOverride(title=title, message=message, width=400, height=200)
             self.popups[id] = popup
-            popup.open()
+            popup.open()  # type: ignore
 
     def close_popup(self, id: str):
         if id in self.popups:
-            self.popups[id].dismiss()
+            self.popups[id].dismiss()  # type: ignore
 
     def post_game_start(self):
         self.calculate_icons_for_tiles(small=False, large=True)
@@ -319,14 +420,14 @@ class ui(Singleton, DirectObject):
 
     def toggle_big_tile_icons(self):
         for _, tile in self.map.map.items():
-            if tile._showing_large_icons is False:
+            if tile.is_showing_large_icons() is False:
                 tile.add_icon_to_tile()
             else:
                 tile.clear_large_icons()
 
     def toggle_little_tile_icons(self):
         for _, tile in self.map.map.items():
-            if tile._showing_small_icons is False:
+            if tile.is_showing_large_icons() is False:
                 tile.add_small_icons()
             else:
                 tile.clear_small_icons()
@@ -342,14 +443,14 @@ class ui(Singleton, DirectObject):
     def set_screen(self, screen_name: str):
         self.get_gui().get_screen_manager().current = screen_name
 
-    def get_screen(self, screen_name: str):
-        return self.get_gui().get_screen_manager().get_screen(screen_name)
+    def get_screen(self, screen_name: str) -> Screen:
+        return self.get_gui().get_screen_manager().get_screen(screen_name)  # type: ignore
 
     def get_escape_menu(self):
         if self.showing_escape:
             self.set_screen("game_ui")
-            self.get_screen("save_load_screen").hide_load_menu()
-            self.get_screen("save_load_screen").hide_save_menu()
+            self.get_screen("save_load_screen").hide_load_menu()  # type: ignore
+            self.get_screen("save_load_screen").hide_save_menu()  # type: ignore
             self.showing_escape = False
             self.get_game().unpause()
             return
@@ -382,7 +483,7 @@ class ui(Singleton, DirectObject):
         if self.previous_tile is not None:
             tiles.append(self.previous_tile)
 
-        if len(tiles) == 0 or tiles is None:
+        if len(tiles) == 0:
             return
 
         for tile in tiles:
@@ -391,12 +492,12 @@ class ui(Singleton, DirectObject):
             tile.set_color(Colors.RESTORE)
 
     def select_tile(self, tile_coords: List[str]):
-        from gameplay.repositories.tile import TileRepository
+        if isinstance(tile_coords, List):  # type: ignore
+            _tile_coords = tile_coords[0]
+        else:
+            _tile_coords = str(tile_coords)
 
-        if not isinstance(tile_coords, list):
-            tile_coords = [tile_coords]
-
-        tile = self.map.map.get(tile_coords[0])
+        tile = self.map.map.get(_tile_coords)
         if tile is None:
             return
 
@@ -410,20 +511,6 @@ class ui(Singleton, DirectObject):
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
-
-        self.previous_tiles = self.neighboring_tiles
-        self.neighboring_tiles = []
-        self.neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False)
-
-        if self.show_resources_in_radius:
-            self.toggle_tile_icons(tile, small=True, large=True)
-
-        for neighbor in self.neighboring_tiles:
-            if self.show_resources_in_radius:
-                self.toggle_tile_icons(neighbor, small=True, large=True)
-            if self.show_resources_in_radius:
-                neighbor_tile_colors: List[Tuple[float, float, float, float]] = [Colors.PURPLE] * 3
-                self.color_tile(neighbor, neighbor_tile_colors)
 
     def color_tile(
         self,
@@ -489,10 +576,10 @@ class ui(Singleton, DirectObject):
 
         if self.current_unit is not None:
             self.previous_unit = self.current_unit
-            if self.previous_unit.model is not None:
+            if self.previous_unit.model is not None:  # type: ignore # type: "NodePath"
                 self.previous_unit.set_color(Colors.RESTORE)
 
-        if object is not None and isinstance(object, UnitBaseClass):
+        if isinstance(object, UnitBaseClass):
             if object.owner == PlayerManager.session_player():
                 # Green for player units
                 object.set_color(Colors.GREEN)

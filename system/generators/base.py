@@ -10,6 +10,8 @@ from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
 from gameplay.repositories.tile import TileRepository
+from gameplay.tech import TechTree
+from gameplay.techs.trees.core import Core
 from gameplay.tiles.base_tile import BaseTile
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
@@ -43,6 +45,7 @@ class BaseGenerator(ABC):
         turn_order: int = 0,
         leader: Optional[Leader] = None,
         is_player: bool = False,
+        tech_tree: Type[TechTree] = Core,
     ) -> Player:
         if leader is None:
             leader = civilization.random_leader()
@@ -56,10 +59,10 @@ class BaseGenerator(ABC):
             _name: str = get_i18n().lookup(name)
 
         player: Player = Player(_name, turn_order, personality, civilization, leader)
+        player.is_human = is_player
+        player.tech.set_tech_tree(tech_tree())
         if player.is_registered is False:
             player.register()
-
-        player.is_human = is_player
 
         return player
 
