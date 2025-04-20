@@ -160,6 +160,8 @@ class ui(Singleton, DirectObject):
         self.accept("x", self.toggle_big_tile_icons)
         self.accept("c", self.toggle_little_tile_icons)
 
+        self.accept("space", self.on_space_press)
+
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
 
@@ -191,6 +193,9 @@ class ui(Singleton, DirectObject):
         for neighbor in self.highlighted_tiles:
             if self.show_resources_in_radius:
                 self.toggle_tile_icons(neighbor, small=False, large=False)
+
+    def on_space_press(self):
+        MessengerGlobal.messenger.send("game.requests.end_turn")
 
     def on_escape_press(self):
         if self.game is None:
