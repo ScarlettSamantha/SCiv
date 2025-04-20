@@ -33,6 +33,7 @@ class TooltipLabel(BoxLayout):
 
         if image_source:
             self.icon = Image(source=image_source, size_hint=(None, None), size=(dp(20), dp(20)))
+            self.icon.pos_hint = {"x": 0, "top": 1}
             self.add_widget(self.icon)
 
         self.label = Label(
