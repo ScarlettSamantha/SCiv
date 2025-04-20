@@ -5,6 +5,7 @@ import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import load_prc_file  # type: ignore
+from panda3d_kivy import monkey
 
 from helpers.cache import Cache
 from managers.config import ConfigManager
@@ -12,6 +13,8 @@ from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
 from managers.log import LogManager
 from managers.unit import Unit
+
+monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window
 
 
 class SCIV(ShowBase):
