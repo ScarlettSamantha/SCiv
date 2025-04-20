@@ -83,7 +83,7 @@ class FoundAction(BaseUnitAction):
 
         return True
 
-    def on_failure(self, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
+    def on_failure(self, _self: Any, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
         if self.failure_reason == CantFoundReasons.TILE_IS_CITY:
             messenger.send(
                 "ui.request.open.popup",
@@ -141,7 +141,7 @@ class FoundAction(BaseUnitAction):
             )
         return None
 
-    def on_success(self, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
+    def on_success(self, _self: Any, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
         from managers.player import PlayerManager
 
         messenger.send("unit.action.found_city.success", [self.tile])

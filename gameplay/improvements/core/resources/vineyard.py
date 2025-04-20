@@ -11,6 +11,7 @@ class Vineyard(Improvement):
     name = t_("content.improvements.core.resources.vineyard.name")
     description = t_("content.improvements.core.resources.vineyard.description")
     placeable_on_tiles = True
+    tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)
 
     visible_on_condition = Conditions(ResearchCondition(Astrology, None))
     placeable_on_condition = Conditions(ResearchCondition(Astrology, None))
@@ -23,5 +24,3 @@ class Vineyard(Improvement):
 
         self.health = 50
         self.max_health = 50
-
-        self.tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)

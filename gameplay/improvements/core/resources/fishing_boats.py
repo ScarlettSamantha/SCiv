@@ -16,6 +16,7 @@ class FishingBoats(Improvement):
     placeable_on_condition = Conditions(ResearchCondition(Sailing, None))
 
     placeable_by_player = True
+    tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
@@ -25,5 +26,3 @@ class FishingBoats(Improvement):
 
         self.health = 50
         self.max_health = 50
-
-        self.tile_yield_improvement = Yields(food=1.0, mode=Yields.ADDITIVE)

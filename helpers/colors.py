@@ -25,18 +25,38 @@ class Colors:
     GREY: Tuple4f = (0.5, 0.5, 0.5, 1)
     WHITE: Tuple4f = (1, 1, 1, 1)
     MAGENTA: Tuple4f = (0.5, 0, 0.5, 1)
+    BROWN: Tuple4f = (0.6, 0.3, 0.1, 1)
+    MAROON: Tuple4f = (0.5, 0, 0, 1)
+    NAVY: Tuple4f = (0, 0, 0.5, 1)
+    OLIVE: Tuple4f = (0.5, 0.5, 0, 1)
+    INDIGO: Tuple4f = (0.29, 0, 0.51, 1)
+    GOLD: Tuple4f = (1.0, 0.84, 0, 1)
+    SILVER: Tuple4f = (0.75, 0.75, 0.75, 1)
+    CYAN: Tuple4f = (0, 1, 1, 1)
+    LIME: Tuple4f = (0.75, 1, 0, 1)
+    PINK: Tuple4f = (1, 0.4, 0.7, 1)
 
     COLORS: List[Tuple4f] = [
-        RED,  # strong warm
-        BLUE,  # strong cool
-        YELLOW,  # bright primary
-        PURPLE,  # dark accent
-        GREEN,  # mid-bright, natural
-        ORANGE,  # warm, light
-        TIEL,  # muted blue-green
-        MAGENTA,  # strong pinkish
-        BLACK,  # dark neutral
-        GREY,  # mid neutral
+        RED,
+        BLUE,
+        YELLOW,
+        PURPLE,
+        GREEN,
+        ORANGE,
+        TIEL,
+        MAGENTA,
+        BLACK,
+        GREY,
+        BROWN,
+        MAROON,
+        NAVY,
+        OLIVE,
+        INDIGO,
+        GOLD,
+        SILVER,
+        CYAN,
+        LIME,
+        PINK,
     ]
 
     # Pastel color constants
@@ -68,30 +88,7 @@ class Colors:
         PASTEL_SILVER,  # soft neutral
     ]
 
-    ALL: List[Tuple4f] = [
-        RED,
-        BLUE,
-        YELLOW,
-        PURPLE,
-        GREEN,
-        ORANGE,
-        TIEL,
-        MAGENTA,
-        BLACK,
-        GREY,
-        PASTEL_PINK,
-        PASTEL_BLUE,
-        PASTEL_LIME,
-        PASTEL_MAGENTA,
-        PASTEL_SKY,
-        PASTEL_PEACH,
-        PASTEL_LAVENDER,
-        PASTEL_GREEN,
-        PASTEL_KHAKI,
-        PASTEL_CYAN,
-        PASTEL_YELLOW,
-        PASTEL_SILVER,
-    ]
+    ALL: List[Tuple4f] = COLORS + PASTELS
 
     @classmethod
     def random(cls, set: str = "all") -> Tuple4f:

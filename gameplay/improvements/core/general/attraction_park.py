@@ -8,6 +8,7 @@ from managers.i18n import t_
 class AttractionPark(Improvement):
     name = t_("content.improvements.core.general.attraction_park.name")
     description = t_("content.improvements.core.general.attraction_park.description")
+    tile_yield_improvement = Yields(name="military_base", food=1.0, mode=Yields.ADDITIVE)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
@@ -17,5 +18,3 @@ class AttractionPark(Improvement):
 
         self.health = 50
         self.max_health = 50
-
-        self.tile_yield_improvement = Yields(name="military_base", food=1.0, mode=Yields.ADDITIVE)

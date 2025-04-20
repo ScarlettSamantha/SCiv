@@ -8,6 +8,7 @@ from managers.i18n import t_
 class HotWaterSprings(Improvement):
     name = t_("content.improvements.core.general.hot_water_springs.name")
     description = t_("content.improvements.core.general.hot_water_springs.description")
+    tile_yield_improvement = Yields(name="hot_water_springs", food=1.0, mode=Yields.ADDITIVE)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
@@ -17,5 +18,3 @@ class HotWaterSprings(Improvement):
 
         self.health = 50
         self.max_health = 50
-
-        self.tile_yield_improvement = Yields(name="hot_water_springs", food=1.0, mode=Yields.ADDITIVE)
