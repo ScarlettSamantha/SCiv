@@ -133,13 +133,13 @@ class ResearchButton(TooltippedButton):
         if hasattr(self, "_name_lbl"):
             self._name_lbl.text = new
 
-    def on_enter(self, *args: Any):
-        super().on_enter(*args)  # keeps the tooltip working
-        MessengerGlobal.messenger.send("ui.research.hover_tech", [self.value])
+    # def on_enter(self, *args: Any):
+    #     super().on_enter(*args)  # keeps the tooltip working
+    #     MessengerGlobal.messenger.send("ui.research.hover_tech", [self.value])
 
-    def on_leave(self, *args: Any):
-        super().on_leave(*args)
-        MessengerGlobal.messenger.send("ui.research.hover_clear")
+    # def on_leave(self, *args: Any):
+    #     super().on_leave(*args)
+    #     MessengerGlobal.messenger.send("ui.research.hover_clear")
 
     def _refresh_second_line(self, *args: Any):
         self._second_line.clear_widgets()
@@ -235,8 +235,8 @@ class Research(FloatLayout, DirectObject):
         self.accept("ui.update.ui.show_research_ui", self.show_popup)
         self.accept("ui.update.ui.hide_research_ui", self.hide_popup)
         self.accept("ui.update.ui.refresh_research_ui", self.update)
-        self.accept("ui.research.hover_tech", self._highlight_tech)
-        self.accept("ui.research.hover_clear", self._clear_highlight)
+        # self.accept("ui.research.hover_tech", self._highlight_tech)
+        # self.accept("ui.research.hover_clear", self._clear_highlight)
         self.accept_once("t", self.show_popup)
 
     def update(self, *args: Any) -> None:
