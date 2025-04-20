@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from direct.showbase.MessengerGlobal import messenger
 
@@ -35,8 +35,8 @@ class FoundAction(BaseUnitAction):
             name=t_("actions.unit.found_city"),
             action=self.found_action_wrapper,
             condition=self.founding_conditions,  # type: ignore
-            on_success=self.on_success,
-            on_failure=self.on_failure,
+            on_success=self.on_success,  # type: ignore
+            on_failure=self.on_failure,  # type: ignore
         )
         self.unit: "Settler" = instance
         self.tile: "BaseTile | None" = instance.get_tile()
@@ -83,7 +83,7 @@ class FoundAction(BaseUnitAction):
 
         return True
 
-    def on_failure(self, *args: Any, **kwargs: Any) -> None:
+    def on_failure(self, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
         if self.failure_reason == CantFoundReasons.TILE_IS_CITY:
             messenger.send(
                 "ui.request.open.popup",
@@ -139,8 +139,9 @@ class FoundAction(BaseUnitAction):
                     ),
                 ],
             )
+        return None
 
-    def on_success(self, *args: Any, **kwargs: Any) -> bool:
+    def on_success(self, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
         from managers.player import PlayerManager
 
         messenger.send("unit.action.found_city.success", [self.tile])
@@ -151,17 +152,13 @@ class FoundAction(BaseUnitAction):
         if self.tile.city is None:
             raise AssertionError("City was not founded")
 
-        if (
-            self.tile.owner == PlayerManager.player()
-            and self.tile.city.player
-            == PlayerManager.player()  # We check tile instead of unit as it should have been destroyed in the action. Which unregisters it from the player.
-        ):  # check if the player is the owner of the unit/city
-            if self.tile.city.is_capital:  # check if the city is a capital
+        if self.tile.owner == PlayerManager.player() and self.tile.city.player == PlayerManager.player():
+            if self.tile.city.is_capital:
                 title, message = (
                     t_("ui.dialogs.unit.found_city.founded_own_capital.title"),
                     t_("ui.dialogs.unit.found_city.founded_own_capital.message"),
                 )
-            else:  # if not, it's a regular city
+            else:
                 title, message = (
                     t_("ui.dialogs.unit.found_city.city_founded.title"),
                     t_("ui.dialogs.unit.found_city.city_founded.message"),
