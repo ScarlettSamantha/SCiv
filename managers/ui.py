@@ -158,7 +158,7 @@ class ui(Singleton, DirectObject):
 
         self.accept("z", self.calculate_icons_for_tiles)
         self.accept("x", self.toggle_big_tile_icons)
-        self.accept("c", self.toggle_little_tile_icons)
+        self.accept("v", self.toggle_little_tile_icons)
 
         self.accept("space", self.on_space_press)
 

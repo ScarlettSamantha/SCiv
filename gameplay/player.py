@@ -6,6 +6,7 @@ from gameplay._units import Units
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
+from gameplay.civic import CivicSubtree
 from gameplay.civilization import Civilization
 from gameplay.claims import Claims
 from gameplay.government import Government
@@ -21,6 +22,7 @@ from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
+from managers.civics import Civic, CivicsManager, CivicTree
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.tech import TechManager
 from system.effects import Effect, Effects
@@ -118,6 +120,7 @@ class Player(BaseEntity):
         self.gold: Yields = Yields(gold=0)
 
         self.tech: TechManager = TechManager()
+        self.civics: CivicsManager = CivicsManager()
         self._register_callbacks()
 
     def register(self) -> None:
@@ -248,3 +251,15 @@ class Player(BaseEntity):
 
     def owns_tile(self, x: int, y: int) -> bool:
         return self.tiles.get_tiles().get((x, y), None) is not None
+
+    def has_civic_tree_unlocked(self, civic_tree: Type[CivicTree]) -> bool:
+        return self.civics.is_civic_tree_unlocked(civic_tree)
+
+    def has_civic_subtree_unlocked(self, sub_tree: Type[CivicSubtree]) -> bool:
+        return self.civics.is_civic_subtree_unlocked(sub_tree)
+
+    def has_civic(self, civic: Type["Civic"]) -> bool:
+        return self.civics.is_civic_activated(civic)
+
+    def get_civic_tree(self) -> CivicTree | None:
+        return self.civics.get_tree()

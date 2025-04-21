@@ -5,7 +5,6 @@ from exceptions.condition_exception import ConditionObjectPropertyDoesNotExist
 from mixins.callbacks import CallbacksMixin
 
 if TYPE_CHECKING:
-    from gameplay.culture import Civic, CultureSubtree
     from gameplay.promotion import Promotion, PromotionTree
     from system.requires import Requires, RequiresMultiple
 
@@ -61,35 +60,9 @@ class RequiresMultiple(ConditionMultiple):
         return cls(conditions=conditions)
 
 
-class RequiresCivicComplete(Requires):
-    def __init__(self, civic: "Civic", *args: Any, **kwargs: Any):
-        super().__init__(obj=civic, property="completed", required_value=True, *args, **kwargs)
-
-
-class RequiresCivicsComplete(RequiresMultiple):
-    def __init__(self, civics: List["Civic"], *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        for civic in civics:
-            _instance: RequiresCivicComplete = RequiresCivicComplete(civic=civic)
-            self.conditions.append(_instance)
-
-
-class RequriesSubtreeCompelete(Requires):
-    def __init__(self, subtree: "CultureSubtree", *args: Any, **kwargs: Any) -> None:
-        super().__init__(obj=subtree, property="is_completed", required_value=True, *args, **kwargs)
-
-
-class RequiresSubtreesComplete(RequiresMultiple):
-    def __init__(self, subtrees: List["CultureSubtree"], *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        for subtree in subtrees:
-            _instance: RequriesSubtreeCompelete = RequriesSubtreeCompelete(subtree=subtree)
-            self.conditions.append(_instance)
-
-
 class RequiresPromotionComplete(Requires):
     def __init__(self, promotion: "Promotion", *args: Any, **kwargs: Any):
-        super().__init__(obj=promotion, property="aquired", required_value=True, *args, **kwargs)
+        super().__init__(obj=promotion, property="acquired", required_value=True, *args, **kwargs)
 
 
 class RequiresPromotionsComplete(RequiresMultiple):
