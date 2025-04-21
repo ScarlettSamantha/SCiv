@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Literal, Optional, Self, Type
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -28,6 +28,7 @@ from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
 
 
@@ -238,3 +239,12 @@ class Player(BaseEntity):
 
     def has_researched_tech(self, tech: Type[Tech]) -> bool:
         return self.tech.is_tech_researched(tech)
+
+    def get_all_cities(self) -> Cities:
+        return self.cities
+
+    def get_all_tiles(self) -> Dict[tuple[int, int], "BaseTile"]:
+        return self.tiles.get_tiles()
+
+    def owns_tile(self, x: int, y: int) -> bool:
+        return self.tiles.get_tiles().get((x, y), None) is not None

@@ -7,6 +7,7 @@ from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from direct.gui.OnscreenImage import OnscreenImage
+from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
 
@@ -23,7 +24,7 @@ from helpers.colors import Colors, Tuple4f
 from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, t_
-from managers.player import Player, PlayerManager
+from managers.player import PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
 from system.subsystems.hexgen.hex import Hex
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.units.unit_base import UnitBaseClass
+    from managers.player import Player
 
 
 class CantBuildReason(Enum):
@@ -102,7 +104,7 @@ class BaseTile(BaseEntity):
         self.gameplay_height: int = 0
 
         # None is nature.
-        self.player: Optional[Player] = None
+        self.player: Optional["Player"] = None
 
         # Base health and if damagable declarations.
         self.damagable: bool = False
@@ -164,7 +166,7 @@ class BaseTile(BaseEntity):
         # Does this contain a city?
         self.city: Optional["City"] = None
         # Who, if anybody, is the owner of this tile?
-        self.owner: Optional[Player] = None
+        self.owner: Optional["Player"] = None
         # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
         # is this city being worked by a city?
@@ -907,7 +909,7 @@ class BaseTile(BaseEntity):
 
     def found(
         self,
-        player: Optional[Player] = None,
+        player: Optional["Player"] = None,
         population: int = 1,
         capital: Optional[bool] = None,  # None is Auto detect
     ) -> bool:
@@ -945,6 +947,7 @@ class BaseTile(BaseEntity):
 
         self.rerender()
         self.add_city_name()
+        MessengerGlobal.messenger.send("ui.request.update.borders")
         return True
 
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:

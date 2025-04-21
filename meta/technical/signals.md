@@ -103,6 +103,9 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.hide_city_ui` (L: ui-part-city)
 - `ui.update.ui.show_city_ui` (L: ui-part-city)
 
+- `ui.request.update.borders`
+- `ui.borders.updated` (E: system-border | L: manager-game)
+
 - `ui.update.ui.show_research_ui` (E:ui-part-top-menu | L: ui-part-research)
 - `ui.update.ui.hide_research_ui` (E:ui-part-top-menu, E:screen-game-ui | L: ui-part-research)
 

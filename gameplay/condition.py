@@ -1,9 +1,11 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Self, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Self, Type
 
-from gameplay.player import Player
 from gameplay.tech import Tech
 from managers.player import PlayerManager
+
+if TYPE_CHECKING:
+    from gameplay.player import Player
 
 
 class ConditionalTypes(Enum):
@@ -114,7 +116,9 @@ class BuildCondition(Condition):
 
 
 class ResearchCondition(Condition):
-    def __init__(self, tech: List[Type[Tech]] | Type[Tech], player: Optional[Player] = None, *args: Any, **kwargs: Any):
+    def __init__(
+        self, tech: List[Type[Tech]] | Type[Tech], player: Optional["Player"] = None, *args: Any, **kwargs: Any
+    ):
         if not isinstance(tech, list):
             tech = [tech]
         super().__init__(*args, **kwargs)
@@ -123,7 +127,7 @@ class ResearchCondition(Condition):
         self.required_params = ["player", "tech"]
         self._condition = self._research_condition
 
-    def _research_condition(self, player: Optional[Player], tech: List[Type[Tech]]) -> bool:
+    def _research_condition(self, player: Optional["Player"], tech: List[Type[Tech]]) -> bool:
         """Check if the player has researched the tech."""
         if player is None:
             player = PlayerManager.session_player()

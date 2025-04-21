@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
-from gameplay.improvement import Player
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
@@ -15,6 +14,7 @@ from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.player import Player
     from gameplay.units.unit_base import UnitBaseClass  # Prevent circular import
     from main import SCIV
 
@@ -92,7 +92,7 @@ class Turn(Singleton, DirectObject):
             self.logger.info("Processing player turn changes.")
             _timer_players = datetime.now()
 
-            def cities(player: Player):
+            def cities(player: "Player"):
                 self.logger.info("Processing player city turn changes.")
                 self.turn_stage = TurnStage.TURN_PLAYERS_CITIES
                 for city in player.cities:

@@ -7,6 +7,7 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
 from panda3d.core import WindowProperties
 
+from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.player import Player
@@ -27,6 +28,7 @@ from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
+from system.shaders import Shaders
 
 if TYPE_CHECKING:
     from main import SCIV
@@ -46,6 +48,8 @@ class Game(Singleton, DirectObject):
         self.turn: Turn = Turn.get_singleton_instance(base=self.base)
         self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
+        self.shader: Shaders = Shaders()
+        self.border: Borders | None = None
         self.config: ConfigManager = ConfigManager.get_singleton_instance()
         self.entities: EntityManager = EntityManager.get_singleton_instance(base=self.base)
         self.unit: Unit = Unit.get_singleton_instance(base=self.base)
@@ -127,6 +131,9 @@ class Game(Singleton, DirectObject):
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
+        self.border = Borders(self.world.get_size(), self.players, self.shaders, self.base.render)  # type: ignore
+
+        self.accept("ui.request.update.borders", self.border.update_borders)
 
         turn = self.entities.get_meta_data("turn")
         if turn is None:
@@ -370,6 +377,9 @@ class Game(Singleton, DirectObject):
         MessengerGlobal.messenger.send("game.state.true_game_start")
         self.ui.post_game_start()
         self.camera.recenter()
+        self.border = Borders(self.world.get_size(), self.players, self.shader, self.base.render)  # type: ignore
+        self.accept("ui.request.update.borders", self.border.update_borders)
+
         self.logger.info("Game start complete")
 
     def process_turn(self):

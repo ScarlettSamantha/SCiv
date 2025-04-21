@@ -9,7 +9,7 @@ from direct.showbase.MessengerGlobal import messenger
 from helpers.cache import Cache
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
-from managers.player import Player, PlayerManager
+from managers.player import PlayerManager
 from mixins.singleton import Singleton
 from system.effects import Effects
 
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
     from main import SCIV
+    from managers.player import Player
     from system.generators.base import BaseGenerator
 
 
@@ -134,9 +135,9 @@ class World(Singleton, DirectObject):
                 tile.on_turn_end(turn)
         self.effects.on_turn_end(turn)
 
-    def set_ownership_of_tile(self, tile: "BaseTile", player: Player, city: "City"):
+    def set_ownership_of_tile(self, tile: "BaseTile", player: "Player", city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
-        old_owner: Optional[Player] = tile.owner
+        old_owner: Optional["Player"] = tile.owner
         if old_owner is not None:
             self.logger.info(f"Old owner of tile {tile} is {old_owner}")
             old_owner.tiles.remove(tile)
