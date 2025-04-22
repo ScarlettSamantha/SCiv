@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from kivy.app import Widget
-from kivy.clock import Clock
 from kivy.graphics import Color, Line, Rectangle, Triangle  # type: ignore
 from kivy.uix.anchorlayout import AnchorLayout  # NEW
 from kivy.uix.behaviors import ButtonBehavior
@@ -19,28 +18,59 @@ from gameplay.civics.core.tree.core import CoreCivicTree
 from helpers.placeholder import Placeholder
 from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
+from menus.kivy.elements.tooltip import TooltipBehavior
 
 
-class CivicNode(ButtonBehavior, AnchorLayout):
-    def __init__(self, civic: Any, icon_px: int = 64, **kwargs: Any):
-        super().__init__(  # type: ignore
-            size_hint=(None, None),
-            size=(icon_px + 4, icon_px + 4),
-            **kwargs,
-        )
+class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
+    def __init__(self, civic: Type[Civic], icon_px: int = 64, **kwargs: Any):
+        TooltipBehavior.__init__(self, **kwargs)
+        super().__init__(size_hint=(None, None), size=(icon_px + 4, icon_px + 4), **kwargs)  # type: ignore
+
         self.civic = civic
+        _civic = civic()
 
-        # background just wraps the icon
+        icon_src = getattr(_civic, "icon_path", Placeholder.getPlaceholderImagePathSmallIcon())
+        name = str(getattr(_civic, "name", ""))
+        description = str(getattr(_civic, "description", ""))
+        cost = _civic.get_cost()
+
+        unlocks = civic.get_unlocks()
+        requires = civic.get_requirements()
+
+        def civic_name_list(cls_list: List[Type[Civic]]) -> str:
+            return "\n".join(f"• {getattr(_cls(), 'name', str(_cls))}" for _cls in cls_list)
+
+        tooltip_parts = [
+            f"[b]{name}[/b]",
+            "",
+            description,
+            "",
+        ]
+
+        if unlocks:
+            tooltip_parts.append("[b]Unlocks:[/b]")
+            tooltip_parts.append(civic_name_list(unlocks))
+            tooltip_parts.append("")
+
+        if requires:
+            tooltip_parts.append("[b]Requires:[/b]")
+            tooltip_parts.append(civic_name_list(requires))
+            tooltip_parts.append("")
+
+        tooltip_parts.append(f"[b]Cost:[/b] {cost}")
+        self.tooltip_text = "\n".join(tooltip_parts)
+        self.tooltip_markup = True
+        self.tooltip_image_source = icon_src
+        self.tooltip_multiline = True
+
+        # Background and Icon
         with self.canvas.before:
             self.bg_color = Color(0.3, 0.3, 0.3, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
         self.bind(pos=self._update_rect, size=self._update_rect)
+        self.bind(state=self._on_state_change)  # type: ignore
 
-        self.icon = Image(
-            source=getattr(civic, "icon_path", Placeholder.getPlaceholderImagePathSmallIcon()),
-            size_hint=(None, None),
-            size=(icon_px, icon_px),
-        )
+        self.icon = Image(source=icon_src, size_hint=(None, None), size=(icon_px, icon_px))
         self.add_widget(self.icon)
 
     def _update_rect(self, *args: Any):
@@ -49,6 +79,12 @@ class CivicNode(ButtonBehavior, AnchorLayout):
 
     def _update_label(self, instance: Label, size: List[int]) -> None:
         instance.text_size = size
+
+    def _on_state_change(self, instance: "CivicNode", value: str):
+        if value == "down":
+            self.bg_color.rgba = (0.2, 0.2, 0.2, 1)
+        else:
+            self.bg_color.rgba = (0.3, 0.3, 0.3, 1)
 
 
 class SubtreeCard(BoxLayout):
@@ -177,7 +213,7 @@ class Civics(FloatLayout, DirectObject):
             self.layout.add_widget(col)  # type: ignore
 
         # defer line drawing to next frame
-        Clock.schedule_once(lambda dt: self.draw_dependency_lines(), 0.25)  # type: ignore
+        # Clock.schedule_once(lambda dt: self.draw_dependency_lines(), 0.25)  # type: ignore
 
     def build(self) -> None:
         if self._is_build:
