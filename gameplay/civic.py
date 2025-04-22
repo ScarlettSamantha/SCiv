@@ -15,16 +15,17 @@ class Civic:
     requires: Dict[str, Conditions] = {}
     tier: int = 0
     unlocks: List[Type["Civic"]] = []
+    base_cost: int = 10
 
     def __init__(
         self,
-        _cost: int = 0,
+        cost_modifier: int = 0,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         self.requires_civics: List["Civic"] = []
-        self._cost: int = _cost
-        self._progress: int = 0
+        self._cost: int = (self.base_cost * (self.tier if self.tier != 0 else 1)) + cost_modifier
+        self._completed: bool = False
 
     @classmethod
     def add_requirement(cls, requirement: Condition | Type["Civic"]):
@@ -62,20 +63,6 @@ class Civic:
         else:
             self._cost = value
 
-    @property
-    def progress(self) -> int:
-        return self._progress
-
-    @progress.setter
-    def progress(self, value: int | float):
-        if isinstance(value, float):
-            self._progress = round(value)
-        else:
-            self._progress = value
-
-        if self._progress >= self.cost:
-            self.completed = True
-
     def is_requires_completed(self) -> bool:
         if not self.requires or self.key not in self.requires:
             return True
@@ -101,20 +88,8 @@ class Civic:
     def get_cost(self) -> int:
         return self.cost
 
-    def __add__(self, other: int) -> Self:
-        self.progress += other
-        return self
-
-    def __sub__(self, other: int) -> Self:
-        self.progress -= other
-        return self
-
-    def __mul__(self, other: int) -> Self:
-        self.progress = round(self.cost, other)
-        return self
-
-    def __truediv__(self, other: int) -> Self:
-        self.progress = round(self.cost / other)
+    def complete(self) -> Self:
+        self.completed = True
         return self
 
 
