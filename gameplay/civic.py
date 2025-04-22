@@ -3,13 +3,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Self, Type
 
 from gameplay.condition import CivicCondition, Condition, Conditions
 from managers.i18n import T_TranslationOrStr
-from mixins.callbacks import CallbacksMixin
 
 if TYPE_CHECKING:
     from gameplay.civic import Civic
 
 
-class Civic(CallbacksMixin):
+class Civic:
     key: str
     name: T_TranslationOrStr
     description: T_TranslationOrStr
@@ -23,17 +22,9 @@ class Civic(CallbacksMixin):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        CallbacksMixin.__init__(self, *args, **kwargs)
-
         self.requires_civics: List["Civic"] = []
         self._cost: int = _cost
         self._progress: int = 0
-
-        self.declare_callbacks()
-
-    def declare_callbacks(self):
-        self._declare_event("on_progress")
-        self._declare_event("on_complete")
 
     @classmethod
     def add_requirement(cls, requirement: Condition | Type["Civic"]):
@@ -59,7 +50,6 @@ class Civic(CallbacksMixin):
     @completed.setter
     def completed(self, value: bool):
         self._completed = value
-        self.trigger_callback("on_complete")
 
     @property
     def cost(self) -> int:
@@ -82,8 +72,6 @@ class Civic(CallbacksMixin):
             self._progress = round(value)
         else:
             self._progress = value
-
-        self.trigger_callback("on_progress")
 
         if self._progress >= self.cost:
             self.completed = True
@@ -152,6 +140,10 @@ class CivicSubtree:
     @classmethod
     def get_all_civics(cls) -> List[Type[Civic]]:
         return cls.civics
+
+    @classmethod
+    def is_unlocked(cls) -> bool:
+        return True
 
 
 class CivicTree:
