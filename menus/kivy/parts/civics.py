@@ -357,8 +357,11 @@ class Civics(FloatLayout, DirectObject):
             self.accept_once("c", self.show_popup)
             return
 
+        if not self.parent:
+            ui.get_singleton_instance().get_main_game_ui().add_widget(self)
         if not self._is_build:
             self.build()
+
         self.update()
         self.opacity = 1
         self.disabled = False
@@ -371,12 +374,14 @@ class Civics(FloatLayout, DirectObject):
         self.is_open = True
 
     def hide_popup(self, *_: Any) -> None:
-        self.clear_widgets()
+        if self.parent:
+            self.parent.remove_widget(self)
+
         self._is_build = False
         self.popup_disabled = True
-        self.accept_once("c", self.show_popup)
         self.opacity = 0
         self.disabled = True
+        self.accept_once("c", self.show_popup)
         MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.raycaster_on")
         MessengerGlobal.messenger.send("system.input.enable_zoom")
