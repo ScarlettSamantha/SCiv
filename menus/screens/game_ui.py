@@ -155,6 +155,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if screen.pause_menu._is_open:  # type: ignore
             MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
         else:
+            if self.get_civics().is_open:
+                self.get_civics().hide_popup()
+            if self.get_research().is_open:
+                self.get_research().hide_popup()
             MessengerGlobal.messenger.send("ui.update.ui.show_pause")
 
     def on_unit_destroyed(self, unit: BaseEntity):
