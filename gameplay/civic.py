@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, List, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Self, Type
 
 from gameplay.condition import CivicCondition, Condition, Conditions
 from managers.i18n import T_TranslationOrStr
@@ -13,7 +13,7 @@ class Civic(CallbacksMixin):
     key: str
     name: T_TranslationOrStr
     description: T_TranslationOrStr
-    requires: Conditions = Conditions()
+    requires: Dict[str, Conditions] = {}
     tier: int = 0
     unlocks: List[Type["Civic"]] = []
 
@@ -40,10 +40,13 @@ class Civic(CallbacksMixin):
         if not isinstance(requirement, Condition):
             requirement = CivicCondition(requirement)
 
-        if requirement in cls.requires:
+        if cls.key not in list(cls.requires.keys()):
+            cls.requires[cls.key] = Conditions()
+
+        if requirement in cls.requires[cls.key]:
             return
 
-        cls.requires.add(requirement)
+        cls.requires[cls.key].add(requirement)
 
     @classmethod
     def get_tier(cls) -> int:
@@ -86,15 +89,17 @@ class Civic(CallbacksMixin):
             self.completed = True
 
     def is_requires_completed(self) -> bool:
-        return self.requires()  # Call is evaluation
+        if not self.requires or self.key not in self.requires:
+            return True
+        return self.requires[self.key]()  # Call is evaluation
 
     @classmethod
     def get_requirements(cls) -> List[Type["Civic"]]:
-        if not cls.requires:
+        if not cls.requires or cls.key not in cls.requires:
             return []
 
         requirements: List[Type[Civic]] = []
-        for requirement in cls.requires:
+        for requirement in cls.requires[cls.key]:
             if isinstance(requirement, CivicCondition):
                 requirements.append(requirement.get_civic())
             else:
@@ -105,19 +110,22 @@ class Civic(CallbacksMixin):
     def get_unlocks(cls) -> List[Type["Civic"]]:
         return cls.unlocks
 
-    def __add__(self, other: int):
+    def get_cost(self) -> int:
+        return self.cost
+
+    def __add__(self, other: int) -> Self:
         self.progress += other
         return self
 
-    def __sub__(self, other: int):
+    def __sub__(self, other: int) -> Self:
         self.progress -= other
         return self
 
-    def __mul__(self, other: int):
+    def __mul__(self, other: int) -> Self:
         self.progress = round(self.cost, other)
         return self
 
-    def __truediv__(self, other: int):
+    def __truediv__(self, other: int) -> Self:
         self.progress = round(self.cost / other)
         return self
 
