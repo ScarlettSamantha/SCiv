@@ -98,18 +98,15 @@ class SubtreeCard(BoxLayout):
             **kwargs,  # type: ignore
         )
 
-        # ---------- background ----------
         with self.canvas.before:
             Color(0.4, 0.4, 0.4, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
         self.bind(pos=self._update_rect, size=self._update_rect)
 
-        # ---------- title ----------
         title = Label(text=subtree.__name__, size_hint=(1, None), height=30, halign="center", valign="middle")
         title.bind(size=self._update_label)  # type: ignore
         self.add_widget(title)
 
-        # ---------- build rows exactly as before ----------
         civics = subtree.register_civics()
         tiers = self._group_by_tier(civics)
 
@@ -147,9 +144,6 @@ class SubtreeCard(BoxLayout):
         main_anchor.add_widget(rows_box)
         self.add_widget(main_anchor)
 
-    # --------------------------------------------------------
-    # helpers
-    # --------------------------------------------------------
     def _group_by_tier(self, civics: List[Type[Civic]]) -> Dict[int, List[Type[Civic]]]:
         tiers: Dict[int, List[Type[Civic]]] = {}
         for civic in civics:
@@ -159,9 +153,6 @@ class SubtreeCard(BoxLayout):
             tiers[tier].append(civic)
         return tiers
 
-    # ------------------------------------------------------------------ #
-    # canvas helpers
-    # ------------------------------------------------------------------ #
     def _update_rect(self, *args: Any):
         self.bg_rect.pos = self.pos  # type: ignore
         self.bg_rect.size = self.size
@@ -185,18 +176,12 @@ class Civics(FloatLayout, DirectObject):
 
         self.register()
 
-    # ------------------------------------------------------------------ #
-    # event registration
-    # ------------------------------------------------------------------ #
     def register(self) -> None:
         self.accept("ui.update.ui.show_civic_ui", self.show_popup)
         self.accept("ui.update.ui.hide_civic_ui", self.hide_popup)
         self.accept("ui.update.ui.refresh_civic_ui", self.update)
         self.accept_once("c", self.show_popup)
 
-    # ------------------------------------------------------------------ #
-    # lifecycle
-    # ------------------------------------------------------------------ #
     def update(self, *args: Any) -> None:
         if not self._is_build:
             self.build()
@@ -249,9 +234,6 @@ class Civics(FloatLayout, DirectObject):
 
         self._is_build = True
 
-    # ------------------------------------------------------------------ #
-    # drawing / dependency lines
-    # ------------------------------------------------------------------ #
     def draw_dependency_lines(self) -> None:
         """
         Draw arrows from each civic to the ones it unlocks,
@@ -306,9 +288,6 @@ class Civics(FloatLayout, DirectObject):
 
                         Triangle(points=[dst[0], dst[1], *p1, *p2])
 
-    # ------------------------------------------------------------------ #
-    # geometry helpers
-    # ------------------------------------------------------------------ #
     def _update_rect(self, *args: Any) -> None:
         self._bg_rect.pos = self.pos  # type: ignore
         self._bg_rect.size = self.size
