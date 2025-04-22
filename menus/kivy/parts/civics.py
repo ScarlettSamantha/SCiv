@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -22,10 +22,17 @@ from menus.kivy.elements.tooltip import TooltipBehavior
 
 
 class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
-    def __init__(self, civic: Type[Civic], icon_px: int = 64, **kwargs: Any):
+    def __init__(
+        self,
+        civic: Type[Civic],
+        icon_px: int = 64,
+        on_click: Optional[Callable[["CivicNode"], None]] = None,
+        **kwargs: Any,
+    ):
         TooltipBehavior.__init__(self, **kwargs)
         super().__init__(size_hint=(None, None), size=(icon_px + 4, icon_px + 4), **kwargs)  # type: ignore
 
+        self.on_click = on_click
         self.civic = civic
         _civic = civic()
 
@@ -69,6 +76,7 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
         self.bind(pos=self._update_rect, size=self._update_rect)
         self.bind(state=self._on_state_change)  # type: ignore
+        self.bind(on_release=self._on_click)
 
         self.icon = Image(source=icon_src, size_hint=(None, None), size=(icon_px, icon_px))
         self.add_widget(self.icon)
@@ -86,9 +94,19 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         else:
             self.bg_color.rgba = (0.3, 0.3, 0.3, 1)
 
+    def _on_click(self, *args: Any):
+        if self.on_click:
+            self.on_click(self)
+
 
 class SubtreeCard(BoxLayout):
-    def __init__(self, subtree: Type[CivicSubtree], civic_node_map: Dict[Type[Civic], CivicNode], **kwargs: Any):
+    def __init__(
+        self,
+        subtree: Type[CivicSubtree],
+        civic_node_map: Dict[Type[Civic], CivicNode],
+        on_node_click: Optional[Callable[[CivicNode], None]] = None,
+        **kwargs: Any,
+    ):
         super().__init__(
             orientation="vertical",
             padding=10,
@@ -133,7 +151,7 @@ class SubtreeCard(BoxLayout):
             rows_box.add_widget(anchor)
 
             for civic in civics_in_row:
-                node = CivicNode(civic, icon_px=64)
+                node = CivicNode(civic, icon_px=64, on_click=on_node_click)
                 civic_node_map[civic] = node
                 row.add_widget(node)
 
@@ -194,11 +212,52 @@ class Civics(FloatLayout, DirectObject):
         subtrees.sort(key=lambda subtree: getattr(subtree, "order", float("inf")))
 
         for subtree in subtrees:
-            col = SubtreeCard(subtree, self.civic_node_map)
+            col = SubtreeCard(subtree, self.civic_node_map, on_node_click=self._on_civic_node_click)
             self.layout.add_widget(col)  # type: ignore
 
-        # defer line drawing to next frame
-        # Clock.schedule_once(lambda dt: self.draw_dependency_lines(), 0.25)  # type: ignore
+        self.refresh_civic_nodes()
+
+    def _on_civic_node_click(self, node: CivicNode) -> None:
+        self.refresh_civic_nodes()
+
+    def refresh_civic_nodes(self) -> None:
+        for civic_type, node in self.civic_node_map.items():
+            instance = civic_type()
+            unlocked = instance.is_requires_completed()  # type: ignore
+            available = True
+
+            # Update cost and tooltip
+            cost = instance.get_cost()
+            name = instance.name
+            description = instance.description
+            unlocks = civic_type.get_unlocks()
+            requires = civic_type.get_requirements()
+
+            def civic_name_list(cls_list: List[Type[Civic]]) -> str:
+                return "\n".join(f"• {getattr(_cls(), 'name', str(_cls))}" for _cls in cls_list)
+
+            tooltip_parts = [
+                f"[b]{name}[/b]",
+                "",
+                description,
+                "",
+            ]
+
+            if unlocks:
+                tooltip_parts.append("[b]Unlocks:[/b]")
+                tooltip_parts.append(civic_name_list(unlocks))
+                tooltip_parts.append("")
+
+            if requires:
+                tooltip_parts.append("[b]Requires:[/b]")
+                tooltip_parts.append(civic_name_list(requires))
+                tooltip_parts.append("")
+
+            tooltip_parts.append(f"[b]Cost:[/b] {cost}")
+            node.tooltip_text = "\n".join(map(str, tooltip_parts))
+
+            # Set faded appearance if not available
+            node.opacity = 1.0 if available else 0.5
 
     def build(self) -> None:
         if self._is_build:
