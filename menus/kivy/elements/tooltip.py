@@ -70,7 +70,7 @@ class TooltipBehavior:
     tooltip_markup: BooleanProperty = BooleanProperty(True)
     tooltip_multiline: BooleanProperty = BooleanProperty(False)
     tooltip_image_source: StringProperty = StringProperty("")
-    tooltip_delay = 0.4
+    tooltip_delay = 0.2
 
     def __init__(self, **kwargs: Any):
         self.base: "SCIV" = Cache.get_showbase_instance()
