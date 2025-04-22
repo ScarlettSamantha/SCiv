@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any
 
 from kivy.app import Widget
-from kivy.graphics import Color, Line, Rectangle
+from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 
@@ -44,28 +44,6 @@ class DebugPanel(FloatLayout):
             self.rect.pos = instance.pos  # type: ignore
 
         self.frame.bind(size=update_debug_rect, pos=update_debug_rect)  # type: ignore
-
-        # Blue line (canvas.after) to test something
-        with self.frame.canvas.after:  # type: ignore
-            Color(0, 0, 1, 1)  # Blue color
-            # Draw a horizontal line across the center
-            self.blue_line = Line(
-                points=[self.frame.x, self.frame.center_y, self.frame.right, self.frame.center_y],  # type: ignore
-                width=2,
-            )
-
-        def update_blue_line(instance: Line, value: Any):
-            if self.blue_line is None:
-                return
-
-            self.blue_line.points = [  # type: ignore
-                instance.x,  # type: ignore
-                instance.center_y,  # type: ignore
-                instance.right,  # type: ignore
-                instance.center_y,  # type: ignore
-            ]
-
-        self.frame.bind(size=update_blue_line, pos=update_blue_line)
 
         # Debug panel label
         self.panel = Label(
