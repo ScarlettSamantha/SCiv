@@ -73,6 +73,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.food_label: Optional[ImageLabel] = None
         self.science_label: Optional[ImageLabel] = None
         self.culture_label: Optional[ImageLabel] = None
+        self.border_label: Optional[ImageLabel] = None
 
         self.buildable_buttons: Dict[str, Button] = {}
         self.buildable_improvements: Dict[str, BaseCityImprovement] = {}
@@ -135,6 +136,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             and self.food_label is not None
             and self.science_label is not None
             and self.culture_label is not None
+            and self.border_label is not None
         ):
             tile_yield: Yields = self.city.calculate_yield_from_tiles()
 
@@ -148,6 +150,17 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             )
             self.culture_label.set_text(
                 str(t_("ui.player_ui.city.culture_label", {"culture": tile_yield.culture.value}))
+            )
+            self.border_label.set_text(
+                str(
+                    t_(
+                        "ui.player_ui.city.border_label",
+                        {
+                            "current_points": self.city.border_growth_points,
+                            "required_points": self.city.border_growth_cost,
+                        },
+                    )
+                )
             )
 
         if self.current_button is not None and self.city.is_building and self.city.building is not None:
@@ -416,12 +429,20 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             height=30,
             font_size=12,
         )
+        self.border_label = ImageLabel(
+            text="Border: ?",
+            img_source="assets/icons/border_growth.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
+        )
 
         self.footer.add_widget(self.gold_label)
         self.footer.add_widget(self.production_label)
         self.footer.add_widget(self.food_label)
         self.footer.add_widget(self.science_label)
         self.footer.add_widget(self.culture_label)
+        self.footer.add_widget(self.border_label)
 
         self.frame.add_widget(self.footer)
 

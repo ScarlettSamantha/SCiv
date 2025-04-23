@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Type
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -23,7 +23,7 @@ from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.civics import Civic, CivicsManager, CivicTree
-from managers.i18n import T_TranslationOrStrOrNone
+from managers.i18n import T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
 from system.effects import Effect, Effects
 from system.entity import BaseEntity
@@ -134,6 +134,7 @@ class Player(BaseEntity):
             self.accept(
                 "game.gameplay.research.request_start_research_session_player", self.on_request_start_research_session
             )
+            self.accept("game.gameplay.civic.request_purchase", self.on_request_purchase_civic)
 
     def on_game_load(self) -> None:
         """This will be called when the game is restored from a save file."""
@@ -159,6 +160,30 @@ class Player(BaseEntity):
             self.tech.research_tech(instanced_tech)
 
         MessengerGlobal.messenger.send("game.gameplay.research.player_starts_research", [self, tech])
+
+    def on_request_purchase_civic(self, civic: Type[Civic]) -> None:
+        self.logger.debug(f"Player {str(self.name)} requested to purchase civic {civic.__name__}")
+        instanced_civic: Civic = civic()
+
+        if self.culture.culture.value < instanced_civic.cost:
+            self.logger.warning(
+                f"Player {str(self.name)} does not have enough culture to purchase civic {civic.__name__}"
+            )
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.civic.not_enough_points.title"),
+                    t_("ui.dialogs.civic.not_enough_points.message"),
+                ],
+            )
+            return
+
+        self.civics.activate_civic(instanced_civic)
+        self.culture -= Yields(culture=instanced_civic.cost)
+
+        MessengerGlobal.messenger.send("game.gameplay.civic.player_purchased_civic", [self, civic])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
 
     def on_request_cancel_research_session(self) -> None:
         self.logger.debug(f"Player {str(self.name)} requested to cancel research session.")
@@ -263,3 +288,10 @@ class Player(BaseEntity):
 
     def get_civic_tree(self) -> CivicTree | None:
         return self.civics.get_tree()
+
+    def get_all_tiles_marked_for_border_growth(self) -> Dict[Tuple[int, int], "BaseTile"]:
+        tiles: Dict[Tuple[int, int], "BaseTile"] = {}
+        for city in self.cities:
+            if (_tile := city.get_next_border_growth_tile()) is not None:
+                tiles[(_tile.x, _tile.y)] = _tile
+        return tiles

@@ -138,8 +138,8 @@ class TopBar(BoxLayout, DirectObject):
         self.left_container.add_widget(self.culture_label)  # type: ignore
 
         # Center container for turn, culture, gold, etc.
-        self.center_container.add_widget(self.turn_label)  # type: ignore
         self.center_container.add_widget(self.gold_label)  # type: ignore
+        self.center_container.add_widget(self.turn_label)  # type: ignore
         self.center_container.add_widget(self.faith_label)  # type: ignore
 
         self.is_build = True

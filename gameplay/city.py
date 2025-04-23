@@ -30,6 +30,8 @@ class City(BaseEntity, DirectObject.DirectObject):
     FOOD_EXPONENT: float = 1.5
     FOOD_BASE_REQUIREMENT: float = 10
 
+    CITY_MAX_BORDER_GROWTH_RADIUS: int = 5
+
     def __init__(self, name: str, tile: "BaseTile", *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         from gameplay.player import Player
@@ -49,6 +51,10 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.revolting: bool = False
         self.being_sieged: bool = False
         self.being_blockaded: bool = False
+
+        self.border_growth_points: int = 0
+        self.border_growth_cost: int = 10 * len(self.owned_tiles) + 10
+        self.border_growth_next_tile: Optional[BaseTile] = None
 
         self.health: int = 100
         self.max_health: int = 100
@@ -111,6 +117,17 @@ class City(BaseEntity, DirectObject.DirectObject):
         if self.is_building and self.building is not None:
             self._process_production(yields)
         self._process_owner_contributions(yields)
+        self._process_border_growth()
+
+    def _process_border_growth(self) -> None:
+        self.border_growth_points += int(self.calculate_yield_from_tiles().only(["culture"]).culture.value)
+
+        if self.border_growth_next_tile is None:  # if no tile is assigned, recalculate
+            self.recalculate_border_growth_next_tile()
+
+        if self.border_growth_points >= self.border_growth_cost:
+            MessengerGlobal.messenger.send("game.gameplay.city.requests_tile", [self, self.border_growth_next_tile])
+            self.on_border_growth()
 
     def _process_owner_contributions(self, yields: Yields):
         if self.player is not None:
@@ -220,6 +237,46 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.owned_tiles.remove(tile)
 
     def destroy(self): ...
+
+    def recalculate_border_growth_cost(self) -> int:
+        self.border_growth_cost = 10 * len(self.owned_tiles) + 10
+        return self.border_growth_cost
+
+    def recalculate_border_growth_next_tile(self):
+        max_radius = self.CITY_MAX_BORDER_GROWTH_RADIUS
+        center_tile = self.tile
+
+        for radius in range(1, max_radius + 1):
+            neighbors: List["BaseTile"] = TileRepository.get_neighbors(center_tile, radius)
+            available_tiles: List["BaseTile"] = [
+                tile for tile in neighbors if tile.city is None and tile not in self.owned_tiles
+            ]
+
+            if available_tiles:
+                resource_tiles: List["BaseTile"] = []
+                for tile in available_tiles:
+                    if tile.resources.flatten():
+                        resource_tiles.append(tile)
+                if resource_tiles:
+                    self.border_growth_next_tile = resource_tiles[randint(0, len(resource_tiles) - 1)]
+                else:
+                    self.border_growth_next_tile = available_tiles[randint(0, len(available_tiles) - 1)]
+                self.border_growth_cost = (5 * (len(self.owned_tiles) - 7)) + (5 * (radius - 1))
+                return
+
+        # If no tile is found in any radius
+        self.border_growth_next_tile = None
+
+    def on_border_growth(self):
+        self.border_growth_points -= self.border_growth_cost
+        self.recalculate_border_growth_cost()
+        self.recalculate_border_growth_next_tile()
+        MessengerGlobal.messenger.send("game.gameplay.city.border_growth", [self])
+
+    def get_next_border_growth_tile(self) -> Optional["BaseTile"]:
+        if self.border_growth_next_tile is None:
+            return None
+        return self.border_growth_next_tile
 
     def on_request_start_building_improvement(self, city: "City", improvement: "BaseCityImprovement"):
         if city != self:  # This does not concern us

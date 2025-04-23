@@ -472,6 +472,12 @@
               "message": "This unit can't build improvements, this is a bug. (Please report this issue)"
             }
           }
+        },
+        "civic": {
+          "not_enough_points": {
+            "title": "Not enough points",
+            "message": "You don't have enough points to unlock this civic."
+          }
         }
       },
       "buttons": {
@@ -510,6 +516,7 @@
           "science_label": "Science: {science}",
           "culture_label": "Culture: {culture}",
           "faith_label": "Faith: {faith}",
+          "border_label": "Growth: {current_points}/{required_points}",
           "current_button_building": "Building: {building} {resources_got}/{resources_required}"
         },
         "pause": {

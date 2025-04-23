@@ -43,17 +43,18 @@ class CivicsManager(BaseManager):
             return False
         return civic in self.civic_tree.get_all_subtrees()
 
-    def activate_civic(self, civic: Type[Civic]):
-        if civic not in self.registered_civics:
-            self.logger.warning(f"Civic {civic} is not registered. Cannot activate.")
-            return
-
-        if any(isinstance(activated_civic, civic) for activated_civic in self.civics_activated):
+    def activate_civic(self, civic: Civic):
+        if any(isinstance(activated_civic, type(civic)) for activated_civic in self.civics_activated):
             self.logger.warning(f"Civic {civic} is already activated.")
             return
 
-        self.civics_activated.append(civic())
+        civic.complete()
+        self.civics_activated.append(civic)
         self.logger.info(f"Civic {civic} activated.")
 
     def is_civic_activated(self, civic: Type[Civic]) -> bool:
-        return any(isinstance(activated_civic, civic) for activated_civic in self.civics_activated)
+        activated_civics = self.civics_activated
+        for activated_civic in activated_civics:
+            if isinstance(activated_civic, civic):
+                return True
+        return False

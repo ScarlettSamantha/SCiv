@@ -75,7 +75,6 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
             self.bg_color = Color(0.3, 0.3, 0.3, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
         self.bind(pos=self._update_rect, size=self._update_rect)
-        self.bind(state=self._on_state_change)  # type: ignore
         self.bind(on_release=self._on_click)
 
         self.icon = Image(source=icon_src, size_hint=(None, None), size=(icon_px, icon_px))
@@ -87,12 +86,6 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
 
     def _update_label(self, instance: Label, size: List[int]) -> None:
         instance.text_size = size
-
-    def _on_state_change(self, instance: "CivicNode", value: str):
-        if value == "down":
-            self.bg_color.rgba = (0.2, 0.2, 0.2, 1)
-        else:
-            self.bg_color.rgba = (0.3, 0.3, 0.3, 1)
 
     def _on_click(self, *args: Any):
         if self.on_click:
@@ -218,16 +211,21 @@ class Civics(FloatLayout, DirectObject):
         self.refresh_civic_nodes()
 
     def _on_civic_node_click(self, node: CivicNode) -> None:
+        MessengerGlobal.messenger.send("game.gameplay.civic.request_purchase", [node.civic])
         self.refresh_civic_nodes()
 
     def refresh_civic_nodes(self) -> None:
+        from managers.player import PlayerManager  # or wherever this lives
+
+        player = PlayerManager.session_player()  # or whatever method you use
+
         for civic_type, node in self.civic_node_map.items():
             instance = civic_type()
-            unlocked = instance.is_requires_completed()  # type: ignore
-            available = True
-
-            # Update cost and tooltip
+            completed = player.civics.is_civic_activated(civic_type)
+            unlockable = instance.is_unlockable()
             cost = instance.get_cost()
+            can_afford = player.culture.culture.value >= cost if player else False
+
             name = instance.name
             description = instance.description
             unlocks = civic_type.get_unlocks()
@@ -254,10 +252,24 @@ class Civics(FloatLayout, DirectObject):
                 tooltip_parts.append("")
 
             tooltip_parts.append(f"[b]Cost:[/b] {cost}")
+            tooltip_parts.append(f"[b]Completed:[/b] {'Yes' if completed else 'No'}")
+            tooltip_parts.append(f"[b]Unlockable:[/b] {'Yes' if unlockable else 'No'}")
+            tooltip_parts.append(f"[b]Affordable:[/b] {'Yes' if can_afford else 'No'}")
+
             node.tooltip_text = "\n".join(map(str, tooltip_parts))
 
-            # Set faded appearance if not available
-            node.opacity = 1.0 if available else 0.5
+            # Set background color based on state
+            if completed:
+                node.bg_color.rgba = (0.0, 0.4, 1.0, 1.0)  # Blue for completed
+            elif unlockable and can_afford:
+                node.bg_color.rgba = (1.0, 1.0, 0.0, 1.0)  # Yellow = buyable now
+            elif unlockable:
+                node.bg_color.rgba = (0.2, 0.6, 0.2, 1.0)  # Green = unlockable
+            else:
+                node.bg_color.rgba = (0.3, 0.3, 0.3, 1.0)  # Default gray
+
+            # Optional dimming for unavailable
+            node.opacity = 1.0 if not completed and unlockable else 0.5
 
     def build(self) -> None:
         if self._is_build:

@@ -12,7 +12,9 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
+from gameplay.city import City
 from gameplay.repositories.tile import TileRepository
+from gameplay.tiles.base_tile import BaseTile
 from helpers.geometry import generate_flat_top_hex
 from managers.player import PlayerManager
 from system.shaders import Shaders
@@ -40,8 +42,15 @@ class Borders(DirectObject):
         )
 
         self._setup_borders()
+        self.register()
 
-        self.addTask(self.update_border_times, "update_border_shader_times")
+    def register(self):
+        self.addTask(self.update_border_times, "update_border_shader_times", delay=5)
+        self.accept("game.gameplay.city.gets_tile_ownership", self.refresh)
+
+    def refresh(self, city: "City", tile: "BaseTile"):
+        self._setup_borders()
+        self.update_borders()
 
     def _setup_borders(self):
         for player in self.player_manager.all().values():
@@ -52,16 +61,21 @@ class Borders(DirectObject):
             self.border_textures[player_id] = texture
 
     def _generate_border_texture(self, player: "Player") -> Texture:
-        mask = PNMImage(self.map_width, self.map_height, 1)
+        mask = PNMImage(self.map_width, self.map_height, 3)
         mask.fill(0)  # type: ignore
 
         tiles = player.get_all_tiles()
+        next_tiles = player.get_all_tiles_marked_for_border_growth()
         print(f"[Borders] Player {player.id} controls {len(tiles)} tiles")
 
         for x, y in tiles:
             if 0 <= x < self.map_width and 0 <= y < self.map_height:
-                mask.set_gray(x, y, 1.0)  # type: ignore
-        mask.set_gray(self.map_width // 2, self.map_height // 2, 1.0)  # type: ignore
+                mask.set_red(x, y, 1.0)  # type: ignore
+
+        for x, y in next_tiles:
+            if 0 <= x < self.map_width and 0 <= y < self.map_height:
+                mask.set_green(x, y, 1.0)  # type: ignore
+
         mask.flip(False, True, False)  # Flip vertically (y-axis) # type: ignore
 
         tex = Texture(f"border_mask_{player.id}")
@@ -74,21 +88,30 @@ class Borders(DirectObject):
         hex_nodes = []
 
         for x, y in player.get_all_tiles():
-            hex_np = generate_flat_top_hex().copy_to(self.parent)  # type: ignore
-            hex_np.set_scale(1.0)  # Match your tile size# type: ignore
+            hex_np: NodePath = generate_flat_top_hex().copy_to(self.parent)  # type: ignore
+            hex_np.set_scale(1.0)  # type: ignore
 
             world_pos = self.hex_to_world(x, y)
             hex_np.set_pos(world_pos)  # type: ignore
             hex_np.set_hpr(30, 0, 0)  # type: ignore
 
-            # Calculate which edges are exposed
-            mask = self._get_border_mask(x, y, player)
+            # ✅ This line is okay if you later want to pass edge mask as a bitfield (optional)
+            edge_mask = self._get_border_mask(x, y, player)  # type: ignore
+
+            # ✅ Correctly get and pass the border texture
+            tex = self.border_textures.get(player.id)
+            if tex is None:
+                print(f"[Borders] Warning: no border texture for player {player.id}")
+                continue
 
             # Assign shader and inputs
             hex_np.set_shader(self.shader)  # type: ignore
             hex_np.set_shader_input("borderColor", LVecBase4f(*player.color))  # type: ignore
-            hex_np.set_shader_input("borderMask", mask)  # type: ignore
+            hex_np.set_shader_input("borderMask", tex)  # type: ignore
+            hex_np.set_shader_input("tilePos", (x, y))  # type: ignore
+            hex_np.set_shader_input("mapSize", (self.map_width, self.map_height))  # type: ignore
             hex_np.set_shader_input("time", ClockObject.get_global_clock().get_frame_time())  # type: ignore
+            print(f"[ShaderInput] tilePos: {(x, y)}, mapSize: {(self.map_width, self.map_height)}")  # type: ignore
 
             # Visual setup
             hex_np.set_transparency(TransparencyAttrib.M_alpha)  # type: ignore

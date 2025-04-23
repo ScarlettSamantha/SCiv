@@ -3,6 +3,7 @@ from logging import Logger
 from math import sqrt
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
@@ -182,6 +183,7 @@ class World(Singleton, DirectObject):
             self.set_ownership_of_tile(tile, city.player, city)
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
+            MessengerGlobal.messenger.send("game.gameplay.city.gets_tile_ownership", [city, tile])
             messenger.send(  # type: ignore
                 f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],

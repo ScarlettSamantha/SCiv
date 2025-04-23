@@ -68,6 +68,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.gameplay.city.starts_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.canceled_production` (E: city | L: ui-part-city)
+- `game.gameplay.city.border_growth` (E: city)
 
 - `game.gameplay.city.request_start_building_unit` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_unit` (E: ui-part-city | L: city)
@@ -83,6 +84,10 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.gameplay.research.player_starts_research` (E: manager-player | L: manager-ui)
 - `game.gameplay.research.player_cancels_research` (E: player | L: manager-ui)
 - `game.gameplay.research.player_completed_research` (E: manager-tech | L: )
+
+- `game.gameplay.civic.request_purchase` (E: part-ui-civic | L: )
+- `game.gameplay.civic.player_purchased_civic` (E: part-ui-civic | L: )
+- `game.gameplay.civic.player_tree_completed`  (E:  | L: )
 
 ### Units
 
@@ -152,3 +157,5 @@ These are used by the UI manager to control some debug actions these may disappe
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
 
 - `system.unit.destroyed` (E: unit-base)
+
+- `system.border

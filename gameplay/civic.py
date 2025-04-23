@@ -92,6 +92,16 @@ class Civic:
         self.completed = True
         return self
 
+    def is_unlockable(self) -> bool:
+        required = self.get_requirements()
+        if not required:
+            return True  # No requirements means always unlockable
+
+        completed = [c().completed for c in required]
+        if len(required) == 1:
+            return completed[0]
+        return all(completed)
+
 
 class CivicSubtree:
     key: str
