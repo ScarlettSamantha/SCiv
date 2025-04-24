@@ -174,6 +174,7 @@ class GameConfigMenu(Screen):
 
     def start_game(self):
         from direct.showbase.MessengerGlobal import messenger
+        from kivy.clock import Clock
 
         if self.selected_size is None:
             self.update_selected_size()  # To ensure the size is up to date
@@ -187,8 +188,12 @@ class GameConfigMenu(Screen):
 
         players: int = int(self.player_count)
 
-        messenger.send("system.game.start_load", [size, civ, players])
-        self.manager.current = "game_ui"
+        messenger.send("ui.request.loading_screen")
+
+        def send_start_signal(*args: Any):
+            messenger.send("system.game.start_load", [size, civ, players])
+
+        Clock.schedule_once(send_start_signal, 0.5)  # type: ignore
 
     def back_to_main_menu(self):
         self.manager.current = "main_menu"

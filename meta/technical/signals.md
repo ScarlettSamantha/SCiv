@@ -96,6 +96,8 @@ These are used by the UI manager to control some debug actions these may disappe
 
 ## UI
 
+- `ui.refresh.frame_insert` (E: * | L: manager-ui )
+
 - `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
 - `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
 - `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
@@ -133,6 +135,9 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.request.save_game` (E: ui-part-save | L: manager-ui)
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 - `ui.request.reroll` (E: ui-part-pause-menu | L: manager-ui)
+
+- `ui.request.loading_screen` (E: game-config | L: manager-ui )
+- `ui.loading.next_step` (E: * | L: screen-loading )
 
 ## System
 

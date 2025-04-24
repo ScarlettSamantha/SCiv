@@ -36,9 +36,10 @@ class SCIV(ShowBase):
         config_mgr = ConfigManager()
         config_mgr.__setup__()
         ConfigManager.set_singleton_instance(config_mgr)
+        config_mgr.apply_config_to_prc()
 
         loading_screen: LoadingScreen = LoadingScreen(
-            self, ["assets/logo.png"], 16, on_continue=self.on_loading_screen_continue
+            self, ["assets/logo.png"], 15, on_continue=self.on_loading_screen_continue
         )
         loading_screen.next_stage("Loading OpenCiv")
         simplepbr.init()
@@ -78,10 +79,6 @@ class SCIV(ShowBase):
         self.input_manager.inject_into_camera()
 
         from managers.game import Game
-
-        loading_screen.next_stage("Setting up game manager")
-        self.engine_logger.info("Setting up game manager")
-        config_mgr.apply_config_to_prc()
 
         self.engine_logger.info("Setting up asset manager")
         loading_screen.next_stage("Setting up asset manager")

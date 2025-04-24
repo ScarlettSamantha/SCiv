@@ -128,6 +128,7 @@ class ui(Singleton, DirectObject):
         self.game_gui.run()
 
     def register(self) -> bool:
+        self.accept("ui.refresh.frame_insert", self.insert_refresh_frame)
         self.accept("ui.update.user.tile_clicked", self.select_tile)
         self.accept("ui.update.user.tile_hover", self.on_tile_hover)
         self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
@@ -173,6 +174,9 @@ class ui(Singleton, DirectObject):
 
     def get_main_game_ui(self) -> "Screen | GameUIScreen":
         return self.get_screen("game_ui")
+
+    def insert_refresh_frame(self):
+        self._base.task_mgr.step()  # type: ignore
 
     def on_tile_hover(self, tile_coords: str):
         if (tile := self.map.map.get(tile_coords)) is None:
@@ -332,7 +336,7 @@ class ui(Singleton, DirectObject):
 
     def post_game_start(self):
         self.calculate_icons_for_tiles(small=False, large=True)
-        self.get_gui().load_game_ui()
+        self.get_main_game_ui().get_debug_map_stats().update()  # type: ignore
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)
