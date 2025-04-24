@@ -484,7 +484,7 @@ class BaseTile(BaseEntity):
             # Create the main texture card node
             self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
             if texture_path not in self.texture_cache:
-                self.texture_cache[texture_path] = self.base.loader.load_texture(texturePath=texture_path)
+                self.texture_cache[texture_path] = Cache.get_atlas().get_panda3d_texture_by_virtual_path(texture_path)
                 self.texture_cache[texture_path].set_format(Texture.F_srgb_alpha)  # type: ignore
             texture = self.texture_cache[texture_path]
 

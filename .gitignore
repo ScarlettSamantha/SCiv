@@ -8,3 +8,6 @@ stubs/
 saves/
 monkeytype.sqlite3
 .ruff_cache
+assets/generated/
+!assets/generated/.gitkeep
+!assets/generated/icons/.gitkeep

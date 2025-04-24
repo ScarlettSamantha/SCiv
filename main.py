@@ -52,6 +52,10 @@ class SCIV(ShowBase):
         self.i18n = I18nManager(str(base_file_path / "i18n"), "en_EN", True)
         set_i18n(self.i18n)
 
+        # Start loading and generating assets
+        self.engine_logger.info("Generating non-static assets")
+        self.generate_non_static_assets()
+
         # Manager load order is very important DO NOT CHANGE.
         self.engine_logger.info("Setting up input manager")
         self.input_manager = Input(self)
@@ -99,6 +103,20 @@ class SCIV(ShowBase):
         ui.set_singleton_instance(self.ui_manager)
 
         self.messenger.send("system.main.ready")
+
+    def generate_non_static_assets(self):
+        from system.atlas import AtlasGenerator
+
+        icon_generator = AtlasGenerator(
+            input_dir=pathlib.Path(__file__).parent / "assets" / "icons",
+            output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "atlas.png",
+            output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "mapping.json",
+            icon_size=(128, 128),
+            max_icons=512,
+            atlas_columns=16,
+        )
+        icon_generator.run()
+        Cache.set_atlas(icon_generator)
 
     def _get_git_commit(self) -> str:
         """
