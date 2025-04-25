@@ -1,6 +1,7 @@
 from typing import Any
 
 from gameplay.improvements.core.resources.farm import Farm
+from gameplay.yields import Yields
 
 from ._base_terrain import BaseTerrain
 
@@ -16,3 +17,5 @@ class FlatLightJungle(BaseTerrain):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Farm)
+
+        self.tile_yield_base = Yields(food=1, culture=1)

@@ -18,4 +18,4 @@ class HillsGrass(BaseTerrain):
 
         self.add_supported_improvement(Mine)
 
-        self.tile_yield_base = Yields(food=1)
+        self.tile_yield_base = Yields(production=1)
