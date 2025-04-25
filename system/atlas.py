@@ -156,7 +156,7 @@ class AtlasGenerator:
 
             tex = Texture()
             tex.load(pnm)  # type: ignore
-            self._p3d_texture_cache  # type: ignore = tex
+            self._p3d_texture_cache = tex  # type: ignore
         return self._p3d_texture_cache
 
     def get_panda3d_texture_by_key(self, key: str) -> Optional[Texture]:
