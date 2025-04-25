@@ -47,10 +47,10 @@ class TopBar(BoxLayout, DirectObject):
         self.background_color: Tuple4f = background_color
         self.border: Tuple4f = border
 
-        self.research_label: Optional[Label] = None
+        self.research_label: Optional[ResearchButton] = None
         self.gold_label: Optional[Label] = None
         self.faith_label: Optional[Label] = None
-        self.culture_label: Optional[Label] = None
+        self.culture_label: Optional[CultureButton] = None
         self.turn_label: Optional[Label] = None
 
         # Build 3 sub-boxes: left 30%, center 40%, right 30%
@@ -179,6 +179,7 @@ class TopBar(BoxLayout, DirectObject):
             self.research_label.text = "Researching: None"
         else:
             self.research_label.text = f"Researching: {str(current_tech.name)}({str(player.tech.current_science)} / {str(player.tech.needed_science)})"  # type: ignore
+            self.research_label.image_source = str(current_tech.get_icon())  # type: ignore
         self.culture_label.text = f"Culture: {floor(player.culture.culture.value)}"  # type: ignore
 
         self.gold_label.text = f"Gold: {floor(player.gold.gold.value)}"  # type: ignore

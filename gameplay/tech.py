@@ -15,7 +15,7 @@ class Tech:
     name: T_TranslationOrStr | None = None
     description: T_TranslationOrStr | None = None
 
-    icon: T_TranslationOrStr | None = Placeholder.getPlaceholderImagePathSmallIcon()
+    _icon: T_TranslationOrStr | None = Placeholder.getPlaceholderImagePathSmallIcon()
     icon_border_color: Tuple4f = Colors.TIEL
 
     tech_points_required: int = 1
@@ -57,6 +57,14 @@ class Tech:
     @classmethod
     def on_tooltip(cls) -> str:
         return f"[b]{str(cls.name)}[/b]\n\n[i]Costs:[/i] {cls.tech_points_required} points\n\n{str(cls.description)}"  # type: ignore
+
+    @classmethod
+    def get_icon(cls) -> T_TranslationOrStr:
+        return cls._icon if cls._icon is not None else Placeholder.getPlaceholderImagePathSmallIcon()
+
+    @classmethod
+    def set_icon(cls, value: T_TranslationOrStr) -> None:
+        cls._icon = value
 
 
 class TechTree:

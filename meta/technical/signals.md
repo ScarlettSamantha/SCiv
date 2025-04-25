@@ -110,7 +110,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.hide_city_ui` (L: ui-part-city)
 - `ui.update.ui.show_city_ui` (L: ui-part-city)
 
-- `ui.request.update.borders`
+- `ui.request.update.borders` (L: manager-game | E: * )
 - `ui.borders.updated` (E: system-border | L: manager-game)
 
 - `ui.update.ui.show_research_ui` (E:ui-part-top-menu | L: ui-part-research)
@@ -162,5 +162,3 @@ These are used by the UI manager to control some debug actions these may disappe
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
 
 - `system.unit.destroyed` (E: unit-base)
-
-- `system.border
