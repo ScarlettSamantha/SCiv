@@ -67,7 +67,7 @@ class LoadingScreen:
         self.current_step += 1
         percent = min((self.current_step / self.total_steps) * 100, 100)
 
-        self.step_count.setText(f"{percent}%({self.current_step}/{self.total_steps}): {message}")
+        self.step_count.setText(f"{round(percent, 2)}% ({self.current_step}/{self.total_steps}): {message}")
         self.bar["value"] = percent
         self.base.graphicsEngine.renderFrame()  # type: ignore
 
