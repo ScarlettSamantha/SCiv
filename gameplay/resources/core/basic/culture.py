@@ -8,8 +8,8 @@ class Culture(BasicBaseResource):
     from gameplay.terrain._base_terrain import BaseTerrain
 
     key: str = "resource.core.basic.culture"
-    name: T_TranslationOrStr = t_("content.resources.core.culture.name")
-    description: T_TranslationOrStr = t_("content.resources.core.culture.description")
+    name: T_TranslationOrStr = t_("content.resources.culture.name")
+    description: T_TranslationOrStr = t_("content.resources.culture.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
     icon: str = "assets/icons/resources/core/basic/culture.png"

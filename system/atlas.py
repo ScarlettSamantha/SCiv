@@ -7,11 +7,10 @@ import numpy as np
 from kivy.core.image import Image as CoreImage
 from kivy.core.image import Texture as KivyTexture
 from kivy.uix.image import Image as KivyImage
-from panda3d.core import (
-    PNMImage,
-    Texture,
-)
+from panda3d.core import PNMImage, StringStream, Texture
 from PIL import Image
+
+from managers.assets import AssetManager
 
 
 class AtlasGenerator:
@@ -36,13 +35,17 @@ class AtlasGenerator:
         self._p3d_texture_cache: Optional[Texture] = None
         self._individual_texture_cache: Dict[str, Texture] = {}
 
+    def pre_run(self):
+        AssetManager.get_singleton_instance().generate_static_assets()
+
     def run(self, force: bool = False) -> None:
+        self.pre_run()
+
         if not force and self.output_image.exists() and self.output_mapping.exists():
             input_mtime = max(p.stat().st_mtime for d in self.input_dir for p in d.glob("**/*.png"))
             atlas_mtime = self.output_image.stat().st_mtime
             manifest_mtime = self.output_mapping.stat().st_mtime
             if atlas_mtime > input_mtime and manifest_mtime > input_mtime:
-                print("[IconAtlasGenerator] Using cached atlas and manifest.")
                 return
 
         icon_files = sorted(icon_file for dir_path in self.input_dir for icon_file in dir_path.glob("**/*.png"))
@@ -80,9 +83,6 @@ class AtlasGenerator:
         atlas.save(self.output_image)
         with open(self.output_mapping, "w") as f:
             json.dump(manifest, f, indent=2)
-
-        print(f"[IconAtlasGenerator] Saved atlas to {self.output_image}")
-        print(f"[IconAtlasGenerator] Saved mapping to {self.output_mapping}")
 
         self._manifest_cache = manifest
         self._atlas_image_cache = atlas
@@ -144,15 +144,19 @@ class AtlasGenerator:
 
     def get_panda3d_texture(self) -> Texture:
         if self._p3d_texture_cache is None:
-            atlas = self.atlas_image
-            pnm = PNMImage()
+            atlas = self.atlas_image  # a PIL.Image
             buf = BytesIO()
             atlas.save(buf, format="PNG")
             buf.seek(0)
-            pnm.read(buf)  # type: ignore
+
+            pnm = PNMImage()
+            sstream = StringStream(buf.read())
+            if not pnm.read(sstream):  # type: ignore
+                raise RuntimeError("Failed to read atlas PNG data into PNMImage.")
+
             tex = Texture()
             tex.load(pnm)  # type: ignore
-            self._p3d_texture_cache = tex
+            self._p3d_texture_cache  # type: ignore = tex
         return self._p3d_texture_cache
 
     def get_panda3d_texture_by_key(self, key: str) -> Optional[Texture]:
@@ -161,7 +165,7 @@ class AtlasGenerator:
 
         entry = self.lookup_by_key(key)
         if not entry:
-            return None
+            raise ValueError(f"Key {key} not found in manifest.")
 
         atlas = self.atlas_image
         box = (
@@ -197,4 +201,36 @@ class AtlasGenerator:
             key = next((k for k, v in self.manifest.items() if v == entry), None)
             if key:
                 return self.get_panda3d_texture_by_key(key)
+        return None
+
+    def get_index_for_virtual_path(self, virtual_path: str) -> Optional[int]:
+        entry = self.lookup_by_virtual_path(virtual_path)
+        if entry:
+            return entry.get("index")
+        return None
+
+    def get_position_for_virtual_path(self, virtual_path: str) -> Optional[Tuple[int, int]]:
+        entry = self.lookup_by_virtual_path(virtual_path)
+        if entry:
+            return entry["atlas_x"], entry["atlas_y"]
+        return None
+
+    def get_dimensions_for_virtual_path(self, virtual_path: str) -> Optional[Tuple[int, int]]:
+        entry = self.lookup_by_virtual_path(virtual_path)
+        if entry:
+            return entry["width"], entry["height"]
+        return None
+
+    def get_dimensions_for_key(self, key: str) -> Optional[Tuple[int, int]]:
+        entry = self.lookup_by_key(key)
+        if entry:
+            return entry["width"], entry["height"]
+        return None
+
+    def get_dimensions_for_index(self, index: int) -> Optional[Tuple[int, int]]:
+        if self.manifest is None:
+            return None
+        for entry in self.manifest.values():
+            if entry["index"] == index:
+                return entry["width"], entry["height"]
         return None

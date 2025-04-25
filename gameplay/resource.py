@@ -159,6 +159,9 @@ class BaseResource(ResourceTypeBase, ABC):
         self.tile_yield_on_improvement: Yields = Yields.nullYield()
         self.tile_yield: Yields = Yields.nullYield()
 
+    def get_numeric_icon(self) -> str:
+        return self.icon.replace(".png", f"_{int(self.value)}.png")
+
     def get_yield(self) -> "Yields":
         return self.tile_yield_on_improvement  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
 

@@ -1,4 +1,5 @@
 from logging import Logger
+from os.path import exists
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from zlib import crc32
 
@@ -7,7 +8,14 @@ from kivy.core.image import Image as CoreImage
 from kivy.resources import resource_find  # type: ignore
 from kivy.uix.image import Image as KivyImage
 from panda3d.core import NodePath, TextFont, Texture
+from PIL import Image
 
+from gameplay.resources.core.basic.culture import Culture
+from gameplay.resources.core.basic.faith import Faith
+from gameplay.resources.core.basic.food import Food
+from gameplay.resources.core.basic.gold import Gold
+from gameplay.resources.core.basic.production import Production
+from gameplay.resources.core.basic.science import Science
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -139,6 +147,8 @@ class AssetManager(Singleton):
         if use_cache and cache_key in cls.kivy_image_cache:
             core_image = cls.kivy_image_cache[cache_key]
         else:
+            if not exists(resolved_path):
+                raise FileNotFoundError(f"File does not exist: {resolved_path}")
             core_image = CoreImage(resolved_path)
             if use_cache:
                 cls.kivy_image_cache[cache_key] = core_image
@@ -157,3 +167,26 @@ class AssetManager(Singleton):
     @classmethod
     def _calculate_cache_key(cls, path: str) -> str:
         return str(crc32(path.encode()))
+
+    @classmethod
+    def generate_static_assets(cls):
+        def generate_static_resource_icons():
+            from helpers.images import create_stacked_horizontal_images
+
+            basic_resources = Gold, Production, Food, Faith, Science, Culture
+            for resource in basic_resources:
+                resource_instance = resource()
+                icon_path = resource_instance.icon
+                if not icon_path:
+                    continue
+
+                image = Image.open(icon_path).convert("RGBA")
+
+                # Create a stacked horizontal image with the icon
+                for i in range(1, 6):
+                    stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
+                    stacked_image.save(
+                        f"assets/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png"
+                    )
+
+        generate_static_resource_icons()

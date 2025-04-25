@@ -9,7 +9,19 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Typ
 from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
+from panda3d.core import (
+    AntialiasAttrib,
+    BitMask32,
+    CardMaker,
+    ColorBlendAttrib,
+    LRGBColor,
+    NodePath,
+    PTAFloat,
+    SamplerState,
+    Shader,
+    TextNode,
+    Texture,
+)
 
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
@@ -466,43 +478,90 @@ class BaseTile(BaseEntity):
             self.city_name_group.reparentTo(self.models[0])
 
     def add_icon_to_tile(self) -> None:
-        """
-        Append the texture as a separate node instead of replacing existing models,
-        then set up the structure to later add mini icons and text overlays as separate cards.
-        """
-        resources: Dict[str, BaseResource] = self.resources.flatten()
-        resource = list(resources.values())[0] if resources else None
-
+        """Apply shader overlay for resource icons using atlas UV rects."""
         if self.tile_icon_group is None:
             self.create_root_ui_node()
 
-        if resource is not None:
-            texture_path = resource.icon
-            if not texture_path:
-                raise AssertionError(f"Resource {resource} has no icon set, cannot add texture.")
+        resources = list(self.resources.flatten().values())
+        basic_resource = list(self.get_tile_yield().export_basic())
 
-            # Create the main texture card node
-            self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
-            if texture_path not in self.texture_cache:
-                self.texture_cache[texture_path] = Cache.get_atlas().get_panda3d_texture_by_virtual_path(texture_path)
-                self.texture_cache[texture_path].set_format(Texture.F_srgb_alpha)  # type: ignore
-            texture = self.texture_cache[texture_path]
+        if not self.models:
+            return
 
-            if not self.models:
-                return
+        icon_overlay_card = CardMaker(f"icon_overlay_{self.id}")
+        icon_overlay_card.set_frame(-0.55, 0.55, -0.55, 0.85)  # type: ignore
+        icon_overlay = NodePath(icon_overlay_card.generate())  # type: ignore
+        icon_overlay.set_pos(0.1, 0, 0.17)  # type: ignore
+        icon_overlay.set_hpr(90, -90, 0)  # type: ignore
+        icon_overlay.set_scale(1.0)  # type: ignore
+        icon_overlay.setTransparency(True)
+        icon_overlay.setAttrib(ColorBlendAttrib.makeOff())  # type: ignore
+        icon_overlay.setBin("fixed", 60)
+        icon_overlay.reparent_to(self.tile_icon_group)  # type: ignore
 
-            if self.tile_icon_group is None:
-                raise AssertionError("Tile icon group not created.")
+        shader = Shader.load(  # type: ignore
+            Shader.SL_GLSL, "assets/shaders/resource_icons.vert.glsl", "assets/shaders/resource_icons.frag.glsl"
+        )
+        icon_overlay.setShader(shader)
 
-            # Reparent the main icon card to the common group.
-            self.texture_card_texture.reparentTo(self.tile_icon_group)
-            self.texture_card_texture.setTexture(texture, 1)
-            self.texture_card_texture.setPos((-0.55, 0, 0.151))
-            self.texture_card_texture.setHpr((0, 270, 270))
-            self.texture_card_texture.setScale(6.0)
-            self.texture_card_texture.setTransparency(1)
+        atlas = Cache.get_atlas()
+        atlas_tex = atlas.get_panda3d_texture()
+        atlas_tex.setWrapU(Texture.WMClamp)
+        atlas_tex.setWrapV(Texture.WMClamp)
+        atlas_tex.setFormat(Texture.F_srgb_alpha)
+        atlas_tex.setMinfilter(SamplerState.FT_linear)
+        atlas_tex.setMagfilter(SamplerState.FT_linear)
+        atlas_tex.setAnisotropicDegree(0)
+        icon_overlay.setShaderInput("icon_atlas", atlas_tex)
 
-            self._showing_large_icons = True
+        atlas_width, atlas_height = atlas.atlas_image.size
+        uv_rects = PTAFloat.emptyArray(4 * 7)  # 1 main + 6 small slots  # type: ignore
+
+        # Fill slots
+        slots = [None] * 7  # 0 = main, 1-6 = small
+        if resources:
+            slots[0] = resources[0]  # Main icon  # type: ignore
+
+        for i in range(1, 5):
+            if i < len(basic_resource):
+                slots[i] = basic_resource[i]  # type: ignore
+
+        for i, res in enumerate(slots):
+            if res is None:
+                # Set dummy rect (zero size = invisible)
+                uv_rects[i * 4 + 0] = 0.0
+                uv_rects[i * 4 + 1] = 0.0
+                uv_rects[i * 4 + 2] = 0.0
+                uv_rects[i * 4 + 3] = 0.0
+                continue
+
+            if i >= 1:
+                virtual_path = res.get_numeric_icon()
+            else:
+                virtual_path = res.icon
+            pos = atlas.get_position_for_virtual_path(virtual_path)
+            size = atlas.get_dimensions_for_virtual_path(virtual_path)
+
+            if not pos or not size:
+                continue
+
+            x, y = pos
+            w, h = size
+
+            u0 = x / atlas_width
+            v1 = 1.0 - (y / atlas_height)  # top
+            u1 = (x + w) / atlas_width
+            v0 = 1.0 - ((y + h) / atlas_height)  # bottom
+
+            uv_rects[i * 4 + 0] = u0
+            uv_rects[i * 4 + 1] = v0
+            uv_rects[i * 4 + 2] = u1
+            uv_rects[i * 4 + 3] = v1
+
+        icon_overlay.setShaderInput("uv_rects", uv_rects)
+        icon_overlay.setShaderInput("icon_count", 7)
+
+        self._showing_large_icons = True
 
     def add_small_icons(self, force: bool = False) -> None:
         city_tile_yields = self.city.get_yield() if self.city is not None else Yields.nullYield()

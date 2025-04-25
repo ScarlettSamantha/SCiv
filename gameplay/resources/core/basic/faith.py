@@ -7,8 +7,8 @@ from managers.i18n import T_TranslationOrStr, t_
 
 class Faith(BasicBaseResource):
     key: str = "resource.core.basic.faith"
-    name: T_TranslationOrStr = t_("content.resources.core.faith.name")
-    description: T_TranslationOrStr = t_("content.resources.core.faith.description")
+    name: T_TranslationOrStr = t_("content.resources.faith.name")
+    description: T_TranslationOrStr = t_("content.resources.faith.description")
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 
