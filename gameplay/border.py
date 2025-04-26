@@ -15,6 +15,7 @@ from panda3d.core import (
 from gameplay.city import City
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
+from helpers.cache import Cache
 from helpers.geometry import generate_flat_top_hex
 from managers.player import PlayerManager
 from system.shaders import Shaders
@@ -36,6 +37,7 @@ class Borders(DirectObject):
         self.border_nodes: Dict[str | None, NodePath | List[NodePath]] = {}  # player_id -> NodePath
         self.border_textures: Dict[str | None, NodePath] = {}  # player_id -> Texture
         self.tile_repository = TileRepository
+        self.logger = Cache.get_showbase_instance().logger.get_singleton_instance().graphics.getChild("borders")
 
         self.shader = self.shader_system.load_shader(  # type: ignore
             "borders", "assets/shaders/border.vert", "assets/shaders/border_ring.frag"
@@ -66,7 +68,7 @@ class Borders(DirectObject):
 
         tiles = player.get_all_tiles()
         next_tiles = player.get_all_tiles_marked_for_border_growth()
-        print(f"[Borders] Player {player.id} controls {len(tiles)} tiles")
+        self.logger.debug(f"[Borders] Player {player.id} controls {len(tiles)} tiles")
 
         for x, y in tiles:
             if 0 <= x < self.map_width and 0 <= y < self.map_height:
@@ -95,13 +97,11 @@ class Borders(DirectObject):
             hex_np.set_pos(world_pos)  # type: ignore
             hex_np.set_hpr(30, 0, 0)  # type: ignore
 
-            # ✅ This line is okay if you later want to pass edge mask as a bitfield (optional)
             edge_mask = self._get_border_mask(x, y, player)  # type: ignore
 
-            # ✅ Correctly get and pass the border texture
             tex = self.border_textures.get(player.id)
             if tex is None:
-                print(f"[Borders] Warning: no border texture for player {player.id}")
+                self.logger.error(f"[Borders] Warning: no border texture for player {player.id}")
                 continue
 
             # Assign shader and inputs
@@ -111,7 +111,7 @@ class Borders(DirectObject):
             hex_np.set_shader_input("tilePos", (x, y))  # type: ignore
             hex_np.set_shader_input("mapSize", (self.map_width, self.map_height))  # type: ignore
             hex_np.set_shader_input("time", ClockObject.get_global_clock().get_frame_time())  # type: ignore
-            print(f"[ShaderInput] tilePos: {(x, y)}, mapSize: {(self.map_width, self.map_height)}")  # type: ignore
+            self.logger.debug(f"[ShaderInput] tilePos: {(x, y)}, mapSize: {(self.map_width, self.map_height)}")  # type: ignore
 
             # Visual setup
             hex_np.set_transparency(TransparencyAttrib.M_alpha)  # type: ignore

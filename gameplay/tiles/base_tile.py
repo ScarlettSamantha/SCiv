@@ -691,8 +691,6 @@ class BaseTile(BaseEntity):
         if 0 <= model_index < len(self.models):
             self.models[model_index].removeNode()
             del self.models[model_index]
-        else:
-            print(f"No model at index {model_index} to unrender.")
 
     def rerender(self) -> None:
         """
@@ -742,7 +740,7 @@ class BaseTile(BaseEntity):
         if self.tile_terrain:
             return self.tile_terrain.color()
         else:
-            print(f"No terrain set for tile, returning default color: {self.__class__.__name__}")
+            self.logger.error(f"No terrain set for tile, returning default color: {self.__class__.__name__}")
             return (0, 0, 0)
 
     def model(self) -> str:

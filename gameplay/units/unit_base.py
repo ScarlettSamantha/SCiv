@@ -1,7 +1,7 @@
-from pathlib import Path
 import random
 from abc import ABC
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
 
 from direct.showbase.Loader import Loader
@@ -104,6 +104,8 @@ class UnitBaseClass(BaseEntity, ABC):
         self.build_charges: int = 0
         self.build_charges_left: int = 0
 
+        self.logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+
         self.register_actions()
 
     def register_actions(self): ...
@@ -181,7 +183,7 @@ class UnitBaseClass(BaseEntity, ABC):
         if not self._model:
             raise RuntimeError(f"Failed to load model for unit {self.key}")
 
-        print(f"Unit {self.key} spawned at {self.tile.get_cords()} with model {self._model}")
+        self.logger.debug(f"Unit {self.key} spawned at {self.tile.get_cords()} with model {self._model}")
         return True
 
     def get_actions(self) -> List[Action]:
