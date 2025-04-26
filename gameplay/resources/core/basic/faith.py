@@ -9,6 +9,7 @@ class Faith(BasicBaseResource):
     key: str = "resource.core.basic.faith"
     name: T_TranslationOrStr = t_("content.resources.faith.name")
     description: T_TranslationOrStr = t_("content.resources.faith.description")
+    icon: str = "assets/icons/resources/core/basic/faith.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 

@@ -24,6 +24,7 @@ class ImageLabel(BoxLayout):
     ):
         super().__init__(orientation="horizontal", spacing=spacing, size_hint_x=None, **kwargs)
 
+        self._text = text  # internal storage
         self.width = width if width else dp(550)
         self.size_hint_y = None
         self.height = max(image_size[1], dp(30))
@@ -58,8 +59,17 @@ class ImageLabel(BoxLayout):
     def _update_text_size(self, instance: Widget, value: Tuple[float, float]):
         instance.text_size = (instance.width, None)  # type: ignore
 
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @text.setter
+    def text(self, value: str):
+        self._text = value
+        self.label.text = value
+
     def set_text(self, text: str):
-        self.label.text = text
+        self.text = text  # Redirect to property
 
     def set_image(self, img_source: str):
         self.img.source = img_source

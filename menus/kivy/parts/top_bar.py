@@ -10,6 +10,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
+from gameplay.resources.core.basic.faith import Faith
 from gameplay.resources.core.basic.gold import Gold
 from helpers.colors import Tuple4f
 from managers.player import PlayerManager
@@ -51,7 +52,7 @@ class TopBar(BoxLayout, DirectObject):
 
         self.research_label: Optional[ResearchButton] = None
         self.gold_label: Optional[ImageLabel] = None
-        self.faith_label: Optional[Label] = None
+        self.faith_label: Optional[ImageLabel] = None
         self.culture_label: Optional[CultureButton] = None
         self.turn_label: Optional[Label] = None
 
@@ -115,14 +116,8 @@ class TopBar(BoxLayout, DirectObject):
             img_y_offset=-0.05,
             img_source=Gold.icon,
         )
-        self.faith_label = Label(
-            text="Faith: 0",
-            size_hint=(None, 1),
-            width=80,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
-        )
+
+        self.faith_label = ImageLabel(text="Faith: 0", size_hint=(None, 1), width=100, img_source=Faith.icon)
 
         self.turn_label = Label(
             text="Turn: 0",
@@ -157,7 +152,7 @@ class TopBar(BoxLayout, DirectObject):
             if self.culture_label is not None:  # type: ignore
                 self.culture_label.text = "Culture: 0"
             if self.gold_label is not None:
-                self.gold_label.text = "Gold: 0"  # type: ignore
+                self.gold_label.text = "Gold: 0"
             if self.faith_label is not None:
                 self.faith_label.text = "Faith: 0"
             if self.turn_label is not None:
