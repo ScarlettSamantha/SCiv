@@ -507,9 +507,8 @@ class BaseTile(BaseEntity):
             else:
                 slots[0] = resources[0]
 
-        for i in range(1, 7):
-            if i < len(basic_resource):
-                slots[i] = basic_resource[i - 1]
+        for i, resource in enumerate(basic_resource):
+            slots[i + 1] = resource
 
         for i, res in enumerate(slots):
             if res is None:
