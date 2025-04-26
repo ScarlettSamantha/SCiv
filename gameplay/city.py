@@ -346,6 +346,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.food_collected = Yields.nullYield()
         MessengerGlobal.messenger.send("game.gameplay.city.grows_population", [self])
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
+        MessengerGlobal.messenger.send("game.border.refresh")
 
     def starve_population(self):
         self.population -= 1

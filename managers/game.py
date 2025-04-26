@@ -375,6 +375,7 @@ class Game(Singleton, DirectObject):
         self.logger.info("Post-generation sequence")
         MessengerGlobal.messenger.send("game.state.load_complete")
         MessengerGlobal.messenger.send("game.state.true_game_start")
+        MessengerGlobal.messenger.send("game.border.refresh")
 
         self.ui.post_game_start()
         self.camera.recenter()

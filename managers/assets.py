@@ -16,6 +16,7 @@ from gameplay.resources.core.basic.food import Food
 from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.production import Production
 from gameplay.resources.core.basic.science import Science
+from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -181,12 +182,40 @@ class AssetManager(Singleton):
                     continue
 
                 image = Image.open(icon_path).convert("RGBA")
+                font_size = 32
+                text_vertical_offset = 0
+                text_horizontal_offset = 0
 
                 # Create a stacked horizontal image with the icon
                 for i in range(1, 6):
                     stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
                     stacked_image.save(
                         f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png"
+                    )
+
+                for i in range(6, 50):
+                    img_width, img_height = image.size
+
+                    font = ImageFont.truetype("assets/fonts/Washington.ttf", font_size)
+
+                    bbox = font.getbbox(str(i))
+                    text_width = bbox[2] - bbox[0]
+                    text_height = bbox[3] - bbox[1]
+
+                    pos_x = (img_width - text_width) / 4 + text_horizontal_offset
+                    pos_y = ((img_height - text_height) / 4) + text_vertical_offset
+                    center_pos = (int(pos_x), int(pos_y))
+
+                    draw_text_on_image(
+                        image,
+                        [(str(i), center_pos)],
+                        font_path="assets/fonts/Washington.ttf",
+                        font_size=46,
+                        save=True,
+                        save_path=f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png",
+                        outline=True,
+                        outline_color=(0, 0, 0, 255),
+                        outline_width=1,
                     )
 
         def generate_static_population_icons():
