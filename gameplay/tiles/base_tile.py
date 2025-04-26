@@ -7,7 +7,6 @@ from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from direct.gui.OnscreenImage import OnscreenImage
-from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     AntialiasAttrib,
@@ -903,7 +902,6 @@ class BaseTile(BaseEntity):
 
         self.calculate()
         self.rerender()
-        MessengerGlobal.messenger.send("ui.request.update.borders")
         return True
 
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:

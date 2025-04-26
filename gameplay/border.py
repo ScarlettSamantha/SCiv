@@ -27,11 +27,8 @@ if TYPE_CHECKING:
 class Borders(DirectObject):
     HEX_DIRECTIONS = [(+1, 0), (+1, -1), (0, -1), (-1, 0), (-1, +1), (0, +1)]
 
-    def __init__(
-        self, map_size: Tuple[int, int], player_manager: PlayerManager, shader_system: Shaders, parent: NodePath
-    ):
+    def __init__(self, map_size: Tuple[int, int], shader_system: Shaders, parent: NodePath):
         self.map_width, self.map_height = map_size
-        self.player_manager = player_manager
         self.shader_system = shader_system
         self.parent = parent
         self.border_nodes: Dict[str | None, NodePath | List[NodePath]] = {}  # player_id -> NodePath
@@ -43,7 +40,7 @@ class Borders(DirectObject):
             "borders", "assets/shaders/border.vert", "assets/shaders/border_ring.frag"
         )
 
-        self._setup_borders()
+        self.setup_borders()
         self.register()
 
     def register(self):
@@ -51,16 +48,37 @@ class Borders(DirectObject):
         self.accept("game.gameplay.city.gets_tile_ownership", self.refresh)
 
     def refresh(self, city: "City", tile: "BaseTile"):
-        self._setup_borders()
+        self.setup_borders()
         self.update_borders()
 
-    def _setup_borders(self):
-        for player in self.player_manager.all().values():
-            player_id = player.id
+    def reset(self):
+        # Remove all existing border nodes from scene
+        for nodes in self.border_nodes.values():
+            if isinstance(nodes, list):
+                for node in nodes:  # type: ignore
+                    node.remove_node()  # type: ignore
+            elif isinstance(nodes, NodePath):  # type: ignore
+                nodes.remove_node()  # type: ignore
+
+        self.border_nodes.clear()
+
+    def setup_borders(self):
+        self.reset()
+
+        # Optionally free old textures
+        for tex in self.border_textures.values():
+            tex.release_all()  # type: ignore
+        self.border_textures.clear()
+
+        players = list(PlayerManager.all().values())
+
+        for player in players:
             texture = self._generate_border_texture(player)
+            self.border_textures[player.id] = texture
+
+        for player in players:
             nodes = self._create_border_hexes(player)
-            self.border_nodes[player_id] = nodes
-            self.border_textures[player_id] = texture
+            self.border_nodes[player.id] = nodes
 
     def _generate_border_texture(self, player: "Player") -> Texture:
         mask = PNMImage(self.map_width, self.map_height, 3)
@@ -133,7 +151,7 @@ class Borders(DirectObject):
         return task.cont
 
     def update_borders(self):
-        for player in self.player_manager.all().values():
+        for player in PlayerManager.all().values():
             player_id = player.id
 
             # Remove old hexes

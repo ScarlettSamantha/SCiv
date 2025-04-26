@@ -375,9 +375,13 @@ class Game(Singleton, DirectObject):
         self.logger.info("Post-generation sequence")
         MessengerGlobal.messenger.send("game.state.load_complete")
         MessengerGlobal.messenger.send("game.state.true_game_start")
+
         self.ui.post_game_start()
         self.camera.recenter()
-        self.border = Borders(self.world.get_size(), self.players, self.shader, self.base.render)  # type: ignore
+
+        self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
+        self.base.taskMgr.doMethodLater(1.0, lambda task: self.border.setup_borders() or task.done, "short-inline")  # type: ignore
+
         self.accept("ui.request.update.borders", self.border.update_borders)
 
         self.logger.info("Game start complete")
