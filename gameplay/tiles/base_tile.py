@@ -602,6 +602,9 @@ class BaseTile(BaseEntity):
         if len(self.effects) > 0:
             self.effects.on_turn_end(turn)
 
+        if self.city:
+            self.add_icon_to_tile()
+
     def _render_default_terrain(self) -> None:
         # Get the model path from the terrain (kept as a relative path)
         model_path: str = str(self.tile_terrain.model())
