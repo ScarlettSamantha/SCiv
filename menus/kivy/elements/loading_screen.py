@@ -4,6 +4,7 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, RoundedRectangle  # type: ignore
 from kivy.metrics import dp  # type: ignore
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -66,14 +67,26 @@ class LoadingScreen(FloatLayout):
         # Right framed box
         self.right_overlay = BoxLayout(orientation="vertical", size_hint=(0.2, 1), padding=dp(10), spacing=dp(10))  # type: ignore
         with self.right_overlay.canvas.before:
-            Color(1, 1, 1, 0.05)
+            Color(1, 1, 1, 0.25)
             self.right_frame = RoundedRectangle(  # type: ignore
                 radius=[dp(8)], pos=self.right_overlay.pos, size=self.right_overlay.size
             )
         self.right_overlay.bind(pos=self._update_right_frame, size=self._update_right_frame)  # type: ignore
 
-        self.right_content = BoxLayout(orientation="vertical", spacing=dp(6))  # type: ignore
-        self.right_overlay.add_widget(self.right_content)
+        self.right_content_container = AnchorLayout(
+            anchor_x="center",
+            anchor_y="top",
+        )
+
+        self.right_content = BoxLayout(
+            orientation="vertical",
+            spacing=dp(6),  # type: ignore
+            size_hint_y=None,
+        )
+        self.right_content.bind(minimum_height=self.right_content.setter("height"))  # type: ignore
+
+        self.right_content_container.add_widget(self.right_content)
+        self.right_overlay.add_widget(self.right_content_container)
         overlay_box.add_widget(self.right_overlay)
 
         self.add_widget(overlay_box)

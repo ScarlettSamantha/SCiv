@@ -188,7 +188,7 @@ class GameConfigMenu(Screen):
 
         players: int = int(self.player_count)
 
-        messenger.send("ui.request.loading_screen")
+        messenger.send("ui.request.loading_screen", [civ])
 
         def send_start_signal(*args: Any):
             messenger.send("system.game.start_load", [size, civ, players])

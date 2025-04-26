@@ -4,6 +4,7 @@ from direct.showbase.DirectObject import DirectObject
 from kivy.uix.screenmanager import ScreenManager
 from panda3d_kivy.app import App
 
+from gameplay.civilization import Civilization
 from main import SCIV
 from menus.screens import loading
 from menus.screens.game_config import GameConfigMenu
@@ -56,9 +57,13 @@ class SCivGUI(App, DirectObject):
         self.screen_manager.get_screen("main_menu").show()  # type: ignore
         self.screen_manager.current = "main_menu"
 
-    def activate_loading_screen(self):
+    def activate_loading_screen(self, civilization: Optional[Civilization] = None) -> None:
         if self.screen_manager is None:
             self.screen_manager = self.build()
+
+        if civilization is not None:
+            self.screen_manager.get_screen("loading_screen").set_civilization(civilization)  # type: ignore
+
         self.screen_manager.get_screen("loading_screen").show()  # type: ignore
         self.screen_manager.current = "loading_screen"
 
