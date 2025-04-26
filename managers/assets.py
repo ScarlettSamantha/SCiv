@@ -8,7 +8,7 @@ from kivy.core.image import Image as CoreImage
 from kivy.resources import resource_find  # type: ignore
 from kivy.uix.image import Image as KivyImage
 from panda3d.core import NodePath, TextFont, Texture
-from PIL import Image
+from PIL import Image, ImageFont
 
 from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
@@ -186,7 +186,51 @@ class AssetManager(Singleton):
                 for i in range(1, 6):
                     stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
                     stacked_image.save(
-                        f"assets/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png"
+                        f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png"
                     )
 
+        def generate_static_population_icons():
+            from PIL import Image
+
+            from helpers.images import draw_text_on_image
+
+            base_icon: str = "assets/icons/resources/core/basic/populationx128.png"
+            output_path: str = "assets/generated/icons/resources/core/basic/populationx128_{num}.png"
+            font_size: int = 46
+            text_vertical_offset = 32
+            text_color: Tuple[float, float, float, float] = (0, 0, 0, 1)
+            font = ImageFont.truetype("assets/fonts/Washington.ttf", font_size)
+
+            for i in range(1, 50):
+                # Open the base image to measure size
+                img = Image.open(base_icon).convert("RGBA")
+                img_width, img_height = img.size
+
+                text = str(i)
+
+                # Get text bounding box
+                bbox = font.getbbox(text)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+
+                # Calculate center position
+                pos_x = (img_width - text_width) / 2
+                pos_y = ((img_height - text_height) / 2) + text_vertical_offset
+                center_pos = (pos_x, pos_y)
+
+                # Draw the text centered
+                draw_text_on_image(
+                    base_icon,
+                    [(text, center_pos)],  # type: ignore
+                    font,
+                    font_size=font_size,
+                    text_color=text_color,
+                    save=True,
+                    save_path=output_path.format(num=i),
+                    outline=True,
+                    outline_color=(0, 0, 0, 255),
+                    outline_width=1,
+                )
+
         generate_static_resource_icons()
+        generate_static_population_icons()
