@@ -10,10 +10,12 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
+from gameplay.resources.core.basic.gold import Gold
 from helpers.colors import Tuple4f
 from managers.player import PlayerManager
 from managers.turn import Turn
 from menus.kivy.elements.button_self_resizable import SelfResizableButton
+from menus.screens.loading import ImageLabel
 
 if TYPE_CHECKING:
     from main import SCIV
@@ -48,7 +50,7 @@ class TopBar(BoxLayout, DirectObject):
         self.border: Tuple4f = border
 
         self.research_label: Optional[ResearchButton] = None
-        self.gold_label: Optional[Label] = None
+        self.gold_label: Optional[ImageLabel] = None
         self.faith_label: Optional[Label] = None
         self.culture_label: Optional[CultureButton] = None
         self.turn_label: Optional[Label] = None
@@ -106,13 +108,12 @@ class TopBar(BoxLayout, DirectObject):
             background_color=(0, 0, 0, 0),
         )
 
-        self.gold_label = Label(
+        self.gold_label = ImageLabel(
             text="Gold: 0",
             size_hint=(None, 1),
             width=80,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
+            img_y_offset=-0.05,
+            img_source=Gold.icon,
         )
         self.faith_label = Label(
             text="Faith: 0",
@@ -156,7 +157,7 @@ class TopBar(BoxLayout, DirectObject):
             if self.culture_label is not None:  # type: ignore
                 self.culture_label.text = "Culture: 0"
             if self.gold_label is not None:
-                self.gold_label.text = "Gold: 0"
+                self.gold_label.text = "Gold: 0"  # type: ignore
             if self.faith_label is not None:
                 self.faith_label.text = "Faith: 0"
             if self.turn_label is not None:
