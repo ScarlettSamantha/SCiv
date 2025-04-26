@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Literal, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Tuple
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -12,9 +12,7 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
-from gameplay.city import City
 from gameplay.repositories.tile import TileRepository
-from gameplay.tiles.base_tile import BaseTile
 from helpers.cache import Cache
 from helpers.geometry import generate_flat_top_hex
 from managers.player import PlayerManager
@@ -46,10 +44,23 @@ class Borders(DirectObject):
     def register(self):
         self.addTask(self.update_border_times, "update_border_shader_times", delay=5)
         self.accept("game.gameplay.city.gets_tile_ownership", self.refresh)
+        self.accept("game.gameplay.city.grows_population", self.refresh)
+        self.accept("game.border.refresh", self.refresh)
 
-    def refresh(self, city: "City", tile: "BaseTile"):
-        self.setup_borders()
-        self.update_borders()
+    def refresh(self, *args: Any):
+        self.reset()
+        self.border_textures.clear()
+        players = list(PlayerManager.all().values())
+
+        for player in players:
+            texture = self._generate_border_texture(player)
+            self.border_textures[player.id] = texture
+
+        for player in players:
+            nodes = self._create_border_hexes(player)
+            self.border_nodes[player.id] = nodes
+
+        MessengerGlobal.messenger.send("ui.borders.updated")
 
     def reset(self):
         # Remove all existing border nodes from scene
