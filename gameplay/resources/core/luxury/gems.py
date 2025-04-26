@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.mine import Mine
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -15,6 +16,7 @@ class Gems(BaseLuxuryResource):
     icon: str = "assets/icons/resources/core/luxury/hex_border_gems.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount = 5.0
+    improvement_required = [Mine]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

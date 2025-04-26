@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.farm import Farm
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -26,6 +27,7 @@ class Rice(BaseBonusResource):
     }
     coverage = 1.3
     spawn_amount = 5.0
+    improvement_required = [Farm]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
