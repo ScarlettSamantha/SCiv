@@ -10,9 +10,12 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
+from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
 from gameplay.resources.core.basic.gold import Gold
+from gameplay.resources.core.basic.science import Science
 from helpers.colors import Tuple4f
+from helpers.placeholder import Placeholder
 from managers.player import PlayerManager
 from managers.turn import Turn
 from menus.kivy.elements.button_self_resizable import SelfResizableButton
@@ -22,12 +25,30 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class ResearchButton(SelfResizableButton):
+class BaseButton(SelfResizableButton):
+    placeholder: str = Placeholder.getPlaceholderImagePathSmallIcon()
+
+    def _update_image(self, instance: Widget, value: str) -> None:
+        if value:
+            self.image_widget.source = value
+            self.image_widget.opacity = 1
+        else:
+            self.image_widget.source = self.placeholder
+            self.image_widget.opacity = 0
+            self.image_widget.width = 0
+        self._update_size()
+
+
+class ResearchButton(BaseButton):
+    placeholder: str = Science.icon
+
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
 
-class CultureButton(SelfResizableButton):
+class CultureButton(BaseButton):
+    placeholder: str = Culture.icon
+
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
@@ -98,21 +119,19 @@ class TopBar(BoxLayout, DirectObject):
         self.research_label = ResearchButton(
             text="Researching: None",
             size_hint=(None, 1),
-            width=150,
             background_color=(0, 0, 0, 0),
         )
         self.research_label.bind(on_press=self.on_click_research)  # type: ignore
         self.culture_label = CultureButton(
             text="Culture: 0",
             size_hint=(None, 1),
-            width=80,
             background_color=(0, 0, 0, 0),
         )
 
         self.gold_label = ImageLabel(
             text="Gold: 0",
             size_hint=(None, 1),
-            width=80,
+            width=100,
             img_y_offset=-0.05,
             img_source=Gold.icon,
         )
@@ -122,7 +141,7 @@ class TopBar(BoxLayout, DirectObject):
         self.turn_label = Label(
             text="Turn: 0",
             size_hint=(None, 1),
-            width=80,
+            width=100,
             halign="center",
             valign="middle",
             color=(1, 1, 1, 1),
