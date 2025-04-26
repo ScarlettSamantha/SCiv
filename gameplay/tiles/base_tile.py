@@ -751,16 +751,12 @@ class BaseTile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        Yield = self.tile_yield
-        for resource in self.resources.flatten().values():  # We add the resource yield to the tile yield.
-            Yield += resource.tile_yield
-
-        for (
-            resource
-        ) in self.get_improved_resources():  # if the resource is improved, we add the yield from the improvement.
-            Yield += resource.tile_yield_on_improvement
-
-        return Yield
+        yield_copy = deepcopy(self.tile_yield)
+        for resource in self.resources.flatten().values():
+            yield_copy += resource.tile_yield
+        for resource in self.get_improved_resources():
+            yield_copy += resource.tile_yield_on_improvement
+        return yield_copy
 
     def get_resources(self) -> Resources:
         return self.resources
