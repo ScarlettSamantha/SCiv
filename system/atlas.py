@@ -56,8 +56,6 @@ class AtlasGenerator:
         atlas = Image.new("RGBA", (atlas_width, atlas_height), (0, 0, 0, 0))
         manifest: Dict[str, Dict[str, Any] | Any] = {}
 
-        base_dir = min(self.input_dir, key=lambda d: len(str(d)))
-
         for idx, icon_file in enumerate(icon_files[: self.max_icons]):
             icon = Image.open(icon_file).convert("RGBA")
             icon.thumbnail(self.icon_size, Image.Resampling.LANCZOS)
@@ -70,9 +68,16 @@ class AtlasGenerator:
             atlas.paste(padded, (x, y))
 
             resource_key = self._resource_key_from_path(icon_file)
+
+            base_dir = next((d for d in self.input_dir if icon_file.is_relative_to(d)), None)
+            if base_dir is None:
+                raise ValueError(f"Could not determine base directory for {icon_file}")
+
+            virtual_path = str(icon_file.relative_to(base_dir))
+
             manifest[resource_key] = {
                 "index": idx,
-                "virtual_path": str(icon_file.relative_to(base_dir)),
+                "virtual_path": virtual_path,
                 "atlas_x": x,
                 "atlas_y": y,
                 "width": self.icon_size[0],
