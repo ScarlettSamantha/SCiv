@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.hunting_camp import HuntingCamp
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -30,6 +31,7 @@ class Horses(BaseStrategicResource):
     }
     spawn_amount = 5.0
     coverage = 2.0
+    improvement_required = [HuntingCamp]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
