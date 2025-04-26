@@ -111,8 +111,8 @@ The goal is to have an actual semi playable and resumable game and improved buil
 - [X] Working research
     - [ ] Resource specific improvements and resource system improvements.
 - [X] Civic system implementation + city borders
+- [X] City/Empire borders drawn
 - [ ] Barbarians + Nature player
-- [ ] City/Empire borders drawn
 - [ ] Map gen parameters in GUI
 - [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), maybe UI for this.
 - [ ] Hide development things behind a toggle.
