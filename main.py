@@ -136,7 +136,10 @@ class SCIV(ShowBase):
         from system.atlas import AtlasGenerator
 
         icon_generator = AtlasGenerator(
-            input_dir=pathlib.Path(__file__).parent / "assets" / "icons",
+            input_dir=[
+                pathlib.Path(__file__).parent / "assets" / "icons",
+                pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "resources",
+            ],
             output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "atlas.png",
             output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "mapping.json",
             icon_size=(128, 128),
