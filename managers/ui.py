@@ -158,8 +158,6 @@ class ui(Singleton, DirectObject):
         self.accept("b", self.show_colors_for_units)
 
         self.accept("z", self.calculate_icons_for_tiles)
-        self.accept("x", self.toggle_big_tile_icons)
-        self.accept("v", self.toggle_little_tile_icons)
 
         self.accept("space", self.on_space_press)
 
@@ -188,15 +186,9 @@ class ui(Singleton, DirectObject):
         self.highlight_tiles(neighboring_tiles + [tile])  # We add the tile itself to the list
 
     def on_tile_unhover(self, tile_coords: List[str]):
-        if (tile := self.map.map.get(tile_coords[0])) is None:
+        if (tile := self.map.map.get(tile_coords[0])) is None:  # type: ignore
             return
-
-        if self.show_resources_in_radius:
-            self.toggle_tile_icons(tile, small=False, large=False)
-
-        for neighbor in self.highlighted_tiles:
-            if self.show_resources_in_radius:
-                self.toggle_tile_icons(neighbor, small=False, large=False)
+        pass
 
     def on_space_press(self):
         MessengerGlobal.messenger.send("game.requests.end_turn")
@@ -289,16 +281,11 @@ class ui(Singleton, DirectObject):
                 tile.set_color(color)
 
             self.highlighted_tiles.append(tile)
-            if self.show_resources_in_radius:
-                self.toggle_tile_icons(tile, small=True, large=True)
 
     def unhighlight_tiles(self, tiles: List[BaseTile], restore_color: bool = True):
         for tile in tiles:
             if restore_color:
                 tile.set_color(Colors.RESTORE)
-
-            if self.show_resources_in_radius:
-                self.toggle_tile_icons(tile, small=False, large=False)
 
     def show_draggable_popup(
         self,
@@ -347,7 +334,7 @@ class ui(Singleton, DirectObject):
     def calculate_icons_for_tiles(self, small: bool = True, large: bool = True):
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
-            self.toggle_tile_icons(tile, small=small, large=large)
+            tile.add_icon_to_tile()
 
     def on_resource_ui_change_request(self, value: Enum):
         from menus.kivy.parts.debug_actions import MapActionsValues
@@ -415,27 +402,6 @@ class ui(Singleton, DirectObject):
         else:
             raise ValueError("Invalid value for lense change")
 
-    def toggle_tile_icons(self, tile: BaseTile, small: bool = False, large: bool = False):
-        tile.clear_all_icons()
-        if small:
-            tile.add_small_icons()
-        if large:
-            tile.add_icon_to_tile()
-
-    def toggle_big_tile_icons(self):
-        for _, tile in self.map.map.items():
-            if tile.is_showing_large_icons() is False:
-                tile.add_icon_to_tile()
-            else:
-                tile.clear_large_icons()
-
-    def toggle_little_tile_icons(self):
-        for _, tile in self.map.map.items():
-            if tile.is_showing_large_icons() is False:
-                tile.add_small_icons()
-            else:
-                tile.clear_small_icons()
-
     def get_game_ui(self):
         # If we don't have an active Game, create one
         if self.game is None:
@@ -491,8 +457,6 @@ class ui(Singleton, DirectObject):
             return
 
         for tile in tiles:
-            if self.show_resources_in_radius:
-                tile.clear_all_icons()
             tile.set_color(Colors.RESTORE)
 
     def select_tile(self, tile_coords: List[str]):
