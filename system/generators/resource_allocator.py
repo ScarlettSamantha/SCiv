@@ -110,7 +110,9 @@ class ResourceAllocator:
             return random.uniform(0, 100) < spawn_chance
 
     def _assign_resource(self, tile: BaseTile, resource_class: Type[BaseResource]) -> None:
-        tile.add_resource(resource_class())  # Assign resource to tile
+        resource = resource_class()
+        resource.value = 1
+        tile.add_resource(resource)  # Assign resource to tile
 
     def _allocate_with_clustering(
         self, resource_class: Type[BaseResource], candidate_tiles: List[BaseTile], desired_count: int
