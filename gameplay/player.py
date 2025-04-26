@@ -23,7 +23,7 @@ from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.civics import Civic, CivicsManager, CivicTree
-from managers.i18n import T_TranslationOrStrOrNone, t_
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
 from system.effects import Effect, Effects
 from system.entity import BaseEntity
@@ -121,6 +121,12 @@ class Player(BaseEntity):
 
         self.tech: TechManager = TechManager()
         self.civics: CivicsManager = CivicsManager()
+        self.icon = self.civilization.icon
+        self.introduction: T_TranslationOrStr = (
+            self.civilization.introduction
+            if self.civilization.introduction != ""
+            else t_(f"civilizations.{self.name}.introduction")
+        )
         self._register_callbacks()
 
     def register(self) -> None:
