@@ -159,6 +159,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 self.get_civics().hide_popup()
             if self.get_research().is_open:
                 self.get_research().hide_popup()
+
+            self.clear_selected_unit()
+            self.clear_action_bar()
+
             MessengerGlobal.messenger.send("ui.update.ui.show_pause")
 
     def on_unit_destroyed(self, unit: BaseEntity):

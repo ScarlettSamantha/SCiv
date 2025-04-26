@@ -438,12 +438,9 @@ class ui(Singleton, DirectObject):
         self.previous_unit = None
 
     def clear_selection(self):
-        self.current_tiles[0].set_color(Colors.RESTORE)
         self.current_tiles = []
         self.previous_tiles = []
 
-        if self.current_unit is not None:
-            self.current_unit.set_color(Colors.RESTORE)
         self.current_unit = None
         self.previous_unit = None
 
