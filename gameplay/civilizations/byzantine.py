@@ -28,6 +28,7 @@ class Byzantine(Civilization):
         t_("cities.byzantine.seleucia"),
         t_("cities.byzantine.hierapolis"),
     ]
+    introduction = t_("civilization.byzantine.introduction")
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
