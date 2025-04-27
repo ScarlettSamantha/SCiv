@@ -591,6 +591,9 @@
     },
     "civilization": {
       "barbarians": {
+        "name": "Barbarians",
+        "description": "The Barbarians are a collection of tribes and clans that resist the expansion of empires. They are known for their fierce warriors and nomadic lifestyle.",
+        "introduction": "The Barbarians are a collection of tribes and clans that resist the expansion of empires. They are known for their fierce warriors and nomadic lifestyle.",
         "leaders": {
           "boudicca": {
             "name": "Boudicca",
