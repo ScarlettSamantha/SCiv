@@ -642,7 +642,7 @@
         }
       },
       "american_empire": {
-        "name": "American Empire",
+        "name": "America",
         "description": "The Great American Empire",
         "introduction": "The American Empire is a modern superpower known for its cultural influence, technological advancements, and military strength.",
         "leaders": {
@@ -699,7 +699,7 @@
         }
       },
       "ottoman": {
-        "name": "Ottoman Empire",
+        "name": "Ottoman",
         "description": "The Great Ottoman Empire",
         "introduction": "The Ottoman Empire was a powerful state that controlled much of Southeast Europe, Western Asia, and North Africa for centuries.",
         "leaders": {
@@ -714,7 +714,7 @@
         }
       },
       "akkadian": {
-        "name": "Akkadian Empire",
+        "name": "Akkadians",
         "description": "The Great Akkadian Empire",
         "introduction": "The Akkadian Empire was one of the world's first empires, known for its advanced culture and military prowess.",
         "leaders": {
@@ -813,7 +813,7 @@
         }
       },
       "byzantine": {
-        "name": "Byzantine Empire",
+        "name": "Byzantine's",
         "description": "The great Byzantine Empire",
         "introduction": "The Byzantine Empire was the continuation of the Roman Empire in the East, known for its rich culture and Orthodox Christianity.",
         "leaders": {
