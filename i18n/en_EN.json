@@ -45,6 +45,25 @@
         "denver": "Denver",
         "washington": "Washington"
       },
+      "barbarians": {
+        "cities": {
+          "teutoburg": "Teutoburg",
+          "cherusca": "Cherusca",
+          "vandalia": "Vandalia",
+          "gothhaven": "Gothhaven",
+          "cimbriholm": "Cimbriholm",
+          "ravenhold": "Ravenhold",
+          "wolfshollow": "Wolf's Hollow",
+          "spearpoint": "Spearpoint",
+          "bloodrock": "Bloodrock",
+          "broken_spear": "Broken Spear",
+          "stormpeak": "Stormpeak",
+          "shadowfen": "Shadowfen",
+          "howling_vale": "Howling Vale",
+          "ashenfield": "Ashenfield",
+          "redmarsh": "Redmarsh"
+        }
+      },
       "byzantine": {
         "constantinople": "Constantinople",
         "antioch": "Antioch",
@@ -264,6 +283,9 @@
         "mons": "Mons",
         "luxembourg_city": "Luxembourg City",
         "enschede": "Enschede"
+      },
+      "nature": {
+        "ge": "ge"
       },
       "ottoman": {
         "constantinople": "Constantinople",
@@ -568,9 +590,38 @@
       }
     },
     "civilization": {
+      "barbarians": {
+        "leaders": {
+          "boudicca": {
+            "name": "Boudicca",
+            "description": "Queen of the Iceni tribe"
+          },
+          "alboin": {
+            "name": "Alboin",
+            "description": "King of the Lombards"
+          },
+          "arminius": {
+            "name": "Arminius",
+            "description": "Cherusci chieftain, defeated Roman legions at Teutoburg Forest"
+          },
+          "gaiseric": {
+            "name": "Gaiseric",
+            "description": "King of the Vandals, conqueror of Roman Africa"
+          },
+          "vidigoia": {
+            "name": "Vidigoia",
+            "description": "Visigothic leader, early warrior against Rome"
+          },
+          "boiorix": {
+            "name": "Boiorix",
+            "description": "King of the Cimbri, fought the Roman Republic"
+          }
+        }
+      },
       "nature": {
         "name": "Nature",
-        "description": "The natural world and environment"
+        "description": "The natural world and environment",
+        "introduction": "Nature is the natural world and environment, including plants, animals, and landscapes. It is often seen as a source of beauty and inspiration."
       },
       "rome": {
         "name": "Rome",
