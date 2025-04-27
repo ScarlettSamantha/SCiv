@@ -111,9 +111,9 @@ class BaseGenerator(ABC):
                 chosen_civilization: Type[Civilization] = CivilizationRepository.get("barbarians")
                 civs_ingame.append(chosen_civilization)
             else:  # AI
-                chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
+                chosen_civilization: Type[Civilization] = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
                 while True:
-                    chosen_civilization = CivilizationRepository.random()  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
+                    chosen_civilization = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
                     already_ingame: bool = False
 
                     if chosen_civilization in civs_ingame:
