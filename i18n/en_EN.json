@@ -262,7 +262,7 @@
         "gyeongju": "Gyeongju",
         "chuncheon": "Chuncheon"
       },
-      "low_countries": {
+      "netherlands": {
         "amsterdam": "Amsterdam",
         "brussels": "Brussels",
         "rotterdam": "Rotterdam",
@@ -679,9 +679,9 @@
           }
         }
       },
-      "low_countries": {
-        "name": "Low Countries",
-        "description": "The Great Low Countries",
+      "netherlands": {
+        "name": "Netherlands",
+        "description": "The kingdom of the Netherlands",
         "introduction": "The Low Countries, known for their rich history and cultural heritage, played a significant role in European trade and politics.",
         "leaders": {
           "william": {

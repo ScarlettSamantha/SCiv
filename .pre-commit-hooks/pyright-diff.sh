@@ -1,16 +1,23 @@
 #!/bin/bash
-set -e
 
-COMPARE_BRANCH="${COMPARE_BRANCH:-dev-v0.2.0}"
+set -euo pipefail
 
-git fetch origin "$COMPARE_BRANCH"
+# Get staged Python files
+files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
 
-changed_files=$(git diff --diff-filter=ACMR --name-only origin/"$COMPARE_BRANCH"...HEAD -- '*.py')
+# Filter: only keep files that still exist
+existing_files=()
+for file in $files; do
+    if [ -f "$file" ]; then
+        existing_files+=("$file")
+    fi
+done
 
-if [[ -n "$changed_files" ]]; then
-    echo "Running Pyright on changed files:"
-    echo "$changed_files"
-    echo "$changed_files" | xargs pyright -p pyrightconfig.json
-else
-    echo "No Python files changed. Skipping Pyright."
+# If no files, exit cleanly
+if [ ${#existing_files[@]} -eq 0 ]; then
+    echo "No Python files to check with pyright."
+    exit 0
 fi
+
+# Run pyright on the existing files
+pyright "${existing_files[@]}"
