@@ -12,3 +12,5 @@ assets/generated/
 !assets/generated/.gitkeep
 !assets/generated/icons/.gitkeep
 !**/.gitkeep
+**/*.kra
+**/*.png~
