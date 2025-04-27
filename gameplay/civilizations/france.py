@@ -35,7 +35,7 @@ class France(Civilization):
         super().__init__(*args, **kwargs)
 
         self._loadable = True
-        self.icon = "icons/rome.png"
+        self.icon = "assets/placeholders/icon_small.png"
 
     def register_effects(self):
         pass

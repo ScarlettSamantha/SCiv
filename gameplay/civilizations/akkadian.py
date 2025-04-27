@@ -1,4 +1,5 @@
 from typing import Any
+
 from gameplay.civilization import Civilization
 from managers.i18n import t_
 
@@ -34,7 +35,7 @@ class Akkadian(Civilization):
         super().__init__(*args, **kwargs)
 
         self._loadable = True
-        self.icon = "icons/rome.png"
+        self.icon = "assets/placeholders/icon_small.png"
 
     def register_effects(self):
         pass
