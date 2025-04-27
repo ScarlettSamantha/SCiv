@@ -7,7 +7,6 @@ from kivy.app import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from gameplay.resources.core.basic.culture import Culture
@@ -75,7 +74,7 @@ class TopBar(BoxLayout, DirectObject):
         self.gold_label: Optional[ImageLabel] = None
         self.faith_label: Optional[ImageLabel] = None
         self.culture_label: Optional[CultureButton] = None
-        self.turn_label: Optional[Label] = None
+        self.turn_label: Optional[ImageLabel] = None
 
         # Build 3 sub-boxes: left 30%, center 40%, right 30%
         self.left_container = BoxLayout(size_hint=(0.3, 1), orientation="horizontal", padding=(5, 0))
@@ -138,13 +137,11 @@ class TopBar(BoxLayout, DirectObject):
 
         self.faith_label = ImageLabel(text="Faith: 0", size_hint=(None, 1), width=100, img_source=Faith.icon)
 
-        self.turn_label = Label(
+        self.turn_label = ImageLabel(
             text="Turn: 0",
             size_hint=(None, 1),
             width=100,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
+            img_source="assets/icons/turn.png",
         )
 
         # Add them to the respective container
