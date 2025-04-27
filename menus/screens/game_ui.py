@@ -32,6 +32,7 @@ from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
+from menus.kivy.parts.player_list import PlayerList
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
@@ -86,6 +87,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.top_bar: Optional[TopBar] = None
         self.research: Optional[Research] = None
         self.civics: Optional[Civics] = None
+        self.player_list: Optional[PlayerList] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -106,6 +108,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player = PlayerManager.session_player()
         self.build_research()
         self.build_civics()
+        self.build_player_list()
         self.accept(
             "escape", self.on_escape
         )  # this is to prevent the pause menu from being opened before the game starts
@@ -244,6 +247,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             raise AssertionError("Civics is not initialized.")
         return self.civics
 
+    def get_player_list(self) -> PlayerList:
+        if self.player_list is None:
+            raise AssertionError("Player list is not initialized.")
+        return self.player_list
+
     def build_screen(self):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
@@ -349,6 +357,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.add_widget(self.civics)
 
         return self.civics
+
+    def build_player_list(self) -> PlayerList:
+        self.player_list = PlayerList(base=self._base)
+        self.player_list.build()
+        self.add_widget(self.player_list)
+        return self.player_list
 
     def refresh_top_bar(self):
         if self.top_bar is None:
