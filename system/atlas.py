@@ -87,7 +87,7 @@ class AtlasGenerator:
         self.output_image.parent.mkdir(parents=True, exist_ok=True)
         atlas.save(self.output_image)
         with open(self.output_mapping, "w") as f:
-            json.dump(manifest, f, indent=2)
+            json.dump(manifest, f, indent=4)
 
         self._manifest_cache = manifest
         self._atlas_image_cache = atlas
