@@ -9,6 +9,8 @@ from kivy.resources import resource_find  # type: ignore
 from kivy.uix.image import Image as KivyImage
 from panda3d.core import NodePath, TextFont, Texture
 from PIL import Image, ImageFont
+from PIL import Image as PILImage
+from PIL import ImageFont as PILImageFont
 
 from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
@@ -168,6 +170,24 @@ class AssetManager(Singleton):
     @classmethod
     def _calculate_cache_key(cls, path: str) -> str:
         return str(crc32(path.encode()))
+
+    @classmethod
+    def load_pil_image(cls, path: str, use_cache: bool = True) -> PILImage.Image:
+        """Load a PIL image directly from assets."""
+        if not exists(path):
+            raise FileNotFoundError(f"PIL image not found: {path}")
+
+        cls.logger().debug(f"Loading PIL image {path}")
+        return PILImage.open(path).convert("RGBA")
+
+    @classmethod
+    def load_pil_font(cls, path: str, size: int = 24, use_cache: bool = True) -> PILImageFont.FreeTypeFont:
+        """Load a PIL font (truetype) directly from assets."""
+        if not exists(path):
+            raise FileNotFoundError(f"PIL font not found: {path}")
+
+        cls.logger().debug(f"Loading PIL font {path} with size {size}")
+        return PILImageFont.truetype(path, size)
 
     @classmethod
     def generate_static_assets(cls):

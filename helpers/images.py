@@ -1,6 +1,69 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
+from panda3d.core import SamplerState, Texture
 from PIL import Image, ImageDraw, ImageFont
+
+from helpers.colors import Tuple4f
+
+
+def generate_city_nameplate(
+    left_img: Image.Image,
+    middle_img: Image.Image,
+    right_img: Image.Image,
+    city_name: str,
+    is_capital: bool,
+    font: ImageFont.ImageFont | ImageFont.FreeTypeFont,
+    padding: Tuple[int, int] = (10, 5),
+    text_offset_y: int = 0,
+    star_img: Optional[Image.Image] = None,
+    star_offset_y: int = 0,
+    star_offset_x: int = 0,
+    text_color: Tuple4f = (0, 0, 0, 255),
+) -> Image.Image:
+    draw = ImageDraw.Draw(middle_img)
+
+    # Load text
+    text = city_name
+
+    # Measure text size
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    # Star size if needed
+    star_width = star_img.width if (is_capital and star_img is not None) else 0
+    star_padding = 10 if star_width > 0 else 0  # padding between star and text
+
+    # Total width = star + gap + text
+    content_width = text_width + star_width + star_padding
+
+    # Total image width = left + middle + right
+    total_width: int = int(left_img.width + content_width + 2 * padding[0] + right_img.width)
+    total_height: int = max(left_img.height, middle_img.height, right_img.height)
+
+    # Create final plate
+    final_img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
+
+    # Paste parts
+    final_img.paste(left_img, (0, (total_height - left_img.height) // 2))
+    middle_width = int(content_width + 2 * padding[0])
+    stretched_middle = middle_img.resize((middle_width, middle_img.height))
+    final_img.paste(stretched_middle, (left_img.width, (total_height - middle_img.height) // 2))
+    final_img.paste(right_img, (left_img.width + middle_width, (total_height - right_img.height) // 2))
+
+    # Draw
+    text_x = left_img.width + padding[0] + (star_width + star_padding)
+    text_y = (total_height - text_height) // 2 - text_offset_y
+
+    draw = ImageDraw.Draw(final_img)
+
+    if is_capital and star_img is not None:
+        star_y = (total_height - star_img.height) // 2 - text_offset_y
+        final_img.paste(star_img, (left_img.width + padding[0] + star_offset_x, star_y + star_offset_y), star_img)
+
+    draw.text((text_x, text_y), text, font=font, fill=text_color)  # type: ignore
+
+    return final_img
 
 
 def draw_text_on_image(
@@ -80,3 +143,36 @@ def create_stacked_horizontal_images(images: List[Image.Image], offset: Tuple[in
         composite.alpha_composite(img, dest=pos)
 
     return composite
+
+
+def pil_image_to_panda3d_texture(pil_img: Image.Image) -> Texture:
+    """Convert a PIL Image (RGBA) to a Panda3D Texture directly in memory."""
+    pil_img = pil_img.convert("RGBA")
+
+    # --- Swap R and B to fix Panda3D's channel order expectation ---
+    r, g, b, a = pil_img.split()
+    pil_img = Image.merge("RGBA", (b, g, r, a))
+
+    width, height = pil_img.size
+    raw_data = pil_img.tobytes()
+
+    tex = Texture()
+    tex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_rgba)  # type: ignore
+    tex.set_ram_image(raw_data)  # type: ignore
+
+    tex.set_minfilter(SamplerState.FT_linear)  # type: ignore
+    tex.set_magfilter(SamplerState.FT_linear)  # type: ignore
+    tex.set_wrap_u(SamplerState.WM_clamp)  # type: ignore
+    tex.set_wrap_v(SamplerState.WM_clamp)  # type: ignore
+
+    return tex
+
+
+def normalize_to_byte(value: float) -> int:
+    """Convert a normalized float (0.0–1.0) to a byte value (0–255)."""
+    return max(0, min(255, int(round(value * 255))))
+
+
+def normalize_color_to_bytes(color: tuple[float, ...]) -> tuple[int, ...]:
+    """Convert a tuple of normalized floats to a tuple of byte values."""
+    return tuple(normalize_to_byte(c) for c in color)

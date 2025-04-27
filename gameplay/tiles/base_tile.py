@@ -6,7 +6,6 @@ from pathlib import Path
 from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
-from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     AntialiasAttrib,
@@ -18,7 +17,6 @@ from panda3d.core import (
     PTAFloat,
     SamplerState,
     Shader,
-    TextNode,
     Texture,
 )
 
@@ -31,8 +29,8 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
 from helpers.cache import Cache
-from helpers.colors import Colors, Tuple4f
-from managers.assets import AssetManager
+from helpers.colors import Colors
+from helpers.images import normalize_color_to_bytes
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
@@ -369,81 +367,77 @@ class BaseTile(BaseEntity):
         if self.city_name_group is None:
             raise AssertionError("City name group not created.")
 
-        city_text = TextNode(self.city.name)
-        city_text.setText(self.city.name)  # type: ignore # this is to prevent the text from being empty.
+        from PIL import Image  # Needed for flip
 
-        # Load the font
-        font = AssetManager.load_font("assets/fonts/Washington.ttf")
-        if font:
-            font.setPolyMargin(0.01)  # type: ignore # Improve clarity
-            try:
-                font.setPixelsPerUnit(250)  # type: ignore # Improve clarity
-            except AssertionError:
-                pass  # For some reason some letters are not showing up. This is a workaround. they are replaced with []
-            city_text.setFont(font)  # type: ignore
+        from helpers.images import generate_city_nameplate, pil_image_to_panda3d_texture
+        from managers.assets import AssetManager
 
-        # Load and verify texture
-        texture = AssetManager.load_texture("assets/city_name_border.png")
-        if not texture:
-            raise RuntimeError("Failed to load city name border texture.")
-        city_text.setCardTexture(texture)
+        # Load the assets
+        left_img = AssetManager.load_pil_image("assets/icons/city_plate_left.png")
+        middle_img = AssetManager.load_pil_image("assets/icons/city_plate_middle.png")
+        right_img = AssetManager.load_pil_image("assets/icons/city_plate_right.png")
+        font = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
 
-        # Set text appearance
-        text_color: Tuple4f = Colors.WHITE if self.city.player is None else self.city.player.color
-        city_text.setTextColor(*text_color)
-        city_text.setAlign(TextNode.ACenter)  # type: ignore
-        city_text.setCardDecal(True)
+        if not (left_img and middle_img and right_img and font):
+            raise RuntimeError("Failed to load nameplate assets.")
 
-        if self.city.is_capital:
-            city_text.setCardAsMargin(0.5, 0.2, 0.25, 0.25)
-        else:
-            city_text.setCardAsMargin(0.3, 0.3, 0.25, 0.25)
+        # Generate the PIL nameplate
+        pil_nameplate = generate_city_nameplate(
+            left_img,
+            middle_img,
+            right_img,
+            str(self.city.name),
+            self.city.is_capital,
+            font=font,
+            padding=(20, 8),  # horizontal/vertical padding
+            text_offset_y=32,
+            star_img=AssetManager.load_pil_image("assets/icons/capital_icon.png"),
+            star_offset_y=32,
+            star_offset_x=-16,
+            text_color=normalize_color_to_bytes(self.owner.color) if self.owner else (255, 0, 0, 255),  # type: ignore
+        )
 
-        city_np = self.city_name_group.attachNewNode(city_text)
+        # --- Stretch PIL canvas to force slim aspect ratio ---
+        forced_aspect_ratio = 4.5
+        width = pil_nameplate.width
+        desired_width = int(pil_nameplate.height * forced_aspect_ratio)
 
-        city_np.setPos(0, 0, 2.8)  # Position it above the city
-        city_np.setHpr((0, 45, 0))
+        if width < desired_width:
+            new_img = Image.new("RGBA", (desired_width, pil_nameplate.height), (0, 0, 0, 0))
+            x_offset = (desired_width - width) // 2
+            new_img.paste(pil_nameplate, (x_offset, 0))
+            pil_nameplate = new_img
 
-        # Ensure a fixed card size
-        card_size = 1.0  # Keep the card size fixed
-        city_np.setScale(card_size)
+        # --- Fix upside down issue ---
+        pil_nameplate = pil_nameplate.transpose(Image.FLIP_TOP_BOTTOM)  # type: ignore
 
-        # Handle text overflow by adjusting text scale
-        max_width = 2.0  # Max width the text should fit within
-        base_font_size = 1.0  # Default font scale
+        # Convert to Panda3D texture
+        city_texture = pil_image_to_panda3d_texture(pil_nameplate)
 
-        text_width = city_text.getWidth()
-        if text_width > max_width:
-            text_scale = max_width / text_width
-        else:
-            text_scale = base_font_size
+        # Build the city name card
+        card_maker = CardMaker(f"city_nameplate_{self.id}")
+        aspect_ratio = pil_nameplate.width / pil_nameplate.height
+        card_width = 2.5  # wider
+        card_height = card_width / aspect_ratio
+        card_maker.setFrame(-card_width / 2, card_width / 2, -card_height / 2, card_height / 2)
 
-        city_text.set_glyph_scale(text_scale)  # type: ignore
+        city_np = self.city_name_group.attachNewNode(card_maker.generate())  # type: ignore
+        city_np.setTexture(city_texture)
+        city_np.setTransparency(True)
+        city_np.setColor(1, 1, 1, 1)
+        city_np.clearColorScale()
+        # Proper orientation
+        city_np.setHpr(0, 0, 0)
+        city_np.setBillboardPointEye()
+        city_np.setPos(0, 0, 2.8)
+        city_np.setScale(1.0)
 
-        # Ensure visibility and proper rendering
-        city_np.setTransparency(1)
-        city_np.setCollideMask(BitMask32.bit(0))  # type: ignore
         city_np.setBin("fixed", 50)
         city_np.setDepthWrite(True)
         city_np.setDepthTest(True)
         city_np.setTwoSided(True)
         city_np.setAntialias(AntialiasAttrib.MAuto)
-        city_np.set_billboard_point_eye()  # type: ignore # Always face the camera.
 
-        # If the city is the capital, add an icon before the name
-        if self.city.is_capital:
-            capital_icon = OnscreenImage(image="assets/icons/capital_icon.png")
-            capital_icon.reparentTo(city_np)
-            capital_icon.setScale(0.2)  # Adjust size as needed
-            capital_icon.set_antialias(AntialiasAttrib.MAuto)  # type: ignore
-            capital_icon.setTransparency(1)
-
-            capital_icon.setBin("fixed", 51)  # Higher than text
-            capital_icon.setDepthWrite(False)
-            capital_icon.setDepthTest(False)
-            capital_icon.setPos(-1.25, 0.265, 0)
-
-        # Ensure the city_name_group is reparented to a visible node.
         if self.models:
             self.city_name_group.reparentTo(self.models[0])
 
