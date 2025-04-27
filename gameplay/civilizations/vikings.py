@@ -29,6 +29,7 @@ class Vikings(Civilization):
         t_("cities.vikings.stavanger"),
         t_("cities.vikings.reykjavik"),
     ]
+    introduction = t_("civilization.vikings.introduction")
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

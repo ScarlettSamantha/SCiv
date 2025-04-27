@@ -16,7 +16,7 @@ class Mine(Improvement):
     _model_hpr = (45, 0, 0)
     placeable_on_condition = Conditions(ResearchCondition(Mining, None))
     visible_condition = Conditions(ResearchCondition(Mining, None))
-    tile_yield_improvement = Yields(production=1.0, mode=Yields.ADDITIVE)
+    tile_yield_improvement = Yields(production=3.0, mode=Yields.ADDITIVE)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(

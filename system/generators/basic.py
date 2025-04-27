@@ -2,6 +2,8 @@ from copy import deepcopy
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
+from direct.showbase import MessengerGlobal
+
 from gameplay.resource import BaseResource
 from gameplay.tiles.base_tile import BaseTile, Hex
 from managers.entity import EntityManager
@@ -85,12 +87,14 @@ class Basic(BaseGenerator):
     def generate(self) -> bool:
         """Generates the hex map using HexGen and maps it to our tile system."""
         # Step 1: Generate the world using HexGen
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
         start_time: datetime = datetime.now()
         self.hexgen_map = MapGen(self.map_params, debug=True)
         self.hex_grid: Grid = self.hexgen_map.hex_grid  # Access HexGen's grid
         end_hexgen_time: datetime = datetime.now()
 
         # Step 2: Convert HexGen's terrain types to our tile names and apply offsets
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Converting map..."])
         start_conversion_time: datetime = datetime.now()
         for col in range(self.config.height):
             for row in range(self.config.width):
@@ -112,11 +116,13 @@ class Basic(BaseGenerator):
         end_conversion_time: datetime = datetime.now()
 
         # Step 4: Instantiate tiles for rendering
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_instantiation_time: datetime = datetime.now()
         self.instantiate_tiles()
         end_instantiation_time: datetime = datetime.now()
 
         # Step 5: Allocate resources
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Allocating resources..."])
         start_resource_allocation_time: datetime = datetime.now()
         self.grid = self.world.grid
         self.resource_allocator = ResourceAllocator(self.grid, self.get_all_resources())
@@ -124,6 +130,7 @@ class Basic(BaseGenerator):
         end_resource_allocation_time: datetime = datetime.now()
 
         # Step 6: Place starting units
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Placing starting units..."])
         start_unit_placement_time: datetime = datetime.now()
         self.place_starting_units()
         end_unit_placement_time: datetime = datetime.now()
@@ -158,6 +165,7 @@ class Basic(BaseGenerator):
             "world_generation_stats", self.world_generation_stats
         )  # we can use this to store the stats in the database
 
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Done..."])
         return True
 
     def classify_terrain(self, hex_tile: Hex) -> str:

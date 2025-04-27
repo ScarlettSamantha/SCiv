@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Literal, Optional, Self, Type
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -6,6 +6,7 @@ from gameplay._units import Units
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
+from gameplay.civic import CivicSubtree
 from gameplay.civilization import Civilization
 from gameplay.claims import Claims
 from gameplay.government import Government
@@ -21,13 +22,15 @@ from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
-from managers.i18n import T_TranslationOrStrOrNone
+from managers.civics import Civic, CivicsManager, CivicTree
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
 from system.effects import Effect, Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
 
 
@@ -117,6 +120,13 @@ class Player(BaseEntity):
         self.gold: Yields = Yields(gold=0)
 
         self.tech: TechManager = TechManager()
+        self.civics: CivicsManager = CivicsManager()
+        self.icon = self.civilization.icon
+        self.introduction: T_TranslationOrStr = (
+            self.civilization.introduction
+            if self.civilization.introduction != ""
+            else t_(f"civilizations.{self.name}.introduction")
+        )
         self._register_callbacks()
 
     def register(self) -> None:
@@ -130,6 +140,7 @@ class Player(BaseEntity):
             self.accept(
                 "game.gameplay.research.request_start_research_session_player", self.on_request_start_research_session
             )
+            self.accept("game.gameplay.civic.request_purchase", self.on_request_purchase_civic)
 
     def on_game_load(self) -> None:
         """This will be called when the game is restored from a save file."""
@@ -155,6 +166,30 @@ class Player(BaseEntity):
             self.tech.research_tech(instanced_tech)
 
         MessengerGlobal.messenger.send("game.gameplay.research.player_starts_research", [self, tech])
+
+    def on_request_purchase_civic(self, civic: Type[Civic]) -> None:
+        self.logger.debug(f"Player {str(self.name)} requested to purchase civic {civic.__name__}")
+        instanced_civic: Civic = civic()
+
+        if self.culture.culture.value < instanced_civic.cost:
+            self.logger.warning(
+                f"Player {str(self.name)} does not have enough culture to purchase civic {civic.__name__}"
+            )
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.civic.not_enough_points.title"),
+                    t_("ui.dialogs.civic.not_enough_points.message"),
+                ],
+            )
+            return
+
+        self.civics.activate_civic(instanced_civic)
+        self.culture -= Yields(culture=instanced_civic.cost)
+
+        MessengerGlobal.messenger.send("game.gameplay.civic.player_purchased_civic", [self, civic])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
 
     def on_request_cancel_research_session(self) -> None:
         self.logger.debug(f"Player {str(self.name)} requested to cancel research session.")
@@ -238,3 +273,31 @@ class Player(BaseEntity):
 
     def has_researched_tech(self, tech: Type[Tech]) -> bool:
         return self.tech.is_tech_researched(tech)
+
+    def get_all_cities(self) -> Cities:
+        return self.cities
+
+    def get_all_tiles(self) -> Dict[tuple[int, int], "BaseTile"]:
+        return self.tiles.get_tiles()
+
+    def owns_tile(self, x: int, y: int) -> bool:
+        return self.tiles.get_tiles().get((x, y), None) is not None
+
+    def has_civic_tree_unlocked(self, civic_tree: Type[CivicTree]) -> bool:
+        return self.civics.is_civic_tree_unlocked(civic_tree)
+
+    def has_civic_subtree_unlocked(self, sub_tree: Type[CivicSubtree]) -> bool:
+        return self.civics.is_civic_subtree_unlocked(sub_tree)
+
+    def has_civic(self, civic: Type["Civic"]) -> bool:
+        return self.civics.is_civic_activated(civic)
+
+    def get_civic_tree(self) -> CivicTree | None:
+        return self.civics.get_tree()
+
+    def get_all_tiles_marked_for_border_growth(self) -> Dict[Tuple[int, int], "BaseTile"]:
+        tiles: Dict[Tuple[int, int], "BaseTile"] = {}
+        for city in self.cities:
+            if (_tile := city.get_next_border_growth_tile()) is not None:
+                tiles[(_tile.x, _tile.y)] = _tile
+        return tiles

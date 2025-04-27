@@ -472,6 +472,12 @@
               "message": "This unit can't build improvements, this is a bug. (Please report this issue)"
             }
           }
+        },
+        "civic": {
+          "not_enough_points": {
+            "title": "Not enough points",
+            "message": "You don't have enough points to unlock this civic."
+          }
         }
       },
       "buttons": {
@@ -510,6 +516,7 @@
           "science_label": "Science: {science}",
           "culture_label": "Culture: {culture}",
           "faith_label": "Faith: {faith}",
+          "border_label": "Growth: {current_points}/{required_points}",
           "current_button_building": "Building: {building} {resources_got}/{resources_required}"
         },
         "pause": {
@@ -568,6 +575,7 @@
       "rome": {
         "name": "Rome",
         "description": "The Great Roman Empire",
+        "introduction": "The Roman Empire was one of the most powerful empires in history, known for its vast territories, advanced engineering, and cultural achievements.",
         "leaders": {
           "ceasar": {
             "name": "Julius Caesar",
@@ -582,6 +590,7 @@
       "american_empire": {
         "name": "American Empire",
         "description": "The Great American Empire",
+        "introduction": "The American Empire is a modern superpower known for its cultural influence, technological advancements, and military strength.",
         "leaders": {
           "abraham_lincoln": {
             "name": "Abraham Lincoln",
@@ -604,6 +613,7 @@
       "greece": {
         "name": "Greece",
         "description": "The Great Greek Empire",
+        "introduction": "The Greek Empire is known for its rich history, philosophy, and contributions to art and science.",
         "leaders": {
           "alexander": {
             "name": "Alexander the Great",
@@ -618,6 +628,7 @@
       "low_countries": {
         "name": "Low Countries",
         "description": "The Great Low Countries",
+        "introduction": "The Low Countries, known for their rich history and cultural heritage, played a significant role in European trade and politics.",
         "leaders": {
           "william": {
             "name": "William of Orange",
@@ -636,6 +647,7 @@
       "ottoman": {
         "name": "Ottoman Empire",
         "description": "The Great Ottoman Empire",
+        "introduction": "The Ottoman Empire was a powerful state that controlled much of Southeast Europe, Western Asia, and North Africa for centuries.",
         "leaders": {
           "suleiman": {
             "name": "Suleiman the Magnificent",
@@ -650,6 +662,7 @@
       "akkadian": {
         "name": "Akkadian Empire",
         "description": "The Great Akkadian Empire",
+        "introduction": "The Akkadian Empire was one of the world's first empires, known for its advanced culture and military prowess.",
         "leaders": {
           "sargon": {
             "name": "Sargon of Akkad",
@@ -664,6 +677,7 @@
       "spain": {
         "name": "Spain",
         "description": "The Great Spanish Empire",
+        "introduction": "The Spanish Empire was one of the largest empires in history, known for its vast territories and cultural influence.",
         "leaders": {
           "isabella": {
             "name": "Isabella",
@@ -690,6 +704,7 @@
       "france": {
         "name": "France",
         "description": "The Great French Empire",
+        "introduction": "The French Empire is known for its rich history, cultural achievements, and significant influence on world affairs.",
         "leaders": {
           "charlemange": {
             "name": "Charlemagne",
@@ -712,6 +727,7 @@
       "egypt": {
         "name": "Egypt",
         "description": "The Great Egyptian Empire",
+        "introduction": "The Egyptian Empire is known for its ancient civilization, monumental architecture, and rich cultural heritage.",
         "leaders": {
           "cleopatra": {
             "name": "Cleopatra",
@@ -726,6 +742,7 @@
       "vikings": {
         "name": "Vikings",
         "description": "The great Vikings",
+        "introduction": "The Vikings were seafaring Norse people known for their exploration, trade, and raids across Europe.",
         "leaders": {
           "ragnar": {
             "name": "Ragnar Lothbrok",
@@ -744,6 +761,7 @@
       "byzantine": {
         "name": "Byzantine Empire",
         "description": "The great Byzantine Empire",
+        "introduction": "The Byzantine Empire was the continuation of the Roman Empire in the East, known for its rich culture and Orthodox Christianity.",
         "leaders": {
           "justinian": {
             "name": "Justinian",
@@ -758,6 +776,7 @@
       "persia": {
         "name": "Persia",
         "description": "The great Persian Empire",
+        "introduction": "The Persian Empire was one of the largest empires in history, known for its cultural diversity and administrative efficiency.",
         "leaders": {
           "darius": {
             "name": "Darius the Great",
@@ -776,6 +795,7 @@
       "china": {
         "name": "China",
         "description": "The great Chinese Empire",
+        "introduction": "The Chinese Empire is one of the world's oldest continuous civilizations, known for its rich history and cultural achievements.",
         "leaders": {
           "qin_shi_huang": {
             "name": "Qin Shi Huang",
@@ -790,6 +810,7 @@
       "japan": {
         "name": "Japan",
         "description": "The great Japanese Empire",
+        "introduction": "The Japanese Empire is known for its unique culture, technological advancements, and historical significance in Asia.",
         "leaders": {
           "tokugawa": {
             "name": "Tokugawa Ieyasu",
@@ -808,6 +829,7 @@
       "england": {
         "name": "England",
         "description": "The great English Empire",
+        "introduction": "The English Empire is known for its rich history, cultural achievements, and significant influence on world affairs.",
         "leaders": {
           "elizabeth": {
             "name": "Elizabeth I",
@@ -822,6 +844,7 @@
       "korea": {
         "name": "Korea",
         "description": "The great Korean Empire",
+        "introduction": "The Korean Empire is known for its rich history, cultural achievements, and significant influence in East Asia.",
         "leaders": {
           "sejong": {
             "name": "Sejong the Great",
@@ -836,6 +859,7 @@
       "ussr": {
         "name": "USSR",
         "description": "The great USSR",
+        "introduction": "The USSR was a 20th-century superpower known for its communist ideology and significant influence on global affairs.",
         "leaders": {
           "lenin": {
             "name": "Lenin",
@@ -853,6 +877,7 @@
       },
       "germany": {
         "name": "Germany",
+        "introduction": "Germany is known for its rich history, cultural achievements, and significant influence on European affairs.",
         "description": "The great German Empire",
         "leaders": {
           "otto": {

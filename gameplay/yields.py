@@ -409,6 +409,7 @@ class Yields:
             self.food,
             self.science,
             self.culture,
+            self.faith,
         ]
         return resources
 

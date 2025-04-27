@@ -15,6 +15,7 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
 from gameplay.city import City
+from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tech import TechTree
@@ -27,6 +28,7 @@ from managers.world import World
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.action_bar import ActionBar
 from menus.kivy.parts.city import CityUI
+from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
@@ -83,6 +85,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.city_ui: Optional[CityUI] = None
         self.top_bar: Optional[TopBar] = None
         self.research: Optional[Research] = None
+        self.civics: Optional[Civics] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -102,6 +105,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def on_game_start(self, *args: Any):
         self.player = PlayerManager.session_player()
         self.build_research()
+        self.build_civics()
         self.accept(
             "escape", self.on_escape
         )  # this is to prevent the pause menu from being opened before the game starts
@@ -151,6 +155,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if screen.pause_menu._is_open:  # type: ignore
             MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
         else:
+            if self.get_civics().is_open:
+                self.get_civics().hide_popup()
+            if self.get_research().is_open:
+                self.get_research().hide_popup()
+
+            self.clear_selected_unit()
+            self.clear_action_bar()
+
             MessengerGlobal.messenger.send("ui.update.ui.show_pause")
 
     def on_unit_destroyed(self, unit: BaseEntity):
@@ -226,6 +238,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.research is None:
             raise AssertionError("Research is not initialized.")
         return self.research
+
+    def get_civics(self) -> Civics:
+        if self.civics is None:
+            raise AssertionError("Civics is not initialized.")
+        return self.civics
 
     def build_screen(self):
         self.logger.info("Building game UI screen.")
@@ -316,6 +333,22 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.remove_widget(self.research)  # type: ignore
         self.research = Research(tree=tree)
         self.add_widget(self.research)
+
+    def build_civics(self) -> Civics | None:
+        if self.player is None:
+            return
+
+        tree: None | CivicTree = self.player.civics.get_tree()
+        if tree is None:
+            return
+
+        if self.civics is not None:
+            self.remove_widget(self.civics)
+
+        self.civics = Civics(tree=tree)
+        self.add_widget(self.civics)
+
+        return self.civics
 
     def refresh_top_bar(self):
         if self.top_bar is None:

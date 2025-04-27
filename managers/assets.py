@@ -1,4 +1,5 @@
 from logging import Logger
+from os.path import exists
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from zlib import crc32
 
@@ -7,7 +8,17 @@ from kivy.core.image import Image as CoreImage
 from kivy.resources import resource_find  # type: ignore
 from kivy.uix.image import Image as KivyImage
 from panda3d.core import NodePath, TextFont, Texture
+from PIL import Image, ImageFont
+from PIL import Image as PILImage
+from PIL import ImageFont as PILImageFont
 
+from gameplay.resources.core.basic.culture import Culture
+from gameplay.resources.core.basic.faith import Faith
+from gameplay.resources.core.basic.food import Food
+from gameplay.resources.core.basic.gold import Gold
+from gameplay.resources.core.basic.production import Production
+from gameplay.resources.core.basic.science import Science
+from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -139,6 +150,8 @@ class AssetManager(Singleton):
         if use_cache and cache_key in cls.kivy_image_cache:
             core_image = cls.kivy_image_cache[cache_key]
         else:
+            if not exists(resolved_path):
+                raise FileNotFoundError(f"File does not exist: {resolved_path}")
             core_image = CoreImage(resolved_path)
             if use_cache:
                 cls.kivy_image_cache[cache_key] = core_image
@@ -157,3 +170,116 @@ class AssetManager(Singleton):
     @classmethod
     def _calculate_cache_key(cls, path: str) -> str:
         return str(crc32(path.encode()))
+
+    @classmethod
+    def load_pil_image(cls, path: str, use_cache: bool = True) -> PILImage.Image:
+        """Load a PIL image directly from assets."""
+        if not exists(path):
+            raise FileNotFoundError(f"PIL image not found: {path}")
+
+        cls.logger().debug(f"Loading PIL image {path}")
+        return PILImage.open(path).convert("RGBA")
+
+    @classmethod
+    def load_pil_font(cls, path: str, size: int = 24, use_cache: bool = True) -> PILImageFont.FreeTypeFont:
+        """Load a PIL font (truetype) directly from assets."""
+        if not exists(path):
+            raise FileNotFoundError(f"PIL font not found: {path}")
+
+        cls.logger().debug(f"Loading PIL font {path} with size {size}")
+        return PILImageFont.truetype(path, size)
+
+    @classmethod
+    def generate_static_assets(cls):
+        def generate_static_resource_icons():
+            from helpers.images import create_stacked_horizontal_images
+
+            basic_resources = Gold, Production, Food, Faith, Science, Culture
+            for resource in basic_resources:
+                resource_instance = resource()
+                icon_path = resource_instance.icon
+                if not icon_path:
+                    continue
+
+                image = Image.open(icon_path).convert("RGBA")
+                font_size = 32
+                text_vertical_offset = 0
+                text_horizontal_offset = 0
+
+                # Create a stacked horizontal image with the icon
+                for i in range(1, 6):
+                    stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
+                    stacked_image.save(
+                        f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png"
+                    )
+
+                for i in range(6, 50):
+                    img_width, img_height = image.size
+
+                    font = ImageFont.truetype("assets/fonts/Washington.ttf", font_size)
+
+                    bbox = font.getbbox(str(i))
+                    text_width = bbox[2] - bbox[0]
+                    text_height = bbox[3] - bbox[1]
+
+                    pos_x = (img_width - text_width) / 4 + text_horizontal_offset
+                    pos_y = ((img_height - text_height) / 4) + text_vertical_offset
+                    center_pos = (int(pos_x), int(pos_y))
+
+                    draw_text_on_image(
+                        image,
+                        [(str(i), center_pos)],
+                        font_path="assets/fonts/Washington.ttf",
+                        font_size=46,
+                        save=True,
+                        save_path=f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png",
+                        outline=True,
+                        outline_color=(0, 0, 0, 255),
+                        outline_width=1,
+                    )
+
+        def generate_static_population_icons():
+            from PIL import Image
+
+            from helpers.images import draw_text_on_image
+
+            base_icon: str = "assets/icons/resources/core/basic/populationx128.png"
+            output_path: str = "assets/generated/icons/resources/core/basic/populationx128_{num}.png"
+            font_size: int = 46
+            text_vertical_offset = 32
+            text_color: Tuple[float, float, float, float] = (0, 0, 0, 1)
+            font = ImageFont.truetype("assets/fonts/Washington.ttf", font_size)
+
+            for i in range(1, 50):
+                # Open the base image to measure size
+                img = Image.open(base_icon).convert("RGBA")
+                img_width, img_height = img.size
+
+                text = str(i)
+
+                # Get text bounding box
+                bbox = font.getbbox(text)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+
+                # Calculate center position
+                pos_x = (img_width - text_width) / 2
+                pos_y = ((img_height - text_height) / 2) + text_vertical_offset
+                center_pos = (pos_x, pos_y)
+
+                # Draw the text centered
+                draw_text_on_image(
+                    base_icon,
+                    [(text, center_pos)],  # type: ignore
+                    font,
+                    font_size=font_size,
+                    text_color=text_color,
+                    save=True,
+                    save_path=output_path.format(num=i),
+                    outline=True,
+                    outline_color=(0, 0, 0, 255),
+                    outline_width=1,
+                )
+
+        generate_static_resource_icons()
+        generate_static_population_icons()

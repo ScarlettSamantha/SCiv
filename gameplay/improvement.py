@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple, Type
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
-from gameplay.player import Player
 from gameplay.resources.core.basic.production import Production
 from gameplay.units.core.classes.civilian.builder import Builder
 from gameplay.units.unit_base import UnitBaseClass
@@ -16,6 +15,7 @@ from system.effects import Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.player import Player
     from gameplay.resources.core.basic._base import BasicBaseResource
     from gameplay.tiles.base_tile import BaseTile
 
@@ -92,7 +92,7 @@ class Improvement(BaseEntity):
 
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
 
-        self.owner: Optional[Player] = None
+        self.owner: Optional["Player"] = None
         self.tag: str = ""
 
     @classmethod
@@ -196,10 +196,10 @@ class Improvement(BaseEntity):
     def get_model_path(self) -> str | None:
         return self._model
 
-    def set_owner(self, owner: Player):
+    def set_owner(self, owner: "Player"):
         self.owner = owner
 
-    def get_owner(self) -> Player | None:
+    def get_owner(self) -> "Player | None":
         return self.owner
 
     def on_turn_end(self, turn: int):

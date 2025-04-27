@@ -28,6 +28,7 @@ class Akkadian(Civilization):
         t_("cities.akkadian.akkad"),
         t_("cities.akkadian.akshak"),
     ]
+    introduction = t_("civilization.akkadian.introduction")
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

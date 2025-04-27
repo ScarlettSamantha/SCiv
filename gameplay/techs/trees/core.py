@@ -125,7 +125,6 @@ class Core(TechTree):
         )
         cartography: Type[Tech] = add_to_space(self, classes, "Cartography", get_age(self, ages, "Renaissance"))
         mass_production: Type[Tech] = add_to_space(self, classes, "MassProduction", get_age(self, ages, "Renaissance"))
-        banking: Type[Tech] = add_to_space(self, classes, "Banking", get_age(self, ages, "Renaissance"))
         printing: Type[Tech] = add_to_space(self, classes, "Printing", get_age(self, ages, "Renaissance"))
         square_rigging: Type[Tech] = add_to_space(self, classes, "SquareRigging", get_age(self, ages, "Renaissance"))
         astronomy: Type[Tech] = add_to_space(self, classes, "Astronomy", get_age(self, ages, "Renaissance"))
@@ -135,7 +134,6 @@ class Core(TechTree):
         industrialisation: Type[Tech] = add_to_space(
             self, classes, "Industrialisation", get_age(self, ages, "Industrial")
         )
-        mass_production: Type[Tech] = add_to_space(self, classes, "MassProduction", get_age(self, ages, "Industrial"))
         replaceable_parts: Type[Tech] = add_to_space(
             self, classes, "ReplaceableParts", get_age(self, ages, "Industrial")
         )
@@ -396,14 +394,12 @@ class Core(TechTree):
             scientific_theory,
             cartography,
             mass_production,
-            banking,
             printing,
             square_rigging,
             astronomy,
             metal_casting,
             siege_tactics,
             industrialisation,
-            mass_production,
             replaceable_parts,
             refining,
             steam_power,

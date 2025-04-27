@@ -68,6 +68,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.gameplay.city.starts_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.canceled_production` (E: city | L: ui-part-city)
+- `game.gameplay.city.border_growth` (E: city)
 
 - `game.gameplay.city.request_start_building_unit` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_unit` (E: ui-part-city | L: city)
@@ -84,12 +85,18 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.gameplay.research.player_cancels_research` (E: player | L: manager-ui)
 - `game.gameplay.research.player_completed_research` (E: manager-tech | L: )
 
+- `game.gameplay.civic.request_purchase` (E: part-ui-civic | L: )
+- `game.gameplay.civic.player_purchased_civic` (E: part-ui-civic | L: )
+- `game.gameplay.civic.player_tree_completed`  (E:  | L: )
+
 ### Units
 
 - `unit.action.move.visiting_tile` (E: BaseTile | L: manager-ui)
 - `unit.action.found_city.success` (E: action-found | )
 
 ## UI
+
+- `ui.refresh.frame_insert` (E: * | L: manager-ui )
 
 - `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
 - `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
@@ -102,6 +109,9 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `ui.update.ui.hide_city_ui` (L: ui-part-city)
 - `ui.update.ui.show_city_ui` (L: ui-part-city)
+
+- `ui.request.update.borders` (L: manager-game | E: * )
+- `ui.borders.updated` (E: system-border | L: manager-game)
 
 - `ui.update.ui.show_research_ui` (E:ui-part-top-menu | L: ui-part-research)
 - `ui.update.ui.hide_research_ui` (E:ui-part-top-menu, E:screen-game-ui | L: ui-part-research)
@@ -125,6 +135,9 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.request.save_game` (E: ui-part-save | L: manager-ui)
 - `ui.request.open.popup` (E: actions-*, E:screen-game-ui | L: manager-ui)
 - `ui.request.reroll` (E: ui-part-pause-menu | L: manager-ui)
+
+- `ui.request.loading_screen` (E: game-config | L: manager-ui )
+- `ui.loading.next_step` (E: * | L: screen-loading )
 
 ## System
 

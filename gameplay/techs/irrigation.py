@@ -1,7 +1,10 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any, List, Type
 
 from gameplay.tech import Tech
 from managers.i18n import t_
+
+if TYPE_CHECKING:
+    from system.entity import BaseEntity
 
 
 class Irrigation(Tech):
@@ -15,3 +18,9 @@ class Irrigation(Tech):
             *args,
             **kwargs,
         )
+
+    @classmethod
+    def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
+        from gameplay.improvements.core.resources.plantation import Plantation
+
+        return [Plantation] + super().unlocks()  # type: ignore

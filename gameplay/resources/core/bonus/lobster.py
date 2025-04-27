@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.fishing_boats import FishingBoats
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -23,6 +24,7 @@ class Lobster(BaseBonusResource):
     clusterable = True
     cluster_max_radius = 3
     cluster_dropoff_amount_rate = 1.0
+    improvement_required = [FishingBoats]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

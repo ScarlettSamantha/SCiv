@@ -1,5 +1,6 @@
 from random import choice
 from typing import List, Type
+
 from gameplay.personalities.base import BasePersonality
 from system.pyload import PyLoad
 
@@ -28,6 +29,6 @@ class PersonalityRepository:
                 break
 
             if num == 1:
-                return _selected_personality
+                return _selected_personality  # type: ignore
 
         return _selected_personalities

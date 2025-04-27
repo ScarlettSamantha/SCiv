@@ -1,7 +1,10 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any, List, Type
 
 from gameplay.tech import Tech
 from managers.i18n import t_
+
+if TYPE_CHECKING:
+    from system.entity import BaseEntity
 
 
 class Trapping(Tech):
@@ -15,3 +18,9 @@ class Trapping(Tech):
             *args,
             **kwargs,
         )
+
+    @classmethod
+    def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
+        from gameplay.improvements.core.resources.hunting_camp import HuntingCamp
+
+        return [HuntingCamp] + super().unlocks()  # type: ignore

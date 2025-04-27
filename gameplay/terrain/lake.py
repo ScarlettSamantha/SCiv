@@ -1,4 +1,6 @@
 from typing import Any
+
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 from ._base_terrain import BaseTerrain, rgb
@@ -15,3 +17,5 @@ class Lake(BaseTerrain):
 
         self.fallback_color = self._fallback_color
         self.movement_modifier = 0.5
+
+        self.tile_yield_base = Yields(food=1)

@@ -10,16 +10,45 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
+from gameplay.resources.core.basic.culture import Culture
+from gameplay.resources.core.basic.faith import Faith
+from gameplay.resources.core.basic.gold import Gold
+from gameplay.resources.core.basic.science import Science
 from helpers.colors import Tuple4f
+from helpers.placeholder import Placeholder
 from managers.player import PlayerManager
 from managers.turn import Turn
 from menus.kivy.elements.button_self_resizable import SelfResizableButton
+from menus.screens.loading import ImageLabel
 
 if TYPE_CHECKING:
     from main import SCIV
 
 
-class ResearchButton(SelfResizableButton):
+class BaseButton(SelfResizableButton):
+    placeholder: str = Placeholder.getPlaceholderImagePathSmallIcon()
+
+    def _update_image(self, instance: Widget, value: str) -> None:
+        if value:
+            self.image_widget.source = value
+            self.image_widget.opacity = 1
+        else:
+            self.image_widget.source = self.placeholder
+            self.image_widget.opacity = 0
+            self.image_widget.width = 0
+        self._update_size()
+
+
+class ResearchButton(BaseButton):
+    placeholder: str = Science.icon
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+
+
+class CultureButton(BaseButton):
+    placeholder: str = Culture.icon
+
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
@@ -42,11 +71,10 @@ class TopBar(BoxLayout, DirectObject):
         self.background_color: Tuple4f = background_color
         self.border: Tuple4f = border
 
-        self.research_label: Optional[Label] = None
-        self.gold_label: Optional[Label] = None
-        self.faith_label: Optional[Label] = None
-        self.science_label: Optional[Label] = None
-        self.culture_label: Optional[Label] = None
+        self.research_label: Optional[ResearchButton] = None
+        self.gold_label: Optional[ImageLabel] = None
+        self.faith_label: Optional[ImageLabel] = None
+        self.culture_label: Optional[CultureButton] = None
         self.turn_label: Optional[Label] = None
 
         # Build 3 sub-boxes: left 30%, center 40%, right 30%
@@ -91,47 +119,29 @@ class TopBar(BoxLayout, DirectObject):
         self.research_label = ResearchButton(
             text="Researching: None",
             size_hint=(None, 1),
-            width=150,
             background_color=(0, 0, 0, 0),
         )
         self.research_label.bind(on_press=self.on_click_research)  # type: ignore
-
-        self.gold_label = Label(
-            text="Gold: 0",
-            size_hint=(None, 1),
-            width=80,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
-        )
-        self.faith_label = Label(
-            text="Faith: 0",
-            size_hint=(None, 1),
-            width=80,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
-        )
-        self.science_label = Label(
-            text="Science: 0",
-            size_hint=(None, 1),
-            width=80,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
-        )
-        self.culture_label = Label(
+        self.culture_label = CultureButton(
             text="Culture: 0",
             size_hint=(None, 1),
-            width=80,
-            halign="center",
-            valign="middle",
-            color=(1, 1, 1, 1),
+            background_color=(0, 0, 0, 0),
         )
+
+        self.gold_label = ImageLabel(
+            text="Gold: 0",
+            size_hint=(None, 1),
+            width=100,
+            img_y_offset=-0.05,
+            img_source=Gold.icon,
+        )
+
+        self.faith_label = ImageLabel(text="Faith: 0", size_hint=(None, 1), width=100, img_source=Faith.icon)
+
         self.turn_label = Label(
             text="Turn: 0",
             size_hint=(None, 1),
-            width=80,
+            width=100,
             halign="center",
             valign="middle",
             color=(1, 1, 1, 1),
@@ -140,12 +150,11 @@ class TopBar(BoxLayout, DirectObject):
         # Add them to the respective container
         # Left container can hold your "research" text
         self.left_container.add_widget(self.research_label)  # type: ignore
+        self.left_container.add_widget(self.culture_label)  # type: ignore
 
         # Center container for turn, culture, gold, etc.
-        self.center_container.add_widget(self.turn_label)  # type: ignore
-        self.center_container.add_widget(self.culture_label)  # type: ignore
         self.center_container.add_widget(self.gold_label)  # type: ignore
-        self.center_container.add_widget(self.science_label)  # type: ignore
+        self.center_container.add_widget(self.turn_label)  # type: ignore
         self.center_container.add_widget(self.faith_label)  # type: ignore
 
         self.is_build = True
@@ -159,14 +168,12 @@ class TopBar(BoxLayout, DirectObject):
         except InvalidPregameCondition:
             if self.research_label is not None:
                 self.research_label.text = "Researching: None"
+            if self.culture_label is not None:  # type: ignore
+                self.culture_label.text = "Culture: 0"
             if self.gold_label is not None:
                 self.gold_label.text = "Gold: 0"
             if self.faith_label is not None:
                 self.faith_label.text = "Faith: 0"
-            if self.science_label is not None:
-                self.science_label.text = "Science: 0"
-            if self.culture_label is not None:
-                self.culture_label.text = "Culture: 0"
             if self.turn_label is not None:
                 self.turn_label.text = "Turn: 0"
             return
@@ -175,10 +182,9 @@ class TopBar(BoxLayout, DirectObject):
             label is None
             for label in (
                 self.research_label,
+                self.culture_label,
                 self.gold_label,
                 self.faith_label,
-                self.science_label,
-                self.culture_label,
                 self.turn_label,
             )
         ):
@@ -188,10 +194,12 @@ class TopBar(BoxLayout, DirectObject):
             self.research_label.text = "Researching: None"
         else:
             self.research_label.text = f"Researching: {str(current_tech.name)}({str(player.tech.current_science)} / {str(player.tech.needed_science)})"  # type: ignore
+            self.research_label.image_source = str(current_tech.get_icon())  # type: ignore
+        self.culture_label.text = f"Culture: {floor(player.culture.culture.value)}"  # type: ignore
+
         self.gold_label.text = f"Gold: {floor(player.gold.gold.value)}"  # type: ignore
         self.faith_label.text = f"Faith: {floor(player.faith.faith.value)}"  # type: ignore
-        self.science_label.text = f"Science: {floor(player.science.science.value)}"  # type: ignore
-        self.culture_label.text = f"Culture: {floor(player.culture.culture.value)}"  # type: ignore
+
         self.turn_label.text = f"Turn: {turn}"  # type: ignore
 
     def reset(self):

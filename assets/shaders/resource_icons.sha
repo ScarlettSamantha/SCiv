@@ -1,0 +1,40 @@
+// resource_icons.sha
+
+//Cg
+void vshader(float4 vtx_position : POSITION,
+             float2 vtx_texcoord0 : TEXCOORD0,
+             uniform float4x4 mat_modelproj,
+             out float4 l_position : POSITION,
+             out float2 l_uv : TEXCOORD0)
+{
+    l_position = mul(mat_modelproj, vtx_position);
+    l_uv = vtx_texcoord0;
+}
+
+void fshader(float2 l_uv : TEXCOORD0,
+             uniform sampler2D icon_atlas,
+             uniform int icon_indices[16],
+             uniform int icon_count,
+             out float4 o_color : COLOR)
+{
+    float4 final_color = float4(0, 0, 0, 0);
+
+    const float ICONS_PER_ROW = 64.0; // 64x64 icon grid
+    const float ICON_SIZE = 1.0 / ICONS_PER_ROW;
+    const float GRID_SIZE = 4.0; // 4x4 icon grid per tile
+
+    for (int i = 0; i < icon_count; ++i) {
+        float2 cell_offset = float2(float(i % 4), float(i / 4)) / GRID_SIZE;
+        float2 local_uv = l_uv * GRID_SIZE - cell_offset;
+
+        if (all(local_uv >= 0.0) && all(local_uv <= 1.0)) {
+            int icon_index = icon_indices[i];
+            float2 icon_offset = float2(icon_index % 64, icon_index / 64) * ICON_SIZE;
+            float2 atlas_uv = icon_offset + local_uv * ICON_SIZE;
+            float4 sample = tex2D(icon_atlas, atlas_uv);
+            final_color += sample;
+        }
+    }
+
+    o_color = saturate(final_color); // Clamp to 0–1
+}

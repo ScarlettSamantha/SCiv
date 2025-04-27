@@ -108,7 +108,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         messenger.send("ui.update.ui.show_load")
 
     def open_options(self, instance: Widget):
-        print("Opening options...")
+        print("Opening options...")  # @TODO: Implement this method
 
     def return_to_main_menu(self, instance: Widget):
         messenger.send("ui.request_main_menu")

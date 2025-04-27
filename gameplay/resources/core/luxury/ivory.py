@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.hunting_camp import HuntingCamp
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -22,6 +23,7 @@ class Ivory(BaseLuxuryResource):
     }
     coverage = 0.3
     spawn_amount = 5.0
+    improvement_required = [HuntingCamp]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

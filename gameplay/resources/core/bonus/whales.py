@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.fishing_boats import FishingBoats
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -19,6 +20,7 @@ class Whales(BaseBonusResource):
     coverage = 0.9
     spawn_amount = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
+    improvement_required = [FishingBoats]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

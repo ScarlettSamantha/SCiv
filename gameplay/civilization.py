@@ -3,6 +3,7 @@ from random import choice
 from typing import List, Self
 
 from gameplay.leader import Leader
+from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr
 from system.effects import Effect
 
@@ -10,6 +11,8 @@ from system.effects import Effect
 class Civilization:
     name: T_TranslationOrStr = ""
     description: T_TranslationOrStr = ""
+    introduction: T_TranslationOrStr = ""
+    icon: str = Placeholder.getPlaceholderImagePathSmallIcon()
     city_names: List[T_TranslationOrStr] = []
     city_name_index: int = 0
 
@@ -17,7 +20,6 @@ class Civilization:
         self,
     ) -> None:
         self.dynamic_name = self.name
-        self.icon: str | None = None
         self._loadable = False
         self._leaders: List[Leader] = []
 

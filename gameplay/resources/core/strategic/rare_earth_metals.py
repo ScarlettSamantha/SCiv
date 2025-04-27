@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.mine import Mine
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -30,6 +31,7 @@ class RareEarthMetals(BaseStrategicResource):
     }
     spawn_amount = 3.0
     coverage = 0.5
+    improvement_required = [Mine]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

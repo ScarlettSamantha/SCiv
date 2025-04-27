@@ -109,12 +109,12 @@ The goal is to have an actual semi playable and resumable game and improved buil
 - [X] Map regeneration/reroll (with same settings)
 - [X] CI/CD, Would like a auto builder and checker running on my gitlab instance.
 - [X] Working research
-    - [ ] Resource specific improvements and resource system improvements.
+    - [X] Resource specific improvements and resource system improvements.
+- [X] Civic system implementation + city borders
+- [X] City/Empire borders drawn
 - [ ] Barbarians + Nature player
-- [ ] City/Empire borders drawn
-- [ ] Civic system implementation + city borders
-- [ ] Map gen parameters in GUI
 - [ ] Units dumb fighting (no war or detection of rivers etc, just mele no range), maybe UI for this.
+- [ ] Map gen parameters in GUI
 - [ ] Hide development things behind a toggle.
 - [ ] Settings menu
 - [ ] Basic documentation

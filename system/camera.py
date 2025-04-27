@@ -6,6 +6,7 @@ from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
 from panda3d.core import Camera as PandaCamera
 from panda3d.core import LPoint3f, LVecBase3f, MouseWatcher, NodePath
+from panda3d_kivy.core.window import WindowBase
 
 from gameplay.units.unit_base import UnitBaseClass
 from mixins.singleton import Singleton
@@ -55,6 +56,10 @@ class Camera(Singleton, DirectObject):
         # If you have a target NodePath to center on
         self.target: Optional[NodePath] = None
 
+        self._aspect_ratio = self.base.win.getXSize() / self.base.win.getYSize()  # type: ignore
+        self.win_x: int | float = self.base.win.getXSize()  # type: ignore
+        self.win_y: int | float = self.base.win.getYSize()  # type: ignore
+
         # Create pivot node
         self.pivot = self.base.render.attachNewNode("cameraPivot")  # type: ignore
         self.reset_pivot_position()
@@ -76,7 +81,7 @@ class Camera(Singleton, DirectObject):
         # Dragging state
         self.left_dragging = False
         self.right_dragging = False
-        self.last_mouse_pos = (0, 0)
+        self.last_mouse_pos: Tuple[int, int] = (0, 0)
 
         self.drag_threshold = 40  # 40 pixels to trigger rotation, 0 to disable
 
@@ -161,6 +166,8 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
+        self.accept("window-event", self.on_window_resize)
+
     def set_key(self, key: str, value: Any):
         self.keys[key] = value
 
@@ -199,6 +206,20 @@ class Camera(Singleton, DirectObject):
             return
         self.zoom = min(self.max_zoom, self.zoom + self.zoom_speed)
         self.update_camera_position()
+
+    def on_window_resize(self, window: WindowBase):
+        """Handler for window resize events."""
+        if window != self.base.win:  # type: ignore
+            return  # Only handle main window
+
+        self.win_x = window.getXSize()  # type: ignore
+        self.win_y = window.getYSize()  # type: ignore
+        if self.win_y != 0:  # type: ignore
+            self._aspect_ratio = self.win_x / self.win_y  # type: ignore
+        else:
+            self._aspect_ratio = 1.0
+
+        self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")  # type: ignore
 
     def update_camera_position(self):
         """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
@@ -333,9 +354,17 @@ class Camera(Singleton, DirectObject):
                     self.last_mouse_pos = (x, y)
 
             elif self.right_dragging:
-                pan_factor = 0.02  # Adjust sensitivity
-                move_x = (-delta_x * pan_factor) * cos(yaw_rad) - (delta_y * pan_factor) * sin(yaw_rad)  # type: ignore
-                move_y = (-delta_x * pan_factor) * sin(yaw_rad) + (delta_y * pan_factor) * cos(yaw_rad)  # type: ignore
+                # Get pixel delta (mouse is [-1, 1], so we map to pixels)
+                delta_px_x = (x - self.last_mouse_pos[0]) * self.win_x / 2
+                delta_px_y = (y - self.last_mouse_pos[1]) * self.win_y / 2
+
+                pan_speed = 0.015 * (self.zoom / 25)
+
+                # Rotate delta into world-space, so drag follows camera orientation
+                move_x = (-delta_px_x * pan_speed) * cos(yaw_rad) + (delta_px_y * pan_speed) * sin(yaw_rad)
+                move_y = (-delta_px_x * pan_speed) * sin(yaw_rad) - (delta_px_y * pan_speed) * cos(yaw_rad)
+
+                # Apply movement
                 x0, y0, z0 = self.pivot.getPos()  # type: ignore
                 self.pivot.setPos(x0 + move_x, y0 + move_y, z0)  # type: ignore
                 self.update_camera_position()

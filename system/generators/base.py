@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
+from gameplay.civic import CivicTree
+from gameplay.civics.core.tree.core import CoreCivicTree
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
 from gameplay.personality import Personality
@@ -46,6 +48,7 @@ class BaseGenerator(ABC):
         leader: Optional[Leader] = None,
         is_player: bool = False,
         tech_tree: Type[TechTree] = Core,
+        civic_tree: Type[CivicTree] = CoreCivicTree,
     ) -> Player:
         if leader is None:
             leader = civilization.random_leader()
@@ -61,6 +64,7 @@ class BaseGenerator(ABC):
         player: Player = Player(_name, turn_order, personality, civilization, leader)
         player.is_human = is_player
         player.tech.set_tech_tree(tech_tree())
+        player.civics.set_tree(civic_tree())
         if player.is_registered is False:
             player.register()
 

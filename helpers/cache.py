@@ -3,10 +3,12 @@ from weakref import ReferenceType, ref
 
 if TYPE_CHECKING:
     from main import SCIV
+    from system.atlas import AtlasGenerator
 
 
 class Cache:
     _instance: Optional["SCIV"] = None
+    _atlas: Optional["AtlasGenerator"] = None
 
     @classmethod
     def set_showbase_instance(cls, instance: "SCIV"):
@@ -28,3 +30,13 @@ class Cache:
     @classmethod
     def has_instance(cls) -> bool:
         return cls._instance is not None
+
+    @classmethod
+    def set_atlas(cls, atlas: "AtlasGenerator"):
+        cls._atlas = atlas
+
+    @classmethod
+    def get_atlas(cls) -> "AtlasGenerator":
+        if cls._atlas is None:
+            raise AssertionError("Atlas instance is not set.")
+        return cls._atlas

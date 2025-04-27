@@ -1,9 +1,12 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Self, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Self, Type
 
-from gameplay.player import Player
-from gameplay.tech import Tech
 from managers.player import PlayerManager
+
+if TYPE_CHECKING:
+    from gameplay.civic import Civic, CivicSubtree, CivicTree
+    from gameplay.player import Player
+    from gameplay.tech import Tech
 
 
 class ConditionalTypes(Enum):
@@ -101,6 +104,10 @@ class Conditions:
         """Invoke the conditions check."""
         return self.are_met(params=self.condition_params)
 
+    def __iter__(self) -> Iterator[Condition]:
+        """Iterate over the conditions."""
+        return iter(self._conditions)
+
     @classmethod
     def no_conditions(cls) -> Self:
         """Return a no-op conditions group."""
@@ -114,7 +121,9 @@ class BuildCondition(Condition):
 
 
 class ResearchCondition(Condition):
-    def __init__(self, tech: List[Type[Tech]] | Type[Tech], player: Optional[Player] = None, *args: Any, **kwargs: Any):
+    def __init__(
+        self, tech: List[Type["Tech"]] | Type["Tech"], player: Optional["Player"] = None, *args: Any, **kwargs: Any
+    ):
         if not isinstance(tech, list):
             tech = [tech]
         super().__init__(*args, **kwargs)
@@ -123,7 +132,7 @@ class ResearchCondition(Condition):
         self.required_params = ["player", "tech"]
         self._condition = self._research_condition
 
-    def _research_condition(self, player: Optional[Player], tech: List[Type[Tech]]) -> bool:
+    def _research_condition(self, player: Optional["Player"], tech: List[Type["Tech"]]) -> bool:
         """Check if the player has researched the tech."""
         if player is None:
             player = PlayerManager.session_player()
@@ -132,3 +141,51 @@ class ResearchCondition(Condition):
             if not player.has_researched_tech(t):
                 return False
         return True
+
+
+class CivicTreeUnlockedCondition(Condition):
+    def __init__(self, civic_tree: Type["CivicTree"], *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.params["civic_tree"] = civic_tree
+        self.required_params = ["civic_tree"]
+        self._condition = self._civic_tree_unlocked_condition
+
+    def _civic_tree_unlocked_condition(self, civic_tree: Type["CivicTree"], player: Optional["Player"] = None) -> bool:
+        """Check if the player has unlocked the civic tree."""
+        if player is None:
+            player = PlayerManager.session_player()
+        return player.has_civic_tree_unlocked(civic_tree)
+
+
+class CivicSubTreeUnlockedCondition(Condition):
+    def __init__(self, civic: Type["CivicSubtree"], *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.params["civic"] = civic
+        self.required_params = ["civic"]
+        self._condition = self._civic_subtree_unlocked_condition
+
+    def _civic_subtree_unlocked_condition(self, civic: Type["CivicSubtree"], player: Optional["Player"] = None) -> bool:
+        """Check if the player has unlocked the civic subtree."""
+        if player is None:
+            player = PlayerManager.session_player()
+        return player.has_civic_subtree_unlocked(civic)
+
+
+class CivicCondition(Condition):
+    def __init__(self, civic: Type["Civic"], player: Optional["Player"] = None, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.params["civic"] = civic
+        self.params["player"] = player
+        self.required_params = ["player", "civic"]
+        self._condition = self._civic_condition
+
+    def _civic_condition(self, civic: Type["Civic"], player: Optional["Player"] = None) -> bool:
+        """Check if the player has researched the civic."""
+        if player is None:
+            player = PlayerManager.session_player()
+
+        return player.has_civic(civic)
+
+    def get_civic(self) -> Type["Civic"]:
+        """Get the civic associated with this condition."""
+        return self.params.get("civic")  # type: ignore

@@ -6,9 +6,19 @@ from pathlib import Path
 from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
-from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import AntialiasAttrib, BitMask32, CardMaker, LRGBColor, NodePath, TextNode, Texture
+from panda3d.core import (
+    AntialiasAttrib,
+    BitMask32,
+    CardMaker,
+    ColorBlendAttrib,
+    LRGBColor,
+    NodePath,
+    PTAFloat,
+    SamplerState,
+    Shader,
+    Texture,
+)
 
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
@@ -19,11 +29,11 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
 from helpers.cache import Cache
-from helpers.colors import Colors, Tuple4f
-from managers.assets import AssetManager
+from helpers.colors import Colors
+from helpers.images import normalize_color_to_bytes
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, t_
-from managers.player import Player, PlayerManager
+from managers.player import PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
 from system.subsystems.hexgen.hex import Hex
@@ -34,6 +44,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.units.unit_base import UnitBaseClass
+    from managers.player import Player
 
 
 class CantBuildReason(Enum):
@@ -102,7 +113,7 @@ class BaseTile(BaseEntity):
         self.gameplay_height: int = 0
 
         # None is nature.
-        self.player: Optional[Player] = None
+        self.player: Optional["Player"] = None
 
         # Base health and if damagable declarations.
         self.damagable: bool = False
@@ -164,7 +175,7 @@ class BaseTile(BaseEntity):
         # Does this contain a city?
         self.city: Optional["City"] = None
         # Who, if anybody, is the owner of this tile?
-        self.owner: Optional[Player] = None
+        self.owner: Optional["Player"] = None
         # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
         # is this city being worked by a city?
@@ -190,15 +201,19 @@ class BaseTile(BaseEntity):
         )
         self.meshCollider: bool = True
 
-        self._showing_small_icons: bool = False
         self._showing_large_icons: bool = False
 
         self.effects: Effects = Effects(self)
         self.needs_tile_proecessing: bool = False
 
         self.tile_icon_group: Optional[NodePath] = None
-        self.mini_icons_card: Optional[NodePath] = None
         self.text_card: Optional[NodePath] = None
+        self.icon_overlay_card: Optional[NodePath] = None
+        self.icon_overlay: Optional[NodePath] = None
+        self.shader: Optional[Shader] = None
+        self.atlas: Optional[Any] = None
+        self.atlas_width: Optional[int] = None
+        self.atlas_height: Optional[int] = None
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -230,9 +245,6 @@ class BaseTile(BaseEntity):
 
         if self.tile_icon_group is None:
             raise AssertionError("Tile icon group not created.")
-
-        self.mini_icons_card = NodePath("mini_icons_card")
-        self.mini_icons_card.reparentTo(self.tile_icon_group)  # type: ignore
 
         self.text_card = NodePath("text_card")
         self.text_card.reparentTo(self.tile_icon_group)  # type: ignore
@@ -270,8 +282,6 @@ class BaseTile(BaseEntity):
             del state["city_name_texture_card_texture"]
         if "tile_icon_group" in state:
             del state["tile_icon_group"]
-        if "mini_icons_card" in state:
-            del state["mini_icons_card"]
         if "text_card" in state:
             del state["text_card"]
         if "_model" in state:
@@ -330,34 +340,6 @@ class BaseTile(BaseEntity):
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
-    def clear_large_icons(self) -> None:
-        """
-        Remove the main texture icon from the tile.
-        """
-        if self.tile_icon_group is not None:
-            self.tile_icon_group.removeNode()  # type: ignore
-            self.tile_icon_group = None
-            self._showing_large_icons = False
-
-    def clear_small_icons(self) -> None:
-        """
-        Remove all small icons and text overlays from the tile.
-        """
-        if self.mini_icons_card is not None:
-            self.mini_icons_card.removeNode()  # type: ignore
-            self.mini_icons_card = None
-            self._showing_small_icons = False
-        if self.text_card is not None:
-            self.text_card.removeNode()  # type: ignore
-            self.text_card = None
-
-    def clear_all_icons(self) -> None:
-        """
-        Remove all icons from the tile.
-        """
-        self.clear_large_icons()
-        self.clear_small_icons()
-
     def create_root_ui_node(self) -> None:
         self.texture_card = CardMaker(f"resource_icon_{self.id}")
         self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # type: ignore
@@ -385,249 +367,224 @@ class BaseTile(BaseEntity):
         if self.city_name_group is None:
             raise AssertionError("City name group not created.")
 
-        city_text = TextNode(self.city.name)
-        city_text.setText(self.city.name)  # type: ignore # this is to prevent the text from being empty.
+        from PIL import Image  # Needed for flip
 
-        # Load the font
-        font = AssetManager.load_font("assets/fonts/Washington.ttf")
-        if font:
-            font.setPolyMargin(0.01)  # type: ignore # Improve clarity
-            try:
-                font.setPixelsPerUnit(250)  # type: ignore # Improve clarity
-            except AssertionError:
-                pass  # For some reason some letters are not showing up. This is a workaround. they are replaced with []
-            city_text.setFont(font)  # type: ignore
+        from helpers.images import generate_city_nameplate, pil_image_to_panda3d_texture
+        from managers.assets import AssetManager
 
-        # Load and verify texture
-        texture = AssetManager.load_texture("assets/city_name_border.png")
-        if not texture:
-            raise RuntimeError("Failed to load city name border texture.")
-        city_text.setCardTexture(texture)
+        # Load the assets
+        left_img = AssetManager.load_pil_image("assets/icons/city_plate_left.png")
+        middle_img = AssetManager.load_pil_image("assets/icons/city_plate_middle.png")
+        right_img = AssetManager.load_pil_image("assets/icons/city_plate_right.png")
+        font = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
 
-        # Set text appearance
-        text_color: Tuple4f = Colors.WHITE if self.city.player is None else self.city.player.color
-        city_text.setTextColor(*text_color)
-        city_text.setAlign(TextNode.ACenter)  # type: ignore
-        city_text.setCardDecal(True)
+        if not (left_img and middle_img and right_img and font):
+            raise RuntimeError("Failed to load nameplate assets.")
 
-        if self.city.is_capital:
-            city_text.setCardAsMargin(0.5, 0.2, 0.25, 0.25)
-        else:
-            city_text.setCardAsMargin(0.3, 0.3, 0.25, 0.25)
+        # Generate the PIL nameplate
+        pil_nameplate = generate_city_nameplate(
+            left_img,
+            middle_img,
+            right_img,
+            str(self.city.name),
+            self.city.is_capital,
+            font=font,
+            padding=(20, 8),  # horizontal/vertical padding
+            text_offset_y=32,
+            star_img=AssetManager.load_pil_image("assets/icons/capital_icon.png"),
+            star_offset_y=32,
+            star_offset_x=-16,
+            text_color=normalize_color_to_bytes(self.owner.color) if self.owner else (255, 0, 0, 255),  # type: ignore
+        )
 
-        city_np = self.city_name_group.attachNewNode(city_text)
+        # --- Stretch PIL canvas to force slim aspect ratio ---
+        forced_aspect_ratio = 4.5
+        width = pil_nameplate.width
+        desired_width = int(pil_nameplate.height * forced_aspect_ratio)
 
-        city_np.setPos(0, 0, 2.8)  # Position it above the city
-        city_np.setHpr((0, 45, 0))
+        if width < desired_width:
+            new_img = Image.new("RGBA", (desired_width, pil_nameplate.height), (0, 0, 0, 0))
+            x_offset = (desired_width - width) // 2
+            new_img.paste(pil_nameplate, (x_offset, 0))
+            pil_nameplate = new_img
 
-        # Ensure a fixed card size
-        card_size = 1.0  # Keep the card size fixed
-        city_np.setScale(card_size)
+        # --- Fix upside down issue ---
+        pil_nameplate = pil_nameplate.transpose(Image.FLIP_TOP_BOTTOM)  # type: ignore
 
-        # Handle text overflow by adjusting text scale
-        max_width = 2.0  # Max width the text should fit within
-        base_font_size = 1.0  # Default font scale
+        # Convert to Panda3D texture
+        city_texture = pil_image_to_panda3d_texture(pil_nameplate)
 
-        text_width = city_text.getWidth()
-        if text_width > max_width:
-            text_scale = max_width / text_width
-        else:
-            text_scale = base_font_size
+        # Build the city name card
+        card_maker = CardMaker(f"city_nameplate_{self.id}")
+        aspect_ratio = pil_nameplate.width / pil_nameplate.height
+        card_width = 2.5  # wider
+        card_height = card_width / aspect_ratio
+        card_maker.setFrame(-card_width / 2, card_width / 2, -card_height / 2, card_height / 2)
 
-        city_text.set_glyph_scale(text_scale)  # type: ignore
+        city_np = self.city_name_group.attachNewNode(card_maker.generate())  # type: ignore
+        city_np.setTexture(city_texture)
+        city_np.setTransparency(True)
+        city_np.setColor(1, 1, 1, 1)
+        city_np.clearColorScale()
+        # Proper orientation
+        city_np.setHpr(0, 0, 0)
+        city_np.setBillboardPointEye()
+        city_np.setPos(0, 0, 2.8)
+        city_np.setScale(1.0)
 
-        # Ensure visibility and proper rendering
-        city_np.setTransparency(1)
-        city_np.setCollideMask(BitMask32.bit(0))  # type: ignore
         city_np.setBin("fixed", 50)
         city_np.setDepthWrite(True)
         city_np.setDepthTest(True)
         city_np.setTwoSided(True)
         city_np.setAntialias(AntialiasAttrib.MAuto)
-        city_np.set_billboard_point_eye()  # type: ignore # Always face the camera.
 
-        # If the city is the capital, add an icon before the name
-        if self.city.is_capital:
-            capital_icon = OnscreenImage(image="assets/icons/capital_icon.png")
-            capital_icon.reparentTo(city_np)
-            capital_icon.setScale(0.2)  # Adjust size as needed
-            capital_icon.set_antialias(AntialiasAttrib.MAuto)  # type: ignore
-            capital_icon.setTransparency(1)
-
-            capital_icon.setBin("fixed", 51)  # Higher than text
-            capital_icon.setDepthWrite(False)
-            capital_icon.setDepthTest(False)
-            capital_icon.setPos(-1.25, 0.265, 0)
-
-        # Ensure the city_name_group is reparented to a visible node.
         if self.models:
             self.city_name_group.reparentTo(self.models[0])
 
     def add_icon_to_tile(self) -> None:
-        """
-        Append the texture as a separate node instead of replacing existing models,
-        then set up the structure to later add mini icons and text overlays as separate cards.
-        """
-        resources: Dict[str, BaseResource] = self.resources.flatten()
-        resource = list(resources.values())[0] if resources else None
-
+        """Apply shader overlay for resource icons using atlas UV rects."""
         if self.tile_icon_group is None:
             self.create_root_ui_node()
 
-        if resource is not None:
-            texture_path = resource.icon
-            if not texture_path:
-                raise AssertionError(f"Resource {resource} has no icon set, cannot add texture.")
+        if self.icon_overlay:
+            self.icon_overlay.removeNode()
+            self.icon_overlay = None
+        if self.icon_overlay_card:
+            self.icon_overlay_card = None
+        if self.tile_icon_group:
+            self.tile_icon_group.node().removeAllChildren()  # type: ignore
 
-            # Create the main texture card node
-            self.texture_card_texture = NodePath(self.texture_card.generate())  # type: ignore
-            if texture_path not in self.texture_cache:
-                self.texture_cache[texture_path] = self.base.loader.load_texture(texturePath=texture_path)
-                self.texture_cache[texture_path].set_format(Texture.F_srgb_alpha)  # type: ignore
-            texture = self.texture_cache[texture_path]
+        resources = list(self.resources.flatten().values())
+        basic_resource = self.get_tile_yield()
 
-            if not self.models:
-                return
+        if self.city:
+            city_tile_yields = self.city.get_yield()
+            basic_resource += city_tile_yields
 
-            if self.tile_icon_group is None:
-                raise AssertionError("Tile icon group not created.")
+        basic_resource = basic_resource.export_basic()
 
-            # Reparent the main icon card to the common group.
-            self.texture_card_texture.reparentTo(self.tile_icon_group)
-            self.texture_card_texture.setTexture(texture, 1)
-            self.texture_card_texture.setPos((-0.55, 0, 0.151))
-            self.texture_card_texture.setHpr((0, 270, 270))
-            self.texture_card_texture.setScale(6.0)
-            self.texture_card_texture.setTransparency(1)
+        self.icon_overlay_card = CardMaker(f"icon_overlay_{self.id}")
+        self.icon_overlay_card.set_frame(-0.55, 0.55, -0.55, 0.85)  # type: ignore
+        self.icon_overlay = NodePath(self.icon_overlay_card.generate())  # type: ignore
+        self.icon_overlay.set_pos(0.1, 0, 0.17)  # type: ignore
+        self.icon_overlay.set_hpr(90, -90, 0)  # type: ignore
+        self.icon_overlay.set_scale(1.0)  # type: ignore
+        self.icon_overlay.setTransparency(True)
+        self.icon_overlay.setAttrib(ColorBlendAttrib.makeOff())  # type: ignore
+        self.icon_overlay.setBin("fixed", 60)
+        self.icon_overlay.reparent_to(self.tile_icon_group)  # type: ignore
 
-            self._showing_large_icons = True
+        self.shader = Shader.load(  # type: ignore
+            Shader.SL_GLSL, "assets/shaders/resource_icons.vert.glsl", "assets/shaders/resource_icons.frag.glsl"
+        )
+        self.icon_overlay.setShader(self.shader)  # type: ignore
 
-    def add_small_icons(self, force: bool = False) -> None:
-        city_tile_yields = self.city.get_yield() if self.city is not None else Yields.nullYield()
+        self.atlas = Cache.get_atlas()
+        atlas_tex = self.atlas.get_panda3d_texture()
+        atlas_tex.setWrapU(Texture.WMClamp)
+        atlas_tex.setWrapV(Texture.WMClamp)
+        atlas_tex.setFormat(Texture.F_srgb_alpha)
+        atlas_tex.setMinfilter(SamplerState.FT_linear)
+        atlas_tex.setMagfilter(SamplerState.FT_linear)
+        atlas_tex.setAnisotropicDegree(0)
+        self.icon_overlay.setShaderInput("icon_atlas", atlas_tex)
+        self.atlas_width, self.atlas_height = self.atlas.atlas_image.size
 
-        yields = self.get_tile_yield() + city_tile_yields
-        basic_resources: List[BaseResource] = yields.export_basic()
+        uv_rects = PTAFloat.emptyArray(4 * 7)  # 1 main + 6 small slots  # type: ignore
 
-        if len(basic_resources) == 0:
-            return
+        # Fill slots
+        slots: List[Optional[Union[str, BaseResource]]] = [None] * 7  # 0 = main, 1-6 = small
+        if resources or self.city:
+            if self.city:
+                slots[0] = self.city.get_population_icon()
+            else:
+                slots[0] = resources[0]
 
-        if self.tile_icon_group is None:
-            self.create_root_ui_node()
+        for i, resource in enumerate(basic_resource):
+            slots[i + 1] = resource
 
-        # Create a separate node for mini icons if not already created.
-        if (self.mini_icons_card is None or force) and self.tile_icon_group is not None:
-            self.mini_icons_card = NodePath("mini_icons_card")
-            self.mini_icons_card.reparentTo(self.tile_icon_group)
+        for i, res in enumerate(slots):
+            if res is None:
+                uv_rects[i * 4 + 0] = 0.0
+                uv_rects[i * 4 + 1] = 0.0
+                uv_rects[i * 4 + 2] = 0.0
+                uv_rects[i * 4 + 3] = 0.0
+                continue
 
-        # Create a separate node for text overlays if not already created.
-        if (self.text_card is None or force) and self.tile_icon_group is not None:
-            self.text_card = NodePath("text_card")
-            self.text_card.reparentTo(self.tile_icon_group)
+            if isinstance(res, BaseResource) and res.value == 0:
+                continue
 
-        # Define grid positions relative to the tile icon group.
-        grid_positions: List[Tuple[float, float, float]] = [
-            # top-bottom (- is up), left-right (- is left), z
-            (0.2, -0.48, 0.18),  # Top row, left # gold
-            (0.33, 0.0, 0.18),  # Top row, center # production
-            (0.15, 0.52, 0.18),  # Top row, right # food
-            (0.65, -0.35, 0.18),  # Bottom row, left # science
-            (0.65, 0.3, 0.18),  # Bottom row, right # culture
-        ]
-        grid_positions_text: List[Tuple[float, float, float]] = [
-            (0.25, -0.5, -0.20),  # Top row, left
-            (0.40, 0, -0.20),  # Top row, center
-            (0.25, 0.5, -0.2),  # Top row, right
-            (0.8, -0.4, -0.2),  # Bottom row, left
-            (0.8, 0.4, -0.2),  # Bottom row, right
-        ]
-        font = AssetManager.load_font("assets/fonts/Washington.ttf")
+            if i >= 1 and isinstance(res, BaseResource):
+                virtual_path = res.get_numeric_icon()
+            else:
+                virtual_path = res if isinstance(res, str) else res.icon
 
-        for i, resource in enumerate(basic_resources):
-            icon_path = resource.icon
+            if self.atlas is None:
+                raise AssertionError("Atlas not initialized.")
 
-            # Create mini icon card.
-            small_icon_card = CardMaker("small_icon")
-            small_icon_card.setFrame(-0.05, 0.05, -0.05, 0.05)
-            small_icon_np = NodePath(small_icon_card.generate())  # type: ignore
+            pos = self.atlas.get_position_for_virtual_path(virtual_path)
 
-            if icon_path not in self.texture_cache:
-                self.texture_cache[icon_path] = AssetManager.load_texture(path=icon_path)
-                self.texture_cache[icon_path].set_format(Texture.F_srgb_alpha)  # type: ignore
-            texture = self.texture_cache[icon_path]
+            if pos is None:
+                raise AssertionError(f"Position not found for virtual path: {virtual_path}")
 
-            if not texture:
-                raise AssertionError(f"Failed to load texture for small icon: {icon_path}")
+            size = self.atlas.get_dimensions_for_virtual_path(virtual_path)
+            if not size:
+                continue
 
-            if self.mini_icons_card is None:
-                raise AssertionError("Mini icons card not created.")
+            x, y = pos
+            w, h = size
 
-            small_icon_np.setTexture(texture, 1)
-            small_icon_np.setPos(grid_positions[i])
-            small_icon_np.setHpr(0, 270, -90)
-            small_icon_np.setScale(3.0)
-            small_icon_np.setTransparency(1)
-            small_icon_np.setCollideMask(BitMask32.bit(0))  # type: ignore
-            # Attach mini icon to its dedicated card.
-            small_icon_np.reparentTo(self.mini_icons_card)
+            u0 = x / self.atlas_width
+            v1 = 1.0 - (y / self.atlas_height)  # top
+            u1 = (x + w) / self.atlas_width
+            v0 = 1.0 - ((y + h) / self.atlas_height)  # bottom
 
-            # Create a text node for the number overlay.
-            text_node = TextNode(f"icon_counter_{i}")
-            text_node.setText(str(int(resource.value)))
-            text_node.setFont(font)
-            text_node.setTextColor(1, 1, 1, 1)  # White text.
-            text_node.setAlign(TextNode.ACenter)
-            text_node.setShadow(0, 0)  # Slight shadow.
-            text_node.setShadowColor(0, 0, 0, 1)  # Black shadow.
+            uv_rects[i * 4 + 0] = u0
+            uv_rects[i * 4 + 1] = v0
+            uv_rects[i * 4 + 2] = u1
+            uv_rects[i * 4 + 3] = v1
 
-            if self.text_card is None:
-                raise AssertionError("Text card not created.")
+        self.icon_overlay.setShaderInput("uv_rects", uv_rects)
+        self.icon_overlay.setShaderInput("icon_count", 7)
 
-            # Attach the text node to the separate text card.
-            text_np = self.text_card.attachNewNode(text_node)
-            # Position the text above the mini icon.
-            x, y, z = grid_positions_text[i]
-            text_np.setHpr(90, -90, 0)
-            text_np.setPos(x, y, z + 0.4)
-            text_np.setScale(0.3)
-        self._showing_small_icons = True
+        self._showing_large_icons = True
 
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
-        """
-        Render the tile.
-        - If no models have been rendered yet, the default terrain model is loaded.
-        - If render_all is True, all models are unrendered and the default terrain is re-rendered.
-        - If model_index is provided, only that model is unrendered and re-rendered.
-        """
         if not self.tile_terrain:
             self.logger.warning(f"Tile {self} has no terrain set, not rendering.")
             return
+
         self.set_color(Colors.RESTORE)
         self.calculate()
 
-        # If no models exist, render the default terrain.
         if not self.models and len(self.improvements()) == 0:
             self._render_default_terrain()
+            self.create_root_ui_node()
             return
 
         if render_all:
             self.unrender_all()
             self._render_improvements()
             self._render_default_terrain()
+            self.create_root_ui_node()
         elif model_index is not None:
             self.unrender_model(model_index)
             if model_index == 0:
                 self._render_default_terrain()
             elif model_index == 1:
                 self._render_improvements()
+            self.create_root_ui_node()
         else:
             self._render_default_terrain()
+            self.create_root_ui_node()
 
-        if self._showing_large_icons:
-            self.clear_large_icons()
-            self.add_icon_to_tile()
-        if self._showing_small_icons:
-            self.clear_small_icons()  # This will clear the small icon showing flag as well. so make sure to set it again.
-            self.add_small_icons()
+        # Clear old icon overlay
+        if self.icon_overlay is not None:
+            self.icon_overlay.removeNode()
+            self.icon_overlay = None
+
+        self.add_icon_to_tile()
+
         if self.city is not None:
             self.add_city_name()
 
@@ -638,6 +595,9 @@ class BaseTile(BaseEntity):
 
         if len(self.effects) > 0:
             self.effects.on_turn_end(turn)
+
+        if self.city:
+            self.add_icon_to_tile()
 
     def _render_default_terrain(self) -> None:
         # Get the model path from the terrain (kept as a relative path)
@@ -715,11 +675,6 @@ class BaseTile(BaseEntity):
         self.unrender_all()
 
     def unrender_all(self, icons: bool = False) -> None:
-        """
-        Remove all models from the scene.
-        """
-        if icons:
-            self.clear_all_icons()
         for node in self.models:
             node.removeNode()
         self.models.clear()
@@ -731,8 +686,6 @@ class BaseTile(BaseEntity):
         if 0 <= model_index < len(self.models):
             self.models[model_index].removeNode()
             del self.models[model_index]
-        else:
-            print(f"No model at index {model_index} to unrender.")
 
     def rerender(self) -> None:
         """
@@ -782,7 +735,7 @@ class BaseTile(BaseEntity):
         if self.tile_terrain:
             return self.tile_terrain.color()
         else:
-            print(f"No terrain set for tile, returning default color: {self.__class__.__name__}")
+            self.logger.error(f"No terrain set for tile, returning default color: {self.__class__.__name__}")
             return (0, 0, 0)
 
     def model(self) -> str:
@@ -795,16 +748,12 @@ class BaseTile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        Yield = self.tile_yield
-        for resource in self.resources.flatten().values():  # We add the resource yield to the tile yield.
-            Yield += resource.tile_yield
-
-        for (
-            resource
-        ) in self.get_improved_resources():  # if the resource is improved, we add the yield from the improvement.
-            Yield += resource.tile_yield_on_improvement
-
-        return Yield
+        yield_copy = deepcopy(self.tile_yield)
+        for resource in self.resources.flatten().values():
+            yield_copy += resource.tile_yield
+        for resource in self.get_improved_resources():
+            yield_copy += resource.tile_yield_on_improvement
+        return yield_copy
 
     def get_resources(self) -> Resources:
         return self.resources
@@ -847,6 +796,11 @@ class BaseTile(BaseEntity):
             data = unit.to_gui()
             _units.append(f"{data['tag']} {data['name']}")
 
+        yields = self.get_tile_yield()
+        if self.city:
+            city_yields = self.city.get_yield()
+            yields += city_yields
+
         data: Dict[str, Any] = {
             "tag": self.tag,
             "x": self.x,
@@ -860,7 +814,7 @@ class BaseTile(BaseEntity):
             "owner": str(self.owner.name) if self.owner else t_("civilization.nature.name"),
             "city": self.city,
             "improvements": " | ".join(_improvements),
-            "tile_yield": str(self.tile_yield),
+            "tile_yield": str(yields),
             "temperature": self.temperature,
             "resources": self.resources.flatten(),
             "features": self.features,
@@ -907,16 +861,10 @@ class BaseTile(BaseEntity):
 
     def found(
         self,
-        player: Optional[Player] = None,
+        player: Optional["Player"] = None,
         population: int = 1,
-        capital: Optional[bool] = None,  # None is Auto detect
+        capital: Optional[bool] = None,
     ) -> bool:
-        """
-        Found a city on this tile. If no player is provided, the current player is used.
-        If no population is provided, the default is 1. If no capital is provided, the default is True if the player has no cities.
-
-        The messeging system is used to inform the player of the city being founded via the action(gameplay.actions.unit.found) that calls this mostly.
-        """
         from gameplay.city import City
         from gameplay.terrain.city import City as CityTerrain
 
@@ -935,16 +883,18 @@ class BaseTile(BaseEntity):
             auto_claim_radius=1,
         )
 
-        self.unrender_model(0)
         self.set_terrain(CityTerrain())
+
         self.owner = player
         self.owner.tiles.add_tile(self)
-        if self.owner.capital is not None:  # we have a capital
-            self.owner.capital.de_capitalize()  # We tell the current capital to de-capitalize so it can be done with something in the future, for now its just a property set.
+
+        if self.owner.capital is not None:
+            self.owner.capital.de_capitalize()
+
         self.owner.capital = self.city
 
+        self.calculate()
         self.rerender()
-        self.add_city_name()
         return True
 
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:
@@ -1016,9 +966,6 @@ class BaseTile(BaseEntity):
         resource: Type[BaseResource] | None = hex.get_gameplay_resource()
         if resource is not None:
             self.instance_resource(resource)
-
-    def is_showing_small_icons(self) -> bool:
-        return self._showing_small_icons
 
     def is_showing_large_icons(self) -> bool:
         return self._showing_large_icons

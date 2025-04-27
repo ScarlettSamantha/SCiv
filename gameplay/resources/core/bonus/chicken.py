@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+from gameplay.improvements.core.resources.farm import Farm
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -27,6 +28,7 @@ class Chicken(BaseBonusResource):
     }
     spawn_amount = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
+    improvement_required = [Farm]
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

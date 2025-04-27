@@ -19,4 +19,4 @@ class Palace(BaseCityImprovement):
         self.amount_resource_needed = Yields(production=50)
         self.resource_needed: Type["BasicBaseResource"] = Production
 
-        self.tile_yield_improvement = Yields(gold=2, production=2, food=2, science=2, culture=2, faith=2)
+        self.tile_yield_improvement = Yields(gold=5, production=2, food=2, science=2, culture=2, faith=2)

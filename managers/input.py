@@ -121,7 +121,7 @@ class Input(Singleton, DirectObject):
             return  # Input is disabled
 
         if not self.base.mouseWatcherNode.hasMouse():  # type: ignore
-            print("No mouse in window, cannot pick.")
+            self.logger.warning("No mouse in window, cannot pick.")
             return
 
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore

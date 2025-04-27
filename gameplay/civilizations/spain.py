@@ -1,4 +1,5 @@
 from typing import Any
+
 from gameplay.civilization import Civilization
 from managers.i18n import t_
 
@@ -28,6 +29,7 @@ class Spain(Civilization):
         t_("cities.spain.granada"),
         t_("cities.spain.elche"),
     ]
+    introduction = t_("civilization.spain.introduction")
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
