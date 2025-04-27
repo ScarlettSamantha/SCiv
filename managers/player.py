@@ -13,7 +13,8 @@ class PlayerManager(BaseManager):
         int, "Player"
     ] = {}  # Players are stored in a dictionary with the key being the turn order. recalculated each turn.
     _session_player: "Player | None" = None
-    _nature_player: None = None
+    _nature_player: "Player | None" = None
+    _barbarian_player: "Player | None" = None
 
     @classmethod
     def load(cls, data: Dict[str, "Player"]) -> None:
@@ -76,6 +77,18 @@ class PlayerManager(BaseManager):
     @classmethod
     def get_nature(cls) -> Optional["Player"]:
         return cls._nature_player
+
+    @classmethod
+    def set_nature(cls, player: "Player") -> None:
+        cls._nature_player = player
+
+    @classmethod
+    def get_barbarian(cls) -> Optional["Player"]:
+        return cls._barbarian_player
+
+    @classmethod
+    def set_barbarian(cls, player: "Player") -> None:
+        cls._barbarian_player = player
 
     @classmethod
     def is_session_player(cls, player: "Player") -> bool:

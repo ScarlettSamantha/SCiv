@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
+from gameplay.ai.implementations.barbarians import BarbariansAI
+from gameplay.ai.implementations.enemy import EnemyAI
+from gameplay.ai.implementations.nature import NatureAI
+from gameplay.ai.implementations.player import PlayerAI
 from gameplay.civic import CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from gameplay.civilization import Civilization
@@ -49,6 +53,8 @@ class BaseGenerator(ABC):
         is_player: bool = False,
         tech_tree: Type[TechTree] = Core,
         civic_tree: Type[CivicTree] = CoreCivicTree,
+        is_nature: bool = False,
+        is_barbarian: bool = False,
     ) -> Player:
         if leader is None:
             leader = civilization.random_leader()
@@ -62,21 +68,47 @@ class BaseGenerator(ABC):
             _name: str = get_i18n().lookup(name)
 
         player: Player = Player(_name, turn_order, personality, civilization, leader)
+
         player.is_human = is_player
+        player.is_nature = is_nature
+        player.is_barbarian = is_barbarian
+
         player.tech.set_tech_tree(tech_tree())
         player.civics.set_tree(civic_tree())
+
         if player.is_registered is False:
             player.register()
 
         return player
 
+    def assign_ai(self, player: Player) -> None:
+        """
+        Assigns an AI class to a player
+        """
+        if player.is_human:
+            ai = PlayerAI(player)
+        elif player.is_nature:
+            ai = NatureAI(player)
+        elif player.is_barbarian:
+            ai = BarbariansAI(player)
+        else:
+            ai = EnemyAI(player)
+
+        player.set_ai(ai)
+
     def setup_players(self, player_civilization: Type[Civilization]) -> List[Player] | None:
         players: List[Player] = []
         civs_ingame: List[Type[Civilization]] = []
 
-        for i in range(self.config.num_enemies + 1):  # +1 for the player
+        for i in range(self.config.num_enemies + 3):  # +1 for the player
             if i == 0:  # Player
                 chosen_civilization: Type[Civilization] = player_civilization
+                civs_ingame.append(chosen_civilization)
+            elif i == 1:  # Nature
+                chosen_civilization: Type[Civilization] = CivilizationRepository.get("nature")  # type: ignore
+                civs_ingame.append(chosen_civilization)
+            elif i == 2:  # Barbarians
+                chosen_civilization: Type[Civilization] = CivilizationRepository.get("barbarians")
                 civs_ingame.append(chosen_civilization)
             else:  # AI
                 chosen_civilization: Type[Civilization] = CivilizationRepository.random()  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
@@ -115,11 +147,22 @@ class BaseGenerator(ABC):
                 leader=None,  # None means it will pick from its own list of registered leaders
                 turn_order=i,
                 is_player=i == 0,
+                is_nature=i == 1,
+                is_barbarian=i == 2,
             )
             player.id = str(i)
 
             players.append(player)
-            PlayerManager.add(player, i == 0)
+
+            if player.is_human:
+                PlayerManager.add(player, True)
+            elif player.is_nature:
+                PlayerManager.set_nature(player)
+            elif player.is_barbarian:
+                PlayerManager.set_barbarian(player)
+            else:
+                PlayerManager.add(player, False)
+
         return players
 
     def place_starting_units(
@@ -144,6 +187,9 @@ class BaseGenerator(ABC):
             return (land_tiles / max(1, len(neighbors))) >= threshold
 
         for player in PlayerManager.players().values():
+            if player.is_nature or player.is_barbarian:  # Skip nature and barbarian players as they don't have settlers
+                continue
+
             unit: Settler = Settler()
             unit.owner = player
             spawn_tile: Optional[BaseTile] = None

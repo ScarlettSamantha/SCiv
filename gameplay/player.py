@@ -29,6 +29,7 @@ from system.effects import Effect, Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.ai.core import AI
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
     from gameplay.units.unit_base import UnitBaseClass
@@ -54,9 +55,14 @@ class Player(BaseEntity):
         self.identifier: str | None = None
         self.color: Tuple4f = color if color else Colors.sequence()
 
+        self.ai: Optional["AI"] = None
+
         self.turn_order: int = turn_order
 
         self.is_human: int = 0
+        self.is_nature: bool = False
+        self.is_barbarian: bool = False
+
         self.is_being_controlled: int = 0
         self.instance_controller: int = 0
 
@@ -301,3 +307,9 @@ class Player(BaseEntity):
             if (_tile := city.get_next_border_growth_tile()) is not None:
                 tiles[(_tile.x, _tile.y)] = _tile
         return tiles
+
+    def get_ai(self) -> Optional["AI"]:
+        return self.ai
+
+    def set_ai(self, ai: "AI") -> None:
+        self.ai = ai

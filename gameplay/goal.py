@@ -1,2 +1,0 @@
-class Goal:
-    pass
