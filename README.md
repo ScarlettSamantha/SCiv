@@ -232,7 +232,7 @@ This should be the first real "playable" version that should be some level of fu
 | [Greece](./ideas/civs/greece.md)                   | [Ancient Greece](https://en.wikipedia.org/wiki/Ancient_Greece)         | [code](openciv/gameplay/civilization/greece.py)          |
 | [Japan](./ideas/civs/japan.md)                     | [History of Japan](https://en.wikipedia.org/wiki/History_of_Japan)     | [code](openciv/gameplay/civilization/japan.py)           |
 | [Korea](./ideas/civs/korea.md)                     | [History of Korea](https://en.wikipedia.org/wiki/History_of_Korea)     | [code](openciv/gameplay/civilization/korea.py)           |
-| [Low Countries](./ideas/civs/low_countries.md)     | [Low Countries](https://en.wikipedia.org/wiki/Low_Countries)           | [code](openciv/gameplay/civilization/low_countries.py)   |
+| [Low Countries](./ideas/civs/netherlands.md)     | [Low Countries](https://en.wikipedia.org/wiki/netherlands)           | [code](openciv/gameplay/civilization/netherlands.py)   |
 | [Ottoman](./ideas/civs/ottoman.md)                 | [Ottoman Empire](https://en.wikipedia.org/wiki/Ottoman_Empire)         | [code](openciv/gameplay/civilization/ottoman.py)         |
 | [Persia](./ideas/civs/persia.md)                   | [Persian Empire](https://en.wikipedia.org/wiki/Persian_Empire)         | [code](openciv/gameplay/civilization/persia.py)          |
 | [Rome](./ideas/civs/rome.md)                       | [Ancient Rome](https://en.wikipedia.org/wiki/Ancient_Rome)             | [code](openciv/gameplay/civilization/rome.py)            |

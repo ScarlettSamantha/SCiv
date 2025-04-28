@@ -6,7 +6,7 @@ class William(Leader):
     def __init__(self) -> None:
         super().__init__(
             key="core.leaders.william",
-            name=t_("civilization.low_countries.leaders.william.name"),
-            description=t_("civilization.low_countries.leaders.william.description"),
-            icon="civilization/low_countries/leaders/william/leader_icon.png",
+            name=t_("civilization.netherlands.leaders.william.name"),
+            description=t_("civilization.netherlands.leaders.william.description"),
+            icon="civilization/netherlands/leaders/william/leader_icon.png",
         )

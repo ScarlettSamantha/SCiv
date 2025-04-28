@@ -1,5 +1,5 @@
 from heapq import heappop, heappush
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
 from managers.world import World
 
@@ -25,6 +25,30 @@ class TileRepository:
         if _tile:
             return _tile
         return None
+
+    @classmethod
+    def search(cls, callback: Callable[["BaseTile"], bool]) -> List["BaseTile"]:
+        """
+        Search for a tile in the grid using a callback function.
+
+        :param tile: The starting tile.
+        :param callback: A function that takes a tile and returns True if it matches the search criteria.
+        :return: The first tile that matches the criteria, or None if no match is found.
+        """
+        tiles: List["BaseTile"] = []
+        for _tile in World.get_singleton_instance().grid.values():
+            if callback(_tile):
+                tiles.append(_tile)
+        return tiles
+
+    @classmethod
+    def search_passable_land(cls) -> List["BaseTile"]:
+        """
+        Search for all passable land tiles in the grid.
+
+        :return: A list of passable land tiles.
+        """
+        return cls.search(lambda tile: tile.is_passable() and not tile.is_water)
 
     @classmethod
     def get_cities_in_radius(cls, tile: "BaseTile", radius: int) -> List["City"]:

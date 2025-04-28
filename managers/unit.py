@@ -15,6 +15,9 @@ class Unit(Singleton):
     def __init__(self, base: "SCIV"):
         self.base: "SCIV" = base
 
+    def all(self) -> Dict[str, "UnitBaseClass"]:
+        return self.units
+
     def find_unit(self, tag: str) -> Optional["UnitBaseClass"]:
         return self.units.get(tag, None)
 

@@ -58,3 +58,6 @@ class CivicsManager(BaseManager):
             if isinstance(activated_civic, civic):
                 return True
         return False
+
+    def __len__(self) -> int:
+        return len(self.civics_activated)

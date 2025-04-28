@@ -49,6 +49,12 @@ class PlayerManager(BaseManager):
                 return True
         return False
 
+    def on_game_start(self):
+        self.get_nature().on_game_start()
+
+        for _, player in self._players.items():
+            player.on_game_start()
+
     @classmethod
     def get(cls, turn: int) -> "Player":
         return cls._players[turn]
@@ -75,7 +81,9 @@ class PlayerManager(BaseManager):
         return cls._session_player
 
     @classmethod
-    def get_nature(cls) -> Optional["Player"]:
+    def get_nature(cls) -> "Player":
+        if cls._nature_player is None:
+            raise InvalidPregameCondition("No nature player has been set.")
         return cls._nature_player
 
     @classmethod

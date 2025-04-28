@@ -1,5 +1,6 @@
 import weakref
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Dict, Tuple, Type
 
 from gameplay._units import Units
 from gameplay.ai.goal import Goal, Goals
@@ -7,17 +8,24 @@ from gameplay.ai.memory import Memories, Memory
 from gameplay.ai.task import Task, Tasks
 from gameplay.cities import Cities
 from gameplay.personality import Personality
-from gameplay.player import Player
 from gameplay.player_tiles import PlayerTiles
+from gameplay.tiles.base_tile import BaseTile
+from gameplay.units.unit_base import UnitBaseClass
+from managers.game import World
+
+if TYPE_CHECKING:
+    from gameplay.player import Player
+    from gameplay.vision import Vision
 
 
 class AI(ABC):
-    def __init__(self, player: Player):
-        self.player: Player = player
+    def __init__(self, player: "Player"):
+        self.player: "Player" = player
 
-        self.units: weakref.ReferenceType[Units] = weakref.ref(self.player.units)
-        self.cities: weakref.ReferenceType[Cities] = weakref.ref(self.player.cities)
-        self.tiles: weakref.ReferenceType[PlayerTiles] = weakref.ref(self.player.tiles)
+        self.control_units: weakref.ReferenceType[Units] = weakref.ref(self.player.units)
+        self.control_cities: weakref.ReferenceType[Cities] = weakref.ref(self.player.cities)
+        self.control_tiles: weakref.ReferenceType[PlayerTiles] = weakref.ref(self.player.tiles)
+        self.vision: weakref.ReferenceType["Vision"] = weakref.ref(self.player.vision)
 
         self.end_goal: Goals = self.register_end_goal()
         self.goals: Goals = self.register_goals()
@@ -26,31 +34,31 @@ class AI(ABC):
         self.tasks: Tasks = Tasks()
         self.personality: Personality = self.player.personality
 
-    def _get_memories(self) -> Memories:
+    def get_memories(self) -> Memories:
         return self.memory
 
-    def _get_tasks(self) -> Tasks:
+    def get_tasks(self) -> Tasks:
         return self.tasks
 
-    def _get_units(self) -> Units | None:
-        return self.units()
+    def get_units(self) -> Units | None:
+        return self.control_units()
 
-    def _get_cities(self) -> Cities | None:
-        return self.cities()
+    def get_cities(self) -> Cities | None:
+        return self.control_cities()
 
-    def _get_tiles(self) -> PlayerTiles | None:
-        return self.tiles()
+    def get_tiles(self) -> PlayerTiles | None:
+        return self.control_tiles()
 
-    def _get_player(self) -> Player:
+    def get_player(self) -> "Player":
         return self.player
 
-    def _get_end_goal(self) -> Goals:
+    def get_end_goal(self) -> Goals:
         return self.end_goal
 
-    def _get_goals(self) -> Goals:
+    def get_goals(self) -> Goals:
         return self.goals
 
-    def _get_personality(self) -> Personality:
+    def get_personality(self) -> Personality:
         return self.personality
 
     def _add_memory(self, memory: Memory) -> None:
@@ -91,3 +99,15 @@ class AI(ABC):
 
     @abstractmethod
     def on_game_start(self) -> None: ...
+
+    def spawn_unit(self, unit: Type["UnitBaseClass"], tile: BaseTile) -> "UnitBaseClass":
+        """
+        Spawn a unit on the given tile.
+        """
+        return unit.spawn_on(tile, self.get_player())
+
+    def world(self) -> Dict[Tuple[int, int], BaseTile]:
+        return World.get_singleton_instance().get_grid()
+
+    def get_tile_count(self) -> int:
+        return len(self.world())

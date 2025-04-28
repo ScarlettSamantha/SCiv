@@ -124,6 +124,9 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.show_load` (E: pause-menu-game-ui, E: main-menu-game-ui | L: ui-manager)
 - `ui.update.ui.hide_load` (E: saveload-menu-game-ui | L: ui-manager)
 
+- `ui.update.ui.show_player_info` (E: ui-player-list | L: manager-game )
+- `ui.update.ui.hide_player_info` (E: ui-player-list | L: manager-game )
+
 - `ui.update.ui.refresh_city_ui` (E: manager-ui | L: ui-part-city)
 - `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)

@@ -159,6 +159,7 @@ class UnitBaseClass(BaseEntity, ABC):
         from managers.entity import EntityManager, EntityType
 
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.UNIT)
+        Unit.get_singleton_instance().remove_unit(self)
 
     def spawn(self, ignore_constraints: bool = False) -> bool:
         """
@@ -167,9 +168,6 @@ class UnitBaseClass(BaseEntity, ABC):
         """
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
-
-        if not self.tile.is_occupied() and ignore_constraints is False:  # Assumed tile method
-            raise ValueError(f"Tile at {self.tile.get_pos()} is not passable.")
 
         if not isinstance(self._model, str):
             raise ValueError(f"Unit {self.key} has no model assigned.")
@@ -185,6 +183,18 @@ class UnitBaseClass(BaseEntity, ABC):
 
         self.logger.debug(f"Unit {self.key} spawned at {self.tile.get_cords()} with model {self._model}")
         return True
+
+    @classmethod
+    def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "UnitBaseClass":
+        instance = cls()
+        instance.owner = player
+        instance.tile = tile
+        instance.spawn()
+
+        player.units.add_unit(instance)
+        Unit.get_singleton_instance().add_unit(instance)
+
+        return instance
 
     def get_actions(self) -> List[Action]:
         return self.actions

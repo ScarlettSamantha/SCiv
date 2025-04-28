@@ -173,3 +173,6 @@ class TechManager(BaseManager):
 
     def get_tree(self) -> TechTree | None:
         return self._tech_tree
+
+    def __len__(self) -> int:
+        return len(self.researched_techs)

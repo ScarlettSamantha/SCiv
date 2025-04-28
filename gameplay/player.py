@@ -18,6 +18,7 @@ from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
 from gameplay.tech import Tech
 from gameplay.trades import Trades
+from gameplay.vision import Vision
 from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
@@ -56,6 +57,8 @@ class Player(BaseEntity):
         self.color: Tuple4f = color if color else Colors.sequence()
 
         self.ai: Optional["AI"] = None
+
+        self.vision: Vision = Vision()
 
         self.turn_order: int = turn_order
 
@@ -274,8 +277,12 @@ class Player(BaseEntity):
     def remove_city(self, city: "City") -> None:
         self.cities.remove(city)
 
+    def on_game_start(self) -> None:
+        self.get_ai().on_game_start()
+
     def on_turn_end(self, turn: int):
         self.effects.on_turn_end(turn)
+        self.get_ai().on_turn_end()
 
     def has_researched_tech(self, tech: Type[Tech]) -> bool:
         return self.tech.is_tech_researched(tech)
@@ -308,7 +315,9 @@ class Player(BaseEntity):
                 tiles[(_tile.x, _tile.y)] = _tile
         return tiles
 
-    def get_ai(self) -> Optional["AI"]:
+    def get_ai(self) -> "AI":
+        if self.ai is None:
+            raise ValueError("AI is not set for this player.")
         return self.ai
 
     def set_ai(self, ai: "AI") -> None:

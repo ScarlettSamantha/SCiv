@@ -1,9 +1,11 @@
 from typing import TYPE_CHECKING, Any, List, Optional
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from kivy.app import Widget
 from kivy.core.image import Image as CoreImage
 from kivy.graphics import Color, Rectangle
+from kivy.input import MotionEvent
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
@@ -59,15 +61,13 @@ class PlayerList(FloatLayout, DirectObject):
         self.is_build = True
 
     def _generate_player_widget(self, player: Player) -> FloatLayout:
-        # type: ignore
         container = FloatLayout(
             size_hint=(None, None),
             size=(self.background_image.size[0] // 3, self.background_image.size[1] // 3),  # type: ignore
-        )  # type: ignore
+        )
 
         # Load background texture
         bg_texture = self.background_image.texture  # type: ignore
-        # type: ignore
         with container.canvas.before:  # type: ignore
             Color(1, 1, 1, 1)  # Full white, no tint
             bg_rect = Rectangle(texture=bg_texture, pos=container.pos, size=container.size)  # type: ignore
@@ -99,13 +99,30 @@ class PlayerList(FloatLayout, DirectObject):
         )
         name.bind(size=lambda instance, value: setattr(instance, "text_size", value))  # type: ignore
 
+        # Update grid size
         self.grid.width = ((len(self.players) - 2) * (200 + 20)) + 42  # type: ignore
         self.grid.height = 200 + 20
 
         container.add_widget(icon)
         container.add_widget(name)
 
+        # Add click behavior
+        def on_touch_down(instance: Widget, touch: "MotionEvent"):
+            if container.collide_point(*touch.pos):  # type: ignore
+                if touch.button == "left":  # type: ignore
+                    self._on_player_left_click(player)
+                elif touch.button == "right":  # type: ignore
+                    self._on_player_right_click(player)
+                return True
+            return False
+
+        container.bind(on_touch_down=on_touch_down)
+
         return container
+
+    def _on_player_left_click(self, player: Player) -> None: ...
+    def _on_player_right_click(self, player: Player) -> None:
+        MessengerGlobal.messenger.send("ui.update.ui.show_player_info", [player])
 
     def update_bg(self, instance: Widget, value: Any):
         if hasattr(self, "bg_rect"):

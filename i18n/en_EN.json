@@ -2562,6 +2562,12 @@
               }
             },
             "military": {
+              "barbarian": {
+                "lion": {
+                  "name": "Lion",
+                  "description": "Some rough looking lions."
+                }
+              },
               "warrior": {
                 "name": "Warrior",
                 "description": "Basic melee unit"

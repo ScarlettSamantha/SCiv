@@ -10,8 +10,6 @@ from panda3d.core import WindowProperties
 from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
-from gameplay.player import Player
-from gameplay.repositories.generators import GeneratorRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.unit_base import UnitBaseClass
@@ -20,22 +18,24 @@ from managers.entity import EntityManager, EntityType
 from managers.input import Input
 from managers.player import PlayerManager
 from managers.turn import Turn
-from managers.ui import ui
-from managers.unit import Unit
 from managers.world import World
 from mixins.singleton import Singleton
 from system.camera import Camera
 from system.game_settings import GameSettings
-from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
 from system.shaders import Shaders
 
 if TYPE_CHECKING:
+    from gameplay.player import Player
     from main import SCIV
+    from system.generators.base import BaseGenerator
 
 
 class Game(Singleton, DirectObject):
     def __init__(self, base: "SCIV", camera: Camera):
+        from managers.ui import ui
+        from managers.unit import Unit
+
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
@@ -257,12 +257,14 @@ class Game(Singleton, DirectObject):
         self.ui.select_unit(units)
 
     def choose_generator(self, random: bool = False, name: Optional[str] = None):
+        from gameplay.repositories.generators import GeneratorRepository
+
         if random:
-            generator_cls: Type[BaseGenerator] | List[Type[BaseGenerator]] = GeneratorRepository.random(
+            generator_cls: Type["BaseGenerator"] | List[Type["BaseGenerator"]] = GeneratorRepository.random(
                 1
             )  # returns a class
         else:
-            generators_cls: List[Type[BaseGenerator]] = GeneratorRepository.all()
+            generators_cls: List[Type["BaseGenerator"]] = GeneratorRepository.all()
 
             if len(generators_cls) == 0:
                 raise AssertionError("No generators found")
@@ -274,7 +276,7 @@ class Game(Singleton, DirectObject):
                     break
 
         try:
-            if generator_cls is None or not issubclass(generator_cls, BaseGenerator):  # type: ignore
+            if generator_cls is None or not issubclass(generator_cls, "BaseGenerator"):  # type: ignore
                 raise AssertionError("No valid generator found")
         except NameError:
             raise AssertionError("No valid generator found")
@@ -383,12 +385,27 @@ class Game(Singleton, DirectObject):
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
         self.base.taskMgr.doMethodLater(1.0, lambda task: self.border.setup_borders() or task.done, "short-inline")  # type: ignore
 
+        self.calculate_vision()
+        self.players.on_game_start()
+
         self.accept("ui.request.update.borders", self.border.update_borders)
 
         self.logger.info("Game start complete")
 
+    def calculate_vision(self):
+        tiles = self.world.get_grid().values()
+        units = self.unit.get_singleton_instance().all().values()
+
+        for player in self.players.all().values():
+            for tile in tiles:
+                player.vision.add_visible_tile(tile)
+
+            for unit in units:
+                player.vision.add_visible_unit(unit)
+
     def process_turn(self):
         self.turn.end_turn()
+        self.calculate_vision()
 
     def on_game_end(self):
         self.game_active = False

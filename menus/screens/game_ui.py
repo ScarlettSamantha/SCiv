@@ -32,6 +32,7 @@ from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
+from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.research import Research
@@ -88,6 +89,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.research: Optional[Research] = None
         self.civics: Optional[Civics] = None
         self.player_list: Optional[PlayerList] = None
+        self.player_info: Optional[PlayerInfo] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -109,6 +111,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_research()
         self.build_civics()
         self.build_player_list()
+        self.build_player_info()
         self.accept(
             "escape", self.on_escape
         )  # this is to prevent the pause menu from being opened before the game starts
@@ -155,7 +158,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         screen: PauseMenu | Screen = self.ui_manager.get_screen("pause_menu")
 
-        if screen.pause_menu._is_open:  # type: ignore
+        if screen.pause_menu._is_open or self.player_info.is_open:  # type: ignore
             MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
         else:
             if self.get_civics().is_open:
@@ -363,6 +366,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_list.build()
         self.add_widget(self.player_list)
         return self.player_list
+
+    def build_player_info(self) -> PlayerInfo:
+        self.player_info = PlayerInfo()
+        self.player_info.build()
+        self.add_widget(self.player_info)
+        return self.player_info
 
     def refresh_top_bar(self):
         if self.top_bar is None:

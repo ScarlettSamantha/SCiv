@@ -1,6 +1,10 @@
+from typing import TYPE_CHECKING
+
 from gameplay.ai.core import AI
 from gameplay.ai.goal import Goals
-from gameplay.player import Player
+
+if TYPE_CHECKING:
+    from gameplay.player import Player
 
 
 class BarbariansAI(AI):
@@ -9,7 +13,7 @@ class BarbariansAI(AI):
     It will manage the barbarian units, goals, memory, tasks.
     """
 
-    def __init__(self, player: Player):
+    def __init__(self, player: "Player"):
         super().__init__(player)
 
     def register_end_goal(self) -> Goals:

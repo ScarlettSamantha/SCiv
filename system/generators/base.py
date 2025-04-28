@@ -1,10 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from gameplay.ai.implementations.barbarians import BarbariansAI
-from gameplay.ai.implementations.enemy import EnemyAI
-from gameplay.ai.implementations.nature import NatureAI
-from gameplay.ai.implementations.player import PlayerAI
 from gameplay.civic import CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from gameplay.civilization import Civilization
@@ -21,7 +17,6 @@ from gameplay.techs.trees.core import Core
 from gameplay.tiles.base_tile import BaseTile
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
-from managers.unit import Unit
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
@@ -76,6 +71,7 @@ class BaseGenerator(ABC):
         player.tech.set_tech_tree(tech_tree())
         player.civics.set_tree(civic_tree())
 
+        self.assign_ai(player)
         if player.is_registered is False:
             player.register()
 
@@ -85,6 +81,11 @@ class BaseGenerator(ABC):
         """
         Assigns an AI class to a player
         """
+        from gameplay.ai.implementations.barbarians import BarbariansAI
+        from gameplay.ai.implementations.enemy import EnemyAI
+        from gameplay.ai.implementations.nature import NatureAI
+        from gameplay.ai.implementations.player import PlayerAI
+
         if player.is_human:
             ai = PlayerAI(player)
         elif player.is_nature:
@@ -174,7 +175,6 @@ class BaseGenerator(ABC):
     ) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
 
-        unit_manager: Unit = Unit.get_singleton_instance()
         units: List["Settler"] = []
         occupied_tiles: List[BaseTile] = []  # Track placed player locations
 
@@ -241,8 +241,6 @@ class BaseGenerator(ABC):
             spawn_tile.add_unit(unit)
             occupied_tiles.append(spawn_tile)  # Track this tile as occupied
 
-            unit.spawn()
-            player.units.add_unit(unit)
-            unit_manager.add_unit(unit)
+            unit.spawn_on(spawn_tile, player)
 
         return len(units) > 0
