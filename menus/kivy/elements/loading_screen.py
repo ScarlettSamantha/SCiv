@@ -57,7 +57,10 @@ class LoadingScreen(FloatLayout):
         # Center logo area
         center_stack = BoxLayout(orientation="vertical", size_hint=(0.6, 1), padding=dp(10))
         self.logo_image = Image(
-            source="", size_hint=(None, None), size=(dp(160), dp(160)), pos_hint={"top": 1, "center_x": 0.5}
+            source="assets/logo_512.png",
+            size_hint=(None, None),
+            size=(dp(256), dp(256)),
+            pos_hint={"top": 1, "center_x": 0.5},
         )
 
         center_stack.add_widget(self.logo_image)
