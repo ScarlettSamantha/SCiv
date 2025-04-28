@@ -153,7 +153,6 @@ class PlayerInfo(FloatLayout, DirectObject):
 
         # TOP RIGHT PANEL
         # replace with whatever top-panel data you need
-
         memories = self.player.get_ai().get_memories()
         memories_list = [f"Memory: {str(memory)}" for memory in memories]
 
