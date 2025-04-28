@@ -374,6 +374,10 @@ class Game(Singleton, DirectObject):
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
 
+        self.logger.info("Setting up field")
+        self.render_field()
+        self.logger.info("Field setup complete")
+
         self.logger.info("Post-generation sequence")
         MessengerGlobal.messenger.send("game.state.load_complete")
         MessengerGlobal.messenger.send("game.state.true_game_start")
@@ -410,6 +414,10 @@ class Game(Singleton, DirectObject):
     def on_game_end(self):
         self.game_active = False
         self.game_over = True
+
+    def render_field(self):
+        for tile in self.world.grid.values():
+            tile.render()
 
     def quit_game(self):
         self.base.destroy()

@@ -32,6 +32,9 @@ class Deer(BaseBonusResource):
     spawn_amount = 5.0
     coverage = 0.8
     improvement_required = [HuntingCamp]
+    model = "assets/models/resources/deer.glb"
+    model_size = 0.25
+    model_position = (0, 0, 0.20)
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

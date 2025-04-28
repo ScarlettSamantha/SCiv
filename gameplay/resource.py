@@ -95,11 +95,11 @@ class ResourceSpawnablePlace(Enum):
     BOTH = 2
 
 
-class BaseResource(ResourceTypeBase, ABC):
+class BaseResource(ABC):
     key: str
     name: T_TranslationOrStr
     description: T_TranslationOrStr
-    type: Optional[ResourceType] = None
+    type: Optional[Type[ResourceTypeBase]] = None
     icon: str = "assets/icons/resources/default.png"
     configure_as_float_or_int: ResourceValueType = ResourceValueType.INT
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
@@ -143,6 +143,12 @@ class BaseResource(ResourceTypeBase, ABC):
     # This behaves like a or and statement. If a list is provided, the resource will need to be improved by one of the improvements.
     improvement_required: Optional[Type["Improvement"] | List[Type["Improvement"]]] = None
 
+    # The model that will be used to represent the resource in the game.
+    model: Optional[str] = None
+    model_size: float = 1.0
+    model_position: Tuple[float, float, float] = (0.0, 0.0, 0.10)
+    model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+
     def __init__(
         self,
         value: Union[float, int] = 0,
@@ -152,7 +158,7 @@ class BaseResource(ResourceTypeBase, ABC):
         if self.type is None:
             raise ResourceTypeException(f"Resource type not set for {self.__class__.__name__}")
 
-        super().__init__(self.name, self.description, self.type, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.value: Union[float, int] = value
         self.value_storage: ResourceValueType = self.configure_as_float_or_int
 
@@ -396,7 +402,7 @@ class Resources:
     def remove(self, resource: BaseResource) -> None:
         if resource.type is None:
             return
-        resource_type: ResourceType = resource.type
+        resource_type: Type[ResourceTypeBase] = resource.type
         if resource_type in self.resources and resource.key in self.resources[resource_type]:  # type: ignore
             del self.resources[resource_type][resource.key]
 

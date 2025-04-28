@@ -560,12 +560,14 @@ class BaseTile(BaseEntity):
         if not self.models and len(self.improvements()) == 0:
             self._render_default_terrain()
             self.create_root_ui_node()
+            self._render_resource_model()
             return
 
         if render_all:
             self.unrender_all()
             self._render_improvements()
             self._render_default_terrain()
+            self._render_resource_model()
             self.create_root_ui_node()
         elif model_index is not None:
             self.unrender_model(model_index)
@@ -587,6 +589,21 @@ class BaseTile(BaseEntity):
 
         if self.city is not None:
             self.add_city_name()
+
+    def _render_resource_model(self) -> None:
+        if self.city is not None:
+            return
+        resource = list(self.resources.flatten_non_mechanic().values())
+
+        if len(resource) == 0:
+            return
+
+        resource = resource[0]
+
+        if resource.model is None:
+            return
+
+        self.add_model(resource.model, resource.model_position, resource.model_size, resource.model_hpr)
 
     def on_turn_end(self, turn: int) -> None:
         """Will only be called by the world manager. when the tile has an effect, unit, city or player."""
