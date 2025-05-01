@@ -15,3 +15,4 @@ pillow
 panda3d-gltf
 dill
 setuptools
+pre-commit
