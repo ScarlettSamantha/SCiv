@@ -46,3 +46,6 @@ class ImprovementsSet:
     def on_turn_end(self, turn: int):
         for item in self._improvements:
             item.on_turn_end(turn)
+
+    def has_any(self) -> bool:
+        return len(self._improvements) > 0
