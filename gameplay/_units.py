@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterator, List, TypeVar
+from typing import TYPE_CHECKING, Iterator, List, Optional, TypeVar
 
 if TYPE_CHECKING:
     from gameplay.units.unit_base import UnitBaseClass
@@ -26,7 +26,9 @@ class Units:
     def all(self) -> List["UnitBaseClass"]:
         return self._units
 
-    def has(self, unit: "UnitBaseClass") -> bool:
+    def has(self, unit: Optional["UnitBaseClass"] = None) -> bool:
+        if unit is None:
+            return self.has_any()
         return unit in self._units
 
     def has_any(self) -> bool:
