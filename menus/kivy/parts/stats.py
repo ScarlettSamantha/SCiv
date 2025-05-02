@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, List
 
 from kivy.app import Widget
 from kivy.clock import Clock
@@ -6,8 +6,9 @@ from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties
-
+from direct.task.Task import Task
 from managers.entity import EntityManager
+from menus.kivy.elements.scrolling_graph import ScrollingGraph
 from system.camera import Camera
 
 if TYPE_CHECKING:
@@ -25,6 +26,10 @@ class StatsPanel(FloatLayout):
         self.frame: Optional[FloatLayout] = None
         self.label: Optional[Label] = None
         self.rect: Optional[Rectangle] = None
+        self.fps_graph: Optional[ScrollingGraph] = None
+
+        # Buffer for per-frame dt samples
+        self.frame_times: List[float] = []
 
         self.entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
@@ -51,11 +56,25 @@ class StatsPanel(FloatLayout):
         return self.frame
 
     def register(self):
-        def clocks():
-            Clock.schedule_interval(self.on_update, 0.25)
-            Clock.schedule_interval(self.periodicals, 1)
+        # Schedule updates and sampling
+        Clock.schedule_interval(self.on_update, 1 / 5)
+        Clock.schedule_interval(self.periodicals, 1)
+        # Sample every rendered frame for dt
+        if hasattr(self.base, "taskMgr"):
+            self.base.taskMgr.add(self._sample_frame_time, "StatsPanelFrameTimeSampler")
 
-        clocks()
+    def _sample_frame_time(self, task: Task) -> Any:
+        # Called once per frame by Panda3D
+        dt: float = self.base.clock.getDt()  # type: ignore
+        self.frame_times.append(dt)  # type: ignore
+        # Keep history bounded (e.g. 5x graph points)
+        if self.fps_graph:
+            max_samples = self.fps_graph.max_points * 5
+        else:
+            max_samples = 1000
+        if len(self.frame_times) > max_samples:
+            self.frame_times = self.frame_times[-max_samples:]
+        return task.cont
 
     def hide(self):
         if self.frame is not None:
@@ -112,27 +131,61 @@ class StatsPanel(FloatLayout):
             pos_hint={"right": 1, "top": 1},
             color=(1, 1, 1, 1),
             padding=10,
+            markup=True,
+        )
+
+        self.fps_graph = ScrollingGraph(
+            size_hint=(None, None),
+            size=(300, 150),
+            pos_hint={"right": 0.0, "top": 0.95},
+            max_points=300,
+            y_max=70.0,
         )
 
         self.frame.add_widget(self.label)
+        self.frame.add_widget(self.fps_graph)
         return self.frame
 
-    def on_update(self, dt: float):
-        fps = self.base.clock.getAverageFrameRate()  # type: ignore
-        text = (
-            f"FPS: {fps:.2f}",
+    def on_update(self, dt: float) -> None:
+        # Compute FPS and 1% low
+        fps = float(self.base.clock.getAverageFrameRate())  # type: ignore
+        fps_low1 = 0.0
+        if self.frame_times:
+            sorted_dt = sorted(self.frame_times)
+            idx = max(0, int(len(sorted_dt) * 0.99) - 1)
+            dt99 = sorted_dt[idx]
+            fps_low1 = (1.0 / dt99) if dt99 > 0 else 0.0
+
+        # Compute true per-frame ms from samples
+        if self.frame_times:
+            avg_dt = sum(self.frame_times) / len(self.frame_times)
+            frame_ms = avg_dt * 1000.0
+            self.frame_times.clear()
+        else:
+            frame_ms = dt * 1000.0
+
+        # Update graph and label
+        if self.fps_graph:
+            self.fps_graph.update_graph(fps, 0.0, fps_low1, frame_ms)
+
+        # Refresh text info
+        parts = [
+            f"[color=00ff00]FPS: {fps:.2f}[/color]",
+            f"[color=ffff00]1% Low FPS: {fps_low1:.2f}[/color]",
+            f"[color=0000ff]Frame Time: {frame_ms:.2f} ms[/color]",
             f"Yaw: {self.camera.yaw}",
             f"POS: {self.camera.getPos()}",
             f"HPR: {self.camera.getHpr()}",
             "--Periodicals:--",
-            f"Window_size(x,y): {self._periodicals['window_size'][0]}",
-            f"Window_Pos(top-left): {self._periodicals['window_pos'][0]}",
+            f"Window_size(x,y): {self._periodicals['window_size']}",
+            f"Window_Pos(top-left): {self._periodicals['window_pos']}",
             "--Entity Info:--",
-            f"Entities: {str(self._periodicals['entity_manager_entities_total'])}",
-            f"Orphans: {str(self._periodicals['entity_manager_entities_orphans'])}",
-            f"Players: {str(self._periodicals['entity_manager_total_players'])}",
-            f"Units: {str(self._periodicals['entity_manager_total_units'])}",
-            f"Tiles: {str(self._periodicals['entity_manager_total_tiles'])}",
-            f"Effects: {str(self._periodicals['entity_manager_total_effects'])}",
-        )
-        self.label.text = "\n".join(text)  # type: ignore # We know it exists because it's initialized in build_screen
+            f"Entities: {self._periodicals['entity_manager_entities_total']}",
+            f"Orphans: {self._periodicals['entity_manager_entities_orphans']}",
+            f"Players: {self._periodicals['entity_manager_total_players']}",
+            f"Units: {self._periodicals['entity_manager_total_units']}",
+            f"Tiles: {self._periodicals['entity_manager_total_tiles']}",
+            f"Effects: {self._periodicals['entity_manager_total_effects']}",
+        ]
+        if self.label:
+            self.label.text = "\n".join(parts)
