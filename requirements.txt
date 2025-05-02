@@ -16,3 +16,4 @@ panda3d-gltf
 dill
 setuptools
 pre-commit
+py_trees
