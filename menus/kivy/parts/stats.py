@@ -7,6 +7,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties
 from direct.task.Task import Task
+from direct.showbase.DirectObject import DirectObject
 from managers.entity import EntityManager
 from menus.kivy.elements.scrolling_graph import ScrollingGraph
 from system.camera import Camera
@@ -17,9 +18,10 @@ if TYPE_CHECKING:
     from main import SCIV
 
 
-class StatsPanel(FloatLayout):
+class StatsPanel(FloatLayout, DirectObject):  # type: ignore
     def __init__(self, base: "SCIV | ShowBase", **kwargs: Any):
-        super().__init__(**kwargs)
+        FloatLayout.__init__(self, **kwargs)
+        DirectObject.__init__(self, **kwargs)  # type: ignore
         self.base: "SCIV | ShowBase" = base
         self.camera: Camera = Camera.get_singleton_instance()
 
@@ -55,10 +57,28 @@ class StatsPanel(FloatLayout):
             self.frame = self.build()
         return self.frame
 
+    def start_graph(self):
+        if self.fps_graph is None:
+            return
+        Clock.schedule_once(lambda _: self.fps_graph.start(), 0.1)  # type: ignore we start the graph after a short delay so it does not include the time it takes to load the game
+
+    def stop_graph(self):
+        if self.fps_graph is None:
+            return
+        self.fps_graph.stop()  # type: ignore
+
+    def reset_graph(self):
+        if self.fps_graph is None:
+            return
+        self.stop_graph()
+        self.fps_graph.clear_widgets()
+
     def register(self):
         # Schedule updates and sampling
         Clock.schedule_interval(self.on_update, 1 / 5)
         Clock.schedule_interval(self.periodicals, 1)
+        self.accept("game.state.true_game_start", self.start_graph)
+        self.accept("game.state.reset_start", self.reset_graph)
         # Sample every rendered frame for dt
         if hasattr(self.base, "taskMgr"):
             self.base.taskMgr.add(self._sample_frame_time, "StatsPanelFrameTimeSampler")
