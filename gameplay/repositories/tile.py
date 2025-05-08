@@ -255,7 +255,7 @@ class TileRepository:
         return result
 
     @classmethod
-    def astar(cls, start: "BaseTile", goal: "BaseTile", movement_speed: float) -> Optional[List["BaseTile"]]:
+    def astar(cls, start: "BaseTile", goal: "BaseTile", movement_points: float) -> Optional[List["BaseTile"]]:
         r"""
         A* search algorithm for pathfinding on a hex grid.
 
@@ -270,7 +270,7 @@ class TileRepository:
              a. Extract the node with the lowest f(n).
              b. If this node is the goal, reconstruct and return the path.
              c. Otherwise, for each neighbor:
-                i. Calculate tentative g(n) = current g(n) + (neighbor.movement_cost / movement_speed).
+                i. Calculate tentative g(n) = current g(n) + (neighbor.movement_cost / movement_points).
                 ii. If this path is better, update the cost and record the parent.
 
         ASCII Diagram:
@@ -283,7 +283,7 @@ class TileRepository:
 
         :param start: The starting Tile.
         :param goal: The target Tile.
-        :param movement_speed: Movement speed factor for cost adjustment.
+        :param movement_points: Movement speed factor for cost adjustment.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
         open_set: List[Tuple[float, int, "BaseTile"]] = []
@@ -304,7 +304,7 @@ class TileRepository:
                 return path[::-1]
 
             for neighbor in cls.get_neighbors(current, check_passable=True):
-                tentative_g_score = g_score[current] + (neighbor.movement_cost / movement_speed)
+                tentative_g_score = g_score[current] + (neighbor.movement_cost / movement_points)
 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     came_from[neighbor] = current
