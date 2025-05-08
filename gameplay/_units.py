@@ -34,5 +34,10 @@ class Units:
     def has_any(self) -> bool:
         return len(self._units) > 0
 
+    def first(self) -> Optional["UnitBaseClass"]:
+        if self._units:
+            return self._units[0]
+        return None
+
     def __iter__(self) -> Iterator["UnitBaseClass"]:
         return iter(self._units)
