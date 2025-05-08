@@ -48,6 +48,12 @@ class NatureAI(AI):
                 if goal.is_achieved():
                     self.remove_goal(goal)
 
+    def tick_goals(self) -> None:
+        for goal in self.get_goals():
+            goal.turn_tick()
+            if goal.is_achieved():
+                self.remove_goal(goal)
+
     def on_turn_end(self) -> None:
         # check if we need to rebuild the spawn tile cache
         if self._spawn_cache_from_turn != Turn.get_singleton_instance().get_turn():
