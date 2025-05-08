@@ -44,6 +44,4 @@ class EliminateUnit(Goal):
                 self.get_executing_unit().attack(self.target)
 
     def get_target(self) -> "UnitBaseClass":
-        if not isinstance(self.target, UnitBaseClass):
-            raise TypeError(f"Expected target to be of type UnitBaseClass, got {type(self.target).__name__}")
-        return self.target
+        return self.target  # type: ignore[return-value]
