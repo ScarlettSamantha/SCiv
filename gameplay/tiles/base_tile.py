@@ -813,7 +813,7 @@ class BaseTile(BaseEntity):
             _improvements.append(str(improvement.name))
 
         _units: List[str] = []
-        for unit in self.units._units:  # type: ignore
+        for unit in self.units.all():  # type: ignore
             data = unit.to_gui()
             _units.append(f"{data['tag']} {data['name']}")
 
