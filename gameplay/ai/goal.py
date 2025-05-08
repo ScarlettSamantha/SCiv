@@ -64,12 +64,15 @@ class Goal:
 class Goals:
     def __init__(self):
         self.goals: list[Goal] = []
+        self.removed_goals: list[Goal] = []
 
     def add_goal(self, goal: Goal) -> None:
         self.goals.append(goal)
 
-    def remove_goal(self, goal: Goal) -> None:
+    def remove_goal(self, goal: Goal, add_to_removed_list: bool = True) -> None:
         self.goals.remove(goal)
+        if add_to_removed_list:
+            self.removed_goals.append(goal)
 
     def get_goals(self) -> list[Goal]:
         return self.goals
