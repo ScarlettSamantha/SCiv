@@ -1,23 +1,23 @@
 #!/bin/bash
-
 set -euo pipefail
 
-# Get staged Python files
+# 1. find the repo root (so Pyright can load your config properly)
+cd "$(git rev-parse --show-toplevel)"
+
+# 2. get all staged .py files
 files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
 
-# Filter: only keep files that still exist
-existing_files=()
-for file in $files; do
-    if [ -f "$file" ]; then
-        existing_files+=("$file")
-    fi
+# 3. drop any that no longer exist on disk
+existing=()
+for f in $files; do
+    [[ -f "$f" ]] && existing+=("$f")
 done
 
-# If no files, exit cleanly
-if [ ${#existing_files[@]} -eq 0 ]; then
-    echo "No Python files to check with pyright."
+# 4. exit early if nothing to do
+if [ ${#existing[@]} -eq 0 ]; then
+    echo "No staged Python files to check."
     exit 0
 fi
 
-# Run pyright on the existing files
-pyright "${existing_files[@]}"
+# 5. invoke Pyright on *only* those files
+pyright "${existing[@]}"

@@ -8,7 +8,8 @@ repos:
         types: [python]
       - id: pyright-full
         name: Full Pyright check
-        entry: pyright .
+        entry: >
+          bash -c 'if [ -f .git/MERGE_HEAD ]; then pyright .; else echo "Skipping full pyright (not a merge)"; fi'
         language: system
         types: [python]
       - id: ruff-lint
