@@ -25,7 +25,8 @@ class WalkAction(BaseUnitAction):
         self.get_return_as_failure_argument = True
 
     def move_wrapper(self, *args: Any, **kwargs: Any) -> CantMoveReason:
-        result = self.unit.move(*args, **kwargs)
+        tile = args[2]["tile"]
+        result = self.unit.move(tile)
         self._result = result
         return result
 
