@@ -192,6 +192,7 @@ class UnitBaseClass(BaseEntity, ABC):
         instance.spawn()
 
         player.units.add_unit(instance)
+        tile.units.add_unit(instance)
         Unit.get_singleton_instance().add_unit(instance)
 
         return instance
@@ -257,11 +258,12 @@ class UnitBaseClass(BaseEntity, ABC):
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             # If we got here, we can step onto tile
+            result_tile.remove_unit(self)
             result_tile: "BaseTile" = _tile
             self.moves_left -= _tile.movement_cost
             self.set_pos((cords[0], cords[1], self.pos_z))
             self.tile = _tile
-
+            _tile.add_unit(self)  # Add to the new tile
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
