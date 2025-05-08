@@ -480,8 +480,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 button.bind(on_press=partial(self.prepare_action, action, _unit))  # type: ignore
                 self.action_bar_frame.add_button(button)
 
-            if _unit.can_build is True and _unit.tile is not None:
-                improvements: List[Type[Improvement]] = _unit.tile.get_buildable_improvements()
+            if _unit.can_build is True:
+                improvements: List[Type[Improvement]] = _unit.get_tile().get_buildable_improvements()
                 for _improvement in improvements:
                     # Check if the improvement is placeable on the tile
                     condition_check = (
@@ -502,7 +502,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                     )
                     if (
                         _improvement.placeable_on_tiles is True
-                        and not _unit.tile.improvements().has(_improvement)
+                        and not _unit.get_tile().improvements().has(_improvement)
                         and visible_condition_check
                     ):
                         button: Button = Button(
@@ -512,7 +512,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                             height=75,
                         )
                         button.disabled = (
-                            not _unit.can_build or _unit.tile.owner != _unit.owner or condition_check is False
+                            not _unit.can_build or _unit.get_tile().owner != _unit.owner or condition_check is False
                         )
                         button.bind(  # type: ignore
                             on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, _unit)  # type: ignore

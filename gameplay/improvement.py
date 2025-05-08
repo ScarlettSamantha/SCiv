@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple, Type
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
-from gameplay.resources.core.basic.production import Production
-from gameplay.units.core.classes.civilian.builder import Builder
-from gameplay.units.unit_base import UnitBaseClass
+
 from gameplay.yields import Yields
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStrOrNone
@@ -18,6 +16,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.resources.core.basic._base import BasicBaseResource
     from gameplay.tiles.base_tile import BaseTile
+    from gameplay.units.unit_base import UnitBaseClass
 
 
 class ImprovementBuildTurnMode(Enum):
@@ -39,7 +38,7 @@ class Improvement(BaseEntity):
 
     placeable_on_condition: Conditions | bool = True
 
-    placeable_by_unit: Type[UnitBaseClass] | None = Builder
+    placeable_by_unit: Type["UnitBaseClass"] | None = None
 
     placeable_by_player: bool = False
     placeable_on_tiles: bool = False
@@ -55,6 +54,7 @@ class Improvement(BaseEntity):
         **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
+        from gameplay.resources.core.basic.production import Production
 
         self.key: str = key if key else uuid.uuid4().hex
         self.active: bool = True
@@ -73,7 +73,6 @@ class Improvement(BaseEntity):
         self.player_enabled: bool = True
 
         self.multi_turn_mode: ImprovementBuildTurnMode = ImprovementBuildTurnMode.SINGLE_TURN
-        self.tile: Optional[BaseTile] = tile
 
         # Following 3 are not needed in single turn mode.
         self.amount_resource_needed: Yields = Yields.nullYield()
@@ -136,7 +135,7 @@ class Improvement(BaseEntity):
         if self.tile is None:
             self.tag = f"improvement_{self.name}_{random.randrange(0, 10000)}"
         else:
-            self.tag = f"improvement_{self.tile.x}_{self.tile.y}_{self.name}_{random.randrange(0, 10000)}"
+            self.tag = f"improvement_{self.get_tile().x}_{self.get_tile().y}_{self.name}_{random.randrange(0, 10000)}"
 
     @property
     def model(self):
@@ -166,7 +165,7 @@ class Improvement(BaseEntity):
             self.register()
 
         for effect in self.effects.get_effects().values():
-            effect.apply(self.tile)
+            effect.apply(self.get_tile())
 
     def on_destroy(self):
         if self.is_registered is True:
@@ -186,12 +185,6 @@ class Improvement(BaseEntity):
 
     def replace(self, _with: Type["Improvement"]):
         pass
-
-    def set_tile(self, tile: "BaseTile"):
-        self.tile = tile
-
-    def get_tile(self) -> "BaseTile | None":
-        return self.tile
 
     def get_model_path(self) -> str | None:
         return self._model

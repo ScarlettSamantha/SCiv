@@ -91,7 +91,9 @@ class PlayerManager(BaseManager):
         cls._nature_player = player
 
     @classmethod
-    def get_barbarian(cls) -> Optional["Player"]:
+    def get_barbarian(cls) -> "Player":
+        if cls._barbarian_player is None:
+            raise InvalidPregameCondition("No barbarian player has been set.")
         return cls._barbarian_player
 
     @classmethod

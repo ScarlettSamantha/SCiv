@@ -5,6 +5,7 @@ from os.path import dirname, join, realpath
 from pathlib import Path
 from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
+import weakref
 
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
@@ -76,7 +77,7 @@ class BaseTile(BaseEntity):
         self.id: int = id(self)
         self.x: int = x
         self.y: int = y
-        super().__init__()
+        super().__init__(tile=weakref.ref(self))
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
@@ -722,6 +723,9 @@ class BaseTile(BaseEntity):
         Return the first rendered model (typically the terrain) or None if no model exists.
         """
         return self.models[0] if self.models else None
+
+    def get_units(self) -> Units:
+        return self.units
 
     def set_terrain(self, terrain: BaseTerrain) -> None:
         self.tile_terrain = terrain

@@ -46,7 +46,7 @@ class Player(BaseEntity):
         leader: Leader,
         color: Optional[Tuple4f] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(tile=None)
         from gameplay._units import Units
         from gameplay.resource import Resources
 

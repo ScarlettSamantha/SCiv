@@ -15,10 +15,7 @@ class BuildAction(BaseUnitAction):
     def __init__(self, improvement: Type[Improvement], unit: UnitBaseClass):
         self.unit: UnitBaseClass = unit
 
-        if self.unit.tile is None:
-            raise ValueError("Unit has no tile")
-
-        self.tile: BaseTile = self.unit.tile
+        self.tile: BaseTile = self.unit.get_tile()
         self._condition_result: bool | CantBuildReason = False
         self.improvement: Type[Improvement] = improvement
         super().__init__(

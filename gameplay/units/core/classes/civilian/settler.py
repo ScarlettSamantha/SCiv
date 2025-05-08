@@ -1,9 +1,13 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gameplay.promotion import Promotion, PromotionTree
+
 from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
+
+if TYPE_CHECKING:
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class SettlerPromotion(Promotion):
@@ -66,8 +70,9 @@ class Settler(CoreCivilianBaseClass):
     promotion_tree = SettlerPromotionTree
     model_size = 0.2
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, tile: "BaseTile", *args: Any, **kwargs: Any):
         super().__init__(
+            tile,
             *args,
             **kwargs,
         )

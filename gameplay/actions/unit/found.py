@@ -49,9 +49,6 @@ class FoundAction(BaseUnitAction):
         tile = self.unit.get_tile()
         base = Cache.get_showbase_instance()
 
-        if tile is None:
-            raise AssertionError("Tile was not found")
-
         rules: GameRules = base.game_manager_instance.rules  # type: ignore # We check above that the base instance is not None
 
         self.city_founding_distance_rule: int = rules.get_city_founding_distance_rule()
@@ -173,8 +170,10 @@ class FoundAction(BaseUnitAction):
         return True
 
     def found_action_wrapper(self, *args: Any, **kwargs: Any) -> bool:
-        self.tile = self.unit.tile  # This has to be done before the unit is destroyed otherwise the tile will be None.
-        if self.unit.tile is None or not self.unit.tile.found(self.unit.owner):
+        self.tile = (
+            self.unit.get_tile()
+        )  # This has to be done before the unit is destroyed otherwise the tile will be None.
+        if not self.unit.get_tile().found(self.unit.owner):
             return False
 
         self.unit.destroy()

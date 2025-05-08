@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, List
 
 from gameplay.ai.core import AI
 from gameplay.ai.goal import Goals
+from gameplay.ai.goals.eliminate_player import EliminatePlayer
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.core.classes.military.barbarian_lion import BarbarianLion
@@ -30,7 +31,38 @@ class NatureAI(AI):
     def register_goals(self) -> Goals:
         return Goals()
 
-    def on_turn_end(self) -> None: ...
+    def calculate_goals(self) -> None:
+        if not self.has_goal():
+            for player in self.get_players().values():
+                self.add_goal(EliminatePlayer(self, player))
+
+        for unit in self.get_units():
+            if self.goals.has_goal_for_unit(unit):
+                continue
+            goal = self.create_goals_for_unit(unit)
+            if goal is not None:
+                self.add_goal(goal)
+
+        if self.has_goal():
+            for goal in self.get_goals():
+                if goal.is_achieved():
+                    self.remove_goal(goal)
+
+    def on_turn_end(self) -> None:
+        # check if we need to rebuild the spawn tile cache
+        if self._spawn_cache_from_turn != Turn.get_singleton_instance().get_turn():
+            self._build_spawn_tile_cache()
+
+        self.calculate_goals()
+
+        if self.has_goal():
+            for goal in self.get_goals():
+                if not goal.is_for_unit():
+                    continue
+                if goal.needs_turn_processing:
+                    goal.turn_tick()
+                if goal.is_achieved():
+                    self.remove_goal(goal)
 
     def on_turn_start(self) -> None: ...
 
@@ -49,8 +81,10 @@ class NatureAI(AI):
             if tile.is_city():
                 continue
 
-            neighbors = TileRepository.get_neighbors(tile, 2, False, False)
-            if any(neigh.is_city() or neigh.units for neigh in neighbors):
+            neighbors = TileRepository.get_neighbors(tile, 2, False, False) + [
+                tile
+            ]  # include self otherwise we can spawn a lion on our self
+            if any(neigh.is_city() or neigh.units.has_any() for neigh in neighbors):
                 continue
 
             valid_tiles.append(tile)

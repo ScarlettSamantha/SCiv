@@ -33,12 +33,11 @@ class City(BaseEntity, DirectObject.DirectObject):
     CITY_MAX_BORDER_GROWTH_RADIUS: int = 5
 
     def __init__(self, name: str, tile: "BaseTile", *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+        super().__init__(tile=tile, *args, **kwargs)
         from gameplay.player import Player
 
         self.name: T_TranslationOrStrOrNone = name
         self.player: Optional[Player] = None
-        self.tile: BaseTile = tile
         self.owned_tiles: List[BaseTile] = []
         self.is_capital: bool = False
 
@@ -158,12 +157,14 @@ class City(BaseEntity, DirectObject.DirectObject):
                     self.player.units.add_unit(building)
 
                 tile_to_spawn = None
-                if not self.tile.units.has_any():  # If there are no units on the tile, spawn the unit on the city tile.
+                if (
+                    not self.get_tile().get_units().has_any()
+                ):  # If there are no units on the tile, spawn the unit on the city tile.
                     tile_to_spawn = self.tile
                 else:
                     radius: List[int] = [1, 2, 3, 4]
                     for r in radius:  # Check for a tile to spawn the unit on. We check in a radius of 1, 2, 3, 4 tiles.
-                        tiles = TileRepository.get_neighbors(self.tile, r)
+                        tiles = TileRepository.get_neighbors(self.get_tile(), r)
                         for tile in tiles:
                             if (
                                 not tile.units.has_any()
@@ -244,7 +245,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
     def recalculate_border_growth_next_tile(self):
         max_radius = self.CITY_MAX_BORDER_GROWTH_RADIUS
-        center_tile = self.tile
+        center_tile = self.get_tile()
 
         for radius in range(1, max_radius + 1):
             neighbors: List["BaseTile"] = TileRepository.get_neighbors(center_tile, radius)

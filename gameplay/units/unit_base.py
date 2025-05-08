@@ -8,8 +8,11 @@ from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import BitMask32, LVector3, NodePath
 
+
+from gameplay.ai.goal import T_TARGET
 from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
+from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from main import Cache
 from managers.entity import uuid4
@@ -54,15 +57,14 @@ class UnitBaseClass(BaseEntity, ABC):
     model: Optional[NodePath] = None
     model_size: float = 1.0
 
-    def __init__(self, key: Optional[str] = None):
+    def __init__(self, tile: "BaseTile", key: Optional[str] = None):
         from gameplay.city import Yields  # to avoid circular import
 
-        super().__init__()
+        BaseEntity.__init__(self, tile=tile)
 
         self.key: str = key if key else uuid4().hex
 
         self.owner: Player | None = None
-        self.tile: Optional["BaseTile"] = None  # Tile must be set before spawning
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
@@ -114,10 +116,6 @@ class UnitBaseClass(BaseEntity, ABC):
         self.base = Cache.get_showbase_instance()
         self.spawn(ignore_constraints=True)
 
-    def get_tile(self) -> "BaseTile | None":
-        if self.tile is not None:
-            return self.tile
-
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
 
@@ -155,6 +153,9 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.model is not None:  # type: ignore
             self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))  # type: ignore
 
+    def is_alive(self) -> bool:
+        return self.current_health > 0
+
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
 
@@ -181,14 +182,13 @@ class UnitBaseClass(BaseEntity, ABC):
         if not self._model:
             raise RuntimeError(f"Failed to load model for unit {self.key}")
 
-        self.logger.debug(f"Unit {self.key} spawned at {self.tile.get_cords()} with model {self._model}")
+        self.logger.debug(f"Unit {self.key} spawned at {self.get_tile().get_cords()} with model {self._model}")
         return True
 
     @classmethod
     def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "UnitBaseClass":
-        instance = cls()
+        instance = cls(tile)
         instance.owner = player
-        instance.tile = tile
         instance.spawn()
 
         player.units.add_unit(instance)
@@ -199,13 +199,10 @@ class UnitBaseClass(BaseEntity, ABC):
     def get_actions(self) -> List[Action]:
         return self.actions
 
-    def move(self, action: Action, _args: List[Any], kwargs: Dict[str, Any]) -> CantMoveReason:
-        if "tile" not in kwargs:
-            raise ValueError("No tile provided to move action.")
-
+    def move(self, tile: "BaseTile") -> CantMoveReason:
         from gameplay.repositories.tile import TileRepository
 
-        target_tile: "BaseTile" = kwargs["tile"]
+        target_tile: "BaseTile" = tile
 
         if not self.can_move:
             return CantMoveReason.IMMOBILE
@@ -224,7 +221,7 @@ class UnitBaseClass(BaseEntity, ABC):
 
         tiles_to_move = []
         # Attempt pathfinding
-        if self.tile is not None and (tiles_to_move := TileRepository.astar(self.tile, target_tile, 1.0)) is None:
+        if self.tile is not None and (tiles_to_move := TileRepository.astar(self.get_tile(), target_tile, 1.0)) is None:
             return CantMoveReason.NO_PATH
 
         # This was a bug for a while, but it was fixed
@@ -234,16 +231,16 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.tile is None:
             raise AssertionError(f"Unit {self.key} has no tile assigned.")
 
-        if tiles_to_move[0] == self.tile:
+        if tiles_to_move[0] == self.get_tile():
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
-        result_tile = self.tile  # Start off at our current tile
-        self.tile.units.remove_unit(self)  # Remove from the current tile
-        for tile in tiles_to_move:
-            tile: "BaseTile" = tile  # this is a type hint
-            cords: Tuple[float, float, float] = tile.get_cords()
+        result_tile = self.get_tile()  # Start off at our current tile
+        self.get_tile().get_units().remove_unit(self)  # Remove from the current tile
+        for _tile in tiles_to_move:
+            _tile: "BaseTile" = _tile  # this is a type hint
+            cords: Tuple[float, float, float] = _tile.get_cords()
 
-            if (self.moves_left - tile.movement_cost) < 0:
+            if (self.moves_left - _tile.movement_cost) < 0:
                 previous_tile_cords: Tuple[float, float, float] = (
                     result_tile.get_cords()
                 )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
@@ -252,22 +249,24 @@ class UnitBaseClass(BaseEntity, ABC):
                 return CantMoveReason.NO_MOVES
 
             # Check if tile is still valid for the unit
-            if tile.is_visisted_by(self) is False:
+            if _tile.is_visisted_by(self) is False:
                 # Move partially onto this tile and then get trapped or do partial logic
-                self.moves_left -= tile.movement_cost
+                self.moves_left -= _tile.movement_cost
                 self.set_pos((cords[0], cords[1], self.pos_z))
-                self.tile = tile
+                self.tile = _tile
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             # If we got here, we can step onto tile
-            result_tile: "BaseTile" = tile
-            self.moves_left -= tile.movement_cost
+            result_tile: "BaseTile" = _tile
+            self.moves_left -= _tile.movement_cost
             self.set_pos((cords[0], cords[1], self.pos_z))
-            self.tile = tile
+            self.tile = _tile
 
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
+
+    def attack(self, target: T_TARGET) -> None: ...
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -285,7 +284,7 @@ class UnitBaseClass(BaseEntity, ABC):
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
         # Position and transform the model
-        tile_pos = self.tile.get_cords()
+        tile_pos = self.get_tile().get_cords()
         pos = (
             tile_pos[0] + self.model_position_offset[0],
             tile_pos[1] + self.model_position_offset[1],
@@ -344,7 +343,7 @@ class UnitBaseClass(BaseEntity, ABC):
             "description": self.description,
             "owner": owner_name,
             "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",
-            "tile": self.tile.tag if self.tile is not None else "None",
+            "tile": self.get_tile().tag if self.tile is not None else "None",
             "health": f"{self.current_health}/{self.max_health}",
             "attacks": f"{self.attacks_left}/{self.max_attacks}",
             "damage": self.stats.attack_modifier,
@@ -367,11 +366,8 @@ class UnitBaseClass(BaseEntity, ABC):
         # Remove from the units lookup dictionary if it exists
         self.unregister()
 
-        if self.tile is None:
-            raise AssertionError(f"Unit {self.key} has no tile assigned.")
-
         # Nullify references to break cyclic dependencies
-        self.tile.units.remove_unit(self)
+        self.get_tile().get_units().remove_unit(self)
 
         if self.owner is not None:
             self.owner.units.remove_unit(self)
@@ -395,3 +391,6 @@ class UnitBaseClass(BaseEntity, ABC):
         if isinstance(entity, UnitBaseClass):
             return entity
         return None
+
+    def look(self, radius: int) -> List["BaseTile"]:
+        return TileRepository.get_neighbors(self.get_tile(), radius, False, False)

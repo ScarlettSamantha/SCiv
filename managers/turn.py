@@ -100,6 +100,14 @@ class Turn(Singleton, DirectObject):
                     self.logger.info(f"Processing city {city.name} turn changes.")
                     city.on_turn_end(self.turn)
 
+            nature_player: Player = PlayerManager.get_nature()
+            self.logger.info("Processing nature player turn changes.")
+            nature_player.on_turn_end(self.turn)
+
+            barbarians: Player = PlayerManager.get_barbarian()
+            self.logger.info("Processing barbarian player turn changes.")
+            barbarians.on_turn_end(self.turn)
+
             for player in PlayerManager.all().values():
                 player: "Player" = player
                 self.logger.info(f"Processing player {player.name} turn changes.")

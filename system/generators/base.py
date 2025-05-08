@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
+
 from gameplay.civic import CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from gameplay.civilization import Civilization
@@ -190,8 +191,6 @@ class BaseGenerator(ABC):
             if player.is_nature or player.is_barbarian:  # Skip nature and barbarian players as they don't have settlers
                 continue
 
-            unit: Settler = Settler()
-            unit.owner = player
             spawn_tile: Optional[BaseTile] = None
             fallback_tile: Optional[BaseTile] = None  # Store a fallback tile if needed
 
@@ -237,6 +236,8 @@ class BaseGenerator(ABC):
             if spawn_tile is None:
                 raise Exception("No suitable spawn location found for a player")
 
+            unit: Settler = Settler(spawn_tile)
+            unit.owner = player
             units.append(unit)
             spawn_tile.add_unit(unit)
             occupied_tiles.append(spawn_tile)  # Track this tile as occupied

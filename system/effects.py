@@ -70,7 +70,7 @@ class Effects:
                 effect.city = effect.tile.city
         elif isinstance(self.parent, City) and effect.city is None:
             effect.city = self.parent
-            effect.tile = self.parent.tile
+            effect.tile = self.parent.get_tile()
         elif isinstance(self.parent, Player) and effect.player is None:
             effect.player = self.parent
         elif isinstance(self.parent, World) and effect.world is None:
@@ -242,7 +242,6 @@ class Effect(BaseEntity, ABC):
 
         self.id: str = uuid.uuid4().hex
 
-        self.tile: "BaseTile | None" = None
         self.city: "City | None" = None
         self.player: "Player | None" = None
         self.world: "World | None" = None
@@ -287,8 +286,8 @@ class Effect(BaseEntity, ABC):
     def generate_tag(self) -> str:
         if self.tile is None and self.city is not None:  # is a city effect
             return f"{self.__class__.__name__}_city_{self.city.name}_{self.id}"
-        elif self.tile is not None and self.city is None:  # is a tile effect
-            return f"{self.__class__.__name__}_tile_{self.tile.x}_{self.tile.y}_{self.id}"
+        elif self.city is None:  # is a tile effect
+            return f"{self.__class__.__name__}_tile_{self.get_tile().x}_{self.get_tile().y}_{self.id}"
         else:  # is a global effect
             return f"{self.__class__.__name__}_{self.id}"
 
