@@ -233,5 +233,12 @@
         "Zanjan",
         "zaragoza",
         "Zaragoza"
-    ]
+    ],
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": null,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "[jsonc]": {
+        "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    }
 }
