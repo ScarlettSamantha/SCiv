@@ -1,9 +1,10 @@
 from typing import TYPE_CHECKING, Any, Dict
 
-if TYPE_CHECKING:
-    from gameplay.ai.core import Goal
-    from gameplay.ai.goal import T_PARENT, T_TARGET
 from gameplay.player import Player
+from gameplay.ai.core import Goal
+
+if TYPE_CHECKING:
+    from gameplay.ai.goal import T_PARENT, T_TARGET
 
 
 class EliminatePlayer(Goal):
