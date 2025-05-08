@@ -127,7 +127,6 @@ class SCIV(ShowBase):
         from managers.ui import ui
 
         self.ui_manager.kivy_setup()
-        self.ui_manager.register()
         ui.set_singleton_instance(self.ui_manager)
 
         self.messenger.send("system.main.ready")
