@@ -1,9 +1,9 @@
 from typing import Any
 
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 
 
-class CoreBaseUnit(UnitBaseClass):
+class CoreBaseUnit(Unit):
     pass
 
 

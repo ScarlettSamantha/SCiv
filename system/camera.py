@@ -8,7 +8,7 @@ from panda3d.core import Camera as PandaCamera
 from panda3d.core import LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase
 
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -248,7 +248,7 @@ class Camera(Singleton, DirectObject):
             tile = capital.get_tile().get_pos()
             center = (tile[0], tile[1], 0)
         elif units := PlayerManager.session_player().get_all_units():
-            unit: "UnitBaseClass" = units[0]  # type: ignore
+            unit: "Unit" = units[0]  # type: ignore
             if unit is not None and unit.tile is not None:  # type: ignore
                 center = unit.get_tile().get_pos()  # type: ignore
                 center = (center[0], center[1], 0)

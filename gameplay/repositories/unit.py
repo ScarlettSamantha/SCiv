@@ -1,22 +1,22 @@
 from typing import Dict, Type
 
 from gameplay.promotion import Promotion, PromotionTree
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 from system.pyload import PyLoad
 
 
 class UnitRepository:
-    _cache: Dict[str, Type[UnitBaseClass]] = {}
+    _cache: Dict[str, Type[Unit]] = {}
 
     @classmethod
-    def all(cls, use_cache: bool = True) -> Dict[str, Type[UnitBaseClass]]:
+    def all(cls, use_cache: bool = True) -> Dict[str, Type[Unit]]:
         if use_cache and len(cls._cache) > 0:
             return cls._cache
 
-        classes: Dict[str, Type[UnitBaseClass]] = PyLoad.load_classes(
-            ["gameplay/units/core/classes/civilian", "gameplay/units/core/classes/military"], base_classes=UnitBaseClass
+        classes: Dict[str, Type[Unit]] = PyLoad.load_classes(
+            ["gameplay/units/core/classes/civilian", "gameplay/units/core/classes/military"], base_classes=Unit
         )
-        filtered: Dict[str, Type[UnitBaseClass]] = {}
+        filtered: Dict[str, Type[Unit]] = {}
         for key, _class in classes.items():
             if issubclass(_class, (Promotion, PromotionTree)):
                 continue
@@ -28,7 +28,7 @@ class UnitRepository:
         return filtered
 
     @classmethod
-    def get(cls, key: str, use_cache: bool = True) -> Type[UnitBaseClass]:
+    def get(cls, key: str, use_cache: bool = True) -> Type[Unit]:
         return cls.all(use_cache=use_cache)[key]
 
     @classmethod
@@ -36,5 +36,5 @@ class UnitRepository:
         return key in cls.all(use_cache=use_cache)
 
     @classmethod
-    def get_all_buildable_units(cls, use_cache: bool = True) -> Dict[str, Type[UnitBaseClass]]:
+    def get_all_buildable_units(cls, use_cache: bool = True) -> Dict[str, Type[Unit]]:
         return {_: unit for _, unit in cls.all(use_cache=use_cache).items() if unit.buildable}

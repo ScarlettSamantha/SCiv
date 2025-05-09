@@ -44,7 +44,7 @@ from world.items._base_item import BaseItem
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
-    from gameplay.units.unit_base import UnitBaseClass
+    from gameplay.units.unit import Unit
     from managers.player import Player
 
 
@@ -353,7 +353,7 @@ class BaseTile(BaseEntity):
         self.tile_icon_group.reparentTo(self.models[-1])  # type: ignore
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
-    def is_visisted_by(self, unit: "UnitBaseClass") -> bool:
+    def is_visisted_by(self, unit: "Unit") -> bool:
         messenger.send("unit.action.move.visiting_tile", [unit, self])
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
@@ -791,11 +791,11 @@ class BaseTile(BaseEntity):
     def is_city(self) -> bool:
         return self.city is not None
 
-    def add_unit(self, unit: "UnitBaseClass") -> None:
+    def add_unit(self, unit: "Unit") -> None:
         unit.tile = self
         self.units.add_unit(unit)
 
-    def remove_unit(self, unit: "UnitBaseClass") -> None:
+    def remove_unit(self, unit: "Unit") -> None:
         del unit.tile
         # Assuming the intent is to remove the unit.
         self.units.remove_unit(unit)

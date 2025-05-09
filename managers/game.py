@@ -12,7 +12,7 @@ from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 class Game(Singleton, DirectObject):
     def __init__(self, base: "SCIV", camera: Camera):
         from managers.ui import ui
-        from managers.unit import Unit
+        from managers.unit import UnitManager
 
         self.game_active: bool = False
         self.game_over: bool = False
@@ -52,7 +52,7 @@ class Game(Singleton, DirectObject):
         self.border: Borders | None = None
         self.config: ConfigManager = ConfigManager.get_singleton_instance()
         self.entities: EntityManager = EntityManager.get_singleton_instance(base=self.base)
-        self.unit: Unit = Unit.get_singleton_instance(base=self.base)
+        self.unit: UnitManager = UnitManager.get_singleton_instance(base=self.base)
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -123,7 +123,7 @@ class Game(Singleton, DirectObject):
 
         players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
 
-        units: Dict[str, "UnitBaseClass"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
+        units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
 
         self.world.load(world_tiles)
         self.players.load(players)

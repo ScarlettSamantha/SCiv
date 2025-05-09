@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit_base import UnitBaseClass
+    from gameplay.units.unit import Unit
     from managers.world import World
 
 
@@ -27,7 +27,7 @@ class EffectType(Enum):
     IMPROVEMENT = 5
 
 
-parent_types = Union["City", "BaseTile", "Player", "World", "UnitBaseClass", "Improvement"]
+parent_types = Union["City", "BaseTile", "Player", "World", "Unit", "Improvement"]
 
 
 class Effects:
@@ -61,7 +61,7 @@ class Effects:
         from gameplay.improvement import Improvement
         from gameplay.player import Player
         from gameplay.tiles.base_tile import BaseTile
-        from gameplay.units.unit_base import UnitBaseClass
+        from gameplay.units.unit import Unit
         from managers.world import World
 
         if isinstance(self.parent, BaseTile) and effect.tile is None:
@@ -75,7 +75,7 @@ class Effects:
             effect.player = self.parent
         elif isinstance(self.parent, World) and effect.world is None:
             effect.world = self.parent
-        elif isinstance(self.parent, UnitBaseClass) and effect.unit is None:
+        elif isinstance(self.parent, Unit) and effect.unit is None:
             effect.unit = self.parent
         elif isinstance(self.parent, Improvement) and effect.improvement is None:
             effect.improvement = self.parent
@@ -89,7 +89,7 @@ class Effects:
             effect.player = None
         elif isinstance(self.parent, "World") and effect.world is not None:
             effect.world = None
-        elif isinstance(self.parent, "UnitBaseClass") and effect.unit is not None:
+        elif isinstance(self.parent, "Unit") and effect.unit is not None:
             effect.unit = None
         elif isinstance(self.parent, "Improvement") and effect.improvement is not None:
             effect.improvement = None
@@ -184,7 +184,7 @@ def _place_on_improvement(improvement: "Improvement", effect: "Effect") -> None:
     improvement.effects.add_effect(effect)
 
 
-def _place_on_unit(unit: "UnitBaseClass", effect: "Effect") -> None:
+def _place_on_unit(unit: "Unit", effect: "Effect") -> None:
     unit.effects.add_effect(effect)
 
 
@@ -218,7 +218,7 @@ class EffectPlacers(Enum):
             _place_on_world(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_IMPROVEMENT and isinstance(base_object, "Improvement"):
             _place_on_improvement(base_object, effect)
-        elif self == EffectPlacers.PLACE_ON_UNIT and isinstance(base_object, "UnitBaseClass"):
+        elif self == EffectPlacers.PLACE_ON_UNIT and isinstance(base_object, "Unit"):
             _place_on_unit(base_object, effect)
         else:
             raise ValueError("Invalid place method.")
@@ -246,7 +246,7 @@ class Effect(BaseEntity, ABC):
         self.player: "Player | None" = None
         self.world: "World | None" = None
         self.improvement: "Improvement | None" = None
-        self.unit: "UnitBaseClass | None" = None
+        self.unit: "Unit | None" = None
 
         self.yield_impact: Yields = Yields.nullYield()  # Will be read on turn change
         self.maintenance_impact: Yields = (

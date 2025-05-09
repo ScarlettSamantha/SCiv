@@ -13,7 +13,7 @@ from gameplay.player import Player
 from gameplay.repositories.tile import TileRepository
 from gameplay.tech import Tech
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 from helpers.colors import Colors
 from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType
@@ -51,8 +51,8 @@ class ui(Singleton, DirectObject):
         self.neighboring_tiles: List[BaseTile] = []
         self.previous_tiles: List[BaseTile] = []
 
-        self.current_unit: Optional[UnitBaseClass] = None
-        self.previous_unit: Optional[UnitBaseClass] = None
+        self.current_unit: Optional[Unit] = None
+        self.previous_unit: Optional[Unit] = None
 
         self.game_menu_state: Optional[Game] = None
         self.registered = False if not self.registered else self.register
@@ -221,7 +221,7 @@ class ui(Singleton, DirectObject):
 
         ui.refresh_top_bar()
 
-    def on_unit_destroyed(self, unit: UnitBaseClass):
+    def on_unit_destroyed(self, unit: Unit):
         messenger.send("ui.update.ui.unit_unselected", [unit])
         if unit == self.current_unit:
             self.current_unit = None
@@ -525,14 +525,14 @@ class ui(Singleton, DirectObject):
         for _, tile in self.map.map.items():
             tile.set_color(Colors.RESTORE)
 
-    def select_unit(self, unit: List[str] | UnitBaseClass):
+    def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
             result = self.get_entities().get(EntityType.UNIT, unit[0])
             if result is None:
                 return
-            object: BaseEntity | UnitBaseClass = result
+            object: BaseEntity | Unit = result
         else:
-            object: BaseEntity | UnitBaseClass = unit
+            object: BaseEntity | Unit = unit
 
         if self.current_tile is not None:
             self.current_tile.set_color(Colors.RESTORE)
@@ -544,7 +544,7 @@ class ui(Singleton, DirectObject):
             if self.previous_unit.model is not None:  # type: ignore # type: "NodePath"
                 self.previous_unit.set_color(Colors.RESTORE)
 
-        if isinstance(object, UnitBaseClass):
+        if isinstance(object, Unit):
             if object.owner == PlayerManager.session_player():
                 # Green for player units
                 object.set_color(Colors.GREEN)

@@ -5,7 +5,7 @@ from gameplay.ai.goal import T_PARENT
 from gameplay.border import TileRepository
 
 if TYPE_CHECKING:
-    from gameplay._units import UnitBaseClass
+    from gameplay._units import Unit
 
 
 class EliminateUnit(Goal):
@@ -19,8 +19,8 @@ class EliminateUnit(Goal):
 
     def __init__(
         self,
-        target: "UnitBaseClass",
-        executing_unit: "UnitBaseClass",
+        target: "Unit",
+        executing_unit: "Unit",
         parent: T_PARENT,
         *args: Dict[str, Any],
         **kwargs: Dict[str, Any],
@@ -43,5 +43,5 @@ class EliminateUnit(Goal):
             else:
                 self.get_executing_unit().attack(self.target)
 
-    def get_target(self) -> "UnitBaseClass":
+    def get_target(self) -> "Unit":
         return self.target  # type: ignore[return-value]

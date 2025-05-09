@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit_base import UnitBaseClass
+    from gameplay.units.unit import Unit
 
 
 class City(BaseEntity, DirectObject.DirectObject):
@@ -69,7 +69,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.resource_required: Optional[type[BaseResource]] = None
         self.resource_required_amount: Yields = Yields.nullYield()  # no-op
         self.resource_collected: Yields = Yields.nullYield()  # no-op # This is the amount of resources collected so far
-        self.building: BaseCityImprovement | UnitBaseClass | None = None  # can be either improvement or unit
+        self.building: BaseCityImprovement | Unit | None = None  # can be either improvement or unit
 
         self._improvements: ImprovementsSet = ImprovementsSet()
         self.tag = ""
@@ -136,7 +136,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         """Process production: add resources and check if improvement is complete."""
         production = tile_yield.only(["production"])
         self.resource_collected += production
-        from gameplay.units.unit_base import UnitBaseClass
+        from gameplay.units.unit import Unit
 
         if self.resource_collected.only(["production"]) >= self.resource_required_amount and self.building is not None:
             self.logger.debug(f"City {self.name} has collected enough resources to build {self.building.name}.")
@@ -152,7 +152,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             if isinstance(building, BaseCityImprovement):
                 self._improvements.add(building)
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_improvement", [self, building])
-            elif isinstance(building, UnitBaseClass):  # type: ignore
+            elif isinstance(building, Unit):  # type: ignore
                 if self.player is not None:
                     self.player.units.add_unit(building)
 
@@ -180,7 +180,7 @@ class City(BaseEntity, DirectObject.DirectObject):
                 if tile_to_spawn is None:
                     raise AssertionError("Could not find a tile to spawn the unit on.")
 
-                unit: UnitBaseClass = building
+                unit: Unit = building
                 unit.tile = tile_to_spawn
                 unit.owner = self.player
                 unit.spawn()
@@ -282,11 +282,11 @@ class City(BaseEntity, DirectObject.DirectObject):
     def on_request_start_building_improvement(self, city: "City", improvement: "BaseCityImprovement"):
         if city != self:  # This does not concern us
             return
-        from gameplay.units.unit_base import UnitBaseClass
+        from gameplay.units.unit import Unit
 
         self.logger.debug(f"City {city.name} got request to build improvement {improvement.name}.")
 
-        if not isinstance(improvement, BaseCityImprovement) and not isinstance(improvement, UnitBaseClass):  # type: ignore
+        if not isinstance(improvement, BaseCityImprovement) and not isinstance(improvement, Unit):  # type: ignore
             self.logger.error("Improvement is not an instance of BaseCityImprovement or UnitBaseClass.")
             return
 
@@ -304,7 +304,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.logger.debug(f"City {self.name} is starting to build improvement {improvement.name}. sending message.")
         MessengerGlobal.messenger.send("game.gameplay.city.starts_building_improvement", [self, improvement])
 
-    def on_request_start_building_unit(self, city: "City", unit: "UnitBaseClass"):
+    def on_request_start_building_unit(self, city: "City", unit: "Unit"):
         if city != self:
             return
 

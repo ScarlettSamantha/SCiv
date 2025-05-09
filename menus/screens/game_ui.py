@@ -20,10 +20,10 @@ from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tech import TechTree
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
-from managers.unit import Unit
+from managers.unit import UnitManager
 from managers.world import World
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.action_bar import ActionBar
@@ -63,7 +63,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.world_manager = World.get_singleton_instance()
         self.camera: Camera = Camera.get_singleton_instance()
-        self.unit_manager: Unit = Unit.get_singleton_instance()
+        self.unit_manager: UnitManager = UnitManager.get_singleton_instance()
         self.ui_manager: ui = ui.get_singleton_instance()
         self.player: Optional[Player] = None
 
@@ -71,7 +71,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.wait_for_next_input_of_user: bool = False
         self.wait_for_action_of_user: Optional[partial[Callable[[Optional[BaseTile]], None]]] = None
-        self.unit_waiting_for_action: Optional[UnitBaseClass] = None
+        self.unit_waiting_for_action: Optional[Unit] = None
 
         self.debug_panel: Optional[Label] = None
         self.camera_panel: Optional[Label] = None
@@ -461,11 +461,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.action_bar_frame is None:
             return
 
-        _unit: Optional[UnitBaseClass] = None
+        _unit: Optional[Unit] = None
         if isinstance(unit, str):
-            _unit: Optional[UnitBaseClass] = self.unit_manager.find_unit(unit)
+            _unit: Optional[Unit] = self.unit_manager.find_unit(unit)
         else:
-            _unit: Optional[UnitBaseClass] = unit if isinstance(unit, UnitBaseClass) else None
+            _unit: Optional[Unit] = unit if isinstance(unit, Unit) else None
 
         if _unit is not None:
             self.action_bar_frame.clear_buttons()
@@ -525,7 +525,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.action_bar_frame.clear_buttons()
 
-    def prepare_build_action(self, improvement: Type[Improvement], unit: UnitBaseClass):
+    def prepare_build_action(self, improvement: Type[Improvement], unit: Unit):
         from gameplay.actions.unit.build import BuildAction
 
         action = BuildAction(improvement, unit)
@@ -537,7 +537,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.clear_action_bar()
         self.generate_buttons_for_unit_actions(unit)
 
-    def prepare_action(self, action: Action, unit: UnitBaseClass, _):
+    def prepare_action(self, action: Action, unit: Unit, _):
         """Prepares an action and waits for the next tile click before executing."""
         if action.on_the_spot_action:
             action.action_kwargs["unit"] = unit
@@ -551,7 +551,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.unit_waiting_for_action = unit
         self.waiting_for_world_input = True  # type: ignore # We know it exists because it's initialized in build_screen
 
-    def execute_action(self, action: Action, unit: UnitBaseClass, tile: Optional[BaseTile]):
+    def execute_action(self, action: Action, unit: Unit, tile: Optional[BaseTile]):
         """Executes the action after tile selection (if required)."""
         action.action_kwargs["unit"] = unit
 

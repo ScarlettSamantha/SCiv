@@ -12,7 +12,7 @@ from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 from helpers.cache import Optional
 from managers.game import World
 from managers.player import PlayerManager
@@ -116,7 +116,7 @@ class AI(ABC):
     @abstractmethod
     def on_game_start(self) -> None: ...
 
-    def spawn_unit(self, unit: Type["UnitBaseClass"], tile: BaseTile) -> "UnitBaseClass":
+    def spawn_unit(self, unit: Type["Unit"], tile: BaseTile) -> "Unit":
         """
         Spawn a unit on the given tile.
         """
@@ -146,19 +146,19 @@ class AI(ABC):
             targets.update(self.get_target_for_unit(unit))
         return targets
 
-    def create_goals_for_unit(self, executing_unit: UnitBaseClass) -> Optional[Goal]:
+    def create_goals_for_unit(self, executing_unit: Unit) -> Optional[Goal]:
         targets = self.get_target_for_unit(executing_unit)
         if len(targets) == 0:
             return None
 
         for tile in targets.values():
             if tile.units.has_any():
-                target_unit: UnitBaseClass | None = tile.units.first()
+                target_unit: Unit | None = tile.units.first()
                 if target_unit is None or target_unit.owner == self.get_player():
                     continue
                 return EliminateUnit(target=target_unit, executing_unit=executing_unit, parent=weakref.ref(self))
 
-    def get_goals_for_unit(self, executing_unit: UnitBaseClass) -> List[Goal]:
+    def get_goals_for_unit(self, executing_unit: Unit) -> List[Goal]:
         """
         Get the goals for a specific unit.
         """
@@ -168,7 +168,7 @@ class AI(ABC):
                 goals.append(unit_goal)
         return goals
 
-    def get_target_for_unit(self, unit: UnitBaseClass) -> Dict[Tuple[int, int], BaseTile]:
+    def get_target_for_unit(self, unit: Unit) -> Dict[Tuple[int, int], BaseTile]:
         targets: Dict[Tuple[int, int], BaseTile] = {}
         for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
             if tile.is_city() and tile.owner != self.get_player():
@@ -185,7 +185,7 @@ class AI(ABC):
             threats.update(self.get_threat_for_unit(unit))
         return threats
 
-    def get_threat_for_unit(self, unit: UnitBaseClass) -> Dict[Tuple[int, int], BaseTile]:
+    def get_threat_for_unit(self, unit: Unit) -> Dict[Tuple[int, int], BaseTile]:
         threats: Dict[Tuple[int, int], BaseTile] = {}
         for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
             if tile.is_city() and tile.owner != self.get_player():
@@ -194,14 +194,14 @@ class AI(ABC):
                 threats[tile.x, tile.y] = tile
         return threats
 
-    def is_target(self, unit: UnitBaseClass) -> bool:
+    def is_target(self, unit: Unit) -> bool:
         """
         Check if the unit is a target.
         """
         result = unit.owner != self.get_player()
         return result
 
-    def is_threat(self, unit: UnitBaseClass) -> bool:
+    def is_threat(self, unit: Unit) -> bool:
         """
         Check if the unit is a threat.
         """
@@ -211,9 +211,7 @@ class AI(ABC):
     def check_route_to(self, _from: "BaseTile", to: "BaseTile", radius: int = 5) -> bool:
         return TileRepository.astar(_from, to, radius) is not None
 
-    def move_unit(
-        self, unit: UnitBaseClass, to: BaseTile, on_tile_visit: Optional[Callable[["BaseTile"], None]] = None
-    ) -> None:
+    def move_unit(self, unit: Unit, to: BaseTile, on_tile_visit: Optional[Callable[["BaseTile"], None]] = None) -> None:
         """
         Move a unit to a specific tile.
         """

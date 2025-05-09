@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.resources.core.basic._base import BasicBaseResource
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit_base import UnitBaseClass
+    from gameplay.units.unit import Unit
 
 
 class ImprovementBuildTurnMode(Enum):
@@ -38,7 +38,7 @@ class Improvement(BaseEntity):
 
     placeable_on_condition: Conditions | bool = True
 
-    placeable_by_unit: Type["UnitBaseClass"] | None = None
+    placeable_by_unit: Type["Unit"] | None = None
 
     placeable_by_player: bool = False
     placeable_on_tiles: bool = False

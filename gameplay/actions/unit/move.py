@@ -3,13 +3,13 @@ from typing import Any
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
-from gameplay.units.unit_base import CantMoveReason, UnitBaseClass
+from gameplay.units.unit import CantMoveReason, Unit
 from managers.i18n import t_
 from system.actions import Action
 
 
 class WalkAction(BaseUnitAction):
-    def __init__(self, instance: UnitBaseClass):
+    def __init__(self, instance: Unit):
         self.unit = instance
         super().__init__(
             name=t_("actions.unit.move"),

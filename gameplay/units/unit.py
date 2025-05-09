@@ -18,7 +18,7 @@ from main import Cache
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
-from managers.unit import Unit
+from managers.unit import UnitManager
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -45,7 +45,7 @@ class CantMoveReason(Enum):
     OTHER_UNIT_ON_TILE = 9  # This might have to integrate with the other owner in some way ether being it attacking or being attacked or just not being able to move.
 
 
-class UnitBaseClass(BaseEntity, ABC):
+class Unit(BaseEntity, ABC):
     _model: Optional[str] = None
 
     buildable: bool = False
@@ -126,7 +126,7 @@ class UnitBaseClass(BaseEntity, ABC):
         if self.owner is not None:
             self.owner.units.add_unit(entity_manager.get(EntityType.UNIT, str(self.tag)))  # type: ignore
 
-        Unit.get_singleton_instance().add_unit(self)
+        UnitManager.get_singleton_instance().add_unit(self)
 
     @overload
     def set_pos(self, pos: Tuple[float, float, float], maintain_z: bool = True) -> None: ...
@@ -160,7 +160,7 @@ class UnitBaseClass(BaseEntity, ABC):
         from managers.entity import EntityManager, EntityType
 
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.UNIT)
-        Unit.get_singleton_instance().remove_unit(self)
+        UnitManager.get_singleton_instance().remove_unit(self)
 
     def spawn(self, ignore_constraints: bool = False) -> bool:
         """
@@ -186,14 +186,14 @@ class UnitBaseClass(BaseEntity, ABC):
         return True
 
     @classmethod
-    def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "UnitBaseClass":
+    def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "Unit":
         instance = cls(tile)
         instance.owner = player
         instance.spawn()
 
         player.units.add_unit(instance)
         tile.units.add_unit(instance)
-        Unit.get_singleton_instance().add_unit(instance)
+        UnitManager.get_singleton_instance().add_unit(instance)
 
         return instance
 
@@ -386,11 +386,11 @@ class UnitBaseClass(BaseEntity, ABC):
         return True
 
     @classmethod
-    def get_unit_by_tag(cls, tag: str) -> Optional["UnitBaseClass"]:
+    def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:
         from managers.entity import EntityManager, EntityType
 
-        entity: UnitBaseClass | BaseEntity | None = EntityManager.get_singleton_instance().get(EntityType.UNIT, tag)
-        if isinstance(entity, UnitBaseClass):
+        entity: Unit | BaseEntity | None = EntityManager.get_singleton_instance().get(EntityType.UNIT, tag)
+        if isinstance(entity, Unit):
             return entity
         return None
 

@@ -3,14 +3,14 @@ from weakref import ReferenceType
 from exceptions.ai import AIException
 
 if TYPE_CHECKING:
-    from gameplay._units import UnitBaseClass
+    from gameplay._units import Unit
     from gameplay.ai.core import AI
     from gameplay.cities import City
     from gameplay.improvement import Improvement
     from gameplay.player import Player
 
 
-T_TARGET = Union["City", "Player", "Improvement", "UnitBaseClass"]
+T_TARGET = Union["City", "Player", "Improvement", "Unit"]
 T_PARENT = Union[ReferenceType["AI"], "AI"]
 
 
@@ -20,8 +20,8 @@ class Goal:
     for_unit: bool = False
     needs_turn_processing: bool = True
 
-    def __init__(self, parent: T_PARENT, target: T_TARGET, executing_unit: Optional["UnitBaseClass"] = None):
-        self.executing_unit: Optional["UnitBaseClass"] = executing_unit
+    def __init__(self, parent: T_PARENT, target: T_TARGET, executing_unit: Optional["Unit"] = None):
+        self.executing_unit: Optional["Unit"] = executing_unit
         self.target: T_TARGET = target
         self.parent_ai: ReferenceType["AI"] = parent if isinstance(parent, ReferenceType) else ReferenceType(parent)
         self.achieved: bool = False
@@ -38,7 +38,7 @@ class Goal:
         """Check if the goal is for a specific unit."""
         return self.for_unit
 
-    def get_executing_unit(self) -> "UnitBaseClass":
+    def get_executing_unit(self) -> "Unit":
         """Get the executing unit for this goal."""
         if self.executing_unit is None and self.for_unit:
             raise AIException("Executing unit is None when for_unit is True")
@@ -83,7 +83,7 @@ class Goals:
             return any(isinstance(g, goal) for g in self.goals)
         return goal in self.goals
 
-    def has_goal_for_unit(self, executing_unit: "UnitBaseClass", goal_type: Optional[Type[Goal]] = None) -> bool:
+    def has_goal_for_unit(self, executing_unit: "Unit", goal_type: Optional[Type[Goal]] = None) -> bool:
         """
         Check if a specific unit has a goal of a certain type.
         If goal_type is None, check for any goal for the unit.

@@ -13,7 +13,7 @@ from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
 from managers.log import LogManager
-from managers.unit import Unit
+from managers.unit import UnitManager
 
 monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window
 
@@ -109,8 +109,8 @@ class SCIV(ShowBase):
 
         loading_screen.next_stage("Setting up unit manager")
         self.engine_logger.info("Setting up unit manager")
-        self.unit_manager = Unit(self)
-        Unit.set_singleton_instance(self.unit_manager)
+        self.unit_manager = UnitManager(self)
+        UnitManager.set_singleton_instance(self.unit_manager)
 
         self.engine_logger.info("Setting up UI manager")
         loading_screen.next_stage("Setting up kivy")

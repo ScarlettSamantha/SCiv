@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from gameplay.units.unit_base import UnitBaseClass
+from gameplay.units.unit import Unit
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Vision:
     def __init__(self):
         self._visible_tiles: List[BaseTile] = []
-        self._visible_units: List[UnitBaseClass] = []
+        self._visible_units: List[Unit] = []
         self._visible_cities: List[City] = []
         self._visible_resources: List[BaseResource] = []
         self._visible_improvements: List[Improvement] = []
@@ -30,14 +30,14 @@ class Vision:
         if tile in self._visible_tiles:
             self._visible_tiles.remove(tile)
 
-    def get_visible_units(self) -> List["UnitBaseClass"]:
+    def get_visible_units(self) -> List["Unit"]:
         return self._visible_units
 
-    def add_visible_unit(self, unit: "UnitBaseClass"):
+    def add_visible_unit(self, unit: "Unit"):
         if unit not in self._visible_units:
             self._visible_units.append(unit)
 
-    def remove_visible_unit(self, unit: "UnitBaseClass"):
+    def remove_visible_unit(self, unit: "Unit"):
         if unit in self._visible_units:
             self._visible_units.remove(unit)
 

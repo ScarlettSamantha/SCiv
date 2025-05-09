@@ -15,7 +15,7 @@ from system.entity import BaseEntity
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.player import Player
-    from gameplay.units.unit_base import UnitBaseClass  # Prevent circular import
+    from gameplay.units.unit import Unit  # Prevent circular import
     from main import SCIV
 
 
@@ -127,7 +127,7 @@ class Turn(Singleton, DirectObject):
                 entity_manager: EntityManager = EntityManager.get_singleton_instance()
                 for _, entity in entity_manager.get_all_refs(EntityType.UNIT).items():
                     entity: weakref.ReferenceType["BaseEntity"] = entity
-                    entity_instance: "UnitBaseClass | None" = entity()  # type: ignore
+                    entity_instance: "Unit | None" = entity()  # type: ignore
 
                     if entity_instance is not None:
                         entity_instance.restore_movement_points()

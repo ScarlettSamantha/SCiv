@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from gameplay.ai.core import AI
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit_base import UnitBaseClass
+    from gameplay.units.unit import Unit
 
 
 class Player(BaseEntity):
@@ -255,10 +255,10 @@ class Player(BaseEntity):
     def remove_effect(self, effect: Effect) -> None:
         self.effects.remove_effect(effect)
 
-    def add_unit(self, unit: "UnitBaseClass") -> None:
+    def add_unit(self, unit: "Unit") -> None:
         self.units.add_unit(unit)
 
-    def remove_unit(self, unit: "UnitBaseClass") -> None:
+    def remove_unit(self, unit: "Unit") -> None:
         self.units.remove_unit(unit)
 
     def destroy(self):
@@ -268,7 +268,7 @@ class Player(BaseEntity):
     def get_units(self) -> Units:
         return self.units
 
-    def get_all_units(self) -> List["UnitBaseClass"]:
+    def get_all_units(self) -> List["Unit"]:
         return self.get_units().all()
 
     def add_city(self, city: "City") -> None:

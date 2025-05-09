@@ -17,7 +17,7 @@ from system.effects import Effects
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit_base import UnitBaseClass
+    from gameplay.units.unit import Unit
     from main import SCIV
     from managers.player import Player
     from system.generators.base import BaseGenerator
@@ -50,7 +50,7 @@ class World(Singleton, DirectObject):
         self.grid = {}
         self.effects = Effects(self)
 
-        unit: "UnitBaseClass"
+        unit: "Unit"
         for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
             unit.destroy()
 
@@ -77,7 +77,7 @@ class World(Singleton, DirectObject):
         for tile in self.map.values():  # Place the tiles
             tile.on_load()
 
-        unit: "UnitBaseClass"
+        unit: "Unit"
         for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
             unit.on_load()
 
