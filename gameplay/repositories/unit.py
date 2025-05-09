@@ -1,7 +1,7 @@
 from typing import Dict, Type
 
 from gameplay.promotion import Promotion, PromotionTree
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 from system.pyload import PyLoad
 
 

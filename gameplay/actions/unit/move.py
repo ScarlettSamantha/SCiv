@@ -3,7 +3,7 @@ from typing import Any
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
-from gameplay.units.unit import CantMoveReason, Unit
+from gameplay.unit import CantMoveReason, Unit
 from managers.i18n import t_
 from system.actions import Action
 

@@ -13,7 +13,7 @@ from gameplay.player import Player
 from gameplay.repositories.tile import TileRepository
 from gameplay.tech import Tech
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 from helpers.colors import Colors
 from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType

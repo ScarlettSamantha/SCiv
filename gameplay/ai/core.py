@@ -12,7 +12,7 @@ from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 from helpers.cache import Optional
 from managers.game import World
 from managers.player import PlayerManager

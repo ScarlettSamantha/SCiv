@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Iterator, List, Optional, TypeVar
 
 if TYPE_CHECKING:
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
 
 T = TypeVar("T", bound="Unit")
 

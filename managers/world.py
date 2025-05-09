@@ -17,7 +17,7 @@ from system.effects import Effects
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
     from main import SCIV
     from managers.player import Player
     from system.generators.base import BaseGenerator

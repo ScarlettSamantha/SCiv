@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List
 
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 
 if TYPE_CHECKING:
     from gameplay.city import City

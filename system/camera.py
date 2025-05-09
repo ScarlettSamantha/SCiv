@@ -8,7 +8,7 @@ from panda3d.core import Camera as PandaCamera
 from panda3d.core import LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase
 
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:

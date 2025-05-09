@@ -15,7 +15,7 @@ from system.entity import BaseEntity
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.player import Player
-    from gameplay.units.unit import Unit  # Prevent circular import
+    from gameplay.unit import Unit  # Prevent circular import
     from main import SCIV
 
 

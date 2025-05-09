@@ -20,7 +20,7 @@ from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tech import TechTree
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.unit import UnitManager

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 
 if TYPE_CHECKING:
     from gameplay.tiles.base_tile import BaseTile

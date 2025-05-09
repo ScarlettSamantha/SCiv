@@ -12,7 +12,7 @@ from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from gameplay.tiles.base_tile import BaseTile
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input

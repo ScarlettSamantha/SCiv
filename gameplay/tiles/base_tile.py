@@ -44,7 +44,7 @@ from world.items._base_item import BaseItem
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
     from managers.player import Player
 
 

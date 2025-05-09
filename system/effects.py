@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
     from managers.world import World
 
 
@@ -61,7 +61,7 @@ class Effects:
         from gameplay.improvement import Improvement
         from gameplay.player import Player
         from gameplay.tiles.base_tile import BaseTile
-        from gameplay.units.unit import Unit
+        from gameplay.unit import Unit
         from managers.world import World
 
         if isinstance(self.parent, BaseTile) and effect.tile is None:

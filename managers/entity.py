@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
     from main import SCIV
     from system.effects import Effect
 
@@ -44,7 +44,7 @@ class EntityType(Enum):
 
                 self._base_type = BaseTile
             elif self == EntityType.UNIT:
-                from gameplay.units.unit import Unit
+                from gameplay.unit import Unit
 
                 self._base_type = Unit
             elif self == EntityType.IMPROVEMENT:

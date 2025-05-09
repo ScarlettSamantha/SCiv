@@ -1,6 +1,6 @@
 from typing import Any
 
-from gameplay.units.unit import Unit
+from gameplay.unit import Unit
 
 
 class CoreBaseUnit(Unit):

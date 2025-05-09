@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
     from main import SCIV
 
 

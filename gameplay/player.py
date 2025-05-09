@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from gameplay.ai.core import AI
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
 
 
 class Player(BaseEntity):

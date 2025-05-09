@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tiles.base_tile import BaseTile
-    from gameplay.units.unit import Unit
+    from gameplay.unit import Unit
 
 
 class City(BaseEntity, DirectObject.DirectObject):
@@ -136,7 +136,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         """Process production: add resources and check if improvement is complete."""
         production = tile_yield.only(["production"])
         self.resource_collected += production
-        from gameplay.units.unit import Unit
+        from gameplay.unit import Unit
 
         if self.resource_collected.only(["production"]) >= self.resource_required_amount and self.building is not None:
             self.logger.debug(f"City {self.name} has collected enough resources to build {self.building.name}.")
@@ -282,7 +282,7 @@ class City(BaseEntity, DirectObject.DirectObject):
     def on_request_start_building_improvement(self, city: "City", improvement: "BaseCityImprovement"):
         if city != self:  # This does not concern us
             return
-        from gameplay.units.unit import Unit
+        from gameplay.unit import Unit
 
         self.logger.debug(f"City {city.name} got request to build improvement {improvement.name}.")
 
