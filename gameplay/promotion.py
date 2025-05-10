@@ -1,7 +1,5 @@
 from abc import abstractmethod
 from typing import Any, Iterable, List, Self
-
-from gameplay.combat.stats import Stats
 from managers.i18n import T_TranslationOrStr
 from mixins.callbacks import CallbacksMixin
 from system.requires import Requires, RequiresMultiple, T_Requires
@@ -16,7 +14,6 @@ class Promotion(CallbacksMixin):
         icon: str,
         aquired: bool = False,
         requires: T_Requires = None,
-        combat_stats: Stats = Stats(),
         *args: Any,
         **kwargs: Any,
     ):
@@ -26,7 +23,6 @@ class Promotion(CallbacksMixin):
         self.description: T_TranslationOrStr = description
         self.icon: str = icon
         self._requires: T_Requires = requires
-        self.combat_stats: Stats = combat_stats
 
         self.aquired: bool = aquired
 
@@ -96,9 +92,6 @@ class PromotionTree(CallbacksMixin):
         self.icon: str = icon
         self.requires: T_Requires = unlock_requires
         self.unlocked: bool = unlocked
-
-        # Unlike the Promotion class, we don't have a combat_stats attribute here as we need to calculate the effects of all promotions in the tree.
-        self.combat_stats: Stats = Stats()
         self.register_promotions()
 
     @abstractmethod

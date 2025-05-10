@@ -1,6 +1,5 @@
 from typing import Any, Iterator, List
 
-from gameplay.combat.stats import Stats
 from managers.i18n import T_TranslationOrStr
 from system.requires import Requires
 
@@ -24,7 +23,6 @@ class Item:
         self.active: bool = False
 
         self.requires: Requires = requires
-        self.combat_stats: Stats = Stats()
 
 
 class Items:
