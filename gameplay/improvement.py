@@ -50,18 +50,16 @@ class Improvement(BaseEntity):
         self,
         key: Optional[str] = None,
         tile: "BaseTile | None" = None,
+        owner: Optional["Player"] = None,
         *args: Any,
         **kwargs: Any,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(tile, owner, *args, **kwargs)
         from gameplay.resources.core.basic.production import Production
 
         self.key: str = key if key else uuid.uuid4().hex
         self.active: bool = True
         self.destroyed: bool = False
-
-        self.health: int = 100
-        self.max_health: int = 100
 
         self.upgradable: bool = False
         self.upgrade_into: Type[Improvement] | None = None

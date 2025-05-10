@@ -55,9 +55,6 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.border_growth_cost: int = 10 * len(self.owned_tiles) + 10
         self.border_growth_next_tile: Optional[BaseTile] = None
 
-        self.health: int = 100
-        self.max_health: int = 100
-
         self.tax_level: float = 0.0
         self.population_food_usage: float = 1.0
         self.new_population_food_required: Yields = Yields(
@@ -236,8 +233,6 @@ class City(BaseEntity, DirectObject.DirectObject):
 
     def remove_owned_tile(self, tile: "BaseTile"):
         self.owned_tiles.remove(tile)
-
-    def destroy(self): ...
 
     def recalculate_border_growth_cost(self) -> int:
         self.border_growth_cost = 10 * len(self.owned_tiles) + 10
