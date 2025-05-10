@@ -1,27 +1,43 @@
 repos:
   - repo: local
     hooks:
+      # 1) Automatically apply all auto-fixable Ruff formatting
+      - id: ruff-fix
+        name: Ruff auto-fix
+        entry: ruff format
+        language: system
+        types: [python]
+
+      # 2) Pyright on changed files
       - id: pyright-diff
         name: Pyright on changed files
         entry: bash .pre-commit-hooks/pyright-diff.sh
         language: system
         types: [python]
+
+      # 3) Full Pyright check on merge commits
       - id: pyright-full
         name: Full Pyright check
         entry: >
           bash -c 'if [ -f .git/MERGE_HEAD ]; then pyright .; else echo "Skipping full pyright (not a merge)"; fi'
         language: system
         types: [python]
+
+      # 4) Ruff linting (after auto-fix)
       - id: ruff-lint
         name: Ruff lint check
         entry: ruff check .
         language: system
         types: [python]
+
+      # 5) Verify no remaining formatting changes
       - id: ruff-format
         name: Ruff format check
-        entry: ruff format --check --diff .
+        entry: ruff format --check --diff
         language: system
         types: [python]
+
+      # 6) Markdown linting
       - id: markdown-lint
         name: Markdown lint
         entry: markdownlint '**/*.md' -c .markdownlint.json -i stubs
