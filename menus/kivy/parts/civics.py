@@ -84,7 +84,7 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         self.bg_rect.pos = self.pos  # type: ignore
         self.bg_rect.size = self.size
 
-    def _update_label(self, instance: Label, size: List[int]) -> None:
+    def _update_label(self, instance: Label, size: Tuple[int, int]) -> None:
         instance.text_size = size
 
     def _on_click(self, *args: Any):
@@ -168,7 +168,7 @@ class SubtreeCard(BoxLayout):
         self.bg_rect.pos = self.pos  # type: ignore
         self.bg_rect.size = self.size
 
-    def _update_label(self, instance: Label, size: List[int]) -> None:
+    def _update_label(self, instance: Label, size: Tuple[int, int]) -> None:
         instance.text_size = size
 
 
