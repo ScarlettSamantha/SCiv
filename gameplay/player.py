@@ -261,7 +261,7 @@ class Player(BaseEntity):
     def remove_unit(self, unit: "Unit") -> None:
         self.units.remove_unit(unit)
 
-    def destroy(self):
+    def destroy(self, as_system: bool = False) -> None:
         """Player is destroyed or wiped out."""
         self.unregister()
 

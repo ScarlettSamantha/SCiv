@@ -991,7 +991,7 @@ class BaseTile(BaseEntity):
     def is_showing_large_icons(self) -> bool:
         return self._showing_large_icons
 
-    def destroy(self):
+    def destroy(self, as_system: bool = False) -> None:
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
         self.unrender_all()
         self.destroyed = True
