@@ -9,12 +9,11 @@ from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import BitMask32, LVector3, NodePath
 
 
-from gameplay.ai.goal import T_TARGET
-from gameplay.combat.stats import Stats
 from gameplay.condition import Condition
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from main import Cache
+from managers.combat import T_TARGET, Combat
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
@@ -74,17 +73,6 @@ class Unit(BaseEntity, ABC):
         self.pos_y: float = 0.0
         self.pos_x: float = 0.0
         self.pos_z: float = 0.0
-
-        self.max_health: int = 100
-        self.current_health: int = 100
-
-        self.max_attacks: int = 1
-        self.attacks_left: int = 1
-
-        self.stats: Stats = Stats()
-        # 1 is mele
-        self.range: int = 1
-        self.in_direct: bool = False
 
         self.max_moves: int = 10
         self.moves_left: int | float = 10.0
@@ -154,7 +142,7 @@ class Unit(BaseEntity, ABC):
             self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))  # type: ignore
 
     def is_alive(self) -> bool:
-        return self.current_health > 0
+        return self.health() > 0
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -268,8 +256,6 @@ class Unit(BaseEntity, ABC):
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
 
-    def attack(self, target: T_TARGET) -> None: ...
-
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
 
@@ -346,20 +332,21 @@ class Unit(BaseEntity, ABC):
             "owner": owner_name,
             "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",
             "tile": self.get_tile().tag if self.tile is not None else "None",
-            "health": f"{self.current_health}/{self.max_health}",
-            "attacks": f"{self.attacks_left}/{self.max_attacks}",
-            "damage": self.stats.attack_modifier,
-            "defense": self.stats.defense_modifier,
-            "armor_piercing": self.stats.armor_piercing,
+            "health": f"{self.health()}/{self.max_health}",
+            "damage": f"Mele: {self.get_attack_power_mele()} | Ranged: {self.get_attack_power_ranged()}",
+            "defense": f"Mele: {self.get_defense_mele()} | Ranged: {self.get_defense_ranged()}",
+            "attack_points": f"{self.attack_points_left}/{self.attack_points}",
+            "attack_points_cost": f"Mele: {self.attack_points_cost_mele} | Ranged: {self.attack_points_cost_ranged}",
+            "attack_range": self.attack_range,
             "movement": f"{self.moves_left}/{self.max_moves}",
-            "range": self.range,
             "can_move": self.can_move,
             "can_attack": self.can_attack,
             "can_heal": self.can_heal,
             "can_pillage": self.can_pillage,
+            "can_build": self.can_build,
         }
 
-    def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> bool:
+    def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
         """Removes the unit from the scene and cleans up references."""
         if self.model:  # type: ignore
             self.model.removeNode()  # type: ignore # Remove from the scene graph
@@ -383,8 +370,6 @@ class Unit(BaseEntity, ABC):
         else:
             messenger.send("game.gameplay.unit.destroyed", [self])
 
-        return True
-
     @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:
         from managers.entity import EntityManager, EntityType
@@ -396,3 +381,6 @@ class Unit(BaseEntity, ABC):
 
     def look(self, radius: int) -> List["BaseTile"]:
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)
+
+    def attack(self, target: T_TARGET) -> None:
+        Combat.attack(self, target)
