@@ -15,7 +15,4 @@ class Castle(Improvement):
             **kwargs,
         )
 
-        self.health = 50
-        self.max_health = 50
-
         self.tile_yield_improvement = Yields(name="Castle", food=1.0, mode=Yields.ADDITIVE)

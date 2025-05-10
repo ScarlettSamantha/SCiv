@@ -24,6 +24,4 @@ class Mine(Improvement):
             **kwargs,
         )
 
-        self.health = 50
-        self.max_health = 50
         self._model_offset = (-0.20, 0.15, 0.09)

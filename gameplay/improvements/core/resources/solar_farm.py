@@ -24,6 +24,3 @@ class SolarFarm(Improvement):
             *args,
             **kwargs,
         )
-
-        self.health = 50
-        self.max_health = 50

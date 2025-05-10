@@ -26,7 +26,4 @@ class Farm(Improvement):
             **kwargs,
         )
 
-        self.health = 50
-        self.max_health = 50
-
         self.effects.add_effect(FarmEffect())
