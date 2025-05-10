@@ -25,6 +25,7 @@ from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
 from gameplay.condition import Conditions
 from gameplay.improvements_set import ImprovementsSet
+from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.weather import BaseWeather
@@ -118,7 +119,6 @@ class BaseTile(BaseEntity):
 
         # Base health and if damagable declarations.
         self.damagable: bool = False
-        self.health: int = 100
         self.damage: int = 0
 
         # Does it take damage over time?
@@ -550,6 +550,9 @@ class BaseTile(BaseEntity):
 
         self._showing_large_icons = True
 
+    def get_distance(self, other: "BaseTile") -> int:
+        return TileRepository.distance(self, other)
+
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         if not self.tile_terrain:
             self.logger.warning(f"Tile {self} has no terrain set, not rendering.")
@@ -840,7 +843,7 @@ class BaseTile(BaseEntity):
             "resources": self.resources.flatten(),
             "features": self.features,
             "units": ",".join(_units),
-            "health": self.health,
+            "health": self.health(),
             "damage": self.damage,
             "pos": (self.pos_x, self.pos_y, self.pos_z),
             "Hpr": (),

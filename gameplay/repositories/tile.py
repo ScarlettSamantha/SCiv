@@ -1,3 +1,4 @@
+from enum import Enum
 from heapq import heappop, heappush
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
@@ -6,6 +7,13 @@ from managers.world import World
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
+
+
+class DistanceCalculationType(Enum):
+    EUCLIDEAN = 0
+    HEX = 1
+    MANHATTAN = 2
+    CHEBYSHEV = 3
 
 
 class TileRepository:
@@ -549,3 +557,36 @@ class TileRepository:
     def hex_distance(tile1: "BaseTile", tile2: "BaseTile") -> int:
         """Calculate the hex grid distance between two tiles."""
         return (abs(tile1.x - tile2.x) + abs(tile1.y - tile2.y)) // 2
+
+    @staticmethod
+    def distance(
+        tile1: "BaseTile",
+        tile2: "BaseTile",
+        distance_type: DistanceCalculationType = DistanceCalculationType.EUCLIDEAN,
+    ) -> int:
+        def euclidean_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+            return ((t1.x - t2.x) ** 2 + (t1.y - t2.y) ** 2) ** 0.5
+
+        def manhattan_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+            return abs(t1.x - t2.x) + abs(t1.y - t2.y)
+
+        def chebyshev_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+            return max(abs(t1.x - t2.x), abs(t1.y - t2.y))
+
+        def hex_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+            # this already yields an integer via floor division, but we’ll cast anyway
+            return (abs(t1.x - t2.x) + abs(t1.y - t2.y)) // 2
+
+        distance_functions = {
+            DistanceCalculationType.EUCLIDEAN: euclidean_distance,
+            DistanceCalculationType.MANHATTAN: manhattan_distance,
+            DistanceCalculationType.CHEBYSHEV: chebyshev_distance,
+            DistanceCalculationType.HEX: hex_distance,
+        }
+
+        if distance_type not in distance_functions:
+            raise ValueError(f"Unsupported distance type: {distance_type}")
+
+        # compute as float, then cast to int
+        raw = distance_functions[distance_type](tile1, tile2)
+        return int(raw)
