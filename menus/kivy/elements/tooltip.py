@@ -312,7 +312,7 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
     def _update_bg_border(self, _, val: List[int]):
         self._bg_image.border = val  # type: ignore
 
-    def _update_label_height(self, lbl: Label, sz: tuple[float, float]) -> None:
+    def _update_label_height(self, lbl: Label, sz: tuple[int, int]) -> None:
         lbl.height = sz[1]
 
     def _on_primary_text(self, _, new: str):
