@@ -333,18 +333,7 @@ class Game(Singleton, DirectObject):
 
         self.game_active = True
         self.logger.info(f"Game start requested with {self.properties}")
-
-        retry_attempts = 3
-        for attempt in range(retry_attempts):
-            try:
-                self._try_game_start()
-                break
-            except Exception as e:
-                self.logger.error(f"Game start failed on attempt {attempt + 1}/{retry_attempts}: {e}")
-                self.reset_game()
-                if attempt == retry_attempts - 1:
-                    raise
-                self.logger.info("Retrying game start after failure...")
+        self._try_game_start()
 
     def _try_game_start(self):
         self.logger.info("Starting world generation sequence")
