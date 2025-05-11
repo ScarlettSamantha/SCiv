@@ -139,7 +139,7 @@ class AssetManager(Singleton):
 
     @classmethod
     def load_kivy_image(
-        cls, path: str, size_hint_y: Optional[float] = None, height: Optional[float] = None, use_cache: bool = True
+        cls, path: str, size_hint_y: Optional[int] = None, height: Optional[int] = None, use_cache: bool = True
     ) -> KivyImage:
         resolved_path: str = resource_find(path)  # type: ignore
         if not resolved_path:
