@@ -21,6 +21,7 @@ from gameplay.player import Player
 from gameplay.tech import TechTree
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.unit import Unit
+from managers.combat import test_combat_outcome
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -32,6 +33,8 @@ from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
+from menus.kivy.parts.player_combat_log import PlayerCombatLog
+from managers.combat_log import CombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
@@ -90,6 +93,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.civics: Optional[Civics] = None
         self.player_list: Optional[PlayerList] = None
         self.player_info: Optional[PlayerInfo] = None
+        self.player_combat_log: Optional[PlayerCombatLog] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -112,6 +116,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_civics()
         self.build_player_list()
         self.build_player_info()
+        self.build_combat_log()
+        self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
             "escape", self.on_escape
         )  # this is to prevent the pause menu from being opened before the game starts
@@ -372,6 +378,19 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_info.build()
         self.add_widget(self.player_info)
         return self.player_info
+
+    def build_combat_log(self) -> PlayerCombatLog:
+        combat_log = CombatLog()
+        test_objects = test_combat_outcome()
+        for obj in test_objects:
+            combat_log.add_entry(CombatLog.entry_from_outcome(obj), both_sides=False)
+        logs = combat_log.get_entries(PlayerManager.session_player())
+
+        self.player_combat_log = PlayerCombatLog(log=logs)
+        self.player_combat_log.build()
+        self.player_combat_log.update()
+        self.add_widget(self.player_combat_log)
+        return self.player_combat_log
 
     def refresh_top_bar(self):
         if self.top_bar is None:
