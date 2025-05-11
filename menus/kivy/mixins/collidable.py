@@ -20,7 +20,7 @@ class CollisionPreventionMixin:
     has_tracking_enabled: bool = False
     in_collision_with_ui: bool = False
     tick_rate: float = 0.5  # How often to check for mouse movement
-    ui_geometry_update_interval: float = 5.0  # Seconds between UI geometry cache updates
+    ui_geometry_update_interval: float = 1.0  # Seconds between UI geometry cache updates
 
     def __init__(self, base: "SCIV", disable_zoom: bool = False):
         self._input = Input.get_singleton_instance()
