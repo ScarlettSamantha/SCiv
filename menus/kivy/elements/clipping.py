@@ -8,74 +8,167 @@ from kivy.uix.widget import Widget
 
 
 class ClippingScrollList(ScrollView):
-    def __init__(self, cols: int = 1, smooth_scroll_speed: float = 0.2, **kwargs: Any):
-        super().__init__()  # type: ignore
-        self.do_scroll_x = False  # Only vertical scrolling
+    """
+    A vertical ScrollView that clips off‐screen children by setting their opacity.
+    Supports smooth scrolling, step scrolling, inverted scroll direction, and configurable start position.
+    """
+
+    def __init__(
+        self,
+        cols: int = 1,
+        smooth_scroll_speed: float = 0.15,
+        invert_scroll: bool = False,
+        start_at_bottom: bool = False,
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
+        # Always vertical
+        self.do_scroll_x = False
         self.do_scroll_y = True
-        self.smooth_scroll_speed = smooth_scroll_speed  # Set via init argument
 
-        # Make scrollbar wider and white
+        self.smooth_scroll_speed = smooth_scroll_speed
+        self.invert_scroll = invert_scroll
+        self.start_at_bottom = start_at_bottom
+        self.scroll_step_size = 30  # fallback step if no children
+
+        # Customize the scrollbar
         self.bar_width = 12
-        self.bar_color = [1, 1, 1, 1]  # RGBA (White, fully opaque)
+        self.bar_color = [1, 1, 1, 1]
 
-        # Use a GridLayout instead of BoxLayout
+        # Container for widgets
         self._container = GridLayout(cols=cols, size_hint_y=None, padding=5, spacing=5)
         self._container.bind(minimum_height=self._container.setter("height"))  # type: ignore
 
-        self.add_widget(self._container)
+        # Add container as the only direct child
+        super().add_widget(self._container)
+
+        # Set initial scroll position and then apply clipping
+        Clock.schedule_once(self._set_initial_scroll, 0)  # type: ignore
         Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
+
+    def _set_initial_scroll(self, dt: Any):
+        """
+        Position scroll at top or bottom according to start_at_bottom,
+        taking invert_scroll into account.
+        """
+        if self.start_at_bottom:
+            # bottom = 0.0 normally, 1.0 if inverted
+            target = 1.0 if self.invert_scroll else 0.0
+        else:
+            # top = 1.0 normally, 0.0 if inverted
+            target = 0.0 if self.invert_scroll else 1.0
+        self.scroll_y = target
 
     def add_widget(self, widget: Widget, *args: Any, **kwargs: Any):
-        if isinstance(widget, Widget) and widget != self._container:  # type: ignore
-            widget.opacity = 1  # Ensure all widgets start visible
-            self._container.add_widget(widget)  # type: ignore
-            Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
+        # Route all non‐container adds into the container
+        if widget is self._container:
+            super().add_widget(widget, *args, **kwargs)
         else:
-            super().add_widget(widget, *args, **kwargs)  # type: ignore
-
-    def force_scroll_to(self, target_widget: Widget):
-        if target_widget not in self._container.children:
-            return
-        target_y: int = target_widget.y  # type: ignore
-        content_height: int = self._container.height  # type: ignore
-        target_scroll: int = 1.0 - ((target_y + target_widget.height) / max(1, content_height))  # type: ignore
-        self.scroll_y = max(0, min(1, target_scroll))  # type: ignore
-
-    def on_scroll_y(self, *args: Any):
-        Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
-
-    def smooth_scroll_to(self, target_widget: Widget):
-        if target_widget not in self._container.children:  # type: ignore
-            return
-        target_y = target_widget.to_window(0, target_widget.y)[1]  # type: ignore
-        viewport_y = self.to_window(0, self.y)[1]  # type: ignore
-        scroll_distance = (target_y - viewport_y) / self.height  # type: ignore
-        target_scroll = max(0, min(1, self.scroll_y - scroll_distance))  # type: ignore
-        Animation(scroll_y=target_scroll, d=self.smooth_scroll_speed, t="out_quad").start(self)  # type: ignore
+            widget.opacity = 1
+            self._container.add_widget(widget)
+            Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
 
     def scroll_to_top(self):
-        self.scroll_y = 0.9999  # Hack to force scrolling to the top
+        # Animate to the visual "top" (start_at_bottom doesn’t affect this)
+        target = 0.0 if self.invert_scroll else 1.0
+        Animation(scroll_y=target, d=self.smooth_scroll_speed, t="out_cubic").start(self)  # type: ignore
 
     def scroll_to_bottom(self):
-        self.scroll_y = 0.0
+        # Animate to the visual "bottom"
+        target = 1.0 if self.invert_scroll else 0.0
+        Animation(scroll_y=target, d=self.smooth_scroll_speed, t="out_cubic").start(self)  # type: ignore
 
-    def _apply_clipping(self, *args: Any):
-        if not self._container.children:
+    def scroll_by_step(self, direction: str = "up"):
+        """
+        Move one “step” (one child‐height or fallback) up or down.
+        Respects invert_scroll by flipping the sense of up/down.
+        """
+        step = self._get_step_size()
+        cur = self.scroll_y
+        content_h = max(1, self._container.height)
+        delta = step / content_h
+
+        # XOR flips direction when inverted
+        if (direction == "down") ^ self.invert_scroll:
+            new = cur + delta
+        else:
+            new = cur - delta
+
+        self.scroll_y = max(0.0, min(1.0, new))
+
+    def _get_step_size(self) -> float:
+        if self._container.children:
+            return self._container.children[-1].height
+        return self.scroll_step_size
+
+    def smooth_scroll_to(self, target_widget: Widget):
+        """
+        Animate scroll to bring target_widget into view.
+        """
+        if target_widget not in self._container.children:
             return
-        self._container.do_layout()  # type: ignore
-        self._container.canvas.ask_update()
-        content_height = self._container.height  # type: ignore
-        viewport_height = self.height  # type: ignore
-        self.do_scroll_y = content_height > viewport_height  # type: ignore
-        viewport_y = self.to_window(0, self.y)[1] + viewport_height  # type: ignore
-        for child in self._container.children:  # type: ignore
-            child_y = child.to_window(0, child.y)[1] + child.height  # type: ignore
-            is_visible = (child_y >= viewport_y - viewport_height) and (child_y < viewport_y)  # type: ignore
-            child.opacity = 1 if is_visible else 0
 
-    def clear_widgets(self, children: List[Widget] | None = None) -> None:
+        y = target_widget.y
+        h = target_widget.height
+        content_h = max(self._container.height, self.height)
+        view_h = self.height
+
+        if content_h > view_h:
+            norm = 1.0 - ((y + h) / (content_h - view_h))
+        else:
+            norm = 1.0
+
+        norm = max(0.0, min(1.0, norm))
+        final = 1.0 - norm if self.invert_scroll else norm
+
+        Animation(scroll_y=final, d=self.smooth_scroll_speed, t="out_cubic").start(self)  # type: ignore
+
+    def force_scroll_to(self, target_widget: Widget):
+        """
+        Immediately jump scroll to bring target_widget into view.
+        """
+        if target_widget not in self._container.children:
+            return
+
+        y = target_widget.y
+        h = target_widget.height
+        content_h = max(self._container.height, self.height)
+        view_h = self.height
+
+        if content_h > view_h:
+            norm = 1.0 - ((y + h) / (content_h - view_h))
+        else:
+            norm = 1.0
+
+        norm = max(0.0, min(1.0, norm))
+        self.scroll_y = 0.0 + norm if self.invert_scroll else norm
+
+    def clear_widgets(self, children: List[Widget] | None = None):
         self._container.clear_widgets(children=children)
         Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
+
+    def on_scroll_y(self, *args: Any):
+        # Re‐apply clipping whenever scroll changes
+        Clock.schedule_once(self._apply_clipping, 0)  # type: ignore
+
+    def _apply_clipping(self, *args: Any):
+        """
+        Hide any child outside the current viewport by setting opacity=0.
+        """
+        if not self._container.children:
+            return
+
+        self._container.do_layout()  # type: ignore
+        content_h = self._container.height
+        view_h = self.height
+        self.do_scroll_y = content_h > view_h
+
+        wy = self.to_window(0, self.y)[1]
+        top = wy + view_h
+
+        for child in self._container.children:
+            cy = child.to_window(0, child.y)[1] + child.height
+            child.opacity = 1 if (cy > wy and cy <= top) else 0
 
 
 class HorizontalClippingScrollList(ScrollView):
