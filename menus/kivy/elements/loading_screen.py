@@ -127,7 +127,7 @@ class LoadingScreen(FloatLayout):
         Clock.schedule_once(self._update_ui)  # type: ignore
 
     def _resize_label(self, instance: Widget, size: Tuple[float, float]):
-        instance.height = size[1]
+        instance.height = int(size[1])
 
     def _update_bg(self, *args: Any):
         self.bg_rect.pos = self.pos  # type: ignore
