@@ -66,7 +66,7 @@ class Settler(CoreCivilianBaseClass):
     key = "core.unit.class.settler"
     name = t_("content.units.core.units.civilian.settler.name")
     description = t_("content.units.core.units.civilian.settler.description")
-    icon = None
+    icon = "assets/icons/settler.png"
     promotion_tree = SettlerPromotionTree
     model_size = 0.2
 
