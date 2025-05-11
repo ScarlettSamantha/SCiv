@@ -6,7 +6,6 @@ from weakref import ReferenceType
 from direct.showbase.DirectObject import DirectObject
 
 
-from gameplay.player import Player
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.placeholder import Placeholder
@@ -15,6 +14,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 if TYPE_CHECKING:
     from main import SCIV
     from gameplay.tiles.base_tile import BaseTile
+    from gameplay.player import Player
 
 
 class BaseEntity(ABC, DirectObject):
@@ -48,7 +48,7 @@ class BaseEntity(ABC, DirectObject):
     def __init__(
         self,
         tile: Optional[Union["BaseTile", ReferenceType["BaseTile"]]] = None,
-        owner: Optional[Player] = None,
+        owner: Optional["Player"] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -158,5 +158,5 @@ class BaseEntity(ABC, DirectObject):
             return True
         return False
 
-    def get_owner(self) -> Optional[Player]:
+    def get_owner(self) -> Optional["Player"]:
         return self.owner
