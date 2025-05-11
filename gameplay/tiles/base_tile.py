@@ -28,6 +28,7 @@ from gameplay.improvements_set import ImprovementsSet
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.unit_icons import UnitIcons
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
 from helpers.cache import Cache
@@ -215,6 +216,7 @@ class BaseTile(BaseEntity):
         self.atlas: Optional[Any] = None
         self.atlas_width: Optional[int] = None
         self.atlas_height: Optional[int] = None
+        self._unit_icons: Optional[UnitIcons] = None
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -565,6 +567,8 @@ class BaseTile(BaseEntity):
             self._render_default_terrain()
             self.create_root_ui_node()
             self._render_resource_model()
+            if self.units.has_any():
+                self.add_unit_icon()
             return
 
         if render_all:
@@ -593,6 +597,23 @@ class BaseTile(BaseEntity):
 
         if self.city is not None:
             self.add_city_name()
+        elif self.units.has_any():
+            self.add_unit_icon()
+
+    def add_unit_icon(self) -> None:
+        if self.tile_icon_group is None:
+            self.create_root_ui_node()
+
+        if self._unit_icons is None:
+            self._unit_icons = UnitIcons(self.tile_icon_group)
+
+        self._unit_icons.remove_all()
+
+        # get the tile’s base pos
+        x, y, z = self.tile_icon_group.getPos(self.base.render)  # type: ignore
+        for unit in self.units.all():
+            if unit.icon:
+                self._unit_icons.add_marker((x, y, z + 0.5), (0.2, 0.2), str(unit.icon))
 
     def _render_resource_model(self) -> None:
         if self.city is not None:
@@ -698,6 +719,9 @@ class BaseTile(BaseEntity):
     def unrender_all(self, icons: bool = False) -> None:
         for node in self.models:
             node.removeNode()
+        if self._unit_icons is not None:
+            self._unit_icons.remove_all()
+
         self.models.clear()
 
     def unrender_model(self, model_index: int) -> None:

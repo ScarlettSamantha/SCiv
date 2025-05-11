@@ -166,6 +166,7 @@ class Unit(BaseEntity, ABC):
 
         # Load the Panda3D model and position it at the tile
         self.model = self.load_model(self._model)
+        self.get_tile().rerender()
 
         if not self._model:
             raise RuntimeError(f"Failed to load model for unit {self.key}")
@@ -177,10 +178,10 @@ class Unit(BaseEntity, ABC):
     def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "Unit":
         instance = cls(tile)
         instance.owner = player
-        instance.spawn()
 
         player.units.add_unit(instance)
         tile.units.add_unit(instance)
+        instance.spawn()
         UnitManager.get_singleton_instance().add_unit(instance)
 
         return instance
@@ -247,11 +248,13 @@ class Unit(BaseEntity, ABC):
 
             # If we got here, we can step onto tile
             result_tile.remove_unit(self)
+            result_tile.rerender()
             result_tile: "BaseTile" = _tile
             self.moves_left -= _tile.movement_cost
             self.set_pos((cords[0], cords[1], self.pos_z))
             self.tile = _tile
             _tile.add_unit(self)  # Add to the new tile
+            self.get_tile().rerender()  # Rerender the tile
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
@@ -363,6 +366,7 @@ class Unit(BaseEntity, ABC):
 
         self.owner = None
         self.actions.clear()
+        self.get_tile().rerender()
         del self.tag
 
         if as_system:
