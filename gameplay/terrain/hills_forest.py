@@ -11,7 +11,6 @@ class HillsForest(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0.5
     _model = "assets/models/tiles/forest.glb"
-    _texture = "assets/models/tiles/grass2.png"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

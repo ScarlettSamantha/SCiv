@@ -8,8 +8,8 @@ from ._base_terrain import BaseTerrain
 
 class HillsSnow(BaseTerrain):
     _name = "world.terrain.hills_snow"
-    _model = "assets/models/tiles/mountains2.glb"
-    _texture = "assets/models/tiles/hills_grass.png"
+    _model = {0: "assets/models/tiles/hills_snow.glb", 50: "assets/models/tiles/hills_snow2.glb"}
+
     movement_modifier = 0.5
     water_availability = 0.25
 

@@ -1,3 +1,4 @@
+import random
 from typing import Any
 from managers.i18n import T_TranslationOrStr
 
@@ -19,3 +20,10 @@ class MountainSnow(BaseTerrain):
 
         self.passable: bool = False
         self.passable_without_tech: bool = False
+        self.enable_random_rotation: bool = True
+
+    def random_rotation(self) -> int:
+        return (270 + random.randint(0, 5) * 60) % 360
+
+    def model(self) -> T_TranslationOrStr:
+        return str(self._model)

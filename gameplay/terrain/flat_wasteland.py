@@ -9,7 +9,6 @@ class FlatWasteland(BaseTerrain):
     water_availability = 0.25
     radatiation = 1.0  # Keeping the attribute name as in the original code
     _model = "assets/models/tiles/wasteland.glb"
-    _texture = "assets/models/tiles/grass2.png"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

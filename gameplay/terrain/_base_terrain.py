@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import TYPE_CHECKING, List, Tuple, Type
+import random
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, Union
 
 from panda3d.core import LRGBColor
 
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 
 class BaseTerrain(ABC):
     _name: T_TranslationOrStrOrNone = None
-    _model: T_TranslationOrStr = ""
+    _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = None
     can_spawn_resources: bool = True
     _fallback_color: Tuple[float, float, float] = rgb(0, 119, 255)
 
@@ -28,6 +29,9 @@ class BaseTerrain(ABC):
     _warn_user_before_build: bool = False
     _warn_user_before_build_text: T_TranslationOrStr = ""
     _warn_user_before_build_title: T_TranslationOrStr = ""
+
+    model_scale: float = 0.41
+    uv_index: str = "base"
 
     def __init__(self):
         self.fallback_color: Tuple[float, float, float] = rgb(225, 0, 255)
@@ -45,11 +49,12 @@ class BaseTerrain(ABC):
 
         self.passable: bool = True
         self.passable_without_tech: bool = True
+        self.model_rotation: Optional[float] = 270
 
         self._supports_improvements: List[Type["Improvement"]] = []
 
     @classmethod
-    def get_model(cls) -> T_TranslationOrStr:
+    def get_model(cls) -> Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None]:
         return cls._model
 
     @classmethod
@@ -57,7 +62,38 @@ class BaseTerrain(ABC):
         return cls._fallback_color
 
     def model(self) -> T_TranslationOrStr:
-        return str(self._model)
+        # direct string
+        if isinstance(self._model, str):
+            return self._model
+
+        # factory callable
+        if callable(self._model):
+            return self._model()
+
+        # percentage-based dict
+        if isinstance(self._model, dict):
+            # sum only positive percentages
+            total_perc = sum(p for p in self._model.keys() if p > 0)
+            if total_perc > 100.0:
+                raise ValueError(f"Total percentage too high: {total_perc}%")
+
+            rand_val = random.uniform(0.0, 100.0)
+            cumulative = 0.0
+
+            for perc, mdl in sorted(self._model.items(), reverse=True):
+                if perc <= 0:
+                    continue
+                cumulative += perc
+                if rand_val <= cumulative:
+                    return mdl
+
+            # fallback
+            if 0.0 in self._model:
+                return self._model[0]
+
+            raise ValueError("No model selected (rand_val outside defined % ranges) and no 0% fallback provided.")
+
+        raise ValueError("`_model` must be str, callable, or dict of float→model")
 
     def texture(self) -> T_TranslationOrStr:
         return self._texture

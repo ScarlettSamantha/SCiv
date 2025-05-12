@@ -10,7 +10,6 @@ class FlatTundra(BaseTerrain):
     movement_modifier = 1
     water_availability = 0.25
     _model = "assets/models/tiles/tundra.glb"
-    _texture = "assets/models/tiles/grass2.png"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

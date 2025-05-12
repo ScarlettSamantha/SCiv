@@ -1,15 +1,15 @@
 from typing import Any
 
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
+from managers.i18n import T_TranslationOrStrOrNone
 
 from ._base_terrain import BaseTerrain, rgb
 
 
 class Lake(BaseTerrain):
     _name: T_TranslationOrStrOrNone = "world.terrain.sea_water"
-    _model: T_TranslationOrStr = "assets/models/tiles/water_shallow.glb"
-    _texture: T_TranslationOrStr = "assets/models/tiles/water_shallow.png"
+    _model = "assets/models/tiles/lake.glb"
+    model_scale: float = 0.41
     _fallback_color = rgb(0, 119, 255)
 
     def __init__(self, *args: Any, **kwargs: Any):

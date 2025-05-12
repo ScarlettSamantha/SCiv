@@ -1,6 +1,5 @@
 from typing import Any
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStr
 
 from ._base_terrain import BaseTerrain, rgb
 
@@ -8,7 +7,7 @@ from ._base_terrain import BaseTerrain, rgb
 class Sea(BaseTerrain):
     _name = "world.terrain.sea_water"
     _model = "assets/models/tiles/water_deep.glb"
-    _texture: T_TranslationOrStr = "assets/models/tiles/town.png"
+
     _fallback_color = rgb(0, 119, 255)
 
     def __init__(self, *args: Any, **kwargs: Any):
