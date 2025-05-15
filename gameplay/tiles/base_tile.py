@@ -191,6 +191,8 @@ class BaseTile(BaseEntity):
 
         self.inherit_passability_from_terrain: bool = True
 
+        self.coast_directions: List[Tuple[int, int]] = []
+
         # We configure base tile yield mostly just for debugging.
         self.tile_yield: Yields = Yields(
             gold=0.0,
@@ -469,7 +471,7 @@ class BaseTile(BaseEntity):
         self.icon_overlay_card = CardMaker(f"icon_overlay_{self.id}")
         self.icon_overlay_card.set_frame(-0.55, 0.55, -0.55, 0.85)  # type: ignore
         self.icon_overlay = NodePath(self.icon_overlay_card.generate())  # type: ignore
-        self.icon_overlay.set_pos(0.1, 0, 0.17)  # type: ignore
+        self.icon_overlay.set_pos(0.1, 0, 0.1)  # type: ignore
         self.icon_overlay.set_hpr(90, -90, 0)  # type: ignore
         self.icon_overlay.set_scale(1.0)  # type: ignore
         self.icon_overlay.setTransparency(True)
@@ -477,10 +479,11 @@ class BaseTile(BaseEntity):
         self.icon_overlay.setBin("fixed", 60)
         self.icon_overlay.reparent_to(self.tile_icon_group)  # type: ignore
 
-        self.shader = Shader.load(  # type: ignore
-            Shader.SL_GLSL, "assets/shaders/resource_icons.vert.glsl", "assets/shaders/resource_icons.frag.glsl"
-        )
-        self.icon_overlay.setShader(self.shader)  # type: ignore
+        self.icon_overlay.setShader(
+            Shader.load(  # type: ignore
+                Shader.SL_GLSL, "assets/shaders/resource_icons.vert.glsl", "assets/shaders/resource_icons.frag.glsl"
+            )
+        )  # type: ignore
 
         self.atlas = Cache.get_atlas()
         atlas_tex = self.atlas.get_panda3d_texture()
@@ -653,8 +656,8 @@ class BaseTile(BaseEntity):
         if hex_model is None:
             raise AssertionError(f"Model not found: {full_model_path}")
 
-        hex_model.setScale(0.48)
-        hex_model.setHpr(270, 0, 0)
+        hex_model.setScale(getattr(self.get_terrain(), "model_scale", 0.48))
+        hex_model.setHpr(getattr(self.get_terrain(), "model_rotation", 270), 0, 0)
 
         node: NodePath = hex_model.copyTo(self.base.render)  # type: ignore
         node.setPos(self.pos_x, self.pos_y, 0)

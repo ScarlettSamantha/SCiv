@@ -179,7 +179,7 @@ class Borders(DirectObject):
         tile = self.tile_repository.get_tile(x, y)
         if tile:
             pos = tile.get_node().get_pos()  # type: ignore
-            return (pos.x, pos.y, pos.z + 0.075)  # Raise slightly for overlay# type: ignore
+            return (pos.x, pos.y, pos.z + 0.05)  # Raise slightly for overlay# type: ignore
         return (0, 0, 0)
 
     def _get_border_mask(self, x: int, y: int, player: "Player") -> int:
