@@ -4,7 +4,7 @@ from logging import Logger
 from os.path import dirname, join, realpath
 from pathlib import Path
 from posixpath import abspath
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union
 import weakref
 
 from direct.showbase.MessengerGlobal import messenger
@@ -34,13 +34,14 @@ from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors
 from helpers.images import normalize_color_to_bytes
+from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
 from system.subsystems.hexgen.hex import Hex
-from world.features._base_feature import BaseFeature
+from system.subsystems.hexgen.enums import GeoformType
 from world.items._base_item import BaseItem
 
 if TYPE_CHECKING:
@@ -75,6 +76,7 @@ class BaseTile(BaseEntity):
         pos_y: float = 0.0,
         pos_z: float = 0.0,
         extra_data: Optional[Dict[Any, Any]] = None,
+        auto_calculate_z_pos_on_altitude: bool = True,
     ) -> None:
         self.id: int = id(self)
         self.x: int = x
@@ -83,6 +85,8 @@ class BaseTile(BaseEntity):
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
+        self.z_scale: float = 1.5
+
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
         self._entity_manager = EntityManager.get_singleton_instance()
@@ -102,10 +106,10 @@ class BaseTile(BaseEntity):
         self.is_sea: bool = False
         self.is_lake: bool = False
 
-        self.altitude: float = 0.0
+        self.altitude: float = 1
         self.biome: int = 1
         self.moisture: float = 0.0
-        self.temperature: float = 0.0
+        self.temperature: float = 1
         self.terrain: str = "plains"
         self.zone: str = "temperate"
         self.hemisphere: str = "north"
@@ -164,7 +168,8 @@ class BaseTile(BaseEntity):
         self.weather: Optional[BaseWeather] = None
 
         # What features does this tile contain?
-        self.features: List[BaseFeature] = list()
+        self.features: Set[Any] = set()
+        self.geoforms: Optional[GeoformType] = None
         # Does this have any units?
         self.units: Units = Units()
         # Does this have improvements?
@@ -644,23 +649,40 @@ class BaseTile(BaseEntity):
         if self.city:
             self.add_icon_to_tile()
 
-    def _render_default_terrain(self) -> None:
-        # Get the model path from the terrain (kept as a relative path)
+    def calculate_z_pos_on_altitude(self) -> Tuple[float, float, float]:
+        if self.is_water and not self.is_lake:
+            return (self.pos_x, self.pos_y, 0.0)
+        elif self.is_lake:
+            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 0.55)
+            pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
+            return (self.pos_x, self.pos_y, pos_z)
+        else:
+            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 0.55)
+            pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
+            return (self.pos_x, self.pos_y, float(pos_z))
+
+    def _render_default_terrain(self, z_scale: float = 1.0) -> None:
+        """
+        Renders the default terrain model, with altitude distribution optionally stretched by z_scale.
+        """
         model_path: str = str(self.tile_terrain.model())
-        # Resolve the full path to the model file
         full_model_path: str = realpath(join(dirname(__file__), "../..", model_path))
 
-        # Load the model using the full path
         hex_model: NodePath | None = self.base.loader.loadModel(full_model_path)
-
         if hex_model is None:
             raise AssertionError(f"Model not found: {full_model_path}")
 
-        hex_model.setScale(getattr(self.get_terrain(), "model_scale", 0.48))
-        hex_model.setHpr(getattr(self.get_terrain(), "model_rotation", 270), 0, 0)
+        hex_scale = getattr(self.get_terrain(), "model_scale", 0.41)
+        if hex_scale < 0.1:
+            raise AssertionError(f"Model scale is too small: {hex_scale}")
+
+        hex_model.setScale(max(0.1, getattr(self.get_terrain(), "model_scale", 0.41)))
+        hex_model.setHpr(max(0.1, getattr(self.get_terrain(), "model_rotation", 270)), 0, 0)
+        hex_model.setPos(*self.calculate_z_pos_on_altitude())  # type: ignore
 
         node: NodePath = hex_model.copyTo(self.base.render)  # type: ignore
-        node.setPos(self.pos_x, self.pos_y, 0)
+        node.setPos(*self.calculate_z_pos_on_altitude())  # type: ignore
+
         node.setCollideMask(BitMask32.bit(1))  # type: ignore
         self.tag = self.generate_tag(self.x, self.y)
         node.setTag("tile_id", self.tag)
@@ -685,7 +707,7 @@ class BaseTile(BaseEntity):
         self,
         model_path: str,
         pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        scale: float = 1.0,
+        scale: float = 0.41,
         hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
     ) -> None:
         """
@@ -697,10 +719,15 @@ class BaseTile(BaseEntity):
         if extra_model is None:
             raise AssertionError(f"Model not found: {model_path}")
 
-        extra_model.setScale(0.48 * scale)
+        x, y, z = self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], self.pos_z + pos_offset[2]
+
+        model_scale = max(0.01, getattr(extra_model, "model_scale", scale))
+        extra_model.setScale(model_scale)
         extra_model.setHpr(*hpr)
+        extra_model.setPos(x, y, z)  # type: ignore
         node: NodePath = extra_model.copyTo(self.base.render)  # type: ignore
-        node.setPos(self.pos_x + pos_offset[0], self.pos_y + pos_offset[1], pos_offset[2])
+
+        node.setPos(x, y, z)
         node.setCollideMask(BitMask32.bit(1))  # type: ignore
         self.models.append(node)
 
@@ -873,7 +900,8 @@ class BaseTile(BaseEntity):
             "health": self.health(),
             "damage": self.damage,
             "pos": (self.pos_x, self.pos_y, self.pos_z),
-            "Hpr": (),
+            "effective_z": self.calculate_z_pos_on_altitude(),
+            "Hpr": ",".join(map(str, self.hpr)),
             "effects": ",".join(self.effects.get_effects().keys()),
             "resource_improved": "Yes" if self.is_resource_improved() else "No",
         }
@@ -888,6 +916,8 @@ class BaseTile(BaseEntity):
             "is_lake": self.is_lake,
             "is_city": self.is_city(),
             "terrain": self.terrain,
+            "features": ",".join(str(feature) for feature in self.features),
+            "geoform": self.geoforms,
             "zone": self.zone,
             "hemisphere": self.hemisphere,
             "resource['rating']": self.resource["rating"] if self.resource else None,
@@ -1002,6 +1032,8 @@ class BaseTile(BaseEntity):
         self.resources.add(resource(3), auto_instance=True)
 
     def enrich_from_extra_data(self, hex: Hex) -> None:
+        from system.subsystems.hexgen.enums import HexFeature
+
         self.altitude = hex.altitude
         self.biome = hex.biome  # type: ignore
         self.moisture = hex.moisture
@@ -1013,7 +1045,10 @@ class BaseTile(BaseEntity):
         self.is_water = hex.is_water
         self.is_land = hex.is_land
         self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
-        self.is_lake = hex.geoform_type.id == 4  # type: ignore # 4 == Lake
+        self.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore # 4 == Lake
+        self.geoforms = hex.geoform_type
+        self.features = hex.features
+
         resource: Type[BaseResource] | None = hex.get_gameplay_resource()
         if resource is not None:
             self.instance_resource(resource)

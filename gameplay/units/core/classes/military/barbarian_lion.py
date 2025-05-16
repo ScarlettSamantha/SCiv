@@ -11,7 +11,7 @@ class BarbarianLion(CoreMilitaryBaseClass):
     name = t_("content.units.units.core.units.military.barbarian.lion.name")
     description = t_("content.units.units.core.units.military.barbarian.lion.name")
     icon = "assets/icons/lions.png"
-    model_size = 0.025
+    model_size = 0.03
 
     can_retaliate = True
 
@@ -30,4 +30,4 @@ class BarbarianLion(CoreMilitaryBaseClass):
             *args,
             **kwargs,
         )
-        self.model_position_offset = (0, 0, 0.1)
+        self.model_position_offset = (0, 0, 0.01)

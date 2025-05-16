@@ -14,6 +14,7 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from main import Cache
 from managers.combat import T_TARGET, Combat
+from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
@@ -139,7 +140,7 @@ class Unit(BaseEntity, ABC):
                 self.tile = pos
 
         if self.model is not None:  # type: ignore
-            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z))  # type: ignore
+            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z + self.tile.pos_z))  # type: ignore
 
     def is_alive(self) -> bool:
         return self.health() > 0
@@ -224,7 +225,7 @@ class Unit(BaseEntity, ABC):
         if tiles_to_move[0] == self.get_tile():
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
-        result_tile = self.get_tile()  # Start off at our current tile
+        result_tile: "BaseTile" = self.get_tile()  # Start off at our current tile
         self.get_tile().get_units().remove_unit(self)  # Remove from the current tile
         for _tile in tiles_to_move:
             _tile: "BaseTile" = _tile  # this is a type hint
@@ -235,14 +236,14 @@ class Unit(BaseEntity, ABC):
                     result_tile.get_cords()
                 )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
                 self.tile = result_tile
-                self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z))
+                self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z + _tile.pos_z))
                 return CantMoveReason.NO_MOVES
 
             # Check if tile is still valid for the unit
             if _tile.is_visisted_by(self) is False:
                 # Move partially onto this tile and then get trapped or do partial logic
                 self.moves_left -= _tile.movement_cost
-                self.set_pos((cords[0], cords[1], self.pos_z))
+                self.set_pos((cords[0], cords[1], self.pos_z + cords[2]))
                 self.tile = _tile
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
@@ -251,7 +252,7 @@ class Unit(BaseEntity, ABC):
             result_tile.rerender()
             result_tile: "BaseTile" = _tile
             self.moves_left -= _tile.movement_cost
-            self.set_pos((cords[0], cords[1], self.pos_z))
+            self.set_pos((cords[0], cords[1], self.pos_z + _tile.pos_z))
             self.tile = _tile
             _tile.add_unit(self)  # Add to the new tile
             self.get_tile().rerender()  # Rerender the tile
@@ -387,4 +388,5 @@ class Unit(BaseEntity, ABC):
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)
 
     def attack(self, target: T_TARGET) -> None:
-        Combat.attack(self, target)
+        outcome = Combat.attack(self, target)
+        CombatLog.add_entry(entry=CombatLog.entry_from_outcome(outcome=outcome))  # type: ignore
