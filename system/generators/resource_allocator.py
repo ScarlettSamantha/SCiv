@@ -1,14 +1,17 @@
 import random
-from typing import Dict, List, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Tuple, Type
 
 from gameplay.resource import BaseResource, ResourceSpawnablePlace
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tiles.base_tile import BaseTile
+
+
+if TYPE_CHECKING:
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class ResourceAllocator:
-    def __init__(self, grid: Dict[Tuple[int, int], BaseTile], resources: List[Type[BaseResource]]) -> None:
-        self.grid: Dict[Tuple[int, int], BaseTile] = grid
+    def __init__(self, grid: Dict[Tuple[int, int], "BaseTile"], resources: List[Type[BaseResource]]) -> None:
+        self.grid: Dict[Tuple[int, int], "BaseTile"] = grid
         self.grid_width: int = max([t.x for t in grid.values()]) + 1
         self.grid_height: int = max([t.y for t in grid.values()]) + 1
         self.resources: List[Type[BaseResource]] = resources
@@ -32,7 +35,7 @@ class ResourceAllocator:
 
     def _allocate_single_resource(self, resource_class: Type[BaseResource], coverage_percent: float) -> None:
         # get valid candidate tiles for this resource
-        candidate_tiles: List[BaseTile] = self._filter_valid_tiles(resource_class)
+        candidate_tiles: List["BaseTile"] = self._filter_valid_tiles(resource_class)
 
         # figure out how many of them we want to fill
         total_map_tiles: int = len(self.grid)
@@ -46,8 +49,8 @@ class ResourceAllocator:
         else:
             self._allocate_without_clustering(resource_class, candidate_tiles, desired_count)
 
-    def _filter_valid_tiles(self, resource_class: Type[BaseResource]) -> List[BaseTile]:
-        valid_tiles: List[BaseTile] = []
+    def _filter_valid_tiles(self, resource_class: Type[BaseResource]) -> List["BaseTile"]:
+        valid_tiles: List["BaseTile"] = []
         for tile in self.grid.values():
             if (
                 tile.resource is not None and len(list(tile.resource.values())) > 0
@@ -63,7 +66,7 @@ class ResourceAllocator:
 
         return valid_tiles
 
-    def _terrain_allows_resource(self, tile: BaseTile, resource_class: Type[BaseResource]) -> bool:
+    def _terrain_allows_resource(self, tile: "BaseTile", resource_class: Type[BaseResource]) -> bool:
         if tile.is_water and resource_class.spawn_type == ResourceSpawnablePlace.LAND:
             return False
         if not tile.is_water and resource_class.spawn_type == ResourceSpawnablePlace.WATER:
@@ -86,21 +89,21 @@ class ResourceAllocator:
             return spawn_chance > 0.0
 
     def _allocate_without_clustering(
-        self, resource_class: Type[BaseResource], candidate_tiles: List[BaseTile], desired_count: int
+        self, resource_class: Type[BaseResource], candidate_tiles: List["BaseTile"], desired_count: int
     ) -> None:
         if not candidate_tiles:
             return
 
         # sample if we have more candidates than we need
-        to_fill: List[BaseTile] = random.sample(candidate_tiles, min(desired_count, len(candidate_tiles)))
+        to_fill: List["BaseTile"] = random.sample(candidate_tiles, min(desired_count, len(candidate_tiles)))
 
-        tile: BaseTile
+        tile: "BaseTile"
         for tile in to_fill:
             # final chance roll per tile:
             if self._roll_spawn_chance(tile, resource_class):
                 self._assign_resource(tile, resource_class)
 
-    def _roll_spawn_chance(self, tile: BaseTile, resource_class: Type[BaseResource]) -> bool:
+    def _roll_spawn_chance(self, tile: "BaseTile", resource_class: Type[BaseResource]) -> bool:
         spawn_chance: float | Dict[Type[BaseTerrain], float] = resource_class.spawn_chance
         terrain_type = tile.get_terrain().__class__
         if isinstance(spawn_chance, dict):
@@ -109,13 +112,13 @@ class ResourceAllocator:
         else:
             return random.uniform(0, 100) < spawn_chance
 
-    def _assign_resource(self, tile: BaseTile, resource_class: Type[BaseResource]) -> None:
+    def _assign_resource(self, tile: "BaseTile", resource_class: Type[BaseResource]) -> None:
         resource = resource_class()
         resource.value = 1
         tile.add_resource(resource)  # Assign resource to tile
 
     def _allocate_with_clustering(
-        self, resource_class: Type[BaseResource], candidate_tiles: List[BaseTile], desired_count: int
+        self, resource_class: Type[BaseResource], candidate_tiles: List["BaseTile"], desired_count: int
     ) -> None:
         count_placed = 0
         remaining_tiles = set(candidate_tiles)
@@ -150,7 +153,7 @@ class ResourceAllocator:
         directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
 
         visited = set([tile])
-        result: List[BaseTile] = []
+        result: List["BaseTile"] = []
         queue = deque([(tile, 0)])
 
         while queue:
@@ -178,7 +181,7 @@ class ResourceAllocator:
         return result
 
     def _spread_cluster(
-        self, resource_class: Type[BaseResource], center_tile: BaseTile, remaining_tiles: set[BaseTile], limit: int
+        self, resource_class: Type[BaseResource], center_tile: "BaseTile", remaining_tiles: set["BaseTile"], limit: int
     ) -> int:
         placed = 0
         if not resource_class.clusterable:
@@ -204,7 +207,7 @@ class ResourceAllocator:
 
         random.shuffle(cluster_hexes)  # shuffle them so we don’t just do rings in strict order
 
-        h: BaseTile
+        h: "BaseTile"
         for h in cluster_hexes:
             if limit <= 0:
                 break
@@ -229,7 +232,7 @@ class ResourceAllocator:
 
         return placed
 
-    def _hex_distance(self, tile_1: BaseTile, tile_2: BaseTile) -> int:
+    def _hex_distance(self, tile_1: "BaseTile", tile_2: "BaseTile") -> int:
         dx = abs(tile_1.x - tile_2.x)
         dy = abs(tile_1.y - tile_2.y)
         return max(dx, dy, abs(dx - dy))
