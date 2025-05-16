@@ -5,18 +5,20 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 from direct.showbase import MessengerGlobal
 
 from gameplay.resource import BaseResource
-from gameplay.tiles.base_tile import BaseTile, Hex
+
 from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
 from system.pyload import PyLoad
-from system.subsystems.hexgen.enums import MapType, OceanType
-from system.subsystems.hexgen.mapgen import MapGen
+from system.subsystems.hexgen.enums import MapType, OceanType, HexFeature
+from system.generators.base import WorldParams
+
 
 if TYPE_CHECKING:
     from main import SCIV
     from system.game_settings import GameSettings
     from system.subsystems.hexgen.grid import Grid
+    from gameplay.tiles.base_tile import BaseTile, Hex
 
 
 class Basic(BaseGenerator):
@@ -41,17 +43,6 @@ class Basic(BaseGenerator):
         self.world_generation_stats: Dict[str, Any] = {}
         self.number_of_tiles: int = self.config.width * self.config.height
 
-        # Initialize HexGen world parameters
-        self.map_params = {
-            "map_type": MapType.terran,
-            "size": max(self.config.width, self.config.height),
-            "random_seed": self.seed,
-            "sea_percent": 40,  # 60% water coverage
-            "ocean_type": OceanType.water,
-            "roughness": 12,  # Controls terrain roughness
-            "hydrosphere": True,  # Enables rivers/lakes
-            "num_rivers": self.number_of_tiles // 100,  # Number of rivers
-        }
         self.map_params = {
             "map_type": MapType.terran,
             "surface_pressure": 1013.25,
@@ -60,9 +51,9 @@ class Basic(BaseGenerator):
             "day_length": 24,
             "base_temp": 0,
             "avg_temp": 10,
-            "sea_percent": 55,
+            "sea_percent": 40,
             "hydrosphere": True,
-            "ocean_type": [OceanType.water, OceanType.hydrocarbons],
+            "ocean_type": [OceanType.water],
             "random_seed": self.seed,
             "roughness": 18,
             "height_range": (0, 240),
@@ -71,13 +62,17 @@ class Basic(BaseGenerator):
             # features
             "craters": True,
             "volcanoes": True,
+            "volcano_area_size": 1,
+            "num_volcanoes": max(5, self.number_of_tiles // 1000),
             "num_rivers": self.number_of_tiles // 100,
             # territories
-            "num_territories": 0,
+            "num_territories": self.number_of_tiles // 100,
         }
 
-    def load_tiles(self) -> Dict[str, Type[BaseTile]]:
+    def load_tiles(self) -> Dict[str, Type["BaseTile"]]:
         """Loads tile classes dynamically."""
+        from gameplay.tiles.base_tile import BaseTile
+
         classes = PyLoad.load_classes("gameplay/tiles", base_classes=BaseTile)
         # Remove the base class from the list
         if "BaseTile" in classes:
@@ -87,6 +82,8 @@ class Basic(BaseGenerator):
     def generate(self) -> bool:
         """Generates the hex map using HexGen and maps it to our tile system."""
         # Step 1: Generate the world using HexGen
+        from system.subsystems.hexgen.mapgen import MapGen
+
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
         start_time: datetime = datetime.now()
         self.hexgen_map = MapGen(self.map_params, debug=True)
@@ -121,7 +118,7 @@ class Basic(BaseGenerator):
         self.instantiate_tiles()
         end_instantiation_time: datetime = datetime.now()
 
-        # Step 5: Allocate resources
+        # Step 6: Allocate resources
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Allocating resources..."])
         start_resource_allocation_time: datetime = datetime.now()
         self.grid = self.world.grid
@@ -129,7 +126,7 @@ class Basic(BaseGenerator):
         self.resource_allocator.allocate_resources()
         end_resource_allocation_time: datetime = datetime.now()
 
-        # Step 6: Place starting units
+        # Step 7: Place starting units
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Placing starting units..."])
         start_unit_placement_time: datetime = datetime.now()
         self.place_starting_units()
@@ -168,120 +165,139 @@ class Basic(BaseGenerator):
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Done..."])
         return True
 
-    def classify_terrain(self, hex_tile: Hex) -> str:
-        # arctic =               (1, 'a', 'Arctic')
-        # tundra =               (2, 'u', 'Tundra')
-        # alpine_tundra =        (3, 'p', 'Alpine Tundra')
-        # desert =               (4, 'd', 'Desert')
-        # scrubland =            (5, 's', 'Scrubland')
-        # savanna =              (6, 'S', 'Savanna')
-        # grasslands =           (7, 'g', 'Grasslands')
-        # boreal_forest =        (8, 'b', 'Boreal Forest')
-        # temperate_forest =     (9, 't', 'Temperate Forest')
-        # temperate_rainforest = (10, 'T', 'Temperate Rainforest')
-        # tropical_forest =      (11, 'r', 'Tropical Forest')
-        # tropical_rainforest =  (12, 'R', 'Tropical Rainforest')
-
-        desert_temperature_threshold = 30
-        grass_temperature_upper_threshold = 30
-        grass_temperature_lower_threshold = 10
-        moisture_threshold_mangrove_jungle = 12
-        light_jungle_temperature_threshold = 25
-        cold_forrest_temperature_threshold = 8
-        flat_to_hills_threshold = 160
-        hills_to_mountains_threshold = 205
-
+    def classify_terrain(self, hex_tile: "Hex") -> str:
         biome_id: int = hex_tile.biome.id  # type: ignore
         geoform_id: int = hex_tile.geoform_type.id  # type: ignore
+        hex_temp: int = int(hex_tile.temperature[0])  # type: ignore
+        hex_alt: int = int(hex_tile.altitude)  # type: ignore
 
+        if HexFeature.volcano in hex_tile.features:  # if we dont have flow its just the area around it.
+            return "Volcano"
+
+        # Water check
         if hex_tile.is_water:
-            if biome_id in (2,) or hex_tile.temperature[0] < -1:
+            if biome_id in (WorldParams.tundra,) or hex_tile.temperature[0] < -1:
                 return "SeaIce"
-
+            elif geoform_id == 4 or HexFeature in hex_tile.features:
+                return "Lake"
+            elif geoform_id == 2:
+                return "Sea"
             elif hex_tile.is_coast and geoform_id != 2:  # Shallow water, For some reason water is desert or grassland
                 return "Coast"
-            elif geoform_id == 2:
-                return "Lake"
             else:
                 return "Sea"
-        else:
+        elif hex_tile.is_land:
             # Its land
-            # We ask for the altitude to determine if it's a mountain
-            if hex_tile.altitude > hills_to_mountains_threshold:
-                if hex_tile.temperature[0] < -2:
+
+            # Check for mountains
+            if hex_tile.altitude > WorldParams.hills_to_mountains_threshold:
+                if hex_temp < -2:
                     return "MountainSnow"
-                return "Mountain"
+                else:
+                    return "Mountain"
+            # Check for hills
+            else:
+                if int(hex_alt) > WorldParams.flat_to_hills_threshold:
+                    if (
+                        biome_id
+                        in (
+                            WorldParams.grasslands,
+                            WorldParams.scrubland,
+                        )
+                        and hex_temp >= WorldParams.forest_lower_threshold
+                        and hex_temp <= WorldParams.grass_temperature_upper_threshold
+                    ):
+                        return "HillsGrassland"
+                    elif (
+                        biome_id
+                        in (
+                            WorldParams.boreal_forest,
+                            WorldParams.temperate_forest,
+                            WorldParams.temperate_rainforest,
+                            WorldParams.tropical_forest,
+                            WorldParams.tropical_rainforest,
+                        )
+                        and hex_temp >= WorldParams.forest_lower_threshold
+                    ):
+                        return "HillsForest"
+                    elif biome_id in (WorldParams.savanna, WorldParams.desert, WorldParams.scrubland):
+                        return "HillsDesert"
+                    elif (
+                        biome_id in (WorldParams.alpine_tundra, WorldParams.arctic, WorldParams.boreal_forest)
+                        and hex_temp < 0
+                    ):
+                        return "HillsSnow"
+                    elif hex_temp < WorldParams.grass_temperature_lower_threshold and biome_id not in (
+                        WorldParams.scrubland,
+                        WorldParams.savanna,
+                        WorldParams.desert,
+                    ):
+                        return "HillsTundra"
+                else:
+                    if (
+                        biome_id in (WorldParams.desert,) and hex_temp > WorldParams.desert_temperature_threshold
+                    ):  # Desert or savannah, keep this high as it needs to be checked first before grassland
+                        return "FlatDesert"
+                    elif (
+                        biome_id in (WorldParams.grasslands, WorldParams.tropical_forest)
+                        and hex_tile.moisture > WorldParams.moisture_threshold_mangrove_jungle
+                    ):  # Virtual Mangrove Actual grassland with high moister
+                        return "FlatJungle"
+                    elif (
+                        biome_id in (WorldParams.tropical_forest,)
+                        and hex_temp < WorldParams.light_jungle_temperature_threshold
+                    ):
+                        return "FlatLightJungle"
+                    elif biome_id in (WorldParams.scrubland,) or (
+                        biome_id == WorldParams.grasslands and hex_temp < WorldParams.schrubland_temperature_threshold
+                    ):  # Virtual Mangrove Actual scrubland with low moister
+                        return "FlatScrubland"
+                    elif (
+                        biome_id in (WorldParams.savanna, WorldParams.desert)
+                        and hex_temp <= WorldParams.desert_temperature_threshold
+                    ) or biome_id in (
+                        WorldParams.grasslands,
+                    ):  # Grassland and when its a "desert" but to cold to be a desert
+                        return "FlatGrass"
+                    elif biome_id in (WorldParams.savanna,):  # Savanna
+                        return "FlatSavanna"
+                    elif biome_id in (
+                        WorldParams.boreal_forest,
+                        WorldParams.tropical_rainforest,
+                    ):  # flat heavy forrest virtual (cold boreal forest)
+                        if hex_temp < WorldParams.cold_forrest_temperature_threshold:
+                            return "FlatPineForest"
+                        return "FlatHeavyForest"
+                    elif biome_id in (
+                        WorldParams.tropical_rainforest,
+                    ):  # Fake tile type: Jungle not (Tropical Rainforest)
+                        pass
+                        # return "FlatJungle"
+                    elif biome_id in (
+                        WorldParams.tropical_forest,
+                        WorldParams.temperate_rainforest,
+                        WorldParams.temperate_forest,
+                        WorldParams.boreal_forest,
+                    ):  # forest
+                        return "FlatForrest"
 
-            if hex_tile.altitude > flat_to_hills_threshold:
-                if (
-                    biome_id in (7, 5)
-                    and hex_tile.temperature[0] > grass_temperature_lower_threshold
-                    and hex_tile.temperature[0] < grass_temperature_upper_threshold
-                ):
-                    return "HillsGrassland"
-                elif biome_id in (6, 4) and hex_tile.temperature[0] > desert_temperature_threshold:
-                    return "HillsDesert"
-                elif biome_id in (3,) and hex_tile.temperature[0] < 0:
-                    return "HillsSnow"
-                elif (
-                    hex_tile.temperature[0] < grass_temperature_lower_threshold
-                    and hex_tile.temperature[0] > 0
-                    and biome_id not in (7, 5, 6, 4)
-                ):
-                    return "HillsTundra"
+                    elif biome_id in (WorldParams.scrubland,):  # Scrubland
+                        return "FlatScrubland"
+                    elif biome_id in (WorldParams.arctic,):  # Arctic / Ice
+                        return "FlatIce"
+                    elif biome_id in (WorldParams.tundra, WorldParams.alpine_tundra):  # 2 Tundra, 3 Alpine Tundra
+                        if hex_temp < -0:  # This is a cold tile or alpine
+                            return "FlatTundraSnow"
+                        else:
+                            return "FlatTundra"  # This is a normal tundra should be just 2 left as 3 is handled above
+                    elif biome_id in (13,):  # Wasteland
+                        return "FlatWasteland"
+                    elif biome_id in (WorldParams.tundra,):
+                        return "FlatTundra"
 
-            if (
-                biome_id in (4,) and hex_tile.temperature[0] > desert_temperature_threshold
-            ):  # Desert or savannah, keep this high as it needs to be checked first before grassland
-                return "FlatDesert"
-            elif (
-                biome_id in (7, 11) and hex_tile.moisture > moisture_threshold_mangrove_jungle
-            ):  # Virtual Mangrove Actual grassland with high moister
-                return "FlatJungle"
-            elif biome_id in (11,) and hex_tile.temperature[0] < light_jungle_temperature_threshold:
-                return "FlatLightJungle"
-            elif biome_id in (5,) or (
-                biome_id == 7 and hex_tile.temperature[0] < cold_forrest_temperature_threshold
-            ):  # Virtual Mangrove Actual scrubland with low moister
-                return "FlatScrubland"
-            elif biome_id in (6,):  # Savanna
-                return "FlatSavanna"
-            elif biome_id in (7,) or (
-                biome_id in (6, 4) and hex_tile.temperature[0] <= desert_temperature_threshold
-            ):  # Grassland and when its a "desert" but to cold to be a desert
-                return "FlatGrass"
-            elif biome_id in (
-                8,
-                12,
-            ):  # flat heavy forrest virtual (cold boreal forest)
-                if hex_tile.temperature[0] < cold_forrest_temperature_threshold:
-                    return "FlatPineForest"
-                return "FlatHeavyForest"
-            elif biome_id in (12,):  # Fake tile type: Jungle not (Tropical Rainforest)
-                pass
-                # return "FlatJungle"
-            elif biome_id in (
-                11,
-                10,
-                9,
-                8,
-            ):  # forest
-                return "FlatForrest"
-
-            elif biome_id in (5,):  # Scrubland
-                return "FlatScrubland"
-            elif biome_id in (1,):  # Arctic / Ice
-                return "FlatIce"
-            elif biome_id in (2, 3) or (
-                biome_id in (7, 6, 4) and hex_tile.temperature[0] < grass_temperature_lower_threshold
-            ):  # 2 Tundra, 3 Alpine Tundra
-                if hex_tile.temperature[0] < 0 or biome_id in (3,):  # This is a cold tile or alpine
-                    return "FlatTundraSnow"
-                return "FlatTundra"  # This is a normal tundra should be just 2 left as 3 is handled above
-            elif biome_id in (13,):  # Wasteland
-                return "FlatWasteland"
-
-        raise ValueError(f"Terrain not found for hex_tile: {hex_tile}{hex_tile.biome}")
+        raise ValueError(
+            f"Terrain not found for hex_tile: {hex_tile}|{hex_tile.biome}[{biome_id}]|{hex_tile.geoform_type}|{int(hex_tile.temperature[0])}|{hex_tile.altitude}"
+        )
 
     def instantiate_tiles(self):
         """Creates Tile objects and places them on the grid."""
@@ -308,7 +324,7 @@ class Basic(BaseGenerator):
                 obj_instance.register()
 
                 obj_instance.enrich_from_extra_data(hex=hex_tile)
-
+                _, _, obj_instance.pos_z = obj_instance.calculate_z_pos_on_altitude()
                 # Generate a unique tag for mapping
                 tag = obj_instance.generate_tag(x, y)
                 self.map[tag] = obj_instance
@@ -322,7 +338,7 @@ class Basic(BaseGenerator):
         resources = instance.all_by_type([ResourceType.STRATEGIC, ResourceType.BONUS, ResourceType.LUXURY])
         return resources
 
-    def _hex_distance(self, hex1: Hex, hex2: Hex) -> int:
+    def _hex_distance(self, hex1: "Hex", hex2: "Hex") -> int:
         """
         Calculates the distance between two hex tiles using axial coordinates.
         """

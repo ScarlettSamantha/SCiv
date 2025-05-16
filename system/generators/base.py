@@ -7,21 +7,51 @@ from gameplay.civics.core.tree.core import CoreCivicTree
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
 from gameplay.personality import Personality
-from gameplay.player import Player
+
 from gameplay.repositories.civilization import Civilization as CivilizationRepository
 from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
-from gameplay.repositories.tile import TileRepository
+
 from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
-from gameplay.tiles.base_tile import BaseTile
+
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
     from main import SCIV
+    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.player import Player
+
+
+class WorldParams:
+    (
+        arctic,  # id 1 | 'a' | 'Arctic'
+        tundra,  # id 2 | 'u' | 'Tundra'
+        alpine_tundra,  # id 3 | 'p' | 'Alpine Tundra'
+        desert,  # id 4 | 'd' | 'Desert'
+        scrubland,  # id 5 | 's' | 'Scrubland'
+        savanna,  # id 6 | 'S' | 'Savanna'
+        grasslands,  # id 7 | 'g' | 'Grasslands'
+        boreal_forest,  # id 8 | 'b' | 'Boreal Forest'
+        temperate_forest,  # id 9 | 't' | 'Temperate Forest'
+        temperate_rainforest,  # id 10 | 'T' | 'Temperate Rainforest'
+        tropical_forest,  # id 11 | 'r' | 'Tropical Forest'
+        tropical_rainforest,  # id 12 | 'R' | 'Tropical Rainforest'
+    ) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+
+    desert_temperature_threshold = 20
+    grass_temperature_upper_threshold = 30
+    grass_temperature_lower_threshold = 10
+    forest_lower_threshold = 2
+    moisture_threshold_mangrove_jungle = 12
+    light_jungle_temperature_threshold = 25
+    cold_forrest_temperature_threshold = 8
+    schrubland_temperature_threshold = 4
+    flat_to_hills_threshold = 170
+    hills_to_mountains_threshold = 217
 
 
 class BaseGenerator(ABC):
@@ -51,7 +81,9 @@ class BaseGenerator(ABC):
         civic_tree: Type[CivicTree] = CoreCivicTree,
         is_nature: bool = False,
         is_barbarian: bool = False,
-    ) -> Player:
+    ) -> "Player":
+        from gameplay.player import Player
+
         if leader is None:
             leader = civilization.random_leader()
 
@@ -78,7 +110,7 @@ class BaseGenerator(ABC):
 
         return player
 
-    def assign_ai(self, player: Player) -> None:
+    def assign_ai(self, player: "Player") -> None:
         """
         Assigns an AI class to a player
         """
@@ -98,7 +130,7 @@ class BaseGenerator(ABC):
 
         player.set_ai(ai)
 
-    def setup_players(self, player_civilization: Type[Civilization]) -> List[Player] | None:
+    def setup_players(self, player_civilization: Type[Civilization]) -> List["Player"] | None:
         players: List[Player] = []
         civs_ingame: List[Type[Civilization]] = []
 
@@ -175,13 +207,14 @@ class BaseGenerator(ABC):
         map_edge_buffer: int = 3,
     ) -> bool:
         from gameplay.units.core.classes.civilian.settler import Settler
+        from gameplay.repositories.tile import TileRepository
 
         units: List["Settler"] = []
-        occupied_tiles: List[BaseTile] = []  # Track placed player locations
+        occupied_tiles: List["BaseTile"] = []  # Track placed player locations
 
         min_distances: List[int] = [5, 4, 3]  # Distances to attempt
 
-        def has_sufficient_land(tile: BaseTile, radius: int, threshold: float) -> bool:
+        def has_sufficient_land(tile: "BaseTile", radius: int, threshold: float) -> bool:
             """Checks if the tile has at least the given ratio of land within the radius."""
             neighbors: List[BaseTile] = TileRepository.get_neighbors(tile, radius=radius)
             land_tiles = sum(1 for n in neighbors if not n.is_water)
