@@ -3,6 +3,8 @@ from typing import List, NamedTuple, Union, TYPE_CHECKING
 from dataclasses import dataclass
 import random
 
+from gameplay.border import PlayerManager
+
 
 if TYPE_CHECKING:
     from gameplay.cities import City
@@ -173,12 +175,24 @@ class Combat:
 
 
 def test_combat_outcome() -> List[CombatOutcome]:
-    return [
-        CombatOutcome(CombatResults.DEFENDER_KILLED, 10.0, 0.0, False, True, False, None, None, None, None, 0.0, 0.0),
-        CombatOutcome(CombatResults.NO_RANGE, 0.0, 0.0, False, False, False, None, None, None, None, 0.0, 0.0),
-        CombatOutcome(CombatResults.NO_MOVEMENT, 0.0, 0.0, False, False, False, None, None, None, None, 0.0, 0.0),
-        CombatOutcome(CombatResults.NO_POINTS, 0.0, 0.0, False, False, False, None, None, None, None, 0.0, 0.0),
-        CombatOutcome(CombatResults.ATTACKER_KILLED, 5.0, 8.0, True, False, True, None, None, None, None, 0.0, 0.0),
-        CombatOutcome(CombatResults.ATTACKER_DAMAGED, 10.0, 3.0, False, False, True, None, None, None, None, 0.0, 0.0),
-        CombatOutcome(CombatResults.DEFENDER_DAMAGED, 6.0, 0.0, False, False, False, None, None, None, None, 0.0, 0.0),
+    player = PlayerManager.session_player()
+    items = [
+        CombatOutcome(
+            CombatResults.DEFENDER_KILLED, 10.0, 0.0, False, True, False, player, player, None, None, 0.0, 0.0
+        ),
+        CombatOutcome(CombatResults.NO_RANGE, 0.0, 0.0, False, False, False, player, player, None, None, 0.0, 0.0),
+        CombatOutcome(CombatResults.NO_MOVEMENT, 0.0, 0.0, False, False, False, player, player, None, None, 0.0, 0.0),
+        CombatOutcome(CombatResults.NO_POINTS, 0.0, 0.0, False, False, False, player, player, None, None, 0.0, 0.0),
+        CombatOutcome(CombatResults.ATTACKER_KILLED, 5.0, 8.0, True, False, True, player, player, None, None, 0.0, 0.0),
+        CombatOutcome(
+            CombatResults.ATTACKER_DAMAGED, 10.0, 3.0, False, False, True, player, player, None, None, 0.0, 0.0
+        ),
+        CombatOutcome(
+            CombatResults.DEFENDER_DAMAGED, 6.0, 0.0, False, False, False, player, player, None, None, 0.0, 0.0
+        ),
     ]
+
+    for i in range(10):
+        items.append(items[i % len(items)])
+
+    return items
