@@ -29,8 +29,6 @@ class BaseTerrain(ABC):
     _warn_user_before_build: bool = False
     _warn_user_before_build_text: T_TranslationOrStr = ""
     _warn_user_before_build_title: T_TranslationOrStr = ""
-
-    model_scale: float = 0.41
     uv_index: str = "base"
 
     def __init__(self):
