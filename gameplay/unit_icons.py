@@ -120,7 +120,7 @@ class UnitIcons(DirectObject):
             # (re)position
             quad.set_pos(base_pos)  # type: ignore
             # (re)scale
-            quad.set_scale(w, 0, h)  # type: ignore
+            quad.set_scale(w, 1, h)  # type: ignore
             # update the shader uniform too
             quad.set_shader_input("billboard_position", quad.get_pos(self.base.render))  # type: ignore
         return Task.cont  # type: ignore
