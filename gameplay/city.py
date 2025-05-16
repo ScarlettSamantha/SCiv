@@ -15,7 +15,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 from managers.log import LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
-from system.generators.base import TileRepository
+from gameplay.repositories.tile import TileRepository
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
