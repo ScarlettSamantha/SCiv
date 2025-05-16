@@ -10,7 +10,7 @@ class HillsForest(BaseTerrain):
     _name = "world.terrain.hills_forest"
     movement_modifier = 0.5
     water_availability = 0.5
-    _model = "assets/models/tiles/forest.glb"
+    _model = "assets/models/tiles/hills_forest.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

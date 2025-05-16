@@ -10,6 +10,7 @@ class Mountain(BaseTerrain):
     _model = "assets/models/tiles/mountain_grass.glb"
     _fallback_color = rgb(0, 119, 255)
     can_spawn_resources = False
+    model_height = 0.25
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

@@ -12,7 +12,7 @@ class FlatGrass(BaseTerrain):
     _name = "world.terrain.flatland_grass"
     movement_modifier = 0.5
     water_availability = 1
-    _model = "assets/models/tiles/grassv2.glb"
+    _model = {0: "assets/models/tiles/grassv2.glb", 50: "assets/models/tiles/grassv3.glb"}
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
