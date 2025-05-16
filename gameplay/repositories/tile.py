@@ -1,12 +1,15 @@
+from collections import deque
 from enum import Enum
 from heapq import heappop, heappush
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Tuple
 
 from managers.world import World
+
 
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tiles.base_tile import BaseTile
+    from system.generators.basic import Hex
 
 
 class DistanceCalculationType(Enum):
@@ -590,3 +593,72 @@ class TileRepository:
         # compute as float, then cast to int
         raw = distance_functions[distance_type](tile1, tile2)
         return int(raw)
+
+    @classmethod
+    def get_neighbors_hex(
+        cls,
+        tile: "Hex",
+        grid: Dict[Tuple[int, int], "Hex"],
+        radius: int = 1,
+    ) -> List["Hex"]:
+        from collections import deque
+
+        directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
+        directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
+
+        visited = set([tile])
+        result: List["Hex"] = []
+        queue = deque([(tile, 0)])
+
+        while queue:
+            current_tile, dist = queue.popleft()
+            # Include tiles that are within [1, radius] steps, but not the original tile
+            if 0 < dist <= radius:
+                result.append(current_tile)
+            if dist < radius:
+                # Determine neighbor directions based on odd/even x of current tile
+                curr_directions = directions_even if current_tile.x % 2 == 0 else directions_odd
+                for dx, dy in curr_directions:
+                    nx, ny = current_tile.x + dx, current_tile.y + dy
+                    neighbor = grid.get((nx, ny))
+                    if neighbor and neighbor not in visited:
+                        visited.add(neighbor)
+                        queue.append((neighbor, dist + 1))
+
+        return result
+
+    @classmethod
+    def flood_fill(
+        cls,
+        start_tile: "Hex",
+        grid: Dict[Tuple[int, int], "Hex"],
+        condition: Callable[["Hex"], bool],
+        visited: Set["Hex"] = set(),
+    ) -> Tuple[Set["Hex"], Set["Hex"]]:
+        """
+        Returns all connected tiles starting from start_tile that satisfy the given condition,
+        using a breadth-first search. The search continues in all directions as long as
+        condition(tile) is True, stopping only at tiles where the condition is False.
+        Does not limit distance—will spread across the entire connected region.
+
+        :param start_tile: The tile to start the fill from.
+        :param condition: A function taking a tile, returning True if it should be included.
+        :return: List of all connected tiles that match the condition.
+        """
+        result: Set["Hex"] = set()
+        queue = deque([start_tile])
+
+        while queue:
+            tile = queue.popleft()
+            if tile in visited:
+                continue
+            if not condition(tile):
+                continue
+            visited.add(tile)
+            result.add(tile)
+            # Add all neighbors (no radius: just direct neighbors)
+            for neighbor in cls.get_neighbors_hex(tile, grid, radius=1):
+                if neighbor not in visited and condition(neighbor):
+                    queue.append(neighbor)
+
+        return (result, visited)
