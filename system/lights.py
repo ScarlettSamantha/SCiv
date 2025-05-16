@@ -1,24 +1,22 @@
 from typing import TYPE_CHECKING
 
-from panda3d.core import AmbientLight, DirectionalLight, Vec4
+from panda3d.core import AmbientLight, DirectionalLight, NodePath, Vec3, Vec4
 
 if TYPE_CHECKING:
     from main import SCIV
 
 
 def setup_lights(base: "SCIV"):
-    # Ambient light.
-    ambient_light = AmbientLight("ambient")
-    ambient_light.setColor(Vec4(1, 1, 1, 1))
-    ambient_light.setColorTemperature(6000)
-    ambient_node = base.render.attachNewNode(ambient_light)  # type: ignore
+    # 1) Ambient fill so shadows aren’t pitch-black:
+    ambient = AmbientLight("ambient")
+    ambient.setColor(Vec4(1, 1, 1, 1))  # ~30% white
+    ambient_np: NodePath = base.render.attachNewNode(ambient)  # type: ignore
+    base.render.setLight(ambient_np)  # type: ignore
 
-    # Directional light.
-    directional_light = DirectionalLight("directional")
-    directional_light.setColor(Vec4(1, 1, 1, 1))
-
-    directional_node = base.render.attachNewNode(directional_light)  # type: ignore
-    directional_node.setHpr(45, -60, 0)  # type: ignore
-
-    base.render.setLight(ambient_node)  # type: ignore
-    # self.render.setLight(directional_node)
+    # 2) “Sun” directional light for proper highlights/shadows:
+    sun = DirectionalLight("sun")
+    sun.setColor(Vec4(1.0, 1.0, 0.9, 1))  # full-strength, slight warmth
+    sun.setShadowCaster(True, 1024, 1024)  # if you want shadows
+    sun.setDirection(Vec3(-1, -1, -2))  # from above & behind
+    sun_np: NodePath = base.render.attachNewNode(sun)  # type: ignore
+    base.render.setLight(sun_np)  # type: ignore
