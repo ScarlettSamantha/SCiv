@@ -1,41 +1,48 @@
+from typing import TYPE_CHECKING, List, Set
 import uuid
+
+
+from system.subsystems.hexgen.hex import Hex
+
+if TYPE_CHECKING:
+    from system.subsystems.hexgen.enums import GeoformType
 
 
 class Geoform:
     """A landmass or water feature"""
 
-    def __init__(self, hexes, geotype):
+    def __init__(self, hexes: set["Hex"], geotype: "GeoformType"):
         self.type = geotype  # GeoformType
-        self.hexes = hexes  # set
+        self.hexes: Set["Hex"] = hexes  # set
         self.size = len(hexes)
         self.id = uuid.uuid4()  # uuid
-        self.neighbors = set()  # set
+        self.neighbors: set["Geoform"] = set()  # set of Geoform
         self.to_delete = False
 
         for h in hexes:
             h.geoform = self
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, str | int]:
         """Dictionary representation"""
         return {"id": self.id.hex, "type": self.type.name, "size": self.size}
 
-    def neighbor_of_type(self, other_type):
+    def neighbor_of_type(self, other_type: "GeoformType") -> list["Geoform"]:
         """
         Returns all neighbors of a given type
         """
-        result = []
+        result: List["Geoform"] = []
         for n in self.neighbors:
             if n.type is other_type:
                 result.append(n)
         return result
 
-    def neighbor_of_types(self, other_types):
-        result = []
+    def neighbor_of_types(self, other_types: List["GeoformType"]) -> list["Geoform"]:
+        result: list["Geoform"] = []
         for t in other_types:
             result.extend(self.neighbor_of_type(t))
         return result
 
-    def merge(self, other):
+    def merge(self, other: "Geoform") -> None:
         """Merge another Geoform into this one"""
         # add their hexes to mine
         self.hexes.update(other.hexes)
@@ -49,18 +56,20 @@ class Geoform:
         # mark them to be deleted
         other.to_delete = True
 
-    def is_geotype(self, geotype):
+    def is_geotype(self, geotype: "GeoformType") -> bool:
         """Is this geoform this type?"""
         return self.type is geotype
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Geoform):
+            return NotImplemented
         return self.id == other.id
 
-    def __key(self):
+    def __key(self) -> uuid.UUID:
         return self.id
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__key())
 
-    def __str__(self):
-        return "<Geoform: type: {}, size: {}, id: {}>".format(self.type.title, self.size, self.id)
+    def __str__(self) -> str:
+        return "<Geoform: type: {}, size: {}, id: {}>".format(self.type.get(1), self.size, self.id)

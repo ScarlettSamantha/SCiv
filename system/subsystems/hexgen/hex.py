@@ -1,11 +1,16 @@
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
+
+import numpy as np
 
 from gameplay.resource import BaseResource
 from system.subsystems.hexgen.edge import Edge
+from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.enums import (
     Biome,
     Hemisphere,
+    HexFeature,
+    GeoformType,
     HexEdge,
     HexSide,
     HexType,
@@ -18,10 +23,10 @@ if TYPE_CHECKING:
 
 
 class Hex:
-    def __init__(self, grid: "Grid", x: int, y: int, altitude: int):
+    def __init__(self, grid: "Grid", x: int, y: int, altitude: np.float64):
         self.x: int = x
         self.y: int = y
-        self.altitude: float | int = altitude
+        self.altitude: float = altitude
         self.grid: "Grid" = grid
 
         self.edge_east = None
@@ -36,7 +41,7 @@ class Hex:
         self.distance = 0  # distance in hexes to the coast. 0 if no coast
         self.moisture = 0
 
-        self.territory = None
+        self.territory: Optional[Territory] = None
         self.marked = False  # marked by the grouping algorithm
 
         self.bubble_cache: Dict[Any, Any] = dict()
@@ -44,21 +49,15 @@ class Hex:
         self.features: Set[Any] = set()
 
         # geoform type
-        self.geoform_type = None
+        self.geoform_type: Optional[GeoformType] = None
 
         # geoform instance if it exists
-        self.geoform = None
+        self.geoform: Optional[Any] = None
 
-        self.resource = None
-        self._neighbors = None
+        self._neighbors: Optional[List[tuple[HexEdge, "Hex"]]] = None
 
-        world_pressure = self.grid.params.get("surface_pressure")
-        self.pressure = (world_pressure, world_pressure)
-        self.wind = None
-        self.wind_temp_effect = [
-            0,
-            0,
-        ]  # Seasonal tuple. Temp changes from pressure and wind
+        world_pressure = self.grid.params.get("surface_pressure", 1013.25)
+        self.pressure: Tuple[float, float] = (float(world_pressure), float(world_pressure))
 
         # instance of a sea
         self.sea = None
@@ -71,7 +70,7 @@ class Hex:
     def get_gameplay_resource(self) -> Type[BaseResource] | None:
         return self.gameplay_resource
 
-    def has_feature(self, feature):
+    def has_feature(self, feature: HexFeature):
         """
         Does this hex have this feature
         :param feature: HexFeature
@@ -79,7 +78,7 @@ class Hex:
         """
         return feature in self.features
 
-    def add_feature(self, feature):
+    def add_feature(self, feature: HexFeature):
         """
         Adds a feature
         :param feature: HexFeature
@@ -87,7 +86,7 @@ class Hex:
         """
         self.features.add(feature)
 
-    def remove_feature(self, feature):
+    def remove_feature(self, feature: HexFeature):
         """
         Removes a feature
         :param feature: HexFeature
@@ -98,75 +97,6 @@ class Hex:
     @property
     def is_owned(self):
         return self.territory is not None
-
-    # @property
-    # def pressure(self):
-    #     """
-    #     Returns a season dict that represents the pressure in mPa in summer and winter.
-    #     This function should not be random, but instead be determined by other hex values.
-    #     """
-    #     world_pressure = self.grid.params.get('surface_pressure')
-    #
-    #     # create base pressure changes not accounting for land
-    #
-    #     # base pressure differences between the different pressure belts
-    #     # TODO: add variable here to make more volitile weather
-    #     # TODO: have this variable depend on axial tilt
-    #     pressure_diff = random.randint(6, 10)
-    #
-    #     # ±10 degrees         (centered on 0 degrees)   = ITCZ (low pressure)
-    #     # ±20 to ±40 degrees  (centered on ±30 degrees) = STHZ (high pressure)
-    #     # ±40 to ±80 degrees  (centered on ±60 degrees) = PF (low pressure)
-    #
-    #     # end_year is winter, mid_year is summer
-    #     if self.is_land:
-    #         max_shift = round(self.distance / 2)
-    #         end_year = pressure_at_seasons(self.latitude, world_pressure, pressure_diff, -max_shift)
-    #         mid_year = pressure_at_seasons(self.latitude, world_pressure, pressure_diff, max_shift)
-    #         base_pressure = (end_year, mid_year)
-    #     else:
-    #         max_shift = min(6, 0.005 * round(self.grid.sealevel - self.latitude))
-    #         end_year = pressure_at_seasons(self.latitude, world_pressure, pressure_diff, -max_shift)
-    #         mid_year = pressure_at_seasons(self.latitude, world_pressure, pressure_diff, max_shift)
-    #         base_pressure = (end_year, mid_year)
-    #
-    #
-    #     # add effects of land and water
-    #     if self.is_land:
-    #         if self.hemisphere is Hemisphere.northern:
-    #             # winter
-    #             end_year = base_pressure[0] + min(15, round(self.distance * 0.5) )
-    #
-    #             # summer
-    #             mid_year = base_pressure[1] - min(15, round(self.distance * 0.5) )
-    #         elif self.hemisphere is Hemisphere.southern:
-    #             # summer
-    #             end_year = base_pressure[0] - min(15, round(self.distance * 0.5) )
-    #
-    #             # winter
-    #             mid_year = base_pressure[1] + min(15, round(self.distance * 0.5) )
-    #
-    #     return (end_year, mid_year)
-
-    # @property
-    # def wind(self):
-    #     """
-    #     Wind consists of a HexEdge direction and a magnitude that is equal to the difference in pressure
-    #     Wind direction is always to the neighbor with the lowest pressure,
-    #     deflected by the following rules:
-    #
-    #     Northern Hemisphere:
-    #         high pressure areas: clockwise
-    #         low pressure areas: counter-clockwise
-    #     Southern Hemisphere:
-    #         high pressure areas: counter-clockwise
-    #         low pressure areas: clockwise
-    #     """
-    #     world_pressure = self.grid.params.get('surface_pressure')
-    #     return (
-    #         decide_wind(0, world_pressure, self),
-    #         decide_wind(1, world_pressure, self)
-    #     )
 
     @property
     def latitude_ratio(self) -> float:
@@ -193,12 +123,12 @@ class Hex:
             return ((ratio) / 0.5) * -90 + 90
 
     @property
-    def zone(self) -> None | Zones:
-        axial_tilt = abs(self.grid.params.get("axial_tilt"))
+    def zone(self) -> Zones:
+        axial_tilt: float = float(abs(self.grid.params.get("axial_tilt", 18)))
 
         # northern polar zone
-        northern_polar_zone = axial_tilt
-        southern_polar_zone = -(0 - axial_tilt)
+        northern_polar_zone: float = axial_tilt
+        southern_polar_zone: float = -(0 - axial_tilt)
         northern_tropic_zone = axial_tilt
         southern_tropic_zone = -axial_tilt
         northern_temperate = axial_tilt + (axial_tilt / 2)
@@ -220,6 +150,7 @@ class Hex:
             return Zones.southern_temperate
         elif -90 < self.latitude <= southern_polar_zone:
             return Zones.antarctic_circle
+        raise Exception("Zone invalid Latitude: {}".format(self.latitude))
 
     @property
     def base_temperature(self) -> tuple[float, float]:
@@ -230,10 +161,10 @@ class Hex:
         """
         # import ipdb; ipdb.set_trace()
         ratio = self.latitude_ratio
-        avg_temp = self.grid.params.get("avg_temp")
-        volitility = round(abs(self.grid.params.get("axial_tilt")))
+        avg_temp = self.grid.params.get("avg_temp", 10)
+        volitility: float = round(abs(self.grid.params.get("axial_tilt", 18)))
         base_temp = self.grid.params.get("base_temp")
-        min_temp = max(avg_temp - volitility, base_temp)
+        min_temp: int = max(avg_temp - volitility, base_temp)
         # global avg temperature should be around ratio 0.4 and 0.6
 
         # part1 includes latitude only
@@ -251,10 +182,7 @@ class Hex:
 
     @property
     def temperature(self) -> tuple[float, float]:
-        return (
-            self.base_temperature[0] + self.wind_temp_effect[0],
-            self.base_temperature[1] + self.wind_temp_effect[1],
-        )
+        return (self.base_temperature[0], self.base_temperature[1])
 
     @property
     def biome(self) -> Biome:
@@ -302,13 +230,13 @@ class Hex:
         return len(self.grid.grid) - 1
 
     @property
-    def map_surrounding(self):
+    def map_surrounding(self) -> list[Any]:
         """
         Returns the surrounding hexes without wrapping about the map
         :return: list of Hex
         """
         # east
-        sur = []
+        sur: List[Hex] = []
         if self.y != self.max_size:
             sur.append(self.grid.find_hex(self.x, self.y + 1))
         # west
@@ -408,7 +336,7 @@ class Hex:
             else:
                 return self.grid.find_hex(self.x + 1, self.y + 1)
 
-    def neighbor_at(self, direction):
+    def neighbor_at(self, direction: HexEdge) -> "Hex":
         """Given a HexEdge, find the hex on the other side of this edge"""
         if direction is HexEdge.east:
             return self.hex_east
@@ -425,7 +353,7 @@ class Hex:
         raise Exception("No such direction")
 
     @property
-    def surrounding(self):
+    def surrounding(self) -> List["Hex"]:
         """
         Returns a list of all surrounding hexes
         Returns: Hex
@@ -440,7 +368,7 @@ class Hex:
         ]
 
     @property
-    def neighbors(self):
+    def neighbors(self) -> List[tuple[HexEdge, "Hex"]]:
         """Surrounding hexes with HexEdge enums"""
         if self._neighbors is not None:
             return self._neighbors
@@ -455,22 +383,23 @@ class Hex:
             ]
             return self._neighbors
 
-    def bubble(self, distance=1):
+    def bubble(self, distance: int = 1) -> List["Hex"]:
         """
         Returns a list of all hexes within a certain number of hexes
         """
-        around = self.surrounding
+        around: List["Hex"] = self.surrounding
         if distance == 0:
-            return self
+            return [self]
         elif distance == 1:
-            return around.append(self)
+            around.append(self)
+            return around
         try:
             return self.bubble_cache[distance]
         except KeyError:
 
-            def step(iteration, hexes):
+            def step(iteration: int, hexes: List["Hex"]) -> List["Hex"]:
                 if iteration < distance - 1:
-                    temp = []
+                    temp: List["Hex"] = []
                     for h in hexes:
                         temp.extend(h.surrounding)
                     return step(iteration + 1, temp)
@@ -519,19 +448,21 @@ class Hex:
     def is_coast(self) -> bool:
         return any(x.is_land for x in self.surrounding)
 
-    def decide_slope(self, one, two) -> tuple[Any, Any]:
+    def decide_slope(self, one: "Hex", two: "Hex") -> tuple[Any, Any]:
         """Returns UP, DOWN tuple"""
         if one.altitude < two.altitude:
             return two, one
         return one, two
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Hex):
+            return NotImplemented
         return self.x == other.x and self.y == other.y
 
-    def __key(self):
+    def __key(self) -> tuple[int, int]:
         return self.x, self.y
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__key())
 
     @property
@@ -550,34 +481,34 @@ class Hex:
         h1 = self.hex_north_east
         h2 = self.hex_south_east
         up, down = self.decide_slope(h1, h2)
-        self.edge_east = Edge(HexSide.east, self, self.hex_east, up, down)
+        self.edge_east = Edge(str(HexSide.east), self, self.hex_east, up, down)
 
         h1 = self.hex_north_west
         h2 = self.hex_south_west
         up, down = self.decide_slope(h1, h2)
-        self.edge_west = Edge(HexSide.west, self, self.hex_west, up, down)
+        self.edge_west = Edge(str(HexSide.west), self, self.hex_west, up, down)
 
         h1 = self.hex_north_west
         h2 = self.hex_east
         up, down = self.decide_slope(h1, h2)
-        self.edge_north_east = Edge(HexSide.north_east, self, self.hex_north_east, up, down)
+        self.edge_north_east = Edge(str(HexSide.north_east), self, self.hex_north_east, up, down)
 
         h1 = self.hex_south_west
         h2 = self.hex_east
         up, down = self.decide_slope(h1, h2)
-        self.edge_south_east = Edge(HexSide.south_east, self, self.hex_south_east, up, down)
+        self.edge_south_east = Edge(str(HexSide.south_east), self, self.hex_south_east, up, down)
 
         h1 = self.hex_north_east
         h2 = self.hex_west
         up, down = self.decide_slope(h1, h2)
-        self.edge_north_west = Edge(HexSide.north_west, self, self.hex_north_west, up, down)
+        self.edge_north_west = Edge(str(HexSide.north_west), self, self.hex_north_west, up, down)
 
         h1 = self.hex_south_east
         h2 = self.hex_west
         up, down = self.decide_slope(h1, h2)
-        self.edge_south_west = Edge(HexSide.south_west, self, self.hex_south_west, up, down)
+        self.edge_south_west = Edge(str(HexSide.south_west), self, self.hex_south_west, up, down)
 
-    def get_edge(self, side):
+    def get_edge(self, side: HexSide) -> Edge | None:
         if side is HexSide.east:
             return self.edge_east
         elif side is HexSide.south_east:
@@ -592,7 +523,7 @@ class Hex:
             return self.edge_north_east
 
     @property
-    def edges(self):
+    def edges(self) -> List[Edge | None]:
         return [
             self.edge_east,
             self.edge_north_east,

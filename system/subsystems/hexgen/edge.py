@@ -1,23 +1,28 @@
+from typing import TYPE_CHECKING
 import uuid
+
 
 from system.subsystems.hexgen.enums import EdgeDirection
 
+if TYPE_CHECKING:
+    from system.subsystems.hexgen.hex import Hex
+
 
 class Edge:
-    def __init__(self, side, one, two, up, down):
+    def __init__(self, side: str, one: "Hex", two: "Hex", up: "Hex", down: "Hex"):
         """
         One and Two are Hexes on both sides.
         Up is the Hex upslope of the edge and Down is the Hex downslope
         """
-        self.side = side
-        self.one = one
-        self.two = two
-        self.up = up
-        self.down = down
-        self.delta = self.up.altitude - self.down.altitude
-        self.id = uuid.uuid4()
+        self.side: str = side
+        self.one: "Hex" = one
+        self.two: "Hex" = two
+        self.up: "Hex" = up
+        self.down: "Hex" = down
+        self.delta: float = self.up.altitude - self.down.altitude
+        self.id: uuid.UUID = uuid.uuid4()
 
-        self.is_river = False
+        self.is_river: bool = False
 
     def __repr__(self):
         return "<Edge Side: {}, One: {}, Two: {}, Down: {}, delta: {}, direction: {}>".format(
@@ -55,11 +60,13 @@ class Edge:
             elif self.down == self.one.hex_south_east:
                 return EdgeDirection.south_east
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """
-        :param other: Edge
+        :param other: object
         :return: True if both edges are equal to each other
 
         Eg: A Hex's south-east is equal to the bottom-left's north-west
         """
+        if not isinstance(other, Edge):
+            return NotImplemented
         return other.one == self.two or (self.one == other.one and self.two == other.two)
