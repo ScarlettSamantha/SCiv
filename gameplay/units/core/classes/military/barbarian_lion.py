@@ -1,5 +1,6 @@
 from typing import Any
 
+from gameplay.tiles.base_tile import BaseTile
 from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
 
@@ -25,8 +26,9 @@ class BarbarianLion(CoreMilitaryBaseClass):
     defense_mele = 0.0
     defense_ranged = 0.0
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, tile: "BaseTile", *args: Any, **kwargs: Any):
         super().__init__(
+            tile=tile,
             *args,
             **kwargs,
         )

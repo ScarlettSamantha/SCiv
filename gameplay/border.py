@@ -122,7 +122,7 @@ class Borders(DirectObject):
             hex_np: NodePath = generate_flat_top_hex().copy_to(self.parent)  # type: ignore
             hex_np.set_scale(1.0)  # type: ignore
 
-            world_pos = self.hex_to_world(x, y)
+            world_pos = TileRepository.hex_to_world(x, y)
             hex_np.set_pos(world_pos)  # type: ignore
             hex_np.set_hpr(30, 0, 0)  # type: ignore
 
@@ -174,13 +174,6 @@ class Borders(DirectObject):
             self.border_nodes[player_id] = new_nodes
 
         MessengerGlobal.messenger.send("ui.borders.updated")
-
-    def hex_to_world(self, x: int, y: int) -> Tuple[float, float, float]:
-        tile = self.tile_repository.get_tile(x, y)
-        if tile:
-            pos = tile.get_node().get_pos()  # type: ignore
-            return (pos.x, pos.y, pos.z + 0.05)  # Raise slightly for overlay# type: ignore
-        return (0, 0, 0)
 
     def _get_border_mask(self, x: int, y: int, player: "Player") -> int:
         mask = 0

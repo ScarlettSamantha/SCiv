@@ -73,6 +73,21 @@ class TileRepository:
         return x < threshold or y < threshold or x >= map_width - threshold or y >= map_height - threshold
 
     @classmethod
+    def get_tiles_in_radius_from_cords(cls, x: int, y: int, radius: int) -> List["BaseTile"]:
+        r"""
+        Retrieves all tiles within a given hexagonal radius from the specified coordinates.
+
+        :param x: The x-coordinate of the origin tile.
+        :param y: The y-coordinate of the origin tile.
+        :param radius: The radius (in hex steps) to search.
+        :return: List of Tile objects within the specified radius.
+        """
+        tile = cls.get_tile(x, y)
+        if tile is None:
+            return []
+        return cls.get_tiles_in_radius(tile, radius)
+
+    @classmethod
     def get_tiles_in_radius(cls, tile: "BaseTile", radius: int) -> List["BaseTile"]:
         r"""
         Retrieves all tiles within a given hexagonal radius from the specified tile.
@@ -593,6 +608,14 @@ class TileRepository:
         # compute as float, then cast to int
         raw = distance_functions[distance_type](tile1, tile2)
         return int(raw)
+
+    @classmethod
+    def hex_to_world(cls, x: int, y: int) -> Tuple[float, float, float]:
+        tile = cls.get_tile(x, y)
+        if tile:
+            pos = tile.get_node().get_pos()  # type: ignore
+            return (pos.x, pos.y, pos.z + 0.05)  # Raise slightly for overlay# type: ignore
+        return (0, 0, 0)
 
     @classmethod
     def get_neighbors_hex(

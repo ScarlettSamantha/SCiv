@@ -1,6 +1,10 @@
+import datetime
 import random
 import sys
 from typing import Any, Dict, List, Set
+from matplotlib.patches import RegularPolygon
+import numpy as np
+import matplotlib.pyplot as plt
 from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.enums import (
     GeoformType,
@@ -150,6 +154,7 @@ class MapGen:
         self.geoforms: List[Geoform] = []
         self._determine_landforms()
         self._detect_lakes()
+        self.debug_draw_hex_rivers()
         print("Done") if self.debug else False
 
     def generate_craters(self):
@@ -392,127 +397,104 @@ class MapGen:
 
     def _generate_rivers(self) -> None:
         """
-        For each river source edge:
-            If both downstream edges are invalid:
-                create a lake at the lower hex and spawn a new source from it
-            otherwise follow the lowest valid downslope edge until sea level or lake
+        Generate rivers so they always end in sea or lake, or connect to each other:
+        - pick N random high-altitude inland sources
+        - follow the steepest downslope at each step
+        - if next tile is sea (h.is_sea) or lake (h.is_lake), mark & stop
+        - if another river ends within 2 tiles, connect to that river
+        - if you get stuck on a plateau, spawn a lake there
         """
         num_rivers = self.params.get("num_rivers", 0)
         if self.debug:
             print(f"Making {num_rivers} rivers")
 
-        # pick initial sources
-        while len(self.rivers_sources) < num_rivers:
-            rx = random.randint(0, self.hex_grid.size - 1)
-            ry = random.randint(0, self.hex_grid.size - 1)
-            start_hex = self.hex_grid.grid[rx][ry]
-            if start_hex.is_inland and start_hex.altitude > self.hex_grid.sealevel + 35:
-                side = random.choice(list(HexSide))
-                self.rivers_sources.append(RiverSegment(self.hex_grid, rx, ry, side, True))
+        # 1) pick all valid sources once
+        candidates = [
+            h for row in self.hex_grid.grid for h in row if h.is_inland and h.altitude > self.hex_grid.sealevel + 35
+        ]
+        if not candidates:
+            if self.debug:
+                print("No valid river sources found.")
+            return
 
-        if self.debug:
-            print("Placed river sources")
+        sources = random.sample(candidates, min(num_rivers, len(candidates)))
+        self.rivers_sources = [
+            RiverSegment(self.hex_grid, h.x, h.y, random.choice(list(HexSide)), True) for h in sources
+        ]
 
-        # grow each river from its source
-        for source in list(self.rivers_sources):
-            segment: RiverSegment = source
-            finished = False
-            while not finished:
-                down_hex: "Hex" = segment.edge.down
-
-                # add moisture around the split
-                for nbr in segment.edge.one.bubble(3) + segment.edge.two.bubble(3):
-                    if nbr.is_land:
-                        nbr.moisture += 1
-                for nbr in segment.edge.one.surrounding + segment.edge.two.surrounding:
-                    if nbr.is_land:
-                        nbr.moisture += 1
-
-                # determine the two candidate edges
-                if segment.edge.direction is None:
-                    raise ValueError("segment.edge.direction is None, cannot branch river segment.")
-                side1, side2 = segment.side.branching(segment.edge.direction)
-                edge1, edge2 = down_hex.get_edge(side1), down_hex.get_edge(side2)
-
-                # validity checks: not looping back and not already a river
-                one_valid = edge1 is not None and not (
-                    edge1.down in (segment.edge.one, segment.edge.two) or self.is_river(side1)
-                )
-                two_valid = edge2 is not None and not (
-                    edge2.down in (segment.edge.one, segment.edge.two) or self.is_river(side2)
-                )
-
-                if one_valid and two_valid:
-                    if edge1 is None or edge2 is None:
-                        raise ValueError("edge1 or edge2 is None")
-
-                    chosen_edge, chosen_side = (
-                        (edge1, side1) if edge1.down.altitude < edge2.down.altitude else (edge2, side2)
-                    )
-                    finished = chosen_edge.down.altitude < self.hex_grid.sealevel
-                    segment.next = RiverSegment(
-                        self.hex_grid,
-                        chosen_edge.one.x,
-                        chosen_edge.one.y,
-                        chosen_side,
-                        False,
-                    )
-                    segment = segment.next
-
-                elif one_valid:
-                    if edge1 is None:
-                        raise ValueError("edge1 is None or edge1.one is None")
-
-                    finished = edge1.down.altitude < self.hex_grid.sealevel
-                    segment.next = RiverSegment(
-                        self.hex_grid,
-                        edge1.one.x,
-                        edge1.one.y,
-                        side1,
-                        False,
-                    )
-                    segment = segment.next
-
-                elif two_valid:
-                    finished = edge2 is not None and edge2.down.altitude < self.hex_grid.sealevel
-                    if edge2 is None:
-                        raise ValueError("edge2 is None or edge2.one is None")
-                    segment.next = RiverSegment(
-                        self.hex_grid,
-                        edge2.one.x,
-                        edge2.one.y,
-                        side2,
-                        False,
-                    )
-                    segment = segment.next
-
-                else:
-                    # both invalid → form a lake and spawn a new source
-                    lake_hex = min(segment.edge.one, segment.edge.two, key=lambda h: h.altitude)
-                    lake_hex.add_feature(HexFeature.lake)  # mark the lake
-
-                    # choose an outgoing side that doesn’t point back into the lake
-                    outgoing_sides = [
-                        s for s in HexSide if (edge := lake_hex.get_edge(s)) is not None and edge.down is not lake_hex
-                    ]
-                    if outgoing_sides:
-                        new_side = random.choice(outgoing_sides)
-                        self.rivers_sources.append(RiverSegment(self.hex_grid, lake_hex.x, lake_hex.y, new_side, True))
-                    finished = True
-
-        # collect all river segments of minimum length > 2 and mark their edges
-        final_segments: List[RiverSegment] = []
+        # 2) grow each river
+        self.rivers.clear()
         for src in self.rivers_sources:
             seg = src
-            if seg.size > 2:
-                while seg:
-                    final_segments.append(seg)
-                    seg = seg.next
+            while True:
+                down = seg.edge.down
 
-        for seg in final_segments:
-            seg.edge.is_river = True
+                # ------------- river connection step -------------
+                nearby = self._find_nearby_river_end(down, radius=2)
+                if nearby:
+                    path = self.hex_grid.straight_line_path((down.x, down.y), (nearby.x, nearby.y))
+                    for px, py in path[1:]:  # [1:] skips the current hex
+                        h = self.hex_grid.get(px, py)
+                        if not h:
+                            break
+                        prev_hex = seg.edge.down
+                        side = prev_hex.get_side_to(h)
+                        if side is not None:
+                            edge = prev_hex.get_edge(side)
+                            if edge is None:
+                                break
+                            edge.is_river = True
+                            seg.next = RiverSegment(self.hex_grid, px, py, side, False)
+                            seg = seg.next
+                    # Mark the final segment as river too
+                    seg.edge.is_river = True
+                    break  # Connected, so end river here
 
-        self.rivers = final_segments
+                # stop if we've hit sea or lake
+                if getattr(down, "is_sea", False) or getattr(down, "is_lake", False):
+                    seg.edge.is_river = True
+                    break
+
+                # plateau → spawn a lake and stop
+                nbrs = [(s, down.get_edge(s)) for s in HexSide]
+                nbrs = [(s, e) for s, e in nbrs if e and e.down.altitude < down.altitude]
+                if not nbrs:
+                    down.add_feature(HexFeature.lake)
+                    seg.edge.is_river = True
+                    break
+
+                # pick steepest next edge
+                next_side, next_edge = min(nbrs, key=lambda se: se[1].down.altitude)
+
+                # if next hex is water (but not necessarily lake) treat as sea end
+                nxt = next_edge.down
+                if getattr(nxt, "is_sea", False) or getattr(nxt, "is_lake", False):
+                    next_edge.is_river = True
+                    break
+
+                # otherwise advance
+                seg.next = RiverSegment(self.hex_grid, next_edge.one.x, next_edge.one.y, next_side, False)
+                seg = seg.next
+
+            # collect & mark whole chain
+            s2 = src
+            while s2:
+                s2.edge.is_river = True
+                self.rivers.append(s2)
+                s2 = s2.next
+
+    def _find_nearby_river_end(self, h, radius=2):
+        """
+        Find a river segment in self.rivers that is an END (no .next)
+        and is within 'radius' tiles of hex h. Returns the hex to connect to, or None.
+        """
+        for other in self.rivers:
+            if other.next is not None:
+                continue
+            dist = self.hex_distance((h.x, h.y), (other.edge.down.x, other.edge.down.y))
+            if 0 < dist <= radius:
+                return other.edge.down
+        return None
 
     def _detect_lakes(self) -> None:
         """
@@ -710,6 +692,66 @@ class MapGen:
                 r = r.next
         return False
 
+    def hex_distance(self, a: tuple[int, int], b: tuple[int, int]) -> int:
+        """
+        Returns the distance (number of steps) between two hexes in axial coordinates (q, r).
+        """
+        aq, ar = a
+        bq, br = b
+        return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
+
+    def get_side_to(self, target_hex) -> "HexSide":
+        """
+        Returns the HexSide direction from this hex to target_hex.
+        Assumes self.neighbors is a dict {HexSide: Hex}.
+        """
+        for side, neighbor in self.neighbors.items():
+            if neighbor is target_hex:
+                return side
+        return None
+
+    def get_edge(self, side: "HexSide"):
+        """
+        Returns the edge object for the given side.
+        """
+        return self.edges[side]  # Or however you store your edge objects
+
+    def straight_line_path(self, a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
+        """
+        Returns a list of (q, r) axial coordinates forming a straight line path between a and b (inclusive).
+        Uses hex lerp and hex_round as per Red Blob Games.
+        """
+
+        def lerp(a, b, t):
+            return a + (b - a) * t
+
+        def hex_round(q, r, s):
+            rq = round(q)
+            rr = round(r)
+            rs = round(s)
+            q_diff = abs(rq - q)
+            r_diff = abs(rr - r)
+            s_diff = abs(rs - s)
+            if q_diff > r_diff and q_diff > s_diff:
+                rq = -rr - rs
+            elif r_diff > s_diff:
+                rr = -rq - rs
+            else:
+                rs = -rq - rr
+            return int(rq), int(rr)
+
+        aq, ar = a
+        bq, br = b
+        N = self.hex_distance(a, b)
+        results = []
+        for i in range(N + 1):
+            t = 0 if N == 0 else i / N
+            q = lerp(aq, bq, t)
+            r = lerp(ar, br, t)
+            s = -q - r
+            results.append(hex_round(q, r, s))
+        return results
+
     def find_river(self, x: int, y: int) -> List[HexSide]:
         """Finds river segments at an hex's x and y coordinates. Returns a list of EdgeSides
         representing where the river segments are"""
@@ -718,3 +760,51 @@ class MapGen:
             if s.x == x and s.y == y:
                 seg.append(s.side)
         return seg
+
+    def debug_draw_hex_rivers(self) -> None:
+        """
+        Hex-based debug: gray=land, cyan=sea, dark blue=lakes, bright blue=rivers.
+        """
+        grid = self.hex_grid.grid
+        cols, rows = len(grid), len(grid[0])
+        fig, ax = plt.subplots(figsize=(16, 16))
+
+        # flat-topped hex parameters
+        side: float = 1.0
+        height: float = np.sqrt(3) * side
+
+        # draw each hex
+        for i in range(cols):
+            for j in range(rows):
+                h = grid[i][j]
+                x = side * 1.5 * i
+                y = height * (j + 0.5 * (i % 2))
+
+                if h.has_feature(HexFeature.lake):
+                    face = "#013f86"  # dark blue
+                elif getattr(h, "is_water", False):
+                    face = "#15b2d3"  # cyan
+                else:
+                    face = "#cccccc"  # light gray
+
+                hex_patch = RegularPolygon(
+                    (x, y),
+                    numVertices=6,
+                    radius=side,
+                    orientation=np.pi / 6,  # flat top
+                    facecolor=face,
+                    edgecolor="k",
+                    linewidth=0.2,
+                )
+                ax.add_patch(hex_patch)
+
+        # overlay river points
+        xs, ys = [], []
+        for seg in self.rivers:
+            xs.append(side * 1.5 * seg.x)
+            ys.append(height * (seg.y + 0.5 * (seg.x % 2)))
+        ax.scatter(xs, ys, c="b", s=10)
+
+        ax.set_aspect("equal")
+        ax.axis("off")
+        plt.savefig(f"debugging/river_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png")

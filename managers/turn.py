@@ -77,26 +77,27 @@ class Turn(Singleton, DirectObject):
         self.logger.info(f"Processing turn {self.turn}, sending start_process signal.")
         messenger.send("game.turn.start_process", [self.turn])
 
+        timings: dict[str, float] = {}
+
         def world():
             from managers.world import World
 
-            _timer_world = datetime.now()
+            _start = datetime.now()
             self.logger.info("Processing world turn changes.")
             self.turn_stage = TurnStage.TURN_WORLD
-            World.get_singleton_instance().on_turn_end(self.turn)  # World manager will forward the signal to all tiles
-            self.logger.debug(
-                f"Turn {self.turn} processing for world took: {round((datetime.now() - _timer_world).total_seconds() * 1000, 4)} miliseconds."
-            )
+            World.get_singleton_instance().on_turn_end(self.turn)
+            timings["world"] = (datetime.now() - _start).total_seconds()
+            self.logger.debug(f"Turn {self.turn} processing for world took: {timings['world']:.4f} seconds.")
 
         def players():
+            _start = datetime.now()
             self.logger.info("Processing player turn changes.")
-            _timer_players = datetime.now()
 
             def cities(player: "Player"):
                 self.logger.info("Processing player city turn changes.")
                 self.turn_stage = TurnStage.TURN_PLAYERS_CITIES
                 for city in player.cities:
-                    city: "City" = city  # this is a type hint
+                    city: "City" = city
                     self.logger.info(f"Processing city {city.name} turn changes.")
                     city.on_turn_end(self.turn)
 
@@ -114,13 +115,12 @@ class Turn(Singleton, DirectObject):
                 player.on_turn_end(self.turn)
                 cities(player)
 
-            self.logger.debug(
-                f"Turn {self.turn} processing for players took: {round((datetime.now() - _timer_players).total_seconds() * 1000, 4)} miliseconds."
-            )
+            timings["players"] = (datetime.now() - _start).total_seconds()
+            self.logger.debug(f"Turn {self.turn} processing for players took: {timings['players']:.4f} seconds.")
 
         def units():
+            _start = datetime.now()
             self.logger.info("Processing unit turn changes.")
-            _timer_units = datetime.now()
             self.turn_stage = TurnStage.TURN_UNITS
 
             def restore_all_movement_points():
@@ -139,15 +139,22 @@ class Turn(Singleton, DirectObject):
 
             self.logger.info("Restoring all movement points for all units.")
             restore_all_movement_points()
-            self.logger.debug(
-                f"Turn {self.turn} processing for units took: {round((datetime.now() - _timer_units).total_seconds() * 1000, 4)} miliseconds."
-            )
+            timings["units"] = (datetime.now() - _start).total_seconds()
+            self.logger.debug(f"Turn {self.turn} processing for units took: {timings['units']:.4f} seconds.")
 
+        # Run stages
         world()
         players()
         units()
 
         self.turn += 1
         self.turn_stage = TurnStage.NO_TURN_CHANGE
+
+        # Dump a single timing line for the turn
+        timing_line = f"Turn {self.turn} timings: " + ", ".join(f"{k}: {v:.4f}s" for k, v in timings.items())
+        self.logger.info(timing_line)
+        # You can also send it via messenger if you want
+        messenger.send("game.turn.timings", [self.turn, timings])
+
         self.logger.info(f"Turn {self.turn} processed, sending end_process signal.")
         messenger.send("game.turn.end_process", [self.turn])

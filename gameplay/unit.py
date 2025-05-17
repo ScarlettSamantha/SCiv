@@ -140,7 +140,7 @@ class Unit(BaseEntity, ABC):
                 self.tile = pos
 
         if self.model is not None:  # type: ignore
-            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z + self.tile.pos_z))  # type: ignore
+            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z + self.get_tile().pos_z))  # type: ignore
 
     def is_alive(self) -> bool:
         return self.health() > 0
@@ -177,7 +177,7 @@ class Unit(BaseEntity, ABC):
 
     @classmethod
     def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "Unit":
-        instance = cls(tile)
+        instance = cls(tile=tile)
         instance.owner = player
 
         player.units.add_unit(instance)
@@ -252,8 +252,9 @@ class Unit(BaseEntity, ABC):
             result_tile.rerender()
             result_tile: "BaseTile" = _tile
             self.moves_left -= _tile.movement_cost
-            self.set_pos((cords[0], cords[1], self.pos_z + _tile.pos_z))
             self.tile = _tile
+            self.set_pos((cords[0], cords[1], self.pos_z + _tile.pos_z))
+
             _tile.add_unit(self)  # Add to the new tile
             self.get_tile().rerender()  # Rerender the tile
         if result_tile == target_tile:

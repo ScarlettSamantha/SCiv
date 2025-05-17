@@ -136,6 +136,8 @@ class EntityManager(Singleton):
             "total_units": 0,
             "total_tiles": 0,
             "total_effects": 0,
+            "voxels": 0,
+            "faces": 0,
         }
 
         return super().__setup__(*args, **kwargs)

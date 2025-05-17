@@ -1,3 +1,4 @@
+import datetime
 import random
 from typing import TYPE_CHECKING, List
 
@@ -55,11 +56,16 @@ class NatureAI(AI):
                 self.remove_goal(goal)
 
     def on_turn_end(self) -> None:
+        start_time = datetime.datetime.now()
+        self.logger.debug("NatureAI on_turn_end")
         # check if we need to rebuild the spawn tile cache
         if self._spawn_cache_from_turn != Turn.get_singleton_instance().get_turn():
             self._build_spawn_tile_cache()
-
+        self.logger.debug(
+            "Took %d seconds to build spawn tile cache", (datetime.datetime.now() - start_time).total_seconds()
+        )
         self.calculate_goals()
+        self.logger.debug("Took %d seconds to calculate goals", (datetime.datetime.now() - start_time).total_seconds())
 
         if self.has_goal():
             for goal in self.get_goals():
@@ -69,6 +75,8 @@ class NatureAI(AI):
                     goal.turn_tick()
                 if goal.is_achieved():
                     self.remove_goal(goal)
+            self.logger.debug("Took %d seconds to tick goals", (datetime.datetime.now() - start_time).total_seconds())
+        self.logger.debug("AI took %d seconds to process turn", (datetime.datetime.now() - start_time).total_seconds())
 
     def on_turn_start(self) -> None: ...
 
@@ -80,17 +88,30 @@ class NatureAI(AI):
         self._spawn_initial_threat()
 
     def _build_spawn_tile_cache(self) -> None:
-        """Populate the cache with all valid tiles for threat spawning."""
+        """
+        Efficiently populate the cache with all valid tiles for threat spawning.
+        A valid tile:
+        - Is passable land
+        - Is not a city
+        - Itself and all tiles within radius-2 have no cities/units
+        """
         all_land = TileRepository.search_passable_land()
+        # Index all city and unit tiles for O(1) lookup
+        city_tiles = {tile for tile in all_land if tile.is_city()}
+        unit_tiles = {tile for tile in all_land if tile.units.has_any()}
+        # If cities/units can be on non-passable land, you may need to expand this
+
         valid_tiles: List["BaseTile"] = []
+
         for tile in all_land:
-            if tile.is_city():
+            # Skip if tile itself is city or has units
+            if tile in city_tiles or tile in unit_tiles:
                 continue
 
-            neighbors = TileRepository.get_neighbors(tile, 2, False, False) + [
-                tile
-            ]  # include self otherwise we can spawn a lion on our self
-            if any(neigh.is_city() or neigh.units.has_any() for neigh in neighbors):
+            # Get radius-2 neighbors
+            neighbors = TileRepository.get_neighbors(tile, 2, False, False)
+            # Check if any neighbor is a city or has units (set lookup is fast)
+            if any(neigh in city_tiles or neigh in unit_tiles for neigh in neighbors):
                 continue
 
             valid_tiles.append(tile)

@@ -27,7 +27,6 @@ class Loading(
 
     def next_stage(self, message: str):
         self.loading_screen.next_step(message)  # type: ignore
-        MessengerGlobal.messenger.send("ui.refresh.frame_insert")
 
     def on_done(self):
         self.manager.current = "game_ui"

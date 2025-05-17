@@ -43,6 +43,12 @@ class Grid:
     def size(self) -> int:
         return self.params.get("size", 100)
 
+    def get(self, x: int, y: int) -> Hex | None:
+        """
+        Returns the Hex at (x, y) or None if out of bounds.
+        """
+        return self.find_hex(x, y)
+
     def find_hex(self, x: int, y: int) -> Hex:
         """Finds a hex at (x, y) coordinates."""
         try:
@@ -64,3 +70,48 @@ class Grid:
 
         number: int = round(len(self.hexes) * 0.10)
         self.coldest_hexes = self.hexes[:number]
+
+    def hex_distance(self, a: tuple[int, int], b: tuple[int, int]) -> int:
+        ax, ay = a
+        bx, by = b
+        az = -ax - ay
+        bz = -bx - by
+        return max(abs(ax - bx), abs(ay - by), abs(az - bz))
+
+    def straight_line_path(self, a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
+        def lerp(a, b, t):
+            return a + (b - a) * t
+
+        def cube_lerp(a, b, t):
+            return (lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t))
+
+        def cube_round(cube):
+            rx = round(cube[0])
+            ry = round(cube[1])
+            rz = round(cube[2])
+
+            x_diff = abs(rx - cube[0])
+            y_diff = abs(ry - cube[1])
+            z_diff = abs(rz - cube[2])
+
+            if x_diff > y_diff and x_diff > z_diff:
+                rx = -ry - rz
+            elif y_diff > z_diff:
+                ry = -rx - rz
+            else:
+                rz = -rx - ry
+            return (int(rx), int(ry), int(rz))
+
+        ax, ay = a
+        bx, by = b
+        ac = (ax, ay, -ax - ay)
+        bc = (bx, by, -bx - by)
+
+        N = self.hex_distance(a, b)
+        results = []
+        for i in range(N + 1):
+            t = 0 if N == 0 else i / N
+            cube = cube_lerp(ac, bc, t)
+            rx, ry, rz = cube_round(cube)
+            results.append((rx, ry))
+        return results

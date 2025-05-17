@@ -163,7 +163,7 @@ class LoadingScreen(FloatLayout):
         self.current_step += 1
         if message:
             self.step_message = message
-        self._update_ui()
+        Clock.schedule_once(lambda dt: self._update_ui(), 1)
 
     def add_to_right_overlay(self, widget: Widget):
         self.right_content.add_widget(widget)

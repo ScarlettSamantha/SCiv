@@ -379,6 +379,7 @@ class Game(Singleton, DirectObject):
         self.base.taskMgr.doMethodLater(1.0, lambda task: self.border.setup_borders() or task.done, "short-inline")  # type: ignore
 
         self.calculate_vision()
+
         self.players.on_game_start()
 
         self.accept("ui.request.update.borders", self.border.update_borders)
@@ -398,7 +399,6 @@ class Game(Singleton, DirectObject):
 
     def process_turn(self):
         self.turn.end_turn()
-        self.calculate_vision()
 
     def on_game_end(self):
         self.game_active = False
@@ -406,6 +406,7 @@ class Game(Singleton, DirectObject):
 
     def render_field(self):
         for tile in self.world.grid.values():
+            tile.ensure_anchor_node()
             tile.render()
 
     def quit_game(self):

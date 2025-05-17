@@ -128,7 +128,6 @@ class ui(Singleton, DirectObject):
         self.game_gui.run()
 
     def register(self) -> bool:
-        self.accept("ui.refresh.frame_insert", self.insert_refresh_frame)
         self.accept("ui.update.user.tile_clicked", self.select_tile)
         self.accept("ui.update.user.tile_hover", self.on_tile_hover)
         self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
@@ -322,7 +321,6 @@ class ui(Singleton, DirectObject):
             self.popups[id].dismiss()  # type: ignore
 
     def post_game_start(self):
-        self.calculate_icons_for_tiles(small=False, large=True)
         self.get_main_game_ui().get_debug_map_stats().update()  # type: ignore
 
     def activate_pstat(self):
@@ -335,6 +333,7 @@ class ui(Singleton, DirectObject):
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
             tile.add_icon_to_tile()
+            tile.flatten()
 
     def on_resource_ui_change_request(self, value: Enum):
         from menus.kivy.parts.debug_actions import MapActionsValues

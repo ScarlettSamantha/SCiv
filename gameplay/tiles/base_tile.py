@@ -188,9 +188,6 @@ class BaseTile(BaseEntity):
         # is this city being worked by a city?
         self.city_owner: Optional["City"] = None
 
-        self.texture_card: Optional[NodePath | CardMaker] = None
-        self.texture_card_texture: Optional[NodePath] = None
-
         self.city_name_group: Optional[NodePath] = None
         self.city_name_texture_card_texture: Optional[NodePath] = None
 
@@ -224,6 +221,7 @@ class BaseTile(BaseEntity):
         self.atlas_width: Optional[int] = None
         self.atlas_height: Optional[int] = None
         self._unit_icons: Optional[UnitIcons] = None
+        self.anchor_node: Optional[NodePath] = None
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -239,6 +237,10 @@ class BaseTile(BaseEntity):
     def get_tile_terrain(self) -> BaseTerrain:
         return self._tile_terrain
 
+    def flatten(self):
+        for model in self.models:
+            model.flattenStrong()
+
     @classmethod
     def generate_tag(cls, x: int, y: int) -> str:
         return f"tile_{x}_{y}"
@@ -250,8 +252,8 @@ class BaseTile(BaseEntity):
         self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
-        self._render_default_terrain()
-        self.create_root_ui_node()
+        # self._render_default_terrain()
+        # self.create_root_ui_node()
 
         if self.tile_icon_group is None:
             raise AssertionError("Tile icon group not created.")
@@ -350,16 +352,22 @@ class BaseTile(BaseEntity):
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
-    def create_root_ui_node(self) -> None:
-        self.texture_card = CardMaker(f"resource_icon_{self.id}")
-        self.texture_card.setFrame(-0.05, 0.05, -0.05, 0.05)  # type: ignore
+    def ensure_anchor_node(self):
+        if not hasattr(self, "anchor_node") or self.anchor_node is None:
+            self.anchor_node = NodePath(f"tile_anchor_{self.x}_{self.y}")
+            self.anchor_node.setScale(0.48, 0.48, 0.48)
+            self.anchor_node.setPos(*self.calculate_z_pos_on_altitude())
+            self.anchor_node.reparentTo(render)  # or another shared node
 
+    def create_root_ui_node(self) -> None:
         self.city_name_group = NodePath("city_name_group")
-        self.city_name_group.reparentTo(self.models[-1])  # type: ignore
+        if self.anchor_node is None:
+            self.ensure_anchor_node()
+        self.city_name_group.reparentTo(self.anchor_node)  # type: ignore
         self.city_name_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
         self.tile_icon_group = NodePath("tile_icon_group")
-        self.tile_icon_group.reparentTo(self.models[-1])  # type: ignore
+        self.tile_icon_group.reparentTo(self.anchor_node)  # type: ignore
         self.tile_icon_group.setCollideMask(BitMask32.bit(0))  # type: ignore
 
     def is_visisted_by(self, unit: "Unit") -> bool:
@@ -439,7 +447,7 @@ class BaseTile(BaseEntity):
         # Proper orientation
         city_np.setHpr(0, 0, 0)
         city_np.setBillboardPointEye()
-        city_np.setPos(0, 0, 2.8)
+        city_np.setPos(self.pos_x, self.pos_y, self.pos_z + 0.1)
         city_np.setScale(1.0)
 
         city_np.setBin("fixed", 50)
@@ -475,14 +483,23 @@ class BaseTile(BaseEntity):
 
         self.icon_overlay_card = CardMaker(f"icon_overlay_{self.id}")
         self.icon_overlay_card.set_frame(-0.55, 0.55, -0.55, 0.85)  # type: ignore
+        self.icon_overlay_card.setHasUvs(True)  # type: ignore# type: ignore
         self.icon_overlay = NodePath(self.icon_overlay_card.generate())  # type: ignore
-        self.icon_overlay.set_pos(0.1, 0, 0.1)  # type: ignore
-        self.icon_overlay.set_hpr(90, -90, 0)  # type: ignore
-        self.icon_overlay.set_scale(1.0)  # type: ignore
+        self.icon_overlay.set_collide_mask(BitMask32.bit(1))  # type: ignore
+        self.icon_overlay.set_pos(0, 0, 0.05)  # type: ignore
+        self.icon_overlay.set_hpr(0, -90, 0)  # type: ignore
+        self.icon_overlay.set_scale(1)  # type: ignore
         self.icon_overlay.setTransparency(True)
         self.icon_overlay.setAttrib(ColorBlendAttrib.makeOff())  # type: ignore
         self.icon_overlay.setBin("fixed", 60)
-        self.icon_overlay.reparent_to(self.tile_icon_group)  # type: ignore
+        self.icon_overlay.setDepthTest(True)
+        self.icon_overlay.setDepthWrite(False)
+        self.icon_overlay.reparent_to(self.anchor_node)
+        if self.tag is None:
+            self.tag = self.generate_tag(self.x, self.y)
+
+        # type: ignore
+        self.icon_overlay.setTag("tile_id", self.tag)  # type: ignore
 
         self.icon_overlay.setShader(
             Shader.load(  # type: ignore
@@ -570,6 +587,7 @@ class BaseTile(BaseEntity):
 
         self.set_color(Colors.RESTORE)
         self.calculate()
+        self.generate_tag(self.x, self.y)
 
         if not self.models and len(self.improvements()) == 0:
             self._render_default_terrain()
@@ -577,6 +595,7 @@ class BaseTile(BaseEntity):
             self._render_resource_model()
             if self.units.has_any():
                 self.add_unit_icon()
+            self.add_icon_to_tile()
             return
 
         if render_all:
@@ -732,7 +751,7 @@ class BaseTile(BaseEntity):
         self.models.append(node)
 
         if self.tag is None:
-            raise AssertionError("Tile tag is not set.")
+            self.tag = self.generate_tag(self.x, self.y)
 
         node.setTag("tile_id", self.tag)
         if self.models:
@@ -1046,6 +1065,7 @@ class BaseTile(BaseEntity):
         self.is_land = hex.is_land
         self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
         self.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore # 4 == Lake
+        self.has_river = ",".join(str(edge) for edge in hex.edges)
         self.geoforms = hex.geoform_type
         self.features = hex.features
 

@@ -6,6 +6,7 @@ from direct.showbase import MessengerGlobal
 
 from gameplay.resource import BaseResource
 
+from managers.assets import AssetManager
 from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
@@ -99,7 +100,7 @@ class Basic(BaseGenerator):
                 x = col * self.world.col_spacing  # Horizontal spacing
 
                 if col % 2 == 1:  # Odd columns are staggered
-                    y = row * self.world.row_spacing + (self.world.row_spacing * 0.5)
+                    y = row * self.world.row_spacing + (self.world.row_spacing * 20.5)
                 else:
                     y = row * self.world.row_spacing  # Even columns align normally
 

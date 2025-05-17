@@ -19,7 +19,7 @@ def scale_value(
 
 
 def scaled_pos_z(val: float, out_min: float, out_max: float, z_scale: float) -> float:
-    center = (out_min + out_max) / 2
+    center = max(0, (out_min + out_max) / 2)
     result = center + (val - center) * z_scale
     if math.isnan(result) or math.isinf(result):
         print(f"scaled_pos_z produced bad value: {result} from {val=}, {out_min=}, {out_max=}, {z_scale=}")

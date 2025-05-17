@@ -16,3 +16,5 @@ APPLICATION_NAME: str = "SCIV"
 CREATOR: Tuple[str, str] = ("Scarlett Samantha Verheul", "scarlett.verheul@gmail.com")
 
 AUTHORS: List[Tuple[str, str]] = [CREATOR]
+
+DEBUG: bool = True

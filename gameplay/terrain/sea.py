@@ -6,7 +6,7 @@ from ._base_terrain import BaseTerrain, rgb
 
 class Sea(BaseTerrain):
     _name = "world.terrain.sea_water"
-    _model = "assets/models/tiles/water_deep.glb"
+    _model = "assets/models/tiles/sea.glb"
 
     _fallback_color = rgb(0, 119, 255)
 

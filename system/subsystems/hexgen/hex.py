@@ -535,3 +535,12 @@ class Hex:
 
     def __repr__(self):
         return "<HEX: X: {}, Y: {}, Z: {}>".format(self.x, self.y, self.altitude)
+
+    def get_side_to(self, target_hex) -> HexEdge | None:
+        """
+        Returns the HexEdge direction from this hex to target_hex.
+        """
+        for side, neighbor in self.neighbors:
+            if neighbor == target_hex:
+                return side
+        return None

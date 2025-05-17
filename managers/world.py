@@ -132,7 +132,6 @@ class World(Singleton, DirectObject):
                 or len(tile._improvements) > 0  # type: ignore
                 or tile.needs_tile_proecessing is True
             ):  # We dont want to process tiles that have no player, city, units, effects or need tile processing this saves seconds of turn time.
-                self.logger.debug(f"Processing tile {tile.tag} on turn end.")
                 tile.on_turn_end(turn)
         self.effects.on_turn_end(turn)
 

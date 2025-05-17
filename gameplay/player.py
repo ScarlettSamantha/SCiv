@@ -1,3 +1,4 @@
+import datetime
 from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Tuple, Type
 
 from direct.showbase import MessengerGlobal
@@ -281,8 +282,11 @@ class Player(BaseEntity):
         self.get_ai().on_game_start()
 
     def on_turn_end(self, turn: int):
+        start_time = datetime.datetime.now()
         self.effects.on_turn_end(turn)
+        self.logger.debug(f"Effects on turn end took {datetime.datetime.now() - start_time}")
         self.get_ai().on_turn_end()
+        self.logger.debug(f"AI on turn end took {datetime.datetime.now() - start_time}")
 
     def has_researched_tech(self, tech: Type[Tech]) -> bool:
         return self.tech.is_tech_researched(tech)

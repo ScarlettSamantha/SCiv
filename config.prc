@@ -5,3 +5,5 @@ win-size 1920 1080
 pstats-gpu-timing 1
 
 framebuffer-srgb 0
+hardware-animated-vertices true
+basic-shaders-only false

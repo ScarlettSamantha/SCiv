@@ -19,13 +19,15 @@ monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to 
 
 
 class SCIV(ShowBase):
-    def __init__(self):
+    def __init__(self, debug: bool = False):
         from managers.assets import AssetManager
         from managers.ui import ui
         from managers.world import World
         from system.camera import Camera
         from system.lights import setup_lights
         from version import __version__
+
+        self.debug = debug
 
         self.version = __version__
         # Get the commit hash from git if available, otherwise 'Unknown'
@@ -171,7 +173,7 @@ class SCIV(ShowBase):
 
 if __name__ == "__main__":
     load_prc_file("config.prc")
-    app = SCIV()
+    app = SCIV(debug=True)
 
     try:
         app.run()
