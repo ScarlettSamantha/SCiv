@@ -1,4 +1,3 @@
-from copy import deepcopy
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
@@ -6,7 +5,6 @@ from direct.showbase import MessengerGlobal
 
 from gameplay.resource import BaseResource
 
-from managers.assets import AssetManager
 from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
@@ -81,87 +79,88 @@ class Basic(BaseGenerator):
         return classes
 
     def generate(self) -> bool:
-        """Generates the hex map using HexGen and maps it to our tile system."""
-        # Step 1: Generate the world using HexGen
+        """Generates the hex map, instantiates tiles without their default models, then builds GPU meshes using the tile's own Z calculation."""
         from system.subsystems.hexgen.mapgen import MapGen
 
+        # Step 1: Generate raw world data via HexGen
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
-        start_time: datetime = datetime.now()
+        start_time = datetime.now()
         self.hexgen_map = MapGen(self.map_params, debug=True)
-        self.hex_grid: Grid = self.hexgen_map.hex_grid  # Access HexGen's grid
-        end_hexgen_time: datetime = datetime.now()
+        self.hex_grid: Grid = self.hexgen_map.hex_grid
+        end_hexgen_time = datetime.now()
 
-        # Step 2: Convert HexGen's terrain types to our tile names and apply offsets
+        # Step 2: Classify terrain and compute 2D render positions
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Converting map..."])
-        start_conversion_time: datetime = datetime.now()
+        start_conversion = datetime.now()
         for col in range(self.config.height):
             for row in range(self.config.width):
-                # Compute the base x, y positions
-                x = col * self.world.col_spacing  # Horizontal spacing
-
-                if col % 2 == 1:  # Odd columns are staggered
-                    y = row * self.world.row_spacing + (self.world.row_spacing * 20.5)
-                else:
-                    y = row * self.world.row_spacing  # Even columns align normally
-
-                # Fetch the corresponding hex tile
                 hex_tile = self.hex_grid.grid[col][row]  # type: ignore
-
-                # Convert HexGen biome to our tile system
+                # Stagger odd-q layout
+                x = col * self.world.col_spacing
+                y = row * self.world.row_spacing + (self.world.row_spacing * 0.5 if col % 2 else 0)
                 terrain = self.classify_terrain(hex_tile)
-                hex_tile.terrain = terrain  # Store terrain type
-                hex_tile.render_pos = (x, y)  # Store adjusted render coordinates
-        end_conversion_time: datetime = datetime.now()
+                hex_tile.terrain = terrain
+                hex_tile.render_pos = (x, y)
+        end_conversion = datetime.now()
 
-        # Step 4: Instantiate tiles for rendering
+        # Step 3: Instantiate tile objects WITHOUT rendering their Panda3D models
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
-        start_instantiation_time: datetime = datetime.now()
+        start_inst = datetime.now()
         self.instantiate_tiles()
-        end_instantiation_time: datetime = datetime.now()
+        end_inst = datetime.now()
 
-        # Step 6: Allocate resources
+        # Step 4: Build and position GPU meshes based on each tile's calculated Z
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Building meshes..."])
+        start_mesh = datetime.now()
+        # Create a height map from each tile's pos_z
+        height_map = {coords: tile.pos_z for coords, tile in self.world.grid.items()}
+        from system.mesh import create_hex_grid_node
+
+        hexes = [tile for tile in self.world.grid.values()]
+
+        grid_np = create_hex_grid_node(
+            1,
+            tiles=hexes,
+            cols=self.config.width,
+            rows=self.config.height,
+        )
+        grid_np.reparentTo(self.base.render)
+
+        for tile in hexes:
+            tile.recalc_grid_position(1)
+
+        end_mesh = datetime.now()
+
+        # Step 5: Allocate resources and place units
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Allocating resources..."])
-        start_resource_allocation_time: datetime = datetime.now()
-        self.grid = self.world.grid
-        self.resource_allocator = ResourceAllocator(self.grid, self.get_all_resources())
+        start_res = datetime.now()
+        self.resource_allocator = ResourceAllocator(self.world.grid, self.get_all_resources())
         self.resource_allocator.allocate_resources()
-        end_resource_allocation_time: datetime = datetime.now()
+        end_res = datetime.now()
 
-        # Step 7: Place starting units
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Placing starting units..."])
-        start_unit_placement_time: datetime = datetime.now()
+        start_units = datetime.now()
         self.place_starting_units()
-        end_unit_placement_time: datetime = datetime.now()
+        end_units = datetime.now()
 
+        # Record timing stats
         self.world_generation_stats["durations"] = {
-            "step_1_hexgen_time": str(round((end_hexgen_time - start_time).total_seconds() * 1000, 2)),
-            "step_2_conversion_time": str(
-                round((end_conversion_time - start_conversion_time).total_seconds() * 1000, 2)
-            ),
-            "step_3_instantiation_time": str(
-                round((end_instantiation_time - start_instantiation_time).total_seconds() * 1000, 2)
-            ),
-            "step_4_resource_allocation_time": str(
-                round((end_resource_allocation_time - start_resource_allocation_time).total_seconds() * 1000, 2)
-            ),
-            "step_5_unit_placement_time": str(
-                round((end_unit_placement_time - start_unit_placement_time).total_seconds() * 1000, 2)
-            ),
+            "hexgen": round((end_hexgen_time - start_time).total_seconds() * 1000, 2),
+            "conversion": round((end_conversion - start_conversion).total_seconds() * 1000, 2),
+            "instantiate_tiles": round((end_inst - start_inst).total_seconds() * 1000, 2),
+            "mesh_build": round((end_mesh - start_mesh).total_seconds() * 1000, 2),
+            "resources": round((end_res - start_res).total_seconds() * 1000, 2),
+            "units": round((end_units - start_units).total_seconds() * 1000, 2),
         }
-
-        params = deepcopy(self.map_params)
-        del params["map_type"]  # This is not serializable
-        del params["ocean_type"]  # This is not serializable
-
-        self.world_generation_stats["seed"] = self.seed
-        self.world_generation_stats["map_params"] = params
-        self.world_generation_stats["map_size"] = (self.config.width, self.config.height)
-        self.world_generation_stats["start_time"] = start_time.isoformat()
-        self.world_generation_stats["end_time"] = datetime.now().isoformat()
-
-        EntityManager.get_singleton_instance().add_meta_data(
-            "world_generation_stats", self.world_generation_stats
-        )  # we can use this to store the stats in the database
+        self.world_generation_stats.update(
+            {
+                "seed": self.seed,
+                "map_size": (self.config.width, self.config.height),
+                "start_time": start_time.isoformat(),
+                "end_time": datetime.now().isoformat(),
+            }
+        )
+        EntityManager.get_singleton_instance().add_meta_data("world_generation_stats", self.world_generation_stats)
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Done..."])
         return True

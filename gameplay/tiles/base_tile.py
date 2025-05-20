@@ -1,6 +1,7 @@
 from copy import deepcopy
 from enum import Enum
 from logging import Logger
+import math
 from os.path import dirname, join, realpath
 from pathlib import Path
 from posixpath import abspath
@@ -352,12 +353,53 @@ class BaseTile(BaseEntity):
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
+    def compute_hex_center(self, x: int, y: int, radius: float = 1) -> Tuple[float, float]:
+        """
+        Given axial coords (x=column, y=row) and hex radius,
+        return the world‐space center (pos_x, pos_y) using flat‐topped staggering.
+        """
+        # same as get_hex_spacing
+        horiz = 1.5 * radius
+        vert = math.sqrt(3) * radius
+
+        # column offset in X
+        pos_x = x * horiz
+        # stagger every other column by half a vertical step
+        pos_y = y * vert + (vert * 0.5 if (x % 2) else 0.0)
+
+        return pos_x, pos_y
+
     def ensure_anchor_node(self):
+        """
+        Make sure each tile has a single anchor NodePath:
+          - positioned at (pos_x, pos_y, 0)
+          - then lifted in Z to its calculated altitude
+          - and finally scaled by self.z_scale so scale and height stay in sync.
+        All of your per‐tile models, UI nodes, borders, etc. should be parented under this anchor.
+        """
         if not hasattr(self, "anchor_node") or self.anchor_node is None:
+            # create it only once
             self.anchor_node = NodePath(f"tile_anchor_{self.x}_{self.y}")
-            self.anchor_node.setScale(0.48, 0.48, 0.48)
-            self.anchor_node.setPos(*self.calculate_z_pos_on_altitude())
-            self.anchor_node.reparentTo(render)  # or another shared node
+            self.anchor_node.reparentTo(render)
+
+        # Put the anchor at ground‐XY, then lift it in Z by the tile’s altitude
+        # (so that scaling multiplies that Z‐offset as well)
+        gx, gy, gz = self.calculate_z_pos_on_altitude()
+        # calculate_z_pos_on_altitude already returns (pos_x, pos_y, pos_z),
+        # but we want the anchor at (pos_x, pos_y, 0) and children at z = pos_z.
+        # So:
+        self.anchor_node.setPos(gx, gy, 0.0)
+        # Now scale the anchor uniformly:
+        self.anchor_node.setScale(self.z_scale)
+
+        # Finally, reparent any existing models/UI under this anchor and
+        # reset their own Z to the raw altitude.
+        for np in self.models + [self.tile_icon_group, self.city_name_group]:
+            if np is not None:
+                # detach from wherever they were
+                np.wrtReparentTo(self.anchor_node)
+                # then place them at their altitude in local coords
+                np.setZ(gz)
 
     def create_root_ui_node(self) -> None:
         self.city_name_group = NodePath("city_name_group")
@@ -482,13 +524,14 @@ class BaseTile(BaseEntity):
         basic_resource = basic_resource.export_basic()
 
         self.icon_overlay_card = CardMaker(f"icon_overlay_{self.id}")
-        self.icon_overlay_card.set_frame(-0.55, 0.55, -0.55, 0.85)  # type: ignore
+        # Make the icon overlay card square
+        self.icon_overlay_card.set_frame(-1, 1, -1, 1)
         self.icon_overlay_card.setHasUvs(True)  # type: ignore# type: ignore
         self.icon_overlay = NodePath(self.icon_overlay_card.generate())  # type: ignore
         self.icon_overlay.set_collide_mask(BitMask32.bit(1))  # type: ignore
-        self.icon_overlay.set_pos(0, 0, 0.05)  # type: ignore
+        self.icon_overlay.set_pos(0, 0, self.calculate_z_pos_on_altitude()[2] + 0.01)  # type: ignore
         self.icon_overlay.set_hpr(0, -90, 0)  # type: ignore
-        self.icon_overlay.set_scale(1)  # type: ignore
+        self.icon_overlay.set_scale(0.5)  # type: ignore
         self.icon_overlay.setTransparency(True)
         self.icon_overlay.setAttrib(ColorBlendAttrib.makeOff())  # type: ignore
         self.icon_overlay.setBin("fixed", 60)
@@ -580,6 +623,14 @@ class BaseTile(BaseEntity):
     def get_distance(self, other: "BaseTile") -> int:
         return TileRepository.distance(self, other)
 
+    def recalc_grid_position(self, radius: float) -> None:
+        """
+        Recompute self.pos_x/pos_y from self.x,self.y & radius
+        so it matches the mesh layout exactly.
+        """
+        px, py = self.compute_hex_center(self.x, self.y, radius)
+        self.pos_x, self.pos_y = px, py
+
     def render(self, render_all: bool = True, model_index: Optional[int] = None) -> None:
         if not self.tile_terrain:
             self.logger.warning(f"Tile {self} has no terrain set, not rendering.")
@@ -590,7 +641,7 @@ class BaseTile(BaseEntity):
         self.generate_tag(self.x, self.y)
 
         if not self.models and len(self.improvements()) == 0:
-            self._render_default_terrain()
+            # self._render_default_terrain()
             self.create_root_ui_node()
             self._render_resource_model()
             if self.units.has_any():
@@ -601,7 +652,7 @@ class BaseTile(BaseEntity):
         if render_all:
             self.unrender_all()
             self._render_improvements()
-            self._render_default_terrain()
+            # self._render_default_terrain()
             self._render_resource_model()
             self.create_root_ui_node()
         elif model_index is not None:
@@ -612,7 +663,7 @@ class BaseTile(BaseEntity):
                 self._render_improvements()
             self.create_root_ui_node()
         else:
-            self._render_default_terrain()
+            # self._render_default_terrain()
             self.create_root_ui_node()
 
         # Clear old icon overlay

@@ -1,14 +1,15 @@
 from typing import Any
 from gameplay.yields import Yields
 
-from ._base_terrain import BaseTerrain, rgb
+from ._base_terrain import BaseTerrain
+from helpers.colors import Colors
 
 
 class Sea(BaseTerrain):
     _name = "world.terrain.sea_water"
     _model = "assets/models/tiles/sea.glb"
 
-    _fallback_color = rgb(0, 119, 255)
+    _fallback_color = Colors.BLUE
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

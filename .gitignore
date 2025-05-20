@@ -19,3 +19,4 @@ lib64/
 bin/
 pyvenv.cfg
 debugging/
+.history/

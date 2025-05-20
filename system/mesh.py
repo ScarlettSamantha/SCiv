@@ -1,107 +1,242 @@
-import math
+from typing import TYPE_CHECKING, List, Tuple
 from panda3d.core import (
-    GeomVertexFormat,
-    GeomVertexData,
-    GeomVertexWriter,
-    GeomTriangles,
     Geom,
     GeomNode,
+    GeomVertexData,
+    GeomVertexFormat,
+    GeomVertexWriter,
+    GeomTriangles,
+    LineSegs,
     NodePath,
     Shader,
 )
+import math
 
-# Offsets for odd-q flat-topped hex grid
-EVEN_Q_NEIGHBORS = [(1, 0), (0, -1), (-1, 0), (-1, 1), (0, 1), (1, 1)]
-ODD_Q_NEIGHBORS = [(1, -1), (0, -1), (-1, -1), (-1, 0), (0, 1), (1, 0)]
+if TYPE_CHECKING:
+    from managers.entity import BaseTile
+
+if TYPE_CHECKING:
+    pass
 
 
-class HexMeshGenerator:
+# GLSL shaders with flat qualifier for uniform tile color
+VERT_SHADER = """
+#version 130
+in vec4 p3d_Vertex;
+in vec3 p3d_Normal;
+in vec4 p3d_Color;
+uniform mat4 p3d_ModelViewProjectionMatrix;
+out vec3 v_normal;
+flat out vec4 v_color;
+void main() {
+    gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
+    v_normal = normalize(p3d_Normal);
+    v_color = p3d_Color;
+}
+"""
+
+FRAG_SHADER = """
+#version 130
+in vec3 v_normal;
+flat in vec4 v_color;
+out vec4 fragColor;
+void main() {
+    // Color only flat tops by vertex color (now flat across each hex)
+    if (v_normal.z > 0.99) {
+        fragColor = v_color;
+    } else {
+        fragColor = vec4(1.0, 0.0, 1.0, 1.0);
+    }
+}
+"""
+
+
+def create_flat_top_hexagon_vertices(radius, center=(0, 0, 0)):
+    """Generate 6 corner verts + center for flat-topped hexagon."""
+    cx, cy, cz = center
+    verts = []
+    for i in range(6):
+        ang = math.radians(60 * i)
+        verts.append((cx + radius * math.cos(ang), cy + radius * math.sin(ang), cz))
+    verts.append((cx, cy, cz))
+    return verts
+
+
+def get_hex_spacing(radius):
+    """Return horizontal and vertical spacing for flat-topped hexes."""
+    return 1.5 * radius, math.sqrt(3) * radius
+
+
+def generate_hex_grid_mesh(radius, tiles: List["BaseTile"] = None, cols=10, rows=10):
     """
-    Generates a mesh for a single hex tile with 90° vertical walls,
-    optionally clamped to ground (z=0) to avoid overly long walls.
+    Generate combined vertex list, triangle indices, and an index map for each hex,
+    using each tile’s own elevation (pos_z) if provided.
+
+    :param radius: float radius of each hex.
+    :param tiles:  Optional list of BaseTile instances (must have .x, .y, and .pos_z).
+    :param cols:   Number of columns if not using tiles.
+    :param rows:   Number of rows if not using tiles.
+    :return: (vertices, triangles, hex_starts)
+        - vertices: List of (x, y, z) coords for every vertex.
+        - triangles: List of (i1, i2, i3) index triples.
+        - hex_starts: List of starting vertex‐indices for each hex cell.
     """
+    horiz, vert = get_hex_spacing(radius)
 
-    def __init__(self, radius=0.5, height_scale=1.0, clamp_to_ground=True):
-        self.radius = radius
-        self.height_scale = height_scale
-        self.clamp_to_ground = clamp_to_ground
-        self.format = GeomVertexFormat.get_v3n3()
+    # Build a list of (col, row, height) triples.
+    if tiles:
+        # Use each BaseTile’s pos_z
+        coords = [(t.x, t.y, t.calculate_z_pos_on_altitude()[2]) for t in tiles]
+    else:
+        # Flat grid at z=0
+        coords = [(c, r, 0.0) for c in range(cols) for r in range(rows)]
 
-    def _neighbor_offsets(self, q: int):
-        return ODD_Q_NEIGHBORS if (q & 1) else EVEN_Q_NEIGHBORS
+    verts: List[Tuple[float, float, float]] = []
+    tris: List[Tuple[int, int, int]] = []
+    hex_starts: List[int] = []
+    offset = 0
 
-    def _add_wall(self, i, ring, h0, h1, vwriter, nwriter, tris, next_index):
-        """
-        Draws a vertical wall between heights h0 and h1 at edge i.
-        If clamp_to_ground is True, the lower height goes to 0 instead of h1.
-        Returns updated next_index.
-        """
-        z_top = max(h0, h1)
-        z_bot = 0.0 if self.clamp_to_ground else min(h0, h1)
-        t1, t2 = i + 1, ((i + 1) % 6) + 1
-        x1, y1 = ring[i]
-        x2, y2 = ring[(i + 1) % 6]
-        # bottom verts
-        vwriter.addData3(x1, y1, z_bot)
-        nwriter.addData3(0, 0, 0)
-        vwriter.addData3(x2, y2, z_bot)
-        nwriter.addData3(0, 0, 0)
-        b1, b2 = next_index, next_index + 1
-        next_index += 2
-        # calc normal
-        ex, ey = x2 - x1, y2 - y1
-        nx, ny = ey, -ex
-        length = math.hypot(nx, ny)
-        if length:
-            nx /= length
-            ny /= length
-        # set normals for quad vertices
-        for vid in (t1, t2, b2, b1):
-            nwriter.setRow(vid)
-            nwriter.setData3(nx, ny, 0)
-        # two triangles
-        tris.addVertices(t1, t2, b2)
-        tris.addVertices(t1, b2, b1)
-        return next_index
+    for col, row, height in coords:
+        # Mark where this hex’s vertices begin
+        hex_starts.append(offset)
 
-    def build_tile(self, q: int, r: int, height_map: dict) -> NodePath:
-        """
-        Builds the mesh for a tile at (q,r), with walls to neighbors.
-        """
-        h0 = height_map.get((q, r), 0.0) * self.height_scale
-        offsets = self._neighbor_offsets(q)
-        # ring coords
-        ring = [
-            (self.radius * math.cos(math.radians(60 * i + 30)), self.radius * math.sin(math.radians(60 * i + 30)))
-            for i in range(6)
-        ]
-        # setup vertex data
-        vdata = GeomVertexData(f"hex_{q}_{r}", self.format, Geom.UHStatic)
-        vw = GeomVertexWriter(vdata, "vertex")
-        nw = GeomVertexWriter(vdata, "normal")
-        # top center
-        vw.addData3(0, 0, h0)
-        nw.addData3(0, 0, 1)
-        # top ring
-        for x, y in ring:
-            vw.addData3(x, y, h0)
-            nw.addData3(0, 0, 1)
-        tris = GeomTriangles(Geom.UHStatic)
+        # Compute the hex center in X/Y, using flat‐topped staggering
+        cx = col * horiz
+        cy = row * vert + (vert * 0.5 if (col % 2) else 0.0)
+
+        # Generate the 6 corner verts + center at the given height
+        hverts = create_flat_top_hexagon_vertices(radius, (cx, cy, height))
+        center_idx = len(hverts) - 1
+
+        # Build the triangle fan around the center
         for i in range(6):
-            tris.addVertices(0, i + 1, (i + 1) % 6 + 1)
-        next_index = 7
-        # walls
-        for i, (dq, dr) in enumerate(offsets):
-            h1 = height_map.get((q + dq, r + dr), 0.0) * self.height_scale
-            if h1 != h0:
-                next_index = self._add_wall(i, ring, h0, h1, vw, nw, tris, next_index)
-        # assemble
-        geom = Geom(vdata)
-        geom.addPrimitive(tris)
-        node = GeomNode(f"hexnode_{q}_{r}")
-        node.addGeom(geom)
-        np = NodePath(node)
-        np.setTwoSided(True)
-        shader = Shader.load(Shader.SL_GLSL, "assets/shaders/hex.vert.glsl", "assets/shaders/hex.frag.glsl")
-        np.setShader(shader)
-        return np
+            tris.append((offset + center_idx, offset + i, offset + (i + 1) % 6))
+
+        # Append these verts and advance the offset
+        verts.extend(hverts)
+        offset += len(hverts)
+
+    return verts, tris, hex_starts
+
+
+def build_geom_node(
+    vertices,
+    triangles,
+    hex_starts=None,
+    tiles=None,
+):
+    """
+    Build and return a NodePath from mesh data with per‐hex coloring.
+
+    :param vertices: List of (x,y,z) coords.
+    :param triangles: List of (i1, i2, i3) tuples.
+    :param hex_starts: List of start indices into vertices for each hex.
+    :param tiles:      Parallel list of BaseTile instances (one per hex).
+    :param hex_color_func: Function(tile: BaseTile) -> (r,g,b,a).
+    """
+    fmt = GeomVertexFormat.getV3n3c4()
+    vdata = GeomVertexData("hexgrid", fmt, Geom.UHStatic)
+    vw = GeomVertexWriter(vdata, "vertex")
+    nw = GeomVertexWriter(vdata, "normal")
+    cw = GeomVertexWriter(vdata, "color")
+
+    # fallback white
+    def default_color(tile: "BaseTile"):
+        color = tile.get_terrain().get_fallback_color()
+        # If color is not a tuple/list, try to convert it (e.g., from LRGBColor)
+        if not isinstance(color, (tuple, list)):
+            color = tuple(float(c) for c in color)
+        # Ensure color is a tuple of 4 floats (RGBA)
+        if len(color) == 3:
+            return (float(color[0]), float(color[1]), float(color[2]), 1.0)
+        elif len(color) == 4:
+            return (float(color[0]), float(color[1]), float(color[2]), float(color[3]))
+        else:
+            # fallback to white
+            return (1.0, 1.0, 1.0, 1.0)
+
+    current_hex = 0
+    # pre‐compute where each hex’s vertices end
+    next_start = hex_starts[1] if hex_starts and len(hex_starts) > 1 else len(vertices)
+
+    for idx, (x, y, z) in enumerate(vertices):
+        # bump hex index when we pass its start
+        if hex_starts and idx >= next_start:
+            current_hex += 1
+            next_start = hex_starts[current_hex + 1] if current_hex + 1 < len(hex_starts) else len(vertices)
+
+        vw.addData3(x, y, z)
+        nw.addData3(0, 0, 1)
+
+        # pass the actual BaseTile into your color fn
+        tile = tiles[current_hex] if tiles is not None else None
+        r, g, b, a = default_color(tile)
+        cw.addData4(r, g, b, a)
+
+    prim = GeomTriangles(Geom.UHStatic)
+    for a, b, c in triangles:
+        prim.addVertices(a, b, c)
+        prim.closePrimitive()
+
+    geom = Geom(vdata)
+    geom.addPrimitive(prim)
+    node = GeomNode("hex_grid")
+    node.addGeom(geom)
+    np = NodePath(node)
+
+    # apply the flat‐color shader you already wrote
+    shader = Shader.make(Shader.SLGLSL, VERT_SHADER, FRAG_SHADER)
+    np.setShader(shader)
+    np.setTwoSided(True)
+    np.setLightOff()
+    return np
+
+
+def create_hex_grid_node(
+    radius,
+    tiles=None,
+    cols=None,
+    rows=None,
+    hex_color_func=None,
+    show_borders=True,  # new flag
+):
+    """
+    High‐level: build a colored hex grid from either:
+      - tiles: list of BaseTile (must have x,y attrs)
+      - cols & rows: explicit grid size
+    :param show_borders: if True, draws thin black outlines around each hex top.
+    """
+    verts, tris, starts = generate_hex_grid_mesh(
+        radius,
+        tiles=tiles,
+        cols=cols or 10,
+        rows=rows or 10,
+    )
+    # build the filled, shaded mesh
+    grid_np = build_geom_node(
+        verts,
+        tris,
+        hex_starts=starts,
+        tiles=tiles,
+    )
+
+    if show_borders:
+        ls = LineSegs()
+        ls.setColor(0, 0, 0, 1)  # black borders
+        ls.setThickness(1.0)
+        # for each hex, draw a closed loop around its 6 corners
+        for start in starts:
+            # grab the 6 corner positions (the 7th vert is the center)
+            corners = [verts[start + i] for i in range(6)]
+            ls.moveTo(corners[-1])
+            for p in corners:
+                ls.drawTo(p)
+        border_node = ls.create()
+        border_np = NodePath(border_node)
+        border_np.reparentTo(grid_np)
+        # ensure borders aren’t depth-tested away
+        border_np.setBin("fixed", 0)
+        border_np.setDepthTest(False)
+        border_np.setDepthWrite(False)
+
+    return grid_np
