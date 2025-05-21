@@ -117,7 +117,11 @@ class ConfigManager(Singleton):
             loadPrcFileData("", f"win-size {w} {h}")
 
         if "sync-video" in window_settings:
-            loadPrcFileData("", f"sync-video {bool(window_settings['sync-video'])}")
+            loadPrcFileData("", "sync-video false")
+
+        loadPrcFileData("", "sync-video #f")
+        loadPrcFileData("", "clock-mode limited")
+        loadPrcFileData("", "clock-frame-rate 144")
 
         if "show-frame-rate-meter" in window_settings:
             loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")

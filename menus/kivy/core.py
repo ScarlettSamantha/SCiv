@@ -4,6 +4,7 @@ from direct.showbase.DirectObject import DirectObject
 from kivy.uix.screenmanager import ScreenManager
 from panda3d_kivy.app import App
 
+
 from gameplay.civilization import Civilization
 from main import SCIV
 from menus.screens import loading

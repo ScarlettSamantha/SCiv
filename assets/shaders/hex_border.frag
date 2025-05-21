@@ -36,9 +36,6 @@ void main() {
         float baseAng = -30.0 + 60.0 * i;
         vec2 a = hex_corner(baseAng);
         vec2 b = hex_corner(baseAng + 60.0);
-        // Only draw if the borderColor is red (R==1, G==0, B==0)
-        if (borderColor.r < 0.99 || borderColor.g > 0.01 || borderColor.b > 0.01)
-            discard;
         float d = distToSegment(texcoord, a, b, proj);
         if (d < thickness) {
             drawEdge = true;

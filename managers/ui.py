@@ -123,8 +123,12 @@ class ui(Singleton, DirectObject):
 
     def kivy_setup(self):
         from menus.kivy.core import SCivGUI
+        from kivy.config import Config as KivyConfig
 
+        KivyConfig.set("graphics", "maxfps", "0")
         self.game_gui = SCivGUI(self._base)
+        self.pullback = self.game_gui.display_region.get_draw_callback()  # type: ignore
+
         self.game_gui.run()
 
     def register(self) -> bool:

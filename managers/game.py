@@ -375,7 +375,9 @@ class Game(Singleton, DirectObject):
         self.ui.post_game_start()
         self.camera.recenter()
 
+        self.logger.info("Setting up borders")
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
+        self.logger.info("Borders setup complete")
 
         self.calculate_vision()
 
@@ -406,8 +408,12 @@ class Game(Singleton, DirectObject):
 
     def render_field(self):
         for tile in self.world.grid.values():
-            tile.ensure_anchor_node()
             tile.render()
+            tile.add_icon_to_tile()
+
+        from system.scene_optimizer import SceneOptimizer
+
+        SceneOptimizer.flatten_scene(render)
 
     def quit_game(self):
         self.base.destroy()

@@ -4,11 +4,9 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
-from panda3d.core import Camera as PandaCamera
-from panda3d.core import LPoint3f, LVecBase3f, MouseWatcher, NodePath
+from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase
 
-from gameplay.unit import Unit
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -42,20 +40,21 @@ class Camera(Singleton, DirectObject):
         self.zoom_enabled: bool = True
         self.lock: bool = False
 
-        # Optional pitch
-        self.pitch: float = 45.0  # Fixed pitch at 45 degrees
+        # Fixed pitch at 45 degrees
+        self.pitch: float = 45.0
 
         # Pivot rotation (yaw)
         self.yaw: float = 0.0
+        self._update_yaw_trig()
 
-        # Pan speed (for WASD/arrow keys)
+        # Pan & rotate speeds
         self.pan_speed: float = 20.0
-        # Rotation speed for Q/E (degrees/sec)
-        self.rotate_speed: float = 60.0
+        self.rotate_speed: float = 60.0  # degrees/sec
 
-        # If you have a target NodePath to center on
+        # Optional target NodePath to center on
         self.target: Optional[NodePath] = None
 
+        # Window dimensions & aspect
         self._aspect_ratio = self.base.win.getXSize() / self.base.win.getYSize()  # type: ignore
         self.win_x: int | float = self.base.win.getXSize()  # type: ignore
         self.win_y: int | float = self.base.win.getYSize()  # type: ignore
@@ -68,7 +67,16 @@ class Camera(Singleton, DirectObject):
         self.base.camera.reparentTo(self.pivot)  # type: ignore
         self.update_camera_position()
 
-        # Track key states
+        # --- Throttling state ---
+        # Desired state variables
+        self._desired_pivot_pos = self.pivot.getPos()
+        self._desired_yaw = self.yaw
+        self._desired_zoom = self.zoom
+        # Flush interval (seconds)
+        self.update_interval = 0.05
+        self._time_since_last_flush = 0.0
+
+        # Track key & drag states
         self.keys = {
             "up": False,
             "down": False,
@@ -77,18 +85,21 @@ class Camera(Singleton, DirectObject):
             "rotate_left": False,
             "rotate_right": False,
         }
-
-        # Dragging state
         self.left_dragging = False
         self.right_dragging = False
-        self.last_mouse_pos: Tuple[int, int] = (0, 0)
-
-        self.drag_threshold = 40  # 40 pixels to trigger rotation, 0 to disable
+        self.last_mouse_pos: Tuple[float, float] = (0.0, 0.0)
+        self.drag_threshold = 40  # pixels to trigger rotation
 
         # Set up controls & add update task
         self.setup_controls()
 
+    def _update_yaw_trig(self):
+        rad = self.yaw * (pi / 180.0)
+        self._cos_yaw = cos(rad)
+        self._sin_yaw = sin(rad)
+
     def register(self) -> Literal[True]:
+        # Single throttled update task
         self.base.taskMgr.add(self.update, "updateCivCameraTask")
         return True
 
@@ -97,7 +108,12 @@ class Camera(Singleton, DirectObject):
         self.base.camera.setPos(0, 0, 0)  # type: ignore
         self.base.camera.setHpr(0, 0, 0)  # type: ignore
         self.yaw = 0.0
+        self._update_yaw_trig()
         self.zoom = 20.0
+        # reset desired states too
+        self._desired_pivot_pos = self.pivot.getPos()
+        self._desired_yaw = self.yaw
+        self._desired_zoom = self.zoom
         self.update_camera_position()
 
     def __setup__(self, *args: Any, **kwargs: Any):
@@ -114,58 +130,48 @@ class Camera(Singleton, DirectObject):
         return self.base_camera().getHpr(self.base.render)  # type: ignore
 
     def setup_controls(self):
-        # WASD / arrow keys for panning
-        self.accept("arrow_up", self.set_key, ["up", True])
-        self.accept("arrow_up-up", self.set_key, ["up", False])
-        self.accept("arrow_down", self.set_key, ["down", True])
-        self.accept("arrow_down-up", self.set_key, ["down", False])
-        self.accept("arrow_left", self.set_key, ["left", True])
-        self.accept("arrow_left-up", self.set_key, ["left", False])
-        self.accept("arrow_right", self.set_key, ["right", True])
-        self.accept("arrow_right-up", self.set_key, ["right", False])
+        # WASD / arrows
+        for key, name in [
+            ("arrow_up", "up"),
+            ("w", "up"),
+            ("arrow_down", "down"),
+            ("s", "down"),
+            ("arrow_left", "left"),
+            ("a", "left"),
+            ("arrow_right", "right"),
+            ("d", "right"),
+        ]:
+            self.accept(key, self.set_key, [name, True])
+            self.accept(f"{key}-up", self.set_key, [name, False])
 
-        self.accept("w", self.set_key, ["up", True])
-        self.accept("w-up", self.set_key, ["up", False])
-        self.accept("s", self.set_key, ["down", True])
-        self.accept("s-up", self.set_key, ["down", False])
-        self.accept("a", self.set_key, ["left", True])
-        self.accept("a-up", self.set_key, ["left", False])
-        self.accept("d", self.set_key, ["right", True])
-        self.accept("d-up", self.set_key, ["right", False])
-
-        # Q/E for rotation
+        # Q/E rotation
         self.accept("q", self.set_key, ["rotate_left", True])
         self.accept("q-up", self.set_key, ["rotate_left", False])
         self.accept("e", self.set_key, ["rotate_right", True])
         self.accept("e-up", self.set_key, ["rotate_right", False])
 
-        # Mouse wheel for zoom
+        # Mouse wheel => zoom
         self.accept("wheel_up", self.zoom_in)
         self.accept("wheel_down", self.zoom_out)
 
-        # Recenter pivot
+        # Recenter
         self.accept("r", self.recenter)
 
-        # Left mouse => rotate
+        # Mouse drags
         self.accept("mouse1", self.start_left_drag)
         self.accept("mouse1-up", self.stop_left_drag)
-
-        # Disable/enable zoom
-        self.accept("system.input.disable_zoom", self.disable_zoom)
-        self.accept("system.input.enable_zoom", self.enable_zoom)
-
-        # Right mouse => pan (drag to move)
         self.accept("mouse3", self.start_right_drag)
         self.accept("mouse3-up", self.stop_right_drag)
 
-        # Disable/enable camera control
+        # Zoom/control locks
+        self.accept("system.input.disable_zoom", self.disable_zoom)
+        self.accept("system.input.enable_zoom", self.enable_zoom)
         self.accept("system.input.disable_control", self.disable_control)
         self.accept("system.input.enable_control", self.enable_control)
-
-        # Lock/unlock camera
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
+        # Window resize
         self.accept("window-event", self.on_window_resize)
 
     def set_key(self, key: str, value: Any):
@@ -198,28 +204,22 @@ class Camera(Singleton, DirectObject):
     def zoom_in(self):
         if not self.zoom_enabled:
             return
-        self.zoom = max(self.min_zoom, self.zoom - self.zoom_speed)
-        self.update_camera_position()
+        # adjust desired only
+        self._desired_zoom = max(self.min_zoom, self._desired_zoom - self.zoom_speed)
 
     def zoom_out(self):
         if not self.zoom_enabled:
             return
-        self.zoom = min(self.max_zoom, self.zoom + self.zoom_speed)
-        self.update_camera_position()
+        self._desired_zoom = min(self.max_zoom, self._desired_zoom + self.zoom_speed)
 
     def on_window_resize(self, window: WindowBase):
-        """Handler for window resize events."""
         if window != self.base.win:  # type: ignore
-            return  # Only handle main window
+            return
 
         self.win_x = window.getXSize()  # type: ignore
         self.win_y = window.getYSize()  # type: ignore
-        if self.win_y != 0:  # type: ignore
-            self._aspect_ratio = self.win_x / self.win_y  # type: ignore
-        else:
-            self._aspect_ratio = 1.0
-
-        self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")  # type: ignore
+        self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0
+        self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")
 
     def update_camera_position(self):
         """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
@@ -231,7 +231,6 @@ class Camera(Singleton, DirectObject):
         self.base_camera().lookAt(self.pivot)  # type: ignore
 
     def reset_pivot_position(self):
-        """Set pivot to target or (0,0,0) if no target."""
         if self.target is not None:
             self.pivot.setPos(self.target.getPos())  # type: ignore
         else:
@@ -248,130 +247,102 @@ class Camera(Singleton, DirectObject):
             tile = capital.get_tile().get_pos()
             center = (tile[0], tile[1], 0)
         elif units := PlayerManager.session_player().get_all_units():
-            unit: "Unit" = units[0]  # type: ignore
+            unit = units[0]  # type: ignore
             if unit is not None and unit.tile is not None:  # type: ignore
-                center = unit.get_tile().get_pos()  # type: ignore
-                center = (center[0], center[1], 0)
+                pos = unit.get_tile().get_pos()  # type: ignore
+                center = (pos[0], pos[1], 0)
         else:
-            result = self.target.getPos() if self.target else (0, 0, 0)
-            if isinstance(result, LPoint3f):  # this is a workaround for the type hinting
-                center = (result[0], result[1], 0)  # type: ignore
-            else:
-                center = (result[0], result[1], 0)
+            raise NotImplementedError("No target to recenter on")
 
-        self.pivot.setPos(center)  # type: ignore
-        self.base_camera().setHpr(0, self.pitch, 0)  # type: ignore
-        self.yaw = 0.0
-        self.zoom = 20.0
-        self.update_camera_position()
+        # immediately jump pivot
+        self.pivot.setPos(*center)
+        self._desired_pivot_pos = self.pivot.getPos()
 
     def start_left_drag(self):
-        """Begin left-drag => rotating."""
         if not self.mouseWatcherNode.hasMouse():
             return
-
         self.left_dragging = True
-
         md = self.mouseWatcherNode.getMouse()
-        x = md.getX() * self.base.win.getXSize()  # type: ignore
-        y = md.getY() * self.base.win.getYSize()  # type: ignore
-        self.last_mouse_pos = (x, y)  # type: ignore
         self.last_mouse_pos = (md.getX(), md.getY())
 
     def stop_left_drag(self):
-        """Stop left-drag."""
         self.left_dragging = False
 
     def start_right_drag(self):
-        """Begin right-drag => panning the pivot."""
         if not self.mouseWatcherNode.hasMouse():
             return
-
         self.right_dragging = True
-
-        if self.mouseWatcherNode.hasMouse():
-            md = self.mouseWatcherNode.getMouse()
-            x = md.getX() * self.base.win.getXSize()  # type: ignore
-            y = md.getY() * self.base.win.getYSize()  # type: ignore
-            self.last_mouse_pos = (x, y)  # type: ignore
-            self.last_mouse_pos = (md.getX(), md.getY())
+        md = self.mouseWatcherNode.getMouse()
+        self.last_mouse_pos = (md.getX(), md.getY())
 
     def stop_right_drag(self):
         self.right_dragging = False
 
-    def update(self, task: Task.Task) -> Literal[1]:
-        """Per-frame update for panning with keys, Q/E rotation, and dragging."""
-        if not self.active:
-            return task.cont
-
-        dt = self.base.clock.getDt()  # type: ignore
-        move_vec = (0, 0)
-
-        # Convert degrees to radians for rotation
-        yaw_rad = self.yaw * (pi / 180.0)
-        forward = (sin(yaw_rad), -cos(yaw_rad))
-        right = (cos(yaw_rad), sin(yaw_rad))
+    def _sample_input(self, dt: float):
+        # pan with keys
+        forward = (self._sin_yaw, -self._cos_yaw)
+        right = (self._cos_yaw, self._sin_yaw)
+        px, py, pz = self._desired_pivot_pos
 
         if self.keys["down"]:
-            move_vec: Tuple[float, ...] = (  # type: ignore
-                move_vec[0] + forward[0] * self.pan_speed * dt,
-                move_vec[1] + forward[1] * self.pan_speed * dt,
-            )
+            px += forward[0] * self.pan_speed * dt
+            py += forward[1] * self.pan_speed * dt
         if self.keys["up"]:
-            move_vec = (move_vec[0] - forward[0] * self.pan_speed * dt, move_vec[1] - forward[1] * self.pan_speed * dt)  # type: ignore
+            px -= forward[0] * self.pan_speed * dt
+            py -= forward[1] * self.pan_speed * dt
         if self.keys["left"]:
-            move_vec = (move_vec[0] - right[0] * self.pan_speed * dt, move_vec[1] - right[1] * self.pan_speed * dt)  # type: ignore
+            px -= right[0] * self.pan_speed * dt
+            py -= right[1] * self.pan_speed * dt
         if self.keys["right"]:
-            move_vec = (move_vec[0] + right[0] * self.pan_speed * dt, move_vec[1] + right[1] * self.pan_speed * dt)  # type: ignore
+            px += right[0] * self.pan_speed * dt
+            py += right[1] * self.pan_speed * dt
 
-        if move_vec != (0, 0):
-            x0, y0, z0 = self.pivot.getPos()  # type: ignore
-            self.pivot.setPos(x0 + move_vec[0], y0 + move_vec[1], z0)  # type: ignore
-            self.update_camera_position()
-
+        # rotation keys
         if self.keys["rotate_left"]:
-            self.yaw += self.rotate_speed * dt
-            self.update_camera_position()
-
+            self._desired_yaw += self.rotate_speed * dt
         if self.keys["rotate_right"]:
-            self.yaw -= float(self.rotate_speed * dt)  # type: ignore
-            self.update_camera_position()
+            self._desired_yaw -= self.rotate_speed * dt
 
+        # dragging deltas
         if self.mouseWatcherNode.hasMouse():
             md = self.mouseWatcherNode.getMouse()
-            x = md.getX()
-            y = md.getY()
-            delta_x: int = x - self.last_mouse_pos[0]  # type: ignore
-            delta_y: int = y - self.last_mouse_pos[1]  # type: ignore
+            x, y = md.getX(), md.getY()
+            dx = x - self.last_mouse_pos[0]
+            dy = y - self.last_mouse_pos[1]
 
-            if self.left_dragging:
-                # Only apply rotation if the horizontal movement exceeds the threshold.
-                if abs(delta_x) >= self.drag_threshold:  # type: ignore
-                    rotation_factor = 0.1  # Slower rotation factor
-                    self.yaw -= delta_x * rotation_factor  # type: ignore
-                    self.update_camera_position()
-                    # Update last position only after a valid rotation to avoid accumulating tiny deltas.
-                    self.last_mouse_pos = (x, y)
-
+            if self.left_dragging and abs(dx) >= self.drag_threshold:
+                self._desired_yaw -= dx * 0.1
             elif self.right_dragging:
-                # Get pixel delta (mouse is [-1, 1], so we map to pixels)
-                delta_px_x = (x - self.last_mouse_pos[0]) * self.win_x / 2
-                delta_px_y = (y - self.last_mouse_pos[1]) * self.win_y / 2
+                # screen px to world units
+                delta_px_x = dx * self.win_x / 2
+                delta_px_y = dy * self.win_y / 2
+                pan_factor = 0.015 * (self._desired_zoom / 25)
+                px += (-delta_px_x * pan_factor) * self._cos_yaw + (delta_px_y * pan_factor) * self._sin_yaw
+                py += (-delta_px_x * pan_factor) * self._sin_yaw - (delta_px_y * pan_factor) * self._cos_yaw
 
-                pan_speed = 0.015 * (self.zoom / 25)
+            # update last_mouse_pos always
+            self.last_mouse_pos = (x, y)
 
-                # Rotate delta into world-space, so drag follows camera orientation
-                move_x = (-delta_px_x * pan_speed) * cos(yaw_rad) + (delta_px_y * pan_speed) * sin(yaw_rad)
-                move_y = (-delta_px_x * pan_speed) * sin(yaw_rad) - (delta_px_y * pan_speed) * cos(yaw_rad)
+        # commit new pivot pos
+        self._desired_pivot_pos = LPoint3f(px, py, pz)
 
-                # Apply movement
-                x0, y0, z0 = self.pivot.getPos()  # type: ignore
-                self.pivot.setPos(x0 + move_x, y0 + move_y, z0)  # type: ignore
-                self.update_camera_position()
-                self.last_mouse_pos = (x, y)
+    def _flush_to_gpu(self):
+        # apply accumulated desired state
+        self.pivot.setPos(self._desired_pivot_pos)
+        self.yaw = self._desired_yaw
+        self._update_yaw_trig()
+        self.zoom = self._desired_zoom
+        self.update_camera_position()
 
-            else:
-                # Update last_mouse_pos when not dragging
-                self.last_mouse_pos = (x, y)
-
+    def update(self, task: Task.Task) -> Literal[1]:
+        if not self.active and not (self.left_dragging or self.right_dragging or any(self.keys.values())):
+            return task.cont
+        dt = self.base.clock.getDt()  # type: ignore
+        # sample inputs every frame
+        self._sample_input(dt)
+        # throttle flush
+        self._time_since_last_flush += dt
+        if self._time_since_last_flush >= self.update_interval:
+            self._flush_to_gpu()
+            self._time_since_last_flush = 0.0
         return task.cont

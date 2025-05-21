@@ -40,6 +40,7 @@ class Input(Singleton, DirectObject):
     def register(self):
         # Left-click
         self.accept("mouse1", self.pick_object)
+        self.accept("f7", self.run_analyze)
 
         # Escape key
         self.accept("escape", self.on_escape)
@@ -115,6 +116,9 @@ class Input(Singleton, DirectObject):
                 self.hovered_tile_id = None
 
         return task.cont
+
+    def run_analyze(self):
+        render.analyze()
 
     def pick_object(self) -> NodePath | None:
         if not self.active:

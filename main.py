@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import os
+
 import pathlib
 from logging import Logger
 
@@ -6,7 +10,7 @@ from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import load_prc_file  # type: ignore
 from panda3d_kivy import monkey
-
+from kivy.config import Config
 from helpers.cache import Cache
 from helpers.direct_loading_screen import LoadingScreen
 from managers.config import ConfigManager
@@ -15,6 +19,10 @@ from managers.input import Input
 from managers.log import LogManager
 from managers.unit import UnitManager
 
+
+Config.set("graphics", "maxfps", "0")
+Config.set("graphics", "vsync", "0")
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window
 
 

@@ -1,7 +1,7 @@
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Set, Tuple
 
-from PIL import Image, ImageDraw
+from PIL import Image
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import (
@@ -24,6 +24,7 @@ from helpers.geometry import generate_flat_top_hex
 from managers.player import PlayerManager
 from managers.world import World
 from system.shaders import Shaders
+from helpers.colors import Colors
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -33,6 +34,9 @@ import io
 
 class Borders(DirectObject):
     HEX_DIRECTIONS = [(+1, 0), (+1, -1), (0, -1), (-1, 0), (-1, +1), (0, +1)]
+
+    COLOR_HEX_TOP_BORDERS = Colors.BLACK
+    TOP_BORDER_SCALE = 1.0
 
     def __init__(
         self,
@@ -159,12 +163,12 @@ class Borders(DirectObject):
         border_color: Tuple[int, int, int] = (255, 0, 0),
     ) -> Texture:
         cols, rows = map_size
-        player_tiles: List[Tuple[int, int]] = []
+        player_tiles: Set[Tuple[int, int]] = set()
         for player in PlayerManager.all().values():
-            tiles_player = list(player.get_all_tiles().keys()) + list(
+            tiles_player = set(player.get_all_tiles().keys()) | set(
                 player.get_all_tiles_marked_for_border_growth().keys()
             )
-            player_tiles.extend(tiles_player)
+            player_tiles.update(tiles_player)
         self.player_tiles = player_tiles
 
         r = hex_radius_px
@@ -176,25 +180,6 @@ class Borders(DirectObject):
         img_w = horiz * (cols - 1) + w
         img_h = vert * rows + r
         img = Image.new("RGB", (img_w, img_h), bg_color)
-        draw = ImageDraw.Draw(img)
-
-        angles = [math.radians(60 * i) for i in range(6)]
-        offsets = [(int(r * math.cos(a)), int(r * math.sin(a))) for a in angles]
-
-        def hex_corners(cx: int, cy: int) -> List[Tuple[int, int]]:
-            return [(cx + dx, cy + dy) for dx, dy in offsets]
-
-        for x in range(cols):
-            x_off = r + x * horiz
-            y_base = r + (vert // 2 if x % 2 else 0)
-            color = border_color
-            for y in range(rows):
-                if (x, y) in player_tiles:
-                    color = (0, 255, 0)
-                cx = x_off
-                cy = y * vert + y_base
-                pts = hex_corners(cx, cy)
-                draw.polygon(pts, outline=color, width=thickness_px)
 
         img.save("hex_border_mask.png")
 
@@ -216,19 +201,20 @@ class Borders(DirectObject):
 
         # iterate every tile in the world
         grid = World.get_singleton_instance().get_grid()
+        hex = generate_flat_top_hex()
         for x, y in grid:
             # spawn a flat-top hex at world position
             if len(self.player_tiles) > 0 and (x, y) in self.player_tiles:
-                color = (0, 1, 0, 1)
+                color = Colors.GREEN
             else:
-                color = (1, 0, 0, 1)
+                color = Colors.RED
 
-            hex_np: NodePath = generate_flat_top_hex().copy_to(self.parent)
+            hex_np: NodePath = hex.copy_to(self.parent)
             hex_np.set_scale(0.99)
 
             # position it just above the terrain
             wx, wy, wz = TileRepository.hex_to_world(x, y)
-            hex_np.set_pos(LVecBase3f(wx, wy, wz + 0.02))
+            hex_np.set_pos(LVecBase3f(wx, wy, wz + 0.001))
             hex_np.set_hpr(30, 0, 0)
 
             # assign the hex-border shader & inputs
@@ -254,16 +240,16 @@ class Borders(DirectObject):
 
     def apply_shader_to_hexes(self, hex_nodes: List[NodePath]) -> None:
         for node in hex_nodes:
-            self.apply_shader_to_hex(node, LVecBase4f(1, 0, 0, 1))
+            self.apply_shader_to_hex(node, LVecBase4f(*self.COLOR_HEX_TOP_BORDERS))
 
     def _create_empire_border_hexes(self, player: "Player") -> List[NodePath]:
         hex_nodes: List[NodePath] = []
         for x, y in player.get_all_tiles():
             hex_np = generate_flat_top_hex().copy_to(self.parent)
-            hex_np.set_scale(0.99)
+            hex_np.set_scale(0.95)
 
             pos = TileRepository.hex_to_world(x, y)
-            hex_np.set_pos(LVecBase3f(pos[0], pos[1], pos[2] + 0.02))
+            hex_np.set_pos(LVecBase3f(pos[0], pos[1], pos[2] + 0.04))
             hex_np.set_hpr(30, 0, 0)
 
             tex = self.border_textures.get(player.id)
