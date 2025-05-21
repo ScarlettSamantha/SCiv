@@ -11,7 +11,7 @@ from system.generators.resource_allocator import ResourceAllocator
 from system.pyload import PyLoad
 from system.subsystems.hexgen.enums import MapType, OceanType, HexFeature
 from system.generators.base import WorldParams
-
+from system.mesh import create_hex_grid_node
 
 if TYPE_CHECKING:
     from main import SCIV
@@ -113,17 +113,10 @@ class Basic(BaseGenerator):
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Building meshes..."])
         start_mesh = datetime.now()
         # Create a height map from each tile's pos_z
-        height_map = {coords: tile.pos_z for coords, tile in self.world.grid.items()}
-        from system.mesh import create_hex_grid_node
 
         hexes = [tile for tile in self.world.grid.values()]
 
-        grid_np = create_hex_grid_node(
-            1,
-            tiles=hexes,
-            cols=self.config.width,
-            rows=self.config.height,
-        )
+        grid_np = create_hex_grid_node(1, tiles=hexes, cols=self.config.width, rows=self.config.height)
         grid_np.reparentTo(self.base.render)
 
         for tile in hexes:

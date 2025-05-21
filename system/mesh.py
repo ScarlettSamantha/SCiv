@@ -95,16 +95,15 @@ def generate_hex_grid_mesh(radius, tiles: List["BaseTile"] = None, cols=10, rows
     tris: List[Tuple[int, int, int]] = []
     hex_starts: List[int] = []
     offset = 0
-
+    hex_centers: List[Tuple[float, float, float]] = []
     for col, row, height in coords:
         # Mark where this hex’s vertices begin
         hex_starts.append(offset)
 
-        # Compute the hex center in X/Y, using flat‐topped staggering
         cx = col * horiz
         cy = row * vert + (vert * 0.5 if (col % 2) else 0.0)
+        hex_centers.append((cx, cy, height))
 
-        # Generate the 6 corner verts + center at the given height
         hverts = create_flat_top_hexagon_vertices(radius, (cx, cy, height))
         center_idx = len(hverts) - 1
 
@@ -116,7 +115,93 @@ def generate_hex_grid_mesh(radius, tiles: List["BaseTile"] = None, cols=10, rows
         verts.extend(hverts)
         offset += len(hverts)
 
-    return verts, tris, hex_starts
+    return verts, tris, hex_starts, hex_centers
+
+
+def generate_hex_walls(
+    center: Tuple[float, float, float],
+    radius: float,
+    height: float = 0.0,
+    color=(0.5, 0.5, 0.5, 1.0),
+) -> NodePath:
+    """
+    Creates 6 walls for a flat-topped hexagon, each wall connecting the top edge of the hex to z=0,
+    and adds border lines for each wall (2 vertical + 1 bottom).
+    """
+    fmt = GeomVertexFormat.getV3n3c4()
+    vdata = GeomVertexData("hex_walls", fmt, Geom.UHStatic)
+    vw = GeomVertexWriter(vdata, "vertex")
+    nw = GeomVertexWriter(vdata, "normal")
+    cw = GeomVertexWriter(vdata, "color")
+
+    cx, cy, cz = center
+    verts = []
+
+    # Generate 6 top corners around the hex
+    for i in range(6):
+        angle = math.radians(60 * i)
+        x = cx + radius * math.cos(angle)
+        y = cy + radius * math.sin(angle)
+        z = cz
+        verts.append((x, y, z))
+
+    prim = GeomTriangles(Geom.UHStatic)
+    index = 0
+
+    # For wall border lines
+    ls = LineSegs()
+    ls.setColor(0, 0, 0, 1)
+    ls.setThickness(1.0)
+
+    for i in range(6):
+        a = verts[i]
+        b = verts[(i + 1) % 6]
+        a_bottom = (a[0], a[1], height)
+        b_bottom = (b[0], b[1], height)
+
+        # Add the 4 vertices of the quad (a, b, b_bottom, a_bottom)
+        for v in [a, b, b_bottom, a_bottom]:
+            vw.addData3f(*v)
+            nw.addData3f(0, 0, 1)
+            cw.addData4f(*color)
+
+        # Add triangles for the wall quad
+        prim.addVertices(index, index + 1, index + 2)
+        prim.addVertices(index, index + 2, index + 3)
+        prim.closePrimitive()
+        index += 4
+
+        # Add vertical and bottom lines
+        ls.moveTo(*a)
+        ls.drawTo(*a_bottom)
+
+        ls.moveTo(*b)
+        ls.drawTo(*b_bottom)
+
+        ls.moveTo(*a_bottom)
+        ls.drawTo(*b_bottom)
+
+    # Build wall geometry
+    geom = Geom(vdata)
+    geom.addPrimitive(prim)
+    wall_node = GeomNode("hex_walls")
+    wall_node.addGeom(geom)
+    wall_np = NodePath(wall_node)
+    wall_np.setTwoSided(True)
+    wall_np.setLightOff()
+    wall_np.setBin("fixed", 0)  # render after the tile top
+    wall_np.setDepthTest(True)
+    wall_np.setDepthWrite(True)
+
+    # Build border line geometry
+    border_node = ls.create()
+    border_np = NodePath(border_node)
+    border_np.reparentTo(wall_np)
+    border_np.setBin("fixed", 20)  # render above walls but still respect depth
+    border_np.setDepthTest(True)
+    border_np.setDepthWrite(True)
+
+    return wall_np
 
 
 def build_geom_node(
@@ -193,7 +278,7 @@ def build_geom_node(
 
 
 def create_hex_grid_node(
-    radius,
+    radius=1,
     tiles=None,
     cols=None,
     rows=None,
@@ -206,7 +291,7 @@ def create_hex_grid_node(
       - cols & rows: explicit grid size
     :param show_borders: if True, draws thin black outlines around each hex top.
     """
-    verts, tris, starts = generate_hex_grid_mesh(
+    verts, tris, starts, centers = generate_hex_grid_mesh(
         radius,
         tiles=tiles,
         cols=cols or 10,
@@ -220,10 +305,15 @@ def create_hex_grid_node(
         tiles=tiles,
     )
 
+    for center in centers:
+        wall_np = generate_hex_walls(center=center, radius=radius, height=0.0)
+        wall_np.reparentTo(grid_np)
+        wall_np.setBin("fixed", 0)  # render after the tile top
+
     if show_borders:
         ls = LineSegs()
         ls.setColor(0, 0, 0, 1)  # black borders
-        ls.setThickness(1.0)
+        ls.setThickness(3.0)
         # for each hex, draw a closed loop around its 6 corners
         for start in starts:
             # grab the 6 corner positions (the 7th vert is the center)
@@ -231,12 +321,13 @@ def create_hex_grid_node(
             ls.moveTo(corners[-1])
             for p in corners:
                 ls.drawTo(p)
+
         border_node = ls.create()
         border_np = NodePath(border_node)
         border_np.reparentTo(grid_np)
         # ensure borders aren’t depth-tested away
+        border_np.setDepthTest(True)
+        border_np.setDepthWrite(True)
         border_np.setBin("fixed", 0)
-        border_np.setDepthTest(False)
-        border_np.setDepthWrite(False)
 
     return grid_np

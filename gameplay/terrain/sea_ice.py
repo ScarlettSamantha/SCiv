@@ -1,5 +1,6 @@
 from typing import Any
 from gameplay.terrain._base_terrain import BaseTerrain
+from helpers.colors import Colors
 
 
 class SeaIce(BaseTerrain):
@@ -12,6 +13,7 @@ class SeaIce(BaseTerrain):
         25: "assets/models/tiles/sea_ice3.glb",
         0: "assets/models/tiles/sea_ice4.glb",
     }
+    _fallback_color = Colors.WHITE
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

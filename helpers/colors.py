@@ -35,6 +35,8 @@ class Colors:
     CYAN: Tuple4f = (0, 1, 1, 1)
     LIME: Tuple4f = (0.75, 1, 0, 1)
     PINK: Tuple4f = (1, 0.4, 0.7, 1)
+    DARK_GREEN: Tuple4f = (0, 0.5, 0, 1)
+    LIGHT_GREEN: Tuple4f = (0.5, 1, 0.5, 1)
 
     COLORS: List[Tuple4f] = [
         RED,
@@ -57,6 +59,8 @@ class Colors:
         CYAN,
         LIME,
         PINK,
+        DARK_GREEN,
+        LIGHT_GREEN,
     ]
 
     # Pastel color constants

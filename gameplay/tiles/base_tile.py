@@ -8,6 +8,7 @@ from posixpath import abspath
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union
 import weakref
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     AntialiasAttrib,
@@ -86,7 +87,7 @@ class BaseTile(BaseEntity):
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
-        self.z_scale: float = 1.5
+        self.z_scale: float = 1
 
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
@@ -691,7 +692,7 @@ class BaseTile(BaseEntity):
         x, y, z = self.tile_icon_group.getPos(self.base.render)  # type: ignore
         for unit in self.units.all():
             if unit.icon:
-                self._unit_icons.add_marker((x, y, z + 0.5), (0.2, 0.2), str(unit.icon))
+                self._unit_icons.add_marker((x, y, z + 0.8), (0.2, 0.2), str(unit.icon))
 
     def _render_resource_model(self) -> None:
         if self.city is not None:
@@ -723,11 +724,11 @@ class BaseTile(BaseEntity):
         if self.is_water and not self.is_lake:
             return (self.pos_x, self.pos_y, 0.0)
         elif self.is_lake:
-            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 0.55)
+            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1)
             pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
             return (self.pos_x, self.pos_y, pos_z)
         else:
-            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 0.55)
+            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1)
             pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
             return (self.pos_x, self.pos_y, float(pos_z))
 
@@ -1038,6 +1039,7 @@ class BaseTile(BaseEntity):
 
         self.owner = player
         self.owner.tiles.add_tile(self)
+        self.owner.add_tile(self)
 
         if self.owner.capital is not None:
             self.owner.capital.de_capitalize()
@@ -1046,6 +1048,9 @@ class BaseTile(BaseEntity):
 
         self.calculate()
         self.rerender()
+
+        MessengerGlobal.messenger.send("game.border.refresh")
+
         return True
 
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:

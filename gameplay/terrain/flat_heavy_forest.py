@@ -4,7 +4,7 @@ from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.yields import Yields
-
+from helpers.colors import Colors
 from ._base_terrain import BaseTerrain
 
 
@@ -14,6 +14,7 @@ class FlatHeavyForest(BaseTerrain):
     water_availability = 0.75
     _model = "assets/models/tiles/flat_heavy_forest.glb"
     _texture = "assets/models/tiles/forrest3.png"
+    _fallback_color = Colors.DARK_GREEN
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

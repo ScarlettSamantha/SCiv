@@ -300,6 +300,9 @@ class Player(BaseEntity):
     def owns_tile(self, x: int, y: int) -> bool:
         return self.tiles.get_tiles().get((x, y), None) is not None
 
+    def add_tile(self, tile: "BaseTile") -> None:
+        self.tiles.add_tile(tile)
+
     def has_civic_tree_unlocked(self, civic_tree: Type[CivicTree]) -> bool:
         return self.civics.is_civic_tree_unlocked(civic_tree)
 

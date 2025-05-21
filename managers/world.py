@@ -146,6 +146,7 @@ class World(Singleton, DirectObject):
                 old_owner.cities.remove(tile.city)
 
         player.tiles.add(tile)
+        tile.city = city
         tile.owner = player
 
         self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")

@@ -18,6 +18,9 @@ class Cities:
         if auto_destroy:
             value.destroy()
 
+    def all(self) -> List["City"]:
+        return self._cities
+
     def has(self, value: "City") -> bool:
         return value in self._cities
 

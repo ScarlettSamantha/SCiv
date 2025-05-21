@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, U
 from panda3d.core import LRGBColor
 
 from gameplay.yields import Yields
+from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ class BaseTerrain(ABC):
     _name: T_TranslationOrStrOrNone = None
     _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = None
     can_spawn_resources: bool = True
-    _fallback_color: Tuple[float, float, float] = rgb(0, 119, 255)
+    _fallback_color: Tuple[float, float, float] | Tuple4f = rgb(0, 119, 255)
 
     # This is for things like a forrest, where the terrain is replaced by a new terrain type.
     _warn_user_before_build: bool = False

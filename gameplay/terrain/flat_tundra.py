@@ -3,6 +3,7 @@ from typing import Any
 from gameplay.improvements.core.resources.mine import Mine
 
 from ._base_terrain import BaseTerrain
+from helpers.colors import Colors
 
 
 class FlatTundra(BaseTerrain):
@@ -10,6 +11,7 @@ class FlatTundra(BaseTerrain):
     movement_modifier = 1
     water_availability = 0.25
     _model = "assets/models/tiles/tundra.glb"
+    _fallback_color = Colors.GREY
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

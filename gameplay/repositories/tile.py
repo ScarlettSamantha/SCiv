@@ -20,6 +20,8 @@ class DistanceCalculationType(Enum):
 
 
 class TileRepository:
+    grid = None
+
     def __init__(self) -> None:
         pass
 
@@ -32,7 +34,9 @@ class TileRepository:
         :param y: y-coordinate
         :return: The Tile at (x, y) if it exists; otherwise, None.
         """
-        _tile = World.get_singleton_instance().grid.get((x, y))
+        if cls.grid is None:
+            cls.grid = World.get_singleton_instance().grid
+        _tile = cls.grid.get((x, y))
         if _tile:
             return _tile
         return None
@@ -613,8 +617,7 @@ class TileRepository:
     def hex_to_world(cls, x: int, y: int) -> Tuple[float, float, float]:
         tile = cls.get_tile(x, y)
         if tile:
-            pos = tile.get_node().get_pos()  # type: ignore
-            return (pos.x, pos.y, pos.z + 0.05)  # Raise slightly for overlay# type: ignore
+            return tile.get_pos()  # Raise slightly for overlay# type: ignore
         return (0, 0, 0)
 
     @classmethod

@@ -4,6 +4,7 @@ from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.yields import Yields
 
 from ._base_terrain import BaseTerrain
+from helpers.colors import Colors
 
 
 class FlatPineForest(BaseTerrain):
@@ -12,6 +13,7 @@ class FlatPineForest(BaseTerrain):
     water_availability = 0.75
     _model = "assets/models/tiles/flat_pine.glb"
     _texture = "assets/models/tiles/forrest3.png"
+    _fallback_color = Colors.GREEN
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
