@@ -8,9 +8,10 @@ from logging import Logger
 import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import load_prc_file  # type: ignore
-from panda3d_kivy import monkey
 from kivy.config import Config
+
+Config.set("modules", "inspector", "")
+from panda3d_kivy import monkey
 from helpers.cache import Cache
 from helpers.direct_loading_screen import LoadingScreen
 from managers.config import ConfigManager
@@ -19,9 +20,6 @@ from managers.input import Input
 from managers.log import LogManager
 from managers.unit import UnitManager
 
-
-Config.set("graphics", "maxfps", "0")
-Config.set("graphics", "vsync", "0")
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window
 
@@ -156,7 +154,19 @@ class SCIV(ShowBase):
             atlas_columns=16,
         )
         icon_generator.run()
-        Cache.set_atlas(icon_generator)
+
+        terrain_atlas = AtlasGenerator(
+            input_dir=pathlib.Path(__file__).parent / "assets" / "terrain",
+            output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "atlas.png",
+            output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "mapping.json",
+            icon_size=(512, 512),
+            max_icons=128,
+            atlas_columns=16,
+        )
+        terrain_atlas.run()
+
+        Cache.set_icon_atlas(icon_generator)
+        Cache.set_terrain_atlas(terrain_atlas)
 
     def _get_git_commit(self) -> str:
         """
@@ -180,10 +190,9 @@ class SCIV(ShowBase):
 
 
 if __name__ == "__main__":
-    load_prc_file("config.prc")
     app = SCIV(debug=True)
 
     try:
         app.run()
-    except SystemExit:
+    except (SystemExit, AssertionError):
         print("Goodbye :-)")

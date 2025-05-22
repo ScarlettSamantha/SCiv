@@ -8,7 +8,8 @@ if TYPE_CHECKING:
 
 class Cache:
     _instance: Optional["SCIV"] = None
-    _atlas: Optional["AtlasGenerator"] = None
+    _icon_atlas: Optional["AtlasGenerator"] = None
+    _terrain_atlas: Optional["AtlasGenerator"] = None
 
     @classmethod
     def set_showbase_instance(cls, instance: "SCIV"):
@@ -32,11 +33,21 @@ class Cache:
         return cls._instance is not None
 
     @classmethod
-    def set_atlas(cls, atlas: "AtlasGenerator"):
-        cls._atlas = atlas
+    def set_icon_atlas(cls, atlas: "AtlasGenerator"):
+        cls._icon_atlas = atlas
 
     @classmethod
-    def get_atlas(cls) -> "AtlasGenerator":
-        if cls._atlas is None:
+    def get_icon_atlas(cls) -> "AtlasGenerator":
+        if cls._icon_atlas is None:
             raise AssertionError("Atlas instance is not set.")
-        return cls._atlas
+        return cls._icon_atlas
+
+    @classmethod
+    def set_terrain_atlas(cls, atlas: "AtlasGenerator"):
+        cls._terrain_atlas = atlas
+
+    @classmethod
+    def get_terrain_atlas(cls) -> "AtlasGenerator":
+        if cls._terrain_atlas is None:
+            raise AssertionError("Atlas instance is not set.")
+        return cls._terrain_atlas
