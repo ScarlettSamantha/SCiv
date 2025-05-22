@@ -1,6 +1,5 @@
 from typing import Any, Optional
 
-from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen

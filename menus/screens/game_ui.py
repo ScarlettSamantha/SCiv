@@ -7,6 +7,7 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix import widget
+from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
@@ -18,7 +19,6 @@ from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
-from gameplay.tech import TechTree
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.unit import Unit
 from managers.combat import test_combat_outcome
@@ -107,13 +107,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.logger.info("Game UI Screen initialized.")
         self.register()
-        self.build_screen()
         self.logger.info("Game UI Screen built.")
 
     def on_game_start(self, *args: Any):
         self.player = PlayerManager.session_player()
-        self.build_research()
-        self.build_civics()
         self.build_player_list()
         self.build_player_info()
         self.build_combat_log()
@@ -265,6 +262,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
+        self.root_layout.add_widget(self.build_research())
+        self.root_layout.add_widget(self.build_civics())
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
         self.root_layout.add_widget(self.build_stats_frame())  # type: ignore
         self.root_layout.add_widget(self.build_debug_frame())  # type: ignore
@@ -300,6 +299,32 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.logger.info("Non-collidable UI elements registered.")
         self.add_widget(self.root_layout)
+
+    def bring_to_front(self, widget: Widget):
+        parent: Widget = widget.parent
+        # remove then add without index → goes to the end of children → drawn last → on top
+        if widget in parent.children:
+            # if the widget is already in the parent, remove it first
+            parent.remove_widget(widget)
+            parent.add_widget(widget)
+        elif widget in self.children:
+            # if the widget is in the root layout, remove it first
+            self.remove_widget(widget)
+            self.add_widget(widget)
+
+    def send_to_back(self, widget: Widget):
+        parent: Widget = widget.parent
+        if widget in parent.children:
+            # if the widget is already in the parent, remove it first
+            parent.remove_widget(widget)
+            # add without index → goes to the end of children → drawn last → on top
+            parent.add_widget(widget, len(parent.children) - 1)
+        elif widget in self.children:
+            # if the widget is in the root layout, remove it first
+            self.remove_widget(widget)
+            # add at index=0 → goes to the end of children → drawn last → on top
+            # this is a workaround for kivy not allowing to add a widget at index=0
+            self.add_widget(widget, index=len(self.children) - 1)
 
     def build_action_bar(self) -> GridLayout:
         self.action_bar_frame = ActionBar()
@@ -338,32 +363,28 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
         return self.top_bar.build()
 
-    def build_research(self) -> Research | None:
-        if self.player is None:
-            return
-
-        tree: None | TechTree = self.player.tech.get_tree()
-        if tree is None:
-            return
-
+    def build_research(self) -> Research:
+        if self.player is None or (tree := self.player.tech.get_tree()) is None:
+            raise AssertionError("Player or tech tree is not initialized.")
         if self.research is not None:
             self.remove_widget(self.research)  # type: ignore
-        self.research = Research(tree=tree)
-        self.add_widget(self.research)
+        self.research = Research(tree=tree, manager=self)
+        self.research.disabled = True
+        return self.research
 
-    def build_civics(self) -> Civics | None:
+    def build_civics(self) -> Civics:
         if self.player is None:
-            return
+            raise AssertionError("Player is not initialized.")
+        tree: CivicTree | None = self.player.civics.get_tree()
 
-        tree: None | CivicTree = self.player.civics.get_tree()
         if tree is None:
-            return
+            raise AssertionError("Civic tree is not initialized.")
 
         if self.civics is not None:
             self.remove_widget(self.civics)
 
-        self.civics = Civics(tree=tree)
-        self.add_widget(self.civics)
+        self.civics = Civics(tree=tree, manager=self)
+        self.civics.disabled = True
 
         return self.civics
 
@@ -375,7 +396,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def build_player_info(self) -> PlayerInfo:
         self.player_info = PlayerInfo()
-        self.player_info.build()
+        # self.player_info.build()
+        # self.player_info.hide_popup()
         self.add_widget(self.player_info)
         return self.player_info
 

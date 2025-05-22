@@ -99,6 +99,8 @@ class PlayerInfo(FloatLayout, DirectObject):
         self.add_widget(self.bottom_right)
 
         self._is_build = True
+        self.disabled = True
+        self.opacity = 0
         self.refresh()
 
     def _row(self, title: str, value: Any) -> BoxLayout:

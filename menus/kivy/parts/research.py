@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -23,7 +23,12 @@ from managers.tech import TechManager
 from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
+from menus.screens.game_ui import GameUIScreen
 from system.entity import BaseEntity
+
+
+if TYPE_CHECKING:
+    pass  # type: ignore
 
 
 class ResearchButton(TooltippedButton):
@@ -213,15 +218,18 @@ class ResearchButton(TooltippedButton):
         self._refresh_second_line()
 
     def on_release(self):
+        if self.disabled:
+            return
         super().on_release()
         self._refresh_content()
 
 
 class Research(FloatLayout, DirectObject):
-    def __init__(self, tree: TechTree, **kwargs: Any) -> None:
+    def __init__(self, tree: TechTree, manager: GameUIScreen, **kwargs: Any) -> None:
         FloatLayout.__init__(self, **kwargs)  # type: ignore
         DirectObject.__init__(self, **kwargs)
 
+        self.manager: GameUIScreen = manager
         self.tree: TechTree = tree
         self.player_tech_manager: TechManager = PlayerManager.session_player().tech
         self._column_width: int = 450
@@ -282,6 +290,7 @@ class Research(FloatLayout, DirectObject):
         self._draw_dependency_lines()
         self.add_widget(self.scroll_view)  # type: ignore
         self._is_build = True
+        self.disabled = True
 
     def _update_rect(self, instance: FloatLayout, value: Any) -> None:
         self._bg_rect.pos = instance.pos  # type: ignore
@@ -433,6 +442,8 @@ class Research(FloatLayout, DirectObject):
             Animation(rgba=(r, g, b_, 1.0), duration=0.2).start(color)  # type: ignore
 
     def on_research_button_click(self, btn: ResearchButton) -> None:
+        if self.disabled is True:
+            return
         MessengerGlobal.messenger.send("game.gameplay.research.request_start_research_session_player", [btn.value])
         MessengerGlobal.messenger.send("ui.update.ui.refresh_research_ui")
 
@@ -651,6 +662,7 @@ class Research(FloatLayout, DirectObject):
         if self._is_build is False:
             self.build()
         self.opacity = 1
+        self.manager.bring_to_front(self)
         self.disabled = False
         self.popup_disabled = False
         self.accept_once("t", self.hide_popup)
@@ -664,6 +676,7 @@ class Research(FloatLayout, DirectObject):
         self.clear_widgets()
         self._is_build = False
         self.popup_disabled = True
+        self.manager.send_to_back(self)
         self.accept_once("t", self.show_popup)
         MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.raycaster_on")

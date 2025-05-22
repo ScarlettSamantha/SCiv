@@ -1,5 +1,5 @@
 import math
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -19,6 +19,9 @@ from helpers.placeholder import Placeholder
 from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
+
+if TYPE_CHECKING:
+    from menus.screens.game_ui import GameUIScreen  # type: ignore
 
 
 class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
@@ -88,7 +91,7 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         instance.text_size = size
 
     def _on_click(self, *args: Any):
-        if self.on_click:
+        if not self.disabled and not self.parent.disabled and self.on_click:
             self.on_click(self)
 
 
@@ -173,10 +176,13 @@ class SubtreeCard(BoxLayout):
 
 
 class Civics(FloatLayout, DirectObject):
-    def __init__(self, tree: CivicTree, **kwargs: Any) -> None:
+    parent: "GameUIScreen"  # type: ignore
+
+    def __init__(self, tree: CivicTree, manager: "GameUIScreen", **kwargs: Any) -> None:
         FloatLayout.__init__(self, **kwargs)
         DirectObject.__init__(self, **kwargs)
 
+        self.manager = manager
         self._is_build: bool = False
         self.is_open: bool = False
         self.tree: CoreCivicTree = tree if isinstance(tree, CoreCivicTree) else CoreCivicTree()
@@ -211,6 +217,8 @@ class Civics(FloatLayout, DirectObject):
         self.refresh_civic_nodes()
 
     def _on_civic_node_click(self, node: CivicNode) -> None:
+        if self.disabled or self.parent.disabled:
+            return
         MessengerGlobal.messenger.send("game.gameplay.civic.request_purchase", [node.civic])
         self.refresh_civic_nodes()
 
@@ -304,6 +312,7 @@ class Civics(FloatLayout, DirectObject):
         self.add_widget(self.scroll_view)
 
         self._is_build = True
+        self.disabled = True
 
     def draw_dependency_lines(self) -> None:
         """
@@ -369,8 +378,6 @@ class Civics(FloatLayout, DirectObject):
             self.accept_once("c", self.show_popup)
             return
 
-        if not self.parent:
-            ui.get_singleton_instance().get_main_game_ui().add_widget(self)
         if not self._is_build:
             self.build()
 
@@ -378,6 +385,7 @@ class Civics(FloatLayout, DirectObject):
         self.opacity = 1
         self.disabled = False
         self.popup_disabled = False
+        self.manager.bring_to_front(self)
         self.accept_once("c", self.hide_popup)
         MessengerGlobal.messenger.send("system.input.raycaster_off")
         MessengerGlobal.messenger.send("system.input.disable_zoom")
@@ -386,13 +394,11 @@ class Civics(FloatLayout, DirectObject):
         self.is_open = True
 
     def hide_popup(self, *_: Any) -> None:
-        if self.parent:
-            self.parent.remove_widget(self)
-
         self._is_build = False
         self.popup_disabled = True
         self.opacity = 0
         self.disabled = True
+        self.manager.send_to_back(self)
         self.accept_once("c", self.show_popup)
         MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.raycaster_on")

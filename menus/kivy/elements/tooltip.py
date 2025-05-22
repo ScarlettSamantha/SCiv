@@ -74,7 +74,7 @@ class TooltipBehavior:
 
     def __init__(self, **kwargs: Any):
         self.base: "SCIV" = Cache.get_showbase_instance()
-        self.base.taskMgr.add(self._poll_mouse_pos, "_poll_mouse_pos")
+        self.base.taskMgr.add(self._poll_mouse_pos, "_poll_mouse_pos") # type: ignore
         self.tooltip_label: TooltipLabel | None = None
         self._tooltip_trigger = None
         self._suppress_tooltip = False
@@ -253,7 +253,8 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
             kwargs["tooltip_text"], (T_TranslationOrStr, T_TranslationOrStrOrNone)
         ):
             kwargs["tooltip_text"] = str(kwargs["tooltip_text"])
-        super().__init__(**kwargs)  # type: ignore
+        ButtonBehavior.__init__(self, **kwargs)  # type: ignore
+        BoxLayout.__init__(self, **kwargs)  # type: ignore
         TooltipBehavior.__init__(self, tooltip_markup=True, **kwargs)
 
         with self.canvas.before:

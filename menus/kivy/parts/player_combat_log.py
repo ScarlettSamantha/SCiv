@@ -19,6 +19,7 @@ class PlayerCombatLog(BoxLayout):
         self.is_built: bool = False
         self.scroll: ClippingScrollList | None = None
         self.bg_rect: Rectangle | None = None
+        self.disabled = True
 
     def build(self):
         if self.is_built:

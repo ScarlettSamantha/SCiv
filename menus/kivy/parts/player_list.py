@@ -9,8 +9,8 @@ from kivy.input import MotionEvent
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
-from kivy.uix.label import Label
-from panda3d.core import GraphicsWindow, WindowProperties  # Import GraphicsWindow
+from kivy.uix.label import Label 
+from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
 
 from gameplay.player import Player
 from managers.player import PlayerManager
@@ -43,6 +43,7 @@ class PlayerList(FloatLayout, DirectObject):
 
         # Reposition when window size changes
         self.grid.bind(size=self.update_position)
+        self.disabled = True
 
     def update_position(self, *args: Any):
         text_length = sum(len(str(player.civilization.name)) * 16 for player in self.players)  # type: ignore
@@ -108,6 +109,8 @@ class PlayerList(FloatLayout, DirectObject):
 
         # Add click behavior
         def on_touch_down(instance: Widget, touch: "MotionEvent"):
+            if self.disabled:
+                return False
             if container.collide_point(*touch.pos):  # type: ignore
                 if touch.button == "left":  # type: ignore
                     self._on_player_left_click(player)
