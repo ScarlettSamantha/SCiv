@@ -5,13 +5,14 @@ from direct.showbase import MessengerGlobal
 
 from gameplay.resource import BaseResource
 
+from managers import game
 from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
 from system.pyload import PyLoad
 from system.subsystems.hexgen.enums import MapType, OceanType, HexFeature
 from system.generators.base import WorldParams
-from system.mesh import create_hex_grid_node
+from system.mesh import HexGrid
 
 if TYPE_CHECKING:
     from main import SCIV
@@ -36,6 +37,7 @@ class Basic(BaseGenerator):
         self.tiles_dict: Dict[str, Type[BaseTile]] = self.load_tiles()
         self.grid: Dict[Tuple[int, int], BaseTile] = {}
         self.map: Dict[str, BaseTile] = self.world.map
+        self.mesh_grid: Optional[HexGrid] = None
 
         self.resource_allocator: Optional[ResourceAllocator] = None
 
@@ -116,8 +118,14 @@ class Basic(BaseGenerator):
 
         hexes = [tile for tile in self.world.grid.values()]
 
-        grid_np = create_hex_grid_node(1, tiles=hexes, cols=self.config.width, rows=self.config.height)
-        grid_np.reparentTo(self.base.render)
+        self.mesh_grid = HexGrid(
+            radius=1.0,
+            tiles=list(self.world.grid.values()),
+            cols=self.config.width,
+            rows=self.config.height,
+        )
+        self.mesh_grid.grid_np.instance_to(self.base.render)  # type: ignore
+        game.Game.get_singleton_instance().mesh_grid = self.mesh_grid
 
         for tile in hexes:
             tile.recalc_grid_position(1)
