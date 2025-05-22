@@ -13,6 +13,7 @@ class FlatTundra(BaseTerrain):
     _model = "assets/models/tiles/tundra.glb"
     _fallback_color = Colors.GREY
 
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 

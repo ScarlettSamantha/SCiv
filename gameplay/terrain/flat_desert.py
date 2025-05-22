@@ -13,4 +13,5 @@ class FlatDesert(BaseTerrain):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
+        self._texture = "flat_dessert.png"
         self.add_supported_improvement(Mine)

@@ -30,7 +30,7 @@ class BaseTerrain(ABC):
     _warn_user_before_build: bool = False
     _warn_user_before_build_text: T_TranslationOrStr = ""
     _warn_user_before_build_title: T_TranslationOrStr = ""
-    uv_index: str = "base"
+    uv_map: Tuple[int, int] = (0, 0)
 
     def __init__(self):
         self.fallback_color: Tuple[float, float, float] = rgb(225, 0, 255)
@@ -57,7 +57,7 @@ class BaseTerrain(ABC):
         return cls._model
 
     @classmethod
-    def get_fallback_color(cls) -> LRGBColor | Tuple[float, float, float]:
+    def get_fallback_color(cls) -> Tuple[float, float, float] | Tuple4f:
         return cls._fallback_color
 
     def model(self) -> T_TranslationOrStr:
@@ -134,3 +134,6 @@ class BaseTerrain(ABC):
     def on_build_upon(
         self, improvement: "Improvement"
     ): ...  # this is mostly for things like forrests, where the terrain is replaced by a new terrain type.
+
+    def get_atlas_uv(self) -> Tuple[int, int]:
+        return self.uv_map

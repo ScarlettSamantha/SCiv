@@ -21,5 +21,6 @@ class FlatGrass(BaseTerrain):
         self.add_supported_improvement(Mine)
         self.add_supported_improvement(Farm)
         self.add_supported_improvement(Pasture)
+        self._texture = "flat_grass.png"
 
         self.tile_yield_base = Yields(food=1)
