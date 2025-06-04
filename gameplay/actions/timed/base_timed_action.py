@@ -54,5 +54,5 @@ class BaseTimedAction(Action):
         """Starts the timed action in a non-blocking fashion."""
         self._run_invoke()
         self._logger.info(f"Starting timer for action {self.name} with a delay of {self._delay} seconds.")
-        self.sequence = Sequence(Wait(self._delay), Func(self._timed_callback))
+        self.sequence = Sequence(Wait(self._delay), Func(self._timed_callback))  # type: ignore
         self.sequence.start()

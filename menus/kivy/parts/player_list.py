@@ -9,7 +9,7 @@ from kivy.input import MotionEvent
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
-from kivy.uix.label import Label 
+from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
 
 from gameplay.player import Player

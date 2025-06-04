@@ -140,9 +140,7 @@ class BaseEntity(ABC, DirectObject):
     def get_attack_points_cost_ranged(cls) -> float:
         return cls.attack_points_cost_ranged
 
-    def destroy(self, as_system: bool = False) -> None:
-        """Placeholder destroy method."""
-        pass
+    def destroy(self, as_system: bool = False) -> None: ...
 
     def kill(self) -> None:
         self.health_left = 0
