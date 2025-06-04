@@ -7,7 +7,7 @@ import numpy as np
 from kivy.core.image import Image as CoreImage
 from kivy.core.image import Texture as KivyTexture
 from kivy.uix.image import Image as KivyImage
-from panda3d.core import PNMImage, StringStream, Texture
+from panda3d.core import PNMImage, StringStream, Texture  # type: ignore
 from PIL import Image
 
 from managers.assets import AssetManager
@@ -19,7 +19,7 @@ class AtlasGenerator:
         input_dir: List[Path] | Path,
         output_image: Path,
         output_mapping: Path,
-        icon_size: Tuple[int, int] = (128, 128),
+        icon_size: Tuple[int, int] = (256, 256),
         max_icons: int = 512,
         atlas_columns: int = 16,
     ):
@@ -33,7 +33,7 @@ class AtlasGenerator:
         self._manifest_cache: Optional[Dict[str, Dict[str, Any] | Any]] = None
         self._atlas_image_cache: Optional[Image.Image] = None
         self._p3d_texture_cache: Optional[Texture] = None
-        self._individual_texture_cache: Dict[str, Texture] = {}
+        self._individual_texture_cache: Dict[str, "Texture"] = {}
 
     def pre_run(self):
         AssetManager.get_singleton_instance().generate_static_assets()
@@ -48,7 +48,9 @@ class AtlasGenerator:
             if atlas_mtime > input_mtime and manifest_mtime > input_mtime:
                 return
 
-        icon_files = sorted(icon_file for dir_path in self.input_dir for icon_file in dir_path.glob("**/*.png"))
+        icon_files = sorted(
+            icon_file for dir_path in self.input_dir for icon_file in dir_path.glob("**/*.png")
+        ) + sorted(icon_file for dir_path in self.input_dir for icon_file in dir_path.glob("*.png"))
         atlas_rows = (min(len(icon_files), self.max_icons) + self.atlas_columns - 1) // self.atlas_columns
         atlas_width = self.atlas_columns * self.icon_size[0]
         atlas_height = atlas_rows * self.icon_size[1]
@@ -69,7 +71,7 @@ class AtlasGenerator:
 
             resource_key = self._resource_key_from_path(icon_file)
 
-            base_dir = next((d for d in self.input_dir if icon_file.is_relative_to(d)), None)
+            base_dir = next((d for d in self.input_dir if d in icon_file.parents), None)
             if base_dir is None:
                 raise ValueError(f"Could not determine base directory for {icon_file}")
 
@@ -92,7 +94,7 @@ class AtlasGenerator:
         self._manifest_cache = manifest
         self._atlas_image_cache = atlas
         self._p3d_texture_cache = None
-        self._individual_texture_cache.clear()
+        self._individual_texture_cache.clear()  # type: ignore
 
     def _resource_key_from_path(self, path: Path) -> str:
         return path.stem.replace("hex_border_", "resource.core.bonus.")
@@ -147,26 +149,26 @@ class AtlasGenerator:
         kivy_tex: KivyTexture = CoreImage(buf, ext="png").texture  # type: ignore
         return KivyImage(texture=kivy_tex)
 
-    def get_panda3d_texture(self) -> Texture:
-        if self._p3d_texture_cache is None:
+    def get_panda3d_texture(self) -> Texture:  # type: ignore
+        if self._p3d_texture_cache is None:  # type: ignore
             atlas = self.atlas_image  # a PIL.Image
             buf = BytesIO()
             atlas.save(buf, format="PNG")
             buf.seek(0)
 
             pnm = PNMImage()
-            sstream = StringStream(buf.read())
+            sstream: StringStream = StringStream(buf.read())  # type: ignore
             if not pnm.read(sstream):  # type: ignore
                 raise RuntimeError("Failed to read atlas PNG data into PNMImage.")
 
-            tex = Texture()
+            tex: Texture = Texture()  # type: ignore
             tex.load(pnm)  # type: ignore
             self._p3d_texture_cache = tex  # type: ignore
-        return self._p3d_texture_cache
+        return self._p3d_texture_cache  # type: ignore
 
-    def get_panda3d_texture_by_key(self, key: str) -> Optional[Texture]:
-        if key in self._individual_texture_cache:
-            return self._individual_texture_cache[key]
+    def get_panda3d_texture_by_key(self, key: str) -> Optional[Texture]:  # type: ignore
+        if key in self._individual_texture_cache:  # type: ignore
+            return self._individual_texture_cache[key]  # type: ignore
 
         entry = self.lookup_by_key(key)
         if not entry:
@@ -191,21 +193,21 @@ class AtlasGenerator:
             for x in range(width):
                 r, g, b = arr[y, x][:3]
                 a = arr[y, x][3] if has_alpha else 255
-                pnm.setXelA(x, y, r / 255, g / 255, b / 255, a / 255)
+                pnm.setXelA(x, y, r / 255, g / 255, b / 255, a / 255)  # type: ignore
 
-        tex = Texture()
+        tex = Texture()  # type: ignore
         tex.load(pnm)  # type: ignore
-        self._individual_texture_cache[key] = tex
-        return tex
+        self._individual_texture_cache[key] = tex  # type: ignore
+        return tex  # type: ignore
 
-    def get_panda3d_texture_by_virtual_path(self, virtual_path: str) -> Optional[Texture]:
+    def get_panda3d_texture_by_virtual_path(self, virtual_path: str) -> Optional[Texture]:  # type: ignore
         entry = self.lookup_by_virtual_path(virtual_path)
         if self.manifest is None:
             return None
         if entry:
             key = next((k for k, v in self.manifest.items() if v == entry), None)
             if key:
-                return self.get_panda3d_texture_by_key(key)
+                return self.get_panda3d_texture_by_key(key)  # type: ignore
         return None
 
     def get_index_for_virtual_path(self, virtual_path: str) -> Optional[int]:
