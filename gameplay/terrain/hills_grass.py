@@ -7,9 +7,7 @@ from ._base_terrain import BaseTerrain
 
 
 class HillsGrass(BaseTerrain):
-    _name = "world.terrain.hills_gras"
-    _model = "assets/models/tiles/hills_grass2.glb"
-    _texture = "assets/models/tiles/hills_grass.png"
+    _name = "world.terrain.hills_grass"
     movement_modifier = 0.75
     water_availability = 0.75
 
@@ -17,5 +15,5 @@ class HillsGrass(BaseTerrain):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Mine)
-
+        self._texture = "hills_grass.png"
         self.tile_yield_base = Yields(production=1)

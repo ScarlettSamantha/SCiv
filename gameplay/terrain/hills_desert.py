@@ -9,9 +9,9 @@ class HillsDesert(BaseTerrain):
     _name = "world.terrain.hills_desert"
     movement_modifier = 0.5
     water_availability = 0.25
-    _model = "assets/models/tiles/hills_desert.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         self.add_supported_improvement(Mine)
+        self._texture = "hills_desert.png"

@@ -11,8 +11,6 @@ class FlatJungle(BaseTerrain):
     _name = "world.terrain.flatland_jungle"
     movement_modifier = 0.5
     water_availability = 0
-    _model = "assets/models/tiles/flat_jungle2.glb"
-    _texture = "assets/models/tiles/desert2.png"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -21,3 +19,4 @@ class FlatJungle(BaseTerrain):
         self.add_supported_improvement(LoggingCamp)
 
         self.tile_yield_base = Yields(food=1)
+        self._texture = "flat_jungle.png"

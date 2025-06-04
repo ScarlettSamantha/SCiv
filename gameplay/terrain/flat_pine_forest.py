@@ -11,9 +11,7 @@ class FlatPineForest(BaseTerrain):
     _name = "world.terrain.flat_pine_forest"
     movement_modifier = 0.5
     water_availability = 0.75
-    _model = "assets/models/tiles/flat_pine.glb"
-    _texture = "assets/models/tiles/forrest3.png"
-    _fallback_color = Colors.GREEN
+    _fallback_color = Colors.t4f_to_t3(Colors.GREEN)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -21,3 +19,4 @@ class FlatPineForest(BaseTerrain):
         self.add_supported_improvement(LoggingCamp)
 
         self.tile_yield_base = Yields(production=1)
+        self._texture = "flat_pine_forest.png"

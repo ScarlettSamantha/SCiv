@@ -2,13 +2,12 @@ from typing import Any
 
 from managers.i18n import T_TranslationOrStr
 
-from ._base_terrain import BaseTerrain, rgb
+from ._base_terrain import BaseTerrain
 
 
 class Mountain(BaseTerrain):
     _name = "world.terrain.mountain"
-    _model = "assets/models/tiles/mountain_grass.glb"
-    _fallback_color = rgb(0, 119, 255)
+    _fallback_color = 0, 119, 255
     can_spawn_resources = False
     model_height = 0.25
 
@@ -20,6 +19,7 @@ class Mountain(BaseTerrain):
 
         self.passable: bool = False
         self.passable_without_tech: bool = False
+        self._texture = "mountain_dirt.png"
 
     def model(self) -> T_TranslationOrStr:
         return str(self._model)

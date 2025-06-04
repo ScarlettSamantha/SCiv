@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
 
 
-def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | LRGBColor:
+def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | Tuple4f:
     return (r / 255, g / 255, b / 255)
 
 
@@ -24,7 +24,7 @@ class BaseTerrain(ABC):
     _name: T_TranslationOrStrOrNone = None
     _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = None
     can_spawn_resources: bool = True
-    _fallback_color: Tuple[float, float, float] | Tuple4f = rgb(0, 119, 255)
+    _fallback_color: Tuple[float, float, float] = (0, 119, 255)
 
     # This is for things like a forrest, where the terrain is replaced by a new terrain type.
     _warn_user_before_build: bool = False
@@ -33,7 +33,9 @@ class BaseTerrain(ABC):
     uv_map: Tuple[int, int] = (0, 0)
 
     def __init__(self):
-        self.fallback_color: Tuple[float, float, float] = rgb(225, 0, 255)
+        self.fallback_color: Tuple[float, float, float] = (
+            self._fallback_color if self._fallback_color else (0, 119, 255)
+        )
 
         self.name: T_TranslationOrStr = "" if self._name is None else self._name
         self.user_title: T_TranslationOrStr = ""
@@ -62,6 +64,7 @@ class BaseTerrain(ABC):
 
     def model(self) -> T_TranslationOrStr:
         # direct string
+
         if isinstance(self._model, str):
             return self._model
 
@@ -92,7 +95,7 @@ class BaseTerrain(ABC):
 
             raise ValueError("No model selected (rand_val outside defined % ranges) and no 0% fallback provided.")
 
-        raise ValueError("`_model` must be str, callable, or dict of float→model")
+        raise ValueError("_model must be str, callable, or dict of float model")
 
     def texture(self) -> T_TranslationOrStr:
         return self._texture
@@ -129,11 +132,11 @@ class BaseTerrain(ABC):
     def get_warning_text(self) -> Tuple[T_TranslationOrStr, T_TranslationOrStr]:
         return self._warn_user_before_build_title, self._warn_user_before_build_text
 
-    def on_spawn(self): ...  # meant for runtime decisions like neighbour evaluation when determining yield.
+    def on_spawn(self): ...  # meant for runtime decisions like neighbor evaluation when determining yield.
 
     def on_build_upon(
         self, improvement: "Improvement"
-    ): ...  # this is mostly for things like forrests, where the terrain is replaced by a new terrain type.
+    ): ...  # this is mostly for things like forests, where the terrain is replaced by a new terrain type.
 
     def get_atlas_uv(self) -> Tuple[int, int]:
         return self.uv_map

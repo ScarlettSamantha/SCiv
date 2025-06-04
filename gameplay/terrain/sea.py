@@ -7,10 +7,7 @@ from helpers.colors import Colors
 
 class Sea(BaseTerrain):
     _name = "world.terrain.sea_water"
-    _model = "assets/models/tiles/sea.glb"
-    uv_map = (0, 0)
-
-    _fallback_color = Colors.BLUE
+    _fallback_color = Colors.t4f_to_t3(Colors.BLUE)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -20,6 +17,6 @@ class Sea(BaseTerrain):
 
         self.passable: bool = False
         self.passable_without_tech: bool = False
-        self._texture = "deepsea.png"
+        self._texture = "deep_sea.png"
 
         self.tile_yield_base.add(Yields(food=1, gold=1))

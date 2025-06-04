@@ -2,14 +2,12 @@ import random
 from typing import Any
 from managers.i18n import T_TranslationOrStr
 
-from ._base_terrain import BaseTerrain, rgb
+from ._base_terrain import BaseTerrain
 
 
 class MountainSnow(BaseTerrain):
     _name = "world.terrain.mountain_snow"
-    _model = "assets/models/tiles/snow_mountain.glb"
-    _texture: T_TranslationOrStr = "assets/models/tiles/mountain.png"
-    _fallback_color = rgb(0, 119, 255)
+    _fallback_color = (0, 119, 255)
     can_spawn_resources = False
 
     def __init__(self, *args: Any, **kwargs: Any):
@@ -21,6 +19,7 @@ class MountainSnow(BaseTerrain):
         self.passable: bool = False
         self.passable_without_tech: bool = False
         self.enable_random_rotation: bool = True
+        self._texture = "mountain_ice.png"
 
     def random_rotation(self) -> int:
         return (270 + random.randint(0, 5) * 60) % 360

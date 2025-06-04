@@ -126,6 +126,22 @@ class Colors:
             return color
 
     @staticmethod
+    def t4f_to_t3f(color: Tuple4f) -> Tuple3f:
+        return color[:3]
+
+    @staticmethod
+    def t4_to_t3(color: Tuple[float, float, float, float]) -> Tuple[float, float, float]:
+        return color[:3]
+
+    @staticmethod
+    def t4f_to_t4(color: Tuple3f) -> Tuple4f:
+        return (color[0], color[1], color[2], 1.0)
+
+    @staticmethod
+    def t4f_to_t3(color: Tuple4f) -> Tuple[float, float, float]:
+        return (color[0], color[1], color[2])
+
+    @staticmethod
     def to_hex(color: Tuple3f | Tuple4f, strip_alpha: bool = True) -> str:
         if len(color) == 4:
             if strip_alpha:

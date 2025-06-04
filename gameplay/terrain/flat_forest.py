@@ -12,8 +12,6 @@ class FlatForest(BaseTerrain):
     _name = "world.terrain.flatland_forest"
     movement_modifier = 0.5
     water_availability = 0.75
-    _model = "assets/models/tiles/flat_woodlands3.glb"
-    _texture = "assets/models/tiles/forrest3.png"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -23,3 +21,5 @@ class FlatForest(BaseTerrain):
         self.add_supported_improvement(Mine)
         self.add_supported_improvement(Farm)
         self.add_supported_improvement(LoggingCamp)
+
+        self._texture = "flat_light_forest.png"

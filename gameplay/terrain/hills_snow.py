@@ -8,7 +8,6 @@ from ._base_terrain import BaseTerrain
 
 class HillsSnow(BaseTerrain):
     _name = "world.terrain.hills_snow"
-    _model = {0: "assets/models/tiles/hills_snow.glb", 50: "assets/models/tiles/hills_snow2.glb"}
 
     movement_modifier = 0.5
     water_availability = 0.25
@@ -19,3 +18,4 @@ class HillsSnow(BaseTerrain):
         self.add_supported_improvement(Mine)
 
         self.tile_yield_base = Yields(production=1)
+        self._texture = "hills_snow.png"
