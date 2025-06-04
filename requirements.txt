@@ -17,3 +17,5 @@ dill
 setuptools
 pre-commit
 py_trees
+matplotlib
+mypy
