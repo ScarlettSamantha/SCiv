@@ -7,7 +7,6 @@ from panda3d.core import (
     NodePath,
     Shader,
     TextureStage,
-    TransparencyAttrib,
     Texture,
     ColorBlendAttrib,
     LVecBase3f,
@@ -84,7 +83,7 @@ class UnitIcons(DirectObject):
         # texture + transparency + blending
         ts = TextureStage("icon")
         quad.set_texture(ts, tex)  # type: ignore
-        quad.setTransparency(TransparencyAttrib.MAlpha)  # type: ignore
+        quad.setTransparency(1)  # type: ignore
         quad.setAttrib(  # type: ignore
             ColorBlendAttrib.make(  # type: ignore
                 ColorBlendAttrib.MAdd,
