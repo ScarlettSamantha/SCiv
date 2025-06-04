@@ -23,17 +23,42 @@ repos:
         language: system
         types: [python]
 
-      # 4) Ruff linting (after auto-fix)
+      # 4) Ruff linting (after auto-fix) on staged files, or full if merging
       - id: ruff-lint
         name: Ruff lint check
-        entry: ruff check .
+        entry: |
+          bash -c '
+            if [ -f .git/MERGE_HEAD ]; then
+              ruff check .
+            else
+              # collect staged .py files
+              files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" || true)
+              if [ -z "$files" ]; then
+                echo "No staged Python files to lint."
+                exit 0
+              fi
+              echo "$files" | xargs ruff check
+            fi
+          '
         language: system
         types: [python]
 
-      # 5) Verify no remaining formatting changes
+      # 5) Verify no remaining formatting changes for staged files, or full if merging
       - id: ruff-format
         name: Ruff format check
-        entry: ruff format --check --diff
+        entry: |
+          bash -c '
+            if [ -f .git/MERGE_HEAD ]; then
+              ruff format --check --diff
+            else
+              files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" || true)
+              if [ -z "$files" ]; then
+                echo "No staged Python files to check format."
+                exit 0
+              fi
+              echo "$files" | xargs ruff format --check --diff
+            fi
+          '
         language: system
         types: [python]
 
