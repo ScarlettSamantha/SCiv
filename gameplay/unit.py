@@ -175,14 +175,21 @@ class Unit(BaseEntity, ABC):
         self.logger.debug(f"Unit {self.key} spawned at {self.get_tile().get_cords()} with model {self._model}")
         return True
 
+    def get_model_path(self) -> Optional[str]:
+        """
+        Returns the model path of the unit.
+        """
+        if isinstance(self._model, str):
+            return self._model
+        return None
+
     @classmethod
     def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "Unit":
         instance = cls(tile=tile)
         instance.owner = player
 
         player.units.add_unit(instance)
-        tile.units.add_unit(instance)
-        instance.spawn()
+        tile.add_unit(instance)
         UnitManager.get_singleton_instance().add_unit(instance)
 
         return instance
