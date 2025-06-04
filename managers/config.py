@@ -117,14 +117,24 @@ class ConfigManager(Singleton):
             loadPrcFileData("", f"win-size {w} {h}")
 
         if "sync-video" in window_settings:
-            loadPrcFileData("", "sync-video false")
-
-        loadPrcFileData("", "sync-video #f")
-        loadPrcFileData("", "clock-mode limited")
-        loadPrcFileData("", "clock-frame-rate 144")
+            loadPrcFileData("", "sync-video #t" if window_settings["sync-video"] else "sync-video #f")
+            if window_settings["sync-video"]:
+                os.environ["vblank_mode"] = "0"
 
         if "show-frame-rate-meter" in window_settings:
             loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")
+
+    def enable_vsync(self):
+        """Enable VSync in the config."""
+        self.config_data["window"]["sync-video"] = True
+        os.environ["vblank_mode"] = "1"  # Set this to 0 to enable VSync
+        self.save_config()
+
+    def disable_vsync(self):
+        """Disable VSync in the config."""
+        self.config_data["window"]["sync-video"] = False
+        os.environ["vblank_mode"] = "0"
+        self.save_config()
 
     def set_screen_mode(self, mode: str):
         """
