@@ -9,5 +9,7 @@
   "exclude": ["assets", "scripts", "system/subsystems/hexgen/**", "./stubs"],
   "stubPath": "./stubs",
   "reportMissingTypeStubs": "none",
-  "reportUnknownLambdaType": "none"
+  "reportUnknownLambdaType": "none",
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "none"
 }

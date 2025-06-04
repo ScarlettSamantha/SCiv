@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
 from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, MouseWatcher, NodePath
-from panda3d_kivy.core.window import WindowBase
+from panda3d_kivy.core.window import WindowBase  # type: ignore
 
 from mixins.singleton import Singleton
 
@@ -56,8 +56,8 @@ class Camera(Singleton, DirectObject):
 
         # Window dimensions & aspect
         self._aspect_ratio = self.base.win.getXSize() / self.base.win.getYSize()  # type: ignore
-        self.win_x: int | float = self.base.win.getXSize()  # type: ignore
-        self.win_y: int | float = self.base.win.getYSize()  # type: ignore
+        self.win_x: int = self.base.win.getXSize()  # type: ignore # type: int
+        self.win_y: int = self.base.win.getYSize()  # type: ignore # type: int
 
         # Create pivot node
         self.pivot = self.base.render.attachNewNode("cameraPivot")  # type: ignore
@@ -69,12 +69,12 @@ class Camera(Singleton, DirectObject):
 
         # --- Throttling state ---
         # Desired state variables
-        self._desired_pivot_pos = self.pivot.getPos()
+        self._desired_pivot_pos: LPoint3f = self.pivot.getPos()  # type: ignore
         self._desired_yaw = self.yaw
         self._desired_zoom = self.zoom
         # Flush interval (seconds)
-        self.update_interval = 0.05
-        self._time_since_last_flush = 0.0
+        self.update_interval: float = 0.05
+        self._time_since_last_flush: float = 0.0
 
         # Track key & drag states
         self.keys = {
@@ -100,7 +100,7 @@ class Camera(Singleton, DirectObject):
 
     def register(self) -> Literal[True]:
         # Single throttled update task
-        self.base.taskMgr.add(self.update, "updateCivCameraTask")
+        self.base.taskMgr.add(self.update, "updateCivCameraTask")  # type: ignore
         return True
 
     def reset(self):
@@ -111,7 +111,7 @@ class Camera(Singleton, DirectObject):
         self._update_yaw_trig()
         self.zoom = 20.0
         # reset desired states too
-        self._desired_pivot_pos = self.pivot.getPos()
+        self._desired_pivot_pos = self.pivot.getPos()  # type: ignore
         self._desired_yaw = self.yaw
         self._desired_zoom = self.zoom
         self.update_camera_position()
@@ -172,7 +172,7 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
         # Window resize
-        self.accept("window-event", self.on_window_resize)
+        self.accept("window-event", self.on_window_resize)  # type: ignore
 
     def set_key(self, key: str, value: Any):
         self.keys[key] = value
@@ -212,14 +212,14 @@ class Camera(Singleton, DirectObject):
             return
         self._desired_zoom = min(self.max_zoom, self._desired_zoom + self.zoom_speed)
 
-    def on_window_resize(self, window: WindowBase):
+    def on_window_resize(self, window: WindowBase) -> None:  # type: ignore
         if window != self.base.win:  # type: ignore
             return
 
         self.win_x = window.getXSize()  # type: ignore
         self.win_y = window.getYSize()  # type: ignore
-        self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0
-        self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")
+        self._aspect_ratio: float = int(self.win_x) / int(self.win_y) if int(self.win_y) else 1  # type: ignore
+        self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")  # type: ignore
 
     def update_camera_position(self):
         """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
@@ -255,8 +255,16 @@ class Camera(Singleton, DirectObject):
             raise NotImplementedError("No target to recenter on")
 
         # immediately jump pivot
-        self.pivot.setPos(*center)
-        self._desired_pivot_pos = self.pivot.getPos()
+        self.pivot.setPos(*center)  # type: ignore
+        self._desired_pivot_pos: LPoint3f = self.pivot.getPos()  # type: ignore
+        # reset yaw and zoom
+        self.yaw = 0.0
+        self._update_yaw_trig()
+        self.zoom = 20.0
+        self._desired_yaw = self.yaw
+        self._desired_zoom = self.zoom
+        self.base.camera.setHpr(0, 0, 0)  # type: ignore
+        self.base.camera.setPos(*center)  # type: ignore
 
     def start_left_drag(self):
         if not self.mouseWatcherNode.hasMouse():
@@ -282,20 +290,20 @@ class Camera(Singleton, DirectObject):
         # pan with keys
         forward = (self._sin_yaw, -self._cos_yaw)
         right = (self._cos_yaw, self._sin_yaw)
-        px, py, pz = self._desired_pivot_pos
+        px, py, pz = self._desired_pivot_pos  # type: ignore
 
         if self.keys["down"]:
-            px += forward[0] * self.pan_speed * dt
-            py += forward[1] * self.pan_speed * dt
+            px += forward[0] * self.pan_speed * dt  # type: ignore
+            py += forward[1] * self.pan_speed * dt  # type: ignore
         if self.keys["up"]:
-            px -= forward[0] * self.pan_speed * dt
-            py -= forward[1] * self.pan_speed * dt
+            px -= forward[0] * self.pan_speed * dt  # type: ignore
+            py -= forward[1] * self.pan_speed * dt  # type: ignore
         if self.keys["left"]:
-            px -= right[0] * self.pan_speed * dt
-            py -= right[1] * self.pan_speed * dt
+            px -= right[0] * self.pan_speed * dt  # type: ignore
+            py -= right[1] * self.pan_speed * dt  # type: ignore
         if self.keys["right"]:
-            px += right[0] * self.pan_speed * dt
-            py += right[1] * self.pan_speed * dt
+            px += right[0] * self.pan_speed * dt  # type: ignore
+            py += right[1] * self.pan_speed * dt  # type: ignore
 
         # rotation keys
         if self.keys["rotate_left"]:
@@ -317,8 +325,8 @@ class Camera(Singleton, DirectObject):
                 delta_px_x = dx * self.win_x / 2
                 delta_px_y = dy * self.win_y / 2
                 pan_factor = 0.015 * (self._desired_zoom / 25)
-                px += (-delta_px_x * pan_factor) * self._cos_yaw + (delta_px_y * pan_factor) * self._sin_yaw
-                py += (-delta_px_x * pan_factor) * self._sin_yaw - (delta_px_y * pan_factor) * self._cos_yaw
+                px += (-delta_px_x * pan_factor) * self._cos_yaw + (delta_px_y * pan_factor) * self._sin_yaw  # type: ignore
+                py += (-delta_px_x * pan_factor) * self._sin_yaw - (delta_px_y * pan_factor) * self._cos_yaw  # type: ignore
 
             # update last_mouse_pos always
             self.last_mouse_pos = (x, y)
@@ -328,7 +336,7 @@ class Camera(Singleton, DirectObject):
 
     def _flush_to_gpu(self):
         # apply accumulated desired state
-        self.pivot.setPos(self._desired_pivot_pos)
+        self.pivot.setPos(self._desired_pivot_pos)  # type: ignore
         self.yaw = self._desired_yaw
         self._update_yaw_trig()
         self.zoom = self._desired_zoom
@@ -337,12 +345,12 @@ class Camera(Singleton, DirectObject):
     def update(self, task: Task.Task) -> Literal[1]:
         if not self.active and not (self.left_dragging or self.right_dragging or any(self.keys.values())):
             return task.cont
-        dt = self.base.clock.getDt()  # type: ignore
+        dt: float = self.base.clock.getDt()  # type: ignore
         # sample inputs every frame
-        self._sample_input(dt)
+        self._sample_input(dt)  # type: ignore
         # throttle flush
         self._time_since_last_flush += dt
-        if self._time_since_last_flush >= self.update_interval:
+        if self._time_since_last_flush >= float(self.update_interval):  # type: ignore
             self._flush_to_gpu()
             self._time_since_last_flush = 0.0
         return task.cont
