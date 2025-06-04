@@ -5,13 +5,13 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
-from panda3d.core import WindowProperties
+from panda3d.core import WindowProperties  # type: ignore
 
 from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
-from gameplay.tiles.base_tile import BaseTile
+
 from gameplay.unit import Unit
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
@@ -23,12 +23,14 @@ from mixins.singleton import Singleton
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
+from system.mesh import HexGrid
 from system.shaders import Shaders
 
 if TYPE_CHECKING:
     from gameplay.player import Player
     from main import SCIV
     from system.generators.base import BaseGenerator
+    from gameplay.tiles.base_tile import BaseTile
 
 
 class Game(Singleton, DirectObject):
@@ -53,6 +55,7 @@ class Game(Singleton, DirectObject):
         self.config: ConfigManager = ConfigManager.get_singleton_instance()
         self.entities: EntityManager = EntityManager.get_singleton_instance(base=self.base)
         self.unit: UnitManager = UnitManager.get_singleton_instance(base=self.base)
+        self.mesh_grid: Optional[HexGrid] = None
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -80,7 +83,7 @@ class Game(Singleton, DirectObject):
 
     def register(self):
         def timers():
-            self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)
+            self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)  # type: ignore
 
         def messenger():
             self.accept("game.turn.request_end", self.process_turn)
@@ -174,7 +177,7 @@ class Game(Singleton, DirectObject):
         self.base.disableMouse()
         from system.vars import APPLICATION_NAME, VERSION_NAME_STRING
 
-        props = WindowProperties()
+        props = WindowProperties()  # type: ignore
 
         win_size: Tuple[int, int] = self.config.get_by_key("window", "win-size")
         win_origin: Tuple[int, int] = self.config.get_by_key("window", "win-origin")
@@ -340,6 +343,7 @@ class Game(Singleton, DirectObject):
 
         self.active_generator = self.world.get_generator()  # type: ignore
         self.generate_world()
+
         self.logger.info("World generation complete")
 
         self.logger.info(f"Setting up players({self.properties.num_enemies})")  # type: ignore
@@ -381,6 +385,7 @@ class Game(Singleton, DirectObject):
 
         self.calculate_vision()
 
+        self.mesh_grid: Optional[HexGrid] = self.active_generator.mesh_grid  # type: ignore
         self.players.on_game_start()
         self.border.setup_borders()
 
@@ -413,7 +418,12 @@ class Game(Singleton, DirectObject):
 
         from system.scene_optimizer import SceneOptimizer
 
-        SceneOptimizer.flatten_scene(render)
+        SceneOptimizer.flatten_scene(self.base.render)
 
     def quit_game(self):
         self.base.destroy()
+
+    def get_mesh(self) -> HexGrid:
+        if self.mesh_grid is None:
+            raise ValueError("Mesh grid has not been generated yet. Call generate_world() first.")
+        return self.mesh_grid

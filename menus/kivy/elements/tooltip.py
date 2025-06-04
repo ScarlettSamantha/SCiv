@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, List, Self, Tuple
+import typing
 
 from direct.task.Task import Task
 from kivy.clock import Clock
@@ -74,7 +75,7 @@ class TooltipBehavior:
 
     def __init__(self, **kwargs: Any):
         self.base: "SCIV" = Cache.get_showbase_instance()
-        self.base.taskMgr.add(self._poll_mouse_pos, "_poll_mouse_pos") # type: ignore
+        self.base.taskMgr.add(self._poll_mouse_pos, "_poll_mouse_pos")  # type: ignore
         self.tooltip_label: TooltipLabel | None = None
         self._tooltip_trigger = None
         self._suppress_tooltip = False
@@ -181,7 +182,8 @@ class TooltippedImage(Image, TooltipBehavior):
             del kwargs["source"]
 
         if "tooltip_text" in kwargs and isinstance(
-            kwargs["tooltip_text"], (T_TranslationOrStr, T_TranslationOrStrOrNone)
+            kwargs["tooltip_text"],
+            tuple(typing.get_args(T_TranslationOrStr)) + tuple(typing.get_args(T_TranslationOrStrOrNone)),
         ):
             kwargs["tooltip_text"] = str(kwargs["tooltip_text"])
 

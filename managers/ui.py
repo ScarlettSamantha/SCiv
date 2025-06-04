@@ -7,7 +7,7 @@ from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
-from panda3d.core import PStatClient
+from panda3d.core import PStatClient  # type: ignore
 
 from gameplay.player import Player
 from gameplay.repositories.tile import TileRepository
@@ -123,13 +123,9 @@ class ui(Singleton, DirectObject):
 
     def kivy_setup(self):
         from menus.kivy.core import SCivGUI
-        from kivy.config import Config as KivyConfig
 
-        KivyConfig.set("graphics", "maxfps", "0")
         self.game_gui = SCivGUI(self._base)
-        self.pullback = self.game_gui.display_region.get_draw_callback()  # type: ignore
-
-        self.game_gui.run()
+        self.game_gui.run()  # type: ignore
 
     def register(self) -> bool:
         self.accept("ui.update.user.tile_clicked", self.select_tile)
@@ -325,13 +321,15 @@ class ui(Singleton, DirectObject):
             self.popups[id].dismiss()  # type: ignore
 
     def post_game_start(self):
-        self.get_main_game_ui().get_debug_map_stats().update()  # type: ignore
+        screen: "GameUIScreen" = self.get_gui().get_screen("game_ui")
+        screen.player = PlayerManager.session_player()
+        screen.build_screen()  # type: ignore
 
     def activate_pstat(self):
-        PStatClient.connect("127.0.0.1", 5185)
+        PStatClient.connect("127.0.0.1", 5185)  # type: ignore
 
     def deactivate_pstat(self):
-        PStatClient.disconnect()
+        PStatClient.disconnect()  # type: ignore
 
     def calculate_icons_for_tiles(self, small: bool = True, large: bool = True):
         for _, tile in self.map.map.items():

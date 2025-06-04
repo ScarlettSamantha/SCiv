@@ -2,7 +2,6 @@ from copy import deepcopy
 from enum import Enum
 from logging import Logger
 import math
-from os.path import dirname, join, realpath
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union
 import weakref
@@ -20,6 +19,7 @@ from panda3d.core import (
     SamplerState,
     Shader,
     Texture,
+    TransparencyAttrib,
 )
 
 from gameplay._units import Units
@@ -38,6 +38,7 @@ from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
+from system.atlas import AtlasGenerator
 from system.effects import Effects
 from system.entity import BaseEntity
 from system.subsystems.hexgen.hex import Hex
@@ -85,7 +86,7 @@ class BaseTile(BaseEntity):
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
-        self.z_scale: float = 1
+        self.z_scale: float = 1.01
 
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
@@ -217,18 +218,20 @@ class BaseTile(BaseEntity):
         self.icon_overlay_card: Optional[NodePath] = None
         self.icon_overlay: Optional[NodePath] = None
         self.shader: Optional[Shader] = None
-        self.atlas: Optional[Any] = None
+        self.atlas: Optional[AtlasGenerator] = None
         self.atlas_width: Optional[int] = None
         self.atlas_height: Optional[int] = None
         self._unit_icons: Optional[UnitIcons] = None
 
         # 1) one master pivot for positioning/scaling
-        self.anchor_node: NodePath = NodePath(f"tile_anchor_{x}_{y}")
+        self.anchor_node: NodePath = NodePath(f"tile_{x}_{y}")
         self.anchor_node.reparentTo(self.base.render)
 
         self.geom_group: NodePath = self.anchor_node.attachNewNode("geom_group")
         self.ui_group: NodePath = self.anchor_node.attachNewNode("ui_group")
-        self.anchor_node.flatten_strong()
+        self.anchor_node.setCollideMask(BitMask32.bit(1))
+        self.anchor_node.setTag("tile_id", f"tile_{x}_{y}")
+        self.hex_overlay_np: Optional[NodePath] = None
 
         self._geom_flattened: bool = False
 
@@ -237,6 +240,8 @@ class BaseTile(BaseEntity):
         self.city_name_np: Optional[NodePath] = None
         self.unit_icons_np: Optional[NodePath] = None
         self._unit_icons: Optional[UnitIcons] = None
+
+        self.atlas = Cache.get_icon_atlas()
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -451,7 +456,7 @@ class BaseTile(BaseEntity):
 
         city_np = self.city_name_group.attachNewNode(card_maker.generate())  # type: ignore
         city_np.setTexture(city_texture)
-        city_np.setTransparency(True)
+        city_np.setTransparency(TransparencyAttrib.MAlpha)
         city_np.setColor(1, 1, 1, 1)
         city_np.clearColorScale()
         # Proper orientation
@@ -469,6 +474,11 @@ class BaseTile(BaseEntity):
         if self.models:
             self.city_name_group.reparentTo(self.models[0])
 
+    def get_atlas(self) -> AtlasGenerator:
+        if self.atlas is None:
+            self.atlas = Cache.get_icon_atlas()
+        return self.atlas
+
     def add_icon_to_tile(self) -> None:
         """Create the resource-icon overlay once, then just update its UVs each frame."""
         # build the card on first call
@@ -480,7 +490,7 @@ class BaseTile(BaseEntity):
             self.icon_overlay_np = self.ui_group.attachNewNode(cm.generate())
             self.icon_overlay_np.setPos(0, 0, 0)
             self.icon_overlay_np.setCollideMask(BitMask32.bit(1))
-            self.icon_overlay_np.setTransparency(True)
+            self.icon_overlay_np.setTransparency(TransparencyAttrib.MAlpha)
             self.icon_overlay_np.setAttrib(ColorBlendAttrib.makeOff())
             self.icon_overlay_np.setBin("fixed", 60)
             self.icon_overlay_np.setDepthTest(True)
@@ -494,7 +504,7 @@ class BaseTile(BaseEntity):
                 )
             )
             # load atlas once
-            atlas = Cache.get_atlas()
+            atlas = Cache.get_icon_atlas()
             atlas_tex = atlas.get_panda3d_texture()
             atlas_tex.setWrapU(Texture.WMClamp)
             atlas_tex.setWrapV(Texture.WMClamp)
@@ -502,12 +512,12 @@ class BaseTile(BaseEntity):
             atlas_tex.setMinfilter(SamplerState.FT_linear)
             atlas_tex.setMagfilter(SamplerState.FT_linear)
             atlas_tex.setAnisotropicDegree(0)
-            self.icon_overlay_np.setShaderInput("icon_atlas", atlas_tex)
+            self.icon_overlay_np.setShaderInput("icon_atlas", atlas_tex)  # type: ignore[union-attr]
 
             self.atlas_width, self.atlas_height = atlas.atlas_image.size
 
         # compute which icons to show
-        resources = list(self.resources.flatten().values())
+        resources: List[BaseResource] = list(self.resources.flatten().values())
         basic = self.get_tile_yield()
         if self.city:
             basic += self.city.get_yield()
@@ -516,23 +526,34 @@ class BaseTile(BaseEntity):
             slots[0] = self.city.get_population_icon()
         elif resources:
             slots[0] = resources[0]
-        for i, res in enumerate(basic.export_basic()):
-            slots[i + 1] = res
+        for i, resource in enumerate(basic.export_basic()):
+            slots[i + 1] = resource
 
         # fill the UV array
         uv = PTAFloat.emptyArray(4 * 7)
-        for i, res in enumerate(slots):
-            if not res:
+        for i, resource in enumerate(slots):
+            if not resource:
                 continue
-            path = (
-                res.get_numeric_icon()
-                if isinstance(res, BaseResource) and i > 0
-                else (res.icon if hasattr(res, "icon") else res)
-            )
-            pos = atlas.get_position_for_virtual_path(path)
-            size = atlas.get_dimensions_for_virtual_path(path) if pos else None
+
+            if isinstance(resource, BaseResource) and i > 0:
+                path = resource.get_numeric_icon()
+            elif hasattr(resource, "icon"):
+                path = str(resource.icon)  # type: ignore
+            elif isinstance(resource, str):
+                path = resource
+            else:
+                self.logger.warning(f"Unknown resource type for icon: {type(resource)}")
+                continue
+
+            pos = self.get_atlas().get_position_for_virtual_path(path)
+            size = self.get_atlas().get_dimensions_for_virtual_path(path) if pos else None
             if not pos or not size:
                 continue
+
+            if self.atlas_width is None or self.atlas_height is None:
+                self.logger.error("Atlas dimensions not set, cannot compute UVs.")
+                continue
+
             x, y = pos
             w, h = size
             u0, v1 = x / self.atlas_width, 1.0 - (y / self.atlas_height)
@@ -541,8 +562,8 @@ class BaseTile(BaseEntity):
             uv[base + 0], uv[base + 1], uv[base + 2], uv[base + 3] = u0, v0, u1, v1
 
         # push UVs & count into the shader
-        self.icon_overlay_np.setShaderInput("uv_rects", uv)
-        self.icon_overlay_np.setShaderInput("icon_count", 7)
+        self.icon_overlay_np.setShaderInput("uv_rects", uv)  # type: ignore[union-attr]
+        self.icon_overlay_np.setShaderInput("icon_count", 7)  # type: ignore[union-attr]
         # ensure it stays at the right Z offset
         self.icon_overlay_np.setZ(0 + 0.01)
 
@@ -559,22 +580,56 @@ class BaseTile(BaseEntity):
 
     def render(self) -> None:
         """Fast path: position/scale the anchor, flatten once, swap textures, and reposition UI."""
-
         pos_z = self.calculate_z_pos_on_altitude()[2]
         self.anchor_node.setPos(self.pos_x, self.pos_y, 0)
         self.anchor_node.setScale(1)
+
+        for improvement in self._improvements.get_all():
+            if improvement.model is not None:
+                self.add_model(improvement.model)
+
+        self._render_resource_model()
+
+        if not hasattr(self, "hex_overlay_np") or self.hex_overlay_np is None:
+            from panda3d.core import CardMaker
+
+            cm = CardMaker(f"hex_overlay_{self.id}")
+            overlay_size = 1.0  # Adjust this to fit your tile, must fully cover hex
+            cm.setFrame(-overlay_size, overlay_size, -overlay_size, overlay_size)
+            self.hex_overlay_np = self.ui_group.attachNewNode(cm.generate())
+            self.hex_overlay_np.setTransparency(1)
+            self.hex_overlay_np.setAttrib(ColorBlendAttrib.makeOff())
+            self.hex_overlay_np.setBin("fixed", 40)  # Drawn below icons, above terrain
+            self.hex_overlay_np.setDepthTest(True)
+            self.hex_overlay_np.setDepthWrite(False)
+            self.hex_overlay_np.setHpr(0, -90, 0)  # Flat on X/Y plane
+            self.hex_overlay_np.setScale(1.0)
+            self.hex_overlay_np.setPos(0, 0, 0.02)  # Just above terrain, below icons
+
+        # Load the overlay texture (alpha hex in square PNG)
+        texture_name: Optional[str] = None
+        if hasattr(self.get_terrain(), "texture"):
+            texture_name = str(self.get_terrain().texture())
+        elif hasattr(self.get_terrain(), "name"):
+            texture_name = getattr(self.get_terrain(), f"{self.name}.png", "default.png")
+
+        if texture_name is None or texture_name == "":
+            texture_name = "default.png"
+
+        texture: Optional[Texture] = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(str(texture_name))
+        if texture is None:
+            raise AssertionError(f"Texture not found: {texture_name}")
+        texture.set_format(Texture.F_srgb_alpha)
+        self.hex_overlay_np.setTexture(texture, 1)
 
         if not self._geom_flattened:
             self.geom_group.flattenStrong()
             self._geom_flattened = True
 
-        tex = self.texture_cache.get(self.terrain)
-        if tex:
-            for np in self.geom_group.findAllMatches("**/+GeomNode"):
-                np.node().setTexture(tex, 1)
-
         # lift all UI elements together
         self.ui_group.setZ(pos_z)
+
+        self.add_icon_to_tile()
 
         # reposition unit markers
         if self.unit_icons_np:
@@ -591,6 +646,8 @@ class BaseTile(BaseEntity):
             # Initialize the UnitIcons helper once
             self._unit_icons = UnitIcons(self.unit_icons_np)
 
+        if self._unit_icons is None:
+            raise AssertionError("UnitIcons helper not initialized.")
         # Clear out any existing markers
         self._unit_icons.remove_all()
 
@@ -645,33 +702,6 @@ class BaseTile(BaseEntity):
             pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
             return (self.pos_x, self.pos_y, float(pos_z))
 
-    def _render_default_terrain(self, z_scale: float = 1.0) -> None:
-        """
-        Renders the default terrain model, with altitude distribution optionally stretched by z_scale.
-        """
-        model_path: str = str(self.tile_terrain.model())
-        full_model_path: str = realpath(join(dirname(__file__), "../..", model_path))
-
-        hex_model: NodePath | None = self.base.loader.loadModel(full_model_path)
-        if hex_model is None:
-            raise AssertionError(f"Model not found: {full_model_path}")
-
-        hex_scale = getattr(self.get_terrain(), "model_scale", 0.41)
-        if hex_scale < 0.1:
-            raise AssertionError(f"Model scale is too small: {hex_scale}")
-
-        hex_model.setScale(max(0.1, getattr(self.get_terrain(), "model_scale", 0.41)))
-        hex_model.setHpr(max(0.1, getattr(self.get_terrain(), "model_rotation", 270)), 0, 0)
-        hex_model.setPos(*self.calculate_z_pos_on_altitude())  # type: ignore
-
-        node: NodePath = hex_model.copyTo(self.base.render)  # type: ignore
-        node.setPos(*self.calculate_z_pos_on_altitude())  # type: ignore
-
-        node.setCollideMask(BitMask32.bit(1))  # type: ignore
-        self.tag = self.generate_tag(self.x, self.y)
-        node.setTag("tile_id", self.tag)
-        self.models.append(node)
-
     def _render_improvements(self) -> None:
         improvements: List[Improvement] = self.improvements().get_all()
         for improvement in improvements:
@@ -702,24 +732,21 @@ class BaseTile(BaseEntity):
 
         # This callback runs on the main thread once loading is finished:
         def on_model_loaded(extra_model: NodePath) -> None:
-            if extra_model is None:
-                raise AssertionError(f"Model not found: {model_path}")
-
             # compute placement
             x = self.pos_x + pos_offset[0]
             y = self.pos_y + pos_offset[1]
-            z = 2
+            z = self.pos_z + pos_offset[2]
 
             # scale/hpr/pos
             model_scale = max(0.01, getattr(extra_model, "model_scale", scale))
             extra_model.setScale(model_scale)
             extra_model.setHpr(*hpr)
-            extra_model.setPos(x, y, z)
 
             # instance into the scene
-            node: NodePath = extra_model.instanceTo(self.base.render)
+            node: NodePath = extra_model.instanceTo(self.geom_group)
             node.setPos(x, y, z)
             node.setCollideMask(BitMask32.bit(1))
+            node.instance_to(self.base.render)
 
             # keep track of it
             self.models.append(node)
@@ -762,6 +789,8 @@ class BaseTile(BaseEntity):
         """
         Refresh the tile's visual representation by unrendering and then rendering.
         """
+        self.icon_overlay_np = None
+        self.hex_overlay_np = None
         self.render()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
@@ -813,7 +842,7 @@ class BaseTile(BaseEntity):
             return (0, 0, 0)
 
     def model(self) -> str:
-        return str(self.tile_terrain.model()) if self.tile_terrain else ""
+        return str(self.tile_terrain.model()) if self.tile_terrain and self.tile_terrain.get_model() is not None else ""
 
     def texture(self) -> T_TranslationOrStr:
         return self.tile_terrain.texture() if self.tile_terrain else ""

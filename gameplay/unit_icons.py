@@ -34,7 +34,7 @@ class UnitIcons(DirectObject):
 
         # Hook our update into Panda3D's task manager
         self.base = Cache.get_showbase_instance()
-        self.base.taskMgr.add(self._update_positions, "unit_icons_billboard_update")
+        self.base.taskMgr.add(self._update_positions, "unit_icons_billboard_update")  # type: ignore
 
     def _get_texture(self, path: str) -> Texture:
         """
@@ -43,7 +43,9 @@ class UnitIcons(DirectObject):
         if path in self._tex_cache:
             return self._tex_cache[path]
 
-        tex = Cache.get_atlas().get_panda3d_texture_by_virtual_path(path)
+        tex = Cache.get_icon_atlas().get_panda3d_texture_by_virtual_path(path)
+        if tex is None:
+            raise ValueError(f"Texture not found for path: {path}")
         # mark as sRGB + alpha so gamma → linear happens correctly but alpha is unchanged
         tex.setFormat(Texture.F_srgb_alpha)  # type: ignore
         self._tex_cache[path] = tex

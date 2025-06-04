@@ -268,11 +268,15 @@ class Unit(BaseEntity, ABC):
         self.actions.remove(action)
 
     def load_model(self, model_path: str) -> NodePath | None:
+        from gameplay.tiles.base_tile import BaseTile
+
         loader: Loader = Loader(self.base)
         model: Optional[NodePath] = loader.loadModel(model_path)
         if not model:
             return None
 
+        if isinstance(self.tile, BaseTile):
+            self.tile.unit_icons_np = None
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
@@ -295,7 +299,7 @@ class Unit(BaseEntity, ABC):
             model.setCollideMask(BitMask32.allOff())  # type: ignore
 
         model.setTag("tile_id", self.tag)
-        model.reparentTo(self.base.render)  # type: ignore # Attach model to scene graph
+        model.reparentTo(self.base.render)
 
         return model
 

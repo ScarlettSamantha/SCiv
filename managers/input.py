@@ -42,6 +42,9 @@ class Input(Singleton, DirectObject):
         self.accept("mouse1", self.pick_object)
         self.accept("f7", self.run_analyze)
 
+        self.accept("f2", self.activate)
+        self.accept("f3", self.de_activate)
+
         # Escape key
         self.accept("escape", self.on_escape)
 
@@ -50,7 +53,7 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
 
         delay_seconds: float = self._hover_frame_skip / 60
-        self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=delay_seconds)
+        self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=delay_seconds)  # type: ignore
 
     def delay_activate(self, delay: int | float):
         self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore
@@ -118,7 +121,7 @@ class Input(Singleton, DirectObject):
         return task.cont
 
     def run_analyze(self):
-        render.analyze()
+        self.base.render.analyze()  # type: ignore
 
     def pick_object(self) -> NodePath | None:
         if not self.active:
