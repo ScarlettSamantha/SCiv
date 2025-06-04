@@ -147,7 +147,7 @@ class LoadingScreen(FloatLayout):
     def progress(self):
         return min(self.current_step / max(self.total_steps, 1), 1)
 
-    def _update_ui(self, *args: Any):
+    def _update_ui(self, *args: Any) -> int:
         self.progress_bar.value = self.progress
         self.percentage_label.text = f"{int(self.progress * 100)}%"
         self.step_label.text = self.step_message
@@ -159,11 +159,13 @@ class LoadingScreen(FloatLayout):
             self.continue_button.opacity = 0
             self.continue_button.disabled = True
 
+        return 0
+
     def next_step(self, message: Optional[str] = None):
         self.current_step += 1
         if message:
             self.step_message = message
-        Clock.schedule_once(lambda dt: self._update_ui(), 1)
+        Clock.schedule_once(self._update_ui, 1)  # type: ignore
 
     def add_to_right_overlay(self, widget: Widget):
         self.right_content.add_widget(widget)
