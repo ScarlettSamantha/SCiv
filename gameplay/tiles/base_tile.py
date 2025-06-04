@@ -86,7 +86,7 @@ class BaseTile(BaseEntity):
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
-        self.z_scale: float = 1.01
+        self.z_scale: float = 1.25
 
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
@@ -581,6 +581,7 @@ class BaseTile(BaseEntity):
     def render(self) -> None:
         """Fast path: position/scale the anchor, flatten once, swap textures, and reposition UI."""
         pos_z = self.calculate_z_pos_on_altitude()[2]
+        self.recalc_grid_position(radius=1.0)  # Ensure pos_x/pos_y are correct
         self.anchor_node.setPos(self.pos_x, self.pos_y, 0)
         self.anchor_node.setScale(1)
 
@@ -630,6 +631,7 @@ class BaseTile(BaseEntity):
         self.ui_group.setZ(pos_z)
 
         self.add_icon_to_tile()
+        self.add_unit_icon()
 
         # reposition unit markers
         if self.unit_icons_np:
@@ -659,7 +661,7 @@ class BaseTile(BaseEntity):
             if unit.icon:
                 # Place each icon slightly above the tile
                 self._unit_icons.add_marker(
-                    (x, y, z + 0.8),  # position
+                    (x, y, z + 1.5),  # position
                     (0.2, 0.2),  # size
                     str(unit.icon),  # icon name/tag
                 )
@@ -876,6 +878,13 @@ class BaseTile(BaseEntity):
     def add_unit(self, unit: "Unit") -> None:
         unit.tile = self
         self.units.add_unit(unit)
+
+        model = unit.get_model_path()
+
+        if model is None:
+            raise NotImplementedError("Unit model rendering not implemented for this tile type.")
+
+        self.add_model(model, unit.model_position_offset, unit.model_size, unit.model_rotation)
 
     def remove_unit(self, unit: "Unit") -> None:
         del unit.tile
