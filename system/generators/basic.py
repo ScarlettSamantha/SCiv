@@ -177,14 +177,14 @@ class Basic(BaseGenerator):
 
         # Water check
         if hex_tile.is_water:
-            if biome_id in (WorldParams.tundra,) or hex_tile.temperature[0] < -1:
-                return "SeaIce"
-            elif geoform_id == 4 or HexFeature in hex_tile.features:
+            if geoform_id == 4 or HexFeature.lake in hex_tile.features:
                 return "Lake"
             elif geoform_id == 2:
                 return "Sea"
             elif hex_tile.is_coast and geoform_id != 2:  # Shallow water, For some reason water is desert or grassland
                 return "Coast"
+            elif biome_id in (WorldParams.tundra,) or hex_tile.temperature[0] < -1:
+                return "SeaIce"
             else:
                 return "Sea"
         elif hex_tile.is_land:
