@@ -10,8 +10,8 @@ from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
 from kivy.config import Config
 
-Config.set("modules", "inspector", "")
-from panda3d_kivy import monkey
+
+from panda3d_kivy import monkey  # type: ignore
 from helpers.cache import Cache
 from helpers.direct_loading_screen import LoadingScreen
 from managers.config import ConfigManager
@@ -20,8 +20,9 @@ from managers.input import Input
 from managers.log import LogManager
 from managers.unit import UnitManager
 
+Config.set("modules", "inspector", "")  # type: ignore
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window
+monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window # type: ignore
 
 
 class SCIV(ShowBase):
