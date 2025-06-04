@@ -23,12 +23,12 @@ from managers.tech import TechManager
 from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
-from menus.screens.game_ui import GameUIScreen
+
 from system.entity import BaseEntity
 
 
 if TYPE_CHECKING:
-    pass  # type: ignore
+    from menus.screens.game_ui import GameUIScreen  # type: ignore
 
 
 class ResearchButton(TooltippedButton):
@@ -225,11 +225,11 @@ class ResearchButton(TooltippedButton):
 
 
 class Research(FloatLayout, DirectObject):
-    def __init__(self, tree: TechTree, manager: GameUIScreen, **kwargs: Any) -> None:
+    def __init__(self, tree: TechTree, manager: "GameUIScreen", **kwargs: Any) -> None:
         FloatLayout.__init__(self, **kwargs)  # type: ignore
         DirectObject.__init__(self, **kwargs)
 
-        self.manager: GameUIScreen = manager
+        self.manager: "GameUIScreen" = manager
         self.tree: TechTree = tree
         self.player_tech_manager: TechManager = PlayerManager.session_player().tech
         self._column_width: int = 450
