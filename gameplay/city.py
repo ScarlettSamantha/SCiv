@@ -85,6 +85,8 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.tag = f"city_{str(randint(1, 100000000))}"
 
     def register(self):
+        from managers.entity import EntityManager, EntityType
+
         self.accept(f"game.gameplay.city.gets_tile_ownership_{self.tag}", self.on_tile_ownership_changed)
         self.accept(
             f"game.gameplay.city.request_start_building_improvement_{self.tag}",
@@ -92,6 +94,9 @@ class City(BaseEntity, DirectObject.DirectObject):
         )
         self.accept(f"game.gameplay.city.request_start_building_unit_{self.tag}", self.on_request_start_building_unit)
         self.accept(f"game.gameplay.city.request_cancel_building_improvement_{self.tag}", self.on_cancel_building)
+
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+        entity_manager.register(entity=self, type=EntityType.CITY, key=self.tag)
 
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
