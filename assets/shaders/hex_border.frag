@@ -24,7 +24,7 @@ vec2 hex_corner(float angleDeg) {
 
 void main() {
     // how “thick” in UV‐space we want the line:
-    float thickness = 0.02;
+    float thickness = 0.01;
     float proj;
     bool drawEdge = false;
 
