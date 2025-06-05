@@ -78,7 +78,7 @@ class SCIV(ShowBase):
         # Start loading and generating assets
         loading_screen.next_stage("Generating assets")
         self.engine_logger.info("Generating non-static assets")
-        self.generate_non_static_assets()
+        self.generate_non_static_assets(force=config_mgr.get_default(("assets", "use-cache"), True))
 
         # Manager load order is very important DO NOT CHANGE.
         loading_screen.next_stage("Setting up input manager")
@@ -140,12 +140,15 @@ class SCIV(ShowBase):
 
         self.messenger.send("system.main.ready")
 
-    def generate_non_static_assets(self):
+    def generate_non_static_assets(self, force: bool = True) -> None:
         from system.atlas import AtlasGenerator
+
+        icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
+        terrain_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "tile-set-tiles"), "default")
 
         icon_generator = AtlasGenerator(
             input_dir=[
-                pathlib.Path(__file__).parent / "assets" / "icons",
+                pathlib.Path(__file__).parent / "assets" / "icons" / icon_tile_set,
                 pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "resources",
             ],
             output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "atlas.png",
@@ -154,17 +157,17 @@ class SCIV(ShowBase):
             max_icons=512,
             atlas_columns=16,
         )
-        icon_generator.run()
+        icon_generator.run(force=force)
 
         terrain_atlas = AtlasGenerator(
-            input_dir=pathlib.Path(__file__).parent / "assets" / "terrain",
+            input_dir=pathlib.Path(__file__).parent / "assets" / "terrain" / terrain_tile_set,
             output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "atlas.png",
             output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "mapping.json",
             icon_size=(512, 512),
             max_icons=128,
             atlas_columns=16,
         )
-        terrain_atlas.run()
+        terrain_atlas.run(force=force)
 
         Cache.set_icon_atlas(icon_generator)
         Cache.set_terrain_atlas(terrain_atlas)
