@@ -272,9 +272,7 @@ class BaseGenerator(ABC):
             unit: Settler = Settler(spawn_tile)
             unit.owner = player
             units.append(unit)
-            spawn_tile.add_unit(unit)
-            occupied_tiles.append(spawn_tile)  # Track this tile as occupied
-
+            occupied_tiles.append(spawn_tile)
             unit.spawn_on(spawn_tile, player)
 
         return len(units) > 0
