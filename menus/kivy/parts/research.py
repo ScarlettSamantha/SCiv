@@ -20,7 +20,6 @@ from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.tech import TechManager
-from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
 
@@ -241,16 +240,14 @@ class Research(FloatLayout, DirectObject):
         self._is_build: bool = False
         self._level_colors: Dict[int, Tuple[float, float, float, float]] = {}
         self._hovered_tech: Type[Tech] | None = None
-        self.is_open: bool = False
+        self.is_open: bool = True
+        self.popup_disabled = False  # Dont remove this otherwise kivy starts behaving strange due to a dependence on this later on in the chain.
         self.register()
 
     def register(self) -> None:
-        self.accept("ui.update.ui.show_research_ui", self.show_popup)
-        self.accept("ui.update.ui.hide_research_ui", self.hide_popup)
         self.accept("ui.update.ui.refresh_research_ui", self.update)
-        # self.accept("ui.research.hover_tech", self._highlight_tech)
-        # self.accept("ui.research.hover_clear", self._clear_highlight)
-        self.accept_once("t", self.show_popup)
+        # Bind to height for live resizing
+        self.bind(height=lambda *_: self.rebuild_layout())
 
     def update(self, *args: Any) -> None:
         if self.is_open:
@@ -267,30 +264,29 @@ class Research(FloatLayout, DirectObject):
             bar_width=15,
             size_hint=(1, 1),
         )
+        # type: ignore
+
+        self._tech_classes: List[Type[Tech]] = list(self.tree.items())  # type: ignore
 
         self._float_layout = FloatLayout(size_hint=(None, 1), pos_hint={"top": 0, "y": 0})
+        self._level_map: Dict[Type[Tech], int] = self._calculate_levels(self._tech_classes)
+        max_level = max(self._level_map.values()) if self._level_map else 0
+        self._float_layout.width = (max_level + 1) * self._column_width + self._padding_left * 2
+        self._float_layout.height = self.height or 1080  # type: ignore
 
         with self._float_layout.canvas.before:  # type: ignore
             Color(0.1, 0.1, 0.1, 1)  # dark gray background
             self._bg_rect = Rectangle(pos=self._float_layout.pos, size=self._float_layout.size)  # type: ignore
-        self._float_layout.bind(pos=self._update_rect, size=self._update_rect)  # type: ignore
-
+        self._float_layout.bind(pos=self._update_rect, size=self._update_rect)
         self.scroll_view.add_widget(self._float_layout)  # type: ignore
-
-        self._tech_classes: List[Type[Tech]] = list(self.tree.items())  # type: ignore
-        self._level_map: Dict[Type[Tech], int] = self._calculate_levels(self._tech_classes)
-
         self._buttons: Dict[Type[Tech], Button] = {}
 
         self._column_bounds: Dict[int, Tuple[float, float]] = {}
 
         self._tech_by_level: Dict[int, List[Type[Tech]]] = {}
 
-        self._place_tech_buttons()
-        self._draw_dependency_lines()
         self.add_widget(self.scroll_view)  # type: ignore
         self._is_build = True
-        self.disabled = True
 
     def _update_rect(self, instance: FloatLayout, value: Any) -> None:
         self._bg_rect.pos = instance.pos  # type: ignore
@@ -326,6 +322,11 @@ class Research(FloatLayout, DirectObject):
         return level_map
 
     def _place_tech_buttons(self) -> None:
+        self._tech_by_level = {}
+        self._level_map = self._calculate_levels(self._tech_classes)
+        self._column_bounds = {}
+        self._buttons = {}
+
         tech_by_level: Dict[int, List[Type[Tech]]] = defaultdict(list)
         for tech_cls in self._tech_classes:
             lvl: int = self._level_map[tech_cls]
@@ -397,15 +398,8 @@ class Research(FloatLayout, DirectObject):
         self._float_layout.height = total_height
         self._calculate_button_state()
 
-        # Bind to height for live resizing
-        self.bind(height=lambda *_: self._rebuild_layout())
-
-    def _rebuild_layout(self):
+    def rebuild_layout(self):
         # Clear previous widgets, reset data
-        self._float_layout.clear_widgets()
-        self._buttons.clear()
-        self._column_bounds.clear()
-
         self._place_tech_buttons()
         self._draw_dependency_lines()
 
@@ -650,36 +644,3 @@ class Research(FloatLayout, DirectObject):
         Color(*color)
         Line(points=[tipx, tipy, leftx, lefty], width=1.5)
         Line(points=[tipx, tipy, rightx, righty], width=1.5)
-
-    def show_popup(self, *_: Any) -> None:
-        is_escape_open = ui.get_singleton_instance().get_screen("pause_menu").pause_menu._is_open  # type: ignore
-        if is_escape_open:  # We check if we are in the game screen
-            self.accept_once(
-                "t", self.show_popup
-            )  # This is to re-accept the t key if a popup is not shown so we don't get stuck
-            return
-
-        if self._is_build is False:
-            self.build()
-        self.opacity = 1
-        self.manager.bring_to_front(self)
-        self.disabled = False
-        self.popup_disabled = False
-        self.accept_once("t", self.hide_popup)
-        MessengerGlobal.messenger.send("system.input.raycaster_off")
-        MessengerGlobal.messenger.send("system.input.disable_zoom")
-        MessengerGlobal.messenger.send("system.input.disable_control")
-        MessengerGlobal.messenger.send("system.input.camera_lock")
-        self.is_open = True
-
-    def hide_popup(self, *_: Any) -> None:
-        self.clear_widgets()
-        self._is_build = False
-        self.popup_disabled = True
-        self.manager.send_to_back(self)
-        self.accept_once("t", self.show_popup)
-        MessengerGlobal.messenger.send("system.input.camera_unlock")
-        MessengerGlobal.messenger.send("system.input.raycaster_on")
-        MessengerGlobal.messenger.send("system.input.enable_zoom")
-        MessengerGlobal.messenger.send("system.input.enable_control")
-        self.is_open = False
