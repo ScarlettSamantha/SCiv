@@ -567,6 +567,8 @@ class BaseTile(BaseEntity):
                 elif isinstance(resource, (BaseBonusResource, BaseLuxuryResource, BaseStrategicResource)):
                     return resource.icon.replace("assets/icons", "")
                 elif isinstance(resource, BasicBaseResource):
+                    if resource.value > 0:
+                        return resource.get_numeric_icon().replace("resources/", "")
                     return resource.icon
                 return None
 
@@ -631,7 +633,7 @@ class BaseTile(BaseEntity):
 
         for improvement in self._improvements.get_all():
             if improvement.model is not None:
-                self.add_model(improvement.model, type=NET_TYPE.IMPROVEMENT)
+                self.add_model(improvement.model, net_type=NET_TYPE.IMPROVEMENT)
 
         self._render_resource_model()
 
@@ -689,6 +691,19 @@ class BaseTile(BaseEntity):
 
         self.set_walls_color(Colors.to_normalized_float(self.get_terrain().wall_color(), 1.0))
 
+    def remove_unit_icons(self) -> None:
+        """
+        Remove all unit icons from the tile.
+        """
+        if self._unit_icons is not None:
+            self._unit_icons.remove_all()
+            if self.unit_icons_np is not None:
+                self.unit_icons_np.removeNode()
+            self.unit_icons_np = None
+            self._unit_icons = None
+        else:
+            self.logger.warning("No unit icons to remove.")
+
     def add_unit_icon(self) -> None:
         """
         Create or update unit‐icon markers under the ui_group.
@@ -731,7 +746,7 @@ class BaseTile(BaseEntity):
             return
 
         self.add_model(
-            resource.model, resource.model_position, resource.model_size, resource.model_hpr, type=NET_TYPE.RESOURCE
+            resource.model, resource.model_position, resource.model_size, resource.model_hpr, net_type=NET_TYPE.RESOURCE
         )
 
     def on_turn_end(self, turn: int) -> None:
@@ -763,7 +778,7 @@ class BaseTile(BaseEntity):
                 pos_offset=improvement.get_model_offset(),  # type: ignore
                 scale=improvement.get_model_scale(),  # type: ignore
                 hpr=improvement.get_model_hpr(),  # type: ignore,
-                type=NET_TYPE.IMPROVEMENT,
+                net_type=NET_TYPE.IMPROVEMENT,
             )
 
     def add_model(
@@ -772,55 +787,67 @@ class BaseTile(BaseEntity):
         pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         scale: float = 0.41,
         hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        type: NET_TYPE = NET_TYPE.TILE,
+        net_type: NET_TYPE = NET_TYPE.TILE,
         net_id: Optional[str] = None,
     ) -> None:
         """
         Asynchronously load and add an additional model on top of the tile.
         """
+
         base_path: Path = self.base.get_base_path()
         full_path = str(base_path.joinpath(model_path).absolute())
 
-        # This callback runs on the main thread once loading is finished:
-        def on_model_loaded(extra_model: NodePath, type: NET_TYPE) -> None:
-            # compute placement
+        def on_model_loaded(extra_model: NodePath, net_type: NET_TYPE) -> None:
+            # 1) Compute placement in world coords
             x = self.pos_x + pos_offset[0]
             y = self.pos_y + pos_offset[1]
             z = self.pos_z + pos_offset[2]
 
-            # scale/hpr/pos
+            # 2) Scale/HPR/pos for the "source" model
             model_scale = max(0.01, getattr(extra_model, "model_scale", scale))
             extra_model.setScale(model_scale)
             extra_model.setHpr(*hpr)
 
-            # instance into the scene
+            # 3) Instance (or directly parent) into the scene
+            #    If you want an instance under geom_group, then reparent that to render:
             node: NodePath = extra_model.instanceTo(self.geom_group)
+            node.reparentTo(self.base.render)
             node.setPos(x, y, z)
             node.setCollideMask(BitMask32.bit(1))
-            node.instance_to(self.base.render)
 
-            # keep track of it
+            # 4) Keep track of it (append to the list)
             self.models.append(node)
             if self.tag is None:
                 self.tag = self.generate_tag(self.x, self.y)
 
-            node.setTag(NET_TYPE_FIELD, type.value)
-            node.setTag(NET_NODE_TAG_ID_FIELD, self.tag if not net_id else net_id)
+            # 5) Store tags AS STRINGS
+            node.setTag(NET_TYPE_FIELD, str(net_type.value))
+            node.setTag(NET_NODE_TAG_ID_FIELD, self.tag if (net_id is None) else net_id)
 
-            # replace first model slot
-            if self.models:
-                self.models[0] = node
-            else:
-                self.models.append(node)
+            print(f"[add_model] Spawned node with tag='{net_type.value}', appended to self.models.")
 
-        # kick off the async load
-        self.base.loader.loadModel(full_path, callback=on_model_loaded, extraArgs=[type])
+        # Kick off the async load
+        self.base.loader.loadModel(full_path, callback=on_model_loaded, extraArgs=[net_type])
 
     def unrender(self) -> None:
         """
         Remove the tile from the scene by unrendering all models.
         """
         self.unrender_all()
+
+    def unrender_by_type(self, net_type: NET_TYPE) -> None:
+        desired_tag = str(net_type.value)
+        to_remove = [node for node in self.models if node.getTag(NET_TYPE_FIELD) == desired_tag]
+
+        if not to_remove:
+            return
+
+        for node in to_remove:
+            try:
+                self.models.remove(node)
+            except ValueError:
+                print(f"  WARNING: Node {node} was not in self.models, skipping remove().")
+            node.removeNode()
 
     def unrender_all(self, icons: bool = False) -> None:
         for node in self.models:
@@ -844,6 +871,7 @@ class BaseTile(BaseEntity):
         """
         self.icon_overlay_np = None
         self.hex_overlay_np = None
+        self.remove_unit_icons()
         self.render()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
@@ -940,14 +968,14 @@ class BaseTile(BaseEntity):
             unit.model_position_offset,
             unit.model_size,
             unit.model_rotation,
-            type=NET_TYPE.MODEL,
+            net_type=NET_TYPE.MODEL,
             net_id=unit.tag,
         )
 
     def remove_unit(self, unit: "Unit") -> None:
-        del unit.tile
         # Assuming the intent is to remove the unit.
         self.units.remove_unit(unit)
+        self.rerender()
 
     def is_occupied(self) -> bool:
         return len(self.units._units) > 0 or self.city is not None  # type: ignore

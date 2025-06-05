@@ -220,9 +220,6 @@ class Unit(BaseEntity, ABC):
         if len(target_tile.units) > 0:
             return CantMoveReason.OTHER_UNIT_ON_TILE
 
-        if self.model is None:  # type: ignore
-            raise ValueError(f"Unit {self.key} has no model assigned.")
-
         tiles_to_move = []
         # Attempt pathfinding
         if self.tile is not None and (tiles_to_move := TileRepository.astar(self.get_tile(), target_tile, 1.0)) is None:
@@ -239,7 +236,11 @@ class Unit(BaseEntity, ABC):
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
         result_tile: "BaseTile" = self.get_tile()  # Start off at our current tile
-        self.get_tile().get_units().remove_unit(self)  # Remove from the current tile
+
+        self.get_tile().unrender_by_type(NET_TYPE.MODEL)
+        self.get_tile().remove_unit(self)  # Remove from the current tile
+        self.get_tile().remove_unit_icons()
+        self.get_tile().rerender()  # Rerender the tile to remove the unit model
         for _tile in tiles_to_move:
             _tile: "BaseTile" = _tile  # this is a type hint
             cords: Tuple[float, float, float] = _tile.get_cords()
@@ -250,6 +251,8 @@ class Unit(BaseEntity, ABC):
                 )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
                 self.tile = result_tile
                 self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z + _tile.pos_z))
+                self.add_unit_model_to_tile(self.tile)  # Add the model to the current tile
+                self.tile.rerender()
                 return CantMoveReason.NO_MOVES
 
             # Check if tile is still valid for the unit
@@ -260,19 +263,34 @@ class Unit(BaseEntity, ABC):
                 self.tile = _tile
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
-            # If we got here, we can step onto tile
-            result_tile.remove_unit(self)
-            result_tile.rerender()
             result_tile: "BaseTile" = _tile
             self.moves_left -= _tile.movement_cost
             self.tile = _tile
             self.set_pos((cords[0], cords[1], self.pos_z + _tile.pos_z))
 
-            _tile.add_unit(self)  # Add to the new tile
-            self.get_tile().rerender()  # Rerender the tile
+        self.get_tile().add_unit(self)  # Add to the new tile
+        self.add_unit_model_to_tile(result_tile)  # Add the model to the new tile
+        self.get_tile().rerender()  # Rerender the tile
         if result_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
+
+    def add_unit_model_to_tile(self, tile: "BaseTile") -> None:
+        """
+        Adds the unit's model to the specified tile.
+        This is used when the unit is moved to a new tile.
+        """
+        if self._model is None:
+            raise ValueError(f"Unit {self.key} has no model assigned.")
+
+        tile.add_model(
+            self._model,
+            net_type=NET_TYPE.MODEL,
+            net_id=self.tag,
+            pos_offset=self.model_position_offset,
+            scale=self.model_size,
+            hpr=self.model_rotation,
+        )
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -379,14 +397,14 @@ class Unit(BaseEntity, ABC):
         self.unregister()
 
         # Nullify references to break cyclic dependencies
-        self.get_tile().get_units().remove_unit(self)
+        self.get_tile().unrender_by_type(NET_TYPE.MODEL)
+        self.get_tile().remove_unit(self)
 
         if self.owner is not None:
             self.owner.units.remove_unit(self)
 
         self.owner = None
         self.actions.clear()
-        self.get_tile().rerender()
         del self.tag
 
         if as_system:
