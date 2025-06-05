@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from direct.task import Task
 from panda3d.core import WindowProperties  # type: ignore
 
 from gameplay.border import Borders
@@ -82,15 +81,12 @@ class Game(Singleton, DirectObject):
         self.register()
 
     def register(self):
-        def timers():
-            self.base.taskMgr.add(self.config_saveback, "config_saveback", delay=5)  # type: ignore
-
         def messenger():
+            self.accept("window-event", self.config_saveback)
             self.accept("game.turn.request_end", self.process_turn)
             self.accept("game.state.request_load", self.on_request_load)
             self.accept("game.state.main_menu", self.on_main_menu)
 
-        timers()
         messenger()
 
     def save(self, session_name: str):
@@ -205,10 +201,9 @@ class Game(Singleton, DirectObject):
         self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
         return True
 
-    def config_saveback(self, task: Task.Task):
+    def config_saveback(self, *args: Any, **kwargs: Any) -> None:
         if self.environment_writeback() is True:
             self.config.save_config()
-        return task.again
 
     def register_callback_inputs(self):
         self.accept("system.input.user.tile_clicked", self.handle_tile_click)
@@ -414,6 +409,7 @@ class Game(Singleton, DirectObject):
     def render_field(self):
         for tile in self.world.grid.values():
             tile.render()
+            tile.calculate()
             tile.add_icon_to_tile()
 
         from system.scene_optimizer import SceneOptimizer
