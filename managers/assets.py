@@ -190,14 +190,19 @@ class AssetManager(Singleton):
         return PILImageFont.truetype(path, size)
 
     @classmethod
-    def generate_static_assets(cls):
+    def generate_static_assets(cls, tile_set: str = "default"):
         def generate_static_resource_icons():
             from helpers.images import create_stacked_horizontal_images
 
             basic_resources = Gold, Production, Food, Faith, Science, Culture
             for resource in basic_resources:
                 resource_instance = resource()
-                icon_path = resource_instance.icon
+                base_path = (
+                    f"assets/icons/{tile_set}/"
+                    if resource_instance.icon.startswith("resources")
+                    else f"assets/icons/{tile_set}/resources/"
+                )
+                icon_path = f"{base_path}/{resource_instance.icon}"
                 if not icon_path:
                     continue
 
@@ -206,12 +211,16 @@ class AssetManager(Singleton):
                 text_vertical_offset = 0
                 text_horizontal_offset = 0
 
+                directory = "assets/generated/icons/resources/core/basic"
+                if not exists(directory):
+                    from os import makedirs
+
+                    makedirs(directory)
+
                 # Create a stacked horizontal image with the icon
                 for i in range(1, 6):
                     stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
-                    stacked_image.save(
-                        f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png"
-                    )
+                    stacked_image.save(f"{directory}/{str(resource_instance.name).lower()}_{i}.png")
 
                 for i in range(6, 50):
                     img_width, img_height = image.size
@@ -243,7 +252,7 @@ class AssetManager(Singleton):
 
             from helpers.images import draw_text_on_image
 
-            base_icon: str = "assets/icons/resources/core/basic/populationx128.png"
+            base_icon: str = f"assets/icons/{tile_set}/resources/core/basic/populationx128.png"
             output_path: str = "assets/generated/icons/resources/core/basic/populationx128_{num}.png"
             font_size: int = 46
             text_vertical_offset = 32
