@@ -69,7 +69,7 @@ class AtlasGenerator:
             y = (idx // self.atlas_columns) * self.icon_size[1]
             atlas.paste(padded, (x, y))
 
-            resource_key = self._resource_key_from_path(icon_file)
+            # resource_key = self._resource_key_from_path(icon_file)
 
             base_dir = next((d for d in self.input_dir if d in icon_file.parents), None)
             if base_dir is None:
@@ -77,7 +77,7 @@ class AtlasGenerator:
 
             virtual_path = str(icon_file.relative_to(base_dir))
 
-            manifest[resource_key] = {
+            manifest[virtual_path] = {
                 "index": idx,
                 "virtual_path": virtual_path,
                 "full_path": str(icon_file),
