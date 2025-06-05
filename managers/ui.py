@@ -457,12 +457,12 @@ class ui(Singleton, DirectObject):
         for tile in tiles:
             tile.set_color(Colors.RESTORE)
 
-    def select_tile(self, tile_coords: List[str]):
-        _tile_coords = tile_coords[0]
-        tile = self.map.map.get(_tile_coords)
+    def select_tile(self, tile_coords: str):
+        x, y = tile_coords.split("_")[-2:]
+        tile = self.map.grid.get((int(x), int(y)))
 
         if tile is None:
-            messenger.send("ui.update.user.tile_not_found", [_tile_coords])
+            messenger.send("ui.update.user.tile_not_found", [tile_coords])
             return
 
         tile.is_selected = True
