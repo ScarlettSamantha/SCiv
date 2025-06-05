@@ -43,6 +43,7 @@ from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
 from managers.game import Game
 from managers.i18n import T_TranslationOrStr, t_
+from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from managers.player import PlayerManager
 from system.atlas import AtlasGenerator
 from system.effects import Effects
@@ -103,7 +104,7 @@ class BaseTile(BaseEntity):
         self.destroyed: bool = False
         self.grid_position: Optional[Any] = None
         self.raw_position: Optional[Any] = None
-        self.tag: Optional[str] = None
+        self.tag: Optional[str] = self.generate_tag(self.x, self.y)
         # Instead of a single node, we keep a list of NodePaths.
 
         self.models: List[NodePath] = []
@@ -237,6 +238,8 @@ class BaseTile(BaseEntity):
         self.anchor_node.reparentTo(self.base.render)
 
         self.geom_group: NodePath = self.anchor_node.attachNewNode("geom_group")
+        self.geom_group.set_tag("net_type", "tile")
+        self.geom_group.set_tag("net_node_tag_id", self.tag)
         self.ui_group: NodePath = self.anchor_node.attachNewNode("ui_group")
         self.anchor_node.setCollideMask(BitMask32.bit(1))
         self.anchor_node.setTag("tile_id", f"tile_{x}_{y}")
@@ -276,10 +279,8 @@ class BaseTile(BaseEntity):
         return f"tile_{x}_{y}"
 
     def on_load(self) -> None:
-        self.tag = self.generate_tag(self.x, self.y)
         self.models = []
         self.base = Cache.get_showbase_instance()
-        self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
         # self._render_default_terrain()
@@ -519,6 +520,10 @@ class BaseTile(BaseEntity):
             self.icon_overlay_np.setHpr(0, -90, 0)
             self.icon_overlay_np.setScale(0.75)
 
+            if self.tag is not None:
+                self.icon_overlay_np.set_tag("net_type", NET_TYPE.TILE.value)
+                self.icon_overlay_np.set_tag("net_node_tag_id", self.tag)
+
             self.icon_overlay_np.setShader(
                 Shader.load(
                     Shader.SL_GLSL, "assets/shaders/resource_icons.vert.glsl", "assets/shaders/resource_icons.frag.glsl"
@@ -626,7 +631,7 @@ class BaseTile(BaseEntity):
 
         for improvement in self._improvements.get_all():
             if improvement.model is not None:
-                self.add_model(improvement.model)
+                self.add_model(improvement.model, type=NET_TYPE.IMPROVEMENT)
 
         self._render_resource_model()
 
@@ -673,7 +678,9 @@ class BaseTile(BaseEntity):
         self.ui_group.setZ(pos_z)
 
         self.add_icon_to_tile()
-        self.add_unit_icon()
+
+        if self.units.has_any():
+            self.add_unit_icon()
 
         # reposition unit markers
         if self.unit_icons_np:
@@ -723,7 +730,9 @@ class BaseTile(BaseEntity):
         if resource.model is None:
             return
 
-        self.add_model(resource.model, resource.model_position, resource.model_size, resource.model_hpr)
+        self.add_model(
+            resource.model, resource.model_position, resource.model_size, resource.model_hpr, type=NET_TYPE.RESOURCE
+        )
 
     def on_turn_end(self, turn: int) -> None:
         """Will only be called by the world manager. when the tile has an effect, unit, city or player."""
@@ -751,9 +760,10 @@ class BaseTile(BaseEntity):
 
             self.add_model(
                 model_path=model_path,
-                pos_offset=improvement._model_offset,  # type: ignore
-                scale=improvement._model_scale,  # type: ignore
-                hpr=improvement._model_hpr,  # type: ignore
+                pos_offset=improvement.get_model_offset(),  # type: ignore
+                scale=improvement.get_model_scale(),  # type: ignore
+                hpr=improvement.get_model_hpr(),  # type: ignore,
+                type=NET_TYPE.IMPROVEMENT,
             )
 
     def add_model(
@@ -762,6 +772,8 @@ class BaseTile(BaseEntity):
         pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         scale: float = 0.41,
         hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        type: NET_TYPE = NET_TYPE.TILE,
+        net_id: Optional[str] = None,
     ) -> None:
         """
         Asynchronously load and add an additional model on top of the tile.
@@ -770,7 +782,7 @@ class BaseTile(BaseEntity):
         full_path = str(base_path.joinpath(model_path).absolute())
 
         # This callback runs on the main thread once loading is finished:
-        def on_model_loaded(extra_model: NodePath) -> None:
+        def on_model_loaded(extra_model: NodePath, type: NET_TYPE) -> None:
             # compute placement
             x = self.pos_x + pos_offset[0]
             y = self.pos_y + pos_offset[1]
@@ -791,7 +803,9 @@ class BaseTile(BaseEntity):
             self.models.append(node)
             if self.tag is None:
                 self.tag = self.generate_tag(self.x, self.y)
-            node.setTag("tile_id", self.tag)
+
+            node.setTag(NET_TYPE_FIELD, type.value)
+            node.setTag(NET_NODE_TAG_ID_FIELD, self.tag if not net_id else net_id)
 
             # replace first model slot
             if self.models:
@@ -800,7 +814,7 @@ class BaseTile(BaseEntity):
                 self.models.append(node)
 
         # kick off the async load
-        self.base.loader.loadModel(full_path, callback=on_model_loaded)
+        self.base.loader.loadModel(full_path, callback=on_model_loaded, extraArgs=[type])
 
     def unrender(self) -> None:
         """
@@ -921,7 +935,14 @@ class BaseTile(BaseEntity):
         if model is None:
             raise NotImplementedError("Unit model rendering not implemented for this tile type.")
 
-        self.add_model(model, unit.model_position_offset, unit.model_size, unit.model_rotation)
+        self.add_model(
+            model,
+            unit.model_position_offset,
+            unit.model_size,
+            unit.model_rotation,
+            type=NET_TYPE.MODEL,
+            net_id=unit.tag,
+        )
 
     def remove_unit(self, unit: "Unit") -> None:
         del unit.tile

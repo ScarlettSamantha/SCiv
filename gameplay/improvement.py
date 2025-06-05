@@ -196,6 +196,15 @@ class Improvement(BaseEntity):
     def on_turn_end(self, turn: int):
         self.effects.on_turn_end(turn)
 
+    def get_model_hpr(self) -> Tuple[float, float, float]:
+        return self._model_hpr
+
+    def get_model_scale(self) -> float:
+        return self._model_scale
+
+    def get_model_offset(self) -> Tuple[float, float, float]:
+        return self._model_offset
+
     @staticmethod
     def basic_resource_improvement(
         name: str,

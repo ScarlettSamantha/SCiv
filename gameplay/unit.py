@@ -17,6 +17,7 @@ from managers.combat import T_TARGET, Combat
 from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
+from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from managers.player import PlayerManager
 from managers.unit import UnitManager
 from system.actions import Action
@@ -98,6 +99,7 @@ class Unit(BaseEntity, ABC):
         self.logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
 
         self.register_actions()
+        self.register()
 
     def register_actions(self): ...
 
@@ -167,6 +169,10 @@ class Unit(BaseEntity, ABC):
 
         # Load the Panda3D model and position it at the tile
         self.model = self.load_model(self._model)
+
+        if self.model:
+            self.model.setCollideMask(BitMask32.bit(1))
+
         self.get_tile().rerender()
 
         if not self._model:
@@ -305,7 +311,8 @@ class Unit(BaseEntity, ABC):
         else:
             model.setCollideMask(BitMask32.allOff())  # type: ignore
 
-        model.setTag("tile_id", self.tag)
+        model.setTag(NET_TYPE_FIELD, NET_TYPE.MODEL.value)
+        model.setTag(NET_NODE_TAG_ID_FIELD, self.tag)
         model.reparentTo(self.base.render)
 
         return model

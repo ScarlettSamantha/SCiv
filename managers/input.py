@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
@@ -17,6 +18,16 @@ from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from main import SCIV
+
+NET_NODE_TAG_ID_FIELD: str = "net_node_tag_id"  # tag for the node path to identify it as a net node
+NET_TYPE_FIELD: str = "net_type"  # tag for the node path to identify it as a net node
+
+
+class NET_TYPE(Enum):
+    MODEL = "model"
+    TILE = "tile"
+    IMPROVEMENT = "improvement"
+    RESOURCE = "resource"
 
 
 class Input(Singleton, DirectObject):
@@ -106,13 +117,19 @@ class Input(Singleton, DirectObject):
 
         if self.pq.getNumEntries() > 0:
             self.pq.sortEntries()
-            entry = self.pq.getEntry(0)
-            picked_obj = entry.getIntoNodePath()
-            tile_id = picked_obj.getNetTag("tile_id")
+            for entry in self.pq.getEntries():
+                picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
+                net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
+                net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
-            if tile_id.startswith("tile") and tile_id != self.hovered_tile_id:
-                self.hovered_tile_id = tile_id
-                messenger.send("system.input.user.tile_hovered", [tile_id])
+                selected_object = False
+                if NET_TYPE.TILE.value == net_type:
+                    # This is a tile
+                    messenger.send("system.input.user.tile_hovered", [net_id])
+                    selected_object = True
+
+                if selected_object:
+                    self.hovered_tile_id = net_id  # type: ignore
         else:
             if self.hovered_tile_id is not None:
                 messenger.send("system.input.user.tile_unhovered", [self.hovered_tile_id])
@@ -136,19 +153,24 @@ class Input(Singleton, DirectObject):
         self.picker.traverse(self.base.render)  # type: ignore
         if self.pq.getNumEntries() > 0:  # type: ignore
             self.pq.sortEntries()  # type: ignore
-            entry = self.pq.getEntry(0)  # type: ignore # closest collision
-            picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
-            tile_id = picked_obj.getNetTag("tile_id")  # type: ignore
+            for entry in self.pq.getEntries():
+                picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
+                net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
+                net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
-            start_of_id = tile_id.split("_")[0]  # type: ignore
-            if start_of_id == "unit":
-                # This is a unit, not a tile
-                messenger.send("system.input.user.unit_clicked", [tile_id])
-            elif start_of_id == "tile":
-                # This is a tile
-                messenger.send("system.input.user.tile_clicked", [tile_id])
+                selected_object = False
+                if NET_TYPE.MODEL.value == net_type:
+                    # This is a unit, not a tile
+                    messenger.send("system.input.user.unit_clicked", [net_id])
+                    selected_object = True
+                elif NET_TYPE.TILE.value == net_type:
+                    # This is a tile
+                    messenger.send("system.input.user.tile_clicked", [net_id])
+                    selected_object = True
 
-            return picked_obj  # type: ignore
+                if selected_object:
+                    return picked_obj  # type: ignore
+            return None
         else:
             self.logger.debug("No object picked. Possibly between tiles or outside the game field.")
             return None
