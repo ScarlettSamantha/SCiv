@@ -279,7 +279,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
-
         self.root_layout.add_widget(self.build_debug_actions())  # type: ignore
         self.root_layout.add_widget(self.build_player_turn_control())  # type: ignore
         self.root_layout.add_widget(self.build_city_ui())  # type: ignore
@@ -295,6 +294,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger.info("Game UI screen built.")
         self.logger.info("Registering non-collidable UI elements.")
 
+        self.register_non_collidable(self.action_bar_frame.frame)  # type: ignore
         self.register_non_collidable(self.debug_actions.frame)  # type: ignore
         self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
         self.register_non_collidable(self.city_ui.frame)  # type: ignore
