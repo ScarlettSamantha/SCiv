@@ -169,6 +169,8 @@ class BaseResource(ABC):
         path = self.icon
         if generated:
             path = path.replace("assets/icons/resources/", "")
+        if self.value == 0 or self.value == 0.0:
+            return path
         path = path.replace(".png", f"_{int(self.value)}.png")
         return path
 
