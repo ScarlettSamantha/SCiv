@@ -3,9 +3,9 @@ from enum import Enum
 from logging import Logger
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
 import weakref
-
+from helpers.colors import Colors, Tuple4f
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
@@ -36,11 +36,13 @@ from helpers.cache import Cache
 from helpers.images import normalize_color_to_bytes
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
+from managers.game import Game
 from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
 from system.atlas import AtlasGenerator
 from system.effects import Effects
 from system.entity import BaseEntity
+from system.mesh import HexGrid
 from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.enums import GeoformType
 from world.items._base_item import BaseItem
@@ -86,7 +88,7 @@ class BaseTile(BaseEntity):
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
-        self.z_scale: float = 1.25
+        self.z_scale: float = 1.75
 
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
 
@@ -106,6 +108,8 @@ class BaseTile(BaseEntity):
         self.is_land: bool = False
         self.is_sea: bool = False
         self.is_lake: bool = False
+
+        self.is_selected: bool = False
 
         self.altitude: float = 1
         self.biome: int = 1
@@ -578,6 +582,10 @@ class BaseTile(BaseEntity):
         px, py = self.compute_hex_center(self.x, self.y, radius)
         self.pos_x, self.pos_y = px, py
 
+    def set_walls_color(self, color: Tuple[float, ...]) -> None:
+        mesh: HexGrid = Game.get_singleton_instance().get_mesh()
+        mesh.set_wall_color_for_tile(mesh.get_tile_index_from_coords(self.x, self.y), cast(Tuple4f, color))
+
     def render(self) -> None:
         """Fast path: position/scale the anchor, flatten once, swap textures, and reposition UI."""
         pos_z = self.calculate_z_pos_on_altitude()[2]
@@ -617,9 +625,12 @@ class BaseTile(BaseEntity):
         if texture_name is None or texture_name == "":
             texture_name = "default.png"
 
-        texture: Optional[Texture] = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(str(texture_name))
+        atlas = Cache.get_terrain_atlas()
+
+        texture: Optional[Texture] = atlas.get_panda3d_texture_by_virtual_path(texture_name)
         if texture is None:
             raise AssertionError(f"Texture not found: {texture_name}")
+
         texture.set_format(Texture.F_srgb_alpha)
         self.hex_overlay_np.setTexture(texture, 1)
 
@@ -637,6 +648,8 @@ class BaseTile(BaseEntity):
         if self.unit_icons_np:
             for marker in self.unit_icons_np.getChildren():
                 marker.setZ(pos_z)
+
+        self.set_walls_color(Colors.to_normalized_float(self.get_terrain().wall_color(), 1.0))
 
     def add_unit_icon(self) -> None:
         """
@@ -700,7 +713,7 @@ class BaseTile(BaseEntity):
             pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
             return (self.pos_x, self.pos_y, pos_z)
         else:
-            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1)
+            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1.5)
             pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
             return (self.pos_x, self.pos_y, float(pos_z))
 
@@ -918,6 +931,7 @@ class BaseTile(BaseEntity):
             "x": self.x,
             "y": self.y,
             "terrain": terrain_name,
+            "altitude": self.altitude,
             "model": self.model(),
             "passable": f"{str(self.passable)}, {str(self.passable_without_tech)}",
             "movement_cost": self.movement_cost,
@@ -938,6 +952,7 @@ class BaseTile(BaseEntity):
             "Hpr": ",".join(map(str, self.hpr)),
             "effects": ",".join(self.effects.get_effects().keys()),
             "resource_improved": "Yes" if self.is_resource_improved() else "No",
+            "Is selected": "Yes" if self.is_selected else "No",
         }
 
         data["hex_data"] = {

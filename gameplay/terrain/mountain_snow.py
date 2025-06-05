@@ -7,7 +7,7 @@ from ._base_terrain import BaseTerrain
 
 class MountainSnow(BaseTerrain):
     _name = "world.terrain.mountain_snow"
-    _fallback_color = (0, 119, 255)
+    _fallback_color = (255, 255, 255)
     can_spawn_resources = False
 
     def __init__(self, *args: Any, **kwargs: Any):

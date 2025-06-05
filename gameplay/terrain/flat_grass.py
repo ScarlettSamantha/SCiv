@@ -12,7 +12,7 @@ class FlatGrass(BaseTerrain):
     _name = "world.terrain.flatland_grass"
     movement_modifier = 0.5
     water_availability = 1
-    _fallback_color = (0.0, 0.5, 0.0)
+    _fallback_color = (106, 255, 0)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

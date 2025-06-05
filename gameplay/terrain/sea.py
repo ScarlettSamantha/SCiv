@@ -17,6 +17,6 @@ class Sea(BaseTerrain):
 
         self.passable: bool = False
         self.passable_without_tech: bool = False
-        self._texture = "deep_sea.png"
+        self._texture = "deepsea.png"
 
         self.tile_yield_base.add(Yields(food=1, gold=1))

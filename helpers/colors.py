@@ -153,6 +153,10 @@ class Colors:
         return "#{:02x}{:02x}{:02x}".format(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255))
 
     @staticmethod
+    def to_normalized_float(color: Tuple3f, alpha: float) -> tuple[float, ...]:
+        return tuple((*[c / 255.0 for c in color[:3]], alpha))
+
+    @staticmethod
     def to_rgba(color: Tuple4f) -> str:
         return "rgba({}, {}, {}, {})".format(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255), color[3])
 

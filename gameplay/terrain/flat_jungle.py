@@ -11,6 +11,7 @@ class FlatJungle(BaseTerrain):
     _name = "world.terrain.flatland_jungle"
     movement_modifier = 0.5
     water_availability = 0
+    _fallback_color = (45, 64, 32)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

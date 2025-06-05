@@ -2,7 +2,6 @@ from abc import ABC
 import random
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, Union
 
-from panda3d.core import LRGBColor
 
 from gameplay.yields import Yields
 from helpers.colors import Tuple4f
@@ -116,7 +115,10 @@ class BaseTerrain(ABC):
     def get_modifiers(self) -> "Yields":
         return self.tile_modifiers
 
-    def color(self) -> LRGBColor | Tuple[float, float, float]:
+    def color(self) -> Tuple[float, float, float]:
+        return self.fallback_color
+
+    def wall_color(self) -> Tuple[float, float, float]:
         return self.fallback_color
 
     def supported_improvements(self) -> List[Type["Improvement"]]:

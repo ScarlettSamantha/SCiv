@@ -9,6 +9,7 @@ class HillsTundra(BaseTerrain):
     _name = "world.terrain.hills_tundra"
     movement_modifier = 0.5
     water_availability = 0.25
+    _fallback_color = (186, 186, 186)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
