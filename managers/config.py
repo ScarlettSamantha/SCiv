@@ -5,7 +5,6 @@ from typing import Any, Dict, Tuple
 from panda3d.core import loadPrcFileData  # type: ignore
 
 from mixins.singleton import Singleton
-from system.vars import APPLICATION_NAME, VERSION_NAME_STRING
 
 
 class ConfigManager(Singleton):
@@ -20,7 +19,8 @@ class ConfigManager(Singleton):
 
     def _load_config(self) -> Any | Dict[str, Dict[str, bool] | Dict[str, str | int] | Dict[str, str | list[int]]]:
         """Internal method: load config from JSON or return default if missing/invalid."""
-        if os.path.exists(self.config_file):
+        path = os.path.abspath(self.config_file)
+        if os.path.exists(path):
             try:
                 with open(self.config_file, "r") as f:
                     return json.load(f)
@@ -28,18 +28,9 @@ class ConfigManager(Singleton):
                 print(f"Failed to parse {self.config_file}: {e}")
 
         # If not found or failed, return a reasonable default:
-        return {
-            "dev": {
-                "debug": False,
-            },
-            "render": {"clock-mode": "limited", "clock-frame-rate": 144},
-            "window": {
-                "screen-mode": "windowed",  # "windowed", "fullscreen", or "borderless"
-                "win-origin": [100, 100],
-                "win-size": [1600, 900],
-                "window-title": f"{APPLICATION_NAME}<{VERSION_NAME_STRING}>",
-            },
-        }
+        raise RuntimeError(
+            f"Config file '{self.config_file}' not found or invalid. Please create it with default settings."
+        )
 
     def get_by_key(self, *args: Any) -> Any:
         """
