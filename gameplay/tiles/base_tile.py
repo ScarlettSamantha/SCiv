@@ -5,6 +5,11 @@ import math
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
 import weakref
+
+from gameplay.resources.core.basic._base import BasicBaseResource
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
+from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from helpers.colors import Colors, Tuple4f
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
@@ -551,24 +556,38 @@ class BaseTile(BaseEntity):
             if not resource:
                 continue
 
-            if isinstance(resource, BaseResource) and i > 0:
-                path = resource.get_numeric_icon()
-            elif hasattr(resource, "icon"):
-                path = str(resource.icon)  # type: ignore
-            elif isinstance(resource, str):
-                path = resource
+            def get_resource_path(resource: Union[str, BaseResource]) -> str | None:
+                if isinstance(resource, str):
+                    return resource.replace("resources/", "")
+                elif isinstance(resource, (BaseBonusResource, BaseLuxuryResource, BaseStrategicResource)):
+                    return resource.icon.replace("assets/icons", "")
+                elif isinstance(resource, BasicBaseResource):
+                    return resource.icon
+                return None
+
+            path: str | None = None
+            if i == 0:
+                if self.city is not None:
+                    path = self.city.get_population_icon().replace("resources/", "")
+                else:
+                    path = resources[0].icon.replace("assets/icons/", "")
             else:
-                self.logger.warning(f"Unknown resource type for icon: {type(resource)}")
+                if isinstance(resource, BaseResource) and resource.value == 0:
+                    continue
+
+                path = get_resource_path(resource)
+
+            if path is None:
                 continue
 
             pos = self.get_atlas().get_position_for_virtual_path(path)
             size = self.get_atlas().get_dimensions_for_virtual_path(path) if pos else None
+
             if not pos or not size:
-                continue
+                raise AssertionError(f"Icon not found in atlas: {path}")
 
             if self.atlas_width is None or self.atlas_height is None:
-                self.logger.error("Atlas dimensions not set, cannot compute UVs.")
-                continue
+                raise AssertionError("Atlas dimensions not set.")
 
             x, y = pos
             w, h = size
