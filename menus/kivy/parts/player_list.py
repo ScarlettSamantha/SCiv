@@ -12,6 +12,7 @@ from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
 
 from gameplay.player import Player
+from helpers.colors import Colors
 from main import Cache
 from managers.player import PlayerManager
 
@@ -90,13 +91,13 @@ class PlayerList(FloatLayout, DirectObject):
 
         # Civilization name label
         name = Label(
-            text=str(player.civilization.name),
+            text=f"[color={Colors.to_hex(player.color)}]{player.civilization.name}[/color]",
             size_hint=(None, None),
             size=(100, 30),
             pos_hint={"center_x": 0.5, "top": 0.675},
             halign="center",
             valign="middle",
-            color=player.color,
+            markup=True,
         )
         name.bind(size=lambda instance, value: setattr(instance, "text_size", value))  # type: ignore
 

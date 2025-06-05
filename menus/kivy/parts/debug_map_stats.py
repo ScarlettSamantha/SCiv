@@ -165,6 +165,7 @@ class DebugMapStats(FloatLayout):
 
         self.frame.add_widget(self.map_resource_column)
         self.frame.add_widget(self.map_type_column)
+        self.update()
         return self.frame
 
     def update_debug_info(self, text: str):

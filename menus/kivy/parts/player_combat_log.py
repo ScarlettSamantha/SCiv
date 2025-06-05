@@ -19,7 +19,7 @@ class PlayerCombatLog(BoxLayout):
         self.is_built: bool = False
         self.scroll: ClippingScrollList | None = None
         self.bg_rect: Rectangle | None = None
-        self.disabled = True
+        self.disabled = False
 
     def build(self):
         if self.is_built:
@@ -53,9 +53,6 @@ class PlayerCombatLog(BoxLayout):
         """
         Refresh displayed entries, clipping off-screen automatically.
         """
-        if not self.is_built:
-            self.build()
-
         # Clear any existing log entries
         if self.scroll:
             self.scroll.clear_widgets()

@@ -60,7 +60,7 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
     def start_graph(self):
         if self.fps_graph is None:
             return
-        Clock.schedule_once(lambda _: self.fps_graph.start(), 0.1)  # type: ignore we start the graph after a short delay so it does not include the time it takes to load the game
+        Clock.schedule_once(lambda _: self.fps_graph.start(), 1 // 15)  # type: ignore we start the graph after a short delay so it does not include the time it takes to load the game
 
     def stop_graph(self):
         if self.fps_graph is None:
@@ -209,3 +209,4 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
         ]
         if self.label:
             self.label.text = "\n".join(parts)
+        self.start_graph()

@@ -117,6 +117,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.debug_map_stats is not None:
             self.debug_map_stats.update()
 
+        self.root_layout.add_widget(self.build_debug_map_stats())  # type: ignore
+        self.root_layout.add_widget(self.build_debug_frame())  # type: ignore
+        self.root_layout.add_widget(self.build_top_bar())  # type: ignore
+        self.root_layout.add_widget(self.build_stats_frame())  # type: ignore
+
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
             "escape", self.on_escape
@@ -274,37 +279,25 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
-        self.root_layout.add_widget(self.build_stats_frame())  # type: ignore
-        self.root_layout.add_widget(self.build_debug_frame())  # type: ignore
+
         self.root_layout.add_widget(self.build_debug_actions())  # type: ignore
-        self.root_layout.add_widget(self.build_debug_map_stats())  # type: ignore
         self.root_layout.add_widget(self.build_player_turn_control())  # type: ignore
         self.root_layout.add_widget(self.build_city_ui())  # type: ignore
-        self.root_layout.add_widget(self.build_top_bar())  # type: ignore
 
         if (
             self.action_bar_frame is None
-            or self.debug_frame is None
-            or self.stats_frame is None
             or self.debug_actions is None
-            or self.debug_map_stats is None
             or self.player_turn_control is None
             or self.city_ui is None
-            or self.top_bar is None
         ):
             raise AssertionError("Action bar, debug panel, or stats panel, player_turn_control is not initialized.")
 
         self.logger.info("Game UI screen built.")
         self.logger.info("Registering non-collidable UI elements.")
 
-        self.register_non_collidable(self.action_bar_frame.frame)  # type: ignore
-        self.register_non_collidable(self.debug_frame.frame)  # type: ignore
-        self.register_non_collidable(self.stats_frame.frame)  # type: ignore
         self.register_non_collidable(self.debug_actions.frame)  # type: ignore
-        self.register_non_collidable(self.debug_map_stats.frame)  # type: ignore
         self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
         self.register_non_collidable(self.city_ui.frame)  # type: ignore
-        self.register_non_collidable(self.top_bar)  # type: ignore
 
         self.logger.info("Non-collidable UI elements registered.")
         self.add_widget(self.root_layout)
