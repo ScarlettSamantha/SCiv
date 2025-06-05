@@ -9,7 +9,7 @@ class Science(BasicBaseResource):
     key: str = "resource.core.basic.science"
     name: T_TranslationOrStr = t_("content.resources.science.name")
     description: T_TranslationOrStr = t_("content.resources.science.description")
-    icon: str = "assets/icons/resources/core/basic/science.png"
+    icon: str = "resources/core/basic/science.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 

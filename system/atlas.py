@@ -45,7 +45,7 @@ class AtlasGenerator:
             input_mtime = max(p.stat().st_mtime for d in self.input_dir for p in d.glob("**/*.png"))
             atlas_mtime = self.output_image.stat().st_mtime
             manifest_mtime = self.output_mapping.stat().st_mtime
-            if atlas_mtime > input_mtime and manifest_mtime > input_mtime:
+            if atlas_mtime > input_mtime and manifest_mtime > input_mtime and not force:
                 return
 
         icon_files = sorted(
@@ -80,6 +80,7 @@ class AtlasGenerator:
             manifest[resource_key] = {
                 "index": idx,
                 "virtual_path": virtual_path,
+                "full_path": str(icon_file),
                 "atlas_x": x,
                 "atlas_y": y,
                 "width": self.icon_size[0],
@@ -120,12 +121,14 @@ class AtlasGenerator:
     def lookup_by_virtual_path(self, virtual_path: str) -> Optional[Dict[str, Any]]:
         if self.manifest is None:
             return None
+
         if "assets/icons/" in virtual_path:
             virtual_path = virtual_path.replace("assets/icons/", "")
 
         for k, entry in self.manifest.items():
             if entry["virtual_path"] == virtual_path:
                 return self.lookup_by_key(k)
+
         return None
 
     def get_kivy_image(self, key: str) -> Optional[KivyImage]:
@@ -165,6 +168,39 @@ class AtlasGenerator:
             tex.load(pnm)  # type: ignore
             self._p3d_texture_cache = tex  # type: ignore
         return self._p3d_texture_cache  # type: ignore
+
+    def get_coreimage_by_key(self, key: str) -> Optional[CoreImage]:
+        entry = self.lookup_by_key(key)
+        if not entry:
+            return None
+
+        atlas = self.atlas_image
+        box = (
+            entry["atlas_x"],
+            entry["atlas_y"],
+            entry["atlas_x"] + entry["width"],
+            entry["atlas_y"] + entry["height"],
+        )
+        cropped = atlas.crop(box)
+
+        buf = BytesIO()
+        cropped.save(buf, format="PNG")
+        buf.seek(0)
+
+        return CoreImage(buf, ext="png")
+
+    def get_coreimage_by_virtual_path(self, virtual_path: str) -> Optional[CoreImage]:
+        entry = self.lookup_by_virtual_path(virtual_path)
+        if not entry:
+            return None
+
+        if self.manifest is None:
+            return None
+
+        key = next((k for k, v in self.manifest.items() if v == entry), None)
+        if key:
+            return self.get_coreimage_by_key(key)
+        return None
 
     def get_panda3d_texture_by_key(self, key: str) -> Optional[Texture]:  # type: ignore
         if key in self._individual_texture_cache:  # type: ignore
@@ -216,6 +252,12 @@ class AtlasGenerator:
             return entry.get("index")
         return None
 
+    def get_key_for_virtual_path(self, key: str) -> Optional[str]:
+        entry = self.lookup_by_key(key)
+        if entry:
+            return entry.get("virtual_path")
+        return None
+
     def get_position_for_virtual_path(self, virtual_path: str) -> Optional[Tuple[int, int]]:
         entry = self.lookup_by_virtual_path(virtual_path)
         if entry:
@@ -232,6 +274,14 @@ class AtlasGenerator:
         entry = self.lookup_by_key(key)
         if entry:
             return entry["width"], entry["height"]
+        return None
+
+    def get_real_path_for_virtual_path(self, virtual_path: str) -> Optional[Path]:
+        entry = self.lookup_by_virtual_path(virtual_path)
+        if entry:
+            full_path = entry.get("full_path")
+            if full_path:
+                return Path(full_path)
         return None
 
     def get_dimensions_for_index(self, index: int) -> Optional[Tuple[int, int]]:

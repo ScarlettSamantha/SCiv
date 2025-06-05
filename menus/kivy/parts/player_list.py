@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from kivy.app import Widget
-from kivy.core.image import Image as CoreImage
 from kivy.graphics import Color, Rectangle
 from kivy.input import MotionEvent
 from kivy.uix.floatlayout import FloatLayout
@@ -13,6 +12,7 @@ from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
 
 from gameplay.player import Player
+from main import Cache
 from managers.player import PlayerManager
 
 if TYPE_CHECKING:
@@ -27,11 +27,11 @@ class PlayerList(FloatLayout, DirectObject):
         self.is_build: bool = False
         self.window: "GraphicsWindow" = self.base.win  # type: ignore
         self.window_properties: WindowProperties = self.window.properties  # type: ignore
-        self.background_image = CoreImage("assets/icons/player_portrait.png")
+        self.background_image = Cache.get_icon_atlas().get_coreimage_by_virtual_path("player_portrait.png")
         # Create internal GridLayout
         self.grid = GridLayout(
             rows=1,
-            spacing=20,
+            spacing=-10,
             padding=10,
             size_hint=(None, None),
             width=600,
@@ -64,7 +64,7 @@ class PlayerList(FloatLayout, DirectObject):
     def _generate_player_widget(self, player: Player) -> FloatLayout:
         container = FloatLayout(
             size_hint=(None, None),
-            size=(self.background_image.size[0] // 3, self.background_image.size[1] // 3),  # type: ignore
+            size=(self.background_image.size[0], self.background_image.size[1]),  # type: ignore
         )
 
         # Load background texture

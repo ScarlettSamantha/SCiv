@@ -13,6 +13,7 @@ from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
 from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.science import Science
+from helpers.cache import Cache
 from helpers.colors import Tuple4f
 from helpers.placeholder import Placeholder
 from managers.player import PlayerManager
@@ -39,14 +40,14 @@ class BaseButton(SelfResizableButton):
 
 
 class ResearchButton(BaseButton):
-    placeholder: str = Science.icon
+    placeholder: str = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(Science.icon))
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
 
 class CultureButton(BaseButton):
-    placeholder: str = Culture.icon
+    placeholder: str = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(Culture.icon))
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)

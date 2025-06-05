@@ -6,6 +6,8 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
+from helpers.cache import Cache
+
 
 class ImageLabel(BoxLayout):
     def __init__(
@@ -31,7 +33,7 @@ class ImageLabel(BoxLayout):
 
         # Image with fixed width
         self.img = Image(
-            source=img_source,
+            source=str(Cache.get_icon_atlas().get_real_path_for_virtual_path(img_source)),
             size_hint_x=None,
             width=image_size[0],
             size_hint_y=None,
