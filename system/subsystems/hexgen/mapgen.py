@@ -150,10 +150,15 @@ class MapGen:
             self.generate_volcanoes()
 
         self.territories: List[Territory] = []
+
         self.generate_territories()
+
         self.geoforms: List[Geoform] = []
+
         self._determine_landforms()
+
         self._detect_lakes()
+
         self.debug_draw_hex_rivers()
         print("Done") if self.debug else False
 

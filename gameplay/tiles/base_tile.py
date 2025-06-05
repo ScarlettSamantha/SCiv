@@ -706,16 +706,9 @@ class BaseTile(BaseEntity):
             self.add_icon_to_tile()
 
     def calculate_z_pos_on_altitude(self) -> Tuple[float, float, float]:
-        if self.is_water and not self.is_lake:
-            return (self.pos_x, self.pos_y, 0.0)
-        elif self.is_lake:
-            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1)
-            pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
-            return (self.pos_x, self.pos_y, pos_z)
-        else:
-            pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1.5)
-            pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
-            return (self.pos_x, self.pos_y, float(pos_z))
+        pos_z = scale_value(min(self.altitude, 240), 0, 240, 0, 1.5)
+        pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
+        return (self.pos_x, self.pos_y, float(pos_z))
 
     def _render_improvements(self) -> None:
         improvements: List[Improvement] = self.improvements().get_all()

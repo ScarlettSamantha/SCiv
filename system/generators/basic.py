@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -105,6 +105,11 @@ class Basic(BaseGenerator):
                 hex_tile.render_pos = (x, y)
         end_conversion = datetime.now()
 
+        start_water_level_adjustment = datetime.now()
+        # Adjust water level based on the average height of the map
+        self.adjust_water_levels()
+        end_water_level_adjustment = datetime.now()
+
         # Step 3: Instantiate tile objects WITHOUT rendering their Panda3D models
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_inst = datetime.now()
@@ -148,6 +153,9 @@ class Basic(BaseGenerator):
         self.world_generation_stats["durations"] = {
             "hexgen": round((end_hexgen_time - start_time).total_seconds() * 1000, 2),
             "conversion": round((end_conversion - start_conversion).total_seconds() * 1000, 2),
+            "water_level_adjustment": round(
+                (end_water_level_adjustment - start_water_level_adjustment).total_seconds() * 1000, 2
+            ),
             "instantiate_tiles": round((end_inst - start_inst).total_seconds() * 1000, 2),
             "mesh_build": round((end_mesh - start_mesh).total_seconds() * 1000, 2),
             "resources": round((end_res - start_res).total_seconds() * 1000, 2),
@@ -330,6 +338,76 @@ class Basic(BaseGenerator):
                 tag = obj_instance.generate_tag(x, y)
                 self.map[tag] = obj_instance
                 self.world.grid[(col, row)] = obj_instance
+
+    def adjust_water_levels(self) -> None:
+        """
+        Finds every connected group of water tiles (lakes + sea),
+        looks at all adjacent land‐tile altitudes, takes the minimum,
+        and then forces the entire water body to sit 1 unit below that minimum.
+        """
+        height = self.config.height
+        width = self.config.width
+
+        visited: Set[Tuple[int, int]] = set()  # keep track of (col,row) we’ve already clustered
+
+        # Pre‐cache a reference to the raw hex‐grid for convenience
+        raw = self.hex_grid.grid  # raw[col][row] => Hex
+
+        # Helper: given (c,r), return list of valid neighbor coords in odd‐q layout
+        def neighbors(c: int, r: int) -> List[Tuple[int, int]]:
+            # odd‐q vertical layout offsets:
+            if c % 2 == 0:
+                offsets = [(0, -1), (+1, -1), (+1, 0), (0, +1), (-1, 0), (-1, -1)]
+            else:
+                offsets = [(0, -1), (+1, 0), (+1, +1), (0, +1), (-1, +1), (-1, 0)]
+            result: List[Tuple[int, int]] = []
+            for dc, dr in offsets:
+                nc, nr = c + dc, r + dr
+                if 0 <= nc < height and 0 <= nr < width:
+                    result.append((nc, nr))
+            return result
+
+        for col in range(height):
+            for row in range(width):
+                # skip if not water or already visited
+                hex_tile = raw[col][row]
+                if not hex_tile.is_water or (col, row) in visited:
+                    continue
+
+                # flood‐fill this water body:
+                queue = [(col, row)]
+                visited.add((col, row))
+                water_cluster = [(col, row)]
+                idx = 0
+                while idx < len(queue):
+                    c0, r0 = queue[idx]
+                    idx += 1
+                    for nc, nr in neighbors(c0, r0):
+                        neighbor_hex = raw[nc][nr]
+                        # if neighbor is water and not visited yet, add to cluster
+                        if neighbor_hex.is_water and (nc, nr) not in visited:
+                            visited.add((nc, nr))
+                            queue.append((nc, nr))
+                            water_cluster.append((nc, nr))
+
+                # gather all bordering land‐tile altitudes
+                border_altitudes: List[float] = []
+                for wc, wr in water_cluster:
+                    for nc, nr in neighbors(wc, wr):
+                        neighbor_hex = raw[nc][nr]
+                        if neighbor_hex.is_land:
+                            border_altitudes.append(neighbor_hex.altitude)
+
+                if not border_altitudes:
+                    # No adjacent land at all (e.g. an “ocean” pool that maybe touches the map edge).
+                    continue
+
+                min_adj_land = min(border_altitudes)
+                water_level = min_adj_land - 1  # one unit below the lowest land tile
+
+                # assign every hex in this water_cluster exactly that altitude
+                for wc, wr in water_cluster:
+                    raw[wc][wr].altitude = water_level
 
     def get_all_resources(self) -> List[Type[BaseResource]]:
         from gameplay.repositories.resources import ResourceRepository
