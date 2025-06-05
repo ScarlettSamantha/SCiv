@@ -458,16 +458,18 @@ class ui(Singleton, DirectObject):
             tile.set_color(Colors.RESTORE)
 
     def select_tile(self, tile_coords: List[str]):
-        if isinstance(tile_coords, List):  # type: ignore
-            _tile_coords = tile_coords[0]
-        else:
-            _tile_coords = str(tile_coords)
-
+        _tile_coords = tile_coords[0]
         tile = self.map.map.get(_tile_coords)
+
         if tile is None:
+            messenger.send("ui.update.user.tile_not_found", [_tile_coords])
             return
 
+        tile.is_selected = True
         tile.calculate()
+
+        if self.previous_tile is not None:
+            self.previous_tile.is_selected = False
 
         if tile.city is not None and tile.city.player is not None:
             if PlayerManager.is_session_player(tile.city.player):
