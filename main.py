@@ -46,6 +46,7 @@ class SCIV(ShowBase):
         config_mgr.__setup__()
         ConfigManager.set_singleton_instance(config_mgr)
         config_mgr.apply_config_to_prc()
+        config_mgr.disable_vsync()
 
         loading_screen: LoadingScreen = LoadingScreen(
             self, ["assets/logo.png"], 15, on_continue=self.on_loading_screen_continue
