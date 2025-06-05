@@ -32,14 +32,15 @@ class PyFileProcessor:
         base_classes: Union[Type[Any], List[Type[Any]], Optional[Callable[[str, str], bool]]] = None,
         properties: Optional[Tuple[str, str]] = None,
         _skip_on_error: bool = False,
+        log_errors: bool = True,
     ):
         self.base_classes: Optional[Union[Type[Any], List[Type[Any]], Callable[[str, str], bool]]] = base_classes
         self.properties: Optional[Tuple[str, str]] = properties
         self._skip_on_error: bool = _skip_on_error
+        self.log_debug = log_errors
 
     def process_file(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> Dict[str, Type[Any]]:
         if not self._matches_pattern(file, name_pattern):
-            self._log_skip(file, name_pattern)
             return {}
 
         LogManager.get_singleton_instance().engine.debug(f"Processing file: {file}")
@@ -72,7 +73,10 @@ class PyFileProcessor:
                     re.match(r"^(?!_).*.py$", file_name) is not None and re.match(regex_pattern, file_name) is not None
                 )
             except re.error as e:
-                LogManager.get_singleton_instance().engine.error(f"Invalid regex pattern: {regex_pattern}, error: {e}")
+                if self.log_debug:
+                    LogManager.get_singleton_instance().engine.error(
+                        f"Invalid regex pattern: {regex_pattern}, error: {e}"
+                    )
                 return False
         else:
             return re.match(r"^(?!_).*.py$", file_name) is not None and fnmatch.fnmatch(file_name, name_pattern)
@@ -131,9 +135,10 @@ class PyFileProcessor:
                     if base == allowed or base.__name__ == allowed.__name__:
                         return True
 
-            LogManager.get_singleton_instance().engine.debug(
-                f"Skipping class: {_class.__name__} due to base class mismatch {allowed}"
-            )
+            if self.log_debug:
+                LogManager.get_singleton_instance().engine.debug(
+                    f"Skipping class: {_class.__name__} due to base class mismatch {allowed}"
+                )
             return False
 
         for class_name, _class in classes.items():
