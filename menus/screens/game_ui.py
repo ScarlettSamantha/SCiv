@@ -6,7 +6,6 @@ from weakref import ReferenceType
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from kivy.uix import widget
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -114,6 +113,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_player_list()
         self.build_player_info()
         self.build_combat_log()
+
+        if self.debug_map_stats is not None:
+            self.debug_map_stats.update()
+
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
             "escape", self.on_escape
@@ -149,6 +152,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("game.state.load_finished", self.on_game_start)
         self.accept("game.state.main_menu", self.on_game_end)
 
+        self.accept("ui.update.ui.show_research_ui", self.open_research)
+        self.accept("ui.update.ui.hide_research_ui", self.close_research)
+        self.accept("ui.update.ui.show_civics_ui", self.open_civics)
+        self.accept("ui.update.ui.hide_civics_ui", self.close_civics)
+
+        self.accept("t", self.toggle_research)
+        self.accept("c", self.toggle_civics)
+
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
 
@@ -156,7 +167,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if (
             self.research is not None and self.research.is_open
         ):  # if the research screen is open exit as it is handled in the research screen
-            MessengerGlobal.messenger.send("ui.update.ui.hide_research_ui")
+            self.close_research()
             return
 
         screen: PauseMenu | Screen = self.ui_manager.get_screen("pause_menu")
@@ -164,10 +175,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if screen.pause_menu._is_open or self.player_info.is_open:  # type: ignore
             MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
         else:
-            if self.get_civics().is_open:
-                self.get_civics().hide_popup()
-            if self.get_research().is_open:
-                self.get_research().hide_popup()
+            if self.civics is not None and self.civics.is_open:
+                self.close_civics()
+            if self.research is not None and self.research.is_open:
+                self.close_research()
 
             self.clear_selected_unit()
             self.clear_action_bar()
@@ -262,8 +273,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger.info("Building game UI screen.")
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
-        self.root_layout.add_widget(self.build_research())
-        self.root_layout.add_widget(self.build_civics())
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
         self.root_layout.add_widget(self.build_stats_frame())  # type: ignore
         self.root_layout.add_widget(self.build_debug_frame())  # type: ignore
@@ -366,10 +375,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def build_research(self) -> Research:
         if self.player is None or (tree := self.player.tech.get_tree()) is None:
             raise AssertionError("Player or tech tree is not initialized.")
-        if self.research is not None:
-            self.remove_widget(self.research)  # type: ignore
         self.research = Research(tree=tree, manager=self)
-        self.research.disabled = True
+        self.research.build()
         return self.research
 
     def build_civics(self) -> Civics:
@@ -384,8 +391,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.remove_widget(self.civics)
 
         self.civics = Civics(tree=tree, manager=self)
-        self.civics.disabled = True
-
         return self.civics
 
     def build_player_list(self) -> PlayerList:
@@ -609,5 +614,64 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if action.remove_actions_after_use:
             self.clear_action_bar()
 
-    def add_widget(self, widget: widget.Widget, *args: Any, **kwargs: Any) -> None:
-        return super().add_widget(widget, *args, **kwargs)  # type: ignore
+    def open_research(self):
+        if self.research is None:
+            self.research = self.build_research()
+            self.register_non_collidable(self.research)
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.add_widget(self.research)
+            self.lock_input()
+
+    def open_civics(self):
+        if self.civics is None:
+            self.civics = self.build_civics()
+            self.register_non_collidable(self.civics)
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.add_widget(self.civics)
+            self.lock_input()
+
+    def close_research(self):
+        if self.research is not None:
+            self.unregister_non_collidable(self.research)
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.remove_widget(self.research)
+            self.popup_disabled = True
+            self.research = None
+            self.unlock_input()
+
+    def close_civics(self):
+        if self.civics is not None:
+            self.unregister_non_collidable(self.civics)
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.remove_widget(self.civics)
+            self.popup_disabled = True
+            self.civics = None
+            self.unlock_input()
+
+    def toggle_research(self):
+        if self.research is None:
+            self.open_research()
+        else:
+            self.close_research()
+
+    def toggle_civics(self):
+        if self.civics is None:
+            self.open_civics()
+        else:
+            self.close_civics()
+
+    def lock_input(self):
+        MessengerGlobal.messenger.send("system.input.raycaster_off")
+        MessengerGlobal.messenger.send("system.input.disable_zoom")
+        MessengerGlobal.messenger.send("system.input.disable_control")
+        MessengerGlobal.messenger.send("system.input.camera_lock")
+
+    def unlock_input(self):
+        MessengerGlobal.messenger.send("system.input.camera_unlock")
+        MessengerGlobal.messenger.send("system.input.raycaster_on")
+        MessengerGlobal.messenger.send("system.input.enable_zoom")
+        MessengerGlobal.messenger.send("system.input.enable_control")

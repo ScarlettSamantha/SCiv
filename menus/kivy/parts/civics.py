@@ -16,7 +16,6 @@ from kivy.uix.label import Label
 from gameplay.civic import Civic, CivicSubtree, CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from helpers.placeholder import Placeholder
-from managers.ui import ui
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
 
@@ -91,7 +90,7 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         instance.text_size = size
 
     def _on_click(self, *args: Any):
-        if not self.disabled and not self.parent.disabled and self.on_click:
+        if self.on_click:
             self.on_click(self)
 
 
@@ -184,20 +183,14 @@ class Civics(FloatLayout, DirectObject):
 
         self.manager = manager
         self._is_build: bool = False
-        self.is_open: bool = False
         self.tree: CoreCivicTree = tree if isinstance(tree, CoreCivicTree) else CoreCivicTree()
         self.civic_node_map: Dict[Type[Civic], CivicNode] = {}
         self._float_layout: Optional[FloatLayout] = None
         self.layout: Optional[GridLayout] = None
         self.scroll_view: Optional[HorizontalScrollView] = None
+        self.disabled = False
 
-        self.register()
-
-    def register(self) -> None:
-        self.accept("ui.update.ui.show_civic_ui", self.show_popup)
-        self.accept("ui.update.ui.hide_civic_ui", self.hide_popup)
-        self.accept("ui.update.ui.refresh_civic_ui", self.update)
-        self.accept_once("c", self.show_popup)
+        self.update()
 
     def update(self, *args: Any) -> None:
         if not self._is_build:
@@ -216,9 +209,12 @@ class Civics(FloatLayout, DirectObject):
 
         self.refresh_civic_nodes()
 
+        self.opacity = 1
+        self.disabled = False
+        self.popup_disabled = False
+        self.is_open = True
+
     def _on_civic_node_click(self, node: CivicNode) -> None:
-        if self.disabled or self.parent.disabled:
-            return
         MessengerGlobal.messenger.send("game.gameplay.civic.request_purchase", [node.civic])
         self.refresh_civic_nodes()
 
@@ -371,37 +367,3 @@ class Civics(FloatLayout, DirectObject):
     def _update_rect(self, *args: Any) -> None:
         self._bg_rect.pos = self.pos  # type: ignore
         self._bg_rect.size = self.size
-
-    def show_popup(self, *_: Any) -> None:
-        is_escape_open = ui.get_singleton_instance().get_screen("pause_menu").pause_menu._is_open  # type: ignore
-        if is_escape_open:
-            self.accept_once("c", self.show_popup)
-            return
-
-        if not self._is_build:
-            self.build()
-
-        self.update()
-        self.opacity = 1
-        self.disabled = False
-        self.popup_disabled = False
-        self.manager.bring_to_front(self)
-        self.accept_once("c", self.hide_popup)
-        MessengerGlobal.messenger.send("system.input.raycaster_off")
-        MessengerGlobal.messenger.send("system.input.disable_zoom")
-        MessengerGlobal.messenger.send("system.input.disable_control")
-        MessengerGlobal.messenger.send("system.input.camera_lock")
-        self.is_open = True
-
-    def hide_popup(self, *_: Any) -> None:
-        self._is_build = False
-        self.popup_disabled = True
-        self.opacity = 0
-        self.disabled = True
-        self.manager.send_to_back(self)
-        self.accept_once("c", self.show_popup)
-        MessengerGlobal.messenger.send("system.input.camera_unlock")
-        MessengerGlobal.messenger.send("system.input.raycaster_on")
-        MessengerGlobal.messenger.send("system.input.enable_zoom")
-        MessengerGlobal.messenger.send("system.input.enable_control")
-        self.is_open = False
