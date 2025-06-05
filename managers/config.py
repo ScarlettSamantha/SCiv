@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from panda3d.core import loadPrcFileData  # type: ignore
 
@@ -54,6 +54,16 @@ class ConfigManager(Singleton):
     def get_config_full(self) -> Dict[str, Any]:
         """Return the full config data."""
         return self.config_data
+
+    def get_default(self, key: Tuple[str, ...], default: Any) -> Any:
+        """
+        Get a value from the config by a single key.
+        Example: get("window") -> {"win-size": [1280, 720], ...}
+        """
+        data = self.config_data
+        for k in key:
+            data = data.get(k, {})
+        return data if data else default
 
     def set_by_key(self, value: Any, *args: Any):
         """
