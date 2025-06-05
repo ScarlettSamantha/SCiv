@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, TYPE_CHECKING, Any
+from typing import Dict, List, Tuple, Optional, TYPE_CHECKING, Any
 from panda3d.core import (
     Geom,
     GeomNode,
@@ -14,6 +14,7 @@ from panda3d.core import (
 import math
 
 from helpers.colors import Colors, Tuple4f
+from helpers.tiles import Tiles
 
 if TYPE_CHECKING:
     from managers.entity import BaseTile
@@ -83,6 +84,118 @@ class HexGrid:
     def get_hex_spacing(radius: float) -> tuple[float, float]:
         return 1.5 * radius, math.sqrt(3) * radius
 
+    def _build_height_map(self) -> dict[Tuple[int, int], float]:
+        height_map: dict[Tuple[int, int], float] = {}
+        if self.tiles:
+            for t in self.tiles:
+                height_map[(t.x, t.y)] = t.calculate_z_pos_on_altitude()[2]
+        else:
+            for c in range(self.cols):
+                for r in range(self.rows):
+                    height_map[(c, r)] = 0.0
+        return height_map
+
+    def build_merged_hex_walls(
+        self,
+        bottom_z: float = 0.0,
+        color: Tuple4f = Colors.MAGENTA,
+    ) -> NodePath:
+        height_map = self._build_height_map()
+
+        fmt: Any = GeomVertexFormat.getV3n3c4()
+        vdata = GeomVertexData("merged_walls", fmt, Geom.UHStatic)
+        vw = GeomVertexWriter(vdata, "vertex")
+        nw = GeomVertexWriter(vdata, "normal")
+        cw = GeomVertexWriter(vdata, "color")
+
+        prim = GeomTriangles(Geom.UHStatic)
+        prim.make_indexed()
+
+        horiz, vert = self.get_hex_spacing(self.radius)
+
+        # 4) Clear any old records
+        self.wall_starts.clear()
+        self.wall_vertex_counts.clear()
+
+        idx = 0
+
+        for tile in self.tiles:
+            col, row, cz = tile.x, tile.y, tile.calculate_z_pos_on_altitude()[2]
+            # If tileZ ≤ bottom_z, no walls at all:
+            if cz <= bottom_z:
+                self.wall_starts.append(None)
+                self.wall_vertex_counts.append(0)
+                continue
+
+            start_row = idx
+
+            dirs = Tiles.get_directions_per_col(col)  # Get the correct directions for this column
+
+            wall_pieces: Dict[int, bool] = {0: False, 1: False, 2: False, 3: False, 4: False, 5: False}
+            for face_i in range(6):
+                dx, dy = dirs[face_i]
+                nbr_x, nbr_y = col + dx, row + dy
+                z_nbr = height_map.get((nbr_x, nbr_y), bottom_z)
+
+                # Cull if neighbor is at or above this tile’s top
+                if cz <= z_nbr:
+                    continue
+
+                # Compute the two top‐coordinates of this face (world‐space):
+                #   angA = 60·face_i,    angB = 60·(face_i+1)
+                angA = math.radians(60 * face_i)
+                angB = math.radians(60 * ((face_i + 1) % 6))
+
+                # Our tile’s center in world‐space:
+                centerX = col * horiz
+                centerY = row * vert + (vert * 0.5 if (col % 2) else 0.0)
+
+                ax = centerX + self.radius * math.cos(angA)
+                ay = centerY + self.radius * math.sin(angA)
+                bx = centerX + self.radius * math.cos(angB)
+                by = centerY + self.radius * math.sin(angB)
+
+                # Top vertices (just above cz to avoid z-fighting)
+                topA = (ax, ay, cz + 0.02)
+                topB = (bx, by, cz + 0.02)
+
+                # Bottom vertices: clamp to max(z_nbr, bottom_z)
+                bottom_clamped = max(z_nbr, bottom_z)
+                botA = (ax, ay, bottom_clamped)
+                botB = (bx, by, bottom_clamped)
+
+                # Write exactly four vertices: [topA, topB, botB, botA]
+                for vx, vy, vz in (topA, topB, botB, botA):
+                    vw.addData3f(vx, vy, vz)
+                    # A dummy normal is fine if you’re using a flat-color shader:
+                    nw.addData3f(0, 0, 1)
+                    cw.addData4f(*color)
+
+                # Emit two triangles from these four new rows (idx..idx+3)
+                prim.addVertices(idx + 0, idx + 1, idx + 2)
+                prim.addVertices(idx + 2, idx + 3, idx + 0)
+
+                idx += 4
+                wall_pieces[face_i] = True  # This face has a wall
+            tile.visible_sides = wall_pieces
+
+            used = idx - start_row
+            if used > 0:
+                self.wall_starts.append(start_row)
+                self.wall_vertex_counts.append(used)
+            else:
+                # Fully buried by neighbors with >= height
+                self.wall_starts.append(None)
+                self.wall_vertex_counts.append(0)
+
+        prim.closePrimitive()
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+        node = GeomNode("all_hex_walls")
+        node.addGeom(geom)
+
+        return NodePath(node)
+
     def generate_mesh(self):
         horiz, vert = self.get_hex_spacing(self.radius)
         if self.tiles:
@@ -115,73 +228,6 @@ class HexGrid:
         self.hex_starts = hex_starts
         self.centers = centers
         self.center_height = center_height
-
-    def build_merged_hex_walls(self, bottom_z: float = 0.0, color: Tuple4f = Colors.MAGENTA) -> NodePath:
-        """
-        Build one big GeomNode containing all the “towers” (walls) of each hex
-        whose center‐height > 0. As we go, record for each tile:
-          - wall_starts[i]: the first row index in the merged vdata
-          - wall_vertex_counts[i]: how many rows (vertices) that tile occupies
-
-        If a tile has cz <= 0.0, we record None and 0.
-        """
-        fmt: Any = GeomVertexFormat.getV3n3c4()  # v3, normal, color4
-        vdata: GeomVertexData = GeomVertexData("merged_walls", fmt, Geom.UHStatic)
-        vw = GeomVertexWriter(vdata, "vertex")
-        nw = GeomVertexWriter(vdata, "normal")
-        cw = GeomVertexWriter(vdata, "color")
-        prim: GeomTriangles = GeomTriangles(Geom.UHStatic)
-        prim.make_indexed()  # for indexed prim
-
-        # Clear out any old records, then rebuild.
-        self.wall_starts.clear()
-        self.wall_vertex_counts.clear()
-
-        idx = 0  # running “row” counter
-        for _, (cx, cy, cz) in enumerate(self.centers):
-            if cz <= 0.0:
-                # no wall for this tile: record as None
-                self.wall_starts.append(None)
-                self.wall_vertex_counts.append(0)
-                continue
-
-            # mark the start of this tile’s wall geometry
-            start_row = idx
-            # each hex‐tower has 6 faces; each face we emit 4 vertices.
-            # total rows = 6 * 4 = 24
-            # (We’ll still do the loop as before so normals/colors get written.)
-            top_verts = [
-                (
-                    cx + self.radius * math.cos(math.radians(60 * i)),
-                    cy + self.radius * math.sin(math.radians(60 * i)),
-                    cz + 0.02,
-                )
-                for i in range(6)
-            ]
-
-            for i in range(6):
-                a, b = top_verts[i], top_verts[(i + 1) % 6]
-                a_bot = (a[0], a[1], bottom_z)
-                b_bot = (b[0], b[1], bottom_z)
-                for v in (a, b, b_bot, a_bot):
-                    vw.addData3f(*v)
-                    nw.addData3f(1, 1, 1)
-                    cw.addData4f(*color)
-                # two triangles per face, referencing those 4 new rows:
-                prim.addVertices(idx, idx + 1, idx + 2)
-                prim.addVertices(idx + 2, idx + 3, idx + 0)
-                idx += 4
-
-            # done writing all six faces: record that this tile’s walls occupy 24 rows:
-            self.wall_starts.append(start_row)
-            self.wall_vertex_counts.append(6 * 4)
-
-        prim.closePrimitive()
-        geom = Geom(vdata)
-        geom.addPrimitive(prim)
-        node = GeomNode("all_hex_walls")
-        node.addGeom(geom)
-        return NodePath(node)
 
     def get_tile_index_from_coords(self, x: int, y: int) -> int:
         """

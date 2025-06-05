@@ -236,6 +236,7 @@ class BaseTile(BaseEntity):
         self.anchor_node.setCollideMask(BitMask32.bit(1))
         self.anchor_node.setTag("tile_id", f"tile_{x}_{y}")
         self.hex_overlay_np: Optional[NodePath] = None
+        self.visible_sides: Dict[int, bool] = {0: True, 1: True, 2: True, 3: True, 4: True, 5: True}
 
         self._geom_flattened: bool = False
 
@@ -327,6 +328,17 @@ class BaseTile(BaseEntity):
         if "models" in state:
             del state["models"]
         return state
+
+    def set_visible_sides(self, sides: Dict[int, bool]) -> None:
+        if len(sides) != 6:
+            raise ValueError("visible_sides must be a list of length 6.")
+        self.visible_sides = sides.copy()
+
+    def is_side_visible(self, side_index: int) -> bool:
+        return self.visible_sides[side_index]
+
+    def get_visible_sides(self) -> List[int]:
+        return [i for i, v in enumerate(self.visible_sides) if v]
 
     def get_pos(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z
@@ -925,6 +937,7 @@ class BaseTile(BaseEntity):
             "y": self.y,
             "terrain": terrain_name,
             "altitude": self.altitude,
+            "visible_sides": ",".join(map(str, self.visible_sides.values())),
             "model": self.model(),
             "passable": f"{str(self.passable)}, {str(self.passable_without_tech)}",
             "movement_cost": self.movement_cost,
