@@ -80,9 +80,10 @@ class BaseEntity(ABC, DirectObject):
 
         # If it’s a weakref to a BaseTile, dereference and return
         # Dereference self.tile directly as it's expected to be a ReferenceType
+
         tile_obj = self.tile()
-        if not isinstance(tile_obj, BaseTile):
-            raise TypeError(f"Reference resolved to unexpected type {type(tile_obj)}")
+        if tile_obj is None:
+            raise ValueError("Tile reference is dead (None)")
         return tile_obj
 
     def set_tile(self, tile: "BaseTile") -> None:
