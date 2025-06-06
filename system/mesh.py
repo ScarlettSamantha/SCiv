@@ -184,7 +184,7 @@ class HexGrid:
                 self.wall_starts.append(start_row)
                 self.wall_vertex_counts.append(used)
             else:
-                # Fully buried by neighbors with >= height
+                # Fully buried by neighbors with ≥ height
                 self.wall_starts.append(None)
                 self.wall_vertex_counts.append(0)
 
@@ -322,7 +322,6 @@ class HexGrid:
         vdata = GeomVertexData("hex_grid", fmt, Geom.UHStatic)
         vw = GeomVertexWriter(vdata, "vertex")
         nw = GeomVertexWriter(vdata, "normal")
-        cw = GeomVertexWriter(vdata, "color")
         prim: GeomTriangles = GeomTriangles(Geom.UHStatic)
         prim.make_indexed()  # type: ignore
 
@@ -346,20 +345,10 @@ class HexGrid:
             # build the 7 verts: 6 corners + center
             hverts: List[Tuple[float, float, float]] = self.create_flat_top_hexagon_vertices(self.radius, (cx, cy, z))
             # emit them
-            for i, (x, y, zv) in enumerate(hverts):
-                # flat-top angl
-
+            for _, (x, y, zv) in enumerate(hverts):
                 # map into atlas cell
-
                 vw.addData3f(x, y, zv)
                 nw.addData3f(0, 0, 1)
-                cw.addData4f(*self.wall_color)
-
-            # add the 6 triangles (fan around center, which is vert_idx+6)
-            center_idx = vert_idx + 6
-            for i in range(6):
-                prim.addVertices(center_idx, vert_idx + i, vert_idx + (i + 1) % 6)
-
             vert_idx += 7
 
         prim.closePrimitive()
