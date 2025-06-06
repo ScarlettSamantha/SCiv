@@ -1,7 +1,10 @@
-from typing import Any
+from typing import Any, List, Type, TYPE_CHECKING
 
 from gameplay.tech import Tech
 from managers.i18n import t_
+
+if TYPE_CHECKING:
+    from system.entity import BaseEntity
 
 
 class Construction(Tech):
@@ -15,3 +18,9 @@ class Construction(Tech):
             *args,
             **kwargs,
         )
+
+    @classmethod
+    def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
+        from gameplay.improvements.core.resources.logging_camp import LoggingCamp
+
+        return [LoggingCamp] + super().unlocks()
