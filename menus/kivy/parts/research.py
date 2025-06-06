@@ -15,6 +15,7 @@ from kivy.uix.widget import Widget
 
 from gameplay.age import T_TranslationOrStrOrNone
 from gameplay.tech import Tech, TechTree
+from helpers.cache import Cache
 from helpers.colors import Colors
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr
@@ -45,6 +46,7 @@ class ResearchButton(TooltippedButton):
         self.value: Type[Tech] = value
         self.is_researching = PlayerManager.session_player().tech.is_researching(self.value)
         self.cost = value.tech_points_required
+        self.atlas = Cache.get_icon_atlas()
 
         if self.is_researching:
             self._cost_text: str = f"{str(PlayerManager.session_player().tech.current_science)}/{str(self.cost)}"
@@ -75,7 +77,11 @@ class ResearchButton(TooltippedButton):
             padding=(dp(2), 0, 0, 0),
         )
 
-        tech_icon_src = getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
+        tech_icon_src = str(
+            self.atlas.get_real_path_for_virtual_path(
+                getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
+            )
+        )
 
         tooltip_text = value.on_tooltip() if hasattr(value, "on_tooltip") else getattr(value, "name", "Unknown Tech")
 
@@ -159,9 +165,9 @@ class ResearchButton(TooltippedButton):
             tip = getattr(tech_type, "name", "Unknown Tech Type")
             border_color = getattr(tech_type, "icon_border_color", (1, 1, 1, 1))
             if isinstance(src, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
-                src = str(src)
+                src = str(self.atlas.get_real_path_for_virtual_path(str(src)))
             if isinstance(tip, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
-                tip = str(tip)
+                tip = str(self.atlas.get_real_path_for_virtual_path(str(tip)))
 
             tooltip_text = tech_type.on_tooltip() if hasattr(tech_type, "on_tooltip") else tip  # type: ignore
 

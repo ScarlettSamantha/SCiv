@@ -15,6 +15,7 @@ from kivy.uix.label import Label
 
 from gameplay.civic import Civic, CivicSubtree, CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
+from helpers.cache import Cache
 from helpers.placeholder import Placeholder
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
@@ -37,8 +38,13 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         self.on_click = on_click
         self.civic = civic
         _civic = civic()
+        self.atlas = Cache.get_icon_atlas()
 
-        icon_src = getattr(_civic, "icon_path", Placeholder.getPlaceholderImagePathSmallIcon())
+        icon_src = str(
+            self.atlas.get_real_path_for_virtual_path(
+                getattr(_civic, "icon_path", Placeholder.getPlaceholderImagePathSmallIcon())
+            )
+        )
         name = str(getattr(_civic, "name", ""))
         description = str(getattr(_civic, "description", ""))
         cost = _civic.get_cost()

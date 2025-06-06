@@ -190,9 +190,14 @@ class TopBar(BoxLayout, DirectObject):
 
         if (current_tech := player.tech.current_tech()) is None and self.research_label is not None:
             self.research_label.text = "Researching: None"
-        else:
+        elif current_tech is not None and self.research_label is not None:
+            tech_icon = str(current_tech.get_icon())
+            tech_icon: str = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(str(tech_icon)))
+
             self.research_label.text = f"Researching: {str(current_tech.name)}({str(player.tech.current_science)} / {str(player.tech.needed_science)})"  # type: ignore
-            self.research_label.image_source = str(current_tech.get_icon())  # type: ignore
+            self.research_label.image_source = str(  # type: ignore
+                Cache.get_icon_atlas().get_real_path_for_virtual_path(str(current_tech.get_icon()))
+            )  # type: ignore
         self.culture_label.text = f"Culture: {floor(player.culture.culture.value)}"  # type: ignore
 
         self.gold_label.text = f"Gold: {floor(player.gold.gold.value)}"  # type: ignore
