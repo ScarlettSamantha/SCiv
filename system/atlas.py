@@ -114,18 +114,13 @@ class AtlasGenerator:
         return self._atlas_image_cache
 
     def lookup_by_key(self, key: str) -> Optional[Dict[str, Any]]:
-        if self.manifest is None:
-            return None
-        return self.manifest.get(key)
+        return self.manifest.get(key)  # type: ignore
 
     def lookup_by_virtual_path(self, virtual_path: str) -> Optional[Dict[str, Any]]:
-        if self.manifest is None:
-            return None
-
         if "assets/icons/" in virtual_path:
             virtual_path = virtual_path.replace("assets/icons/", "")
 
-        for k, entry in self.manifest.items():
+        for k, entry in self.manifest.items():  # type: ignore
             if entry["virtual_path"] == virtual_path:
                 return self.lookup_by_key(k)
 
