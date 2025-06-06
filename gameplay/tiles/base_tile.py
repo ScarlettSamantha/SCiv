@@ -626,8 +626,6 @@ class BaseTile(BaseEntity):
 
     def render(self) -> None:
         """Fast path: position/scale the anchor, flatten once, swap textures, and reposition UI."""
-        pos_z = self.calculate_z_pos_on_altitude()[2]
-        self.recalc_grid_position(radius=1.0)  # Ensure pos_x/pos_y are correct
         self.anchor_node.setPos(self.pos_x, self.pos_y, 0)
         self.anchor_node.setScale(1)
 
@@ -637,26 +635,25 @@ class BaseTile(BaseEntity):
 
         self._render_resource_model()
 
-        if not hasattr(self, "hex_overlay_np") or self.hex_overlay_np is None:
-            from panda3d.core import CardMaker
+        from panda3d.core import CardMaker
 
-            cm = CardMaker(f"hex_overlay_{self.id}")
-            overlay_size = 1.0  # Adjust this to fit your tile, must fully cover hex
-            cm.setFrame(-overlay_size, overlay_size, -overlay_size, overlay_size)
-            self.hex_overlay_np = self.ui_group.attachNewNode(cm.generate())
-            self.hex_overlay_np.setTransparency(1)
-            self.hex_overlay_np.setAttrib(ColorBlendAttrib.makeOff())
-            self.hex_overlay_np.setBin("fixed", 40)  # Drawn below icons, above terrain
-            self.hex_overlay_np.setDepthTest(True)
-            self.hex_overlay_np.setDepthWrite(False)
-            self.hex_overlay_np.setHpr(0, -90, 0)  # Flat on X/Y plane
-            self.hex_overlay_np.setScale(1.0)
-            self.hex_overlay_np.setPos(0, 0, 0.02)  # Just above terrain, below icons
+        cm = CardMaker(f"hex_overlay_{self.id}")
+        overlay_size = 1.0  # Adjust this to fit your tile, must fully cover hex
+        cm.setFrame(-overlay_size, overlay_size, -overlay_size, overlay_size)
+        self.hex_overlay_np = self.ui_group.attachNewNode(cm.generate())
+        self.hex_overlay_np.setTransparency(1)
+        self.hex_overlay_np.setAttrib(ColorBlendAttrib.makeOff())
+        self.hex_overlay_np.setBin("fixed", 40)  # Drawn below icons, above terrain
+        self.hex_overlay_np.setDepthTest(True)
+        self.hex_overlay_np.setDepthWrite(False)
+        self.hex_overlay_np.setHpr(0, -90, 0)  # Flat on X/Y plane
+        self.hex_overlay_np.setScale(1.0)
+        self.hex_overlay_np.setPos(0, 0, 0.001)  # Just above terrain, below icons
 
         # Load the overlay texture (alpha hex in square PNG)
         texture_name: Optional[str] = None
         if hasattr(self.get_terrain(), "texture"):
-            texture_name = str(self.get_terrain().texture())
+            texture_name = str(self.tile_terrain.texture())
         elif hasattr(self.get_terrain(), "name"):
             texture_name = getattr(self.get_terrain(), f"{self.name}.png", "default.png")
 
@@ -673,11 +670,11 @@ class BaseTile(BaseEntity):
         self.hex_overlay_np.setTexture(texture, 1)
 
         if not self._geom_flattened:
-            self.geom_group.flattenStrong()
+            self.geom_group.flatten_medium()
             self._geom_flattened = True
 
         # lift all UI elements together
-        self.ui_group.setZ(pos_z)
+        self.ui_group.setZ(self.pos_z + 0.01)
 
         self.add_icon_to_tile()
 
@@ -687,7 +684,7 @@ class BaseTile(BaseEntity):
         # reposition unit markers
         if self.unit_icons_np:
             for marker in self.unit_icons_np.getChildren():
-                marker.setZ(pos_z)
+                marker.setZ(self.pos_z + 1.5)  # Lift icons above the tile
 
         self.set_walls_color(Colors.to_normalized_float(self.get_terrain().wall_color(), 1.0))
 
@@ -869,10 +866,7 @@ class BaseTile(BaseEntity):
         """
         Refresh the tile's visual representation by unrendering and then rendering.
         """
-        self.icon_overlay_np = None
-        self.hex_overlay_np = None
         self.remove_unit_icons()
-        self.render()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
         """
@@ -955,27 +949,11 @@ class BaseTile(BaseEntity):
         return self.city is not None
 
     def add_unit(self, unit: "Unit") -> None:
-        unit.tile = self
         self.units.add_unit(unit)
-
-        model = unit.get_model_path()
-
-        if model is None:
-            raise NotImplementedError("Unit model rendering not implemented for this tile type.")
-
-        self.add_model(
-            model,
-            unit.model_position_offset,
-            unit.model_size,
-            unit.model_rotation,
-            net_type=NET_TYPE.MODEL,
-            net_id=unit.tag,
-        )
 
     def remove_unit(self, unit: "Unit") -> None:
         # Assuming the intent is to remove the unit.
         self.units.remove_unit(unit)
-        self.rerender()
 
     def is_occupied(self) -> bool:
         return len(self.units._units) > 0 or self.city is not None  # type: ignore
@@ -1001,8 +979,7 @@ class BaseTile(BaseEntity):
 
         data: Dict[str, Any] = {
             "tag": self.tag,
-            "x": self.x,
-            "y": self.y,
+            "x(col), y(row)": f"{self.x}, {self.y}",
             "terrain": terrain_name,
             "altitude": self.altitude,
             "visible_sides": ",".join(map(str, self.visible_sides.values())),
@@ -1033,10 +1010,7 @@ class BaseTile(BaseEntity):
             "altitude": self.altitude,
             "biome": f"{self.biome.id} - {self.biome.name}",  # type: ignore
             "moisture": self.moisture,
-            "is_coast": self.is_coast,
-            "is_water": self.is_water,
-            "is_land": self.is_land,
-            "is_lake": self.is_lake,
+            r"is_[\{coast\}|{\sea\}|{water\}|{land\}|{lake\}]": f"{self.is_coast}, {self.is_sea}, {self.is_water}, {self.is_land}, {self.is_lake}",
             "is_city": self.is_city(),
             "terrain": self.terrain,
             "features": ",".join(str(feature) for feature in self.features),
@@ -1060,6 +1034,10 @@ class BaseTile(BaseEntity):
                 "resources_needed": f"{self.city.resource_required_amount}/{self.city.resource_collected}",
             }
             data["city"] = "\n".join(f"{k}: {v}" for k, v in data["city"].items())
+
+        if self.units.has_any():
+            if (unit := self.units.first()) is not None:
+                data.update({"unit_stats": unit.to_gui()})
 
         return data
 
@@ -1087,8 +1065,6 @@ class BaseTile(BaseEntity):
             auto_claim_radius=1,
         )
 
-        self.set_terrain(CityTerrain())
-
         self.owner = player
         self.owner.tiles.add_tile(self)
         self.owner.add_tile(self)
@@ -1099,11 +1075,17 @@ class BaseTile(BaseEntity):
         self.owner.capital = self.city
 
         self.calculate()
-        self.rerender()
-
+        self.set_terrain(CityTerrain())
+        self.clear_icons()
+        self.add_icon_to_tile()
+        self.render()
         MessengerGlobal.messenger.send("game.border.refresh")
 
         return True
+
+    def clear_icons(self) -> None:
+        self.icon_overlay_np = None
+        self.unit_icons_np = None
 
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:
         if not improvement.placeable_on_tiles:

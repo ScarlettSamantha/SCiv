@@ -1,12 +1,13 @@
+from copy import copy
 import random
 from abc import ABC
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, overload
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import BitMask32, LVector3, NodePath
+from panda3d.core import BitMask32, LVector3, NodePath, PandaNode
 
 
 from gameplay.condition import Condition
@@ -98,10 +99,15 @@ class Unit(BaseEntity, ABC):
 
         self.logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
 
+        self.model_cache: Optional[NodePath] = None
+
         self.register_actions()
         self.register()
 
     def register_actions(self): ...
+
+    def get_pos(self) -> Tuple[float, float, float]:
+        return (self.pos_x, self.pos_y, self.pos_z)
 
     def on_load(self):
         self.base = Cache.get_showbase_instance()
@@ -119,30 +125,8 @@ class Unit(BaseEntity, ABC):
 
         UnitManager.get_singleton_instance().add_unit(self)
 
-    @overload
-    def set_pos(self, pos: Tuple[float, float, float], maintain_z: bool = True) -> None: ...
-
-    @overload
-    def set_pos(self, pos: "BaseTile", maintain_z: bool = True, set_as_tile: bool = True) -> None: ...
-
-    def set_pos(
-        self, pos: Union[Tuple[float, float, float], "BaseTile"], maintain_z: bool = True, set_as_tile: bool = True
-    ) -> None:
-        if isinstance(pos, tuple):
-            if maintain_z:
-                self.pos_x, self.pos_y, _ = pos
-            else:
-                self.pos_x, self.pos_y, self.pos_z = pos
-        else:
-            if maintain_z:
-                (self.pos_x, self.pos_y, _) = pos.get_cords()
-            else:
-                (self.pos_x, self.pos_y, self.pos_z) = pos.get_cords()
-            if set_as_tile:
-                self.tile = pos
-
-        if self.model is not None:  # type: ignore
-            self.model.setPos(LVector3(self.pos_x, self.pos_y, self.pos_z + self.get_tile().pos_z))  # type: ignore
+    def set_pos(self, pos: Tuple[float, float, float]) -> None:
+        self.pos_x, self.pos_y, self.pos_z = pos
 
     def is_alive(self) -> bool:
         return self.health() > 0
@@ -168,12 +152,10 @@ class Unit(BaseEntity, ABC):
             self.register()
 
         # Load the Panda3D model and position it at the tile
-        self.model = self.load_model(self._model)
+        self.model = self.load_model()
 
         if self.model:
             self.model.setCollideMask(BitMask32.bit(1))
-
-        self.get_tile().rerender()
 
         if not self._model:
             raise RuntimeError(f"Failed to load model for unit {self.key}")
@@ -189,19 +171,20 @@ class Unit(BaseEntity, ABC):
             return self._model
         return None
 
+    def get_actions(self) -> List[Action]:
+        return self.actions
+
     @classmethod
     def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "Unit":
         instance = cls(tile=tile)
         instance.owner = player
+        instance.spawn()
 
         player.units.add_unit(instance)
         tile.add_unit(instance)
         UnitManager.get_singleton_instance().add_unit(instance)
 
         return instance
-
-    def get_actions(self) -> List[Action]:
-        return self.actions
 
     def move(self, tile: "BaseTile") -> CantMoveReason:
         from gameplay.repositories.tile import TileRepository
@@ -235,45 +218,59 @@ class Unit(BaseEntity, ABC):
         if tiles_to_move[0] == self.get_tile():
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
-        result_tile: "BaseTile" = self.get_tile()  # Start off at our current tile
+        departing_tile: "BaseTile" = self.get_tile()  # Start off at our current tile
+        current_tile: "BaseTile" = self.get_tile()
 
-        self.get_tile().unrender_by_type(NET_TYPE.MODEL)
-        self.get_tile().remove_unit(self)  # Remove from the current tile
-        self.get_tile().remove_unit_icons()
-        self.get_tile().rerender()  # Rerender the tile to remove the unit model
         for _tile in tiles_to_move:
-            _tile: "BaseTile" = _tile  # this is a type hint
-            cords: Tuple[float, float, float] = _tile.get_cords()
-
             if (self.moves_left - _tile.movement_cost) < 0:
-                previous_tile_cords: Tuple[float, float, float] = (
-                    result_tile.get_cords()
-                )  # previous due to the fact that we are not on the tile yet and have not updated the result_tile
-                self.tile = result_tile
-                self.set_pos((previous_tile_cords[0], previous_tile_cords[1], self.pos_z + _tile.pos_z))
-                self.add_unit_model_to_tile(self.tile)  # Add the model to the current tile
-                self.tile.rerender()
+                self._move_to_tile(current_tile, departing_tile)
                 return CantMoveReason.NO_MOVES
 
-            # Check if tile is still valid for the unit
+            self.moves_left -= _tile.movement_cost
+
             if _tile.is_visisted_by(self) is False:
                 # Move partially onto this tile and then get trapped or do partial logic
-                self.moves_left -= _tile.movement_cost
-                self.set_pos((cords[0], cords[1], self.pos_z + cords[2]))
-                self.tile = _tile
+                self._move_to_tile(_tile, departing_tile)
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
-            result_tile: "BaseTile" = _tile
-            self.moves_left -= _tile.movement_cost
-            self.tile = _tile
-            self.set_pos((cords[0], cords[1], self.pos_z + _tile.pos_z))
+            current_tile = _tile
 
-        self.get_tile().add_unit(self)  # Add to the new tile
-        self.add_unit_model_to_tile(result_tile)  # Add the model to the new tile
-        self.get_tile().rerender()  # Rerender the tile
-        if result_tile == target_tile:
+        self._move_to_tile(current_tile, departing_tile)  # Move to the last tile in the path
+        if current_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
+
+    def _clear_departing_tile(self, tile: "BaseTile") -> None:
+        tile.remove_unit(self)
+        self.unload_model()
+        tile.remove_unit_icons()
+
+    def _move_to_tile(self, tile: "BaseTile", clear_departing_tile: Optional["BaseTile"] = None) -> None:
+        if clear_departing_tile is not None:
+            self._clear_departing_tile(clear_departing_tile)
+
+        self.set_tile(tile)
+        self.model = self.load_model()
+        self.calculate_model_position()
+        self.get_tile().add_unit(self)
+        self.get_tile().add_unit_icon()
+
+    def calculate_model_position(self) -> None:
+        """
+        Calculates the position of the model based on the tile's coordinates and the unit's model position offset.
+        This is used to ensure the model is positioned correctly on the tile.
+        """
+        if self.model is None:
+            return None
+
+        pos = (
+            self.get_tile().get_cords()[0] + self.model_position_offset[0],
+            self.get_tile().get_cords()[1] + self.model_position_offset[1],
+            self.get_tile().calculate_z_pos_on_altitude()[2] + self.model_position_offset[2],
+        )
+        self.model.setPos(*pos)
+        self.model.setHpr(LVector3(*self.model_rotation))
+        self.model.setScale(self.model_size)
 
     def add_unit_model_to_tile(self, tile: "BaseTile") -> None:
         """
@@ -282,15 +279,9 @@ class Unit(BaseEntity, ABC):
         """
         if self._model is None:
             raise ValueError(f"Unit {self.key} has no model assigned.")
-
-        tile.add_model(
-            self._model,
-            net_type=NET_TYPE.MODEL,
-            net_id=self.tag,
-            pos_offset=self.model_position_offset,
-            scale=self.model_size,
-            hpr=self.model_rotation,
-        )
+        else:
+            self.unload_model()
+        self.model = self.load_model()
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -298,27 +289,42 @@ class Unit(BaseEntity, ABC):
     def remove_action(self, action: Action) -> None:
         self.actions.remove(action)
 
-    def load_model(self, model_path: str) -> NodePath | None:
-        from gameplay.tiles.base_tile import BaseTile
+    def unload_model(self) -> None:
+        """
+        Unloads the model from the scene and clears the reference.
+        This is used when the unit is destroyed or removed from the scene.
+        """
+        if self.model is not None:
+            self.model.removeNode()
+            self.model = None
+        else:
+            self.logger.warning(f"Unit {self.key} has no model to unload.")
 
+    def load_model(self) -> NodePath | None:
         loader: Loader = Loader(self.base)
-        model: Optional[NodePath] = loader.loadModel(model_path)
-        if not model:
-            return None
+        model_path: Optional[str] = self.get_model_path()
 
-        if isinstance(self.tile, BaseTile):
-            self.tile.unit_icons_np = None
+        if model_path is None:
+            raise ValueError(f"Unit {self.key} has no model path defined.")
+
+        if not self.model_cache:
+            model: NodePath[PandaNode] | None = loader.loadModel(model_path)  # type: ignore
+            if model is None:  # type: ignore
+                raise RuntimeError(f"Failed to load model for unit {self.key} at path {model_path}")
+            self.model_cache = model
+
+        model: NodePath = copy(self.model_cache)
+
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
-        # Position and transform the model
         tile_pos = self.get_tile().get_cords()
         pos = (
-            tile_pos[0] + self.model_position_offset[0],
-            tile_pos[1] + self.model_position_offset[1],
-            tile_pos[2] + self.model_position_offset[2],
+            tile_pos[0],
+            tile_pos[1],
+            self.get_tile().calculate_z_pos_on_altitude()[2],
         )
-        model.setPos(LVector3(*pos))
+        model.setPos(*pos)
         model.setHpr(LVector3(*self.model_rotation))
         model.setScale(self.model_size)
 
@@ -365,13 +371,23 @@ class Unit(BaseEntity, ABC):
             owner_name = PlayerManager.get_nature()
         else:
             owner_name = self.owner.civilization.name
+
+        model = None
+        if self.model is not None:
+            model = self.model
+            model_pos = model.get_pos()
+            model_pos_str = f"{round(model_pos[0], 4)}, {round(model_pos[1], 4)}, {round(model_pos[2], 4)}"
+        else:
+            model_pos_str = "None"
+
         return {
             "tag": self.tag,
             "key": self.key,
+            "pos": f"{round(self.pos_x, 4)}, {round(self.pos_y, 4)}, {round(self.pos_z, 4)}",
+            "model_pos": model_pos_str,
             "name": str(self.name),
             "description": self.description,
             "owner": owner_name,
-            "cords": f"{round(self.pos_x, 5)}, {round(self.pos_y, 5)}, {round(self.pos_z, 5)}",
             "tile": self.get_tile().tag if self.tile is not None else "None",
             "health": f"{self.health()}/{self.max_health}",
             "damage": f"Mele: {self.get_attack_power_mele()} | Ranged: {self.get_attack_power_ranged()}",
