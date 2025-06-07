@@ -126,7 +126,7 @@ class World(Singleton, DirectObject):
         for tile in self.map.values():
             if (
                 tile.player is not None
-                or tile.city is not None
+                or tile.is_city()
                 or len(tile.units) > 0
                 or len(tile.effects) > 0
                 or len(tile._improvements) > 0  # type: ignore
@@ -142,11 +142,14 @@ class World(Singleton, DirectObject):
             self.logger.info(f"Old owner of tile {tile} is {old_owner}")
             old_owner.tiles.remove(tile)
 
-            if tile.city is not None:
-                old_owner.cities.remove(tile.city)
+            if tile.city_owner is not None:
+                if tile.is_city():
+                    old_owner.cities.remove(tile.city_owner)
+                else:
+                    tile.city_owner = None
 
         player.tiles.add(tile)
-        tile.city = city
+        tile.city_owner = city
         tile.owner = player
 
         self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")

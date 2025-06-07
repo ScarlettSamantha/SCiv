@@ -161,6 +161,11 @@ class AtlasGenerator:
 
             tex: Texture = Texture()  # type: ignore
             tex.load(pnm)  # type: ignore
+            tex.setFormat(Texture.F_srgb_alpha)  # type: ignore
+            tex.setMinfilter(Texture.FT_linear_mipmap_linear)  # type: ignore
+            tex.setMagfilter(Texture.FT_linear)
+            tex.setWrapU(Texture.WM_clamp)
+            tex.setWrapV(Texture.WM_clamp)
             self._p3d_texture_cache = tex  # type: ignore
         return self._p3d_texture_cache  # type: ignore
 
@@ -228,6 +233,11 @@ class AtlasGenerator:
 
         tex = Texture()  # type: ignore
         tex.load(pnm)  # type: ignore
+        tex.setFormat(Texture.F_srgb_alpha if has_alpha else Texture.F_rgb)  # type: ignore
+        tex.setMinfilter(Texture.FT_linear_mipmap_linear)
+        tex.setMagfilter(Texture.FT_linear)
+        tex.setWrapU(Texture.WM_clamp)
+        tex.setWrapV(Texture.WM_clamp)
         self._individual_texture_cache[key] = tex  # type: ignore
         return tex  # type: ignore
 

@@ -14,6 +14,7 @@ from panda3d.core import (
     NodePath,
 )
 
+from gameplay.repositories.tile import TileRepository
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -28,6 +29,9 @@ class NET_TYPE(Enum):
     TILE = "tile"
     IMPROVEMENT = "improvement"
     RESOURCE = "resource"
+    BIT = "bit"
+    GEOM = "geom"
+    ANCHOR = "anchor"
 
 
 class Input(Singleton, DirectObject):
@@ -165,7 +169,11 @@ class Input(Singleton, DirectObject):
                     selected_object = True
                 elif NET_TYPE.TILE.value == net_type:
                     # This is a tile
-                    messenger.send("system.input.user.tile_clicked", [net_id])
+                    tile = TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))
+                    if tile is None:
+                        self.logger.warning(f"Tile with ID {net_id} not found.")
+                        return None
+                    messenger.send("system.input.user.tile_clicked", [tile.tag])
                     selected_object = True
 
                 if selected_object:

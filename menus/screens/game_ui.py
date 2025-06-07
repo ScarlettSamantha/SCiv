@@ -465,7 +465,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if _tile is None:
             return
 
-        if _tile.city is None:
+        if not _tile.is_city():
             self.get_city_ui().hide()
             self.showing_city = None
 

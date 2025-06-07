@@ -137,6 +137,18 @@ class Unit(BaseEntity, ABC):
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.UNIT)
         UnitManager.get_singleton_instance().remove_unit(self)
 
+    def render(self) -> NodePath | None:
+        if self.model is not None:
+            self.unload_model()
+
+        self.model = self.load_model()
+
+        if self.model is None:
+            self.logger.error(f"Failed to load model for unit {self.key} at path {self._model}")
+            return None
+
+        return self.model
+
     def spawn(self, ignore_constraints: bool = False) -> bool:
         """
         Spawns the unit at its assigned tile, loading the model into Panda3D.
@@ -152,7 +164,7 @@ class Unit(BaseEntity, ABC):
             self.register()
 
         # Load the Panda3D model and position it at the tile
-        self.model = self.load_model()
+        self.render()
 
         if self.model:
             self.model.setCollideMask(BitMask32.bit(1))
@@ -404,22 +416,18 @@ class Unit(BaseEntity, ABC):
         }
 
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
-        """Removes the unit from the scene and cleans up references."""
-        if self.model:  # type: ignore
-            self.model.removeNode()  # type: ignore # Remove from the scene graph
-            self.model = None  # Clear reference
-
-        # Remove from the units lookup dictionary if it exists
         self.unregister()
 
-        # Nullify references to break cyclic dependencies
-        self.get_tile().unrender_by_type(NET_TYPE.MODEL)
         self.get_tile().remove_unit(self)
 
         if self.owner is not None:
             self.owner.units.remove_unit(self)
 
         self.owner = None
+
+        if self.model:  # type: ignore
+            self.unload_model()
+
         self.actions.clear()
         del self.tag
 

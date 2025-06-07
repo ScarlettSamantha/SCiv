@@ -173,8 +173,9 @@ class FoundAction(BaseUnitAction):
         self.tile = (
             self.unit.get_tile()
         )  # This has to be done before the unit is destroyed otherwise the tile will be None.
-        if not self.unit.get_tile().found(self.unit.owner):
+        owner = self.unit.owner
+        self.unit.destroy()
+        if not self.tile.found(owner):
             return False
 
-        self.unit.destroy()
         return True

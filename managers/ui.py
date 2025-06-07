@@ -10,7 +10,6 @@ from kivy.uix.screenmanager import Screen
 from panda3d.core import PStatClient  # type: ignore
 
 from gameplay.player import Player
-from gameplay.repositories.tile import TileRepository
 from gameplay.tech import Tech
 from gameplay.tiles.base_tile import BaseTile
 from gameplay.unit import Unit
@@ -133,8 +132,6 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
 
         self.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
-        self.accept("ui.update.ui.resource_ui_change", self.on_resource_ui_change_request)
-        self.accept("ui.update.ui.lense_change", self.on_lense_change)
         self.accept("ui.update.ui.show_save", self.on_show_save)
         self.accept("ui.update.ui.show_load", self.on_show_load)
         self.accept("ui.update.ui.hide_save", self.on_hide_save)
@@ -143,22 +140,9 @@ class ui(Singleton, DirectObject):
         self.accept("ui.request.save_game", self.on_request_save_game)
         self.accept("ui.request_main_menu", self.on_request_main_menu)
         self.accept("ui.request.reroll", self.on_reroll)
-        self.accept("unit.action.move.visiting_tile", self.leave_trail)
-
         self.accept("ui.request.open.popup", self.show_draggable_popup)
 
-        self.accept("escape", self.on_escape_press)
-
-        self.accept("f7", self.trigger_render_analyze)
-        self.accept("p", self.activate_pstat)
-        self.accept("l", self.deactivate_pstat)
-        self.accept("n", self.show_colors_for_resources)
-        self.accept("m", self.show_colors_for_water)
-        self.accept("b", self.show_colors_for_units)
-
-        self.accept("z", self.calculate_icons_for_tiles)
-
-        self.accept("space", self.on_space_press)
+        self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
@@ -167,6 +151,12 @@ class ui(Singleton, DirectObject):
         self.accept("game.gameplay.research.player_cancels_research", self.on_cancels_research_session)
 
         self.accept("system.main.ready", self.on_main_ready)
+
+        self.accept("escape", self.on_escape_press)
+        self.accept("p", self.activate_pstat)
+        self.accept("l", self.deactivate_pstat)
+        self.accept("z", self.calculate_icons_for_tiles)
+        self.accept("space", self.on_space_press)
         return True
 
     def get_main_game_ui(self) -> "Screen | GameUIScreen":
@@ -175,19 +165,9 @@ class ui(Singleton, DirectObject):
     def insert_refresh_frame(self):
         self._base.task_mgr.step()  # type: ignore
 
-    def on_tile_hover(self, tile_coords: str):
-        if (tile := self.map.map.get(tile_coords)) is None:
-            return
+    def on_tile_hover(self, tile_coords: str) -> None: ...
 
-        neighboring_tiles = TileRepository.get_neighbors(tile, check_passable=False, radius=self.highlight_tile_radius)
-
-        self.unhighlight_tiles(self.highlighted_tiles, restore_color=False)
-        self.highlight_tiles(neighboring_tiles + [tile])  # We add the tile itself to the list
-
-    def on_tile_unhover(self, tile_coords: List[str]):
-        if (tile := self.map.map.get(tile_coords[0])) is None:  # type: ignore
-            return
-        pass
+    def on_tile_unhover(self, tile_coords: List[str]) -> None: ...
 
     def on_space_press(self):
         MessengerGlobal.messenger.send("game.requests.end_turn")
@@ -276,15 +256,6 @@ class ui(Singleton, DirectObject):
     def highlight_tiles(self, tiles: List[BaseTile], color: Optional[Tuple[float, float, float, float]] = None):
         for tile in tiles:
             tile.calculate()
-            if color is not None:
-                tile.set_color(color)
-
-            self.highlighted_tiles.append(tile)
-
-    def unhighlight_tiles(self, tiles: List[BaseTile], restore_color: bool = True):
-        for tile in tiles:
-            if restore_color:
-                tile.set_color(Colors.RESTORE)
 
     def show_draggable_popup(
         self,
@@ -331,28 +302,11 @@ class ui(Singleton, DirectObject):
     def deactivate_pstat(self):
         PStatClient.disconnect()  # type: ignore
 
-    def calculate_icons_for_tiles(self, small: bool = True, large: bool = True):
+    def calculate_icons_for_tiles(self):
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
             tile.add_icon_to_tile()
             tile.flatten()
-
-    def on_resource_ui_change_request(self, value: Enum):
-        from menus.kivy.parts.debug_actions import MapActionsValues
-
-        self.show_resources_in_radius = False
-        small, big = False, False
-
-        if MapActionsValues.BIG_ICONS == value:
-            big = True
-        elif MapActionsValues.SMALL_ICONS == value:
-            small = True
-        elif MapActionsValues.SMALL_BIG_ICONS == value:
-            small, big = True, True
-        elif MapActionsValues.ALL_IN_RADIUS == value:
-            self.show_resources_in_radius = True  # We hide the rest of the icons
-
-        self.calculate_icons_for_tiles(small=small, large=big)
 
     def debug_ui_change(self, value: Enum):
         from menus.kivy.parts.debug_actions import DebugUIOptionsValues
@@ -384,24 +338,6 @@ class ui(Singleton, DirectObject):
 
         self.debug_show = {"actions": actions, "stats": stats, "debug": debug}
         self.game_gui.debug_ui_state(stats, actions, debug)
-
-    def on_lense_change(self, value: Enum):
-        from menus.kivy.parts.debug_actions import LenseOptionsValues
-
-        self.restore_all_tiles_colors()
-
-        if LenseOptionsValues.RESOURCES == value:
-            self.show_colors_for_resources()
-        elif LenseOptionsValues.WATER == value:
-            self.show_colors_for_water()
-        elif LenseOptionsValues.UNITS == value:
-            self.show_colors_for_units()
-        elif LenseOptionsValues.EMPIRES == value:
-            self.show_empire_colors()
-        elif LenseOptionsValues.NONE == value:
-            return
-        else:
-            raise ValueError("Invalid value for lense change")
 
     def get_game_ui(self):
         # If we don't have an active Game, create one
@@ -454,9 +390,6 @@ class ui(Singleton, DirectObject):
         if len(tiles) == 0:
             return
 
-        for tile in tiles:
-            tile.set_color(Colors.RESTORE)
-
     def select_tile(self, tile_coords: str):
         x, y = tile_coords.split("_")[-2:]
         tile = self.map.grid.get((int(x), int(y)))
@@ -465,13 +398,12 @@ class ui(Singleton, DirectObject):
             messenger.send("ui.update.user.tile_not_found", [tile_coords])
             return
 
-        tile.is_selected = True
-        tile.calculate()
-
         if self.previous_tile is not None:
-            self.previous_tile.is_selected = False
+            self.previous_tile.deselect()
 
-        if tile.city is not None and tile.city.player is not None:
+        tile.select()
+
+        if tile.is_city() and tile.city is not None and tile.city.player is not None:
             if PlayerManager.is_session_player(tile.city.player):
                 messenger.send("ui.update.user.city_clicked", [tile.city])
             else:
@@ -479,21 +411,6 @@ class ui(Singleton, DirectObject):
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
-
-    def color_tile(
-        self,
-        tile: BaseTile,
-        color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
-    ):
-        if color is None:
-            color = Colors.RESTORE
-
-        if tile.owner == PlayerManager.session_player():
-            tile.set_color(color if isinstance(color, tuple) else color[0])
-        elif tile.owner is PlayerManager.get_nature():
-            tile.set_color(color if isinstance(color, tuple) else color[1])
-        else:
-            tile.set_color(color if isinstance(color, tuple) else color[2])
 
     def leave_trail(
         self,
@@ -503,30 +420,6 @@ class ui(Singleton, DirectObject):
         from gameplay.actions.timed.trail import Trial
 
         ActionManager.add_timed_action(Trial(tile=tile))
-
-    def color_neighbors(
-        self,
-        tile: BaseTile,
-        color: Optional[Tuple[float, float, float, float] | List[Tuple[float, float, float, float]]] = None,
-    ):
-        from gameplay.repositories.tile import TileRepository
-
-        if color is None:
-            color = Colors.RESTORE
-
-        neighbors = TileRepository.get_neighbors(tile, check_passable=False)
-        for i, _tile in enumerate(neighbors):
-            _tile.set_color(color if isinstance(color, tuple) else color[i % len(color)])
-
-        return neighbors
-
-    def restore_tile_colors(self, tile: BaseTile):
-        tile.set_color(Colors.RESTORE)
-
-    def restore_all_tiles_colors(self):
-        self.showing_color = False
-        for _, tile in self.map.map.items():
-            tile.set_color(Colors.RESTORE)
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
@@ -538,7 +431,6 @@ class ui(Singleton, DirectObject):
             object: BaseEntity | Unit = unit
 
         if self.current_tile is not None:
-            self.current_tile.set_color(Colors.RESTORE)
             self.previous_tile = self.current_tile
             self.current_tile = None
 
@@ -558,48 +450,3 @@ class ui(Singleton, DirectObject):
 
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore
-
-    def show_colors_for_water(self):
-        for _, hex in self.map.map.items():
-            if self.showing_colors:
-                hex.set_color(Colors.RESTORE)
-                continue
-
-            if hex.is_coast and hex.is_water:
-                hex.set_color(Colors.TIEL)
-            elif hex.is_water:
-                hex.set_color(Colors.BLUE)
-            elif not hex.is_water:
-                hex.set_color(Colors.RED)
-            else:
-                hex.set_color(Colors.RESTORE)
-
-    def show_colors_for_resources(self):
-        from gameplay.resource import ResourceTypeBonus, ResourceTypeStrategic
-
-        for _, hex in self.map.map.items():
-            if len(hex.resources) > 0:
-                is_strategic: bool = len(hex.resources.resources[ResourceTypeStrategic]) > 0
-                is_bonus: bool = len(hex.resources.resources[ResourceTypeBonus]) > 0
-                if is_strategic:
-                    hex.set_color(Colors.YELLOW)
-                elif is_bonus:
-                    hex.set_color(Colors.BLUE)
-                else:
-                    hex.set_color(Colors.GREEN)
-            else:
-                hex.set_color(Colors.RED)
-
-    def show_colors_for_units(self):
-        for _, hex in self.map.map.items():
-            if len(hex.units) > 0:
-                hex.set_color(Colors.BLUE)
-            else:
-                hex.set_color(Colors.RED)
-
-    def show_empire_colors(self):
-        for _, hex in self.map.map.items():
-            if hex.owner is not None:
-                hex.set_color(hex.owner.color)
-            else:
-                hex.set_color(Colors.RESTORE)

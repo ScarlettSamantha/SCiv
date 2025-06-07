@@ -10,14 +10,16 @@ These are all used by the camera system and are used for mainly controlling the 
 - `arrow-down` (E: engine | L: camera)
 - `arrow-left` (E: engine | L: camera)
 - `arrow-right` (E: engine | L: camera)
+
 - `w` (E: engine | L: camera)
 - `s` (E: engine | L: camera)
 - `d` (E: engine | L: camera)
 - `q` (E: engine | L: camera)
 - `e` (E: engine | L: camera)
+- `r` (E: engine | L: camera)
+
 - `wheel_up` (E: engine | L: camera)
 - `wheel-down` (E: engine | L: camera)
-- `r` (E: engine | L: camera)
 - `mouse1` (E: engine | L: camera)
 - `mouse3` (E: engine | L: camera)
 - `escape` (E: engine | L: ui-part-load, L: ui-part-save, ui-part-pause)
@@ -26,11 +28,15 @@ These are all used by the camera system and are used for mainly controlling the 
 
 These are used by the UI manager to control some debug actions these may disappear.
 
-- `f7` (E: engine | L: manager-ui)
+- `f2` (E: engine | L: manager-input) (debug: activate input system)
+- `f3` (E: engine | L: manager-input) (debug: deactivate input system)
+- `f7` (E: engine | L: manager-ui) (debug: run analysis)
+- `f9` (E: engine | L: `tile<selected>`) (debug: trigger rerender on selected tile)
+- `f10` (E: engine | L: `tile<selected>`) (debug: render bits on selected tile)
+- `f11` (E: engine | L: `tile<selected>`) (debug: unrender bits on selected tile)
+
 - `p` (E: engine | L: manager-ui)
 - `l` (E: engine | L: manager-ui)
-- `n` (E: engine | L: manager-ui)
-- `m` (E: engine | L: manager-ui)
 - `b` (E: engine | L: manager-ui)
 - `z` (E: engine | L: manager-ui)
 - `x` (E: engine | L: manager-ui)

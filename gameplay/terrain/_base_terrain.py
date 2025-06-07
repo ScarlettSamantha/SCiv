@@ -3,6 +3,7 @@ import random
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, Union
 
 
+from gameplay.bits import Bit, Bits
 from gameplay.yields import Yields
 from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
@@ -51,7 +52,16 @@ class BaseTerrain(ABC):
         self.passable_without_tech: bool = True
         self.model_rotation: Optional[float] = 270
 
+        self.bits: Bits = Bits()
+        self.active_bits: List[Bit] = []
+        self.bits_group: Optional[str] = None
+
         self._supports_improvements: List[Type["Improvement"]] = []
+
+        self.register()
+
+    def register(self) -> None:
+        self.register_bits()
 
     @classmethod
     def get_model(cls) -> Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None]:
@@ -60,6 +70,22 @@ class BaseTerrain(ABC):
     @classmethod
     def get_fallback_color(cls) -> Tuple[float, float, float] | Tuple4f:
         return cls._fallback_color
+
+    def register_bits(self) -> None:
+        pass
+
+    def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List[Bit]:
+        self.active_bits = self.bits.choose(group=group, num=num)
+        return self.active_bits
+
+    def get_bits(self, choose_if_empty: bool = True) -> List[Bit]:
+        if not self.bits:
+            if choose_if_empty:
+                return self.choose_bits()
+            return []
+        if not self.active_bits:
+            return self.choose_bits()
+        return self.active_bits
 
     def model(self) -> T_TranslationOrStr:
         # direct string

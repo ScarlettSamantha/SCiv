@@ -408,9 +408,8 @@ class Game(Singleton, DirectObject):
 
     def render_field(self):
         for tile in self.world.grid.values():
-            tile.render()
             tile.calculate()
-            tile.add_icon_to_tile()
+            tile.render()
 
         from system.scene_optimizer import SceneOptimizer
 
