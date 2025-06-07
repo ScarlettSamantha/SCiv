@@ -21,7 +21,7 @@ class Chicken(BaseBonusResource):
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatScrubland: 70.0,
-        FlatGrass: 40.0,
+        FlatGrass: 45.0,
         FlatForest: 40.0,
         HillsForest: 40.0,
         FlatTundra: 30.0,
