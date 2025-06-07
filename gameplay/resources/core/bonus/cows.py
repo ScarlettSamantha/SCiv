@@ -29,7 +29,7 @@ class Cows(BaseBonusResource):
     spawn_amount = 5.0
     improvement_required = [Farm]
     model = "assets/models/resources/cow.glb"
-    model_size = 0.03
+    model_size = 0.05
     model_position = (0, 0, 0.01)
 
     def __init__(self, value: int | float = 0):
