@@ -1,31 +1,40 @@
-from typing import Tuple
+import math
+from typing import Dict, Optional, Tuple
 from panda3d.core import LPoint3f, NodePath, Point3, Vec3
 
 from managers.assets import AssetManager
 
 
-class Model:
+class ModelHelper:
     asset_manager_cache: AssetManager = AssetManager.get_singleton_instance()
+    _position_cache: Dict[Tuple[float, float], Dict[str, Tuple[float, float, float]]] = {}
+
+    @classmethod
+    def calculate_hex_slot_positions(
+        cls, radius: float = 1.0, slot_radius: float = 0.25
+    ) -> Dict[str, Tuple[float, float, float]]:
+        if (radius, slot_radius) in cls._position_cache:
+            return cls._position_cache[(radius, slot_radius)]
+
+        _corner_dirs = {
+            "E": (radius, 0.0),
+            "NE": (radius / 2, radius * math.sqrt(3) / 2),
+            "NW": (-radius / 2, radius * math.sqrt(3) / 2),
+            "W": (-radius, 0.0),
+            "SW": (-radius / 2, -radius * math.sqrt(3) / 2),
+            "SE": (radius / 2, -radius * math.sqrt(3) / 2),
+        }
+        cls._position_cache[(radius, slot_radius)] = prop_slots = {
+            name: (x, y, slot_radius) for name, (x, y) in _corner_dirs.items()
+        }
+        return prop_slots
 
     @classmethod
     def load_model(cls, path: str) -> NodePath:
-        """
-        Load a model from disk. Replace this implementation with your own asset loader as needed.
-
-        :param path: Path to the model file
-        :return: Loaded NodePath
-        """
-        model = cls.asset_manager_cache.load_model(path)
-        return model
+        return cls.asset_manager_cache.load_model(path)
 
     @classmethod
     def assess_bounds(cls, node: NodePath) -> tuple[Point3, Point3, Vec3]:
-        """
-        Compute the tight axis-aligned bounding box (AABB) of a NodePath.
-
-        :param node: The NodePath whose bounds to assess
-        :return: (min_point, max_point, size_vector)
-        """
         try:
             bounds: Tuple[LPoint3f, LPoint3f] | None = node.getTightBounds()
             if bounds is None or len(bounds) != 2:
@@ -94,5 +103,59 @@ class Model:
         new_min, new_max = bounds
         center = (new_min + new_max) * 0.5
         node.setPos(-center)
+
+        return node
+
+    @classmethod
+    def calculate_slot_scale_factor(
+        cls,
+        node: NodePath,
+        slot_name: Optional[str] = None,
+        slot_positions: Optional[Tuple[float, float, float]] = None,
+        radius: float = 1.0,
+        slot_radius: float = 1.0,
+    ) -> float:
+        if slot_positions is not None and slot_name is None:
+            _, _, r = slot_positions
+        elif slot_name is not None:
+            slots = cls.calculate_hex_slot_positions(radius, slot_radius)
+            if slot_name not in slots:
+                raise ValueError(f"Unknown slot '{slot_name}'. Valid: {list(slots.keys())}")
+            _, _, r = slots[slot_name]
+        else:
+            r = slot_radius
+
+        size = cls.get_size(node)
+        max_dim = max(size.x, size.y, 1e-6)
+        scale_factor = (r * 2.0) / max_dim
+        return scale_factor
+
+    @classmethod
+    def place_in_hex_slot(
+        cls,
+        node: NodePath,
+        slot_name: str,
+        slot_positions: Optional[Dict[str, Tuple[float, float, float]]] = None,
+        radius: float = 1.0,
+        slot_radius: float = 0.25,
+        rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ) -> NodePath:
+        slots = cls.calculate_hex_slot_positions(radius, slot_radius) if slot_positions is None else slot_positions
+        if slot_name not in slots:
+            raise ValueError(f"Unknown slot '{slot_name}'. Valid: {list(slots.keys())}")
+        x, y, r = slots[slot_name]
+
+        # Compute uniform scale so the node fits within the slot diameter
+        size = cls.get_size(node)
+        max_dim = max(size.x, size.y, 1e-6)
+        scale_factor = (r * 2.0) / max_dim
+        node.setScale(scale_factor)
+
+        # Apply rotation
+        node.setHpr(*rotation)
+
+        # Position at slot + offset
+        node.setPos(x + offset[0], y + offset[1], offset[2])
 
         return node
