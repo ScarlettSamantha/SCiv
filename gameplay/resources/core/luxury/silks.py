@@ -18,6 +18,8 @@ class Silk(BaseLuxuryResource):
     spawn_amount = 5.0
     coverage = 0.35
     improvement_required = [Farm]
+    model = "assets/models/resources/stack_cloth.glb"
+    model_size = 0.25
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

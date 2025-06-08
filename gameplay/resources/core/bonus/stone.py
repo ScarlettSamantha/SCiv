@@ -27,6 +27,8 @@ class Stone(BaseBonusResource):
         HillsDesert: 30.0,
         HillsForest: 80.0,
     }
+    model = "assets/models/resources/stack_stone.glb"
+    model_size = 0.20
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

@@ -31,6 +31,8 @@ class Hardwood(BaseBonusResource):
     coverage = 1.2
     spawn_amount = 5.0
     improvement_required = [LoggingCamp]
+    model = "assets/models/resources/pile_wood.glb"
+    model_size = 0.25
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

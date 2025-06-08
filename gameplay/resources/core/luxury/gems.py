@@ -26,6 +26,8 @@ class Gems(BaseLuxuryResource):
         HillsDesert: 30.0,
         HillsForest: 80.0,
     }
+    model = "assets/models/resources/pile_gems.glb"
+    model_scale = 0.05
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

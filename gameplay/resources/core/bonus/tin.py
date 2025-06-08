@@ -30,6 +30,8 @@ class Tin(BaseBonusResource):
     spawn_amount = 5.0
     coverage = 0.5
     improvement_required = [Mine]
+    model = "assets/models/resources/stack_tin_bars.glb"
+    model_size = 0.25
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

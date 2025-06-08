@@ -26,6 +26,8 @@ class Gold(BaseLuxuryResource):
     spawn_amount = 3.0
     coverage = 0.3
     improvement_required = [Mine]
+    model = "assets/models/resources/stack_gold_bars.glb"
+    model_size = 0.25
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

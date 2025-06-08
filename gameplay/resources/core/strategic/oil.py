@@ -26,6 +26,8 @@ class Oil(BaseStrategicResource):
     icon: str = "assets/icons/resources/core/strategic/bordered_oil.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.BOTH
     spawn_amount = 3.0
+    model = ("assets/models/resources/oil_barrel.glb", None)
+    model_size = 0.33
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
