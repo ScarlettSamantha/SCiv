@@ -3,7 +3,7 @@ win-size 1920 1080
 # Enable GPU timing for debugging
 model-path assets/models
 
-framebuffer-srgb 0
+framebuffer-srgb 1
 hardware-animated-vertices true
 basic-shaders-only false
 flatten-collision-nodes 1
@@ -11,5 +11,3 @@ sampler-object-limit 4086
 default-bin opaque,10
 sort-geom true 
 sync-video #f
-clock-mode limited
-clock-frame-rate 144
