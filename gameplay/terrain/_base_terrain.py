@@ -54,7 +54,6 @@ class BaseTerrain(ABC):
 
         self.bits: Bits = Bits()
         self.active_bits: List[Bit] = []
-        self.bits_group: Optional[str] = None
 
         self._supports_improvements: List[Type["Improvement"]] = []
 
