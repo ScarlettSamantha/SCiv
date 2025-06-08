@@ -144,7 +144,7 @@ class BaseResource(ABC):
     improvement_required: Optional[Type["Improvement"] | List[Type["Improvement"]]] = None
 
     # The model that will be used to represent the resource in the game.
-    model: Optional[str] = None
+    model: Optional[str | Tuple[str | None, str | None]] = None
     model_size: float = 1.0
     model_position: Tuple[float, float, float] = (0.0, 0.0, 0.10)
     model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
@@ -322,6 +322,22 @@ class BaseResource(ABC):
     @classmethod
     def get_color(cls) -> Tuple3f:
         return cls._color
+
+    @classmethod
+    def get_water_model(cls) -> str | None:
+        if cls.model is None:
+            return None
+        if isinstance(cls.model, tuple):
+            return cls.model[1] if cls.model[1] is not None else None
+        return cls.model
+
+    @classmethod
+    def get_land_model(cls) -> str | None:
+        if cls.model is None:
+            return None
+        if isinstance(cls.model, tuple):
+            return cls.model[0] if cls.model[0] is not None else None
+        return cls.model
 
 
 mapping: Dict[ResourceType, Type[ResourceTypeBase]] = {
