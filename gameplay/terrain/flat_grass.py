@@ -27,20 +27,12 @@ class FlatGrass(BaseTerrain):
         self.tile_yield_base = Yields(food=1)
 
     def register_bits(self) -> None:
-        tree_bit = Bit(
-            model="large_tree_green.glb",
-            scale=random.uniform(0.1, 0.35),
-            hpr=(0, 0, 0),
-            offset=(0, 0, 0.00),
-        )
+        tree_bit = Bit(model="large_tree_green.glb", scale=random.uniform(0.20, 0.35))
         bush_bit = Bit(
             model="bush_small_green.glb",
             scale=0.25,
-            hpr=(0, 0, 0),
-            offset=(-0.25, 0.25, 0.00),
         )
         bush2 = bush_bit.copy()
-        bush2.offset = (0.25, -0.25, 0.00)
 
         self.bits.mode = GroupMode.OR
 

@@ -1,4 +1,5 @@
 from typing import Any
+from gameplay.bits import Bit
 from gameplay.yields import Yields
 
 from ._base_terrain import BaseTerrain
@@ -6,7 +7,6 @@ from ._base_terrain import BaseTerrain
 
 class Volcano(BaseTerrain):
     _name = "world.terrain.volcano"
-    _model = "assets/models/tiles/volcano.glb"
 
     _fallback_color = (0, 119, 255)
 
@@ -20,3 +20,15 @@ class Volcano(BaseTerrain):
         self.passable_without_tech: bool = False
 
         self.tile_yield_base.add(Yields.nullYield())
+
+    def register_bits(self) -> None:
+        self.bits.add_bit(
+            Bit(
+                model="volcano.glb",
+                scale=1.0,
+                hpr=(0, 0, 0),
+                offset=(0, 0, 0),
+            )
+        )
+
+        return super().register_bits()
