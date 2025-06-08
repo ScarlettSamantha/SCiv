@@ -1,7 +1,8 @@
-from __future__ import annotations
+from copy import copy
 import random
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
+import uuid
 
 
 class GroupMode(Enum):
@@ -16,10 +17,6 @@ class GroupMode(Enum):
 
 
 class Bit:
-    """
-    Represents a single game prop or bit, with model path and transform.
-    """
-
     BASE_PATH = "assets/models/bits/"
 
     def __init__(
@@ -28,88 +25,227 @@ class Bit:
         scale: float = 1.0,
         offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        preferred_slot: Optional[str] = None,
+        allow_auto_scale: bool = True,
+        disabled: bool = False,
+        id: Optional[str] = None,
     ):
-        # Ensure full path
-        self.model = model if model.startswith(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
-        self.scale = scale
-        self.offset = offset
-        self.hpr = hpr
+        self.id: str = id or uuid.uuid4().hex
+        self.model: str = model if model.startswith(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
+        self.scale: float = scale
+        self.offset: Tuple[float, float, float] = offset
+        self.hpr: Tuple[float, float, float] = hpr
+        self.preferred_slot: Optional[str] = preferred_slot
+        self.net_tag: str = uuid.uuid4().hex
+        self.allow_auto_scale: bool = allow_auto_scale
+        self.disabled: bool = disabled
 
     def copy(
         self,
         scale: Optional[float] = None,
         offset: Optional[Tuple[float, float, float]] = None,
         hpr: Optional[Tuple[float, float, float]] = None,
-    ) -> Bit:
-        return Bit(
-            model=self.model,
-            scale=scale if scale is not None else self.scale,
-            offset=offset if offset is not None else self.offset,
-            hpr=hpr if hpr is not None else self.hpr,
-        )
+    ) -> "Bit":
+        _copy = copy(self)
+        _copy.id = str(uuid.uuid4().hex)  # Ensure a new unique ID
+        _copy.scale = scale if scale is not None else self.scale
+        _copy.offset = offset if offset is not None else self.offset
+        _copy.hpr = hpr if hpr is not None else self.hpr
+        return _copy
+
+    def is_disabled(self) -> bool:
+        return self.disabled
+
+    def has_preferred_slot(self) -> bool:
+        return self.preferred_slot is not None
+
+    def get_preferred_slot_name(self) -> Optional[str]:
+        return self.preferred_slot
 
 
 class Bits:
-    def __init__(self, mode: GroupMode = GroupMode.OR) -> None:
+    def __init__(
+        self,
+        mode: GroupMode = GroupMode.OR,
+        name: Optional[str] = None,
+        parent: Optional["Bits"] = None,
+    ) -> None:
+        """
+        mode: how bits/subgroups combine; name: this group's name; parent: optional parent group
+        """
         self.mode: GroupMode = mode
-        self.bits: List[Bit] = []
-        self.groups: Dict[str, Bits] = {}
+        self.name: Optional[str] = name
+        self.parent: Optional["Bits"] = parent
+        self.bits: Dict[str, Bit] = {}
+        self.groups: Dict[str, "Bits"] = {}
         self.enabled: bool = True
+        self.disabled_bits: Dict[str, Bit] = {}
 
-    def add_bit(self, bit: Bit, group: Optional[str] = None) -> Bits:
-        if group:
-            sub = self.groups.setdefault(group, Bits(mode=self.mode))
-            sub.add_bit(bit)
-        else:
-            self.bits.append(bit)
-        return self
+    @property
+    def full_path(self) -> str:
+        """
+        Returns dot-separated path from root to this group, excluding root's empty name.
+        """
+        if self.parent and self.name:
+            parent_path = self.parent.full_path
+            return f"{parent_path}.{self.name}" if parent_path else self.name
+        return ""
 
-    def add_group(self, name: str, mode: Optional[GroupMode] = None) -> Bits:
+    def _get_full_bit_key(self, bit_id: str) -> str:
+        """
+        Constructs the full key for a bit, including group path.
+        """
+        path = self.full_path
+        return f"{path}.{bit_id}" if path else bit_id
+
+    def add_group(self, name: str, mode: Optional[GroupMode] = None) -> "Bits":
+        """
+        Creates (or returns existing) subgroup under this group.
+        """
+        if name in self.bits:
+            raise ValueError(f"Group name '{name}' conflicts with an existing bit ID")
+        if name in self.groups:
+            return self.groups[name]
         grp_mode = mode if mode is not None else self.mode
-        sub = Bits(mode=grp_mode)
+        sub = Bits(mode=grp_mode, name=name, parent=self)
         self.groups[name] = sub
         return sub
 
+    def add_bit(self, bit: Bit, group: Optional[str] = None) -> "Bits":
+        """
+        Adds a bit to this group or specified subgroup.
+        """
+        if group:
+            if group not in self.groups:
+                self.add_group(group)
+            self.groups[group].add_bit(bit)
+        else:
+            if bit.id in self.groups:
+                raise ValueError(f"Bit ID '{bit.id}' conflicts with existing group name")
+            if bit.id in self.bits:
+                raise ValueError(f"Bit ID '{bit.id}' already exists in this group")
+            self.bits[bit.id] = bit
+            if bit.disabled:
+                self.disabled_bits[bit.id] = bit
+        return self
+
     def remove_bit(self, bit: Bit) -> None:
-        if bit in self.bits:
-            self.bits.remove(bit)
+        """
+        Removes a bit from this group and all subgroups.
+        """
+        if bit.id in self.bits:
+            self.disabled_bits.pop(bit.id, None)
+            del self.bits[bit.id]
         for sub in self.groups.values():
             sub.remove_bit(bit)
 
-    def enable(self) -> None:
-        self.enabled = True
+    def _set_disabled_state(self, parts: List[str], disabled: bool) -> None:
+        """
+        Internal helper to set disabled flag by path parts.
+        """
+        if not parts:
+            return
+        key = parts[0]
+        # subgroup?
+        if key in self.groups:
+            self.groups[key]._set_disabled_state(parts[1:], disabled)
+        else:
+            # leaf bit
+            bit = self.bits.get(key)
+            if bit:
+                bit.disabled = disabled
+                if disabled:
+                    self.disabled_bits[key] = bit
+                else:
+                    self.disabled_bits.pop(key, None)
 
-    def disable(self) -> None:
-        self.enabled = False
+    def disable_bit(self, full_key: str) -> None:
+        """
+        Disable a bit by its full dot-separated key (group1.group2.bit_id).
+        """
+        parts = full_key.split(".")
+        self._set_disabled_state(parts, True)
 
-    def is_enabled(self) -> bool:
-        return self.enabled
+    def enable_bit(self, full_key: str) -> None:
+        """
+        Re-enable a previously disabled bit by its full key.
+        """
+        parts = full_key.split(".")
+        self._set_disabled_state(parts, False)
+
+    def search_bit(self, full_key: str) -> Optional[Bit]:
+        """
+        Retrieves a bit by its full dot-separated key.
+        """
+        parts = full_key.split(".")
+        return self._search_bit_parts(parts)
+
+    def _search_bit_parts(self, parts: List[str]) -> Optional[Bit]:
+        if not parts:
+            return None
+        key = parts[0]
+        if key in self.groups:
+            return self.groups[key]._search_bit_parts(parts[1:])
+        return self.bits.get(key)
+
+    def get_groups(self, groups: List[str] = []) -> Dict[str, "Bits"]:
+        if not groups:
+            return self.groups
+        return {name: self.groups[name] for name in groups if name in self.groups}
 
     def choose(self, num: int = 1, group: Optional[str] = None) -> List[Bit]:
+        """
+        Selects bits according to mode: AND returns all, OR returns random bits/subgroups.
+        """
         container = self if group is None else self.groups.get(group)
         if container is None or not container.enabled:
             return []
         collected = container._collect_recursive()
+        if not collected:
+            return []
         if container.mode == GroupMode.OR:
+            if num == 1:
+                return [random.choice(collected)]
             return random.sample(collected, min(num, len(collected)))
+        # AND mode
         return collected
+
+    def is_disabled(self) -> bool:
+        """
+        Returns True if this group is disabled or has no enabled bits/subgroups.
+        """
+        if not self.enabled:
+            return True
+        # any enabled bit?
+        for bit in self.bits.values():
+            if not bit.disabled:
+                return False
+        # any subgroup not disabled?
+        for sub in self.groups.values():
+            if not sub.is_disabled():
+                return False
+        return True
 
     def _collect_recursive(self) -> List[Bit]:
         if not self.enabled:
             return []
         result: List[Bit] = []
         if self.mode == GroupMode.AND:
-            result.extend(self.bits)
+            result.extend(self.bits.values())
             for sub in self.groups.values():
                 result.extend(sub._collect_recursive())
-        else:
+        else:  # OR mode
             if self.bits:
-                result.append(random.choice(self.bits))
+                result.append(random.choice(list(self.bits.values())))
             if self.groups:
                 sub = random.choice(list(self.groups.values()))
                 result.extend(sub._collect_recursive())
         return result
 
     def clear(self) -> None:
+        """
+        Removes all bits and groups.
+        """
         self.bits.clear()
         self.groups.clear()
+        self.disabled_bits.clear()
