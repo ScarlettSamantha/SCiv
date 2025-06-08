@@ -17,7 +17,7 @@ class Corn(BaseBonusResource):
     icon: str = "assets/icons/resources/core/bonus/bordered_corn.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
-        FlatGrass: 100.0,
+        FlatGrass: 95.0,
         HillsGrass: 100.0,
         BaseTerrain: 0.0,
     }

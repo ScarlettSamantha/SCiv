@@ -20,7 +20,7 @@ class Rice(BaseBonusResource):
     icon: str = "assets/icons/resources/core/bonus/hex_border_rice.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
-        FlatGrass: 100.0,
+        FlatGrass: 75.0,
         FlatForest: 40.0,
         HillsForest: 40.0,
         HillsGrass: 50.0,

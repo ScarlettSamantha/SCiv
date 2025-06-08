@@ -8,6 +8,8 @@ from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.flat_tundra import FlatTundra
+from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.hills_grass import HillsGrass
 from managers.i18n import T_TranslationOrStr, t_
 
 
@@ -23,9 +25,11 @@ class Onions(BaseBonusResource):
         FlatTundra: 40.0,
         FlatForest: 40.0,
         FlatDesert: 20.0,
-        FlatScrubland: 20.0,
+        FlatScrubland: 45.0,
+        HillsForest: 50.0,
+        HillsGrass: 45.0,
     }
-    coverage = 0.7
+    coverage = 0.9
     spawn_amount = 5.0
     improvement_required = [Farm]
 

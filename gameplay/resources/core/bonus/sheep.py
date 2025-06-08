@@ -7,6 +7,7 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_scrubland import FlatScrubland
+from gameplay.terrain.hills_grass import HillsGrass
 from managers.i18n import T_TranslationOrStr, t_
 
 
@@ -22,6 +23,7 @@ class Sheep(BaseBonusResource):
         FlatGrass: 100.0,
         FlatForest: 40.0,
         FlatScrubland: 100.0,
+        HillsGrass: 90.0,
     }
     spawn_amount = 5.0
     coverage = 1.1

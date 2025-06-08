@@ -8,6 +8,7 @@ from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.flat_savanna import FlatSavanna
+from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
@@ -27,12 +28,13 @@ class Aluminium(BaseStrategicResource):
         HillsSnow: 100.0,
         HillsTundra: 100.0,
         FlatForest: 40.0,
+        FlatScrubland: 70.0,
         FlatDesert: 70.0,
         FlatSavanna: 70.0,
         FlatPineForest: 40.0,
     }
     spawn_amount = 5.0
-    coverage = 0.9
+    coverage = 1.1
     improvement_required = [Mine]
 
     def __init__(self, value: int | float = 0):

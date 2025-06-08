@@ -19,7 +19,7 @@ class Oil(BaseStrategicResource):
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         Sea: 70.0,
         Coast: 40.0,
-        BaseTerrain: 0.0,
+        BaseTerrain: 5.0,
         FlatSavanna: 70.0,
         FlatDesert: 70.0,
     }

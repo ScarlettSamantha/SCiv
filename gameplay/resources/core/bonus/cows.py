@@ -21,7 +21,7 @@ class Cows(BaseBonusResource):
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatScrubland: 100.0,
-        FlatGrass: 100.0,
+        FlatGrass: 95.0,
         FlatTundra: 20.0,
         HillsGrass: 20.0,
     }

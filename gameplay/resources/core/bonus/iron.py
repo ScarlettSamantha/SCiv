@@ -32,6 +32,8 @@ class Iron(BaseBonusResource):
     spawn_amount = 5.0
     coverage = 0.4
     improvement_required = [Mine]
+    model = "assets/models/resources/stack_iron.glb"
+    model_size = 0.50
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
