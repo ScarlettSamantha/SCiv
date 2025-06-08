@@ -66,9 +66,7 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_on", self.activate)
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
-
-        delay_seconds: float = self._hover_frame_skip / 60
-        self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=delay_seconds)  # type: ignore
+        self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
 
     def delay_activate(self, delay: int | float):
         self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore
