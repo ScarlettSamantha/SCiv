@@ -67,7 +67,7 @@ class ModelHelper:
     @classmethod
     def get_size(cls, node: NodePath) -> Vec3:
         """
-        Compute the size (width, depth, height) of a NodePath's tight AABB.
+        Compute the size (width, depth, height) of a NodePath's tight AA BB.
 
         :param node: The NodePath whose size to compute
         :return: Vec3 representing (width, depth, height)
