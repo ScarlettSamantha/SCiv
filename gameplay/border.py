@@ -21,6 +21,7 @@ from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
 from helpers.geometry import generate_flat_top_hex
 
+from helpers.tiles import Tiles
 from managers.player import PlayerManager
 from managers.world import World
 from system.shaders import Shaders
@@ -33,7 +34,7 @@ import io
 
 
 class Borders(DirectObject):
-    HEX_DIRECTIONS = [(+1, 0), (+1, -1), (0, -1), (-1, 0), (-1, +1), (0, +1)]
+    HEX_DIRECTIONS = Tiles.get_directions_dirs()
 
     COLOR_HEX_TOP_BORDERS = Colors.MAGENTA
     COLOR_HEX_WALLS = Colors.BLACK
@@ -285,7 +286,7 @@ class Borders(DirectObject):
 
     def _get_border_mask(self, x: int, y: int, player: "Player") -> int:
         mask = 0
-        for i, (dx, dy) in enumerate(self.HEX_DIRECTIONS + [(0, 0)]):
+        for i, (dx, dy) in enumerate(self.HEX_DIRECTIONS[x % 2] + [(0, 0)]):
             if not player.owns_tile(x + dx, y + dy):
                 mask |= 1 << i
         return mask
@@ -295,7 +296,7 @@ class Borders(DirectObject):
         mask = 0
         grid = World.get_singleton_instance().get_grid()
         here = grid[(x, y)].terrain_type  # type: ignore
-        for i, (dx, dy) in enumerate(self.HEX_DIRECTIONS):
+        for i, (dx, dy) in enumerate(self.HEX_DIRECTIONS[x % 2]):
             neigh = grid.get((x + dx, y + dy))
             # outside map or different type → draw that side
             if neigh is None or neigh.terrain_type != here:  # type: ignore
