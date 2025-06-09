@@ -1,7 +1,7 @@
 from typing import Any, Type
 
 from gameplay.terrain.mountain_snow import MountainSnow as MountainSnowTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class MountainSnow(Tile):

@@ -18,7 +18,7 @@ from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from gameplay.unit import Unit
 from managers.combat import test_combat_outcome
 from managers.entity import EntityManager, EntityType

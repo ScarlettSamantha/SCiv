@@ -26,7 +26,7 @@ class Hex:
     def __init__(self, grid: "Grid", x: int, y: int, altitude: np.float64):
         self.x: int = x
         self.y: int = y
-        self.altitude: float = altitude
+        self.altitude: np.float64 = altitude
         self.grid: "Grid" = grid
 
         self.edge_east = None
@@ -177,7 +177,7 @@ class Hex:
         factor: int = 7
         if self.is_water:
             factor = 8
-        part2: float = abs(self.altitude - self.grid.sealevel) / factor
+        part2: float = abs(float(self.altitude) - self.grid.sealevel) / factor
         return (round(part1, 2) - round(part2, 2), round(part1, 2) - round(part2, 2))
 
     @property
@@ -350,7 +350,6 @@ class Hex:
             return self.hex_north_west
         elif direction is HexEdge.north_east:
             return self.hex_north_east
-        raise Exception("No such direction")
 
     @property
     def surrounding(self) -> List["Hex"]:
@@ -536,7 +535,7 @@ class Hex:
     def __repr__(self):
         return "<HEX: X: {}, Y: {}, Z: {}>".format(self.x, self.y, self.altitude)
 
-    def get_side_to(self, target_hex) -> HexEdge | None:
+    def get_side_to(self, target_hex: "Hex") -> HexEdge | None:
         """
         Returns the HexEdge direction from this hex to target_hex.
         """

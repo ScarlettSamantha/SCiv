@@ -19,6 +19,7 @@ from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from main import SCIV
+    from gameplay.tile import Tile
 
 NET_NODE_TAG_ID_FIELD: str = "net_node_tag_id"  # tag for the node path to identify it as a net node
 NET_TYPE_FIELD: str = "net_type"  # tag for the node path to identify it as a net node
@@ -44,6 +45,8 @@ class Input(Singleton, DirectObject):
         self.logger = self.base.logger.engine.getChild("manager.input")
 
         self.hovered_tile_id: Optional[str] = None
+        self.selected_tile: Optional["Tile"] = None
+
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
 
@@ -60,6 +63,10 @@ class Input(Singleton, DirectObject):
         self.accept("f2", self.activate)
         self.accept("f3", self.de_activate)
 
+        self.accept("f9", self.force_render_selected_tile)
+        self.accept("f10", self.render_bits)
+        self.accept("f11", self.unrender_bits)
+
         # Escape key
         self.accept("escape", self.on_escape)
 
@@ -67,6 +74,30 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def force_render_selected_tile(self) -> None:
+        if self.selected_tile is None:
+            self.logger.warning("No selected tile to render.")
+            return
+
+        self.logger.info(f"Rendering selected tile: {self.selected_tile.tag}")
+        self.selected_tile.render()
+
+    def render_bits(self) -> None:
+        if self.selected_tile is None:
+            self.logger.warning("No selected tile to render bits.")
+            return
+
+        self.logger.info(f"Rendering bits for selected tile: {self.selected_tile.tag}")
+        self.selected_tile.render_bits()
+
+    def unrender_bits(self) -> None:
+        if self.selected_tile is None:
+            self.logger.warning("No selected tile to unrender bits.")
+            return
+
+        self.logger.info(f"Unrendering bits for selected tile: {self.selected_tile.tag}")
+        self.selected_tile.unrender_bits()
 
     def delay_activate(self, delay: int | float):
         self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore
@@ -165,17 +196,22 @@ class Input(Singleton, DirectObject):
                     # This is a unit, not a tile
                     messenger.send("system.input.user.unit_clicked", [net_id])
                     selected_object = True
+                    self.selected_tile = None  # Clear selected tile if a unit is clicked
                 elif NET_TYPE.TILE.value == net_type:
                     # This is a tile
                     tile = TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))
                     if tile is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
+                    self.selected_tile = tile
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                     selected_object = True
+                else:
+                    self.selected_tile = None  # Clear selected tile if not a tile
 
                 if selected_object:
                     return picked_obj  # type: ignore
+
             return None
         else:
             self.logger.debug("No object picked. Possibly between tiles or outside the game field.")

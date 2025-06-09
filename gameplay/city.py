@@ -20,7 +20,7 @@ from gameplay.repositories.tile import TileRepository
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
 
 

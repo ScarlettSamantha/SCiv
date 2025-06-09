@@ -19,7 +19,8 @@ if TYPE_CHECKING:
     from main import SCIV
     from system.game_settings import GameSettings
     from system.subsystems.hexgen.grid import Grid
-    from gameplay.tiles.base_tile import Tile, Hex
+    from gameplay.tile import Tile
+    from system.subsystems.hexgen.hex import Hex
 
 
 class Basic(BaseGenerator):
@@ -73,7 +74,7 @@ class Basic(BaseGenerator):
 
     def load_tiles(self) -> Dict[str, Type["Tile"]]:
         """Loads tile classes dynamically."""
-        from gameplay.tiles.base_tile import Tile
+        from gameplay.tile import Tile
 
         classes = PyLoad.load_classes("gameplay/tiles", base_classes=Tile)
         # Remove the base class from the list
@@ -325,15 +326,44 @@ class Basic(BaseGenerator):
                     render_y = row * self.world.row_spacing  # Even columns align normally
 
                 # Instantiate the tile object
-                obj_instance: Tile = tile_class(x, y, render_x, render_y, extra_data=hex_tile)
-                obj_instance.register()
-
-                obj_instance.enrich_from_extra_data(hex=hex_tile)
-                _, _, obj_instance.pos_z = obj_instance.calculate_z_pos_on_altitude()
-                # Generate a unique tag for mapping
-                tag = obj_instance.generate_tag(x, y)
-                self.map[tag] = obj_instance
+                obj_instance: Tile = tile_class(x, y, render_x, render_y)
+                self.enrich_from_extra_data(hex=hex_tile, tile=obj_instance)
+                obj_instance.pos_z = obj_instance.calculate_z_pos_on_altitude()[2]
+                self.map[obj_instance.tag] = obj_instance
                 self.world.grid[(col, row)] = obj_instance
+
+    @classmethod
+    def enrich_from_extra_data(cls, hex: "Hex", tile: "Tile") -> "Tile":
+        """
+        Enriches the Tile instance with additional data from the Hex object.
+        This method is called during tile instantiation to set properties like altitude, temperature, etc.
+        """
+        tile.altitude = float(hex.altitude)
+        tile.temperature = hex.base_temperature[0]
+        tile.moisture = hex.moisture
+        tile.biome = hex.biome  # This is set by classify_terrain # type: ignore
+        tile.geoform_type = hex.geoform_type  # type: ignore
+        tile.features = hex.features
+        tile.is_water = hex.is_water
+        tile.is_land = hex.is_land
+        tile.is_coast = hex.is_coast
+        tile.terrain = hex.terrain  # This is  set by classify_terrain # type: ignore
+        tile.hemisphere = hex.hemisphere.name
+        tile.is_sea = hex.geoform_type.id == 2  # Sea is geoform_type 2 # type: ignore
+        tile.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore
+        tile.geoforms = hex.geoform_type
+
+        if (resource := hex.get_gameplay_resource()) is not None:
+            tile.instance_resource(resource)
+
+        edge_names: List[str] = list(tile.edges.keys())
+        if len(edge_names) != 6:
+            raise ValueError(f"Hex {hex} has {len(edge_names)} edges, expected 6.")
+
+        for i, edge_name in enumerate(tile.edges.keys()):
+            tile.edges[edge_name] = hex.edges[i]
+
+        return tile
 
     def adjust_water_levels(self) -> None:
         """

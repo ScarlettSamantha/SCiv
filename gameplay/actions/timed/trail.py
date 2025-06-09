@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.actions.timed.base_timed_action import BaseTimedAction
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from helpers.colors import Colors
 from managers.i18n import t_
 

@@ -39,6 +39,7 @@ These are not features more things that exist right now and needs to be done som
 - [ ] Make sure previous waiting ui action (eg: move) is canceled when clicking a other action so we have no phantom actions by units that have already been destroyed.
 - [ ] Move builds automatic unit destroy to the unit as a property wrapper maybe ?
 - [ ] Make sure the atlas is used everywhere and see if we can kivy image inject via it.
+- [ ] In mapgen it has a full object reference to the hexes in the area's around him in edge. This should be rewritten. whole hex and edge should be replaced with tile from the beginning.
 
 ## Features
 

@@ -6,7 +6,7 @@ from gameplay.terrain._base_terrain import BaseTerrain
 
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
 
 
 class ResourceAllocator:

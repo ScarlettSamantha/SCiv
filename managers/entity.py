@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.player import Player
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
     from main import SCIV
     from system.effects import Effect
@@ -38,7 +38,7 @@ class EntityType(Enum):
         """Lazy import to avoid circular dependencies."""
         if self._base_type is None:
             if self == EntityType.TILE:
-                from gameplay.tiles.base_tile import Tile
+                from gameplay.tile import Tile
 
                 self._base_type = Tile
             elif self == EntityType.UNIT:

@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.sea_ice import SeaIce as SeaIceTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class SeaIce(Tile):

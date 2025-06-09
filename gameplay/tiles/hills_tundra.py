@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.hills_tundra import HillsTundra as HillsTundraTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class HillsTundra(Tile):

@@ -11,7 +11,7 @@ from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from system.generators.resource_allocator import ResourceAllocator
 
 

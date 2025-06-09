@@ -1,6 +1,6 @@
 from typing import Any
 from gameplay.terrain.flat_grass import FlatGrass as FlatGrassTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from helpers.colors import Colors
 
 

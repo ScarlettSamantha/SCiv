@@ -85,7 +85,7 @@ class ValueDropdown(DropDown):
 
     def calculate_height(self):
         self.container.height = sum(child.height for child in self.container.children)  # type: ignore
-        self.container.minimum_height = self.container.height
+        self.container.size_hint_min_y = self.container.height
 
     def setup_values(self):
         self.option_buttons = {}

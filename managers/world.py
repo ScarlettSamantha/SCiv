@@ -16,7 +16,7 @@ from system.effects import Effects
 
 if TYPE_CHECKING:
     from gameplay.city import City
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
     from main import SCIV
     from managers.player import Player
@@ -62,8 +62,6 @@ class World(Singleton, DirectObject):
         self.logger.info("Loading world data.")
         for map_item in data.values():
             item_tag: str | None = map_item.tag
-            if item_tag is None:
-                raise AssertionError(f"Item {map_item} has no tag.")
             self.map[item_tag] = map_item
 
         self.grid = {(tile.x, tile.y): tile for tile in data.values()}

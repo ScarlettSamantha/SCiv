@@ -15,7 +15,7 @@ from system.entity import BaseEntity
 if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.resources.core.basic._base import BasicBaseResource
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
 
 

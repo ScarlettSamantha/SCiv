@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 from gameplay.unit import Unit
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
 
 
 class CivilianBaseClass(Unit):

@@ -2,6 +2,7 @@ from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from weakref import ReferenceType
+import weakref
 
 from direct.showbase.DirectObject import DirectObject
 
@@ -13,7 +14,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
     from main import SCIV
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.player import Player
 
 
@@ -53,10 +54,12 @@ class BaseEntity(ABC, DirectObject):
         **kwargs: Any,
     ):
         super().__init__()
+        from gameplay.tile import Tile
+
         self.entity_key: Optional[str] = None
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False
-        self.tile: Optional[Union["Tile", ReferenceType["Tile"]]] = tile
+        self.tile: Optional[ReferenceType["Tile"] | "Tile"] = weakref.ref(tile) if isinstance(tile, Tile) else None
         self.owner: Optional[Player] = owner
 
         self.attack_points_left: float = self.attack_points
@@ -72,7 +75,7 @@ class BaseEntity(ABC, DirectObject):
             raise ValueError("Tile is None")
 
         # Delay import so you don’t hit TYPE_CHECKING guard at module load
-        from gameplay.tiles.base_tile import Tile
+        from gameplay.tile import Tile
 
         # If it’s already a Tile instance, return it directly
         if isinstance(self.tile, Tile):
@@ -87,7 +90,7 @@ class BaseEntity(ABC, DirectObject):
         return tile_obj
 
     def set_tile(self, tile: "Tile") -> None:
-        self.tile = tile
+        self.tile = weakref.ref(tile)
 
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()

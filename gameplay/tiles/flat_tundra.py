@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.flat_tundra import FlatTundra as FlatTundraTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from helpers.colors import Colors
 
 

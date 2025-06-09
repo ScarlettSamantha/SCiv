@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.flat_scrubland import FlatScrubland as FlatScrublandTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class FlatScrubland(Tile):

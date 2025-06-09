@@ -22,7 +22,7 @@ from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
     from main import SCIV
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.player import Player
 
 

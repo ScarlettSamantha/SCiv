@@ -19,7 +19,7 @@ class Edge:
         self.two: "Hex" = two
         self.up: "Hex" = up
         self.down: "Hex" = down
-        self.delta: float = self.up.altitude - self.down.altitude
+        self.delta: float = float(self.up.altitude - self.down.altitude)
         self.id: uuid.UUID = uuid.uuid4()
 
         self.is_river: bool = False

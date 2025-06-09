@@ -1,7 +1,7 @@
 from typing import Any, Type
 
 from gameplay.terrain.sea import Sea
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class SeaWater(Tile):

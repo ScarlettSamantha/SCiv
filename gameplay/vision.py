@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.resource import BaseResource
     from gameplay.terrain._base_terrain import BaseTerrain
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
 
 
 class Vision:

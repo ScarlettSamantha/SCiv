@@ -6,7 +6,7 @@ from gameplay.ai.core import AI
 from gameplay.ai.goal import Goals
 from gameplay.ai.goals.eliminate_player import EliminatePlayer
 from gameplay.repositories.tile import TileRepository
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from gameplay.units.core.classes.military.barbarian_lion import BarbarianLion
 from managers.turn import Turn
 

@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from main import SCIV
     from system.generators.base import BaseGenerator
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
 
 
 class Game(Singleton, DirectObject):

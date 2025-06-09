@@ -7,7 +7,7 @@ from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
 
 
 class SettlerPromotion(Promotion):

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.player import Player
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
     from managers.world import World
 
@@ -60,7 +60,7 @@ class Effects:
         from gameplay.city import City
         from gameplay.improvement import Improvement
         from gameplay.player import Player
-        from gameplay.tiles.base_tile import Tile
+        from gameplay.tile import Tile
         from gameplay.unit import Unit
         from managers.world import World
 
@@ -201,7 +201,7 @@ class EffectPlacers(Enum):
     def place(self, base_object: "Tile | City | Player | World", effect: "Effect") -> None:
         from gameplay.city import City
         from gameplay.player import Player
-        from gameplay.tiles.base_tile import Tile
+        from gameplay.tile import Tile
         from managers.world import World
 
         if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, Tile):

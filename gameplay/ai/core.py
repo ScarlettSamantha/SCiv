@@ -11,7 +11,7 @@ from gameplay.cities import Cities
 from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from gameplay.unit import Unit
 from helpers.cache import Optional
 from managers.game import World

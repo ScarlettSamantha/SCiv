@@ -28,6 +28,7 @@ class Bit:
         preferred_slot: Optional[str] = None,
         allow_auto_scale: bool = True,
         disabled: bool = False,
+        blocks_resource_model_spawning: bool = False,
         id: Optional[str] = None,
     ):
         self.id: str = id or uuid.uuid4().hex
@@ -39,6 +40,7 @@ class Bit:
         self.net_tag: str = uuid.uuid4().hex
         self.allow_auto_scale: bool = allow_auto_scale
         self.disabled: bool = disabled
+        self.blocks_resource_model_spawning: bool = blocks_resource_model_spawning
 
     def copy(
         self,

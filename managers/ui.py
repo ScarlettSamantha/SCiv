@@ -11,7 +11,7 @@ from panda3d.core import PStatClient  # type: ignore
 
 from gameplay.player import Player
 from gameplay.tech import Tech
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from gameplay.unit import Unit
 from helpers.colors import Colors
 from managers.action import ActionManager

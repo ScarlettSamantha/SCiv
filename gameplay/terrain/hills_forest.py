@@ -22,6 +22,12 @@ class HillsForest(BaseTerrain):
 
     def register_bits(self) -> None:
         self.bits.add_bit(
-            Bit(model="hill_grass_tree_rock.glb", scale=0.25, preferred_slot="center", allow_auto_scale=False)
+            Bit(
+                model="hill_grass_tree_rock.glb",
+                scale=0.25,
+                preferred_slot="center",
+                allow_auto_scale=False,
+                blocks_resource_model_spawning=True,
+            )
         )
         return super().register_bits()

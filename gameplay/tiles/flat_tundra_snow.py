@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.flat_tundra_snow import FlatTundraSnow as FlatTundraSnowTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class FlatTundraSnow(Tile):

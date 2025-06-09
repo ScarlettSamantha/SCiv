@@ -8,7 +8,7 @@ from managers.world import World
 
 if TYPE_CHECKING:
     from gameplay.city import City
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from system.generators.basic import Hex
 
 

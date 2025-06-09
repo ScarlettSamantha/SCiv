@@ -13,7 +13,7 @@ from helpers.colors import Colors
 from managers.game import World
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from main import SCIV
 
 

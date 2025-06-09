@@ -1,6 +1,6 @@
 from typing import Any
 
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
 

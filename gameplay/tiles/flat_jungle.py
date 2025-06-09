@@ -1,6 +1,6 @@
 from typing import Any
 from gameplay.terrain.flat_jungle import FlatJungle as FlatJungleTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class FlatJungle(Tile):

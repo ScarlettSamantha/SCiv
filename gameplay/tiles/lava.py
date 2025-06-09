@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.mountain import Mountain as MountainTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class Mountain(Tile):

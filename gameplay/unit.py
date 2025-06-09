@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import BasicBaseResource
     from gameplay.player import Player
     from gameplay.promotion import PromotionTree
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
 
 
 class CantMoveReason(Enum):

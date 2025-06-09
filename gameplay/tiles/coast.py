@@ -1,6 +1,6 @@
 from typing import Any
 from gameplay.terrain.coast import Coast as CoastTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 from helpers.colors import Colors
 
 

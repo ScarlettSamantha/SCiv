@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.lake import Lake as LakeTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class Lake(Tile):

@@ -53,8 +53,8 @@ from system.atlas import AtlasGenerator
 from system.effects import Effects
 from system.entity import BaseEntity
 from system.mesh import HexGrid
-from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.enums import GeoformType
+from system.subsystems.hexgen.edge import Edge
 from world.items._base_item import BaseItem
 
 if TYPE_CHECKING:
@@ -100,13 +100,12 @@ class Tile(BaseEntity):
         pos_x: float = 0.0,
         pos_y: float = 0.0,
         pos_z: float = 0.0,
-        extra_data: Optional[Dict[Any, Any]] = None,
-        auto_calculate_z_pos_on_altitude: bool = True,
     ) -> None:
         self.id: int = id(self)
         self.x: int = x
         self.y: int = y
         super().__init__(tile=weakref.ref(self))
+        self.tag = self.generate_tag()
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
         self.pos_z: float = pos_z
@@ -120,8 +119,6 @@ class Tile(BaseEntity):
         self.destroyed: bool = False
         self.grid_position: Optional[Any] = None
         self.raw_position: Optional[Any] = None
-        self.tag: Optional[str] = self.generate_tag(self.x, self.y)
-        # Instead of a single node, we keep a list of NodePaths.
 
         self.models: List[NodePath] = []
 
@@ -130,6 +127,15 @@ class Tile(BaseEntity):
         self.is_land: bool = False
         self.is_sea: bool = False
         self.is_lake: bool = False
+
+        self.edges: Dict[str, Union["Edge", None, weakref.ReferenceType["Edge"]]] = {
+            "e": None,
+            "ne": None,
+            "nw": None,
+            "w": None,
+            "sw": None,
+            "se": None,
+        }
 
         self.is_selected: bool = False
 
@@ -143,77 +149,47 @@ class Tile(BaseEntity):
 
         self.resource: Optional[Dict[str, Any]] = None
         self.resources: Resources = Resources()
-        # This is the height of the tile in relation to the average sea level in meters.
         self.gameplay_height: int = 0
 
-        # None is nature.
-        self.player: Optional["Player"] = None
+        self.player: Optional["Player"] = None  # None is nature.
 
-        # Base health and if damagable declarations.
         self.damagable: bool = False
         self.damage: int = 0
 
-        # Does it take damage over time?
         self.damage_per_turn_mode: int = DamageMode.DAMAGE_NONE
         self.damage_per_turn: float = 0.0
 
-        # Does it damage units over time?
         self.damage_per_turn_on_units_mode: int = DamageMode.DAMAGE_NONE
         self.damage_per_turn_on_units: float = 0.0
 
-        # Does it damage improvements over time?
         self.damage_per_turn_on_improvements_mode: int = DamageMode.DAMAGE_NONE
         self.damage_per_turn_on_improvements: float = 0.0
 
-        # Can units walk over?
         self.walkable: bool = True
-        # Can ships make it through?
         self.sailable: bool = False
-        # Is this deep water?
         self.deep: bool = False
-        # Can airplanes fly over?
         self.flyable: bool = True
-        # Is space above accessible?
         self.space_above: bool = True
-        # Can it be dug under?
-        self.diggable: bool = True
-        # Can it be built on?
-        self.buidable: bool = True
-        # If it can be walked over with climbing.
-        self.climbable: bool = True
-        # If it can be claimed.
-        self.claimable: bool = True
-        # If units can breathe.
-        self.air_breatheable: bool = True
-        # Can things grow on it?
-        self.growable: bool = True
 
-        # How difficult it is to move over this tile measured in movement cost (MC).
+        self.buidable: bool = True
+        self.climbable: bool = True
+        self.claimable: bool = True
+
         self.movement_cost: float = 1.0
 
-        # What weather is the tile having?
         self.weather: Optional[BaseWeather] = None
 
-        # What features does this tile contain?
         self.features: Set[Any] = set()
         self.geoforms: Optional[GeoformType] = None
-        # Does this have any units?
         self.units: Units = Units()
-        # Does this have improvements?
         self._improvements: ImprovementsSet = ImprovementsSet()
-        # Does this have items sitting on top of it?
         self.items: List[BaseItem] = list()
-        # What kind of states apply to this object?
         self.states: List[Any] = []
 
-        # Does this contain a city?
         self.city: Optional["City"] = None
-        # is this city being worked by a city?
         self.city_owner: Optional["City"] = None
 
-        # Who, if anybody, is the owner of this tile?
         self.owner: Optional["Player"] = None
-        # Who has claimed the tile but does not own it?
         self.claimants: List[Any] = []
 
         self.city_name_group: Optional[NodePath] = None
@@ -223,7 +199,6 @@ class Tile(BaseEntity):
 
         self.coast_directions: List[Tuple[int, int]] = []
 
-        # We configure base tile yield mostly just for debugging.
         self.tile_yield: Yields = Yields(
             gold=0.0,
             production=1.0,
@@ -269,13 +244,14 @@ class Tile(BaseEntity):
 
         self._geom_flattened: bool = False
 
-        # placeholders for overlays/markers
         self.icon_overlay_np: Optional[NodePath] = None
         self.city_name_np: Optional[NodePath] = None
         self.unit_icons_np: Optional[NodePath] = None
         self._unit_icons: Optional[UnitIcons] = None
         self.model_nodes_by_net_type: Dict[str, List[NodePath]] = {}
         self.placed_props: Dict[str, NodePath] = {}
+
+        self._block_resource_model_spawning: bool = False
 
         self.atlas = Cache.get_icon_atlas()
 
@@ -293,13 +269,30 @@ class Tile(BaseEntity):
     def get_tile_terrain(self) -> BaseTerrain:
         return self._tile_terrain
 
+    def get_edge(self, side: str) -> Optional["Edge"]:
+        if side not in self.edges:
+            raise ValueError(f"Invalid edge side: {side}. Valid sides are: {list(self.edges.keys())}")
+        edge = self.edges[side]
+        if isinstance(edge, weakref.ReferenceType):
+            return edge()
+        return edge
+
+    def get_edges(self, as_reference: bool = True) -> Dict[str, Union["Edge", None, weakref.ReferenceType["Edge"]]]:
+        data: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = {}
+        for side, edge in self.edges.items():
+            if isinstance(edge, weakref.ReferenceType) and not as_reference:
+                edge = edge()
+            elif isinstance(edge, Edge) and as_reference:
+                edge = weakref.ref(edge)
+            data[side] = edge
+        return data
+
     def flatten(self):
         for model in self.models:
             model.flattenStrong()
 
-    @classmethod
-    def generate_tag(cls, x: int, y: int) -> str:
-        return f"tile_{x}_{y}"
+    def generate_tag(self) -> str:
+        return f"tile_{self.x}_{self.y}"
 
     def on_load(self) -> None:
         self.models = []
@@ -413,16 +406,10 @@ class Tile(BaseEntity):
 
     def select(self) -> None:
         self.is_selected = True
-        self.accept("f9", self.render)
-        self.accept("f10", self.render_bits)
-        self.accept("f11", self.unrender_bits)
         self.on_select()
 
     def deselect(self) -> None:
         self.is_selected = False
-        self.ignore("f9")
-        self.ignore("f10")
-        self.ignore("f11")
         self.on_deselect()
 
     def on_select(self) -> None: ...
@@ -430,16 +417,11 @@ class Tile(BaseEntity):
     def on_deselect(self) -> None: ...
 
     def unregister(self):
-        """Unregisters as a entity in the system."""
         from managers.entity import EntityType  # Prevent circular import
 
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
     def compute_hex_center(self, x: int, y: int, radius: float = 1) -> Tuple[float, float]:
-        """
-        Given axial coords (x=column, y=row) and hex radius,
-        return the world‐space center (pos_x, pos_y) using flat‐topped staggering.
-        """
         # same as get_hex_spacing
         horiz = 1.5 * radius
         vert = math.sqrt(3) * radius
@@ -564,9 +546,8 @@ class Tile(BaseEntity):
         self.icon_overlay_np.setHpr(0, -90, 0)
         self.icon_overlay_np.setScale(0.75)
 
-        if self.tag is not None:
-            self.icon_overlay_np.set_tag("net_type", NET_TYPE.TILE.value)
-            self.icon_overlay_np.set_tag("net_node_tag_id", self.tag)
+        self.icon_overlay_np.set_tag("net_type", NET_TYPE.TILE.value)
+        self.icon_overlay_np.set_tag("net_node_tag_id", self.tag)
 
         self.icon_overlay_np.setShader(
             Shader.load(
@@ -710,7 +691,7 @@ class Tile(BaseEntity):
 
         self.unrender_bits()
         self.render_bits()
-        self._render_resource_model()
+        self.render_resource_model()
 
         self.add_icon_to_tile()
         self.add_unit_icon()
@@ -736,21 +717,16 @@ class Tile(BaseEntity):
     def render_bits(self):
         self.unrender_bits()
         for bit in self.get_terrain().get_bits():
+            if bit.blocks_resource_model_spawning is True:
+                self._block_resource_model_spawning = True
             self.render_bit_into_slot(bit, None)
 
     def search_bit(self, bit_id: str) -> Optional["Bit"]:
-        """
-        Search for a bit by its ID in the tile's terrain bits.
-        Returns the first matching bit or None if not found.
-        """
         if (bit := self.get_terrain().bits.search_bit(bit_id)) is not None:
             return bit
         return None
 
     def enable_bit(self, bit: "Bit", slot: Optional[str] = None) -> None:
-        """
-        Enable a bit on the tile.
-        """
         bit.disabled = False
 
         if bit.has_preferred_slot():
@@ -859,12 +835,10 @@ class Tile(BaseEntity):
             self.placed_props.clear()
         except KeyError:
             return None
+        self._block_resource_model_spawning = False
         self.geom_group.flattenMedium()
 
     def remove_unit_icons(self) -> None:
-        """
-        Remove all unit icons from the tile.
-        """
         if self._unit_icons is not None:
             self._unit_icons.remove_all()
             if self.unit_icons_np is not None:
@@ -897,9 +871,10 @@ class Tile(BaseEntity):
                     str(unit.icon),  # icon name/tag
                 )
 
-    def _render_resource_model(self) -> None:
-        if self.city is not None:
+    def render_resource_model(self) -> None:
+        if self.city is not None or self._block_resource_model_spawning:
             return
+
         resource = list(self.resources.flatten_non_mechanic().values())
 
         if len(resource) == 0:
@@ -907,7 +882,7 @@ class Tile(BaseEntity):
 
         resource = resource[0]
 
-        if resource.model is None or resource.model == (None, None):
+        if resource.model is None or (isinstance(resource.model, tuple) and resource.model == (None, None)):
             return
 
         if (model := (resource.get_land_model() if self.is_land else resource.get_water_model())) is None:
@@ -970,13 +945,12 @@ class Tile(BaseEntity):
                 self.logger.error(f"Model {full_path} failed to load.")
                 return
 
-            # 1) Compute placement in world coords
             x = self.pos_x + pos_offset[0]
             y = self.pos_y + pos_offset[1]
             z = self.pos_z + pos_offset[2]
 
             # 2) Scale/HPR/pos for the "source" model
-            model_scale = max(0.01, getattr(extra_model, "model_scale", scale))
+            model_scale = max(0.01, scale)
             extra_model.setScale(model_scale)
             extra_model.setHpr(*hpr)
 
@@ -986,9 +960,6 @@ class Tile(BaseEntity):
             node.setCollideMask(BitMask32.bit(1))
 
             self.models.append(node)
-            if self.tag is None:
-                self.tag = self.generate_tag(self.x, self.y)
-
             self.model_nodes_by_net_type.setdefault(str(net_type.value), []).append(node)
             node.setTag(NET_TYPE_FIELD, str(net_type.value))
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tag if (net_id is None) else net_id)
@@ -998,9 +969,6 @@ class Tile(BaseEntity):
         self.base.loader.loadModel(full_path, callback=on_model_loaded, extraArgs=[net_type])
 
     def unrender(self) -> None:
-        """
-        Remove the tile from the scene by unrendering all models.
-        """
         self.unrender_all()
 
     def unrender_by_type(self, net_type: NET_TYPE) -> None:
@@ -1030,16 +998,10 @@ class Tile(BaseEntity):
         self.models.clear()
 
     def set_color(self, color: Tuple[float, float, float, float]) -> None:
-        """
-        Set the color of all rendered models on this tile.
-        """
         for node in self.models:
             node.setColor(*color)
 
     def get_node(self) -> Optional[NodePath]:
-        """
-        Return the first rendered model (typically the terrain) or None if no model exists.
-        """
         return self.models[0] if self.models else None
 
     def get_units(self) -> Units:
@@ -1188,7 +1150,7 @@ class Tile(BaseEntity):
         if self.city is not None:
             data["city"] = {
                 "city_name": self.city.name,
-                "owned_tiles": ",".join(str(tile.tag) for tile in self.city.owned_tiles if tile.tag is not None),
+                "owned_tiles": ",".join(str(tile.tag) for tile in self.city.owned_tiles),
                 "population": self.city.population,
                 "is_capital": self.city.is_capital,
                 "is_building": self.city.is_building,
@@ -1294,29 +1256,6 @@ class Tile(BaseEntity):
     def instance_resource(self, resource: Type[BaseResource]):
         """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
-
-    def enrich_from_extra_data(self, hex: Hex) -> None:
-        from system.subsystems.hexgen.enums import HexFeature
-
-        self.altitude = hex.altitude
-        self.biome = hex.biome  # type: ignore
-        self.moisture = hex.moisture
-        self.temperature = hex.base_temperature[0]
-        self.terrain = hex.terrain  # type: ignore
-        self.zone = hex.zone.name  # type: ignore
-        self.hemisphere = hex.hemisphere.name
-        self.is_coast = hex.is_coast
-        self.is_water = hex.is_water
-        self.is_land = hex.is_land
-        self.is_sea = hex.geoform_type.id == 2  # type: ignore # 2 == Sea
-        self.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore # 4 == Lake
-        self.has_river = ",".join(str(edge) for edge in hex.edges)
-        self.geoforms = hex.geoform_type
-        self.features = hex.features
-
-        resource: Type[BaseResource] | None = hex.get_gameplay_resource()
-        if resource is not None:
-            self.instance_resource(resource)
 
     def is_showing_large_icons(self) -> bool:
         return self._showing_large_icons

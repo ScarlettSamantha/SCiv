@@ -5,7 +5,7 @@ from direct.showbase import MessengerGlobal
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.improvement import Improvement
 from gameplay.rules import get_game_rules
-from gameplay.tiles.base_tile import Tile, CantBuildReason
+from gameplay.tile import Tile, CantBuildReason
 from gameplay.unit import Unit
 from managers.i18n import t_
 from system.actions import Action

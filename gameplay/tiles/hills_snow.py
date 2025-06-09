@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.terrain.hills_snow import HillsSnow as HillSnowTerrain
-from gameplay.tiles.base_tile import Tile
+from gameplay.tile import Tile
 
 
 class HillsSnow(Tile):

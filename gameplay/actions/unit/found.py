@@ -11,7 +11,7 @@ from managers.i18n import t_
 from system.requires import Condition
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import Tile
+    from gameplay.tile import Tile
     from gameplay.units.core.classes.civilian.settler import Settler
 
 
