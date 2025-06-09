@@ -33,7 +33,7 @@ from system.entity import BaseEntity
 if TYPE_CHECKING:
     from gameplay.ai.core import AI
     from gameplay.city import City
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.unit import Unit
 
 
@@ -285,7 +285,7 @@ class Player(BaseEntity):
         start_time = datetime.datetime.now()
         self.effects.on_turn_end(turn)
         self.logger.debug(f"Effects on turn end took {datetime.datetime.now() - start_time}")
-        self.get_ai().on_turn_end()
+        # self.get_ai().on_turn_end()
         self.logger.debug(f"AI on turn end took {datetime.datetime.now() - start_time}")
 
     def has_researched_tech(self, tech: Type[Tech]) -> bool:
@@ -294,13 +294,13 @@ class Player(BaseEntity):
     def get_all_cities(self) -> Cities:
         return self.cities
 
-    def get_all_tiles(self) -> Dict[tuple[int, int], "BaseTile"]:
+    def get_all_tiles(self) -> Dict[tuple[int, int], "Tile"]:
         return self.tiles.get_tiles()
 
     def owns_tile(self, x: int, y: int) -> bool:
         return self.tiles.get_tiles().get((x, y), None) is not None
 
-    def add_tile(self, tile: "BaseTile") -> None:
+    def add_tile(self, tile: "Tile") -> None:
         self.tiles.add_tile(tile)
 
     def has_civic_tree_unlocked(self, civic_tree: Type[CivicTree]) -> bool:
@@ -315,8 +315,8 @@ class Player(BaseEntity):
     def get_civic_tree(self) -> CivicTree | None:
         return self.civics.get_tree()
 
-    def get_all_tiles_marked_for_border_growth(self) -> Dict[Tuple[int, int], "BaseTile"]:
-        tiles: Dict[Tuple[int, int], "BaseTile"] = {}
+    def get_all_tiles_marked_for_border_growth(self) -> Dict[Tuple[int, int], "Tile"]:
+        tiles: Dict[Tuple[int, int], "Tile"] = {}
         for city in self.cities:
             if (_tile := city.get_next_border_growth_tile()) is not None:
                 tiles[(_tile.x, _tile.y)] = _tile

@@ -11,7 +11,7 @@ from gameplay.cities import Cities
 from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from gameplay.unit import Unit
 from helpers.cache import Optional
 from managers.game import World
@@ -116,19 +116,19 @@ class AI(ABC):
     @abstractmethod
     def on_game_start(self) -> None: ...
 
-    def spawn_unit(self, unit: Type["Unit"], tile: BaseTile) -> "Unit":
+    def spawn_unit(self, unit: Type["Unit"], tile: Tile) -> "Unit":
         """
         Spawn a unit on the given tile.
         """
         return unit.spawn_on(tile, self.get_player())
 
-    def get_world_state(self) -> Dict[Tuple[int, int], BaseTile]:
+    def get_world_state(self) -> Dict[Tuple[int, int], Tile]:
         """
         Get the world state.
         """
         return self.world()
 
-    def world(self) -> Dict[Tuple[int, int], BaseTile]:
+    def world(self) -> Dict[Tuple[int, int], Tile]:
         return World.get_singleton_instance().get_grid()
 
     def get_tile_count(self) -> int:
@@ -140,8 +140,8 @@ class AI(ABC):
         """
         return PlayerManager.all()
 
-    def get_targets(self) -> Dict[Tuple[int, int], BaseTile]:
-        targets: Dict[Tuple[int, int], BaseTile] = {}
+    def get_targets(self) -> Dict[Tuple[int, int], Tile]:
+        targets: Dict[Tuple[int, int], Tile] = {}
         for unit in self.get_units().all():
             targets.update(self.get_target_for_unit(unit))
         return targets
@@ -168,8 +168,8 @@ class AI(ABC):
                 goals.append(unit_goal)
         return goals
 
-    def get_target_for_unit(self, unit: Unit) -> Dict[Tuple[int, int], BaseTile]:
-        targets: Dict[Tuple[int, int], BaseTile] = {}
+    def get_target_for_unit(self, unit: Unit) -> Dict[Tuple[int, int], Tile]:
+        targets: Dict[Tuple[int, int], Tile] = {}
         for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
             if tile.is_city() and tile.owner != self.get_player():
                 targets[tile.x, tile.y] = tile
@@ -179,14 +179,14 @@ class AI(ABC):
                 targets[tile.x, tile.y] = tile
         return targets
 
-    def get_threats(self) -> Dict[Tuple[int, int], BaseTile]:
-        threats: Dict[Tuple[int, int], BaseTile] = {}
+    def get_threats(self) -> Dict[Tuple[int, int], Tile]:
+        threats: Dict[Tuple[int, int], Tile] = {}
         for unit in self.get_units().all():
             threats.update(self.get_threat_for_unit(unit))
         return threats
 
-    def get_threat_for_unit(self, unit: Unit) -> Dict[Tuple[int, int], BaseTile]:
-        threats: Dict[Tuple[int, int], BaseTile] = {}
+    def get_threat_for_unit(self, unit: Unit) -> Dict[Tuple[int, int], Tile]:
+        threats: Dict[Tuple[int, int], Tile] = {}
         for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
             if tile.is_city() and tile.owner != self.get_player():
                 threats[tile.x, tile.y] = tile
@@ -208,10 +208,10 @@ class AI(ABC):
         result = unit.owner != self.get_player()
         return result
 
-    def check_route_to(self, _from: "BaseTile", to: "BaseTile", radius: int = 5) -> bool:
+    def check_route_to(self, _from: "Tile", to: "Tile", radius: int = 5) -> bool:
         return TileRepository.astar(_from, to, radius) is not None
 
-    def move_unit(self, unit: Unit, to: BaseTile, on_tile_visit: Optional[Callable[["BaseTile"], None]] = None) -> None:
+    def move_unit(self, unit: Unit, to: Tile, on_tile_visit: Optional[Callable[["Tile"], None]] = None) -> None:
         """
         Move a unit to a specific tile.
         """

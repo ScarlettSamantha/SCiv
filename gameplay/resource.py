@@ -11,7 +11,7 @@ from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from system.generators.resource_allocator import ResourceAllocator
 
 
@@ -308,7 +308,7 @@ class BaseResource(ABC):
         return cls(*args, **kwargs, type_=ResourceTypeMechanic)
 
     @classmethod
-    def on_world_place_tile_filter(cls, resource_allocator: "ResourceAllocator", tile: "BaseTile") -> bool:
+    def on_world_place_tile_filter(cls, resource_allocator: "ResourceAllocator", tile: "Tile") -> bool:
         return True
 
     @ClassProperty

@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.flat_savanna import FlatSavanna as FlatSavannaTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class FlatSavanna(BaseTile):
+class FlatSavanna(Tile):
     _terrain = FlatSavannaTerrain
     _model = _terrain.model
     _cache_name = "FlatSavanna"

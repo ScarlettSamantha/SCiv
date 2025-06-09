@@ -1,9 +1,9 @@
 from typing import Any
 from gameplay.terrain.flat_heavy_forest import FlatHeavyForest as FlatHeavyForestTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class FlatHeavyForest(BaseTile):
+class FlatHeavyForest(Tile):
     _terrain = FlatHeavyForestTerrain
     _model = _terrain.model
 

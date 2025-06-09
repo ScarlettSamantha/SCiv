@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.hills_snow import HillsSnow as HillSnowTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class HillsSnow(BaseTile):
+class HillsSnow(Tile):
     _model = HillSnowTerrain.model
     _cache_name = "HillsSnow"
 

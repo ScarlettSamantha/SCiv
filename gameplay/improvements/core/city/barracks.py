@@ -11,6 +11,7 @@ from managers.i18n import t_
 class Barracks(BaseCityImprovement):
     name = t_("content.improvements.core.city.barracks.name")
     description = t_("content.improvements.core.city.barracks.description")
+    _model = ""
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

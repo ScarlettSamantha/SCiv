@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.player import Player
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.unit import Unit
     from managers.world import World
 
@@ -27,7 +27,7 @@ class EffectType(Enum):
     IMPROVEMENT = 5
 
 
-parent_types = Union["City", "BaseTile", "Player", "World", "Unit", "Improvement"]
+parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement"]
 
 
 class Effects:
@@ -60,11 +60,11 @@ class Effects:
         from gameplay.city import City
         from gameplay.improvement import Improvement
         from gameplay.player import Player
-        from gameplay.tiles.base_tile import BaseTile
+        from gameplay.tiles.base_tile import Tile
         from gameplay.unit import Unit
         from managers.world import World
 
-        if isinstance(self.parent, BaseTile) and effect.tile is None:
+        if isinstance(self.parent, Tile) and effect.tile is None:
             effect.tile = self.parent
             if effect.tile.city is not None:
                 effect.city = effect.tile.city
@@ -81,7 +81,7 @@ class Effects:
             effect.improvement = self.parent
 
     def _remove_parent_from_effect(self, effect: "Effect") -> None:
-        if isinstance(self.parent, "BaseTile") and effect.tile is not None:
+        if isinstance(self.parent, "Tile") and effect.tile is not None:
             effect.tile = None
         elif isinstance(self.parent, "City") and effect.city is not None:
             effect.city = None
@@ -154,7 +154,7 @@ class Effects:
         return self._effects_num
 
 
-def _place_on_tile(tile: "BaseTile", effect: "Effect") -> None:
+def _place_on_tile(tile: "Tile", effect: "Effect") -> None:
     tile.effects.add_effect(effect)
 
 
@@ -198,13 +198,13 @@ class EffectPlacers(Enum):
     PLACE_ON_UNIT = 6
     PLACE_ON_IMPROVEMENT = 7
 
-    def place(self, base_object: "BaseTile | City | Player | World", effect: "Effect") -> None:
+    def place(self, base_object: "Tile | City | Player | World", effect: "Effect") -> None:
         from gameplay.city import City
         from gameplay.player import Player
-        from gameplay.tiles.base_tile import BaseTile
+        from gameplay.tiles.base_tile import Tile
         from managers.world import World
 
-        if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, BaseTile):
+        if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, Tile):
             _place_on_tile(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_PLAYERS_TILE and isinstance(base_object, Player):
             _place_on_players_tile(base_object, effect)
@@ -291,7 +291,7 @@ class Effect(BaseEntity, ABC):
         else:  # is a global effect
             return f"{self.__class__.__name__}_{self.id}"
 
-    def apply(self, base_object: "BaseTile | City | Player | World") -> None:
+    def apply(self, base_object: "Tile | City | Player | World") -> None:
         if isinstance(self.place_method, EffectPlacers):
             self.place_method.place(base_object, self)
         elif callable(self.place_method) and isinstance(base_object, BaseEntity):

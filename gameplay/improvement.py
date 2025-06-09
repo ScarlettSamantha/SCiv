@@ -15,7 +15,7 @@ from system.entity import BaseEntity
 if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.resources.core.basic._base import BasicBaseResource
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.unit import Unit
 
 
@@ -49,7 +49,7 @@ class Improvement(BaseEntity):
     def __init__(
         self,
         key: Optional[str] = None,
-        tile: "BaseTile | None" = None,
+        tile: "Tile | None" = None,
         owner: Optional["Player"] = None,
         *args: Any,
         **kwargs: Any,
@@ -208,7 +208,7 @@ class Improvement(BaseEntity):
     @staticmethod
     def basic_resource_improvement(
         name: str,
-        tile: "BaseTile",
+        tile: "Tile",
         property: str,
         delta: float,
         mode: int = Yields.ADDITIVE,

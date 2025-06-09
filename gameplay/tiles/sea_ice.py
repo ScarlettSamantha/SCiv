@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.sea_ice import SeaIce as SeaIceTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class SeaIce(BaseTile):
+class SeaIce(Tile):
     _model = SeaIceTerrain.get_model()
     _cache_name = "SeaIce"
 

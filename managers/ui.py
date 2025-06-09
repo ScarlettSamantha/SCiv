@@ -11,7 +11,7 @@ from panda3d.core import PStatClient  # type: ignore
 
 from gameplay.player import Player
 from gameplay.tech import Tech
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from gameplay.unit import Unit
 from helpers.colors import Colors
 from managers.action import ActionManager
@@ -43,12 +43,12 @@ class ui(Singleton, DirectObject):
         self.game: Optional["Game"] = Game.get_singleton_instance()
         self.map: World = World.get_singleton_instance()
 
-        self.current_tile: Optional[BaseTile] = None
-        self.previous_tile: Optional[BaseTile] = None
-        self.current_tiles: List[BaseTile] = []
+        self.current_tile: Optional[Tile] = None
+        self.previous_tile: Optional[Tile] = None
+        self.current_tiles: List[Tile] = []
 
-        self.neighboring_tiles: List[BaseTile] = []
-        self.previous_tiles: List[BaseTile] = []
+        self.neighboring_tiles: List[Tile] = []
+        self.previous_tiles: List[Tile] = []
 
         self.current_unit: Optional[Unit] = None
         self.previous_unit: Optional[Unit] = None
@@ -70,7 +70,7 @@ class ui(Singleton, DirectObject):
         self.previous_screen_name: Optional[str] = ""
         self.showing_escape: bool = False
 
-        self.highlighted_tiles: List[BaseTile] = []
+        self.highlighted_tiles: List[Tile] = []
         self.highlight_tile_radius: int = 2
 
     def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
@@ -253,7 +253,7 @@ class ui(Singleton, DirectObject):
 
         self.get_gui().get_screen_manager().current = self.previous_screen_name
 
-    def highlight_tiles(self, tiles: List[BaseTile], color: Optional[Tuple[float, float, float, float]] = None):
+    def highlight_tiles(self, tiles: List[Tile], color: Optional[Tuple[float, float, float, float]] = None):
         for tile in tiles:
             tile.calculate()
 
@@ -415,7 +415,7 @@ class ui(Singleton, DirectObject):
     def leave_trail(
         self,
         unit: Any,
-        tile: BaseTile,
+        tile: Tile,
     ):
         from gameplay.actions.timed.trail import Trial
 

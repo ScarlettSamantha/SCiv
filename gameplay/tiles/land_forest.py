@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.flat_forest import FlatForest
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class LandForest(BaseTile):
+class LandForest(Tile):
     _terrain = FlatForest
     _model = _terrain.model
     _cache_name = "LandForest"

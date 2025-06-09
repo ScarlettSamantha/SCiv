@@ -5,7 +5,7 @@ from direct.showbase import MessengerGlobal
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.improvement import Improvement
 from gameplay.rules import get_game_rules
-from gameplay.tiles.base_tile import BaseTile, CantBuildReason
+from gameplay.tiles.base_tile import Tile, CantBuildReason
 from gameplay.unit import Unit
 from managers.i18n import t_
 from system.actions import Action
@@ -15,7 +15,7 @@ class BuildAction(BaseUnitAction):
     def __init__(self, improvement: Type[Improvement], unit: Unit):
         self.unit: Unit = unit
 
-        self.tile: BaseTile = self.unit.get_tile()
+        self.tile: Tile = self.unit.get_tile()
         self._condition_result: bool | CantBuildReason = False
         self.improvement: Type[Improvement] = improvement
         super().__init__(

@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from main import SCIV
     from system.generators.base import BaseGenerator
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
 
 
 class Game(Singleton, DirectObject):
@@ -118,7 +118,7 @@ class Game(Singleton, DirectObject):
         self.entities.session = session_name
         self.entities.load()
 
-        world_tiles: Dict[Any, "BaseTile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
+        world_tiles: Dict[Any, "Tile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
 
         players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
 

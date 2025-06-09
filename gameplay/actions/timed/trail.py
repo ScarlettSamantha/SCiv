@@ -1,7 +1,7 @@
 from typing import Any
 
 from gameplay.actions.timed.base_timed_action import BaseTimedAction
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from helpers.colors import Colors
 from managers.i18n import t_
 
@@ -11,7 +11,7 @@ class Trial(BaseTimedAction):
         if "tile" not in kwargs:
             raise ValueError("Tile must be passed to the trail action")
 
-        self.tile: BaseTile = kwargs.pop("tile")  # type: ignore
+        self.tile: Tile = kwargs.pop("tile")  # type: ignore
 
         super().__init__(
             delay=delay,  # 15 default seconds then the trail will disappear

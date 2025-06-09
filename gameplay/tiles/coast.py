@@ -1,10 +1,10 @@
 from typing import Any
 from gameplay.terrain.coast import Coast as CoastTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from helpers.colors import Colors
 
 
-class Coast(BaseTile):
+class Coast(Tile):
     _cache_name = "Coast"
     _terrain = CoastTerrain()
     _model = _terrain.model

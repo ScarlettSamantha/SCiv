@@ -8,7 +8,7 @@ from managers.world import World
 
 if TYPE_CHECKING:
     from gameplay.city import City
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from system.generators.basic import Hex
 
 
@@ -26,7 +26,7 @@ class TileRepository:
         pass
 
     @classmethod
-    def get_tile(cls, x: int, y: int) -> Optional["BaseTile"]:
+    def get_tile(cls, x: int, y: int) -> Optional["Tile"]:
         """
         Retrieve the tile at the given (x, y) coordinate from the world's grid.
 
@@ -42,7 +42,7 @@ class TileRepository:
         return None
 
     @classmethod
-    def search(cls, callback: Callable[["BaseTile"], bool]) -> List["BaseTile"]:
+    def search(cls, callback: Callable[["Tile"], bool]) -> List["Tile"]:
         """
         Search for a tile in the grid using a callback function.
 
@@ -50,14 +50,14 @@ class TileRepository:
         :param callback: A function that takes a tile and returns True if it matches the search criteria.
         :return: The first tile that matches the criteria, or None if no match is found.
         """
-        tiles: List["BaseTile"] = []
+        tiles: List["Tile"] = []
         for _tile in World.get_singleton_instance().grid.values():
             if callback(_tile):
                 tiles.append(_tile)
         return tiles
 
     @classmethod
-    def search_passable_land(cls) -> List["BaseTile"]:
+    def search_passable_land(cls) -> List["Tile"]:
         """
         Search for all passable land tiles in the grid.
 
@@ -66,18 +66,18 @@ class TileRepository:
         return cls.search(lambda tile: tile.is_passable() and not tile.is_water)
 
     @classmethod
-    def get_cities_in_radius(cls, tile: "BaseTile", radius: int) -> List["City"]:
+    def get_cities_in_radius(cls, tile: "Tile", radius: int) -> List["City"]:
         return [tile.city for tile in cls.get_tiles_in_radius(tile, radius) if tile.city is not None]
 
     @classmethod
-    def is_near_map_edge(cls, map_dimensions: Tuple[int, int], tile: "BaseTile", threshold: int = 3) -> bool:
+    def is_near_map_edge(cls, map_dimensions: Tuple[int, int], tile: "Tile", threshold: int = 3) -> bool:
         """Returns True if the tile is too close to the edge of the map."""
         x, y = tile.get_map_cords()
         map_width, map_height = map_dimensions
         return x < threshold or y < threshold or x >= map_width - threshold or y >= map_height - threshold
 
     @classmethod
-    def get_tiles_in_radius_from_cords(cls, x: int, y: int, radius: int) -> List["BaseTile"]:
+    def get_tiles_in_radius_from_cords(cls, x: int, y: int, radius: int) -> List["Tile"]:
         r"""
         Retrieves all tiles within a given hexagonal radius from the specified coordinates.
 
@@ -92,7 +92,7 @@ class TileRepository:
         return cls.get_tiles_in_radius(tile, radius)
 
     @classmethod
-    def get_tiles_in_radius(cls, tile: "BaseTile", radius: int) -> List["BaseTile"]:
+    def get_tiles_in_radius(cls, tile: "Tile", radius: int) -> List["Tile"]:
         r"""
         Retrieves all tiles within a given hexagonal radius from the specified tile.
 
@@ -130,7 +130,7 @@ class TileRepository:
         :return: List of Tile objects within the specified radius.
         """
         directions = [(+1, 0), (+1, -1), (0, -1), (-1, 0), (-1, +1), (0, +1)]
-        tiles: List[BaseTile] = []
+        tiles: List[Tile] = []
         for r in range(1, radius + 1):
             for dx, dy in directions:
                 x, y = tile.x, tile.y
@@ -177,7 +177,7 @@ class TileRepository:
         return cube_x, cube_y, cube_z
 
     @classmethod
-    def heuristic(cls, tile_a: "BaseTile", tile_b: "BaseTile") -> float:
+    def heuristic(cls, tile_a: "Tile", tile_b: "Tile") -> float:
         r"""
         Computes the hex distance between two tiles by converting them to cube coordinates.
 
@@ -207,7 +207,7 @@ class TileRepository:
         return float(max(abs(ax - bx), abs(ay - by), abs(az - bz)))
 
     @classmethod
-    def heuristic_tiles(cls, tile_a: "BaseTile", tile_b: "BaseTile") -> float:
+    def heuristic_tiles(cls, tile_a: "Tile", tile_b: "Tile") -> float:
         """
         Estimates the cost between two tiles based on their coordinates.
 
@@ -221,8 +221,8 @@ class TileRepository:
 
     @classmethod
     def get_neighbors(
-        cls, tile: "BaseTile", radius: int = 1, check_passable: bool = False, climbable: bool = False
-    ) -> List["BaseTile"]:
+        cls, tile: "Tile", radius: int = 1, check_passable: bool = False, climbable: bool = False
+    ) -> List["Tile"]:
         r"""
         Returns all tiles within the specified radius in an offset hex grid (q-odd layout) using cls.instance_ref_grid.grid.
 
@@ -259,7 +259,7 @@ class TileRepository:
         directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
 
         visited = set([tile])
-        result: List["BaseTile"] = []
+        result: List["Tile"] = []
         queue = deque([(tile, 0)])
 
         while queue:
@@ -285,7 +285,7 @@ class TileRepository:
         return result
 
     @classmethod
-    def astar(cls, start: "BaseTile", goal: "BaseTile", movement_points: float) -> Optional[List["BaseTile"]]:
+    def astar(cls, start: "Tile", goal: "Tile", movement_points: float) -> Optional[List["Tile"]]:
         r"""
         A* search algorithm for pathfinding on a hex grid.
 
@@ -316,17 +316,17 @@ class TileRepository:
         :param movement_points: Movement speed factor for cost adjustment.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
-        open_set: List[Tuple[float, int, "BaseTile"]] = []
+        open_set: List[Tuple[float, int, "Tile"]] = []
         heappush(open_set, (0, id(start), start))  # Use id(start) for unique sorting
-        came_from: Dict["BaseTile", "BaseTile"] = {}
-        g_score: Dict["BaseTile", float] = {start: 0.0}
-        f_score: Dict["BaseTile", float] = {start: cls.heuristic_tiles(start, goal)}
+        came_from: Dict["Tile", "Tile"] = {}
+        g_score: Dict["Tile", float] = {start: 0.0}
+        f_score: Dict["Tile", float] = {start: cls.heuristic_tiles(start, goal)}
 
         while open_set:
             _, __, current = heappop(open_set)  # Extract current safely
 
             if current == goal:
-                path: List["BaseTile"] = []
+                path: List["Tile"] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
@@ -345,7 +345,7 @@ class TileRepository:
         return None  # No path found
 
     @classmethod
-    def dijkstra(cls, start: "BaseTile", goal: "BaseTile") -> Optional[List["BaseTile"]]:
+    def dijkstra(cls, start: "Tile", goal: "Tile") -> Optional[List["Tile"]]:
         r"""
         Dijkstra's algorithm for the shortest path with weighted movement.
 
@@ -368,16 +368,16 @@ class TileRepository:
         :param goal: The target Tile.
         :return: List of Tiles representing the path, or None if unreachable.
         """
-        open_set: List[Tuple[float, "BaseTile"]] = []
+        open_set: List[Tuple[float, "Tile"]] = []
         heappush(open_set, (0, start))
-        came_from: Dict["BaseTile", "BaseTile"] = {}
-        cost_so_far: Dict["BaseTile", float] = {start: 0.0}
+        came_from: Dict["Tile", "Tile"] = {}
+        cost_so_far: Dict["Tile", float] = {start: 0.0}
 
         while open_set:
             _, current = heappop(open_set)
 
             if current == goal:
-                path: List["BaseTile"] = []
+                path: List["Tile"] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
@@ -394,7 +394,7 @@ class TileRepository:
         return None  # No path found
 
     @classmethod
-    def has_line_of_sight(cls, tile_a: "BaseTile", tile_b: "BaseTile") -> bool:
+    def has_line_of_sight(cls, tile_a: "Tile", tile_b: "Tile") -> bool:
         r"""
         Determines if there is a direct, unobstructed path between two tiles using Bresenham's Line Algorithm.
 
@@ -423,7 +423,7 @@ class TileRepository:
 
         while (x0, y0) != (x1, y1):
             if (x0, y0) in World.get_singleton_instance().grid:
-                tile: "BaseTile" = World.get_singleton_instance().grid[(x0, y0)]
+                tile: "Tile" = World.get_singleton_instance().grid[(x0, y0)]
                 if tile.movement_cost > 10:  # Threshold for impassable terrain.
                     return False
 
@@ -438,7 +438,7 @@ class TileRepository:
         return True
 
     @classmethod
-    def bidirectional_dijkstra(cls, start: "BaseTile", goal: "BaseTile") -> Optional[List["BaseTile"]]:
+    def bidirectional_dijkstra(cls, start: "Tile", goal: "Tile") -> Optional[List["Tile"]]:
         r"""
         Bidirectional Dijkstra's algorithm for efficient pathfinding.
 
@@ -461,14 +461,14 @@ class TileRepository:
         :param goal: The target Tile.
         :return: Combined path as a list of Tiles, or None if no path exists.
         """
-        open_start: List[Tuple[float, "BaseTile"]] = []
-        open_goal: List[Tuple[float, "BaseTile"]] = []
+        open_start: List[Tuple[float, "Tile"]] = []
+        open_goal: List[Tuple[float, "Tile"]] = []
         heappush(open_start, (0, start))
         heappush(open_goal, (0, goal))
-        came_from_start: Dict["BaseTile", "BaseTile"] = {}
-        came_from_goal: Dict["BaseTile", "BaseTile"] = {}
-        cost_start: Dict["BaseTile", float] = {start: 0.0}
-        cost_goal: Dict["BaseTile", float] = {goal: 0.0}
+        came_from_start: Dict["Tile", "Tile"] = {}
+        came_from_goal: Dict["Tile", "Tile"] = {}
+        cost_start: Dict["Tile", float] = {start: 0.0}
+        cost_goal: Dict["Tile", float] = {goal: 0.0}
 
         meeting_node = None
         while open_start and open_goal:
@@ -497,7 +497,7 @@ class TileRepository:
             return None  # No meeting point found.
 
         # Reconstruct path from start to meeting node.
-        path_start: List["BaseTile"] = []
+        path_start: List["Tile"] = []
         current = meeting_node
         while current in came_from_start:
             path_start.append(current)
@@ -506,7 +506,7 @@ class TileRepository:
         path_start.reverse()
 
         # Reconstruct path from meeting node to goal.
-        path_goal: List["BaseTile"] = []
+        path_goal: List["Tile"] = []
         current = meeting_node
         while current in came_from_goal:
             current = came_from_goal[current]
@@ -516,8 +516,8 @@ class TileRepository:
 
     @classmethod
     def theta_star(
-        cls, start: "BaseTile", goal: "BaseTile", check_passable: bool = True, check_swimmable: bool = False
-    ) -> Optional[List["BaseTile"]]:
+        cls, start: "Tile", goal: "Tile", check_passable: bool = True, check_swimmable: bool = False
+    ) -> Optional[List["Tile"]]:
         r"""
         Theta* algorithm for any-angle pathfinding on a hex grid.
 
@@ -543,17 +543,17 @@ class TileRepository:
         :param check_swimmable: If True, only consider swimmable tiles.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
-        open_set: List[Tuple[float, "BaseTile"]] = []
+        open_set: List[Tuple[float, "Tile"]] = []
         heappush(open_set, (0, start))
-        came_from: Dict["BaseTile", "BaseTile"] = {}
-        g_score: Dict["BaseTile", float] = {start: 0.0}
-        f_score: Dict["BaseTile", float] = {start: cls.heuristic(start, goal)}
+        came_from: Dict["Tile", "Tile"] = {}
+        g_score: Dict["Tile", float] = {start: 0.0}
+        f_score: Dict["Tile", float] = {start: cls.heuristic(start, goal)}
 
         while open_set:
             _, current = heappop(open_set)
 
             if current == goal:
-                path: List["BaseTile"] = []
+                path: List["Tile"] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
@@ -576,26 +576,26 @@ class TileRepository:
         return None  # No path found
 
     @staticmethod
-    def hex_distance(tile1: "BaseTile", tile2: "BaseTile") -> int:
+    def hex_distance(tile1: "Tile", tile2: "Tile") -> int:
         """Calculate the hex grid distance between two tiles."""
         return (abs(tile1.x - tile2.x) + abs(tile1.y - tile2.y)) // 2
 
     @staticmethod
     def distance(
-        tile1: "BaseTile",
-        tile2: "BaseTile",
+        tile1: "Tile",
+        tile2: "Tile",
         distance_type: DistanceCalculationType = DistanceCalculationType.EUCLIDEAN,
     ) -> int:
-        def euclidean_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+        def euclidean_distance(t1: "Tile", t2: "Tile") -> float:
             return ((t1.x - t2.x) ** 2 + (t1.y - t2.y) ** 2) ** 0.5
 
-        def manhattan_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+        def manhattan_distance(t1: "Tile", t2: "Tile") -> float:
             return abs(t1.x - t2.x) + abs(t1.y - t2.y)
 
-        def chebyshev_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+        def chebyshev_distance(t1: "Tile", t2: "Tile") -> float:
             return max(abs(t1.x - t2.x), abs(t1.y - t2.y))
 
-        def hex_distance(t1: "BaseTile", t2: "BaseTile") -> float:
+        def hex_distance(t1: "Tile", t2: "Tile") -> float:
             # this already yields an integer via floor division, but we’ll cast anyway
             return (abs(t1.x - t2.x) + abs(t1.y - t2.y)) // 2
 

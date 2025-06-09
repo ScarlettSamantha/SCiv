@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.mountain import Mountain as MountainTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class Mountain(BaseTile):
+class Mountain(Tile):
     _terrain = MountainTerrain
     _model = _terrain.get_model()
     _cache_name = "Mountain"

@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.volcano import Volcano as VolcanoTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class Volcano(BaseTile):
+class Volcano(Tile):
     _terrain = VolcanoTerrain
     _model = _terrain.model
     _cache_name = "Volcano"

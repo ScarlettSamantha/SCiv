@@ -15,3 +15,6 @@ class City(BaseTerrain):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self._texture = "city.png"
+
+    def register_bits(self) -> None:
+        return super().register_bits()

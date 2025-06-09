@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.lake import Lake as LakeTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class Lake(BaseTile):
+class Lake(Tile):
     _terrain = LakeTerrain
     _model = _terrain.model
     _cache_name = "Lake"

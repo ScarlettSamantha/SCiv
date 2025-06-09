@@ -78,7 +78,7 @@ class CantBuildReason(Enum):
     IMPROVEMENT_TILE_NOT_PASSABLE = 10
 
 
-class BaseTile(BaseEntity):
+class Tile(BaseEntity):
     texture_cache: Dict[str, Texture] = {}
     prop_size_scale_factor: float = 0.3
     prop_slots: Dict[str, Tuple[float, float, float]] = {
@@ -650,7 +650,7 @@ class BaseTile(BaseEntity):
         # ensure it stays at the right Z offset
         self.icon_overlay_np.setZ(0 + 0.01)
 
-    def get_distance(self, other: "BaseTile") -> int:
+    def get_distance(self, other: "Tile") -> int:
         return TileRepository.distance(self, other)
 
     def recalc_grid_position(self, radius: float) -> None:

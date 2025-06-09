@@ -13,7 +13,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
     from main import SCIV
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.player import Player
 
 
@@ -47,7 +47,7 @@ class BaseEntity(ABC, DirectObject):
 
     def __init__(
         self,
-        tile: Optional[Union["BaseTile", ReferenceType["BaseTile"]]] = None,
+        tile: Optional[Union["Tile", ReferenceType["Tile"]]] = None,
         owner: Optional["Player"] = None,
         *args: Any,
         **kwargs: Any,
@@ -56,7 +56,7 @@ class BaseEntity(ABC, DirectObject):
         self.entity_key: Optional[str] = None
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False
-        self.tile: Optional[Union["BaseTile", ReferenceType["BaseTile"]]] = tile
+        self.tile: Optional[Union["Tile", ReferenceType["Tile"]]] = tile
         self.owner: Optional[Player] = owner
 
         self.attack_points_left: float = self.attack_points
@@ -67,18 +67,18 @@ class BaseEntity(ABC, DirectObject):
 
         self.base: "SCIV" = Cache.get_showbase_instance()
 
-    def get_tile(self) -> "BaseTile":
+    def get_tile(self) -> "Tile":
         if self.tile is None:
             raise ValueError("Tile is None")
 
         # Delay import so you don’t hit TYPE_CHECKING guard at module load
-        from gameplay.tiles.base_tile import BaseTile
+        from gameplay.tiles.base_tile import Tile
 
-        # If it’s already a BaseTile instance, return it directly
-        if isinstance(self.tile, BaseTile):
+        # If it’s already a Tile instance, return it directly
+        if isinstance(self.tile, Tile):
             return self.tile
 
-        # If it’s a weakref to a BaseTile, dereference and return
+        # If it’s a weakref to a Tile, dereference and return
         # Dereference self.tile directly as it's expected to be a ReferenceType
 
         tile_obj = self.tile()
@@ -86,7 +86,7 @@ class BaseEntity(ABC, DirectObject):
             raise ValueError("Tile reference is dead (None)")
         return tile_obj
 
-    def set_tile(self, tile: "BaseTile") -> None:
+    def set_tile(self, tile: "Tile") -> None:
         self.tile = tile
 
     def __getstate__(self) -> Dict[str, Any]:

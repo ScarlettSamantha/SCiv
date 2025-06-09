@@ -18,7 +18,7 @@ from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from gameplay.unit import Unit
 from managers.combat import test_combat_outcome
 from managers.entity import EntityManager, EntityType
@@ -72,7 +72,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.waiting_for_world_input: bool = False
 
         self.wait_for_next_input_of_user: bool = False
-        self.wait_for_action_of_user: Optional[partial[Callable[[Optional[BaseTile]], None]]] = None
+        self.wait_for_action_of_user: Optional[partial[Callable[[Optional[Tile]], None]]] = None
         self.unit_waiting_for_action: Optional[Unit] = None
 
         self.debug_panel: Optional[Label] = None
@@ -461,7 +461,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.stats_frame.frame)  # type: ignore
 
     def process_tile_click(self, tile: str):
-        _tile: Optional[BaseTile] = self.world_manager.lookup_on_tag(tile)
+        _tile: Optional[Tile] = self.world_manager.lookup_on_tag(tile)
         if _tile is None:
             return
 
@@ -590,7 +590,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.unit_waiting_for_action = unit
         self.waiting_for_world_input = True  # type: ignore # We know it exists because it's initialized in build_screen
 
-    def execute_action(self, action: Action, unit: Unit, tile: Optional[BaseTile]):
+    def execute_action(self, action: Action, unit: Unit, tile: Optional[Tile]):
         """Executes the action after tile selection (if required)."""
         action.action_kwargs["unit"] = unit
 

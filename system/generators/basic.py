@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from main import SCIV
     from system.game_settings import GameSettings
     from system.subsystems.hexgen.grid import Grid
-    from gameplay.tiles.base_tile import BaseTile, Hex
+    from gameplay.tiles.base_tile import Tile, Hex
 
 
 class Basic(BaseGenerator):
@@ -35,9 +35,9 @@ class Basic(BaseGenerator):
         self.seed = randrange(0, 10**12 - 1)
 
         # Load tile definitions
-        self.tiles_dict: Dict[str, Type[BaseTile]] = self.load_tiles()
-        self.grid: Dict[Tuple[int, int], BaseTile] = {}
-        self.map: Dict[str, BaseTile] = self.world.map
+        self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
+        self.grid: Dict[Tuple[int, int], Tile] = {}
+        self.map: Dict[str, Tile] = self.world.map
         self.mesh_grid: Optional[HexGrid] = None
 
         self.resource_allocator: Optional[ResourceAllocator] = None
@@ -71,14 +71,14 @@ class Basic(BaseGenerator):
             "num_territories": self.number_of_tiles // 100,
         }
 
-    def load_tiles(self) -> Dict[str, Type["BaseTile"]]:
+    def load_tiles(self) -> Dict[str, Type["Tile"]]:
         """Loads tile classes dynamically."""
-        from gameplay.tiles.base_tile import BaseTile
+        from gameplay.tiles.base_tile import Tile
 
-        classes = PyLoad.load_classes("gameplay/tiles", base_classes=BaseTile)
+        classes = PyLoad.load_classes("gameplay/tiles", base_classes=Tile)
         # Remove the base class from the list
-        if "BaseTile" in classes:
-            del classes["BaseTile"]
+        if "Tile" in classes:
+            del classes["Tile"]
         return classes
 
     def generate(self) -> bool:
@@ -325,7 +325,7 @@ class Basic(BaseGenerator):
                     render_y = row * self.world.row_spacing  # Even columns align normally
 
                 # Instantiate the tile object
-                obj_instance: BaseTile = tile_class(x, y, render_x, render_y, extra_data=hex_tile)
+                obj_instance: Tile = tile_class(x, y, render_x, render_y, extra_data=hex_tile)
                 obj_instance.register()
 
                 obj_instance.enrich_from_extra_data(hex=hex_tile)

@@ -1,9 +1,9 @@
 from typing import Any
 from gameplay.terrain.flat_jungle import FlatJungle as FlatJungleTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class FlatJungle(BaseTile):
+class FlatJungle(Tile):
     _terrain = FlatJungleTerrain
     _model = _terrain.model
     _cache_name = "FlatJungle"

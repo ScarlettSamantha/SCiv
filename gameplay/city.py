@@ -20,7 +20,7 @@ from gameplay.repositories.tile import TileRepository
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.unit import Unit
 
 
@@ -32,13 +32,13 @@ class City(BaseEntity, DirectObject.DirectObject):
 
     CITY_MAX_BORDER_GROWTH_RADIUS: int = 5
 
-    def __init__(self, name: str, tile: "BaseTile", *args: Any, **kwargs: Any):
+    def __init__(self, name: str, tile: "Tile", *args: Any, **kwargs: Any):
         super().__init__(tile=tile, *args, **kwargs)
         from gameplay.player import Player
 
         self.name: T_TranslationOrStrOrNone = name
         self.player: Optional[Player] = None
-        self.owned_tiles: List[BaseTile] = []
+        self.owned_tiles: List[Tile] = []
         self.is_capital: bool = False
 
         self.active: bool = True
@@ -53,7 +53,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.border_growth_points: int = 0
         self.border_growth_cost: int = 10 * len(self.owned_tiles) + 10
-        self.border_growth_next_tile: Optional[BaseTile] = None
+        self.border_growth_next_tile: Optional[Tile] = None
 
         self.tax_level: float = 0.0
         self.population_food_usage: float = 1.0
@@ -233,10 +233,10 @@ class City(BaseEntity, DirectObject.DirectObject):
     def de_capitalize(self):
         self.is_capital = False
 
-    def assign_tile(self, tile: "BaseTile"):
+    def assign_tile(self, tile: "Tile"):
         self.owned_tiles.append(tile)
 
-    def remove_owned_tile(self, tile: "BaseTile"):
+    def remove_owned_tile(self, tile: "Tile"):
         self.owned_tiles.remove(tile)
 
     def recalculate_border_growth_cost(self) -> int:
@@ -248,13 +248,13 @@ class City(BaseEntity, DirectObject.DirectObject):
         center_tile = self.get_tile()
 
         for radius in range(1, max_radius + 1):
-            neighbors: List["BaseTile"] = TileRepository.get_neighbors(center_tile, radius)
-            available_tiles: List["BaseTile"] = [
+            neighbors: List["Tile"] = TileRepository.get_neighbors(center_tile, radius)
+            available_tiles: List["Tile"] = [
                 tile for tile in neighbors if tile.city is None and tile not in self.owned_tiles
             ]
 
             if available_tiles:
-                resource_tiles: List["BaseTile"] = []
+                resource_tiles: List["Tile"] = []
                 for tile in available_tiles:
                     if tile.resources.flatten():
                         resource_tiles.append(tile)
@@ -274,7 +274,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.recalculate_border_growth_next_tile()
         MessengerGlobal.messenger.send("game.gameplay.city.border_growth", [self])
 
-    def get_next_border_growth_tile(self) -> Optional["BaseTile"]:
+    def get_next_border_growth_tile(self) -> Optional["Tile"]:
         if self.border_growth_next_tile is None:
             return None
         return self.border_growth_next_tile
@@ -324,7 +324,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.on_turn_end(turn)
 
-    def on_tile_ownership_changed(self, city: "City", tile: "BaseTile"):
+    def on_tile_ownership_changed(self, city: "City", tile: "Tile"):
         if tile in self.owned_tiles:
             return
         self.assign_tile(tile)
@@ -368,7 +368,7 @@ class City(BaseEntity, DirectObject.DirectObject):
     def found_new(
         cls,
         name: str,
-        tile: "BaseTile",
+        tile: "Tile",
         owner: "Player",
         population: int = 1,
         is_capital: bool = False,
@@ -388,7 +388,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         if auto_claim_radius > 0:
             from gameplay.repositories.tile import TileRepository
 
-            adjacent_tiles: List[BaseTile] = TileRepository.get_neighbors(
+            adjacent_tiles: List[Tile] = TileRepository.get_neighbors(
                 tile,
                 auto_claim_radius,
                 check_passable=False,

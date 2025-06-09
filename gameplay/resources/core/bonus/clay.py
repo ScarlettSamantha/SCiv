@@ -5,7 +5,7 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_grass import FlatGrass
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from managers.i18n import T_TranslationOrStr, t_
 from system.generators.resource_allocator import ResourceAllocator
 
@@ -29,7 +29,7 @@ class Clay(BaseBonusResource):
         super().__init__(value=value)
 
     @classmethod
-    def on_world_place_tile_filter(cls, resource_allocator: ResourceAllocator, tile: BaseTile) -> bool:
+    def on_world_place_tile_filter(cls, resource_allocator: ResourceAllocator, tile: Tile) -> bool:
         if tile.is_coast is False:
             return False
         return True

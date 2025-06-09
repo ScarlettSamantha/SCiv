@@ -16,7 +16,7 @@ from system.effects import Effects
 
 if TYPE_CHECKING:
     from gameplay.city import City
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.unit import Unit
     from main import SCIV
     from managers.player import Player
@@ -35,9 +35,9 @@ class World(Singleton, DirectObject):
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
         # Key is the tag, value is the tile.
-        self.map: Dict[str, "BaseTile"] = {}
+        self.map: Dict[str, "Tile"] = {}
         # Key is the (col, row) tuple, value is the tile.
-        self.grid: Dict[Tuple[int, int], "BaseTile"] = {}
+        self.grid: Dict[Tuple[int, int], "Tile"] = {}
         self.generator: Optional[Type["BaseGenerator"]] = None
         self.effects: Effects = Effects(self)
         self.register()
@@ -54,11 +54,11 @@ class World(Singleton, DirectObject):
         for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
             unit.destroy()
 
-        tile: "BaseTile"
+        tile: "Tile"
         for tile in list(EntityManager.get_singleton_instance().get_all(EntityType.TILE).values()):  # type: ignore
             tile.destroy()
 
-    def load(self, data: Dict[str, "BaseTile"]):
+    def load(self, data: Dict[str, "Tile"]):
         self.logger.info("Loading world data.")
         for map_item in data.values():
             item_tag: str | None = map_item.tag
@@ -105,7 +105,7 @@ class World(Singleton, DirectObject):
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
 
-    def lookup_on_tag(self, tag: str) -> Optional["BaseTile"]:
+    def lookup_on_tag(self, tag: str) -> Optional["Tile"]:
         return self.map.get(tag, None)
 
     def get_generator(self) -> Optional[Type["BaseGenerator"]]:
@@ -113,13 +113,13 @@ class World(Singleton, DirectObject):
             return self.generator
         return None
 
-    def lookup(self, tag: str) -> "BaseTile":
+    def lookup(self, tag: str) -> "Tile":
         return self.map[tag]
 
-    def random_tile(self) -> "BaseTile":
+    def random_tile(self) -> "Tile":
         return self.grid[random.choice(list(self.grid.keys()))]
 
-    def get_grid(self) -> Dict[Tuple[int, int], "BaseTile"]:
+    def get_grid(self) -> Dict[Tuple[int, int], "Tile"]:
         return self.grid
 
     def on_turn_end(self, turn: int):  # We process the world on turn end. and we process the tiles.
@@ -135,7 +135,7 @@ class World(Singleton, DirectObject):
                 tile.on_turn_end(turn)
         self.effects.on_turn_end(turn)
 
-    def set_ownership_of_tile(self, tile: "BaseTile", player: "Player", city: "City"):
+    def set_ownership_of_tile(self, tile: "Tile", player: "Player", city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
         old_owner: Optional["Player"] = tile.owner
         if old_owner is not None:
@@ -160,7 +160,7 @@ class World(Singleton, DirectObject):
         self.logger.info(f"Tile {tile} is now owned by {player}, sending message.")
         messenger.send("game.gameplay.tiles.ownership_changed", [tile, player, old_owner])
 
-    def on_city_requests_tile(self, city: "City", tile: "BaseTile"):
+    def on_city_requests_tile(self, city: "City", tile: "Tile"):
         if city.player is None:
             raise AssertionError("City has no player")
         self.logger.info(f"City {city.name} is requesting tile {tile.tag}.")

@@ -22,7 +22,7 @@ from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
     from main import SCIV
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.player import Player
 
 
@@ -211,13 +211,13 @@ class BaseGenerator(ABC):
         from gameplay.repositories.tile import TileRepository
 
         units: List["Settler"] = []
-        occupied_tiles: List["BaseTile"] = []  # Track placed player locations
+        occupied_tiles: List["Tile"] = []  # Track placed player locations
 
         min_distances: List[int] = [5, 4, 3]  # Distances to attempt
 
-        def has_sufficient_land(tile: "BaseTile", radius: int, threshold: float) -> bool:
+        def has_sufficient_land(tile: "Tile", radius: int, threshold: float) -> bool:
             """Checks if the tile has at least the given ratio of land within the radius."""
-            neighbors: List[BaseTile] = TileRepository.get_neighbors(tile, radius=radius)
+            neighbors: List[Tile] = TileRepository.get_neighbors(tile, radius=radius)
             land_tiles = sum(1 for n in neighbors if not n.is_water)
             return (land_tiles / max(1, len(neighbors))) >= threshold
 
@@ -225,12 +225,12 @@ class BaseGenerator(ABC):
             if player.is_nature or player.is_barbarian:  # Skip nature and barbarian players as they don't have settlers
                 continue
 
-            spawn_tile: Optional[BaseTile] = None
-            fallback_tile: Optional[BaseTile] = None  # Store a fallback tile if needed
+            spawn_tile: Optional[Tile] = None
+            fallback_tile: Optional[Tile] = None  # Store a fallback tile if needed
 
             for min_distance in min_distances:
                 for _ in range(max_attempts):  # Limit attempts to prevent infinite loops
-                    _spawn_tile: Optional[BaseTile] = self.base.world.random_tile()
+                    _spawn_tile: Optional[Tile] = self.base.world.random_tile()
 
                     if not _spawn_tile or not _spawn_tile.is_spawnable_upon() or not _spawn_tile.is_passable():
                         continue
@@ -240,7 +240,7 @@ class BaseGenerator(ABC):
                     )
 
                     # Check if the tile has coastal neighbors
-                    neighbors: List[BaseTile] = TileRepository.get_neighbors(_spawn_tile, radius=1)
+                    neighbors: List[Tile] = TileRepository.get_neighbors(_spawn_tile, radius=1)
                     has_coastal_neighbor: bool = any(n.is_water and n.is_coast for n in neighbors)
                     near_map_edge: bool = TileRepository.is_near_map_edge(
                         self.base.world.get_size(), _spawn_tile, map_edge_buffer

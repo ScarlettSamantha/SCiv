@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import BasicBaseResource
     from gameplay.player import Player
     from gameplay.promotion import PromotionTree
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
 
 
 class CantMoveReason(Enum):
@@ -59,7 +59,7 @@ class Unit(BaseEntity, ABC):
     model: Optional[NodePath] = None
     model_size: float = 1.0
 
-    def __init__(self, tile: "BaseTile", key: Optional[str] = None):
+    def __init__(self, tile: "Tile", key: Optional[str] = None):
         from gameplay.city import Yields  # to avoid circular import
 
         BaseEntity.__init__(self, tile=tile)
@@ -187,7 +187,7 @@ class Unit(BaseEntity, ABC):
         return self.actions
 
     @classmethod
-    def spawn_on(cls, tile: "BaseTile", player: "Player", ignore_constraints: bool = False) -> "Unit":
+    def spawn_on(cls, tile: "Tile", player: "Player", ignore_constraints: bool = False) -> "Unit":
         instance = cls(tile=tile)
         instance.owner = player
         instance.spawn()
@@ -198,10 +198,10 @@ class Unit(BaseEntity, ABC):
 
         return instance
 
-    def move(self, tile: "BaseTile") -> CantMoveReason:
+    def move(self, tile: "Tile") -> CantMoveReason:
         from gameplay.repositories.tile import TileRepository
 
-        target_tile: "BaseTile" = tile
+        target_tile: "Tile" = tile
 
         if not self.can_move:
             return CantMoveReason.IMMOBILE
@@ -230,8 +230,8 @@ class Unit(BaseEntity, ABC):
         if tiles_to_move[0] == self.get_tile():
             del tiles_to_move[0]  # Remove the first tile as it is the current tile
 
-        departing_tile: "BaseTile" = self.get_tile()  # Start off at our current tile
-        current_tile: "BaseTile" = self.get_tile()
+        departing_tile: "Tile" = self.get_tile()  # Start off at our current tile
+        current_tile: "Tile" = self.get_tile()
 
         for _tile in tiles_to_move:
             if (self.moves_left - _tile.movement_cost) < 0:
@@ -252,12 +252,12 @@ class Unit(BaseEntity, ABC):
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
 
-    def _clear_departing_tile(self, tile: "BaseTile") -> None:
+    def _clear_departing_tile(self, tile: "Tile") -> None:
         tile.remove_unit(self)
         self.unload_model()
         tile.remove_unit_icons()
 
-    def _move_to_tile(self, tile: "BaseTile", clear_departing_tile: Optional["BaseTile"] = None) -> None:
+    def _move_to_tile(self, tile: "Tile", clear_departing_tile: Optional["Tile"] = None) -> None:
         if clear_departing_tile is not None:
             self._clear_departing_tile(clear_departing_tile)
 
@@ -284,7 +284,7 @@ class Unit(BaseEntity, ABC):
         self.model.setHpr(LVector3(*self.model_rotation))
         self.model.setScale(self.model_size)
 
-    def add_unit_model_to_tile(self, tile: "BaseTile") -> None:
+    def add_unit_model_to_tile(self, tile: "Tile") -> None:
         """
         Adds the unit's model to the specified tile.
         This is used when the unit is moved to a new tile.
@@ -359,7 +359,7 @@ class Unit(BaseEntity, ABC):
         else:
             return f"unit_{self.key}_{random.randint(0, 1000000)}"
 
-    def tile_is_occupiable(self, tile: "BaseTile") -> bool:
+    def tile_is_occupiable(self, tile: "Tile") -> bool:
         return tile.is_passable() and len(tile.units) == 0
 
     def restore_movement_points(self) -> None:
@@ -445,7 +445,7 @@ class Unit(BaseEntity, ABC):
             return entity
         return None
 
-    def look(self, radius: int) -> List["BaseTile"]:
+    def look(self, radius: int) -> List["Tile"]:
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)
 
     def attack(self, target: T_TARGET) -> None:

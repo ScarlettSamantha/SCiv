@@ -17,20 +17,20 @@ from helpers.colors import Colors, Tuple4f
 from helpers.tiles import Tiles
 
 if TYPE_CHECKING:
-    from managers.entity import BaseTile
+    from managers.entity import Tile
 
 
 class HexGrid:
     def __init__(
         self,
-        tiles: List["BaseTile"],
+        tiles: List["Tile"],
         radius: float = 1.0,
         cols: int = 10,
         rows: int = 10,
         wall_color: Tuple4f = Colors.MAGENTA,
     ):
         self.radius: float = radius
-        self.tiles: List["BaseTile"] = tiles
+        self.tiles: List["Tile"] = tiles
         self.cols = cols or 10
         self.rows = rows or 10
 
@@ -405,6 +405,6 @@ class HexGrid:
             return x * self.rows + y
         raise ValueError("Tile not found")
 
-    def get_tile_index_from_base(self, tile: "BaseTile") -> int:
+    def get_tile_index_from_base(self, tile: "Tile") -> int:
         x, y = tile.x, tile.y
         return self.get_tile_index(x, y)

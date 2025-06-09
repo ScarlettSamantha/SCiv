@@ -1,10 +1,10 @@
 from typing import Any
 from gameplay.terrain.flat_ice import FlatIce as FlatIceTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from helpers.colors import Colors
 
 
-class FlatIce(BaseTile):
+class FlatIce(Tile):
     _terrain = FlatIceTerrain
     _model = _terrain.model
     _cache_name = "FlatIce"

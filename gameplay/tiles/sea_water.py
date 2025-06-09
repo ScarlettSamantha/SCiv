@@ -1,10 +1,10 @@
 from typing import Any, Type
 
 from gameplay.terrain.sea import Sea
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class SeaWater(BaseTile):
+class SeaWater(Tile):
     _terrain: Type[Sea] = Sea
     _model = _terrain.get_model()
     _cache_name = "SeaWater"

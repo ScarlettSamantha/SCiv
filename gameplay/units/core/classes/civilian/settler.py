@@ -7,7 +7,7 @@ from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
 
 
 class SettlerPromotion(Promotion):
@@ -61,23 +61,23 @@ class SettlerPromotionTree(PromotionTree):
 
 
 class Settler(CoreCivilianBaseClass):
-    _model = "assets/models/units/peasant.glb"
+    _model = "assets/models/units/settler_cart.glb"
     buildable = True
     key = "core.unit.class.settler"
     name = t_("content.units.core.units.civilian.settler.name")
     description = t_("content.units.core.units.civilian.settler.description")
     icon = "assets/icons/settler.png"
     promotion_tree = SettlerPromotionTree
-    model_size = 0.2
+    model_size = 0.5
 
-    def __init__(self, tile: "BaseTile", *args: Any, **kwargs: Any):
+    def __init__(self, tile: "Tile", *args: Any, **kwargs: Any):
         super().__init__(
             tile,
             *args,
             **kwargs,
         )
         self.model_rotation = (0, 0, 0)
-        self.model_position_offset = (0, 0, 0.1)
+        self.model_position_offset = (0, 0, 0.0)
 
     def register_actions(self):
         from gameplay.actions.unit.found import FoundAction

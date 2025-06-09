@@ -1,10 +1,10 @@
 from typing import Any
 
 from gameplay.terrain.flat_scrubland import FlatScrubland as FlatScrublandTerrain
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 
 
-class FlatScrubland(BaseTile):
+class FlatScrubland(Tile):
     _terrain = FlatScrublandTerrain
     _model = _terrain.model
 

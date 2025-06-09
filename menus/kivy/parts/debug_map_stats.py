@@ -13,7 +13,7 @@ from helpers.colors import Colors
 from managers.game import World
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from main import SCIV
 
 
@@ -30,7 +30,7 @@ class DebugMapStats(FloatLayout):
         self.loaded_resources: Dict[str, Type["BaseResource"]] = {}
         self.rect = None
 
-        self.map: Dict[str, "BaseTile"] = World.get_singleton_instance().map
+        self.map: Dict[str, "Tile"] = World.get_singleton_instance().map
 
     def get_frame(self) -> GridLayout:
         if self.frame is None:

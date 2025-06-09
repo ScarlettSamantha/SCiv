@@ -11,7 +11,7 @@ from managers.i18n import t_
 from system.requires import Condition
 
 if TYPE_CHECKING:
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
     from gameplay.units.core.classes.civilian.settler import Settler
 
 
@@ -39,7 +39,7 @@ class FoundAction(BaseUnitAction):
             on_failure=self.on_failure,  # type: ignore
         )
         self.unit: "Settler" = instance
-        self.tile: "BaseTile | None" = instance.get_tile()
+        self.tile: "Tile | None" = instance.get_tile()
         self.on_the_spot_action = True
         self.targeting_tile_action = False
         self.city_founding_distance_rule = CITY_FOUNDING_DISTANCE_RADIUS_DEFAULT

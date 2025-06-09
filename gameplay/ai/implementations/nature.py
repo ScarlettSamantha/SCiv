@@ -6,7 +6,7 @@ from gameplay.ai.core import AI
 from gameplay.ai.goal import Goals
 from gameplay.ai.goals.eliminate_player import EliminatePlayer
 from gameplay.repositories.tile import TileRepository
-from gameplay.tiles.base_tile import BaseTile
+from gameplay.tiles.base_tile import Tile
 from gameplay.units.core.classes.military.barbarian_lion import BarbarianLion
 from managers.turn import Turn
 
@@ -23,7 +23,7 @@ class NatureAI(AI):
     def __init__(self, player: "Player"):
         super().__init__(player)
         # cache of passable, non-city, neighbor-empty tiles for spawning threats
-        self._spawn_tiles_cache: List["BaseTile"] = []
+        self._spawn_tiles_cache: List["Tile"] = []
         self._spawn_cache_from_turn: int = 0
 
     def register_end_goal(self) -> Goals:
@@ -101,7 +101,7 @@ class NatureAI(AI):
         unit_tiles = {tile for tile in all_land if tile.units.has_any()}
         # If cities/units can be on non-passable land, you may need to expand this
 
-        valid_tiles: List["BaseTile"] = []
+        valid_tiles: List["Tile"] = []
 
         for tile in all_land:
             # Skip if tile itself is city or has units

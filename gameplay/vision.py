@@ -7,26 +7,26 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.resource import BaseResource
     from gameplay.terrain._base_terrain import BaseTerrain
-    from gameplay.tiles.base_tile import BaseTile
+    from gameplay.tiles.base_tile import Tile
 
 
 class Vision:
     def __init__(self):
-        self._visible_tiles: List[BaseTile] = []
+        self._visible_tiles: List[Tile] = []
         self._visible_units: List[Unit] = []
         self._visible_cities: List[City] = []
         self._visible_resources: List[BaseResource] = []
         self._visible_improvements: List[Improvement] = []
         self._visible_terrain: List[BaseTerrain] = []
 
-    def get_visible_tiles(self) -> List["BaseTile"]:
+    def get_visible_tiles(self) -> List["Tile"]:
         return self._visible_tiles
 
-    def add_visible_tile(self, tile: "BaseTile"):
+    def add_visible_tile(self, tile: "Tile"):
         if tile not in self._visible_tiles:
             self._visible_tiles.append(tile)
 
-    def remove_visible_tile(self, tile: "BaseTile"):
+    def remove_visible_tile(self, tile: "Tile"):
         if tile in self._visible_tiles:
             self._visible_tiles.remove(tile)
 
