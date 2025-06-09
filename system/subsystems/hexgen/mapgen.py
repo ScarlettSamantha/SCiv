@@ -1,7 +1,7 @@
 import datetime
 import random
 import sys
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, Tuple
 from matplotlib.patches import RegularPolygon
 import numpy as np
 import matplotlib.pyplot as plt
@@ -115,7 +115,6 @@ class MapGen:
         if self.params.get("hydrosphere") is False or self.params.get("sea_percent") == 100:
             num_aquifers = 0
 
-        print("Making {} aquifers".format(num_aquifers)) if self.debug else False
         aquifers: List["Hex"] = []
         while len(aquifers) < num_aquifers:
             rx = random.randint(0, len(self.hex_grid.grid) - 1)
@@ -139,9 +138,6 @@ class MapGen:
                 if hex.is_land:
                     hex.moisture += 1
 
-        # decide terrain features
-        print("Making terrain features") if self.debug else False
-        # craters only form in barren planets with a normal or lower atmosphere
         if self.params.get("craters") is True:
             self.generate_craters()
 
@@ -158,9 +154,6 @@ class MapGen:
         self._determine_landforms()
 
         self._detect_lakes()
-
-        self.debug_draw_hex_rivers()
-        print("Done") if self.debug else False
 
     def generate_craters(self):
         # decide number of craters
@@ -187,26 +180,26 @@ class MapGen:
                 for hex in center_hex.surrounding:
                     hex.add_feature(HexFeature.crater)
                     hex.altitude = center_hex.altitude - 5
-                    hex.altitude = max(hex.altitude, 0)
+                    hex.altitude = max(hex.altitude, np.float64(0))
             elif size >= 2:
                 hexes = center_hex.bubble(distance=2)
                 for hex in hexes:
                     hex.add_feature(HexFeature.crater)
                     hex.altitude = center_hex.altitude - 10
-                    hex.altitude = max(hex.altitude, 0)
+                    hex.altitude = max(hex.altitude, np.float64(0))
             elif size >= 3:
                 hexes = center_hex.bubble(distance=3)
                 for hex in hexes:
                     hex.add_feature(HexFeature.crater)
                     hex.altitude = center_hex.altitude - 15
-                    hex.altitude = max(hex.altitude, 0)
+                    hex.altitude = max(hex.altitude, np.float64(0))
 
             for hex in hexes[: round(len(hexes) / 3)]:
                 for i in hex.surrounding:
                     if i.has_feature(HexFeature.crater) is False:
                         i.add_feature(HexFeature.crater)
                         i.altitude = center_hex.altitude - 20
-                        i.altitude = max(i.altitude, 0)
+                        i.altitude = max(i.altitude, np.float64(0))
 
     def generate_volcanoes(self):
         num_volcanoes: int = int(self.params.get("num_volcanoes", 1))
@@ -230,7 +223,9 @@ class MapGen:
                 height: int = volcano.get("height", 0)
                 hex: "Hex" = volcano["hex"]
                 print(f"Volcano: Size: {size}, Height: {height}")
-                hex.altitude = float(min(hex.altitude + height, self.params.get("height_range", (0, 255))[1] - 120))
+                hex.altitude = np.float64(
+                    min(hex.altitude + height, self.params.get("height_range", (0, 255))[1] - 120)
+                )
                 hex.add_feature(HexFeature.volcano)
 
     def generate_territories(self):
@@ -443,13 +438,13 @@ class MapGen:
                         if not h:
                             break
                         prev_hex = seg.edge.down
-                        side = prev_hex.get_side_to(h)
+                        side = prev_hex.get_side_to(h)  # type: ignore
                         if side is not None:
-                            edge = prev_hex.get_edge(side)
+                            edge = prev_hex.get_edge(side)  # type: ignore
                             if edge is None:
                                 break
                             edge.is_river = True
-                            seg.next = RiverSegment(self.hex_grid, px, py, side, False)
+                            seg.next = RiverSegment(self.hex_grid, px, py, side, False)  # type: ignore
                             seg = seg.next
                     # Mark the final segment as river too
                     seg.edge.is_river = True
@@ -488,7 +483,7 @@ class MapGen:
                 self.rivers.append(s2)
                 s2 = s2.next
 
-    def _find_nearby_river_end(self, h, radius=2):
+    def _find_nearby_river_end(self, hex: "Hex", radius: int = 2):
         """
         Find a river segment in self.rivers that is an END (no .next)
         and is within 'radius' tiles of hex h. Returns the hex to connect to, or None.
@@ -496,7 +491,7 @@ class MapGen:
         for other in self.rivers:
             if other.next is not None:
                 continue
-            dist = self.hex_distance((h.x, h.y), (other.edge.down.x, other.edge.down.y))
+            dist = self.hex_distance((hex.x, hex.y), (other.edge.down.x, other.edge.down.y))
             if 0 < dist <= radius:
                 return other.edge.down
         return None
@@ -705,57 +700,86 @@ class MapGen:
         bq, br = b
         return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
 
-    def get_side_to(self, target_hex) -> "HexSide":
+    def get_side_to(self, target_hex: "Hex") -> "HexSide | None":
         """
         Returns the HexSide direction from this hex to target_hex.
         Assumes self.neighbors is a dict {HexSide: Hex}.
         """
-        for side, neighbor in self.neighbors.items():
+        for side, neighbor in self.neighbors.items():  # type: ignore
             if neighbor is target_hex:
-                return side
+                return side  # type: ignore
         return None
 
-    def get_edge(self, side: "HexSide"):
+    def get_edge(self, side: "HexSide") -> "HexSide | None":
         """
         Returns the edge object for the given side.
         """
-        return self.edges[side]  # Or however you store your edge objects
+        return self.edges[side]  # type: ignore # Or however you store your edge objects
 
-    def straight_line_path(self, a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
+    @staticmethod
+    def _axial_to_cube(q: int, r: int) -> Tuple[float, float, float]:
+        """Convert axial (q, r) to cube (x, y, z) coords."""
+        x = float(q)
+        z = float(r)
+        y = -x - z
+        return x, y, z
+
+    @staticmethod
+    def _cube_to_axial(x: int, y: int, z: int) -> Tuple[int, int]:
+        """Convert cube (x, y, z) back to axial (q, r)."""
+        return x, z
+
+    @staticmethod
+    def _cube_lerp(a: float, b: float, t: float) -> float:
+        """Linear interpolation between a and b."""
+        return a + (b - a) * t
+
+    @staticmethod
+    def _cube_round(x: float, y: float, z: float) -> Tuple[int, int, int]:
+        """Round floating cube coords to the nearest hex cube coords."""
+        rx = round(x)
+        ry = round(y)
+        rz = round(z)
+
+        x_diff = abs(rx - x)
+        y_diff = abs(ry - y)
+        z_diff = abs(rz - z)
+
+        # fix the largest difference to ensure x + y + z = 0
+        if x_diff > y_diff and x_diff > z_diff:
+            rx = -ry - rz
+        elif y_diff > z_diff:
+            ry = -rx - rz
+        else:
+            rz = -rx - ry
+
+        return rx, ry, rz
+
+    def straight_line_path(self, a: Tuple[int, int], b: Tuple[int, int]) -> List[Tuple[int, int]]:
         """
-        Returns a list of (q, r) axial coordinates forming a straight line path between a and b (inclusive).
-        Uses hex lerp and hex_round as per Red Blob Games.
+        Returns a list of axial coordinates (q, r) forming a straight-line path
+        between hex a and hex b (inclusive) using cube-coordinate interpolation.
         """
+        # Convert endpoints to cube coords
+        x1, y1, z1 = self._axial_to_cube(*a)
+        x2, y2, z2 = self._axial_to_cube(*b)
 
-        def lerp(a, b, t):
-            return a + (b - a) * t
-
-        def hex_round(q, r, s):
-            rq = round(q)
-            rr = round(r)
-            rs = round(s)
-            q_diff = abs(rq - q)
-            r_diff = abs(rr - r)
-            s_diff = abs(rs - s)
-            if q_diff > r_diff and q_diff > s_diff:
-                rq = -rr - rs
-            elif r_diff > s_diff:
-                rr = -rq - rs
-            else:
-                rs = -rq - rr
-            return int(rq), int(rr)
-
-        aq, ar = a
-        bq, br = b
+        # Number of steps
         N = self.hex_distance(a, b)
-        results = []
+        path: List[Tuple[int, int]] = []
+
         for i in range(N + 1):
-            t = 0 if N == 0 else i / N
-            q = lerp(aq, bq, t)
-            r = lerp(ar, br, t)
-            s = -q - r
-            results.append(hex_round(q, r, s))
-        return results
+            t = 0.0 if N == 0 else i / N
+            # interpolate each cube axis
+            xi = self._cube_lerp(x1, x2, t)
+            yi = self._cube_lerp(y1, y2, t)
+            zi = self._cube_lerp(z1, z2, t)
+            # round to nearest hex
+            rx, ry, rz = self._cube_round(xi, yi, zi)
+            # convert back to axial and append
+            path.append(self._cube_to_axial(rx, ry, rz))
+
+        return path
 
     def find_river(self, x: int, y: int) -> List[HexSide]:
         """Finds river segments at an hex's x and y coordinates. Returns a list of EdgeSides
@@ -772,7 +796,7 @@ class MapGen:
         """
         grid = self.hex_grid.grid
         cols, rows = len(grid), len(grid[0])
-        fig, ax = plt.subplots(figsize=(16, 16))
+        fig, ax = plt.subplots(figsize=(16, 16))  # type: ignore
 
         # flat-topped hex parameters
         side: float = 1.0
@@ -806,10 +830,10 @@ class MapGen:
         # overlay river points
         xs, ys = [], []
         for seg in self.rivers:
-            xs.append(side * 1.5 * seg.x)
-            ys.append(height * (seg.y + 0.5 * (seg.x % 2)))
-        ax.scatter(xs, ys, c="b", s=10)
+            xs.append(side * 1.5 * seg.x)  # type: ignore
+            ys.append(height * (seg.y + 0.5 * (seg.x % 2)))  # type: ignore
+        ax.scatter(xs, ys, c="b", s=10)  # type: ignore
 
         ax.set_aspect("equal")
         ax.axis("off")
-        plt.savefig(f"debugging/river_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+        plt.savefig(f"debugging/river_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png")  # type: ignore
