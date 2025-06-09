@@ -38,8 +38,8 @@ class HexGrid:
         self.wall_color = wall_color or Colors.MAGENTA
 
         # Mesh storage
-        self.verts: List[Tuple[float, float, float]] = []
-        self.tris: List[Tuple[int, int, int]] = []
+        self.mesh_vertices: List[Tuple[float, float, float]] = []
+        self.mesh_triangles: List[Tuple[int, int, int]] = []
         self.hex_starts: List[int] = []
         self.centers: List[Tuple[float, float, float]] = []
         self.center_height: float = 0.0
@@ -74,12 +74,12 @@ class HexGrid:
         radius: float, center: Tuple[float, float, float] = (0, 0, 0)
     ) -> List[Tuple[float, float, float]]:
         cx, cy, cz = center
-        verts: List[Tuple[float, float, float]] = []
+        hexagon_vertices: List[Tuple[float, float, float]] = []
         for i in range(6):
             ang = math.radians(60 * i)
-            verts.append((cx + radius * math.cos(ang), cy + radius * math.sin(ang), cz))
-        verts.append((cx, cy, cz))
-        return verts
+            hexagon_vertices.append((cx + radius * math.cos(ang), cy + radius * math.sin(ang), cz))
+        hexagon_vertices.append((cx, cy, cz))
+        return hexagon_vertices
 
     @staticmethod
     def get_hex_spacing(radius: float) -> tuple[float, float]:
@@ -112,9 +112,8 @@ class HexGrid:
         prim = GeomTriangles(Geom.UHStatic)
         prim.make_indexed()
 
-        horiz, vert = self.get_hex_spacing(self.radius)
+        horizontal_spacing, vert = self.get_hex_spacing(self.radius)
 
-        # 4) Clear any old records
         self.wall_starts.clear()
         self.wall_vertex_counts.clear()
 
@@ -130,7 +129,7 @@ class HexGrid:
 
             start_row = idx
 
-            dirs = Tiles.get_directions_per_col(col)  # Get the correct directions for this column
+            dirs = Tiles.get_directions_per_col(col)
 
             wall_pieces: Dict[int, bool] = {0: False, 1: False, 2: False, 3: False, 4: False, 5: False}
             for face_i in range(6):
@@ -148,7 +147,7 @@ class HexGrid:
                 angB = math.radians(60 * ((face_i + 1) % 6))
 
                 # Our tile’s center in world‐space:
-                centerX = col * horiz
+                centerX = col * horizontal_spacing
                 centerY = row * vert + (vert * 0.5 if (col % 2) else 0.0)
 
                 ax = centerX + self.radius * math.cos(angA)
@@ -198,14 +197,14 @@ class HexGrid:
         return NodePath(node)
 
     def generate_mesh(self):
-        horiz, vert = self.get_hex_spacing(self.radius)
+        horizontal_spacing, vert = self.get_hex_spacing(self.radius)
         if self.tiles:
             coords = [(t.x, t.y, t.calculate_z_pos_on_altitude()[2]) for t in self.tiles]
         else:
             coords = [(c, r, 0.0) for c in range(self.cols) for r in range(self.rows)]
 
-        verts: List[Tuple[float, float, float]] = []
-        tris: List[Tuple[int, int, int]] = []
+        vertices_list: List[Tuple[float, float, float]] = []
+        triangles: List[Tuple[int, int, int]] = []
         hex_starts: List[int] = []
         centers: List[Tuple[float, float, float]] = []
         center_height = 0.0
@@ -213,19 +212,19 @@ class HexGrid:
 
         for col, row, height in coords:
             hex_starts.append(offset)
-            cx = col * horiz
+            cx = col * horizontal_spacing
             cy = row * vert + (vert * 0.5 if (col % 2) else 0.0)
             centers.append((cx, cy, height))
-            hverts = self.create_flat_top_hexagon_vertices(self.radius, (cx, cy, height))
-            center_idx = len(hverts) - 1
+            hexagon_vertices = self.create_flat_top_hexagon_vertices(self.radius, (cx, cy, height))
+            center_idx = len(hexagon_vertices) - 1
             for i in range(6):
-                tris.append((offset + center_idx, offset + i, offset + (i + 1) % 6))
-            verts.extend(hverts)
-            offset += len(hverts)
+                triangles.append((offset + center_idx, offset + i, offset + (i + 1) % 6))
+            vertices_list.extend(hexagon_vertices)
+            offset += len(hexagon_vertices)
             center_height = height
 
-        self.verts = verts
-        self.tris = tris
+        self.mesh_vertices = vertices_list
+        self.mesh_triangles = triangles
         self.hex_starts = hex_starts
         self.centers = centers
         self.center_height = center_height
@@ -324,7 +323,7 @@ class HexGrid:
         prim.make_indexed()  # type: ignore
 
         # helper for flat-top spacing
-        horiz, vert = self.get_hex_spacing(self.radius)
+        horizontal_spacing, vert = self.get_hex_spacing(self.radius)
         # choose coords list
         coords: List[Tuple[float, float, float]] = (
             [(t.x, t.y, t.calculate_z_pos_on_altitude()[2]) for t in self.tiles]
@@ -335,11 +334,8 @@ class HexGrid:
         vert_idx = 0
         for _, (col, row, z) in enumerate(coords):
             # world center
-            cx: float = col * horiz
+            cx: float = col * horizontal_spacing
             cy: float = row * vert + (vert * 0.5 if (col % 2) else 0.0)
-
-            # atlas cell
-
             # build the 7 verts: 6 corners + center
             hverts: List[Tuple[float, float, float]] = self.create_flat_top_hexagon_vertices(self.radius, (cx, cy, z))
             # emit them
