@@ -35,9 +35,15 @@ class Basic(BaseGenerator):
 
         def random_seed() -> int:
             """Generates a random seed based on the current timestamp."""
-            return crc32(str(int(datetime.now().timestamp() * 1000)).encode()) + randrange(1, 10**10)
+            return min(
+                crc32(str(int(datetime.now().timestamp() * 1000)).encode())
+                + randrange(2**5, 2**10)
+                + int(datetime.now().microsecond),
+                2**31 - 1,
+            )
 
         self.seed = config.seed if config.seed is not None else random_seed()
+        config.seed = self.seed  # Ensure the seed is set in the config
 
         # Load tile definitions
         self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
@@ -136,6 +142,7 @@ class Basic(BaseGenerator):
             rows=self.config.height,
         )
         self.mesh_grid.grid_np.instance_to(self.base.render)  # type: ignore
+        game.Game.get_singleton_instance().game_settings = self.config
         game.Game.get_singleton_instance().mesh_grid = self.mesh_grid
 
         for tile in hexes:

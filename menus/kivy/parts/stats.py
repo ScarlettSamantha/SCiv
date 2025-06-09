@@ -9,6 +9,7 @@ from panda3d.core import GraphicsWindow, WindowProperties
 from direct.task.Task import Task
 from direct.showbase.DirectObject import DirectObject
 from managers.entity import EntityManager
+from managers.game import Game
 from menus.kivy.elements.scrolling_graph import ScrollingGraph
 from system.camera import Camera
 
@@ -188,6 +189,8 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
         if self.fps_graph:
             self.fps_graph.update_graph(fps, 0.0, fps_low1, frame_ms)
 
+        seed = Game.get_singleton_instance().get_game_settings().seed
+
         # Refresh text info
         parts = [
             f"[color=00ff00]FPS: {fps:.2f}[/color]",
@@ -206,6 +209,7 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
             f"Units: {self._periodicals['entity_manager_total_units']}",
             f"Tiles: {self._periodicals['entity_manager_total_tiles']}",
             f"Effects: {self._periodicals['entity_manager_total_effects']}",
+            f"Seed: {str(seed) if seed is not None else 'None'}",
         ]
         if self.label:
             self.label.text = "\n".join(parts)

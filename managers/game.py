@@ -55,6 +55,7 @@ class Game(Singleton, DirectObject):
         self.entities: EntityManager = EntityManager.get_singleton_instance(base=self.base)
         self.unit: UnitManager = UnitManager.get_singleton_instance(base=self.base)
         self.mesh_grid: Optional[HexGrid] = None
+        self.game_settings: GameSettings | None = None
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -105,6 +106,11 @@ class Game(Singleton, DirectObject):
             civilization=self.properties.player,
             num_players=self.properties.num_enemies,
         )
+
+    def get_game_settings(self) -> GameSettings:
+        if self.game_settings is None:
+            raise ValueError("Game settings not initialized")
+        return self.game_settings
 
     def on_main_menu(self):
         self.reset_game()
