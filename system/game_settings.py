@@ -19,6 +19,7 @@ class GameSettings:
         victory_conditions: Optional[List[Any]] = None,
         enemies: Optional[List[Any]] = None,
         difficulty: int = 0,
+        seed: Optional[int] = None,
     ):
         from system.generators.basic import Basic
 
@@ -29,3 +30,4 @@ class GameSettings:
         self.generator: Type["BaseGenerator"] = Basic
         self.difficulty: int = difficulty
         self.num_enemies: int = num_enemies
+        self.seed: Optional[int] = seed

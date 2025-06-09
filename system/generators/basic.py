@@ -1,11 +1,13 @@
 from datetime import datetime
-from random import choice
+from random import choice, randrange
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
+from zlib import crc32
 
 from direct.showbase import MessengerGlobal
 
 from gameplay.resource import BaseResource
 
+from helpers.tiles import Tiles
 from managers import game
 from managers.entity import EntityManager
 from system.generators.base import BaseGenerator
@@ -30,10 +32,12 @@ class Basic(BaseGenerator):
     def __init__(self, config: "GameSettings", base: "SCIV"):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
-        from random import randrange
 
-        # Random seed
-        self.seed = randrange(0, 10**12 - 1)
+        def random_seed() -> int:
+            """Generates a random seed based on the current timestamp."""
+            return crc32(str(int(datetime.now().timestamp() * 1000)).encode()) + randrange(1, 10**10)
+
+        self.seed = config.seed if config.seed is not None else random_seed()
 
         # Load tile definitions
         self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
@@ -382,10 +386,7 @@ class Basic(BaseGenerator):
         # Helper: given (c,r), return list of valid neighbor coords in odd‐q layout
         def neighbors(c: int, r: int) -> List[Tuple[int, int]]:
             # odd‐q vertical layout offsets:
-            if c % 2 == 0:
-                offsets = [(0, -1), (+1, -1), (+1, 0), (0, +1), (-1, 0), (-1, -1)]
-            else:
-                offsets = [(0, -1), (+1, 0), (+1, +1), (0, +1), (-1, +1), (-1, 0)]
+            offsets = Tiles.get_directions_per_col(c)
             result: List[Tuple[int, int]] = []
             for dc, dr in offsets:
                 nc, nr = c + dc, r + dr
