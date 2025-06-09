@@ -370,7 +370,6 @@ class ui(Singleton, DirectObject):
         if self.current_unit is None:
             return
 
-        self.current_unit.set_color(Colors.RESTORE)
         self.current_unit = None
         self.previous_unit = None
 
