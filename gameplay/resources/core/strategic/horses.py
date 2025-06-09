@@ -9,7 +9,7 @@ from gameplay.terrain.flat_ice import FlatIce
 from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.hills_grass import HillsGrass
-from gameplay.tiles.hills_forrest import HillsForestTerrain
+from gameplay.tiles.hills_forest import HillsForestTerrain
 from managers.i18n import T_TranslationOrStr, t_
 
 
