@@ -1,4 +1,5 @@
 from typing import Any, Callable, Optional, Tuple
+import random
 
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, RoundedRectangle  # type: ignore
@@ -20,6 +21,12 @@ class LoadingScreen(FloatLayout):
     step_message = StringProperty("Loading...")
     show_continue = BooleanProperty(False)
 
+    loading_screen_images: Tuple[str, ...] = (
+        "assets/loading_screens/1.png",
+        "assets/loading_screens/2.png",
+        "assets/loading_screens/3.png",
+    )
+
     def __init__(self, on_complete: Callable[..., None], **kwargs: Any):
         super().__init__(**kwargs)
         self.on_complete = on_complete
@@ -33,7 +40,7 @@ class LoadingScreen(FloatLayout):
 
         # Top image area (70% of screen)
         self.bg_image = Image(
-            source="assets/loading_screen.png",
+            source=random.choice(self.loading_screen_images),
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(1, 1),
