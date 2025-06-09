@@ -18,7 +18,7 @@ class Berries(BaseBonusResource):
     spawn_amount = 5.0
     improvement_required = [Farm]
     model = "assets/models/resources/crate_berries.glb"
-    model_scale = 0.15
+    model_size = 0.15
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
