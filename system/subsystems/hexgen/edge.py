@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING
-import uuid
 
 
 from system.subsystems.hexgen.enums import EdgeDirection
@@ -20,7 +19,6 @@ class Edge:
         self.up: "Hex" = up
         self.down: "Hex" = down
         self.delta: float = float(self.up.altitude - self.down.altitude)
-        self.id: uuid.UUID = uuid.uuid4()
 
         self.is_river: bool = False
 
