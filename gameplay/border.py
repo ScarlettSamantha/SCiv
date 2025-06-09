@@ -201,7 +201,6 @@ class Borders(DirectObject):
         # convert PIL → PNMImage via an in-memory buffer
         pnm = PNMImage()
         with io.BytesIO() as buf:
-            img.save("/tmp/temp_image.png", format="PNG")  # Save to a temp file for debugging
             img.save(buf, format="PNG")
             buf.seek(0)
             stream = StringStream(buf.getvalue())
