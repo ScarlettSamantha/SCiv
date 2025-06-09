@@ -202,47 +202,53 @@ class AtlasGenerator:
             return self.get_coreimage_by_key(key)
         return None
 
-    def get_panda3d_texture_by_key(self, key: str) -> Optional[Texture]:  # type: ignore
-        if key in self._individual_texture_cache.keys():  # type: ignore
-            return self._individual_texture_cache[key]  # type: ignore
+    def get_panda3d_texture_by_key(self, key: str) -> Texture:  # type: ignore
+        if key in self._individual_texture_cache:
+            return self._individual_texture_cache[key]
 
         entry = self.lookup_by_key(key)
         if not entry:
             raise ValueError(f"Key {key} not found in manifest.")
 
+        # 1) Crop out the icon
         atlas = self.atlas_image
-        box = (
-            entry["atlas_x"],
-            entry["atlas_y"],
-            entry["atlas_x"] + entry["width"],
-            entry["atlas_y"] + entry["height"],
+        x, y = entry["atlas_x"], entry["atlas_y"]
+        w, h = entry["width"], entry["height"]
+        cropped = atlas.crop((x, y, x + w, y + h))
+
+        # 2) Convert to NumPy array
+        arr = np.array(cropped)  # shape (h, w, 4) for RGBA
+
+        # 3) Flip vertically to match OpenGL's lower-left origin :contentReference[oaicite:0]{index=0}
+        arr = np.flipud(arr)
+
+        # 4) Flatten to raw bytes (RGBA order)
+        data = arr.tobytes()
+
+        # 5) Create & fill the Panda3D texture, telling it our data is RGBA
+        tex = Texture()
+        tex.setup2dTexture(
+            w,
+            h,
+            Texture.T_unsigned_byte,
+            Texture.F_srgb_alpha,  # if you want sRGB gamma; otherwise F_rgba
         )
-        cropped = atlas.crop(box)
+        # This will reorder from your RGBA into Panda’s BGRA as needed :contentReference[oaicite:1]{index=1}
+        tex.set_ram_image_as(data, "RGBA")  # type: ignore
 
-        arr = np.array(cropped)
-        height, width = arr.shape[:2]
-        has_alpha = arr.shape[2] == 4
+        # 6) (Optional) set filtering / generate mipmaps
+        tex.setMinfilter(Texture.FT_linear_mipmap_linear)
+        tex.setMagfilter(Texture.FT_linear)
 
-        # Create and fill PNMImage
-        pnm = PNMImage(width, height, 4 if has_alpha else 3)
-        for y in range(height):
-            for x in range(width):
-                r, g, b = arr[y, x][:3]
-                a = arr[y, x][3] if has_alpha else 255
-                pnm.setXelA(x, y, r / 255, g / 255, b / 255, a / 255)  # type: ignore
-
-        tex = Texture()  # type: ignore
-        tex.load(pnm)  # type: ignore
-        tex.setFormat(Texture.F_srgb_alpha if has_alpha else Texture.F_rgb)  # type: ignore
-        self._individual_texture_cache[key] = tex  # type: ignore
-        return tex  # type: ignore
+        self._individual_texture_cache[key] = tex
+        return tex
 
     def get_panda3d_texture_by_virtual_path(self, virtual_path: str) -> Optional[Texture]:  # type: ignore
-        entry = self.lookup_by_virtual_path(virtual_path)
         if self.manifest is None:
             return None
+        entry = self.manifest.get(virtual_path, None)
         if entry:
-            key = next((k for k, v in self.manifest.items() if v == entry), None)
+            key = next(iter(k for k, v in self.manifest.items() if v == entry), None)
             if key:
                 return self.get_panda3d_texture_by_key(key)  # type: ignore
         return None
