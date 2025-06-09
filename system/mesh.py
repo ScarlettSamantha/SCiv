@@ -31,6 +31,7 @@ class HexGrid:
     ):
         self.radius: float = radius
         self.tiles: List["Tile"] = tiles
+        self._tile_index_map: Dict[Tuple[int, int], int] = {(t.x, t.y): i for i, t in enumerate(self.tiles)}
         self.cols = cols or 10
         self.rows = rows or 10
 
@@ -230,18 +231,15 @@ class HexGrid:
         self.center_height = center_height
 
     def get_tile_index_from_coords(self, x: int, y: int) -> int:
-        """
-        Get the tile index from the given coordinates (x, y).
-        If tiles are defined, it searches through them; otherwise, it calculates based on rows and cols.
-        """
         if self.tiles:
-            for i, t in enumerate(self.tiles):
-                if t.x == x and t.y == y:
-                    return i
+            try:
+                return self._tile_index_map[(x, y)]
+            except KeyError:
+                raise ValueError(f"Tile at coordinates ({x}, {y}) not found.")
         else:
             if 0 <= x < self.cols and 0 <= y < self.rows:
                 return x * self.rows + y
-        raise ValueError(f"Tile at coordinates ({x}, {y}) not found.")
+            raise ValueError(f"Tile at coordinates ({x}, {y}) not found.")
 
     def get_wall_record(self, tile_index: int) -> Optional[Tuple[int, int]]:
         """
