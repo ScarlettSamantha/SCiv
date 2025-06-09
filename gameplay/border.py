@@ -190,9 +190,9 @@ class Borders(DirectObject):
         r = hex_radius_px
         w = 2 * r
         h = int(math.sqrt(3) * r)
-        horiz = int(1.5 * r)
+        horizontal = int(1.5 * r)
         vert = h
-        img_w = horiz * (cols - 1) + w
+        img_w = horizontal * (cols - 1) + w
         img_h = vert * rows + r
 
         # build PIL image entirely in memory

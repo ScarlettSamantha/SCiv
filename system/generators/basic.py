@@ -135,7 +135,7 @@ class Basic(BaseGenerator):
         game.Game.get_singleton_instance().mesh_grid = self.mesh_grid
 
         for tile in hexes:
-            tile.recalc_grid_position(1)
+            tile.recalculate_grid_position(1)
 
         end_mesh = datetime.now()
 
@@ -275,7 +275,7 @@ class Basic(BaseGenerator):
                         else:
                             return "FlatHeavyForest"
                     elif biome_id in (WorldParams.scrubland,) or (
-                        biome_id == WorldParams.grasslands and hex_temp < WorldParams.schrubland_temperature_threshold
+                        biome_id == WorldParams.grasslands and hex_temp < WorldParams.scrubland_temperature_threshold
                     ):  # Virtual Mangrove Actual scrubland with low moister
                         return "FlatScrubland"
                     elif biome_id in (WorldParams.savanna,):  # Savanna

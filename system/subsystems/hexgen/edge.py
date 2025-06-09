@@ -11,7 +11,7 @@ class Edge:
     def __init__(self, side: str, one: "Hex", two: "Hex", up: "Hex", down: "Hex"):
         """
         One and Two are Hexes on both sides.
-        Up is the Hex upslope of the edge and Down is the Hex downslope
+        Up is the Hex up-slope of the edge and Down is the Hex down-slope
         """
         self.side: str = side
         self.one: "Hex" = one

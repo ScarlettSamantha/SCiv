@@ -423,12 +423,11 @@ class Tile(BaseEntity):
 
     def compute_hex_center(self, x: int, y: int, radius: float = 1) -> Tuple[float, float]:
         # same as get_hex_spacing
-        horiz = 1.5 * radius
+        horizontal_spacing = 1.5 * radius
         vert = math.sqrt(3) * radius
 
         # column offset in X
-        pos_x = x * horiz
-        # stagger every other column by half a vertical step
+        pos_x = x * horizontal_spacing
         pos_y = y * vert + (vert * 0.5 if (x % 2) else 0.0)
 
         return pos_x, pos_y
@@ -634,7 +633,7 @@ class Tile(BaseEntity):
     def get_distance(self, other: "Tile") -> int:
         return TileRepository.distance(self, other)
 
-    def recalc_grid_position(self, radius: float) -> None:
+    def recalculate_grid_position(self, radius: float = 1) -> None:
         """
         Recompute self.pos_x/pos_y from self.x,self.y & radius
         so it matches the mesh layout exactly.
