@@ -250,6 +250,9 @@ class PyLoad:
         for file in os.listdir(folder):
             file_path = os.path.join(folder, file)
             if os.path.isdir(file_path):
+                # Block hidden directories and __pycache__
+                if file_path.startswith(".") or file_path.startswith("__"):
+                    continue
                 loaded_classes.update(self._process_folder(file_path))
             elif os.path.isfile(file_path):
                 loaded_classes.update(self.processor.process_file(file_path, self.name_pattern))
