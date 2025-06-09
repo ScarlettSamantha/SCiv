@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional, Set
 
 from gameplay.unit import Unit
 
@@ -12,19 +12,40 @@ if TYPE_CHECKING:
 
 class Vision:
     def __init__(self):
-        self._visible_tiles: List[Tile] = []
+        self._visible_tiles: Set[Tile] = set()
         self._visible_units: List[Unit] = []
         self._visible_cities: List[City] = []
         self._visible_resources: List[BaseResource] = []
         self._visible_improvements: List[Improvement] = []
         self._visible_terrain: List[BaseTerrain] = []
 
-    def get_visible_tiles(self) -> List["Tile"]:
+    def mass_set_visible_tiles(
+        self,
+        tiles: Optional[Set["Tile"]] = None,
+        units: Optional[List["Unit"]] = None,
+        cities: Optional[List["City"]] = None,
+        resources: Optional[List["BaseResource"]] = None,
+        improvements: Optional[List["Improvement"]] = None,
+        terrain: Optional[List["BaseTerrain"]] = None,
+    ):
+        if tiles is not None:
+            self._visible_tiles = set(tiles)
+        if units is not None:
+            self._visible_units = units
+        if cities is not None:
+            self._visible_cities = cities
+        if resources is not None:
+            self._visible_resources = resources
+        if improvements is not None:
+            self._visible_improvements = improvements
+        if terrain is not None:
+            self._visible_terrain = terrain
+
+    def get_visible_tiles(self) -> Set["Tile"]:
         return self._visible_tiles
 
     def add_visible_tile(self, tile: "Tile"):
-        if tile not in self._visible_tiles:
-            self._visible_tiles.append(tile)
+        self._visible_tiles.add(tile)
 
     def remove_visible_tile(self, tile: "Tile"):
         if tile in self._visible_tiles:

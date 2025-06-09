@@ -393,9 +393,7 @@ class Game(Singleton, DirectObject):
         units = self.unit.get_singleton_instance().all().values()
 
         for player in self.players.all().values():
-            for tile in tiles:
-                player.vision.add_visible_tile(tile)
-
+            player.vision.mass_set_visible_tiles(tiles=set(tiles))
             for unit in units:
                 player.vision.add_visible_unit(unit)
 
