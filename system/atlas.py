@@ -219,7 +219,7 @@ class AtlasGenerator:
         # 2) Convert to NumPy array
         arr = np.array(cropped)  # shape (h, w, 4) for RGBA
 
-        # 3) Flip vertically to match OpenGL's lower-left origin :contentReference[oaicite:0]{index=0}
+        # 3) Flip vertically to match OpenGL's lower-left origin
         arr = np.flipud(arr)
 
         # 4) Flatten to raw bytes (RGBA order)
