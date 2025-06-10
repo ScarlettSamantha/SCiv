@@ -8,6 +8,7 @@ from gameplay.ai.goals.eliminate_player import EliminatePlayer
 from gameplay.repositories.tile import TileRepository
 from gameplay.tile import Tile
 from gameplay.units.core.classes.military.barbarian_lion import BarbarianLion
+from helpers.debug import Debug
 from managers.turn import Turn
 
 if TYPE_CHECKING:
@@ -25,6 +26,8 @@ class NatureAI(AI):
         # cache of passable, non-city, neighbor-empty tiles for spawning threats
         self._spawn_tiles_cache: List["Tile"] = []
         self._spawn_cache_from_turn: int = 0
+        self.logger = self.player.logger.getChild("nature_ai")
+        self.should_log: bool = Debug.system_ai()
 
     def register_end_goal(self) -> Goals:
         return Goals()
@@ -35,19 +38,32 @@ class NatureAI(AI):
     def calculate_goals(self) -> None:
         if not self.has_goal():
             for player in self.get_players().values():
+                if self.should_log:
+                    self.logger.debug(f"Adding goal to eliminate player {player.name}")
                 self.add_goal(EliminatePlayer(self, player))
-
-        for unit in self.get_units():
-            if self.goals.has_goal_for_unit(unit):
-                continue
-            goal = self.create_goals_for_unit(unit)
-            if goal is not None:
-                self.add_goal(goal)
 
         if self.has_goal():
             for goal in self.get_goals():
+                if self.should_log:
+                    self.logger.debug(f"Checking goal {goal.name} for completion")
                 if goal.is_achieved():
+                    if self.should_log:
+                        self.logger.debug(f"Goal {goal.name} is achieved, removing it")
                     self.remove_goal(goal)
+                else:
+                    if self.should_log:
+                        self.logger.debug(f"Goal {goal.name} is not achieved, keeping it")
+
+        for unit in self.get_units():
+            if self.goals.has_goal_for_unit(unit):
+                if self.should_log:
+                    self.logger.debug(f"Unit {unit.name} already has a goal, skipping")
+                continue
+            goal = self.create_goals_for_unit(unit)
+            if goal is not None:
+                if self.should_log:
+                    self.logger.debug(f"Creating goal for unit {unit.name}: {goal.name}")
+                self.add_goal(goal)
 
     def tick_goals(self) -> None:
         for goal in self.get_goals():
@@ -57,15 +73,21 @@ class NatureAI(AI):
 
     def on_turn_end(self) -> None:
         start_time = datetime.datetime.now()
-        self.logger.debug("NatureAI on_turn_end")
+        if self.should_log:
+            self.logger.debug("NatureAI on_turn_end")
         # check if we need to rebuild the spawn tile cache
         if self._spawn_cache_from_turn != Turn.get_singleton_instance().get_turn():
             self._build_spawn_tile_cache()
-        self.logger.debug(
-            "Took %d seconds to build spawn tile cache", (datetime.datetime.now() - start_time).total_seconds()
-        )
+        if self.should_log:
+            self.logger.debug(
+                "Took %d seconds to build spawn tile cache", (datetime.datetime.now() - start_time).total_seconds()
+            )
         self.calculate_goals()
-        self.logger.debug("Took %d seconds to calculate goals", (datetime.datetime.now() - start_time).total_seconds())
+
+        if self.should_log:
+            self.logger.debug(
+                "Took %d seconds to calculate goals", (datetime.datetime.now() - start_time).total_seconds()
+            )
 
         if self.has_goal():
             for goal in self.get_goals():
@@ -75,8 +97,14 @@ class NatureAI(AI):
                     goal.turn_tick()
                 if goal.is_achieved():
                     self.remove_goal(goal)
-            self.logger.debug("Took %d seconds to tick goals", (datetime.datetime.now() - start_time).total_seconds())
-        self.logger.debug("AI took %d seconds to process turn", (datetime.datetime.now() - start_time).total_seconds())
+            if self.should_log:
+                self.logger.debug(
+                    "Took %d seconds to tick goals", (datetime.datetime.now() - start_time).total_seconds()
+                )
+        if self.should_log:
+            self.logger.debug(
+                "AI took %d seconds to process turn", (datetime.datetime.now() - start_time).total_seconds()
+            )
 
     def on_turn_start(self) -> None: ...
 

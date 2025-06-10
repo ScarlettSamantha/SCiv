@@ -11,6 +11,9 @@ class Debugs(Enum):
     SYSTEM_LOADING_CLASSES = "system_loading_classes"
     SYSTEM_LOADING_MODELS = "system_loading_models"
     SYSTEM_ASSET_GENERATION = "system_asset_generation"
+    SYSTEM_AI = "system_ai"
+
+    DISABLE_AI_TURN_PROCESSING = "disable_ai_turn_processing"
 
 
 class Debug:
@@ -34,6 +37,12 @@ class Debug:
         ),
         Debugs.SYSTEM_ASSET_GENERATION: config_instance_ref.get_by_key(
             (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_ASSET_GENERATION.value), default=False
+        ),
+        Debugs.DISABLE_AI_TURN_PROCESSING: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, Debugs.DISABLE_AI_TURN_PROCESSING.value), default=False
+        ),
+        Debugs.SYSTEM_AI: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_AI.value), default=False
         ),
     }
 
@@ -87,5 +96,19 @@ class Debug:
     def system_asset_generation(cls, override: Optional[bool] = None) -> bool:
         return cls._check_with_override(
             Debugs.SYSTEM_ASSET_GENERATION,
+            override,
+        )
+
+    @classmethod
+    def disable_ai_turn_processing(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.DISABLE_AI_TURN_PROCESSING,
+            override,
+        )
+
+    @classmethod
+    def system_ai(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_AI,
             override,
         )
