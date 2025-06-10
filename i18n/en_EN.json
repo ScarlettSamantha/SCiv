@@ -500,6 +500,28 @@
             "title": "Not enough points",
             "message": "You don't have enough points to unlock this civic."
           }
+        },
+        "lose": {
+          "player": {
+            "conditions": {
+              "eliminated": {
+                "title": "You have been eliminated",
+                "message": "You have been eliminated from the game."
+              }
+            }
+          },
+          "opponent": {
+            "conditions": {
+              "conquered": {
+                "title": "You opponent {name} has been conquered",
+                "message": "You opponent {name} name will fade to the history book, they have been conquered by {player}!"
+              },
+              "surrendered": {
+                "title": "You opponent {name} has surrendered",
+                "message": "You opponent {name} has surrendered to {player}, they will fade to the history book."
+              }
+            }
+          }
         }
       },
       "buttons": {
