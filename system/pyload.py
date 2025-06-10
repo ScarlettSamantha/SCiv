@@ -7,6 +7,7 @@ import os
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
+from helpers.debug import Debug
 from managers.log import LogManager
 
 
@@ -43,7 +44,8 @@ class PyFileProcessor:
         if not self._matches_pattern(file, name_pattern):
             return {}
 
-        LogManager.get_singleton_instance().engine.debug(f"Processing file: {file}")
+        if Debug.system_loading_classes():
+            LogManager.get_singleton_instance().engine.debug(f"Processing file: {file}")
         file_content = self._read_file(file)
         if not file_content:
             return {}
@@ -80,13 +82,6 @@ class PyFileProcessor:
                 return False
         else:
             return re.match(r"^(?!_).*.py$", file_name) is not None and fnmatch.fnmatch(file_name, name_pattern)
-
-    def _log_skip(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> None:
-        """
-        Logs a message indicating that the file is skipped due to a pattern mismatch.
-        """
-        pattern = name_pattern if isinstance(name_pattern, str) else f"Custom->{name_pattern.__name__}"
-        LogManager.get_singleton_instance().engine.debug(f"Skipping {file} due to name pattern[{pattern}] mismatch")
 
     def _read_file(self, file: str) -> Optional[str]:
         """
@@ -135,7 +130,7 @@ class PyFileProcessor:
                     if base == allowed or base.__name__ == allowed.__name__:
                         return True
 
-            if self.log_debug:
+            if Debug.system_loading_classes():
                 LogManager.get_singleton_instance().engine.debug(
                     f"Skipping class: {_class.__name__} due to base class mismatch {allowed}"
                 )
@@ -177,7 +172,8 @@ class PyFileProcessor:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         for class_name in visitor.subclasses:
-            LogManager.get_singleton_instance().engine.debug(f"Found class: {class_name}")
+            if Debug.system_loading_classes():
+                LogManager.get_singleton_instance().engine.debug(f"Found class: {class_name}")
             if inspect.isfunction(self.base_classes):
                 if self.base_classes(module, class_name):
                     loaded_classes[class_name] = getattr(module, class_name)
