@@ -73,7 +73,7 @@ class ClippingScrollList(ScrollView):
         target = 0.0 if self.invert_scroll else 1.0
         Animation(scroll_y=target, d=self.smooth_scroll_speed, t="out_cubic").start(self)  # type: ignore
 
-    def scroll_to_bottom(self):
+    def scroll_to_bottom(self) -> None:
         # Animate to the visual "bottom"
         target = 1.0 if self.invert_scroll else 0.0
         Animation(scroll_y=target, d=self.smooth_scroll_speed, t="out_cubic").start(self)  # type: ignore
