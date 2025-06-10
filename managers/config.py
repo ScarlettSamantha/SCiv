@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from panda3d.core import loadPrcFileData  # type: ignore
 
@@ -32,15 +32,18 @@ class ConfigManager(Singleton):
             f"Config file '{self.config_file}' not found or invalid. Please create it with default settings."
         )
 
-    def get_by_key(self, *args: Any) -> Any:
+    def get_by_key(self, key: Tuple[str, ...], default: Optional[Any] = None, *args: Any) -> Any:
         """
         Get a value from the config by key.
         Example: get_by_key("window", "win-size") -> [1280, 720]
         """
         data = self.config_data
-        for key in args:
-            data = data.get(key, {})  # type: ignore
-        return data  # type: ignore
+        for k in key:
+            if k in data:
+                data = data[k]
+            else:
+                return default if default is not None else {}
+        return data if data else default
 
     def get_config_full(self) -> Dict[str, Any]:
         """Return the full config data."""

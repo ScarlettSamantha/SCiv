@@ -1,0 +1,47 @@
+{
+  "render": {
+    "clock-mode": "unlimited",
+    "clock-frame-rate": 144
+  },
+  "window": {
+    "screen-mode": "bordered",
+    "win-origin": [
+      400,
+      2188
+    ],
+    "win-size": [
+      3440,
+      1360
+    ],
+    "window-title": "SCIV",
+    "sync-video": false,
+    "show-frame-rate-meter": false
+  },
+  "qol": {
+    "intro_skip": true
+  },
+  "assets": {
+    "use-cache": false,
+    "tile-set-icons": "default",
+    "tile-set-tiles": "texture",
+    "tile-set-known": [
+      "default",
+      "texture"
+    ],
+    "icon_resolution_x": 128,
+    "icon_resolution_y": 128,
+    "terrain_resolution_x": 512,
+    "terrain_resolution_y": 512
+  },
+  "debug": {
+    "enable": false,
+    "debugs": {
+      "world_generation": false,
+      "world_rendering": false,
+      "world_spawning": false,
+      "system_asset_generation": false,
+      "system_loading_classes": false,
+      "system_loading_models": false
+    }
+  }
+}
