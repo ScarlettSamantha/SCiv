@@ -13,6 +13,7 @@ from kivy.config import Config
 
 from panda3d_kivy import monkey  # type: ignore
 from helpers.cache import Cache
+from helpers.debug import Debug
 from helpers.direct_loading_screen import LoadingScreen
 from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
@@ -47,6 +48,7 @@ class SCIV(ShowBase):
         ConfigManager.set_singleton_instance(config_mgr)
         config_mgr.apply_config_to_prc()
         config_mgr.disable_vsync()
+        self.config_manager: ConfigManager = config_mgr
 
         loading_screen: LoadingScreen = LoadingScreen(
             self, ["assets/logo.png"], 15, on_continue=self.on_loading_screen_continue
@@ -79,7 +81,7 @@ class SCIV(ShowBase):
         # Start loading and generating assets
         loading_screen.next_stage("Generating assets")
         self.engine_logger.info("Generating non-static assets")
-        self.generate_non_static_assets(force=config_mgr.get_default(("assets", "use-cache"), True))
+        self.generate_non_static_assets()
 
         # Manager load order is very important DO NOT CHANGE.
         loading_screen.next_stage("Setting up input manager")
@@ -127,7 +129,7 @@ class SCIV(ShowBase):
         self.ui_manager = ui(self)
         self.ui_manager.map = self.world
 
-        if config_mgr.get_by_key("qol", "intro_skip"):
+        if config_mgr.get_by_key(("qol", "intro_skip")):
             self.on_loading_screen_continue()
             loading_screen.destroy()
         else:
@@ -141,7 +143,7 @@ class SCIV(ShowBase):
 
         self.messenger.send("system.main.ready")
 
-    def generate_non_static_assets(self, force: bool = True) -> None:
+    def generate_non_static_assets(self, force: bool = False) -> None:
         from system.atlas import AtlasGenerator
 
         icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
@@ -154,21 +156,45 @@ class SCIV(ShowBase):
             ],
             output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "atlas.png",
             output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "mapping.json",
-            icon_size=(128, 128),
+            icon_size=(
+                self.config_manager.get_by_key(("assets", "icon_resolution_x")),
+                self.config_manager.get_by_key(("assets", "icon_resolution_y")),
+            ),
             max_icons=512,
             atlas_columns=16,
         )
-        icon_generator.run(force=force)
 
         terrain_atlas = AtlasGenerator(
             input_dir=pathlib.Path(__file__).parent / "assets" / "terrain" / terrain_tile_set,
             output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "atlas.png",
             output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "mapping.json",
-            icon_size=(512, 512),
+            icon_size=(
+                self.config_manager.get_by_key(("assets", "terrain_resolution_x")),
+                self.config_manager.get_by_key(("assets", "terrain_resolution_y")),
+            ),
             max_icons=128,
             atlas_columns=16,
         )
-        terrain_atlas.run(force=force)
+
+        # We do it at this point as the inits are not that heavy and then we can just call exists on the atlas to see if we need to generate.
+        if force or Debug.system_asset_generation():
+            self.engine_logger.info("Forcing asset generation")
+            icon_generator.run(force=force)
+            terrain_atlas.run(force=force)
+        else:
+            if not icon_generator.exists():
+                self.engine_logger.info("Icon atlas does not exist, generating assets")
+                icon_generator.run(force=force)
+            else:
+                self.engine_logger.info("Icon atlas exists, skipping generation loading cache")
+                icon_generator.load_caches()
+
+            if not terrain_atlas.exists():
+                self.engine_logger.info("Terrain atlas does not exist, generating assets")
+                terrain_atlas.run(force=force)
+            else:
+                self.engine_logger.info("Terrain atlas exists, skipping generation loading cache")
+                terrain_atlas.load_caches()
 
         Cache.set_icon_atlas(icon_generator)
         Cache.set_terrain_atlas(terrain_atlas)

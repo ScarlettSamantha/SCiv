@@ -181,8 +181,8 @@ class Game(Singleton, DirectObject):
 
         props = WindowProperties()  # type: ignore
 
-        win_size: Tuple[int, int] = self.config.get_by_key("window", "win-size")
-        win_origin: Tuple[int, int] = self.config.get_by_key("window", "win-origin")
+        win_size: Tuple[int, int] = self.config.get_by_key(("window", "win-size"))
+        win_origin: Tuple[int, int] = self.config.get_by_key(("window", "win-origin"))
 
         props.setSize(win_size[0], win_size[1])  # type: ignore
         props.setOrigin(win_origin[0], win_origin[1])  # type: ignore
@@ -196,8 +196,8 @@ class Game(Singleton, DirectObject):
         win_size = (props.getXSize(), props.getYSize())  # type: ignore # Get current window size
         win_origin = (props.getXOrigin(), props.getYOrigin())  # type: ignore # Get window position
 
-        old_win_size = tuple(self.config.get_by_key("window", "win-size"))
-        old_win_origin = tuple(self.config.get_by_key("window", "win-origin"))
+        old_win_size = tuple(self.config.get_by_key(("window", "win-size")))
+        old_win_origin = tuple(self.config.get_by_key(("window", "win-origin")))
 
         if old_win_size == win_size and old_win_origin == win_origin:
             self.logger.info("No changes to write back")
