@@ -29,11 +29,10 @@ class EliminateUnit(Goal):
         self.name: str = "Eliminate Unit"
         self.description: str = f"Eliminate the unit {str(target.name)}"
 
-    def turn_tick(self) -> None:
-        if not self.get_target().is_alive():
-            self.mark_achieved()
-            return
+    def is_achieved(self) -> bool:
+        return self.get_target().is_alive() is False or super().is_achieved()
 
+    def turn_tick(self) -> None:
         target_tile = self.target.get_tile()
         current_tile = self.get_executing_unit().get_tile()
         if (path := TileRepository.astar(current_tile, target_tile, self.get_executing_unit().moves_left)) is not None:
