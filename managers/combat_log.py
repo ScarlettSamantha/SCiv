@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING, Optional
+
 
 from managers.combat import CombatOutcome, CombatResults
 from managers.i18n import T_TranslationOrStr, t_
@@ -72,11 +73,21 @@ class CombatLog:
 
     @classmethod
     def entry_from_outcome(cls, outcome: CombatOutcome, text: T_TranslationOrStr = "") -> CombatLogEntry:
+        from gameplay.city import City
+        from gameplay.tile import Tile
+
+        defender: Optional["Player"] = outcome.defender_player
+
+        if isinstance(outcome.defender_entity, (Tile, City)):
+            defender = outcome.defender_entity.get_owner()
+
         if not outcome.attacker_player or not outcome.defender_player:
             raise ValueError("Both attacker and defender players must be specified in the outcome.")
+
         if text == "":
             text = cls.outcome_to_text(outcome)
-        return cls.entry(outcome.attacker_player, outcome.defender_player, outcome, text)
+
+        return cls.entry(outcome.attacker_player, defender if defender else outcome.defender_player, outcome, text)
 
     @classmethod
     def outcome_to_text(cls, outcome: CombatOutcome) -> str:
