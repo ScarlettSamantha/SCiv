@@ -23,6 +23,9 @@ class Units:
     def __len__(self) -> int:
         return self._num_units
 
+    def __contains__(self, unit: "Unit") -> bool:
+        return unit in self._units
+
     def all(self) -> List["Unit"]:
         return self._units
 
