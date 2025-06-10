@@ -18,6 +18,7 @@ from gameplay.resources.core.basic.food import Food
 from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.production import Production
 from gameplay.resources.core.basic.science import Science
+from helpers.debug import Debug
 from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
 
@@ -92,7 +93,8 @@ class AssetManager(Singleton):
             # Return a deep copy of the cached model to ensure independent modification
             return cls.model_cache[cache_key].copyTo(NodePath())  # type: ignore
 
-        cls.logger().debug(f"Loading model {path}")
+        if Debug.system_loading_models():
+            cls.logger().debug(f"Loading model {path}")
 
         if cls.base is None:
             raise ValueError("Base not set for AssetManager")

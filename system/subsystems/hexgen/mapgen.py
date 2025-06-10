@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Set, Tuple
 from matplotlib.patches import RegularPolygon
 import numpy as np
 import matplotlib.pyplot as plt
+from helpers.debug import Debug as DebugHelper
 from system.subsystems.hexgen.hex import Hex
 from system.subsystems.hexgen.enums import (
     GeoformType,
@@ -63,12 +64,7 @@ class MapGen:
         self.params: Dict[str, Any] = default_params
         self.params.update(params)
 
-        if debug:
-            print("Making world with params:")
-            for key, value in params.items():
-                print("\t{}:\t{}".format(key, value))
-
-        self.debug = debug
+        self.debug = DebugHelper.world_generation()
 
         if type(params.get("random_seed")) is int:
             random.seed(params.get("random_seed"))
@@ -158,7 +154,8 @@ class MapGen:
     def generate_craters(self):
         # decide number of craters
         num_craters = random.randint(0, 15)
-        print("Making {} craters".format(num_craters))
+        if self.debug:
+            print("Making {} craters".format(num_craters))
         craters: List[Any] = []
 
         while len(craters) < num_craters:
@@ -203,7 +200,8 @@ class MapGen:
 
     def generate_volcanoes(self):
         num_volcanoes: int = int(self.params.get("num_volcanoes", 1))
-        print("Making {} volcanoes".format(num_volcanoes))
+        if self.debug:
+            print("Making {} volcanoes".format(num_volcanoes))
         volcanoes: List[Dict[str, Any]] = []
         size: int = int(self.params.get("volcano_area_size", 1))
         while len(volcanoes) < num_volcanoes:
@@ -222,7 +220,8 @@ class MapGen:
             for volcano in volcanoes:
                 height: int = volcano.get("height", 0)
                 hex: "Hex" = volcano["hex"]
-                print(f"Volcano: Size: {size}, Height: {height}")
+                if self.debug:
+                    print(f"Volcano: Size: {size}, Height: {height}")
                 hex.altitude = np.float64(
                     min(hex.altitude + height, self.params.get("height_range", (0, 255))[1] - 120)
                 )
@@ -235,8 +234,8 @@ class MapGen:
         # select number of territories to place
         num_territories = self.params.get("num_territories", 0)
 
-        # give each a land pixel to start
-        print("Making {} territories".format(num_territories)) if self.debug else False
+        if self.debug:
+            print("Making {} territories".format(num_territories)) if self.debug else False
 
         c = 0
         if num_territories == 0:
@@ -259,7 +258,6 @@ class MapGen:
         count = 0
         while count < total_hexes:  #  i in range(0, 15):
             count = 0
-            # print("Start: {} < {}".format(count, total_hexes))
             territories = self.territories
             random.shuffle(territories)
             for t in territories:
@@ -270,7 +268,6 @@ class MapGen:
                         t.members.append(f)
                         t.last_added.append(f)
                 count += t.size
-            # print("End: {} < {}".format(count, total_hexes))
 
         # remove water hexes
         for t in self.territories:
@@ -280,8 +277,8 @@ class MapGen:
             for h in water_hexes:
                 h.territory = None
 
-        # merge territories
-        print("Merging barren territories")
+        if self.debug:
+            print("Merging barren territories")
 
         if self.params.get("num_territories", 0) > 0:
             top: List["Territory"] = []
@@ -296,7 +293,8 @@ class MapGen:
             pick_top = None
             pick_bottom = None
             if len(top) > 0:
-                print("Merging {} territories from the top of the map".format(len(top)))
+                if self.debug:
+                    print("Merging {} territories from the top of the map".format(len(top)))
                 pick_top = random.choice(top)
                 top.remove(pick_top)
                 for t in self.territories:
@@ -305,7 +303,8 @@ class MapGen:
                         t.members = []
 
             if len(bottom) > 0:
-                print("Merging {} territories from the bottom of the map".format(len(bottom)))
+                if self.debug:
+                    print("Merging {} territories from the bottom of the map".format(len(bottom)))
                 pick_bottom = random.choice(bottom)
                 bottom.remove(pick_bottom)
                 for t in self.territories:
@@ -323,14 +322,19 @@ class MapGen:
 
             self.territories = [t for t in self.territories]
 
-            print(
-                "{} empty territories being deleted".format(len([t for t in self.territories if len(t.members) == 0]))
-            )
+            if self.debug:
+                print(
+                    "{} empty territories being deleted".format(
+                        len([t for t in self.territories if len(t.members) == 0])
+                    )
+                )
             self.territories = [t for t in self.territories if len(t.members) > 0]
 
-            print("There are now {} territories".format(len(self.territories)))
+            if self.debug:
+                print("There are now {} territories".format(len(self.territories)))
 
-        print("Splitting territories into contiguous blocks") if self.debug else False
+        if self.debug:
+            print("Splitting territories into contiguous blocks") if self.debug else False
         for t in self.territories:
             t.find_groups()
 
@@ -620,7 +624,8 @@ class MapGen:
                         if neighbor in merged or geoform in merged:
                             continue
                         if geoform.type == neighbor.type:
-                            print(f"Merging {geoform.type}")
+                            if self.debug:
+                                print(f"Merging {geoform.type}")
                             geoform.merge(neighbor)
                             merged.add(neighbor)
                 calculate_neighbors()
@@ -634,7 +639,8 @@ class MapGen:
                         if len(islands) == 1 and len(land_forms) == 1:
                             island = islands[0]
                             if len(island.neighbor_of_type(GeoformType.isthmus)) <= 1:
-                                print("Merging island + isthmus into peninsula")
+                                if self.debug:
+                                    print("Merging island + isthmus into peninsula")
                                 island.merge(geoform)
                                 island.type = GeoformType.peninsula
                 calculate_neighbors()
@@ -643,7 +649,8 @@ class MapGen:
                     if geoform.type == GeoformType.small_island:
                         large_islands = geoform.neighbor_of_type(GeoformType.large_island)
                         if large_islands:
-                            print("Merging small island into large island")
+                            if self.debug:
+                                print("Merging small island into large island")
                             large_islands[0].merge(geoform)
                 calculate_neighbors()
 
@@ -656,10 +663,12 @@ class MapGen:
                         continents = set(continents)
                         continents_list = list(continents)
                         if len(continents_list) == 1:
-                            print("Merging island into continent")
+                            if self.debug:
+                                print("Merging island into continent")
                             continents_list[0].merge(geoform)
                         elif len(continents_list) > 1:
-                            print("Merging island and other continents into one continent")
+                            if self.debug:
+                                print("Merging island and other continents into one continent")
                             continents_list[0].merge(geoform)
                             for c in continents_list[1:]:
                                 continents_list[0].merge(c)
@@ -669,15 +678,18 @@ class MapGen:
                     if geoform.type == GeoformType.peninsula:
                         isthmuses = geoform.neighbor_of_type(GeoformType.isthmus)
                         if len(isthmuses) == 1:
-                            print("Merging isthmus into peninsula")
+                            if self.debug:
+                                print("Merging isthmus into peninsula")
                             geoform.merge(isthmuses[0])
                         if geoform.size == 2 and len(geoform.neighbors) == 0:
                             geoform.type = GeoformType.small_island
                 calculate_neighbors()
 
-            print("Deleting {} geoforms".format(len([g for g in self.geoforms if g.to_delete is True])))
+            if self.debug:
+                print("Deleting {} geoforms".format(len([g for g in self.geoforms if g.to_delete is True])))
             self.geoforms = [g for g in self.geoforms if not g.to_delete]
-            print("There is now {} geoforms".format(len(self.geoforms)))
+            if self.debug:
+                print("There is now {} geoforms".format(len(self.geoforms)))
 
     def is_river(self, edge: HexSide) -> bool:
         """

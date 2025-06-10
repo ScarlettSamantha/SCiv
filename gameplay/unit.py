@@ -13,6 +13,7 @@ from panda3d.core import BitMask32, LVector3, NodePath, PandaNode
 from gameplay.condition import Condition
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
+from helpers.debug import Debug
 from main import Cache
 from managers.combat import T_TARGET, Combat
 from managers.combat_log import CombatLog
@@ -172,7 +173,8 @@ class Unit(BaseEntity, ABC):
         if not self._model:
             raise RuntimeError(f"Failed to load model for unit {self.key}")
 
-        self.logger.debug(f"Unit {self.key} spawned at {self.get_tile().get_cords()} with model {self._model}")
+        if Debug.world_spawning():
+            self.logger.debug(f"Unit {self.key} spawned at {self.get_tile().get_cords()} with model {self._model}")
         return True
 
     def get_model_path(self) -> Optional[str]:

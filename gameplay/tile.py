@@ -41,6 +41,7 @@ from gameplay.unit_icons import UnitIcons
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
 from helpers.cache import Cache
+from helpers.debug import Debug
 from helpers.images import normalize_color_to_bytes
 from helpers.maths import scale_value, scaled_pos_z
 from helpers.model import ModelHelper
@@ -948,7 +949,6 @@ class Tile(BaseEntity):
             y = self.pos_y + pos_offset[1]
             z = self.pos_z + pos_offset[2]
 
-            # 2) Scale/HPR/pos for the "source" model
             model_scale = max(0.01, scale)
             extra_model.setScale(model_scale)
             extra_model.setHpr(*hpr)
@@ -963,7 +963,10 @@ class Tile(BaseEntity):
             node.setTag(NET_TYPE_FIELD, str(net_type.value))
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tag if (net_id is None) else net_id)
 
-            print(f"[add_model] Spawned node with tag='{net_type.value}', appended to self.models.")
+            if Debug.world_spawning():
+                self.logger.debug(
+                    f"Added model {model_path} to tile {self.tag} at position ({x}, {y}, {z}) with scale {model_scale}."
+                )
 
         self.base.loader.loadModel(full_path, callback=on_model_loaded, extraArgs=[net_type])
 
