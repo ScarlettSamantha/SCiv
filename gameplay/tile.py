@@ -904,6 +904,10 @@ class Tile(BaseEntity):
         if len(self.effects) > 0:
             self.effects.on_turn_end(turn)
 
+        if len(self.units) > 0:
+            for unit in self.units.all():
+                unit.attack_points_left = unit.attack_points  # Reset attack points for the next turn
+
     def calculate_z_pos_on_altitude(self) -> Tuple[float, float, float]:
         pos_z = scale_value(min(self.altitude, 240), 44, 240, 0, 1.5)
         pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
