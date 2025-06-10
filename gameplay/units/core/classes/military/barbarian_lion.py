@@ -9,8 +9,8 @@ class BarbarianLion(CoreMilitaryBaseClass):
     _model = "assets/models/units/barbarian_lion.glb"
     buildable = False
     key = "core.units.military.barbarian.lion"
-    name = t_("content.units.units.core.units.military.barbarian.lion.name")
-    description = t_("content.units.units.core.units.military.barbarian.lion.name")
+    name = t_("content.units.core.units.military.barbarian.lion.name")
+    description = t_("content.units.core.units.military.barbarian.lion.description")
     icon = "lions.png"
     model_size = 0.06
 
