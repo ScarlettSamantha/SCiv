@@ -3,11 +3,12 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.metrics import dp
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
+from direct.showbase.DirectObject import DirectObject
 from managers.combat_log import CombatLogEntry
 from menus.kivy.elements.clipping import ClippingScrollList
 
 
-class PlayerCombatLog(BoxLayout):
+class PlayerCombatLog(BoxLayout, DirectObject):
     def __init__(self, log: List[CombatLogEntry], **kwargs: Any):
         # force absolute size/position
         kwargs.setdefault("size_hint", (0.3, 0.2))
@@ -21,6 +22,11 @@ class PlayerCombatLog(BoxLayout):
         self.bg_rect: Rectangle | None = None
         self.disabled = False
 
+        self.register()
+
+    def register(self):
+        self.accept("ui.update.ui.combat_log.add", self.add_entry)
+
     def build(self):
         if self.is_built:
             return
@@ -32,7 +38,7 @@ class PlayerCombatLog(BoxLayout):
         # Initialize ClippingScrollList for automatic clipping of off-screen entries
         # Scroll widget fills remaining box area, header fixed
         self.scroll = ClippingScrollList(
-            cols=1, smooth_scroll_speed=0.05, size_hint=(1, 1), bar_width=dp(4), invert_scroll=True
+            cols=1, smooth_scroll_speed=0.05, size_hint=(1, 1), bar_width=dp(4), invert_scroll=False
         )
 
         # Create a black background behind entries
@@ -79,17 +85,12 @@ class PlayerCombatLog(BoxLayout):
         Append a new entry and update the view.
         """
         self.logRef.append(entry)
-        # Directly add only the new entry for efficiency
-        if self.is_built and self.scroll:
-            ts = entry.timestamp.strftime("%H:%M:%S")
-            text = entry.text
-            line = f"[{ts}]: {text}"
+        line = f"[{entry.timestamp.strftime('%H:%M:%S')}]: {entry.text}"
 
-            lbl = Label(text=line, markup=True, size_hint_y=None)
-            lbl.bind(width=lambda inst, val: setattr(inst, "text_size", (val - dp(24), None)))  # type: ignore
-            lbl.bind(texture_size=lambda inst, size: setattr(inst, "height", size[1]))  # type: ignore
-            self.scroll.add_widget(lbl)
-            self.scroll.scroll_to_bottom()
-        else:
-            # Fallback to full refresh
-            self.update()
+        lbl = Label(text=line, markup=True, size_hint_y=None)
+
+        lbl.bind(width=lambda inst, val: setattr(inst, "text_size", (val - dp(24), None)))  # type: ignore
+        lbl.bind(texture_size=lambda inst, size: setattr(inst, "height", size[1]))  # type: ignore
+
+        self.scroll.add_widget(lbl)  # type: ignore
+        self.scroll.scroll_to_bottom()  # type: ignore
