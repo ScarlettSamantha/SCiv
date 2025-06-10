@@ -41,3 +41,6 @@ class Units:
 
     def __iter__(self) -> Iterator["Unit"]:
         return iter(self._units)
+
+    def count(self) -> int:
+        return len(self._units)

@@ -39,3 +39,6 @@ class Cities:
         city: "City" = self._cities[self.index]
         self.index += 1
         return city
+
+    def count(self) -> int:
+        return len(self._cities)
