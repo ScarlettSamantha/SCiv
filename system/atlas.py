@@ -165,6 +165,22 @@ class AtlasGenerator:
             key = cache_file.stem
             self._individual_texture_cache[key] = tex  # type: ignore
 
+    def get_pil_image_by_virtual_path(self, virtual_path: str) -> Optional[Image.Image]:
+        entry = self.lookup_by_virtual_path(virtual_path)
+        if not entry:
+            return None
+
+        atlas = self.atlas_image
+        box = (
+            entry["atlas_x"],
+            entry["atlas_y"],
+            entry["atlas_x"] + entry["width"],
+            entry["atlas_y"] + entry["height"],
+        )
+        cropped = atlas.crop(box)
+
+        return cropped.convert("RGBA")
+
     def _generate_panda3d_texture(self) -> Texture:
         atlas = self.atlas_image  # PIL.Image
         buf = BytesIO()
