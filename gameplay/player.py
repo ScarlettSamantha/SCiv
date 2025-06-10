@@ -24,6 +24,7 @@ from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
+from helpers.debug import Debug
 from managers.civics import Civic, CivicsManager, CivicTree
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
@@ -285,8 +286,9 @@ class Player(BaseEntity):
         start_time = datetime.datetime.now()
         self.effects.on_turn_end(turn)
         self.logger.debug(f"Effects on turn end took {datetime.datetime.now() - start_time}")
-        # self.get_ai().on_turn_end()
-        self.logger.debug(f"AI on turn end took {datetime.datetime.now() - start_time}")
+        if not Debug.disable_ai_turn_processing():
+            self.get_ai().on_turn_end()
+            self.logger.debug(f"AI on turn end took {datetime.datetime.now() - start_time}")
 
     def has_researched_tech(self, tech: Type[Tech]) -> bool:
         return self.tech.is_tech_researched(tech)
