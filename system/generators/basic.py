@@ -35,12 +35,11 @@ class Basic(BaseGenerator):
 
         def random_seed() -> int:
             """Generates a random seed based on the current timestamp."""
-            return min(
-                crc32(str(int(datetime.now().timestamp() * 1000)).encode())
-                + randrange(2**5, 2**10)
-                + int(datetime.now().microsecond),
-                2**31 - 1,
-            )
+            time = str(crc32(str(int(datetime.now().timestamp() * 1000)).encode()))[:-3]
+            rand = str(randrange(2**12, 2**30))[:-3]
+            micro = str(datetime.now().microsecond)[:-3]
+
+            return int(f"{time}{rand}{micro}")
 
         self.seed = config.seed if config.seed is not None else random_seed()
         config.seed = self.seed  # Ensure the seed is set in the config
