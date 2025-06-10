@@ -60,6 +60,9 @@ class Unit(BaseEntity, ABC):
     model: Optional[NodePath] = None
     model_size: float = 1.0
 
+    can_spawn_on_land: bool = True
+    can_spawn_on_water: bool = False
+
     def __init__(self, tile: "Tile", key: Optional[str] = None):
         from gameplay.city import Yields  # to avoid circular import
 
@@ -81,7 +84,8 @@ class Unit(BaseEntity, ABC):
         self.max_moves: int = 10
         self.moves_left: int | float = 10.0
 
-        self.can_swim: bool = False
+        self.can_cross_water: bool = self.can_spawn_on_water
+        self.can_cross_land: bool = self.can_spawn_on_land
         self.can_fly: bool = False
 
         self.can_move: bool = True
@@ -196,6 +200,16 @@ class Unit(BaseEntity, ABC):
 
     @classmethod
     def spawn_on(cls, tile: "Tile", player: "Player", ignore_constraints: bool = False) -> "Unit":
+        if (
+            not ignore_constraints
+            and (cls.can_spawn_on_water and tile.is_land)
+            and (cls.can_spawn_on_land and tile.is_water)
+        ):
+            raise ValueError(f"Unit {cls.__name__} cannot spawn on tile {tile.tag} due to constraints.")
+
+        if tile.is_passable is False:
+            raise ValueError(f"Unit {cls.__name__} cannot spawn on impassable tile {tile.tag}.")
+
         instance = cls(tile=tile)
         instance.owner = player
         instance.spawn()
