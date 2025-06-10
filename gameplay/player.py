@@ -12,6 +12,7 @@ from gameplay.civilization import Civilization
 from gameplay.claims import Claims
 from gameplay.government import Government
 from gameplay.leader import Leader
+from gameplay.lose import LoseConditions
 from gameplay.mood import Mood
 from gameplay.moods import Moods
 from gameplay.personality import Personality
@@ -331,3 +332,8 @@ class Player(BaseEntity):
 
     def set_ai(self, ai: "AI") -> None:
         self.ai = ai
+
+    def lose(self, lose_condition: LoseConditions) -> None:
+        self.logger.info(f"Player {self.name} has lost the game due to {lose_condition.name}.")
+        self.unregister()
+        self.destroy(as_system=True)

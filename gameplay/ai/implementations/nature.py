@@ -65,12 +65,6 @@ class NatureAI(AI):
                     self.logger.debug(f"Creating goal for unit {unit.name}: {goal.name}")
                 self.add_goal(goal)
 
-    def tick_goals(self) -> None:
-        for goal in self.get_goals():
-            goal.turn_tick()
-            if goal.is_achieved():
-                self.remove_goal(goal)
-
     def on_turn_end(self) -> None:
         start_time = datetime.datetime.now()
         if self.should_log:
@@ -123,7 +117,7 @@ class NatureAI(AI):
         - Is not a city
         - Itself and all tiles within radius-2 have no cities/units
         """
-        all_land = TileRepository.search_passable_land()
+        all_land: List["Tile"] = TileRepository.search_passable_land()
         # Index all city and unit tiles for O(1) lookup
         city_tiles = {tile for tile in all_land if tile.is_city()}
         unit_tiles = {tile for tile in all_land if tile.units.has_any()}

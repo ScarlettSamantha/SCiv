@@ -82,11 +82,12 @@ def gather_stats(unit: Union["Unit", T_TARGET]) -> CombatStats:
 class Combat:
     COMBAT_VARIANCE = 0.1  # ±10% random variation
     RNG = random  # injectable RNG for deterministic tests
+    MELE_RANGE = 1  # Melee combat range
 
     @classmethod
-    def _zero(cls, status: CombatResults) -> CombatOutcome:
+    def _zero(cls, status: CombatResults, attacker: "Player", defender: "Player") -> CombatOutcome:
         # No combat occurred or failed checks
-        return CombatOutcome(status, 0.0, 0.0, False, False, False, None, None, None, None, 0.0, 0.0)
+        return CombatOutcome(status, 0.0, 0.0, False, False, False, attacker, defender, None, None, 0.0, 0.0)
 
     @classmethod
     def _roll(cls, base: float) -> float:
@@ -133,29 +134,36 @@ class Combat:
 
         # 2. Movement check
         if getattr(attacker, "has_moved", False):
-            return cls._zero(CombatResults.NO_MOVEMENT)
+            return cls._zero(CombatResults.NO_MOVEMENT, attacker.get_owner(), defender.get_owner())
 
         # 3. Range check
         dist = attacker.get_tile().get_distance(defender.get_tile())
         if dist < attack_stats.min_range or dist > attack_stats.max_range:
-            return cls._zero(CombatResults.NO_RANGE)
+            return cls._zero(CombatResults.NO_RANGE, attacker.get_owner(), defender.get_owner())
 
         # 4. Attack points cost check
-        cost = attack_stats.melee_cost if dist == 1 else attack_stats.ranged_cost
-        if cost > getattr(attacker, "attack_points_left", 0):
-            return cls._zero(CombatResults.NO_POINTS)
+        cost = attack_stats.melee_cost if dist == cls.MELE_RANGE else attack_stats.ranged_cost
+        if getattr(attacker, "attack_points_left", 0) < cost:  # Not enough attack points
+            return cls._zero(CombatResults.NO_POINTS, attacker.get_owner(), defender.get_owner())
 
         # 5. Compute attack damage
-        raw_atk = cls._roll(attack_stats.melee_attack if dist == 1 else attack_stats.ranged_attack)
-        defense_val = defend_stats.melee_defense if dist == 1 else defend_stats.ranged_defense
-        net_atk = max(0.0, raw_atk - (defense_val - attack_stats.armor_penetration))
+        raw_atk = cls._roll(attack_stats.melee_attack if dist == cls.MELE_RANGE else attack_stats.ranged_attack)
+        defense_val = defend_stats.melee_defense if dist == cls.MELE_RANGE else defend_stats.ranged_defense
+        net_atk = max(0.0, raw_atk - max(defense_val - attack_stats.armor_penetration, 0.0))
 
         # 6. Apply damage to defender
         defender_killed = defender.receive_damage(net_atk)
         attacker.attack_points_left -= cost
         if defender_killed:
             return cls._make_outcome(
-                CombatResults.DEFENDER_KILLED, net_atk, 0.0, False, True, False, attacker, defender
+                CombatResults.DEFENDER_KILLED,
+                net_atk,
+                0.0,
+                False,
+                True,
+                False,
+                attacker,
+                defender,
             )
 
         # 7. Retaliation
@@ -167,11 +175,27 @@ class Combat:
             attacker_retaliated = True
             status = CombatResults.ATTACKER_KILLED if attacker_killed else CombatResults.ATTACKER_DAMAGED
             return cls._make_outcome(
-                status, net_atk, defender_damage, attacker_killed, False, attacker_retaliated, attacker, defender
+                status,
+                net_atk,
+                defender_damage,
+                attacker_killed,
+                False,
+                attacker_retaliated,
+                attacker,
+                defender,
             )
 
         # 8. No retaliation: defender damaged
-        return cls._make_outcome(CombatResults.DEFENDER_DAMAGED, net_atk, 0.0, False, False, False, attacker, defender)
+        return cls._make_outcome(
+            CombatResults.DEFENDER_DAMAGED,
+            net_atk,
+            0.0,
+            False,
+            False,
+            False,
+            attacker,
+            defender,
+        )
 
 
 def test_combat_outcome() -> List[CombatOutcome]:

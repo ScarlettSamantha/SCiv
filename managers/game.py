@@ -9,6 +9,7 @@ from panda3d.core import WindowProperties  # type: ignore
 from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
+from gameplay.lose import Lose, LoseConditions
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 
 from gameplay.unit import Unit
@@ -216,6 +217,7 @@ class Game(Singleton, DirectObject):
         self.accept("system.input.user.unit_clicked", self.handle_unit_click)
         self.accept("system.input.user.tile_hovered", self.handle_tile_hover)
         self.accept("system.input.user.tile_unhovered", self.handle_tile_hover_end)
+        self.accept("system.game.player_game_over", self.on_game_end)
         self.accept("system.game.start_load", self.on_game_start)
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
@@ -404,11 +406,17 @@ class Game(Singleton, DirectObject):
                 player.vision.add_visible_unit(unit)
 
     def process_turn(self):
-        self.turn.end_turn()
+        if (
+            not Lose.check_if_game_over()
+        ):  # This gets returned via the messenger as `system.game.player_game_over` if player
+            self.turn.end_turn()
+        else:
+            self.logger.info("Game over detected, not processing turn.")
 
-    def on_game_end(self):
+    def on_game_end(self, player: "Player", lose_condition: Union["LoseConditions", bool]) -> None:
         self.game_active = False
         self.game_over = True
+        self.quit_game()
 
     def render_field(self):
         for tile in self.world.grid.values():

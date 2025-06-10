@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict
 from gameplay.ai.core import Goal
 from gameplay.ai.goal import T_PARENT
 from gameplay.border import TileRepository
+from gameplay.unit import CantMoveReason
 
 if TYPE_CHECKING:
     from gameplay._units import Unit
@@ -33,14 +34,32 @@ class EliminateUnit(Goal):
         return self.get_target().is_alive() is False or super().is_achieved()
 
     def turn_tick(self) -> None:
-        target_tile = self.target.get_tile()
-        current_tile = self.get_executing_unit().get_tile()
-        if (path := TileRepository.astar(current_tile, target_tile, self.get_executing_unit().moves_left)) is not None:
-            if len(path) > 1:
-                for tile in path:
-                    self.get_executing_unit().move(tile)
-            else:
-                self.get_executing_unit().attack(self.target)
+        attacker = self.get_executing_unit()
+        target = self.get_target()
+        if not target.is_alive():
+            return
+
+        start_tile = attacker.get_tile()
+        goal_tile = target.get_tile()
+        movement_points_left = attacker.moves_left
+        attack_range = getattr(attacker, "attack_range", 1)
+
+        result = TileRepository.find_movable_attack_position(
+            start_tile, goal_tile, movement_points_left, attack_range=attack_range
+        )
+        if not result:
+            # no reachable attack‐position this turn
+            return
+
+        _, path = result
+        # skip the first element (own tile)
+        for step in path[1:]:
+            if attacker.move(step) != CantMoveReason.COULD_MOVE:
+                break
+
+        # if we ended in range, fire
+        if TileRepository.distance(attacker.get_tile(), goal_tile) <= attack_range:
+            attacker.attack(target)
 
     def get_target(self) -> "Unit":
         return self.target  # type: ignore[return-value]

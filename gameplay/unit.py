@@ -10,12 +10,13 @@ from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import BitMask32, LVector3, NodePath, PandaNode
 
 
+from direct.showbase import MessengerGlobal
 from gameplay.condition import Condition
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from helpers.debug import Debug
 from main import Cache
-from managers.combat import T_TARGET, Combat
+from managers.combat import T_TARGET, Combat, CombatResults
 from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
@@ -62,6 +63,7 @@ class Unit(BaseEntity, ABC):
 
     can_spawn_on_land: bool = True
     can_spawn_on_water: bool = False
+    max_health: float = 10.0
 
     def __init__(self, tile: "Tile", key: Optional[str] = None):
         from gameplay.city import Yields  # to avoid circular import
@@ -473,4 +475,11 @@ class Unit(BaseEntity, ABC):
 
     def attack(self, target: T_TARGET) -> None:
         outcome = Combat.attack(self, target)
-        CombatLog.add_entry(entry=CombatLog.entry_from_outcome(outcome=outcome))  # type: ignore
+        entry = CombatLog.entry_from_outcome(outcome=outcome, text=CombatLog.outcome_to_text(outcome=outcome))  # type: ignore
+
+        MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
+
+        if outcome.status == CombatResults.ATTACKER_KILLED:
+            self.kill()
+        elif outcome.status == CombatResults.DEFENDER_KILLED:
+            target.kill()

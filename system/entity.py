@@ -156,9 +156,10 @@ class BaseEntity(ABC, DirectObject):
     def receive_damage(self, damage: float) -> bool:
         self.health_left -= damage
         if self.health_left <= 0:
-            self.kill()
             return True
         return False
 
-    def get_owner(self) -> Optional["Player"]:
+    def get_owner(self) -> "Player":
+        if self.owner is None:
+            raise ValueError("Owner is None")
         return self.owner

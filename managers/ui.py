@@ -9,6 +9,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from panda3d.core import PStatClient  # type: ignore
 
+from gameplay.lose import LoseConditions
 from gameplay.player import Player
 from gameplay.tech import Tech
 from gameplay.tile import Tile
@@ -16,7 +17,7 @@ from gameplay.unit import Unit
 from helpers.colors import Colors
 from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType
-from managers.i18n import T_TranslationOrStr, Translation
+from managers.i18n import T_TranslationOrStr, Translation, t_
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
@@ -151,6 +152,8 @@ class ui(Singleton, DirectObject):
         self.accept("game.gameplay.research.player_cancels_research", self.on_cancels_research_session)
 
         self.accept("system.main.ready", self.on_main_ready)
+        self.accept("system.game.player_game_over", self.on_game_over_player)
+        self.accept("system.game.opponent_game_over", self.on_game_over_opponent)
 
         self.accept("escape", self.on_escape_press)
         self.accept("p", self.activate_pstat)
@@ -175,6 +178,32 @@ class ui(Singleton, DirectObject):
     def on_escape_press(self):
         if self.game is None:
             raise ValueError("Game not initialized")
+
+    def on_game_over_player(self, player: Player, reason: LoseConditions):
+        MessengerGlobal.messenger.send(
+            "ui.request.open.popup",
+            [
+                "game_over_popup",
+                t_(f"ui.dialogs.lose.player.conditions.{reason.value}.title"),
+                t_(f"ui.dialogs.lose.player.conditions.{reason.value}.message"),
+                True,
+                self.on_lose_confirm_clicked,
+            ],
+        )
+
+    def on_game_over_opponent(self, player: Player, reason: LoseConditions):
+        MessengerGlobal.messenger.send(
+            "ui.request.open.popup",
+            [
+                "game_over_popup",
+                t_(f"ui.dialogs.lose.opponent.conditions.{reason.value}.title"),
+                t_(f"ui.dialogs.lose.opponent.conditions.{reason.value}.message"),
+            ],
+        )
+
+    def on_lose_confirm_clicked(self):
+        MessengerGlobal.messenger.send("ui.update.ui.request_main_menu")
+        MessengerGlobal.messenger.send("game.state.main_menu")
 
     def on_start_research_session(self, player: Player, tech: Tech):
         from menus.screens.game_ui import GameUIScreen

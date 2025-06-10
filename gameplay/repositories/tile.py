@@ -688,3 +688,48 @@ class TileRepository:
                     queue.append(neighbor)
 
         return (result, visited)
+
+    @classmethod
+    def find_movable_attack_position(
+        cls,
+        attacker_tile: "Tile",
+        target_tile: "Tile",
+        movement_points: float,
+        attack_range: int = 1,
+    ) -> Optional[Tuple["Tile", List["Tile"]]]:
+        """
+        Finds the best tile the attacker can move to in order to attack the target.
+        1) If the attacker can path directly to the target_tile, return that path.
+        2) Otherwise, gather all tiles within `attack_range` of the target,
+           sort them so that tiles “in front” of the target (from the attacker's POV)
+           are tried first, and return the first reachable one.
+        Returns (best_tile, path_to_best_tile) or None if no attack-position is reachable.
+        """
+        # 1) Direct path to target_tile?
+        path = cls.astar(attacker_tile, target_tile, movement_points)
+        if path:
+            return target_tile, path
+
+        # 2) Gather candidates around target
+        candidates = cls.get_tiles_in_radius(target_tile, attack_range)
+        if not candidates:
+            return None
+
+        target_delta_x, target_delta_y = target_tile.x - attacker_tile.x, target_tile.y - attacker_tile.y
+        scored: List[Tuple[float, "Tile"]] = []
+        for candidate_tile in candidates:
+            if candidate_tile.units:
+                continue  # occupied
+
+            # Calculate score based on alignment with target
+            vector_difference_x, candidate_delta_y = candidate_tile.x - target_tile.x, candidate_tile.y - target_tile.y
+            score = vector_difference_x * target_delta_x + candidate_delta_y * target_delta_y
+            scored.append((score, candidate_tile))
+
+        # Try best‐aligned first
+        for _, candidate_tile in sorted(scored, key=lambda t: -t[0]):
+            path = cls.astar(attacker_tile, candidate_tile, movement_points)
+            if path:
+                return candidate_tile, path
+
+        return None
