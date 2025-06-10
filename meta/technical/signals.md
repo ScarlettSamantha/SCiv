@@ -137,6 +137,8 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
 
+- `ui.update.ui.combat_log.add` (E: * | L: ui-player-combat-log )
+
 - `ui.update.ui.debug_ui_toggle` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.lense_change` (E: ui-debug-actions | L: manager-ui)
@@ -169,5 +171,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `system.input.camera_unlock` (E: ui-part-save, E: ui-part-load | L: camera)
 
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
+- `system.game.player_game_over` (E: Lose | L: manager-game)
+- `system.game.opponent_game_over` (E: Lose | L: manager-ui )
 
 - `system.unit.destroyed` (E: unit-base)
