@@ -442,18 +442,17 @@ class Tile(BaseEntity):
         if self.city is None:
             return
 
-        if self.city_name_group is None:
-            raise AssertionError("City name group not created.")
-
         from PIL import Image  # Needed for flip
 
         from helpers.images import generate_city_nameplate, pil_image_to_panda3d_texture
         from managers.assets import AssetManager
 
+        atlas = Cache.get_icon_atlas()
+
         # Load the assets
-        left_img = AssetManager.load_pil_image("assets/icons/city_plate_left.png")
-        middle_img = AssetManager.load_pil_image("assets/icons/city_plate_middle.png")
-        right_img = AssetManager.load_pil_image("assets/icons/city_plate_right.png")
+        left_img = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_left.png")))
+        middle_img = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_middle.png")))
+        right_img = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_right.png")))
         font = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
 
         if not (left_img and middle_img and right_img and font):
@@ -469,14 +468,14 @@ class Tile(BaseEntity):
             font=font,
             padding=(20, 8),  # horizontal/vertical padding
             text_offset_y=32,
-            star_img=AssetManager.load_pil_image("assets/icons/capital_icon.png"),
+            star_img=atlas.get_pil_image_by_virtual_path("capital_icon.png"),
             star_offset_y=32,
             star_offset_x=-16,
             text_color=normalize_color_to_bytes(self.owner.color) if self.owner else (255, 0, 0, 255),  # type: ignore
         )
 
         # --- Stretch PIL canvas to force slim aspect ratio ---
-        forced_aspect_ratio = 4.5
+        forced_aspect_ratio = 1.5
         width = pil_nameplate.width
         desired_width = int(pil_nameplate.height * forced_aspect_ratio)
 
@@ -499,7 +498,7 @@ class Tile(BaseEntity):
         card_height = card_width / aspect_ratio
         card_maker.setFrame(-card_width / 2, card_width / 2, -card_height / 2, card_height / 2)
 
-        city_np = self.city_name_group.attachNewNode(card_maker.generate())  # type: ignore
+        city_np = self.ui_group.attachNewNode(card_maker.generate())  # type: ignore
         city_np.setTexture(city_texture)
         city_np.setTransparency(TransparencyAttrib.MAlpha)
         city_np.setColor(1, 1, 1, 1)
@@ -507,8 +506,8 @@ class Tile(BaseEntity):
         # Proper orientation
         city_np.setHpr(0, 0, 0)
         city_np.setBillboardPointEye()
-        city_np.setPos(self.pos_x, self.pos_y, self.pos_z + 0.1)
-        city_np.setScale(1.0)
+        city_np.setPos(0, 0, 2.0)
+        city_np.setScale(0.75)
 
         city_np.setBin("fixed", 50)
         city_np.setDepthWrite(True)
@@ -517,7 +516,7 @@ class Tile(BaseEntity):
         city_np.setAntialias(AntialiasAttrib.MAuto)
 
         if self.models:
-            self.city_name_group.reparentTo(self.models[0])
+            city_np.reparentTo(self.base.render)
 
     def get_atlas(self) -> AtlasGenerator:
         if self.atlas is None:
@@ -699,6 +698,9 @@ class Tile(BaseEntity):
         if self.units.has_any():
             for unit in self.units.all():
                 unit.render()  # We let the unit handle its own rendering.
+
+        if self.city is not None:
+            self.add_city_name()
 
         texture: Optional[Texture] = atlas.get_panda3d_texture_by_virtual_path(texture_name)
         if texture is None:
