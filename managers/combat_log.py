@@ -94,9 +94,13 @@ class CombatLog:
         """
         Convert combat outcome to a human-readable string.
         """
-        defender_name = str(outcome.defender_entity.name) if outcome.defender_entity else "Unknown"
+        defender_name = (
+            f"{str(outcome.defender_entity.name)}-{str(outcome.defender_entity.get_owner().name)}"
+            if outcome.defender_entity
+            else "Unknown"
+        )
         attacker_name = str(outcome.attacker_entity.name) if outcome.attacker_entity else "Unknown"
-        damage_text = f"{outcome.defender_damage}" if outcome.defender_damage > 0 else ""
+        damage_text = f"{outcome.attacker_damage.__round__(2)}" if outcome.attacker_damage > 0 else ""
 
         param_list = {"defending_unit": defender_name, "attacking_unit": attacker_name, "damage": damage_text}
 
