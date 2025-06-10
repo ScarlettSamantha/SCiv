@@ -98,7 +98,7 @@ class Unit(BaseEntity, ABC):
         self.build_charges: int = 0
         self.build_charges_left: int = 0
 
-        self.logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        self._logger = None
 
         self.model_cache: Optional[NodePath] = None
 
@@ -106,6 +106,12 @@ class Unit(BaseEntity, ABC):
         self.register()
 
     def register_actions(self): ...
+
+    @property
+    def logger(self):
+        if self._logger is None:
+            self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        return self._logger
 
     def get_pos(self) -> Tuple[float, float, float]:
         return (self.pos_x, self.pos_y, self.pos_z)
@@ -418,6 +424,7 @@ class Unit(BaseEntity, ABC):
         }
 
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
+        self.health_left = 0
         self.unregister()
 
         self.get_tile().remove_unit(self)
