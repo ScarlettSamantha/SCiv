@@ -190,7 +190,9 @@ class Improvement(BaseEntity):
     def set_owner(self, owner: "Player"):
         self.owner = owner
 
-    def get_owner(self) -> "Player | None":
+    def get_owner(self) -> "Player":
+        if self.owner is None:
+            raise ValueError("Improvement owner is not set")
         return self.owner
 
     def on_turn_end(self, turn: int):
