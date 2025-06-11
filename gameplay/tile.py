@@ -47,7 +47,7 @@ from helpers.maths import scale_value, scaled_pos_z
 from helpers.model import ModelHelper
 from managers.entity import EntityManager, EntityType
 from managers.game import Game
-from managers.i18n import T_TranslationOrStr, t_
+from managers.i18n import T_TranslationOrStr
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from managers.player import PlayerManager
 from system.atlas import AtlasGenerator
@@ -369,6 +369,12 @@ class Tile(BaseEntity):
     def __repr__(self) -> str:
         return f"{self.id}@{self.x},{self.y}"
 
+    def get_improvements(self) -> ImprovementsSet:
+        """
+        Returns the set of improvements on this tile.
+        """
+        return self._improvements
+
     def is_resource_improved(self) -> bool | None:
         resources = self.resources.flatten()
         if len(resources) == 0:
@@ -645,8 +651,21 @@ class Tile(BaseEntity):
         mesh: HexGrid = Game.get_singleton_instance().get_mesh()
         mesh.set_wall_color_for_tile(mesh.get_tile_index_from_coords(self.x, self.y), cast(Tuple4f, color))
 
+    def _clear_ui(self) -> None:
+        """Remove any existing UI nodes (icons, text, unit markers, etc.)"""
+        # detach *every* child of the ui_group
+        for child in self.ui_group.getChildren():
+            child.removeNode()
+        # reset any cached references
+        self.icon_overlay_np = None
+        self.unit_icons_np = None
+        self.text_card = None
+        self.hex_overlay_np = None
+
     def render(self, auto_calculate: bool = True) -> None:
         from panda3d.core import CardMaker
+
+        self._clear_ui()
 
         if auto_calculate:
             self.calculate()
@@ -693,11 +712,9 @@ class Tile(BaseEntity):
         self.render_resource_model()
 
         self.add_icon_to_tile()
-        self.add_unit_icon()
 
         if self.units.has_any():
-            for unit in self.units.all():
-                unit.render()  # We let the unit handle its own rendering.
+            self.render_unit_icons()
 
         if self.city is not None:
             self.add_city_name()
@@ -715,6 +732,25 @@ class Tile(BaseEntity):
 
         # lift all UI elements together
         self.ui_group.setZ(self.pos_z + 0.01)
+
+    def render_unit_icons(self) -> None:
+        if self.unit_icons_np is not None:
+            self.unit_icons_np.remove_node()
+
+        self.unit_icons_np = self.ui_group.attachNewNode("unit_icons")
+        # Initialize the UnitIcons helper once
+        self._unit_icons = UnitIcons(self.unit_icons_np)
+
+        # Add a marker for each unit
+        for unit in self.units.all():
+            if unit.icon:
+                # Place each icon slightly above the tile
+                self._unit_icons.add_marker(
+                    (0, 0, 0 + 1.5),  # position
+                    (0.2, 0.2),  # size
+                    str(unit.icon),  # icon name/tag
+                )
+        self.unit_icons_np
 
     def render_bits(self):
         self.unrender_bits()
@@ -840,41 +876,8 @@ class Tile(BaseEntity):
         self._block_resource_model_spawning = False
         self.geom_group.flattenMedium()
 
-    def remove_unit_icons(self) -> None:
-        if self._unit_icons is not None:
-            self._unit_icons.remove_all()
-            if self.unit_icons_np is not None:
-                self.unit_icons_np.removeNode()
-            self.unit_icons_np = None
-            self._unit_icons = None
-        else:
-            self.logger.warning("No unit icons to remove.")
-
-    def add_unit_icon(self) -> None:
-        if self.unit_icons_np is not None:
-            self.unit_icons_np.remove_node()
-
-        self.unit_icons_np = self.ui_group.attachNewNode("unit_icons")
-        # Initialize the UnitIcons helper once
-        self._unit_icons = UnitIcons(self.unit_icons_np)
-
-        self._unit_icons.remove_all()
-
-        # Compute world‐space base position of this tile
-        x, y, z = self.anchor_node.getPos(self.base.render)  # type: ignore[name-defined]
-
-        # Add a marker for each unit
-        for unit in self.units.all():
-            if unit.icon:
-                # Place each icon slightly above the tile
-                self._unit_icons.add_marker(
-                    (x, y, z + 1.5),  # position
-                    (0.2, 0.2),  # size
-                    str(unit.icon),  # icon name/tag
-                )
-
     def render_resource_model(self) -> None:
-        if self.city is not None or self._block_resource_model_spawning:
+        if self.city is None and self._block_resource_model_spawning is not True:
             return
 
         resource = list(self.resources.flatten_non_mechanic().values())

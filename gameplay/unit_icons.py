@@ -67,7 +67,7 @@ class UnitIcons(DirectObject):
         cm = CardMaker("marker_quad")
         cm.set_frame(-0.5, 0.5, -0.5, 0.5)  # type: ignore
 
-        quad = self.base.render.attach_new_node(cm.generate())  # type: ignore
+        quad = self.parent.attachNewNode(cm.generate())  # type: ignore
 
         # record the base world position and size
         x, y, z = world_pos

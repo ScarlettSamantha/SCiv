@@ -1,4 +1,3 @@
-from copy import copy
 import random
 from abc import ABC
 from enum import Enum
@@ -218,7 +217,7 @@ class Unit(BaseEntity, ABC):
         player.units.add_unit(instance)
         tile.add_unit(instance)
         UnitManager.get_singleton_instance().add_unit(instance)
-
+        tile.render()
         return instance
 
     def move(self, tile: "Tile") -> CantMoveReason:
@@ -278,7 +277,7 @@ class Unit(BaseEntity, ABC):
     def _clear_departing_tile(self, tile: "Tile") -> None:
         tile.remove_unit(self)
         self.unload_model()
-        tile.remove_unit_icons()
+        tile.render()
 
     def _move_to_tile(self, tile: "Tile", clear_departing_tile: Optional["Tile"] = None) -> None:
         if clear_departing_tile is not None:
@@ -288,7 +287,7 @@ class Unit(BaseEntity, ABC):
         self.model = self.load_model()
         self.calculate_model_position()
         self.get_tile().add_unit(self)
-        self.get_tile().add_unit_icon()
+        self.get_tile().render()
 
     def calculate_model_position(self) -> None:
         """
@@ -298,25 +297,10 @@ class Unit(BaseEntity, ABC):
         if self.model is None:
             return None
 
-        pos = (
-            self.get_tile().get_cords()[0] + self.model_position_offset[0],
-            self.get_tile().get_cords()[1] + self.model_position_offset[1],
-            self.get_tile().calculate_z_pos_on_altitude()[2] + self.model_position_offset[2],
-        )
-        self.model.setPos(*pos)
+        self.pos_x, self.pos_y, self.pos_z = pos = self.get_tile().calculate_z_pos_on_altitude()
+        self.model.setPos(*pos)  # type: ignore
         self.model.setHpr(LVector3(*self.model_rotation))
         self.model.setScale(self.model_size)
-
-    def add_unit_model_to_tile(self, tile: "Tile") -> None:
-        """
-        Adds the unit's model to the specified tile.
-        This is used when the unit is moved to a new tile.
-        """
-        if self._model is None:
-            raise ValueError(f"Unit {self.key} has no model assigned.")
-        else:
-            self.unload_model()
-        self.model = self.load_model()
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -348,7 +332,7 @@ class Unit(BaseEntity, ABC):
                 raise RuntimeError(f"Failed to load model for unit {self.key} at path {model_path}")
             self.model_cache = model
 
-        model: NodePath = copy(self.model_cache)
+        model: NodePath = self.model_cache.copyTo(self.base.render)
 
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
@@ -372,7 +356,6 @@ class Unit(BaseEntity, ABC):
 
         model.setTag(NET_TYPE_FIELD, NET_TYPE.MODEL.value)
         model.setTag(NET_NODE_TAG_ID_FIELD, self.tag)
-        model.reparentTo(self.base.render)
 
         return model
 
