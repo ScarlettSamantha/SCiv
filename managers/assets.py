@@ -146,7 +146,7 @@ class AssetManager(Singleton):
         cls, path: str, size_hint_y: Optional[int] = None, height: Optional[int] = None, use_cache: bool = True
     ) -> KivyImage:
         resolved_path: str = resource_find(path)  # type: ignore
-        if not resolved_path:
+        if not resolved_path or not isinstance(resolved_path, str):  # type: ignore
             raise FileNotFoundError(f"Could not resolve path for Kivy image: {path}")
 
         cache_key: str = cls._calculate_cache_key(resolved_path)

@@ -469,7 +469,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.get_city_ui().hide()
             self.showing_city = None
 
-        self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _tile.to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
+        self.debug_frame.update_debug_info_for_tile(_tile)  # type: ignore # We know it exists because it's initialized in build_screen
 
         if self.wait_for_next_input_of_user is False:
             self.clear_selected_unit()  # Clear the action bar
@@ -494,7 +494,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.get_city_ui().hide()
             self.showing_city = None
 
-        self.debug_frame.update_debug_info("\n".join(f"{key}: {value}" for key, value in _unit().to_gui().items()))  # type: ignore # We know it exists because it's initialized in build_screen
+        self.debug_frame.update_debug_info_for_unit(_unit())  # type: ignore # We know it exists because it's initialized in build_screen
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         if self.action_bar_frame is None:

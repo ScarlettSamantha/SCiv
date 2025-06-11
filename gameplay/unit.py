@@ -21,7 +21,6 @@ from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
-from managers.player import PlayerManager
 from managers.unit import UnitManager
 from system.actions import Action
 from system.effects import Effects
@@ -401,43 +400,6 @@ class Unit(BaseEntity, ABC):
             raise ValueError(f"Unit {self.key} has no model assigned.")
         if self.model is not None:  # type: ignore
             self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
-
-    def to_gui(self) -> Dict[str, Any]:
-        if self.owner is None:
-            owner_name = PlayerManager.get_nature()
-        else:
-            owner_name = self.owner.civilization.name
-
-        model = None
-        if self.model is not None:
-            model = self.model
-            model_pos = model.get_pos()
-            model_pos_str = f"{round(model_pos[0], 4)}, {round(model_pos[1], 4)}, {round(model_pos[2], 4)}"
-        else:
-            model_pos_str = "None"
-
-        return {
-            "tag": self.tag,
-            "key": self.key,
-            "pos": f"{round(self.pos_x, 4)}, {round(self.pos_y, 4)}, {round(self.pos_z, 4)}",
-            "model_pos": model_pos_str,
-            "name": str(self.name),
-            "description": self.description,
-            "owner": owner_name,
-            "tile": self.get_tile().tag if self.tile is not None else "None",
-            "health": f"{self.health()}/{self.max_health}",
-            "damage": f"Mele: {self.get_attack_power_mele()} | Ranged: {self.get_attack_power_ranged()}",
-            "defense": f"Mele: {self.get_defense_mele()} | Ranged: {self.get_defense_ranged()}",
-            "attack_points": f"{self.attack_points_left}/{self.attack_points}",
-            "attack_points_cost": f"Mele: {self.attack_points_cost_mele} | Ranged: {self.attack_points_cost_ranged}",
-            "attack_range": self.attack_range,
-            "movement": f"{self.moves_left}/{self.max_moves}",
-            "can_move": self.can_move,
-            "can_attack": self.can_attack,
-            "can_heal": self.can_heal,
-            "can_pillage": self.can_pillage,
-            "can_build": self.can_build,
-        }
 
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
         self.health_left = 0
