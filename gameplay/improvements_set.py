@@ -24,6 +24,9 @@ class ImprovementsSet:
     def get_all(self) -> List["Improvement"]:
         return self._improvements
 
+    def all(self) -> List["Improvement"]:
+        return self._improvements
+
     def remove(self, value: "Improvement"):
         self._improvements.remove(value)
         self._num_improvements -= 1
