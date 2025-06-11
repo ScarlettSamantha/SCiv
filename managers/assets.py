@@ -31,6 +31,8 @@ class AssetManager(Singleton):
     font_cache: Dict[str, TextFont] = {}
     model_cache: Dict[str, NodePath] = {}
     kivy_image_cache: Dict[str, CoreImage] = {}
+    pil_image_cache: Dict[str, PILImage.Image] = {}
+    pil_font_cache: Dict[Tuple[str, str], PILImageFont.FreeTypeFont] = {}
 
     base: Optional["SCIV"] = None
     _logger: Optional[Logger] = None
@@ -176,20 +178,40 @@ class AssetManager(Singleton):
     @classmethod
     def load_pil_image(cls, path: str, use_cache: bool = True) -> PILImage.Image:
         """Load a PIL image directly from assets."""
+        if use_cache and path in cls.pil_image_cache:
+            pil_image = cls.pil_image_cache.get(path, None)
+            if pil_image is None:
+                raise FileNotFoundError(f"PIL image not found in cache: {path}")
+            return pil_image
+
         if not exists(path):
             raise FileNotFoundError(f"PIL image not found: {path}")
 
         cls.logger().debug(f"Loading PIL image {path}")
-        return PILImage.open(path).convert("RGBA")
+        image = PILImage.open(path).convert("RGBA")
+        if use_cache:
+            cls.pil_image_cache[path] = image
+
+        return image
 
     @classmethod
     def load_pil_font(cls, path: str, size: int = 24, use_cache: bool = True) -> PILImageFont.FreeTypeFont:
         """Load a PIL font (truetype) directly from assets."""
+        key: Tuple[str, str] = (path, str(size))
+        if use_cache and key in cls.pil_font_cache:
+            pil_font = cls.pil_font_cache.get(key, None)
+            if pil_font is None:
+                raise FileNotFoundError(f"PIL font not found in cache: {path}")
+            return pil_font
+
         if not exists(path):
             raise FileNotFoundError(f"PIL font not found: {path}")
 
         cls.logger().debug(f"Loading PIL font {path} with size {size}")
-        return PILImageFont.truetype(path, size)
+        font = PILImageFont.truetype(path, size)
+        if use_cache:
+            cls.pil_font_cache[key] = font
+        return font
 
     @classmethod
     def generate_static_assets(cls, tile_set: str = "default"):
