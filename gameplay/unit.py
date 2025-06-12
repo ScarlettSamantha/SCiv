@@ -11,6 +11,7 @@ from panda3d.core import BitMask32, LVector3, NodePath, PandaNode
 
 from direct.showbase import MessengerGlobal
 from gameplay.condition import Condition
+from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from helpers.debug import Debug
@@ -423,6 +424,11 @@ class Unit(BaseEntity, ABC):
         entry = CombatLog.entry_from_outcome(outcome=outcome, text=CombatLog.outcome_to_text(outcome=outcome))  # type: ignore
 
         MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
+
+        if isinstance(target, Unit):
+            defender_np = target.model
+            if defender_np is not None:
+                spawn_damage_text(defender_np, outcome.attacker_damage)
 
         if outcome.status == CombatResults.ATTACKER_KILLED:
             self.kill()
