@@ -230,7 +230,7 @@ class AI(ABC):
         neighbors = [
             t
             for t in TileRepository.get_neighbors(current, 1, True, False)
-            if t.is_passable() and not t.units.has_any()
+            if t.is_passable() and not t.units.has_any() and not t.is_lake and not t.is_water
         ]
         if not neighbors:
             return None
