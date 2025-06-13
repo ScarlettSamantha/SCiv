@@ -17,6 +17,13 @@ used in `gameplay/actions/unit/found.py` [link](/gameplay/actions/unit/found.py)
 
 - `unit_looses_movement_after_building` | default: `true` [link](/gameplay/actions/unit/build.py) If the units MP will be set to 0 after building
 
+#### AI
+
+##### Spawner
+
+- `get_nature_enemy_spawn_grace_period` - The grace period before the first ware starts.
+- `get_nature_enemy_spawn_rule` - If the ai can actually spawn units as opponents.
+
 #### Possible Future rules
 
 - Allowing player to retain a certain percentage of resources spend on production of unit/improvement if canceled or replaced with a other improvement. This has some gameplay implications.
