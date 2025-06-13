@@ -1,3 +1,4 @@
+import random
 import weakref
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, Dict, List, Tuple, Type
@@ -20,6 +21,7 @@ from managers.player import PlayerManager
 if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.vision import Vision
+    from gameplay.tile import Tile
 
 
 class AI(ABC):
@@ -34,6 +36,7 @@ class AI(ABC):
         self.control_cities: weakref.ReferenceType[Cities] = weakref.ref(self.player.cities)
         self.control_tiles: weakref.ReferenceType[PlayerTiles] = weakref.ref(self.player.tiles)
         self.vision: weakref.ReferenceType["Vision"] = weakref.ref(self.player.vision)
+        self.unit_directions: Dict[int, Tuple[int, int]] = {}
 
         self.end_goal: Goals = self.register_end_goal()
         self.goals: Goals = self.register_goals()
@@ -221,3 +224,48 @@ class AI(ABC):
                 unit.move(path_tile)
                 if on_tile_visit is not None:
                     on_tile_visit(path_tile)
+
+    def _select_wander_tile(self, unit: "Unit") -> Optional["Tile"]:
+        current = unit.get_tile()
+        neighbors = [
+            t
+            for t in TileRepository.get_neighbors(current, 1, True, False)
+            if t.is_passable() and not t.units.has_any()
+        ]
+        if not neighbors:
+            return None
+
+        uid = id(unit)
+        prev_dir = self.unit_directions.get(uid, None)
+
+        if prev_dir:
+            scored: List[Tuple[int, Tile]] = []
+            for t in neighbors:
+                dx = t.x - current.x
+                dy = t.y - current.y
+                score = dx * prev_dir[0] + dy * prev_dir[1]
+                scored.append((score, t))
+
+            best_score, best_tile = max(scored, key=lambda pair: pair[0])
+            if best_score > 0:
+                return best_tile
+
+        return random.choice(neighbors)
+
+    def on_wander(self, unit: "Unit") -> None:
+        while unit.moves_left > 0:
+            current = unit.get_tile()
+            next_tile = self._select_wander_tile(unit)
+            if not next_tile:
+                break
+
+            dx = next_tile.x - current.x
+            dy = next_tile.y - current.y
+            self.unit_directions[id(unit)] = (dx, dy)
+
+            self.move_unit(unit, next_tile)
+
+            new_goal = self.create_goals_for_unit(unit)
+            if new_goal:
+                self.add_goal(new_goal)
+                return

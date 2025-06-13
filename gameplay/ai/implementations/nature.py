@@ -59,11 +59,15 @@ class NatureAI(AI):
                 if self.should_log:
                     self.logger.debug(f"Unit {unit.name} already has a goal, skipping")
                 continue
-            goal = self.create_goals_for_unit(unit)
-            if goal is not None:
+
+            if (goal := self.create_goals_for_unit(unit)) is not None:
                 if self.should_log:
                     self.logger.debug(f"Creating goal for unit {unit.name}: {goal.name}")
                 self.add_goal(goal)
+            else:
+                if self.should_log:
+                    self.logger.debug(f"No goal for {unit.name}, wandering")
+                self.on_wander(unit)
 
     def on_turn_end(self) -> None:
         start_time = datetime.datetime.now()
