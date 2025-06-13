@@ -25,7 +25,7 @@ class FloatingText3D:
         if FloatingText3D.default_parent is None:
             FloatingText3D.default_parent = Cache.get_showbase_instance().render
 
-        world_pos = target_np.getPos(FloatingText3D.default_parent)
+        world_pos = target_np.get_pos()
         self._target_id = id(target_np)
 
         queue = FloatingText3D._queues.setdefault(self._target_id, [])
@@ -67,19 +67,13 @@ class FloatingText3D:
             queue.remove(self)
 
 
-# Helper functions to spawn texts
-
-
 def spawn_damage_text(target_np: NodePath, amount: float):
-    """Spawn a red floating damage number above the target."""
     FloatingText3D(str(round(amount, 2)), target_np, Vec4(1, 0, 0, 1))
 
 
 def spawn_dealing_damage_text(source_np: NodePath, amount: float):
-    """Spawn a red floating damage-dealt number above the source."""
     FloatingText3D(str(round(amount, 2)), source_np, Vec4(1, 0.5, 0, 1))
 
 
 def spawn_heal_text(source_np: NodePath, amount: float):
-    """Spawn a blue floating heal or damage-dealt number above the source."""
     FloatingText3D(str(round(amount, 2)), source_np, Vec4(0, 0.7, 1, 1))
