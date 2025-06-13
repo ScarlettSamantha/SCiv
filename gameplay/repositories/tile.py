@@ -272,7 +272,9 @@ class TileRepository:
         return result
 
     @classmethod
-    def astar(cls, start: "Tile", goal: "Tile", movement_points: float) -> Optional[List["Tile"]]:
+    def astar(
+        cls, start: "Tile", goal: "Tile", movement_points: float, avoid_occupied: bool = False
+    ) -> Optional[List["Tile"]]:
         r"""
         A* search algorithm for pathfinding on a hex grid.
 
@@ -303,33 +305,33 @@ class TileRepository:
         :param movement_points: Movement speed factor for cost adjustment.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
-        open_set: List[Tuple[float, int, "Tile"]] = []
-        heappush(open_set, (0, id(start), start))  # Use id(start) for unique sorting
-        came_from: Dict["Tile", "Tile"] = {}
-        g_score: Dict["Tile", float] = {start: 0.0}
-        f_score: Dict["Tile", float] = {start: cls.heuristic_tiles(start, goal)}
+        open_set: List[Tuple[float, int, Tile]] = []
+        heappush(open_set, (0, id(start), start))
+        came_from: Dict[Tile, Tile] = {}
+        g_score: Dict[Tile, float] = {start: 0.0}
+        f_score: Dict[Tile, float] = {start: cls.heuristic_tiles(start, goal)}
 
         while open_set:
-            _, __, current = heappop(open_set)  # Extract current safely
-
+            _, __, current = heappop(open_set)
             if current == goal:
-                path: List["Tile"] = []
+                path: List[Tile] = [current]
                 while current in came_from:
-                    path.append(current)
                     current = came_from[current]
-                path.append(start)
-                return path[::-1]
+                    path.append(current)
+                return list(reversed(path))
 
             for neighbor in cls.get_neighbors(current, check_passable=True):
-                tentative_g_score = g_score[current] + (neighbor.movement_cost / movement_points)
+                # skip occupied tiles
+                if avoid_occupied and neighbor.units.has_any() and neighbor is not goal:
+                    continue
 
-                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                tentative_g = g_score[current] + (neighbor.movement_cost / movement_points)
+                if neighbor not in g_score or tentative_g < g_score[neighbor]:
                     came_from[neighbor] = current
-                    g_score[neighbor] = tentative_g_score
-                    f_score[neighbor] = tentative_g_score + cls.heuristic_tiles(neighbor, goal)
-                    heappush(open_set, (f_score[neighbor], id(neighbor), neighbor))  # Use id() for tie-breaking
-
-        return None  # No path found
+                    g_score[neighbor] = tentative_g
+                    f_score[neighbor] = tentative_g + cls.heuristic_tiles(neighbor, goal)
+                    heappush(open_set, (f_score[neighbor], id(neighbor), neighbor))
+        return None
 
     @classmethod
     def dijkstra(cls, start: "Tile", goal: "Tile") -> Optional[List["Tile"]]:
@@ -669,7 +671,6 @@ class TileRepository:
                 continue
             visited.add(tile)
             result.add(tile)
-            # Add all neighbors (no radius: just direct neighbors)
             for neighbor in cls.get_neighbors_hex(tile, grid, radius=1):
                 if neighbor not in visited and condition(neighbor):
                     queue.append(neighbor)
@@ -684,46 +685,37 @@ class TileRepository:
         movement_points: float,
         attack_range: int = 1,
     ) -> Optional[Tuple["Tile", List["Tile"]]]:
-        # 1) Direct path to target?
         path = cls.astar(attacker_tile, target_tile, movement_points)
         if path:
             return target_tile, path
 
-        # 2) All potential attack‐positions around the target (adjacent tiles)
         candidates = cls.get_tiles_in_radius(target_tile, attack_range)
         candidates = [
-            t for t in candidates if t.is_passable() and t != attacker_tile and not t.is_water and not t.is_lake
+            t
+            for t in candidates
+            if t.is_passable() and t != attacker_tile and not t.is_water and not t.is_lake and not t.units.has_any()
         ]
         if not candidates:
             return None
 
-        # Precompute the “fallback pool” of free adjacents
-        fallback_positions = [t for t in candidates if not t.units and t.is_passable()]
+        fallback_positions = [t for t in candidates if not t.units.has_any() and t.is_passable()]
 
-        # Score them by alignment
         dx, dy = target_tile.x - attacker_tile.x, target_tile.y - attacker_tile.y
         scored: List[Tuple[float, "Tile"]] = []
         for cand in candidates:
             sx, sy = cand.x - target_tile.x, cand.y - target_tile.y
             scored.append((sx * dx + sy * dy, cand))
 
-        # 3) Try best‐aligned first
         for _, cand in sorted(scored, key=lambda x: -x[0]):
-            # compute path (ignores occupation)
-            p = cls.astar(attacker_tile, cand, movement_points)
+            p = cls.astar(attacker_tile, cand, movement_points, avoid_occupied=True)
             if not p:
                 continue
 
-            # if it's free right now, go for it
             if not cand.units:
                 return cand, p
 
-            # otherwise fall back: any free neighbor we *can* reach?
             for fb in fallback_positions:
-                fb_path = cls.astar(attacker_tile, fb, movement_points)
+                fb_path = cls.astar(attacker_tile, fb, movement_points, avoid_occupied=True)
                 if fb_path:
                     return fb, fb_path
-
-            # if none of the fallbacks worked, keep looking down the scored list
-
         return None
