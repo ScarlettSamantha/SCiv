@@ -193,8 +193,8 @@ class ui(Singleton, DirectObject):
             "ui.request.open.popup",
             [
                 "game_over_popup",
-                t_(f"ui.dialogs.lose.opponent.conditions.{reason.value}.title"),
-                t_(f"ui.dialogs.lose.opponent.conditions.{reason.value}.message"),
+                str(t_(f"ui.dialogs.lose.opponent.conditions.{reason.value}.title")).format(name=str(player.name)),
+                str(t_(f"ui.dialogs.lose.opponent.conditions.{reason.value}.message")).format(name=str(player.name)),
             ],
         )
 
