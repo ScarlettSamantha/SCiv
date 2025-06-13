@@ -519,6 +519,10 @@
               "surrendered": {
                 "title": "You opponent {name} has surrendered",
                 "message": "You opponent {name} has surrendered to {player}, they will fade to the history book."
+              },
+              "eliminated": {
+                "title": "You opponent {name} has been eliminated",
+                "message": "You opponent {name} has been eliminated from the game."
               }
             }
           }
