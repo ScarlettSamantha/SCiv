@@ -20,6 +20,7 @@ class Volcano(BaseTerrain):
         self.passable_without_tech: bool = False
 
         self.tile_yield_base.add(Yields.nullYield())
+        self._texture = "volcano.png"
 
     def register_bits(self) -> None:
         self.bits.add_bit(
