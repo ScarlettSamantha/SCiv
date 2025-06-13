@@ -5,6 +5,7 @@ from zlib import crc32
 
 from direct.showbase import MessengerGlobal
 
+from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
 
 from helpers.tiles import Tiles
@@ -146,6 +147,8 @@ class Basic(BaseGenerator):
 
         for tile in hexes:
             tile.recalculate_grid_position(1)
+
+        TileRepository.grid = self.world.grid
 
         end_mesh = datetime.now()
 
