@@ -8,6 +8,7 @@ from gameplay.ai.goals.eliminate_player import EliminatePlayer
 from gameplay.repositories.tile import TileRepository
 from gameplay.tile import Tile
 from gameplay.units.core.classes.military.barbarian_lion import BarbarianLion
+from helpers.cache import Cache
 from helpers.debug import Debug
 from managers.turn import Turn
 
@@ -28,6 +29,15 @@ class NatureAI(AI):
         self._spawn_cache_from_turn: int = 0
         self.logger = self.player.logger.getChild("nature_ai")
         self.should_log: bool = Debug.system_ai()
+        self.rules = Cache.get_active_rules()
+
+    def register_fixed_turn_events(self) -> None:
+        if self.rules.get_nature_enemy_spawn_rule() is False:
+            if self.should_log:
+                self.logger.debug("Registering initial threat spawn for NatureAI")
+            return
+
+        self.on_fixed_turn(self.rules.get_nature_enemy_spawn_grace_period(), self._spawn_initial_threat)
 
     def register_end_goal(self) -> Goals:
         return Goals()
@@ -70,6 +80,7 @@ class NatureAI(AI):
                 self.on_wander(unit)
 
     def on_turn_end(self) -> None:
+        super().on_turn_end()
         start_time = datetime.datetime.now()
         if self.should_log:
             self.logger.debug("NatureAI on_turn_end")
@@ -111,7 +122,7 @@ class NatureAI(AI):
     def on_game_start(self) -> None:
         # build cache once at game start
         self._build_spawn_tile_cache()
-        self._spawn_initial_threat()
+        self.register_fixed_turn_events()
 
     def _build_spawn_tile_cache(self) -> None:
         """
@@ -135,7 +146,7 @@ class NatureAI(AI):
                 continue
 
             # Get radius-2 neighbors
-            neighbors = TileRepository.get_neighbors(tile, 2, False, False)
+            neighbors = TileRepository.get_neighbors(tile, 2, True, False)
             # Check if any neighbor is a city or has units (set lookup is fast)
             if any(neigh in city_tiles or neigh in unit_tiles for neigh in neighbors):
                 continue

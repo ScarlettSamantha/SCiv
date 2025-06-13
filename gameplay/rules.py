@@ -18,10 +18,19 @@ class GameRules(ABC):
     def get_unit_looses_movement_after_building_rule(cls) -> bool: ...
 
     @classmethod
+    def get_nature_enemy_spawn_rule(cls) -> bool: ...
+
+    @classmethod
+    def get_nature_enemy_spawn_grace_period(cls) -> int: ...
+
+    @classmethod
     def get_rules(cls) -> Dict[str, int]:
         return {
             "city_founding_distance": cls.get_city_founding_distance_rule(),
             "city_founding_in_own_territory": cls.get_city_founding_in_own_territory_rule(),
+            "unit_looses_movement_after_building": cls.get_unit_looses_movement_after_building_rule(),
+            "nature_enemy_spawn": cls.get_nature_enemy_spawn_rule(),
+            "nature_enemy_spawn_grace_period": cls.get_nature_enemy_spawn_grace_period(),
         }
 
 
@@ -38,8 +47,17 @@ class SCIVRules(GameRules):
     def get_unit_looses_movement_after_building_rule(cls) -> bool | Literal[True]:
         return True
 
+    @classmethod
+    def get_nature_enemy_spawn_rule(cls) -> bool | Literal[True]:
+        return True
+
+    @classmethod
+    def get_nature_enemy_spawn_grace_period(cls) -> int | Literal[5]:
+        return 5
+
 
 global active_game_rules
+active_game_rules: GameRules = SCIVRules()
 
 
 def set_game_rules(rules: GameRules):
@@ -48,4 +66,6 @@ def set_game_rules(rules: GameRules):
 
 
 def get_game_rules() -> GameRules:
-    return active_game_rules
+    global active_game_rules
+    local = active_game_rules
+    return local

@@ -1,15 +1,18 @@
 from typing import TYPE_CHECKING, Optional
 from weakref import ReferenceType, ref
+from gameplay.rules import get_game_rules
 
 if TYPE_CHECKING:
     from main import SCIV
     from system.atlas import AtlasGenerator
+    from gameplay.rules import GameRules
 
 
 class Cache:
     _instance: Optional["SCIV"] = None
     _icon_atlas: Optional["AtlasGenerator"] = None
     _terrain_atlas: Optional["AtlasGenerator"] = None
+    _active_rules: Optional["GameRules"] = get_game_rules()
 
     @classmethod
     def set_showbase_instance(cls, instance: "SCIV"):
@@ -51,3 +54,13 @@ class Cache:
         if cls._terrain_atlas is None:
             raise AssertionError("Atlas instance is not set.")
         return cls._terrain_atlas
+
+    @classmethod
+    def get_active_rules(cls) -> "GameRules":
+        if cls._active_rules is None:
+            raise AssertionError("Active game rules are not set.")
+        return cls._active_rules
+
+    @classmethod
+    def set_active_rules(cls, rules: "GameRules"):
+        cls._active_rules = rules

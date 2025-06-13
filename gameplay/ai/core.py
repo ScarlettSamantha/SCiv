@@ -17,6 +17,7 @@ from gameplay.unit import Unit
 from helpers.cache import Optional
 from managers.game import World
 from managers.player import PlayerManager
+from managers.turn import Turn
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -29,6 +30,7 @@ class AI(ABC):
 
     def __init__(self, player: "Player"):
         self.player: "Player" = player
+        self.turn_action_register: Dict[int, List[Callable[..., None]]] = {}
         self.logger = self.player.logger.getChild("ai")
         self.logger.debug(f"AI created for player {str(self.player.name)} with personality {self.player.personality}")
 
@@ -110,8 +112,18 @@ class AI(ABC):
     @abstractmethod
     def register_goals(self) -> Goals: ...
 
-    @abstractmethod
-    def on_turn_end(self) -> None: ...
+    def execute_turn_action(self, turn: int) -> None:
+        """
+        Execute the action registered for the given turn.
+        """
+        if turn in self.turn_action_register:
+            for action in self.turn_action_register[turn]:
+                action()
+            del self.turn_action_register[turn]
+
+    def on_turn_end(self) -> None:
+        turn: int = Turn.get_singleton_instance().get_turn()
+        self.execute_turn_action(turn)
 
     @abstractmethod
     def on_turn_start(self) -> None: ...
@@ -269,3 +281,11 @@ class AI(ABC):
             if new_goal:
                 self.add_goal(new_goal)
                 return
+
+    def on_fixed_turn(self, turn: int, callable: Callable[[], None]) -> None:
+        """
+        Register a callable to be executed on a specific turn.
+        """
+        if turn in self.turn_action_register:
+            raise ValueError(f"Turn {turn} already has an action registered.")
+        self.turn_action_register.setdefault(turn, []).append(callable)
