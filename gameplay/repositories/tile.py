@@ -691,6 +691,9 @@ class TileRepository:
 
         # 2) All potential attack‐positions around the target (adjacent tiles)
         candidates = cls.get_tiles_in_radius(target_tile, attack_range)
+        candidates = [
+            t for t in candidates if t.is_passable() and t != attacker_tile and not t.is_water and not t.is_lake
+        ]
         if not candidates:
             return None
 
