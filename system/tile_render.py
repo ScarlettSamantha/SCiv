@@ -102,6 +102,7 @@ class TileRenderer:
         self.city_nameplate_node: Optional[NodePath] = None
 
         self.bits_renderer = BitsRenderer(tile)
+        self.unit_icons = UnitIcons(self.ui_node)
 
     def clear_ui(self) -> None:
         """Remove all child nodes under the UI group."""
@@ -296,11 +297,10 @@ class TileRenderer:
     def _draw_unit_markers(self) -> None:
         """Add small icons above the tile for each unit present."""
         node = self.ui_node.attachNewNode("unit_markers")
-        helper = UnitIcons(node)
         for unit in self.tile.units.all():
-            if unit.icon:
-                helper.add_marker(
-                    (0, 0, 1.5),  # world offset
+            if unit.icon and self.unit_icons is not None:
+                self.unit_icons.add_marker(
+                    (self.tile.pos_x, self.tile.pos_y, self.tile.pos_z + 1.5),  # world offset
                     (0.2, 0.2),  # icon size
                     str(unit.icon),
                 )
