@@ -280,7 +280,7 @@ class BitsRenderer:
 
         # reserve the slot immediately
         self._bit_slot_assignments[bit.id] = slot_name
-        self.tile.add_model(
+        self.tile.renderer.add_model(
             model_path=bit.model,
             net_type=NET_TYPE.BIT,
             pos_offset=(
@@ -300,8 +300,8 @@ class BitsRenderer:
         )
 
     def _unrender_slot(self, slot_name: str) -> None:
-        node = self.tile.placed_props.pop(slot_name, None)
+        node = self._bit_slot_assignments.pop(slot_name, None)
         if node:
-            if node in self.tile.models:
-                self.tile.models.remove(node)
-            node.removeNode()
+            if node in self.tile.models:  # type: ignore
+                self.tile.models.remove(node)  # type: ignore
+            node.removeNode()  # type: ignore

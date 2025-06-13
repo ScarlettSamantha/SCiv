@@ -2,30 +2,16 @@ from copy import deepcopy
 from enum import Enum
 from logging import Logger
 import math
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
 import weakref
 
 
-from gameplay.resources.core.basic._base import BasicBaseResource
-from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
-from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
-from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
-from helpers.colors import Colors, Tuple4f
+from helpers.colors import Tuple4f
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
-    AntialiasAttrib,
-    BitMask32,
-    CardMaker,
-    ColorBlendAttrib,
     LRGBColor,
-    NodePath,
-    PTAFloat,
-    SamplerState,
-    Shader,
     Texture,
-    TransparencyAttrib,
 )
 
 from gameplay._units import Units
@@ -35,25 +21,22 @@ from gameplay.improvements_set import ImprovementsSet
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.unit_icons import UnitIcons
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
 from helpers.cache import Cache
-from helpers.debug import Debug
-from helpers.images import normalize_color_to_bytes
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
 from managers.game import Game
 from managers.i18n import T_TranslationOrStr
-from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from managers.player import PlayerManager
-from system.atlas import AtlasGenerator
 from system.effects import Effects
 from system.entity import BaseEntity
 from system.mesh import HexGrid
 from system.subsystems.hexgen.enums import GeoformType
 from system.subsystems.hexgen.edge import Edge
+from system.tile_render import TileRenderer
 from world.items._base_item import BaseItem
+
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -102,7 +85,9 @@ class Tile(BaseEntity):
         self.id: int = id(self)
         self.x: int = x
         self.y: int = y
+
         super().__init__(tile=weakref.ref(self))
+
         self.tag = self.generate_tag()
         self.pos_x: float = pos_x
         self.pos_y: float = pos_y
@@ -117,8 +102,6 @@ class Tile(BaseEntity):
         self.destroyed: bool = False
         self.grid_position: Optional[Any] = None
         self.raw_position: Optional[Any] = None
-
-        self.models: List[NodePath] = []
 
         self.is_coast: bool = False
         self.is_water: bool = False
@@ -189,9 +172,7 @@ class Tile(BaseEntity):
 
         self.owner: Optional["Player"] = None
         self.claimants: List[Any] = []
-
-        self.city_name_group: Optional[NodePath] = None
-        self.city_name_texture_card_texture: Optional[NodePath] = None
+        self.effects: Effects = Effects(self)
 
         self.inherit_passability_from_terrain: bool = True
 
@@ -208,54 +189,11 @@ class Tile(BaseEntity):
         )
         self.meshCollider: bool = True
 
-        self._showing_large_icons: bool = False
-
         self.effects: Effects = Effects(self)
         self.needs_tile_proecessing: bool = False
+        self.block_resource_model_spawning: bool = False
 
-        self.tile_icon_group: Optional[NodePath] = None
-        self.text_card: Optional[NodePath] = None
-        self.icon_overlay_card: Optional[NodePath] = None
-        self.icon_overlay: Optional[NodePath] = None
-        self.shader: Optional[Shader] = None
-        self.atlas: Optional[AtlasGenerator] = None
-        self.atlas_width: Optional[int] = None
-        self.atlas_height: Optional[int] = None
-        self._unit_icons: Optional[UnitIcons] = None
-
-        # 1) one master pivot for positioning/scaling
-        self.anchor_node: NodePath = NodePath(f"tile_{x}_{y}")
-        self.anchor_node.reparentTo(self.base.render)
-
-        self.geom_group: NodePath = self.anchor_node.attachNewNode("geom_group")
-        self.geom_group.set_tag(NET_TYPE_FIELD, str(NET_TYPE.GEOM.value))
-        self.geom_group.set_tag(NET_NODE_TAG_ID_FIELD, self.tag)
-
-        self.ui_group: NodePath = self.anchor_node.attachNewNode("ui_group")
-
-        self.anchor_node.setCollideMask(BitMask32.bit(1))
-        self.anchor_node.set_tag(NET_TYPE_FIELD, str(NET_TYPE.ANCHOR.value))
-        self.anchor_node.set_tag(NET_NODE_TAG_ID_FIELD, self.tag)
-
-        self.hex_overlay_np: Optional[NodePath] = None
-        self.visible_sides: Dict[int, bool] = {0: True, 1: True, 2: True, 3: True, 4: True, 5: True}
-
-        self._geom_flattened: bool = False
-
-        self.icon_overlay_np: Optional[NodePath] = None
-        self.city_name_np: Optional[NodePath] = None
-        self.unit_icons_np: Optional[NodePath] = None
-        self._unit_icons: Optional[UnitIcons] = None
-        self.model_nodes_by_net_type: Dict[str, List[NodePath]] = {}
-        self.placed_props: Dict[str, NodePath] = {}
-
-        self._block_resource_model_spawning: bool = False
-
-        self.atlas = Cache.get_icon_atlas()
-
-        from gameplay.bits import BitsRenderer
-
-        self.bits_renderer = BitsRenderer(self)
+        self.renderer = TileRenderer(self)
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -289,10 +227,6 @@ class Tile(BaseEntity):
             data[side] = edge
         return data
 
-    def flatten(self):
-        for model in self.models:
-            model.flattenStrong()
-
     def generate_tag(self) -> str:
         return f"tile_{self.x}_{self.y}"
 
@@ -301,16 +235,8 @@ class Tile(BaseEntity):
         self.base = Cache.get_showbase_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
-        # self._render_default_terrain()
-        # self.create_root_ui_node()
-
-        if self.tile_icon_group is None:
-            raise AssertionError("Tile icon group not created.")
-
-        self.text_card = NodePath("text_card")
-        self.text_card.reparentTo(self.tile_icon_group)  # type: ignore
-
-        self.render()
+        self.renderer.render()
+        self.pos_x, self.pos_y, self.pos_z = self.calculate_z_pos_on_altitude()
 
         if self.city is not None:
             self.city.base = self.base
@@ -371,9 +297,6 @@ class Tile(BaseEntity):
         return f"{self.id}@{self.x},{self.y}"
 
     def get_improvements(self) -> ImprovementsSet:
-        """
-        Returns the set of improvements on this tile.
-        """
         return self._improvements
 
     def is_resource_improved(self) -> bool | None:
@@ -430,11 +353,9 @@ class Tile(BaseEntity):
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
     def compute_hex_center(self, x: int, y: int, radius: float = 1) -> Tuple[float, float]:
-        # same as get_hex_spacing
         horizontal_spacing = 1.5 * radius
         vert = math.sqrt(3) * radius
 
-        # column offset in X
         pos_x = x * horizontal_spacing
         pos_y = y * vert + (vert * 0.5 if (x % 2) else 0.0)
 
@@ -445,206 +366,10 @@ class Tile(BaseEntity):
         self.logger.info(f"Unit {str(unit.tag)} is visiting tile {str(self.tag)}.")
         return True
 
-    def add_city_name(self) -> None:
-        if self.city is None:
-            return
-
-        from PIL import Image  # Needed for flip
-
-        from helpers.images import generate_city_nameplate, pil_image_to_panda3d_texture
-        from managers.assets import AssetManager
-
-        atlas = Cache.get_icon_atlas()
-
-        # Load the assets
-        left_img = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_left.png")))
-        middle_img = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_middle.png")))
-        right_img = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_right.png")))
-        font = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
-
-        if not (left_img and middle_img and right_img and font):
-            raise RuntimeError("Failed to load nameplate assets.")
-
-        # Generate the PIL nameplate
-        pil_nameplate = generate_city_nameplate(
-            left_img,
-            middle_img,
-            right_img,
-            str(self.city.name),
-            self.city.is_capital,
-            font=font,
-            padding=(20, 8),  # horizontal/vertical padding
-            text_offset_y=32,
-            star_img=atlas.get_pil_image_by_virtual_path("capital_icon.png"),
-            star_offset_y=32,
-            star_offset_x=-16,
-            text_color=normalize_color_to_bytes(self.owner.color) if self.owner else (255, 0, 0, 255),  # type: ignore
-        )
-
-        # --- Stretch PIL canvas to force slim aspect ratio ---
-        forced_aspect_ratio = 1.5
-        width = pil_nameplate.width
-        desired_width = int(pil_nameplate.height * forced_aspect_ratio)
-
-        if width < desired_width:
-            new_img = Image.new("RGBA", (desired_width, pil_nameplate.height), (0, 0, 0, 0))
-            x_offset = (desired_width - width) // 2
-            new_img.paste(pil_nameplate, (x_offset, 0))
-            pil_nameplate = new_img
-
-        # --- Fix upside down issue ---
-        pil_nameplate = pil_nameplate.transpose(Image.FLIP_TOP_BOTTOM)  # type: ignore
-
-        # Convert to Panda3D texture
-        city_texture = pil_image_to_panda3d_texture(pil_nameplate)
-
-        # Build the city name card
-        card_maker = CardMaker(f"city_nameplate_{self.id}")
-        aspect_ratio = pil_nameplate.width / pil_nameplate.height
-        card_width = 2.5  # wider
-        card_height = card_width / aspect_ratio
-        card_maker.setFrame(-card_width / 2, card_width / 2, -card_height / 2, card_height / 2)
-
-        city_np = self.ui_group.attachNewNode(card_maker.generate())  # type: ignore
-        city_np.setTexture(city_texture)
-        city_np.setTransparency(TransparencyAttrib.MAlpha)
-        city_np.setColor(1, 1, 1, 1)
-        city_np.clearColorScale()
-        # Proper orientation
-        city_np.setHpr(0, 0, 0)
-        city_np.setBillboardPointEye()
-        city_np.setPos(0, 0, 2.0)
-        city_np.setScale(0.75)
-
-        city_np.setBin("fixed", 50)
-        city_np.setDepthWrite(True)
-        city_np.setDepthTest(True)
-        city_np.setTwoSided(True)
-        city_np.setAntialias(AntialiasAttrib.MAuto)
-
-        if self.models:
-            city_np.reparentTo(self.base.render)
-
-    def get_atlas(self) -> AtlasGenerator:
-        if self.atlas is None:
-            self.atlas = Cache.get_icon_atlas()
-        return self.atlas
-
-    def add_icon_to_tile(self) -> None:
-        """Create the resource-icon overlay once, then just update its UVs each frame."""
-        # build the card on first call
-        cm = CardMaker(f"icon_overlay_{self.id}")
-        cm.setFrame(-1, 1, -1, 1)
-        cm.setHasUvs(True)
-
-        if self.icon_overlay_np is not None:
-            self.icon_overlay_np.remove_node()
-            self.icon_overlay_np = None
-
-        self.icon_overlay_np = self.ui_group.attachNewNode(cm.generate())
-        self.icon_overlay_np.setPos(0, 0, 0)
-        self.icon_overlay_np.setCollideMask(BitMask32.bit(1))
-        self.icon_overlay_np.setTransparency(TransparencyAttrib.MAlpha)
-        self.icon_overlay_np.setAttrib(ColorBlendAttrib.makeOff())
-        self.icon_overlay_np.setBin("fixed", 60)
-        self.icon_overlay_np.setDepthTest(True)
-        self.icon_overlay_np.setDepthWrite(False)
-        self.icon_overlay_np.setHpr(0, -90, 0)
-        self.icon_overlay_np.setScale(0.75)
-
-        self.icon_overlay_np.set_tag("net_type", NET_TYPE.TILE.value)
-        self.icon_overlay_np.set_tag("net_node_tag_id", self.tag)
-
-        self.icon_overlay_np.setShader(
-            Shader.load(
-                Shader.SL_GLSL, "assets/shaders/resource_icons.vert.glsl", "assets/shaders/resource_icons.frag.glsl"
-            )
-        )
-        # load atlas once
-        atlas = Cache.get_icon_atlas()
-        atlas_tex = atlas.get_panda3d_texture()
-        atlas_tex.setWrapU(Texture.WMClamp)
-        atlas_tex.setWrapV(Texture.WMClamp)
-        atlas_tex.setFormat(Texture.F_srgb_alpha)
-        atlas_tex.setMinfilter(SamplerState.FT_linear)
-        atlas_tex.setMagfilter(SamplerState.FT_linear)
-        atlas_tex.setAnisotropicDegree(0)
-        self.icon_overlay_np.setShaderInput("icon_atlas", atlas_tex)  # type: ignore[union-attr]
-
-        self.atlas_width, self.atlas_height = atlas.atlas_image.size
-
-        # compute which icons to show
-        resources: List[BaseResource] = list(self.resources.flatten().values())
-        basic = self.get_tile_yield()
-        if self.city:
-            basic += self.city.get_yield()
-        slots: List[Optional[Union[str, BaseResource]]] = [None] * 7
-        if self.city:
-            slots[0] = self.city.get_population_icon()
-        elif resources:
-            slots[0] = resources[0]
-        for i, resource in enumerate(basic.export_basic()):
-            slots[i + 1] = resource
-
-        # fill the UV array
-        uv = PTAFloat.emptyArray(4 * 7)
-        for i, resource in enumerate(slots):
-            if not resource:
-                continue
-
-            def get_resource_path(resource: Union[str, BaseResource]) -> str | None:
-                if isinstance(resource, str):
-                    return resource.replace("resources/", "")
-                elif isinstance(resource, (BaseBonusResource, BaseLuxuryResource, BaseStrategicResource)):
-                    return resource.icon.replace("assets/icons", "")
-                elif isinstance(resource, BasicBaseResource):
-                    if resource.value > 0:
-                        return resource.get_numeric_icon().replace("resources/", "")
-                    return resource.icon
-                return None
-
-            path: str | None = None
-            if i == 0:
-                if self.city is not None:
-                    path = self.city.get_population_icon().replace("resources/", "")
-                else:
-                    path = resources[0].icon.replace("assets/icons/", "")
-            else:
-                if isinstance(resource, BaseResource) and resource.value == 0:
-                    continue
-
-                path = get_resource_path(resource)
-
-            if path is None:
-                continue
-
-            pos = self.get_atlas().get_position_for_virtual_path(path)
-            size = self.get_atlas().get_dimensions_for_virtual_path(path) if pos else None
-
-            if not pos or not size:
-                raise AssertionError(f"Icon not found in atlas: {path}")
-
-            x, y = pos
-            w, h = size
-            u0, v1 = x / self.atlas_width, 1.0 - (y / self.atlas_height)
-            u1, v0 = (x + w) / self.atlas_width, 1.0 - ((y + h) / self.atlas_height)
-            base = i * 4
-            uv[base + 0], uv[base + 1], uv[base + 2], uv[base + 3] = u0, v0, u1, v1
-
-        # push UVs & count into the shader
-        self.icon_overlay_np.setShaderInput("uv_rects", uv)  # type: ignore[union-attr]
-        self.icon_overlay_np.setShaderInput("icon_count", 7)  # type: ignore[union-attr]
-        # ensure it stays at the right Z offset
-        self.icon_overlay_np.setZ(0 + 0.01)
-
     def get_distance(self, other: "Tile") -> int:
         return TileRepository.distance(self, other)
 
     def recalculate_grid_position(self, radius: float = 1) -> None:
-        """
-        Recompute self.pos_x/pos_y from self.x,self.y & radius
-        so it matches the mesh layout exactly.
-        """
         px, py = self.compute_hex_center(self.x, self.y, radius)
         self.pos_x, self.pos_y = px, py
 
@@ -652,133 +377,10 @@ class Tile(BaseEntity):
         mesh: HexGrid = Game.get_singleton_instance().get_mesh()
         mesh.set_wall_color_for_tile(mesh.get_tile_index_from_coords(self.x, self.y), cast(Tuple4f, color))
 
-    def _clear_ui(self) -> None:
-        """Remove any existing UI nodes (icons, text, unit markers, etc.)"""
-        # detach *every* child of the ui_group
-        for child in self.ui_group.getChildren():
-            child.removeNode()
-        # reset any cached references
-        self.icon_overlay_np = None
-        self.unit_icons_np = None
-        self.text_card = None
-        self.hex_overlay_np = None
-
     def render(self, auto_calculate: bool = True) -> None:
-        from panda3d.core import CardMaker
-
-        self._clear_ui()
-
-        if auto_calculate:
-            self.calculate()
-
-        self.anchor_node.setPos(self.pos_x, self.pos_y, 0)
-        self.anchor_node.setScale(1)
-
-        cm = CardMaker(f"hex_overlay_{self.id}")
-        overlay_size = 1.0  # Adjust this to fit your tile, must fully cover hex
-        cm.setFrame(-overlay_size, overlay_size, -overlay_size, overlay_size)
-
-        if self.hex_overlay_np is not None:
-            self.hex_overlay_np.remove_node()
-            self.hex_overlay_np = None
-
-        self.hex_overlay_np = self.ui_group.attachNewNode(cm.generate())
-        self.hex_overlay_np.setTransparency(1)
-        self.hex_overlay_np.setAttrib(ColorBlendAttrib.makeOff())
-        self.hex_overlay_np.setBin("fixed", 40)  # Drawn below icons, above terrain
-        self.hex_overlay_np.setDepthTest(True)
-        self.hex_overlay_np.setDepthWrite(False)
-        self.hex_overlay_np.setHpr(0, -90, 0)  # Flat on X/Y plane
-        self.hex_overlay_np.setScale(1.0)
-        self.hex_overlay_np.setPos(0, 0, 0.001)  # Just above terrain, below icons
-
-        # Load the overlay texture (alpha hex in square PNG)
-        texture_name: Optional[str] = None
-        if hasattr(self.get_terrain(), "texture"):
-            texture_name = str(self.tile_terrain.texture())
-        elif hasattr(self.get_terrain(), "name"):
-            texture_name = getattr(self.get_terrain(), f"{self.name}.png", "default.png")
-
-        if texture_name is None or texture_name == "":
-            texture_name = "default.png"
-
-        atlas = Cache.get_terrain_atlas()
-
-        for improvement in self._improvements.get_all():
-            if improvement.model is not None:
-                self.add_model(improvement.model, net_type=NET_TYPE.IMPROVEMENT)
-
-        self.bits_renderer.render()
-        self.render_resource_model()
-
-        self.add_icon_to_tile()
-
-        if self.units.has_any():
-            self.render_unit_icons()
-
-        if self.city is not None:
-            self.add_city_name()
-
-        texture: Optional[Texture] = atlas.get_panda3d_texture_by_virtual_path(texture_name)
-        if texture is None:
-            raise AssertionError(f"Texture not found: {texture_name}")
-
-        self.hex_overlay_np.setTexture(texture, 1)
-        self.set_walls_color(Colors.to_normalized_float(self.get_terrain().wall_color(), 1.0))
-
-        if not self._geom_flattened:
-            self.geom_group.flatten_medium()
-            self._geom_flattened = True
-
-        # lift all UI elements together
-        self.ui_group.setZ(self.pos_z + 0.01)
-
-    def render_unit_icons(self) -> None:
-        if self.unit_icons_np is not None:
-            self.unit_icons_np.remove_node()
-
-        self.unit_icons_np = self.ui_group.attachNewNode("unit_icons")
-        # Initialize the UnitIcons helper once
-        self._unit_icons = UnitIcons(self.unit_icons_np)
-
-        # Add a marker for each unit
-        for unit in self.units.all():
-            if unit.icon:
-                # Place each icon slightly above the tile
-                self._unit_icons.add_marker(
-                    (0, 0, 0 + 1.5),  # position
-                    (0.2, 0.2),  # size
-                    str(unit.icon),  # icon name/tag
-                )
-        self.unit_icons_np
-
-    def render_resource_model(self) -> None:
-        if self.city is None and self._block_resource_model_spawning is not True:
-            return
-
-        resource = list(self.resources.flatten_non_mechanic().values())
-
-        if len(resource) == 0:
-            return
-
-        resource = resource[0]
-
-        if resource.model is None or (isinstance(resource.model, tuple) and resource.model == (None, None)):
-            return
-
-        if (model := (resource.get_land_model() if self.is_land else resource.get_water_model())) is None:
-            return
-
-        self.add_model(
-            model_path=model,
-            pos_offset=resource.model_position,
-            scale=resource.model_size,
-            hpr=resource.model_hpr,
-            net_type=NET_TYPE.RESOURCE,
-        )
+        self.renderer.render(update_yields=auto_calculate)
 
     def on_turn_end(self, turn: int) -> None:
-        """Will only be called by the world manager. when the tile has an effect, unit, city or player."""
         if len(self._improvements) > 0:  # We only process improvements if we have any.
             self._improvements.on_turn_end(turn)
 
@@ -793,103 +395,6 @@ class Tile(BaseEntity):
         pos_z = scale_value(min(self.altitude, 240), 44, 240, 0, 1.5)
         pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
         return (self.pos_x, self.pos_y, float(pos_z))
-
-    def _render_improvements(self) -> None:
-        improvements: List[Improvement] = self.improvements().get_all()
-        for improvement in improvements:
-            model_path = improvement.get_model_path()
-
-            if model_path is None:
-                continue
-
-            self.add_model(
-                model_path=model_path,
-                pos_offset=improvement.get_model_offset(),  # type: ignore
-                scale=improvement.get_model_scale(),  # type: ignore
-                hpr=improvement.get_model_hpr(),  # type: ignore,
-                net_type=NET_TYPE.IMPROVEMENT,
-            )
-
-    def add_model(
-        self,
-        model_path: str,
-        net_type: NET_TYPE,
-        pos_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        scale: float = 0.41,
-        hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
-        net_id: Optional[str] = None,
-    ) -> None:
-        """
-        Asynchronously load and add an additional model on top of the tile.
-        """
-        base_path: Path = self.base.get_base_path()
-        full_path = str(base_path.joinpath(model_path).absolute())
-
-        def on_model_loaded(extra_model: Optional[NodePath], net_type: NET_TYPE) -> None:
-            if extra_model is None:
-                self.logger.error(f"Model {full_path} failed to load.")
-                return
-
-            x = self.pos_x + pos_offset[0]
-            y = self.pos_y + pos_offset[1]
-            z = self.pos_z + pos_offset[2]
-
-            model_scale = max(0.01, scale)
-            extra_model.setScale(model_scale)
-            extra_model.setHpr(*hpr)
-
-            node: NodePath = extra_model.instanceTo(self.geom_group)
-            node.reparentTo(self.base.render)
-            node.setPos(x, y, z)
-            node.setCollideMask(BitMask32.bit(1))
-
-            self.models.append(node)
-            self.model_nodes_by_net_type.setdefault(str(net_type.value), []).append(node)
-            node.setTag(NET_TYPE_FIELD, str(net_type.value))
-            node.setTag(NET_NODE_TAG_ID_FIELD, self.tag if (net_id is None) else net_id)
-
-            if Debug.world_spawning():
-                self.logger.debug(
-                    f"Added model {model_path} to tile {self.tag} at position ({x}, {y}, {z}) with scale {model_scale}."
-                )
-
-        self.base.loader.loadModel(full_path, callback=on_model_loaded, extraArgs=[net_type])
-
-    def unrender(self) -> None:
-        self.unrender_all()
-
-    def unrender_by_type(self, net_type: NET_TYPE) -> None:
-        desired_tag = str(net_type.value)
-        to_remove = [
-            node
-            for node in self.model_nodes_by_net_type.values()
-            if isinstance(node, NodePath) and node.getTag(NET_TYPE_FIELD) == desired_tag
-        ]
-
-        if not to_remove:
-            return
-
-        for node in to_remove:
-            try:
-                self.models.remove(node)
-            except ValueError:
-                print(f"  WARNING: Node {node} was not in self.models, skipping remove().")
-            node.removeNode()
-
-    def unrender_all(self, icons: bool = False) -> None:
-        for node in self.models:
-            node.removeNode()
-        if self._unit_icons is not None:
-            self._unit_icons.remove_all()
-
-        self.models.clear()
-
-    def set_color(self, color: Tuple[float, float, float, float]) -> None:
-        for node in self.models:
-            node.setColor(*color)
-
-    def get_node(self) -> Optional[NodePath]:
-        return self.models[0] if self.models else None
 
     def get_units(self) -> Units:
         return self.units
@@ -1060,10 +565,8 @@ class Tile(BaseEntity):
         """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
 
-    def is_showing_large_icons(self) -> bool:
-        return self._showing_large_icons
-
     def destroy(self, as_system: bool = False) -> None:
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
-        self.unrender_all()
+        self.renderer.clear_ui()
+        self.renderer.anchor_node.removeNode()
         self.destroyed = True
