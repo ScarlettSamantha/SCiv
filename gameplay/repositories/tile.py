@@ -3,8 +3,6 @@ from enum import Enum
 from heapq import heappop, heappush
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Tuple
 
-from managers.world import World
-
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -20,10 +18,30 @@ class DistanceCalculationType(Enum):
 
 
 class TileRepository:
-    grid = None
+    grid: Optional[Dict[Tuple[int, int], "Tile"]] = None
+    _neigh_cache: Dict[Tuple[int, int], List["Tile"]] = {}
 
     def __init__(self) -> None:
         pass
+
+    @classmethod
+    def get_grid(cls) -> Dict[Tuple[int, int], "Tile"]:
+        if cls.grid is None:
+            raise ValueError("TileRepository grid is not initialized.")
+        return cls.grid
+
+    @classmethod
+    def _compute_raw_neighbors(cls, x: int, y: int) -> List["Tile"]:
+        """Compute the 6 direct neighbors of (x, y) once."""
+        directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
+        directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
+        dirs = directions_even if x % 2 == 0 else directions_odd
+        out: List["Tile"] = []
+        for dx, dy in dirs:
+            t = cls.get_grid().get((x + dx, y + dy))
+            if t:
+                out.append(t)
+        return out
 
     @classmethod
     def get_tile(cls, x: int, y: int) -> Optional["Tile"]:
@@ -34,9 +52,7 @@ class TileRepository:
         :param y: y-coordinate
         :return: The Tile at (x, y) if it exists; otherwise, None.
         """
-        if cls.grid is None:
-            cls.grid = World.get_singleton_instance().grid
-        _tile = cls.grid.get((x, y))
+        _tile = cls.get_grid().get((x, y))
         if _tile:
             return _tile
         return None
@@ -51,7 +67,7 @@ class TileRepository:
         :return: The first tile that matches the criteria, or None if no match is found.
         """
         tiles: List["Tile"] = []
-        for _tile in World.get_singleton_instance().grid.values():
+        for _tile in cls.get_grid().values():
             if callback(_tile):
                 tiles.append(_tile)
         return tiles
@@ -223,65 +239,36 @@ class TileRepository:
     def get_neighbors(
         cls, tile: "Tile", radius: int = 1, check_passable: bool = False, climbable: bool = False
     ) -> List["Tile"]:
-        r"""
-        Returns all tiles within the specified radius in an offset hex grid (q-odd layout) using cls.instance_ref_grid.grid.
+        # 1) radius == 1, no filtering -> instant lookup
+        if radius == 1 and not check_passable and not climbable:
+            key = (tile.x, tile.y)
+            if key not in cls._neigh_cache:
+                cls._neigh_cache[key] = cls._compute_raw_neighbors(tile.x, tile.y)
+            return cls._neigh_cache[key]
 
-        For a radius of 1, neighbors are the 6 adjacent tiles. For larger radii, any tile within that many steps is included.
+        # 2) radius == 1, but with filters -> filter the cached list
+        if radius == 1:
+            neighs = cls.get_neighbors(tile, radius=1, check_passable=False, climbable=False)
+            if check_passable:
+                neighs = [n for n in neighs if n.is_passable()]
+            if climbable:
+                neighs = [n for n in neighs if n.get_climbable()]
+            return neighs
 
-        For even x-coordinates, the neighbor directions are:
-            (+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)
-
-        For odd x-coordinates, the directions are:
-            (+1,  0), (0, -1), (-1,  0), (-1, +1), (0, +1), (+1, +1)
-
-        ASCII representation (for even x):
-
-                (-1,-1)   (0,-1)
-                    \     /
-                     \   /
-                (-1,0) X (+1,0)
-                     /   \
-                    /     \
-               (0,+1)   (+1,-1)
-
-        The method optionally filters tiles based on whether they are passable or climbable.
-
-        :param tile: The tile whose neighbors are to be fetched.
-        :param radius: The maximum distance from the tile to be included. Default is 1.
-        :param check_passable: If True, only include passable tiles.
-        :param climbable: If True, only include tiles that are climbable.
-        :return: List of neighboring Tile objects within the specified radius.
-        :raises ValueError: If the global grid reference is not set.
-        """
-        from collections import deque
-
-        directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
-        directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
-
-        visited = set([tile])
+        visited = {tile}
+        frontier = {tile}
         result: List["Tile"] = []
-        queue = deque([(tile, 0)])
-
-        while queue:
-            current_tile, dist = queue.popleft()
-            # Include tiles that are within [1, radius] steps, but not the original tile
-            if 0 < dist <= radius:
-                result.append(current_tile)
-            if dist < radius:
-                # Determine neighbor directions based on odd/even x of current tile
-                curr_directions = directions_even if current_tile.x % 2 == 0 else directions_odd
-                for dx, dy in curr_directions:
-                    nx, ny = current_tile.x + dx, current_tile.y + dy
-                    neighbor = World.get_singleton_instance().grid.get((nx, ny))
-                    if neighbor and neighbor not in visited:
-                        # Apply passable or climbable checks
-                        if check_passable and not neighbor.is_passable():
-                            continue
-                        if climbable and not neighbor.get_climbable():
-                            continue
-                        visited.add(neighbor)
-                        queue.append((neighbor, dist + 1))
-
+        for _ in range(radius):
+            new_frontier: Set["Tile"] = set()
+            for frontier_tile in frontier:
+                for neighbor_tile in cls.get_neighbors(
+                    frontier_tile, radius=1, check_passable=check_passable, climbable=climbable
+                ):
+                    if neighbor_tile not in visited:
+                        visited.add(neighbor_tile)
+                        new_frontier.add(neighbor_tile)
+                        result.append(neighbor_tile)
+            frontier = new_frontier
         return result
 
     @classmethod
@@ -422,8 +409,8 @@ class TileRepository:
         err = dx - dy
 
         while (x0, y0) != (x1, y1):
-            if (x0, y0) in World.get_singleton_instance().grid:
-                tile: "Tile" = World.get_singleton_instance().grid[(x0, y0)]
+            if (x0, y0) in cls.get_grid():
+                tile: "Tile" = cls.get_grid()[(x0, y0)]
                 if tile.movement_cost > 10:  # Threshold for impassable terrain.
                     return False
 
@@ -697,39 +684,43 @@ class TileRepository:
         movement_points: float,
         attack_range: int = 1,
     ) -> Optional[Tuple["Tile", List["Tile"]]]:
-        """
-        Finds the best tile the attacker can move to in order to attack the target.
-        1) If the attacker can path directly to the target_tile, return that path.
-        2) Otherwise, gather all tiles within `attack_range` of the target,
-           sort them so that tiles “in front” of the target (from the attacker's POV)
-           are tried first, and return the first reachable one.
-        Returns (best_tile, path_to_best_tile) or None if no attack-position is reachable.
-        """
-        # 1) Direct path to target_tile?
+        # 1) Direct path to target?
         path = cls.astar(attacker_tile, target_tile, movement_points)
         if path:
             return target_tile, path
 
-        # 2) Gather candidates around target
+        # 2) All potential attack‐positions around the target (adjacent tiles)
         candidates = cls.get_tiles_in_radius(target_tile, attack_range)
         if not candidates:
             return None
 
-        target_delta_x, target_delta_y = target_tile.x - attacker_tile.x, target_tile.y - attacker_tile.y
+        # Precompute the “fallback pool” of free adjacents
+        fallback_positions = [t for t in candidates if not t.units and t.is_passable()]
+
+        # Score them by alignment
+        dx, dy = target_tile.x - attacker_tile.x, target_tile.y - attacker_tile.y
         scored: List[Tuple[float, "Tile"]] = []
-        for candidate_tile in candidates:
-            if candidate_tile.units:
-                continue  # occupied
+        for cand in candidates:
+            sx, sy = cand.x - target_tile.x, cand.y - target_tile.y
+            scored.append((sx * dx + sy * dy, cand))
 
-            # Calculate score based on alignment with target
-            vector_difference_x, candidate_delta_y = candidate_tile.x - target_tile.x, candidate_tile.y - target_tile.y
-            score = vector_difference_x * target_delta_x + candidate_delta_y * target_delta_y
-            scored.append((score, candidate_tile))
+        # 3) Try best‐aligned first
+        for _, cand in sorted(scored, key=lambda x: -x[0]):
+            # compute path (ignores occupation)
+            p = cls.astar(attacker_tile, cand, movement_points)
+            if not p:
+                continue
 
-        # Try best‐aligned first
-        for _, candidate_tile in sorted(scored, key=lambda t: -t[0]):
-            path = cls.astar(attacker_tile, candidate_tile, movement_points)
-            if path:
-                return candidate_tile, path
+            # if it's free right now, go for it
+            if not cand.units:
+                return cand, p
+
+            # otherwise fall back: any free neighbor we *can* reach?
+            for fb in fallback_positions:
+                fb_path = cls.astar(attacker_tile, fb, movement_points)
+                if fb_path:
+                    return fb, fb_path
+
+            # if none of the fallbacks worked, keep looking down the scored list
 
         return None
