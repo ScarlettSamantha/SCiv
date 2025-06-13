@@ -1,8 +1,13 @@
 from copy import copy
 import random
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import uuid
+from managers.input import NET_TYPE
+
+
+if TYPE_CHECKING:
+    from gameplay.tile import Tile
 
 
 class GroupMode(Enum):
@@ -72,9 +77,6 @@ class Bits:
         name: Optional[str] = None,
         parent: Optional["Bits"] = None,
     ) -> None:
-        """
-        mode: how bits/subgroups combine; name: this group's name; parent: optional parent group
-        """
         self.mode: GroupMode = mode
         self.name: Optional[str] = name
         self.parent: Optional["Bits"] = parent
@@ -85,25 +87,16 @@ class Bits:
 
     @property
     def full_path(self) -> str:
-        """
-        Returns dot-separated path from root to this group, excluding root's empty name.
-        """
         if self.parent and self.name:
             parent_path = self.parent.full_path
             return f"{parent_path}.{self.name}" if parent_path else self.name
         return ""
 
     def _get_full_bit_key(self, bit_id: str) -> str:
-        """
-        Constructs the full key for a bit, including group path.
-        """
         path = self.full_path
         return f"{path}.{bit_id}" if path else bit_id
 
     def add_group(self, name: str, mode: Optional[GroupMode] = None) -> "Bits":
-        """
-        Creates (or returns existing) subgroup under this group.
-        """
         if name in self.bits:
             raise ValueError(f"Group name '{name}' conflicts with an existing bit ID")
         if name in self.groups:
@@ -114,9 +107,6 @@ class Bits:
         return sub
 
     def add_bit(self, bit: Bit, group: Optional[str] = None) -> "Bits":
-        """
-        Adds a bit to this group or specified subgroup.
-        """
         if group:
             if group not in self.groups:
                 self.add_group(group)
@@ -132,9 +122,6 @@ class Bits:
         return self
 
     def remove_bit(self, bit: Bit) -> None:
-        """
-        Removes a bit from this group and all subgroups.
-        """
         if bit.id in self.bits:
             self.disabled_bits.pop(bit.id, None)
             del self.bits[bit.id]
@@ -142,9 +129,6 @@ class Bits:
             sub.remove_bit(bit)
 
     def _set_disabled_state(self, parts: List[str], disabled: bool) -> None:
-        """
-        Internal helper to set disabled flag by path parts.
-        """
         if not parts:
             return
         key = parts[0]
@@ -162,23 +146,14 @@ class Bits:
                     self.disabled_bits.pop(key, None)
 
     def disable_bit(self, full_key: str) -> None:
-        """
-        Disable a bit by its full dot-separated key (group1.group2.bit_id).
-        """
         parts = full_key.split(".")
         self._set_disabled_state(parts, True)
 
     def enable_bit(self, full_key: str) -> None:
-        """
-        Re-enable a previously disabled bit by its full key.
-        """
         parts = full_key.split(".")
         self._set_disabled_state(parts, False)
 
     def search_bit(self, full_key: str) -> Optional[Bit]:
-        """
-        Retrieves a bit by its full dot-separated key.
-        """
         parts = full_key.split(".")
         return self._search_bit_parts(parts)
 
@@ -196,9 +171,6 @@ class Bits:
         return {name: self.groups[name] for name in groups if name in self.groups}
 
     def choose(self, num: int = 1, group: Optional[str] = None) -> List[Bit]:
-        """
-        Selects bits according to mode: AND returns all, OR returns random bits/subgroups.
-        """
         container = self if group is None else self.groups.get(group)
         if container is None or not container.enabled:
             return []
@@ -213,9 +185,6 @@ class Bits:
         return collected
 
     def is_disabled(self) -> bool:
-        """
-        Returns True if this group is disabled or has no enabled bits/subgroups.
-        """
         if not self.enabled:
             return True
         # any enabled bit?
@@ -245,9 +214,94 @@ class Bits:
         return result
 
     def clear(self) -> None:
-        """
-        Removes all bits and groups.
-        """
         self.bits.clear()
         self.groups.clear()
         self.disabled_bits.clear()
+
+
+class BitsRenderer:
+    def __init__(self, tile: "Tile"):
+        self.tile: "Tile" = tile
+        # reference the tile's prop slots
+        self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.prop_slots
+        self._bit_slot_assignments: Dict[str, str] = {}
+
+    def render(self) -> None:
+        active = {b.id: b for b in self.tile.get_terrain().get_bits()}
+        # remove disabled or missing bits
+        for bit_id, slot in list(self._bit_slot_assignments.items()):
+            b = active.get(bit_id)
+            if b is None or b.is_disabled():
+                self._unrender_slot(slot)
+                del self._bit_slot_assignments[bit_id]
+
+        # render new bits
+        for b in active.values():
+            if b.id in self._bit_slot_assignments or b.is_disabled():
+                continue
+            slot = self._choose_slot_for(b)
+            # if no slot available, skip spawning
+            if not slot:
+                continue
+            self._render_bit(b, slot)
+
+    def enable_bit(self, bit: Bit, slot: Optional[str] = None) -> None:
+        bit.disabled = False
+        chosen = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
+        if not chosen:
+            chosen = self._choose_slot_for(bit)
+        if chosen:
+            self._render_bit(bit, chosen)
+
+    def disable_bit(self, bit: Bit) -> None:
+        bit.disabled = True
+        if bit.id in self._bit_slot_assignments:
+            self._unrender_slot(self._bit_slot_assignments.pop(bit.id))
+
+    def search_bit(self, bit_id: str) -> Optional[Bit]:
+        return self.tile.get_terrain().bits.search_bit(bit_id)
+
+    def _choose_slot_for(self, bit: Bit) -> Optional[str]:
+        # if bit requests a specific slot
+        if bit.has_preferred_slot():
+            name = bit.get_preferred_slot_name()
+            if name in self.prop_slots and self._slot_free(name):
+                return name
+            return None
+        # otherwise pick any free slot
+        free = [s for s in self.prop_slots if self._slot_free(s)]
+        return random.choice(free) if free else None
+
+    def _slot_free(self, slot: str) -> bool:
+        return slot not in self._bit_slot_assignments
+
+    def _render_bit(self, bit: Bit, slot_name: str) -> None:
+        from helpers.model import ModelHelper
+
+        # reserve the slot immediately
+        self._bit_slot_assignments[bit.id] = slot_name
+        self.tile.add_model(
+            model_path=bit.model,
+            net_type=NET_TYPE.BIT,
+            pos_offset=(
+                bit.offset[0] + self.prop_slots[slot_name][0],
+                bit.offset[1] + self.prop_slots[slot_name][1],
+                bit.offset[2] + self.prop_slots[slot_name][2],
+            ),
+            scale=(
+                ModelHelper.calculate_slot_scale_factor(
+                    ModelHelper.load_model(bit.model), slot_positions=self.prop_slots[slot_name]
+                )
+                if bit.allow_auto_scale
+                else bit.scale
+            ),
+            hpr=bit.hpr,
+            net_id=bit.id,
+        )
+
+    def _unrender_slot(self, slot_name: str) -> None:
+        node = self.tile.placed_props.pop(slot_name, None)
+        if node:
+            if node in self.tile.models:
+                self.tile.models.remove(node)
+            node.removeNode()

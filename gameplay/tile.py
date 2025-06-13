@@ -3,12 +3,10 @@ from enum import Enum
 from logging import Logger
 import math
 from pathlib import Path
-import random
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
 import weakref
 
 
-from gameplay.bits import Bit
 from gameplay.resources.core.basic._base import BasicBaseResource
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
@@ -44,7 +42,6 @@ from helpers.cache import Cache
 from helpers.debug import Debug
 from helpers.images import normalize_color_to_bytes
 from helpers.maths import scale_value, scaled_pos_z
-from helpers.model import ModelHelper
 from managers.entity import EntityManager, EntityType
 from managers.game import Game
 from managers.i18n import T_TranslationOrStr
@@ -255,6 +252,10 @@ class Tile(BaseEntity):
         self._block_resource_model_spawning: bool = False
 
         self.atlas = Cache.get_icon_atlas()
+
+        from gameplay.bits import BitsRenderer
+
+        self.bits_renderer = BitsRenderer(self)
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -707,8 +708,7 @@ class Tile(BaseEntity):
             if improvement.model is not None:
                 self.add_model(improvement.model, net_type=NET_TYPE.IMPROVEMENT)
 
-        self.unrender_bits()
-        self.render_bits()
+        self.bits_renderer.render()
         self.render_resource_model()
 
         self.add_icon_to_tile()
@@ -751,130 +751,6 @@ class Tile(BaseEntity):
                     str(unit.icon),  # icon name/tag
                 )
         self.unit_icons_np
-
-    def render_bits(self):
-        self.unrender_bits()
-        for bit in self.get_terrain().get_bits():
-            if bit.blocks_resource_model_spawning is True:
-                self._block_resource_model_spawning = True
-            self.render_bit_into_slot(bit, None)
-
-    def search_bit(self, bit_id: str) -> Optional["Bit"]:
-        if (bit := self.get_terrain().bits.search_bit(bit_id)) is not None:
-            return bit
-        return None
-
-    def enable_bit(self, bit: "Bit", slot: Optional[str] = None) -> None:
-        bit.disabled = False
-
-        if bit.has_preferred_slot():
-            slot_name = bit.get_preferred_slot_name() or slot
-
-            if slot_name is None or slot_name not in self.prop_slots:
-                raise ValueError(f"Slot {slot_name} not found in prop slots: {self.prop_slots.keys()}")
-
-            if not self.if_pop_slot_available(slot_name):
-                return
-        else:
-            slot_name = None
-        model = self.render_bit_into_slot(bit, slot_name)
-        if model is None:
-            raise ValueError(f"Could not render bit {bit} into slot {slot_name}. Slot may not be available.")
-
-    def disable_bit(self, bit: "Bit") -> None:
-        bit.disabled = True
-        self.model_nodes_by_net_type[str(NET_TYPE.BIT.value)] = [
-            model
-            for model in self.model_nodes_by_net_type.get(str(NET_TYPE.BIT.value), [])
-            if model.get_tag(NET_NODE_TAG_ID_FIELD) != bit.id
-        ]
-
-    def render_bit_into_slot(
-        self,
-        bit: "Bit",
-        slot_name: Optional[str] = None,
-    ) -> Optional[NodePath]:
-        slots = ModelHelper.calculate_hex_slot_positions() if self.prop_slots == {} else self.prop_slots
-        model = ModelHelper.load_model(bit.model)
-        if bit.is_disabled():
-            return None
-
-        if bit.has_preferred_slot():
-            slot_name = bit.get_preferred_slot_name()
-            if slot_name is None or slot_name not in slots:
-                raise ValueError(f"Slot {slot_name} not found in prop slots: {slots.keys()}")
-            if not self.if_pop_slot_available(slot_name):
-                return None
-
-        elif slot_name is None:
-            shuffled_slots = list(slots.keys())
-            random.shuffle(shuffled_slots)
-            for slot in shuffled_slots:
-                if self.if_pop_slot_available(slot):
-                    slot_name = slot
-                    break
-
-            if slot_name is None:
-                return None
-
-        pos_offset = (bit.offset[0] + slots[slot_name][0], bit.offset[1] + slots[slot_name][1], bit.offset[2])
-        slot_position = slots[slot_name]
-        scale = (
-            ModelHelper.calculate_slot_scale_factor(model, slot_positions=slot_position)
-            if bit.allow_auto_scale
-            else bit.scale
-        )
-
-        self.add_model(
-            model_path=bit.model,
-            pos_offset=pos_offset,
-            scale=scale,
-            hpr=bit.hpr,
-            net_type=NET_TYPE.BIT,
-            net_id=bit.id,
-        )
-        self.placed_props[slot_name] = model
-
-        return model
-
-    def unrender_bit_slot(self, slot_name: str) -> None:
-        if slot_name not in self.placed_props:
-            raise ValueError(f"Slot {slot_name} not found in placed props: {self.placed_props.keys()}")
-
-        model = self.placed_props.pop(slot_name)
-        self.models.remove(model)
-        model.removeNode()
-
-        # Remove from model_nodes_by_net_type
-        if str(NET_TYPE.BIT.value) in self.model_nodes_by_net_type:
-            self.model_nodes_by_net_type[str(NET_TYPE.BIT.value)].remove(model)
-
-        self.geom_group.flattenMedium()
-
-    def if_pop_slot_available(self, slot_name: str) -> bool:
-        """
-        Check if a prop slot is available for rendering.
-        """
-        if slot_name not in self.prop_slots:
-            raise ValueError(f"Slot {slot_name} not found in prop slots: {','.join(list(self.prop_slots.keys()))}")
-        return slot_name not in self.placed_props
-
-    def unrender_bits(self) -> None:
-        """
-        Remove all bit models from the tile.
-        """
-        try:
-            for model in self.model_nodes_by_net_type[str(NET_TYPE.BIT.value)]:
-                try:
-                    self.models.remove(model)
-                except ValueError:
-                    continue
-                model.removeNode()
-            self.placed_props.clear()
-        except KeyError:
-            return None
-        self._block_resource_model_spawning = False
-        self.geom_group.flattenMedium()
 
     def render_resource_model(self) -> None:
         if self.city is None and self._block_resource_model_spawning is not True:
