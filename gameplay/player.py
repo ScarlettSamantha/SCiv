@@ -68,6 +68,7 @@ class Player(BaseEntity):
         self.is_human: int = 0
         self.is_nature: bool = False
         self.is_barbarian: bool = False
+        self.is_defeated: bool = False
 
         self.is_being_controlled: int = 0
         self.instance_controller: int = 0
@@ -336,4 +337,5 @@ class Player(BaseEntity):
     def lose(self, lose_condition: LoseConditions) -> None:
         self.logger.info(f"Player {self.name} has lost the game due to {lose_condition.name}.")
         self.unregister()
+        self.is_defeated = True
         self.destroy(as_system=True)
