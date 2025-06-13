@@ -15,7 +15,6 @@ from gameplay.tech import Tech
 from gameplay.tile import Tile
 from gameplay.unit import Unit
 from helpers.colors import Colors
-from managers.action import ActionManager
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, Translation, t_
 from managers.player import PlayerManager
@@ -142,8 +141,6 @@ class ui(Singleton, DirectObject):
         self.accept("ui.request_main_menu", self.on_request_main_menu)
         self.accept("ui.request.reroll", self.on_reroll)
         self.accept("ui.request.open.popup", self.show_draggable_popup)
-
-        self.accept("unit.action.move.visiting_tile", self.leave_trail)
 
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
@@ -334,8 +331,6 @@ class ui(Singleton, DirectObject):
     def calculate_icons_for_tiles(self):
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
-            tile.add_icon_to_tile()
-            tile.flatten()
 
     def debug_ui_change(self, value: Enum):
         from menus.kivy.parts.debug_actions import DebugUIOptionsValues
@@ -439,15 +434,6 @@ class ui(Singleton, DirectObject):
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
-
-    def leave_trail(
-        self,
-        unit: Any,
-        tile: Tile,
-    ):
-        from gameplay.actions.timed.trail import Trial
-
-        ActionManager.add_timed_action(Trial(tile=tile))
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
