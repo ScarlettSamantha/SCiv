@@ -44,6 +44,9 @@ class EliminateUnit(Goal):
         movement_points_left = attacker.moves_left
         attack_range = getattr(attacker, "attack_range", 1)
 
+        if movement_points_left <= 0:
+            return
+
         result = TileRepository.find_movable_attack_position(
             start_tile, goal_tile, movement_points_left, attack_range=attack_range
         )
