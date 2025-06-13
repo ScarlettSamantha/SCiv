@@ -422,7 +422,7 @@ class Tile(BaseEntity):
     def is_passable(self) -> bool:
         if self.inherit_passability_from_terrain:
             return self.passable
-        return self.walkable and not self.is_water
+        return self.walkable and not self.is_water and not self.is_sea and not self.is_lake and not self.is_coast
 
     def color(self) -> Union[Tuple[float, float, float], LRGBColor]:
         if self.tile_terrain:
