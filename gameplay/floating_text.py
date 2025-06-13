@@ -1,3 +1,4 @@
+import uuid
 from direct.interval.LerpInterval import LerpPosInterval, LerpColorScaleInterval
 from direct.interval.FunctionInterval import Func
 from direct.interval.IntervalGlobal import Sequence
@@ -5,6 +6,7 @@ from panda3d.core import TextNode, NodePath, Vec3, Vec4, TransparencyAttrib, Bil
 from typing import Dict, List, Optional
 
 from helpers.cache import Cache
+from managers.combat import T_TARGET
 
 
 class FloatingText3D:
@@ -17,7 +19,7 @@ class FloatingText3D:
     def __init__(
         self,
         text: str,
-        target_np: NodePath,
+        target: T_TARGET,
         color: Vec4,
         duration: float = 1.5,
         scale: float = 1.0,
@@ -25,14 +27,14 @@ class FloatingText3D:
         if FloatingText3D.default_parent is None:
             FloatingText3D.default_parent = Cache.get_showbase_instance().render
 
-        world_pos = target_np.get_pos()
-        self._target_id = id(target_np)
+        x, y, z = target.get_pos()
+        self._target_id = uuid.uuid4().int  # Unique ID for the target to manage text queues
 
         queue = FloatingText3D._queues.setdefault(self._target_id, [])
         index = len(queue)
-        start_z = world_pos.z + FloatingText3D._head_offset + index * FloatingText3D._spacing
+        start_z = z + FloatingText3D._head_offset + index * FloatingText3D._spacing
 
-        start_pos = Vec3(world_pos.x, world_pos.y, start_z)
+        start_pos = Vec3(x, y, start_z)
         tn = TextNode("floating_text")
         tn.setText(text)
         tn.setTextScale(0.25)
@@ -67,13 +69,13 @@ class FloatingText3D:
             queue.remove(self)
 
 
-def spawn_damage_text(target_np: NodePath, amount: float):
+def spawn_damage_text(target_np: T_TARGET, amount: float):
     FloatingText3D(str(round(amount, 2)), target_np, Vec4(1, 0, 0, 1))
 
 
-def spawn_dealing_damage_text(source_np: NodePath, amount: float):
+def spawn_dealing_damage_text(source_np: T_TARGET, amount: float):
     FloatingText3D(str(round(amount, 2)), source_np, Vec4(1, 0.5, 0, 1))
 
 
-def spawn_heal_text(source_np: NodePath, amount: float):
+def spawn_heal_text(source_np: T_TARGET, amount: float):
     FloatingText3D(str(round(amount, 2)), source_np, Vec4(0, 0.7, 1, 1))

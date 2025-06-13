@@ -82,8 +82,8 @@ class Unit(BaseEntity, ABC):
         self.pos_x: float = 0.0
         self.pos_z: float = 0.0
 
-        self.max_moves: int = 10
-        self.moves_left: int | float = 10.0
+        self.max_moves: int = 2
+        self.moves_left: int | float = 2.0
 
         self.can_cross_water: bool = self.can_spawn_on_water
         self.can_cross_land: bool = self.can_spawn_on_land
@@ -426,9 +426,7 @@ class Unit(BaseEntity, ABC):
         MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
 
         if isinstance(target, Unit):
-            defender_np = target.model
-            if defender_np is not None:
-                spawn_damage_text(defender_np, outcome.attacker_damage)
+            spawn_damage_text(target, outcome.attacker_damage)
 
         if outcome.status == CombatResults.ATTACKER_KILLED:
             self.kill()

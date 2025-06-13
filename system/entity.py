@@ -1,6 +1,6 @@
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 from weakref import ReferenceType
 import weakref
 
@@ -163,3 +163,17 @@ class BaseEntity(ABC, DirectObject):
         if self.owner is None:
             raise ValueError("Owner is None")
         return self.owner
+
+    def get_pos(self) -> Tuple[float, float, float]:
+        """
+        Get the position of the entity in the world.
+        """
+        if self.tile is None:
+            raise ValueError("Tile is None")
+        if isinstance(self.tile, weakref.ReferenceType):
+            tile = self.tile()
+            if tile is None:
+                raise ValueError("Tile reference is dead (None)")
+        else:
+            tile = self.tile
+        return tile.get_pos()
