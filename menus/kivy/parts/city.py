@@ -218,7 +218,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
         def buildings():
             for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
-                class_instance: BaseCityImprovement = class_ref()
+                class_instance: BaseCityImprovement = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
                 if self.city is None:
                     continue
 

@@ -79,7 +79,9 @@ class TileRepository:
 
         :return: A list of passable land tiles.
         """
-        return cls.search(lambda tile: tile.is_passable() and not tile.is_water and not tile.is_lake)
+        return cls.search(
+            lambda tile: tile.is_passable() and not tile.is_water and not tile.is_lake and not tile.is_coast
+        )
 
     @classmethod
     def get_cities_in_radius(cls, tile: "Tile", radius: int) -> List["City"]:
