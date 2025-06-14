@@ -1,11 +1,15 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gameplay.improvement import Improvement, ImprovementBuildTurnMode
 
+if TYPE_CHECKING:
+    from gameplay.tile import Tile
+    from gameplay.player import Player
+
 
 class BaseCityImprovement(Improvement):
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    def __init__(self, tile: "Tile", owner: "Player", *args: Any, **kwargs: Any):
+        super().__init__(tile=tile, owner=owner, *args, **kwargs)
 
         self.constructable_on_tile = False
         self.constructable_builder = False

@@ -249,8 +249,8 @@ class Effect(BaseEntity, ABC):
     activate_on_add: bool = True
     effect_types: Tuple[EffectType] = tuple()  # type: ignore
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any) -> None:
+        BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
 
         self.id: str = uuid.uuid4().hex
 

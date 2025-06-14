@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Any, Type, TYPE_CHECKING
 
 from gameplay.condition import Condition
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement, ImprovementBuildTurnMode
@@ -7,13 +7,17 @@ from gameplay.resources.core.basic.production import Production
 from gameplay.yields import Yields
 from managers.i18n import t_
 
+if TYPE_CHECKING:
+    from gameplay.tile import Tile
+    from gameplay.player import Player
+
 
 class Monument(BaseCityImprovement):
     name = t_("content.improvements.core.city.monument.name")
     description = t_("content.improvements.core.city.monument.description")
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    def __init__(self, tile: "Tile", owner: "Player", *args: Any, **kwargs: Any):
+        super().__init__(tile=tile, owner=owner, *args, **kwargs)
 
         self.amount_resource_needed = Yields(production=50)
         self.resource_needed: Type["BasicBaseResource"] = Production

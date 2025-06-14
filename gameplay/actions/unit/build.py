@@ -35,7 +35,7 @@ class BuildAction(BaseUnitAction):
         )
 
     def build_wrapper(self, *args: Any, **kwargs: Any) -> CantBuildReason | bool:
-        building: Improvement = self.improvement(tile=self.tile)
+        building: Improvement = self.improvement(tile=self.tile, owner=self.unit.owner)
         result = self.tile.build(building)
         self._result = result
         return result

@@ -26,4 +26,4 @@ class Farm(Improvement):
             **kwargs,
         )
 
-        self.effects.add_effect(FarmEffect())
+        self.effects.add_effect(FarmEffect(self.get_tile(), self.get_owner()))

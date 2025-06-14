@@ -385,7 +385,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         tile.city_owner = instance
 
         if is_capital:
-            instance.build(Palace())
+            instance.build(Palace(tile, owner))
 
         if auto_claim_radius > 0:
             from gameplay.repositories.tile import TileRepository
