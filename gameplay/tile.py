@@ -1,3 +1,4 @@
+from copy import deepcopy
 from enum import Enum
 from logging import Logger
 import math
@@ -29,6 +30,7 @@ from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
+from system.generators.basic import HexFeature
 from system.mesh import HexGrid
 from system.subsystems.hexgen.enums import GeoformType
 from system.subsystems.hexgen.edge import Edge
@@ -119,7 +121,7 @@ class Tile(BaseEntity):
         self.is_selected: bool = False
 
         self.altitude: float = 1
-        self.biome: int = 1
+
         self.moisture: float = 0.0
         self.temperature: float = 1
         self.terrain: str = "plains"
@@ -158,8 +160,9 @@ class Tile(BaseEntity):
 
         self.weather: Optional[BaseWeather] = None
 
-        self.features: Set[Any] = set()
-        self.geoforms: Optional[GeoformType] = None
+        self._features: Set[Any] = set()
+        self._geoforms: Optional[GeoformType] = None
+        self.biome: int = 1
         self.units: Units = Units()
         self._improvements: ImprovementsSet = ImprovementsSet()
         self.items: List[BaseItem] = list()
@@ -193,6 +196,23 @@ class Tile(BaseEntity):
         self.renderer = TileRenderer(self)
 
         self.register()
+
+    @property
+    def features(self) -> Set[Any]:
+        return self._features
+
+    @features.setter
+    def features(self, value: Set[HexFeature | None]) -> None:
+        if len(value) > 0:
+            self._features = value
+
+    @property
+    def geoforms(self) -> Optional[GeoformType]:
+        return self._geoforms
+
+    @geoforms.setter
+    def geoforms(self, value: GeoformType) -> None:
+        self._geoforms = value.value[0]
 
     @property
     def tile_terrain(self) -> BaseTerrain:
@@ -288,22 +308,10 @@ class Tile(BaseEntity):
             del state["renderer"]
         if "_entity_manager" in state:
             del state["_entity_manager"]
-        if "_tile_terrain" in state:
-            del state["_tile_terrain"]
         if "tile_yield" in state:
             del state["tile_yield"]
         if "effects" in state:
             del state["effects"]
-        if "geoforms" in state:
-            del state["geoforms"]
-        if "biome" in state:
-            del state["biome"]
-        if "geoform_type" in state:
-            del state["geoform_type"]
-        if "resources" in state:
-            del state["resources"]
-        if "features" in state:
-            del state["features"]
 
         return state
 
@@ -469,11 +477,23 @@ class Tile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        yield_copy = self.tile_yield
+        yield_copy = deepcopy(self.tile_yield)
+
         for resource in self.resources.flatten().values():
             yield_copy += resource.tile_yield
+
         for resource in self.get_improved_resources():
             yield_copy += resource.tile_yield_on_improvement
+
+        for improvement in self._improvements.get_all():
+            yield_copy += improvement.tile_yield
+
+        for effect in self.effects.get_effects().values():
+            yield_copy += effect.yield_impact
+
+        if self.city is not None:
+            yield_copy += self.city.get_yield()
+
         return yield_copy
 
     def get_resources(self) -> Resources:
