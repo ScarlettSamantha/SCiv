@@ -194,9 +194,7 @@ class TileRenderer:
 
         resource = res_list[0]
 
-        model_def = (
-            resource.get_land_model() if self.tile.is_land and not self.tile.is_coast else resource.get_water_model()
-        )
+        model_def = resource.get_land_model() if self.tile.is_land else resource.get_water_model()
 
         if model_def:
             self.add_model(
