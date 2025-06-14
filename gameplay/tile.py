@@ -288,15 +288,18 @@ class Tile(BaseEntity):
             self.city.register()
 
     def calculate(self):
+        new_yield = Yields.nullYield()
+
         base = self._tile_terrain.get_tile_yield()
+        new_yield += base
 
         for improvement in self._improvements.get_all():
-            base += improvement.tile_yield
+            new_yield += improvement.tile_yield
 
         for effect in self.effects.get_effects().values():
-            base += effect.yield_impact
+            new_yield += effect.yield_impact
 
-        self.tile_yield = base
+        self.tile_yield = new_yield
 
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
@@ -479,21 +482,6 @@ class Tile(BaseEntity):
 
     def get_tile_yield(self) -> Yields:
         yield_copy = deepcopy(self.tile_yield)
-
-        for resource in self.resources.flatten().values():
-            yield_copy += resource.tile_yield
-
-        for resource in self.get_improved_resources():
-            yield_copy += resource.tile_yield_on_improvement
-
-        for improvement in self._improvements.get_all():
-            yield_copy += improvement.tile_yield
-
-        for effect in self.effects.get_effects().values():
-            yield_copy += effect.yield_impact
-
-        if self.city is not None:
-            yield_copy += self.city.get_yield()
 
         return yield_copy
 
