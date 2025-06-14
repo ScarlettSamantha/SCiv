@@ -2400,6 +2400,14 @@
             }
           },
           "city": {
+            "library": {
+              "name": "Library",
+              "description": "Building for storing and lending books"
+            },
+            "market": {
+              "name": "Market",
+              "description": "Place for buying and selling goods"
+            },
             "barracks": {
               "name": "Barracks",
               "description": "Military training facility"
@@ -2601,6 +2609,10 @@
               }
             },
             "military": {
+              "clubman": {
+                "name": "Clubman",
+                "description": "Basic melee unit"
+              },
               "barbarian": {
                 "lion": {
                   "name": "Lion",
