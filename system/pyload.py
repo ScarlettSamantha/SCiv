@@ -11,16 +11,15 @@ from helpers.debug import Debug
 from managers.log import LogManager
 
 
-def load_class(module_name: str, class_name: str):
-    """Dynamically loads a class from a given module."""
+def load_class(module_name: str, class_name: str) -> Type[Any]:
     module = importlib.import_module(module_name)
     return getattr(module, class_name)
 
 
 class GenericClassVisitor(ast.NodeVisitor):
-    def __init__(self, properties: List[Tuple[str, str]] = []):
+    def __init__(self, properties: List[Tuple[str, str]] = []) -> None:
         self.subclasses: List[str] = []
-        self.properties: List[Tuple[str, str]] = properties
+        self.properties = properties
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.subclasses.append(node.name)
@@ -34,11 +33,14 @@ class PyFileProcessor:
         properties: Optional[Tuple[str, str]] = None,
         _skip_on_error: bool = False,
         log_errors: bool = True,
+        package: Optional[str] = None,
     ):
         self.base_classes: Optional[Union[Type[Any], List[Type[Any]], Callable[[str, str], bool]]] = base_classes
         self.properties: Optional[Tuple[str, str]] = properties
         self._skip_on_error: bool = _skip_on_error
         self.log_debug = log_errors
+        self.package: Optional[str] = package
+        self.base_dir: Optional[str] = None
 
     def process_file(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> Dict[str, Type[Any]]:
         if not self._matches_pattern(file, name_pattern):
@@ -152,34 +154,42 @@ class PyFileProcessor:
             tree = ast.parse(file_content)
             visitor = GenericClassVisitor(properties=[self.properties] if self.properties is not None else [])
             visitor.visit(tree)
-            loaded_classes = self._filter_classes(self._load_classes_from_visitor(visitor, file))
+            loaded_classes = self._filter_classes(self._load_classes_from_visitor(visitor, file, package=self.package))
         except SyntaxError as e:
             if not self._skip_on_error:
                 raise e
             LogManager.get_singleton_instance().engine.debug(f"Skipping {file} due to syntax error: {e}")
         return loaded_classes
 
-    def _load_classes_from_visitor(self, visitor: GenericClassVisitor, file: str) -> Dict[str, Type[Any]]:
+    def _load_classes_from_visitor(
+        self, visitor: GenericClassVisitor, file: str, package: Optional[str] = None
+    ) -> Dict[str, Type[Any]]:
         """
-        Loads classes from the visitor's results using importlib.
+        Loads classes from the visitor's results using either full import
+        if `package` is set, or fallback to spec_from_file_location otherwise.
         """
-        loaded_classes: Dict[str, Type[Any]] = {}
-        module_name = os.path.splitext(os.path.basename(file))[0]
-        spec = importlib.util.spec_from_file_location(module_name, file)
-        if spec is None or spec.loader is None:
-            LogManager.get_singleton_instance().engine.error(f"Loader not found for module: {module_name}")
-            return {}
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        for class_name in visitor.subclasses:
-            if Debug.system_loading_classes():
-                LogManager.get_singleton_instance().engine.debug(f"Found class: {class_name}")
+        loaded: Dict[str, Type[Any]] = {}
+
+        if package:
+            rel_path = os.path.splitext(os.path.relpath(file, self.base_dir))[0]
+            mod_path = f"{package}.{rel_path.replace(os.sep, '.')}"
+            module = importlib.import_module(mod_path)
+        else:
+            # fallback to file-based loading
+            spec = importlib.util.spec_from_file_location(os.path.splitext(os.path.basename(file))[0], file)
+            if not spec or not spec.loader:
+                LogManager.get_singleton_instance().engine.error(f"Loader not found for file {file}")
+                return {}
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)  # type: ignore
+
+        for cls_name in visitor.subclasses:
             if inspect.isfunction(self.base_classes):
-                if self.base_classes(module, class_name):
-                    loaded_classes[class_name] = getattr(module, class_name)
+                if self.base_classes(module, cls_name):  # type: ignore
+                    loaded[cls_name] = getattr(module, cls_name)
             else:
-                loaded_classes[class_name] = getattr(module, class_name)
-        return loaded_classes
+                loaded[cls_name] = getattr(module, cls_name)
+        return loaded
 
 
 class PyLoad:
@@ -199,14 +209,24 @@ class PyLoad:
         name_pattern: Union[str, Callable[[str], bool]] = r"^(?!_).*.py$",
         base_classes: Union[Any, List[Any], Callable[[str, str], bool]] = None,
         properties: Tuple[str, str] | None = None,
-        *args: Any,
-        **kwargs: Any,
+        package: Optional[str] = None,
     ):
         self.directory: Union[str, List[str]] = directory
+        # Determine the base package by splitting the path two levels up
+        if isinstance(directory, str):
+            base_path = os.path.abspath(directory)
+        else:
+            base_path = os.path.abspath(directory[0])
+        split_path = base_path.split(os.sep)
+
+        self.package = package if package is not None else ".".join(split_path[-2:])
+
+        # Use the path difference as the package
         self.name_pattern: Union[str, Callable[[str], bool]] = name_pattern
         self.base_classes: Union[Type[Any], List[Type[Any]], Callable[[str, str], bool]] = base_classes
         self.properties: Optional[Tuple[str, str]] = properties
-        self.processor: PyFileProcessor = PyFileProcessor(base_classes, properties)
+        self.processor: PyFileProcessor = PyFileProcessor(base_classes, properties, package=self.package)
+        self.processor.base_dir = directory if isinstance(directory, str) else directory[0]
 
     @classmethod
     def load_classes(
@@ -215,41 +235,28 @@ class PyLoad:
         name_pattern: Union[str, Callable[[str], bool]] = r"^(?!_).*.py$",
         base_classes: Union[Any, List[Any], Callable[[str, str], bool]] = None,
         properties: Optional[Tuple[str, str]] = None,
+        *,
+        package: Optional[str] = None,
     ) -> Dict[str, Type[Any]]:
-        """
-        Loads and returns classes from Python files in the given directory based on the provided criteria.
-
-        :param directory: Directory to search for Python files.
-        :param name_pattern: File name pattern to match Python files.
-        :param base_classes: Base class or list of base classes to match subclasses.
-        :param properties: List of tuples containing class property names and values to match.
-        :return: Dictionary of class names and their corresponding types.
-        """
-        return cls(directory, name_pattern, base_classes, properties).load()
+        return cls(directory, name_pattern, base_classes, properties, package=package).load()
 
     def load(self) -> Dict[str, Type[Any]]:
-        """
-        Loads classes from the specified directory or directories.
-        """
         if isinstance(self.directory, list):
-            loaded_classes: Dict[str, Type[Any]] = {}
-            for _dir in self.directory:
-                loaded_classes.update(self._process_folder(_dir))
-            return loaded_classes
+            out: Dict[str, Type[Any]] = {}
+            for d in self.directory:
+                out.update(self._process_folder(d))
+            return out
         return self._process_folder(self.directory)
 
     def _process_folder(self, folder: str) -> Dict[str, Type[Any]]:
-        """
-        Recursively processes folders and loads classes from Python files.
-        """
-        loaded_classes: Dict[str, Type[Any]] = {}
-        for file in os.listdir(folder):
-            file_path = os.path.join(folder, file)
-            if os.path.isdir(file_path):
-                # Block hidden directories and __pycache__
-                if file_path.startswith(".") or file_path.startswith("__"):
+        loaded: Dict[str, Type[Any]] = {}
+        for entry in os.listdir(folder):
+            path = os.path.join(folder, entry)
+            if os.path.isdir(path):
+                if entry.startswith(".") or entry.startswith("__"):
                     continue
-                loaded_classes.update(self._process_folder(file_path))
-            elif os.path.isfile(file_path):
-                loaded_classes.update(self.processor.process_file(file_path, self.name_pattern))
-        return loaded_classes
+                loaded.update(self._process_folder(path))
+            elif os.path.isfile(path):
+                # pass along self.package so processor can full-import
+                loaded.update(self.processor.process_file(path, self.name_pattern))
+        return loaded
