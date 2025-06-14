@@ -393,7 +393,8 @@ class Unit(BaseEntity, ABC):
             self.unload_model()
 
         self.actions.clear()
-        del self.tag
+        if hasattr(self, "tag"):
+            del self.tag
 
         if as_system:
             messenger.send("system.unit.destroyed", [self])
