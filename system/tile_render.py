@@ -250,6 +250,8 @@ class TileRenderer:
         # Prepare slots: population or first resource + base yields
         base_yields = self.tile.get_tile_yield()
         if self.tile.city:
+            base_yields += self.tile.city.get_yield()
+
             slots: List[Union[str, BaseResource, None]] = [
                 self.tile.city.get_population_icon(),
             ]
