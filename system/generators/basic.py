@@ -204,10 +204,10 @@ class Basic(BaseGenerator):
         if hex_tile.is_water:
             if geoform_id == 4 or HexFeature.lake in hex_tile.features:
                 return "Lake"
-            elif geoform_id == 2:
-                return "Sea"
             elif hex_tile.is_coast and geoform_id != 2:  # Shallow water, For some reason water is desert or grassland
                 return "Coast"
+            elif geoform_id == 2:
+                return "Sea"
             elif biome_id in (WorldParams.tundra,) or hex_tile.temperature[0] < -1:
                 return "SeaIce"
             else:
@@ -355,8 +355,8 @@ class Basic(BaseGenerator):
         tile.altitude = float(hex.altitude)
         tile.temperature = hex.base_temperature[0]
         tile.moisture = hex.moisture
-        tile.biome = hex.biome  # This is set by classify_terrain # type: ignore
-        tile.geoform_type = hex.geoform_type  # type: ignore
+        tile.biome = hex.biome.list()[0]  # This is set by classify_terrain # type: ignore
+        tile.geoform_type = hex.geoform_type.id  # type: ignore
         tile.features = hex.features
         tile.is_water = hex.is_water
         tile.is_land = hex.is_land
@@ -365,7 +365,8 @@ class Basic(BaseGenerator):
         tile.hemisphere = hex.hemisphere.name
         tile.is_sea = hex.geoform_type.id == 2  # Sea is geoform_type 2 # type: ignore
         tile.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore
-        tile.geoforms = hex.geoform_type
+        if hex.geoform_type is not None:
+            tile.geoforms = hex.geoform_type.list()[0]
 
         if (resource := hex.get_gameplay_resource()) is not None:
             tile.instance_resource(resource)
