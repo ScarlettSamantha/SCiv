@@ -21,7 +21,7 @@ class Library(BaseCityImprovement):
     def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):
         from gameplay.techs.writing import Writing
 
-        super().__init__(tile=tile, player=player, *args, **kwargs)
+        super().__init__(tile=tile, owner=player, *args, **kwargs)
 
         self.amount_resource_needed = Yields(production=8)
         self.resource_needed: Type["BasicBaseResource"] = Production
