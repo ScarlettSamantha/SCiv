@@ -261,6 +261,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
         return buttons
 
+    def purge_temporary_units_and_improvements(self):
+        if self.city is None:
+            return
+
     def on_build_button_click(self, instance: ButtonValue):
         if self.city is None:
             return
@@ -478,6 +482,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.frame.opacity = 0
         self.frame.disabled = True
         self.hidden = True
+
+        for unit in self.buildable_units.values():
+            unit.destroy()  # cleanup temporary units
 
     def is_hidden(self) -> bool:
         """Returns True if the City View is hidden."""
