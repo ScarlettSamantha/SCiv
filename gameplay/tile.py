@@ -448,6 +448,7 @@ class Tile(BaseEntity):
         return (
             not self.is_water
             and not self.is_sea
+            and not self.is_lake
             and (on_other_units or len(self.units) == 0)
             and not self.city
             and (
