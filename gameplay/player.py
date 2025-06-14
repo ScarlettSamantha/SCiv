@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Self, Set, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -148,9 +148,6 @@ class Player(BaseEntity):
         state.pop("ai", None)
         state.pop("effects", None)
         state.pop("citizens", None)
-        state.pop("units", None)
-        state.pop("cities", None)
-        state.pop("tiles", None)
         state.pop("relationships", None)
         state.pop("moods", None)
         state.pop("vision", None)
@@ -290,7 +287,7 @@ class Player(BaseEntity):
     def get_units(self) -> Units:
         return self.units
 
-    def get_all_units(self) -> List["Unit"]:
+    def get_all_units(self) -> Set["Unit"]:
         return self.get_units().all()
 
     def add_city(self, city: "City") -> None:

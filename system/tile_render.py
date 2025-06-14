@@ -45,19 +45,6 @@ if TYPE_CHECKING:
 
 
 class TileRenderer:
-    """
-    Encapsulates all Panda3D rendering logic for a Tile instance.
-
-    Responsibilities:
-      - Draw terrain overlay with correct texture and wall color.
-      - Render improvement models on the tile.
-      - Place resource models where appropriate.
-      - Display yield and population icons from an icon atlas.
-      - Show markers for units present on the tile.
-      - Draw a city nameplate when a city occupies the tile.
-      - Load and attach 3D models via Panda3D loader.
-    """
-
     ICON_SLOT_POSITIONS = {
         "center": (0.0, 0.0, 0.3),
         "n": (0.0, 0.45, 0.3),
@@ -73,14 +60,13 @@ class TileRenderer:
     def __init__(self, tile: "Tile") -> None:
         self.tile = tile
         self.base = Cache.get_showbase_instance()
-        self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
         self.atlas_width: int = 0
         self.atlas_height: int = 0
 
         # Root anchor for all geometry and UI nodes
         self.anchor_node: NodePath = NodePath(f"tile_{tile.x}_{tile.y}_anchor")
         self.anchor_node.reparentTo(self.base.render)
-
+        self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
         # Geometry group: terrain, walls, improvements, models
         self.geometry_node: NodePath = self.anchor_node.attachNewNode("geometry_group")
         self.anchor_node.reparentTo(self.base.render)

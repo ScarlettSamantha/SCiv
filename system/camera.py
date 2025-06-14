@@ -247,7 +247,7 @@ class Camera(Singleton, DirectObject):
             tile = capital.get_tile().get_pos()
             center = (tile[0], tile[1], 0)
         elif units := PlayerManager.session_player().get_all_units():
-            unit = units[0]  # type: ignore
+            unit = list(units)[0]  # type: ignore
             if unit is not None and unit.tile is not None:  # type: ignore
                 pos = unit.get_tile().get_pos()  # type: ignore
                 center = (pos[0], pos[1], 0)

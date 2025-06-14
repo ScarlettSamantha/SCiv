@@ -107,7 +107,8 @@ class Unit(BaseEntity, ABC):
         self.model_cache: Optional[NodePath] = None
 
         self.register_actions()
-        self.register()
+        if self.is_registered is False:
+            self.register()
 
     def register_actions(self): ...
 
@@ -126,6 +127,8 @@ class Unit(BaseEntity, ABC):
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
+
+        self.is_registered = True
 
         entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
@@ -171,9 +174,6 @@ class Unit(BaseEntity, ABC):
         if not isinstance(self._model, str):
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
-        if self.is_registered is False:
-            self.register()
-
         # Load the Panda3D model and position it at the tile
         self.render()
 
@@ -213,7 +213,6 @@ class Unit(BaseEntity, ABC):
         instance = cls(tile=tile, player=player)
         instance.spawn()
 
-        player.units.add_unit(instance)
         tile.add_unit(instance)
         UnitManager.get_singleton_instance().add_unit(instance)
         tile.render()
@@ -276,7 +275,7 @@ class Unit(BaseEntity, ABC):
     def _clear_departing_tile(self, tile: "Tile") -> None:
         tile.remove_unit(self)
         self.unload_model()
-        tile.render()
+        self.get_tile().render()
 
     def _move_to_tile(self, tile: "Tile", clear_departing_tile: Optional["Tile"] = None) -> None:
         if clear_departing_tile is not None:

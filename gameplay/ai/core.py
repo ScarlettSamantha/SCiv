@@ -188,7 +188,7 @@ class AI(ABC):
         for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
             if tile.is_city() and tile.owner != self.get_player():
                 targets[tile.x, tile.y] = tile
-            elif tile.units.has_any() and self.is_target(tile.units.all()[0]):
+            elif tile.units.has_any() and self.is_target(tile.units.first()):  # type: ignore
                 targets[tile.x, tile.y] = tile
             elif tile.improvements().has_any() and tile.owner != self.get_player():
                 targets[tile.x, tile.y] = tile
@@ -205,7 +205,7 @@ class AI(ABC):
         for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
             if tile.is_city() and tile.owner != self.get_player():
                 threats[tile.x, tile.y] = tile
-            elif tile.units.has_any() and self.is_threat(tile.units.all()[0]):
+            elif tile.units.has_any() and self.is_threat(tile.units.first()):  # type: ignore
                 threats[tile.x, tile.y] = tile
         return threats
 
