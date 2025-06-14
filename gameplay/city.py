@@ -201,6 +201,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             # When the total food (storage + surplus) is negative, population starves.
             if (self.food_collected + food_surplus) <= Yields.nullYield():
                 self.starve_population()
+                self.get_tile().render()
             else:
                 self.food_collected -= food_surplus
         elif food_surplus.food.value > 0:
@@ -208,6 +209,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             food_stored: Yields = self.food_collected.only(["food"])
             if (food_stored + food_surplus) >= self.new_population_food_required:
                 self.grow_population()
+                self.get_tile().render()
             else:
                 self.food_collected += food_surplus
 
