@@ -385,6 +385,10 @@ class Resources:
         # Also to counter the issue of circular imports.
         return self.resources[ResourceTypeBasic]
 
+    def has_non_mechanical_resources(self) -> bool:
+        # This is a helper method to check if there are any non-mechanical resources in the resources.
+        return bool(self.flatten_non_mechanic())
+
     def __getstate__(self) -> object:
         state = self.__dict__.copy()
         state["resources"] = {k: v for k, v in self.resources.items() if v}  # Remove empty sub-dictionaries

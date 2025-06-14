@@ -52,9 +52,7 @@ class ResourceAllocator:
     def _filter_valid_tiles(self, resource_class: Type[BaseResource]) -> List["Tile"]:
         valid_tiles: List["Tile"] = []
         for tile in self.grid.values():
-            if (
-                tile.resource is not None and len(list(tile.resource.values())) > 0
-            ):  # skip if there's already a resource
+            if tile.resources.has_non_mechanical_resources():  # skip if there's already a resource
                 continue
 
             if not self._terrain_allows_resource(tile, resource_class):  # skip if terrain doesn't allow
@@ -99,6 +97,8 @@ class ResourceAllocator:
 
         tile: "Tile"
         for tile in to_fill:
+            if tile.resources.has_non_mechanical_resources():
+                continue
             # final chance roll per tile:
             if self._roll_spawn_chance(tile, resource_class):
                 self._assign_resource(tile, resource_class)
