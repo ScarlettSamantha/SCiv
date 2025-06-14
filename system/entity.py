@@ -49,7 +49,7 @@ class BaseEntity(ABC, DirectObject):
     def __init__(
         self,
         tile: Optional[Union["Tile", ReferenceType["Tile"]]] = None,
-        owner: Optional["Player"] = None,
+        owner: Optional[Union["Player", ReferenceType["Player"]]] = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -60,29 +60,45 @@ class BaseEntity(ABC, DirectObject):
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False
         self.tile: Optional[ReferenceType["Tile"] | "Tile"] = weakref.ref(tile) if isinstance(tile, Tile) else None
-        self.owner: Optional[Player] = owner
 
         self.attack_points_left: float = self.attack_points
         self.health_left: float = self.max_health
+
+        self._owner: Optional[ReferenceType["Player"]] = (
+            owner if isinstance(owner, weakref.ReferenceType) or owner is None else weakref.ref(owner)
+        )
 
         if Cache.has_instance() is False:
             raise AssertionError("Cache instance is not set.")
 
         self.base: "SCIV" = Cache.get_showbase_instance()
 
+    @property
+    def owner(self) -> Optional[Union[ReferenceType["Player"], "Player"]]:
+        if isinstance(self._owner, weakref.ReferenceType):
+            owner = self._owner()
+            if owner is None:
+                raise ValueError("Owner reference is dead (None)")
+            return owner
+        return self._owner
+
+    @owner.setter
+    def owner(self, value: Optional[Union["Player", ReferenceType["Player"]]]) -> None:
+        if value is None:
+            self._owner = None
+        elif isinstance(value, weakref.ReferenceType):
+            self._owner = value
+        else:
+            self._owner = weakref.ref(value)
+
     def get_tile(self) -> "Tile":
         if self.tile is None:
             raise ValueError("Tile is None")
 
-        # Delay import so you don’t hit TYPE_CHECKING guard at module load
         from gameplay.tile import Tile
 
-        # If it’s already a Tile instance, return it directly
         if isinstance(self.tile, Tile):
             return self.tile
-
-        # If it’s a weakref to a Tile, dereference and return
-        # Dereference self.tile directly as it's expected to be a ReferenceType
 
         tile_obj = self.tile()
         if tile_obj is None:
@@ -162,7 +178,22 @@ class BaseEntity(ABC, DirectObject):
     def get_owner(self) -> "Player":
         if self.owner is None:
             raise ValueError("Owner is None")
+
+        if isinstance(self.owner, weakref.ReferenceType):
+            owner = self.owner()
+
+            if owner is None:
+                raise ValueError("Owner reference is dead (None)")
+            else:
+                return owner
+
         return self.owner
+
+    def set_owner(self, owner: Optional[Union["Player", weakref.ReferenceType["Player"]]] = None) -> None:
+        if isinstance(owner, "Player"):
+            self.owner = weakref.ref(owner)
+            return
+        self.owner = owner
 
     def get_pos(self) -> Tuple[float, float, float]:
         """

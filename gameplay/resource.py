@@ -186,6 +186,9 @@ class BaseResource(ABC):
                 f"Operation not supported between instances of {type(self).__name__} and {type(other).__name__}"
             )
 
+    def __getstate__(self) -> object:
+        return {"class": self.__class__, "value": self.value, "type": self.value_storage}
+
     # Overloaded operators
     def __add__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
         if isinstance(other, BaseResource):

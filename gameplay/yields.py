@@ -84,6 +84,11 @@ class Yields:
             "holy",
         ]
 
+    def __getstate__(self) -> object:
+        # Prepare the state for serialization.
+        state = self.__dict__.copy()
+        return state
+
     @property
     def name(self) -> None | str:
         return self._name

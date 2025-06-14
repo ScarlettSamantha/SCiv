@@ -64,14 +64,13 @@ class Unit(BaseEntity, ABC):
     can_spawn_on_water: bool = False
     max_health: float = 10.0
 
-    def __init__(self, tile: "Tile", key: Optional[str] = None):
+    def __init__(self, tile: "Tile", player: "Player", key: Optional[str] = None, *args: Any, **kwargs: Any):
         from gameplay.city import Yields  # to avoid circular import
 
-        BaseEntity.__init__(self, tile=tile)
+        BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
 
         self.key: str = key if key else uuid4().hex
 
-        self.owner: Player | None = None
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
@@ -211,8 +210,7 @@ class Unit(BaseEntity, ABC):
         if tile.is_passable is False:
             raise ValueError(f"Unit {cls.__name__} cannot spawn on impassable tile {tile.tag}.")
 
-        instance = cls(tile=tile)
-        instance.owner = player
+        instance = cls(tile=tile, player=player)
         instance.spawn()
 
         player.units.add_unit(instance)
@@ -361,10 +359,7 @@ class Unit(BaseEntity, ABC):
         return model
 
     def generate_unit_tag(self) -> str:
-        if self.owner is not None:
-            return f"unit_{self.owner.id}_{self.key}_{random.randint(0, 1000000)}"
-        else:
-            return f"unit_{self.key}_{random.randint(0, 1000000)}"
+        return f"unit_{self.key}_{random.randint(0, 1000000)}"
 
     def tile_is_occupiable(self, tile: "Tile") -> bool:
         return tile.is_passable() and len(tile.units) == 0
@@ -392,9 +387,9 @@ class Unit(BaseEntity, ABC):
         self.get_tile().remove_unit(self)
 
         if self.owner is not None:
-            self.owner.units.remove_unit(self)
+            self.get_owner().units.remove_unit(self)
 
-        self.owner = None
+        self.set_owner(None)
 
         if self.model:  # type: ignore
             self.unload_model()
@@ -406,6 +401,17 @@ class Unit(BaseEntity, ABC):
             messenger.send("system.unit.destroyed", [self])
         else:
             messenger.send("game.gameplay.unit.destroyed", [self])
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state = super().__getstate__()
+        state.pop("base", None)  # Remove base reference to avoid circular references
+        state.pop("_logger", None)
+        state.pop("model", None)  # Remove model reference to avoid circular references
+        state.pop("model_cache", None)
+        state.pop("effects", None)  # Remove effects reference to avoid circular references
+        state.pop("actions", None)  # Remove actions to avoid circular references
+        state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
+        return state
 
     @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:

@@ -25,6 +25,14 @@ class TechManager(BaseManager):
 
         self.process_folders(technology_folders)
 
+    def __getstate__(self) -> object:
+        # Prepare the state for serialization.
+        state = self.__dict__.copy()
+        state.pop("parent", None)
+        state.pop("logger", None)
+        state.pop("_tech_tree", None)
+        return state
+
     @property
     def needed_science(self) -> int:
         return self._needed_science
@@ -46,7 +54,7 @@ class TechManager(BaseManager):
 
     def process_folders(self, folders: List[str]):
         def process_folder(folder: str):
-            classes = PyLoad.load_classes(folder)
+            classes = PyLoad.load_classes(folder, package="gameplay.techs")
             for _class in classes:
                 if not isinstance(_class, Tech):
                     continue

@@ -1,6 +1,7 @@
 from datetime import datetime
 from random import choice, randrange
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
+import weakref
 from zlib import crc32
 
 from direct.showbase import MessengerGlobal
@@ -374,7 +375,10 @@ class Basic(BaseGenerator):
             raise ValueError(f"Hex {hex} has {len(edge_names)} edges, expected 6.")
 
         for i, edge_name in enumerate(tile.edges.keys()):
-            tile.edges[edge_name] = hex.edges[i]
+            if hex.edges[i] is not None:
+                tile.edges[edge_name] = weakref.ref(hex.edges[i])  # type: ignore
+            else:
+                tile.edges[edge_name] = None
 
         return tile
 

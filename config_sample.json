@@ -5,29 +5,20 @@
   },
   "window": {
     "screen-mode": "bordered",
-    "win-origin": [
-      400,
-      2188
-    ],
-    "win-size": [
-      3440,
-      1360
-    ],
+    "win-origin": [400, 2188],
+    "win-size": [3440, 1360],
     "window-title": "SCIV",
     "sync-video": false,
     "show-frame-rate-meter": false
   },
   "qol": {
-    "intro_skip": true
+    "intro_skip": false
   },
   "assets": {
     "use-cache": false,
     "tile-set-icons": "default",
     "tile-set-tiles": "texture",
-    "tile-set-known": [
-      "default",
-      "texture"
-    ],
+    "tile-set-known": ["default", "texture"],
     "icon_resolution_x": 128,
     "icon_resolution_y": 128,
     "terrain_resolution_x": 512,
@@ -41,7 +32,12 @@
       "world_spawning": false,
       "system_asset_generation": false,
       "system_loading_classes": false,
-      "system_loading_models": false
-    }
+      "system_loading_models": false,
+      "system_ai": false,
+      "system_saving": false,
+      "system_loading": false,
+      "system_entity_graph": false
+    },
+    "disable_ai_turn_processing": false
   }
 }

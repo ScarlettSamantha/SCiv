@@ -3,6 +3,7 @@ from abc import ABC
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
+import weakref
 
 from gameplay.yields import Yields
 from managers.entity import EntityType
@@ -32,9 +33,20 @@ parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement"]
 
 class Effects:
     def __init__(self, parent: parent_types) -> None:
-        self.parent: parent_types = parent
+        self._parent: weakref.ReferenceType[parent_types] = weakref.ref(parent)
         self._effects: Dict[str, "Effect"] = {}
         self._effects_num: int = 0
+
+    @property
+    def parent(self) -> parent_types:
+        parent = self._parent()
+        if parent is None:
+            raise ValueError("Parent has been deleted.")
+        return parent
+
+    @parent.setter
+    def parent(self, value: parent_types) -> None:
+        self._parent = weakref.ref(value)
 
     def add_effect(
         self,
@@ -264,6 +276,29 @@ class Effect(BaseEntity, ABC):
     def __del__(self) -> None:
         if self.is_registered:
             self.unregister()
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state = self.__dict__.copy()
+        if "base" in state:
+            del state["base"]
+        if "_logger" in state:
+            del state["_logger"]
+        if "tile" in state:
+            del state["tile"]
+        if "city" in state:
+            del state["city"]
+        if "player" in state:
+            del state["player"]
+        if "world" in state:
+            del state["world"]
+        if "improvement" in state:
+            del state["improvement"]
+        if "unit" in state:
+            del state["unit"]
+        if "effects" in state:
+            del state["effects"]
+
+        return state
 
     def register(self):
         from managers.entity import EntityManager

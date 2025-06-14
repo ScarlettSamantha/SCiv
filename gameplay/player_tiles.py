@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Dict, Tuple
+import weakref
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -6,16 +7,26 @@ if TYPE_CHECKING:
 
 class PlayerTiles:
     def __init__(self):
-        self.tiles: Dict[Tuple[int, int], "Tile"] = {}
+        self.tiles: Dict[Tuple[int, int], weakref.ReferenceType["Tile"]] = {}
 
     def add_tile(self, tile: "Tile"):
-        self.tiles[(tile.x, tile.y)] = tile
+        _tile = weakref.ref(tile)
+        self.tiles[(tile.x, tile.y)] = _tile
 
     def get_tile(self, x: int, y: int) -> "Tile":
-        return self.tiles[(x, y)]
+        tile_ref = self.tiles[(x, y)]
+        tile = tile_ref()
+        if tile is None:
+            raise ValueError(f"Tile at position ({x}, {y}) has been garbage collected.")
+        return tile
 
     def get_tiles(self) -> Dict[Tuple[int, int], "Tile"]:
-        return self.tiles
+        tiles: Dict[Tuple[int, int], "Tile"] = {}
+        for key, ref in self.tiles.items():
+            tile = ref()
+            if tile is not None:
+                tiles[key] = tile
+        return tiles
 
     def remove_tile(self, x: int, y: int):
         del self.tiles[(x, y)]

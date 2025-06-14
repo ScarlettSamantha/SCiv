@@ -1,10 +1,8 @@
-from copy import deepcopy
 from enum import Enum
 from logging import Logger
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
 import weakref
-
 
 from helpers.colors import Tuple4f
 from direct.showbase import MessengerGlobal
@@ -109,7 +107,7 @@ class Tile(BaseEntity):
         self.is_sea: bool = False
         self.is_lake: bool = False
 
-        self.edges: Dict[str, Union["Edge", None, weakref.ReferenceType["Edge"]]] = {
+        self._edges: Dict[str, Optional[Union[Edge, weakref.ReferenceType[Edge]]]] = {
             "e": None,
             "ne": None,
             "nw": None,
@@ -172,7 +170,6 @@ class Tile(BaseEntity):
 
         self.owner: Optional["Player"] = None
         self.claimants: List[Any] = []
-        self.effects: Effects = Effects(self)
 
         self.inherit_passability_from_terrain: bool = True
 
@@ -195,6 +192,8 @@ class Tile(BaseEntity):
 
         self.renderer = TileRenderer(self)
 
+        self.register()
+
     @property
     def tile_terrain(self) -> BaseTerrain:
         return self._tile_terrain
@@ -205,6 +204,32 @@ class Tile(BaseEntity):
         if self.inherit_passability_from_terrain:
             self.passable: bool = True if self.tile_terrain.passable is True else False
             self.passable_without_tech: bool = True if self.tile_terrain.passable_without_tech is True else False
+
+    @property
+    def edges(self) -> Dict[str, Union["Edge", None, weakref.ReferenceType["Edge"]]]:
+        data: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = {}
+        for side, edge in self._edges.items():
+            if isinstance(edge, weakref.ReferenceType):
+                data[side] = edge()
+            else:
+                data[side] = edge
+        return data
+
+    @edges.setter
+    def edges(self, value: Dict[str, Optional[Union["Edge", weakref.ReferenceType["Edge"]]]]) -> None:
+        if len(value) != 6:
+            raise ValueError(f"Edges must have exactly 6 sides, got {len(value)}.")
+        for side in value:
+            if side not in self._edges:
+                raise ValueError(f"Invalid edge side: {side}. Valid sides are: {list(self._edges.keys())}")
+            if isinstance(value[side], Edge):
+                self._edges[side] = weakref.ref(value[side])  # type: ignore
+            elif value[side] is None:
+                self._edges[side] = None
+            elif isinstance(value[side], weakref.ReferenceType):
+                self._edges[side] = value[side]
+            else:
+                raise TypeError(f"Invalid type for edge {side}: {type(value[side])}. Expected Edge or None.")
 
     def get_tile_terrain(self) -> BaseTerrain:
         return self._tile_terrain
@@ -243,7 +268,7 @@ class Tile(BaseEntity):
             self.city.register()
 
     def calculate(self):
-        base = deepcopy(self._tile_terrain.get_tile_yield())  # This is to prevent modifying the base yield.
+        base = self._tile_terrain.get_tile_yield()
 
         for improvement in self._improvements.get_all():
             base += improvement.tile_yield
@@ -259,24 +284,27 @@ class Tile(BaseEntity):
             del state["base"]
         if "logger" in state:
             del state["logger"]
-        if "texture_card" in state:
-            del state["texture_card"]
-        if "texture_card_texture" in state:
-            del state["texture_card_texture"]
-        if "city_name_group" in state:
-            del state["city_name_group"]
-        if "city_name_texture_card_texture" in state:
-            del state["city_name_texture_card_texture"]
-        if "tile_icon_group" in state:
-            del state["tile_icon_group"]
-        if "text_card" in state:
-            del state["text_card"]
-        if "_model" in state:
-            del state["_model"]
+        if "renderer" in state:
+            del state["renderer"]
         if "_entity_manager" in state:
             del state["_entity_manager"]
-        if "models" in state:
-            del state["models"]
+        if "_tile_terrain" in state:
+            del state["_tile_terrain"]
+        if "tile_yield" in state:
+            del state["tile_yield"]
+        if "effects" in state:
+            del state["effects"]
+        if "geoforms" in state:
+            del state["geoforms"]
+        if "biome" in state:
+            del state["biome"]
+        if "geoform_type" in state:
+            del state["geoform_type"]
+        if "resources" in state:
+            del state["resources"]
+        if "features" in state:
+            del state["features"]
+
         return state
 
     def set_visible_sides(self, sides: Dict[int, bool]) -> None:
@@ -333,7 +361,7 @@ class Tile(BaseEntity):
     def register(self):
         from managers.entity import EntityType  # Prevent circular import
 
-        self._entity_manager.register(entity=self, key=str(self.id), type=EntityType.TILE)
+        self._entity_manager.register(entity=self, key=str(self.tag), type=EntityType.TILE)
 
     def select(self) -> None:
         self.is_selected = True
@@ -441,7 +469,7 @@ class Tile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        yield_copy = deepcopy(self.tile_yield)
+        yield_copy = self.tile_yield
         for resource in self.resources.flatten().values():
             yield_copy += resource.tile_yield
         for resource in self.get_improved_resources():

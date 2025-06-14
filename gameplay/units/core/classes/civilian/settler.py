@@ -8,6 +8,7 @@ from system.requires import RequiresPromotionTreeUnlocked
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
+    from gameplay.player import Player
 
 
 class SettlerPromotion(Promotion):
@@ -70,9 +71,10 @@ class Settler(CoreCivilianBaseClass):
     promotion_tree = SettlerPromotionTree
     model_size = 0.5
 
-    def __init__(self, tile: "Tile", *args: Any, **kwargs: Any):
+    def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):
         super().__init__(
             tile,
+            player,
             *args,
             **kwargs,
         )

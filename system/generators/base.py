@@ -270,8 +270,7 @@ class BaseGenerator(ABC):
             if spawn_tile is None:
                 raise Exception("No suitable spawn location found for a player")
 
-            unit: Settler = Settler(spawn_tile)
-            unit.owner = player
+            unit: Settler = Settler(spawn_tile, player)
             units.append(unit)
             occupied_tiles.append(spawn_tile)
             unit.spawn_on(spawn_tile, player)

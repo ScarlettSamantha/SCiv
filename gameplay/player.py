@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Self, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -141,6 +141,24 @@ class Player(BaseEntity):
             else t_(f"civilizations.{self.name}.introduction")
         )
         self._register_callbacks()
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("logger", None)
+        state.pop("ai", None)
+        state.pop("effects", None)
+        state.pop("citizens", None)
+        state.pop("units", None)
+        state.pop("cities", None)
+        state.pop("tiles", None)
+        state.pop("relationships", None)
+        state.pop("moods", None)
+        state.pop("vision", None)
+        state.pop("trades", None)
+        state.pop("votes", None)
+        state.pop("resources", None)
+
+        return state
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType

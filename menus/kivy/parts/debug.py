@@ -123,7 +123,7 @@ class DebugPanel(FloatLayout):
             "movement_cost": tile.movement_cost,
             "texture": tile.texture(),
             "class": tile.__class__.__name__,
-            "owner": str(tile.owner.name) if tile.owner else str(t_("civilization.nature.name")),
+            "owner": str(tile.owner.name) if tile.owner is not None else str(t_("civilization.nature.name")),
             "owner_city": str(tile.city_owner.name) if tile.city_owner else str(t_("civilization.nature.name")),
             "city": tile.city,
             "improvements": " | ".join(_improvements),
@@ -185,7 +185,7 @@ class DebugPanel(FloatLayout):
         if unit.owner is None:
             owner_name = PlayerManager.get_nature()
         else:
-            owner_name = unit.owner.civilization.name
+            owner_name = str(unit.get_owner().civilization.name)
 
         model = None
         if unit.model is not None:

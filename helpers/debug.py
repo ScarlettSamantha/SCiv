@@ -12,6 +12,9 @@ class Debugs(Enum):
     SYSTEM_LOADING_MODELS = "system_loading_models"
     SYSTEM_ASSET_GENERATION = "system_asset_generation"
     SYSTEM_AI = "system_ai"
+    SYSTEM_SAVING = "system_saving"
+    SYSTEM_LOADING = "system_loading"
+    SYSTEM_ENTITY_GRAPH = "system_entity_graph"
 
     DISABLE_AI_TURN_PROCESSING = "disable_ai_turn_processing"
 
@@ -43,6 +46,15 @@ class Debug:
         ),
         Debugs.SYSTEM_AI: config_instance_ref.get_by_key(
             (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_AI.value), default=False
+        ),
+        Debugs.SYSTEM_SAVING: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_SAVING.value), default=False
+        ),
+        Debugs.SYSTEM_LOADING: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_LOADING.value), default=False
+        ),
+        Debugs.SYSTEM_ENTITY_GRAPH: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_ENTITY_GRAPH.value), default=False
         ),
     }
 
@@ -110,5 +122,26 @@ class Debug:
     def system_ai(cls, override: Optional[bool] = None) -> bool:
         return cls._check_with_override(
             Debugs.SYSTEM_AI,
+            override,
+        )
+
+    @classmethod
+    def system_saving(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_SAVING,
+            override,
+        )
+
+    @classmethod
+    def system_loading(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_LOADING,
+            override,
+        )
+
+    @classmethod
+    def system_entity_graph(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_ENTITY_GRAPH,
             override,
         )

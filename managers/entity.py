@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 from logging import Logger
+import os
+from pickletools import genops
+import subprocess
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
+
+from helpers.debug import Debug
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 from system.save_file import BaseSaver, SavePickleFile
@@ -26,6 +31,7 @@ class EntityType(Enum):
     CITY = ("_cities_", None)
     PLAYER = ("_players_", None)
     EFFECT = ("_effects_", None)
+    WORLD = ("_world_", None)
 
     def __init__(self, storage_key: str, base_type: Type["BaseEntity"] | None):
         self.storage_key = storage_key
@@ -73,7 +79,7 @@ V = TypeVar("V", bound="BaseEntity")
 
 class BaseEntityManagerSerializer(ABC):
     @abstractmethod
-    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> Any:
+    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
         pass
 
     @abstractmethod
@@ -85,10 +91,21 @@ class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
     def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
         import dill as pickle  # type: ignore
 
-        return pickle.dumps(data)  # type: ignore
+        if Debug.system_saving():
+            import dill.detect
+
+            with dill.detect.trace():  # Enable tracing for debugging purposes # type: ignore
+                return dill.dumps(data, recurse=True, byref=False)  # type: ignore
+        return pickle.dumps(data, recurse=True, byref=False)  # type: ignore
 
     def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
         import dill as pickle  # type: ignore
+
+        if Debug.system_loading():
+            import dill.detect
+
+            with dill.detect.trace():  # type: ignore
+                return pickle.loads(data)  # type: ignore
 
         return pickle.loads(data)  # type: ignore
 
@@ -278,7 +295,10 @@ class EntityManager(Singleton):
 
         self.session = session_name
 
-        data: bytes = self.serializer.dump(self._entities)
+        if Debug.system_entity_graph() is True:
+            data: bytes = self.debug_dump(keep_profile=True)
+        else:
+            data: bytes = self.serializer.dump(self._entities)
 
         saver_instance = self.saver()
         saver_instance.set_data(data)
@@ -322,3 +342,82 @@ class EntityManager(Singleton):
         saver_instance = self.saver()
         saver_instance.set_identifier(session_name)
         return saver_instance.get_session_data()
+
+    def graph_pickle(
+        self,
+        data: Dict[EntityType, Dict[str, BaseEntity]],
+        out_dot: str | None = None,
+        out_png: str | None = None,
+    ):
+        import dill
+
+        # 1) Prep paths
+        session = self.session or uuid4().hex
+        out_dot = out_dot or f"debugging/{session}_object_graph.dot"
+        os.makedirs(os.path.dirname(out_dot), exist_ok=True)
+
+        # 2) Try the full dill.dumps first
+        try:
+            raw = dill.dumps(data, recurse=True)  # type: ignore
+        except Exception as full_exc:
+            self.logger.warning(f"[graph_pickle] full dill.dumps failed: {full_exc!r}; falling back to class-only dump")
+            class_only = {etype.name: tuple({type(ent) for ent in ents.values()}) for etype, ents in data.items()}
+            raw = dill.dumps(class_only)  # type: ignore
+
+        # 3) Walk opcodes to collect edges between successive GLOBAL ops
+        edges: list[tuple[str, str]] = []
+        last_global: str | None = None
+        for opcode, arg, _ in genops(raw):
+            if opcode.name == "GLOBAL" and isinstance(arg, str):
+                module, name = arg.split()
+                node = f"{module}.{name}"
+                if last_global:
+                    edges.append((last_global, node))
+                last_global = node
+            elif opcode.name in ("PUT", "BINPUT", "LONG_BINPUT"):
+                last_global = None
+
+        from graphviz import Digraph
+
+        dot = Digraph(comment="Pickle Object Graph", format="png")
+        for src, dst in edges:
+            dot.edge(src, dst)  # type: ignore
+        dot.render(filename=out_dot, cleanup=False)  # type: ignore
+
+        self.logger.info(f"[graph_pickle] DOT written to {out_dot} (+ .png)")
+
+    def debug_dump(self, keep_profile: bool = False) -> bytes:
+        # ensure our debug dir exists
+        if not os.path.exists("debugging"):
+            os.makedirs("debugging")
+
+        prof_filename = f"debugging/{self.session}_serialization.prof"
+        trace_filename = f"debugging/{self.session}_serialization.trace.log"
+        png_filename = f"debugging/{self.session}_serialization.call.png"
+
+        try:
+            data = self.serializer.dump(self._entities)
+        except Exception as e:
+            cmd_g2d = ["/usr/bin/python3", "-m", "gprof2dot", "-f", "pstats", prof_filename]
+            cmd_dot = ["dot", "-Tpng", "-o", png_filename]
+            proc = subprocess.Popen(cmd_g2d, stdout=subprocess.PIPE)
+            subprocess.run(cmd_dot, stdin=proc.stdout, check=True)
+            proc.wait()
+
+            try:
+                self.graph_pickle(self._entities)
+            except Exception as e:
+                self.logger.warning(f"Failed to graph pickle: {e!r}")
+
+            # clean up .prof if not wanted
+            if not keep_profile:
+                try:
+                    os.remove(prof_filename)
+                except OSError:
+                    pass
+
+            self.logger.info(f"Serialization call-graph written to {png_filename}")
+            raise RuntimeError(
+                f"Serialization failed due to error. See {trace_filename} for the dill-detect trace. There is more logging in the debugging folder."
+            )
+        return data

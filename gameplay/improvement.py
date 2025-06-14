@@ -1,7 +1,8 @@
 import random
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
+from weakref import ReferenceType
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
@@ -50,11 +51,11 @@ class Improvement(BaseEntity):
         self,
         key: Optional[str] = None,
         tile: "Tile | None" = None,
-        owner: Optional["Player"] = None,
+        owner: Optional[Union["Player", ReferenceType["Player"]]] = None,
         *args: Any,
         **kwargs: Any,
     ):
-        super().__init__(tile, owner, *args, **kwargs)
+        super().__init__(tile=tile, owner=owner, *args, **kwargs)
         from gameplay.resources.core.basic.production import Production
 
         self.key: str = key if key else uuid.uuid4().hex
@@ -89,7 +90,6 @@ class Improvement(BaseEntity):
 
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
 
-        self.owner: Optional["Player"] = None
         self.tag: str = ""
 
     @classmethod
@@ -134,6 +134,18 @@ class Improvement(BaseEntity):
             self.tag = f"improvement_{self.name}_{random.randrange(0, 10000)}"
         else:
             self.tag = f"improvement_{self.get_tile().x}_{self.get_tile().y}_{self.name}_{random.randrange(0, 10000)}"
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state = self.__dict__.copy()
+        if "base" in state:
+            del state["base"]
+        if "_logger" in state:
+            del state["_logger"]
+        if "model" in state:
+            del state["model"]
+        if "effects" in state:
+            del state["effects"]
+        return super().__getstate__()
 
     @property
     def model(self):
@@ -186,14 +198,6 @@ class Improvement(BaseEntity):
 
     def get_model_path(self) -> str | None:
         return self._model
-
-    def set_owner(self, owner: "Player"):
-        self.owner = owner
-
-    def get_owner(self) -> "Player":
-        if self.owner is None:
-            raise ValueError("Improvement owner is not set")
-        return self.owner
 
     def on_turn_end(self, turn: int):
         self.effects.on_turn_end(turn)

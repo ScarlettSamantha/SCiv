@@ -20,6 +20,14 @@ class CivicsManager(BaseManager):
 
         self.civics_activated: List[Civic] = []
 
+    def __getstate__(self) -> object:
+        # Prepare the state for serialization.
+        state = self.__dict__.copy()
+        state.pop("parent", None)
+        state.pop("logger", None)
+        state.pop("civic_tree", None)
+        return state
+
     def process_civics(self):
         if self.civic_tree is None:
             self.logger.warning("No civic tree found. Cannot process civics.")
