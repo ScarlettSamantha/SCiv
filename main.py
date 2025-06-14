@@ -135,6 +135,9 @@ class SCIV(ShowBase):
         else:
             loading_screen.next_stage("Ready")  # This will show the ready button
 
+    def __getstate__(self):
+        return None
+
     def on_loading_screen_continue(self):
         from managers.ui import ui
 
