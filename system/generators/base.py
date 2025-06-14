@@ -16,6 +16,8 @@ from gameplay.repositories.personality import (
 from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
 
+from gameplay.unit import Unit
+from gameplay.units.core.classes.military.club_man import ClubMan
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from system.game_settings import GameSettings
@@ -210,7 +212,7 @@ class BaseGenerator(ABC):
         from gameplay.units.core.classes.civilian.settler import Settler
         from gameplay.repositories.tile import TileRepository
 
-        units: List["Settler"] = []
+        units: List[Unit] = []
         occupied_tiles: List["Tile"] = []  # Track placed player locations
 
         min_distances: List[int] = [5, 4, 3]  # Distances to attempt
@@ -273,5 +275,16 @@ class BaseGenerator(ABC):
             occupied_tiles.append(spawn_tile)
             unit = Settler.spawn_on(spawn_tile, player)
             units.append(unit)  # type: ignore[union-attr]
+
+            companion_spawn_tile: Optional[Tile] = None
+            _neighbors: List[Tile] = TileRepository.get_neighbors(spawn_tile, radius=1)
+            for neighbor in _neighbors:
+                if neighbor.is_spawnable_upon():
+                    companion_spawn_tile = neighbor
+                    break
+
+            if companion_spawn_tile:
+                companion_unit = ClubMan.spawn_on(companion_spawn_tile, player)
+                units.append(companion_unit)
 
         return len(units) > 0
