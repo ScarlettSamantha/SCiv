@@ -24,8 +24,8 @@ class ClubMan(CoreMilitaryBaseClass):
     _model = "assets/models/units/peasant.glb"
     buildable = True
     key = "core.unit.class.clubman"
-    name = t_("content.units.classes.core.clubman.name")
-    description = t_("content.units.classes.core.clubman.description")
+    name = t_("content.units.core.units.military.clubman.name")
+    description = t_("content.units.core.units.military.clubman.description")
     icon = "units/clubman.png"
     model_size = 0.2
 
