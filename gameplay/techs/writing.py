@@ -1,7 +1,9 @@
 from typing import Any
 
+from gameplay.improvements.core.city.library import Library
 from gameplay.tech import Tech
 from managers.i18n import t_
+from system.entity import BaseEntity
 
 
 class Writing(Tech):
@@ -15,3 +17,9 @@ class Writing(Tech):
             *args,
             **kwargs,
         )
+
+    @classmethod
+    def unlocks(cls) -> list[type[BaseEntity] | type[Tech] | type[Library]]:
+        from gameplay.improvements.core.city.library import Library
+
+        return [Library] + super().unlocks()

@@ -8,7 +8,7 @@ class HuntingGathering(Tech):
     key = "core.hunting_gathering"
     name = t_("tech.hunting_gathering.name")
     description = t_("tech.hunting_gathering.description")
-    tech_points_required = 20
+    tech_points_required = 8
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(

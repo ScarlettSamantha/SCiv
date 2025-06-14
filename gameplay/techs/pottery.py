@@ -11,7 +11,7 @@ class Pottery(Tech):
     key = "core.pottery"
     name = t_("tech.pottery.name")
     description = t_("tech.pottery.description")
-    tech_points_required = 20
+    tech_points_required = 10
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(

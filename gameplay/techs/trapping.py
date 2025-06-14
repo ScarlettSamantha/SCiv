@@ -11,7 +11,7 @@ class Trapping(Tech):
     key = "core.trapping"
     name = t_("tech.trapping.name")
     description = t_("tech.trapping.description")
-    tech_points_required = 20
+    tech_points_required = 10
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
