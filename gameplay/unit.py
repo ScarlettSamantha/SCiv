@@ -381,7 +381,6 @@ class Unit(BaseEntity, ABC):
 
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
         self.health_left = 0
-        self.unregister()
 
         self.get_tile().remove_unit(self)
 
@@ -389,7 +388,7 @@ class Unit(BaseEntity, ABC):
             self.get_owner().units.remove_unit(self)
 
         self.set_owner(None)
-
+        self.unregister()
         if self.model:  # type: ignore
             self.unload_model()
 
