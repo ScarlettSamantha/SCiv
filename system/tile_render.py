@@ -100,6 +100,7 @@ class TileRenderer:
         self.icon_overlay_node: Optional[NodePath] = None
         self.unit_markers_node: Optional[NodePath] = None
         self.city_nameplate_node: Optional[NodePath] = None
+        self.models: List[NodePath] = []
 
         self.bits_renderer = BitsRenderer(tile)
         self.unit_icons = UnitIcons(self.ui_node)
@@ -124,18 +125,31 @@ class TileRenderer:
         self.anchor_node.setPos(self.tile.pos_x, self.tile.pos_y, self.tile.pos_z)
         self.anchor_node.setScale(1)
 
+        # Clear previous UI elements
         self.clear_ui()
+
+        # Draw base terrain and geometry
         self._draw_terrain_overlay()
         self._draw_improvements()
+
+        # Draw resource model if no city occupies the tile
         self._draw_resource_model()
+
+        # Draw yield and population icons
         self._draw_yield_and_population_icons()
+
+        # Draw units and city nameplate
         self._draw_unit_markers()
         self._draw_city_nameplate()
+
+        # Only render bits overlays when the tile is not occupied by a city
         self.bits_renderer.render()
 
+        # Optimize node hierarchy
         self.anchor_node.flatten_medium()
         self.geometry_node.flatten_medium()
 
+        # Network tagging for selection/clicks
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
@@ -186,25 +200,37 @@ class TileRenderer:
 
     def _draw_resource_model(self) -> None:
         """Render a resource 3D model if present on the tile."""
-        if self.tile.city is None and not self.tile.block_resource_model_spawning:
-            if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
-                return
-            resource = res_list[0]
+        if self.tile.city is not None or self.tile.block_resource_model_spawning is True:
+            return
 
-            model_def = (
-                resource.get_land_model()
-                if self.tile.is_land and not self.tile.is_coast
-                else resource.get_water_model()
+        if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
+            return
+
+        resource = res_list[0]
+
+        model_def = (
+            resource.get_land_model() if self.tile.is_land and not self.tile.is_coast else resource.get_water_model()
+        )
+
+        if model_def:
+            self.add_model(
+                model_path=model_def,
+                net_type=NET_TYPE.RESOURCE,
+                pos_offset=resource.model_position,
+                scale=resource.model_size,
+                hpr=resource.model_hpr,
             )
 
-            if model_def:
-                self.add_model(
-                    model_path=model_def,
-                    net_type=NET_TYPE.RESOURCE,
-                    pos_offset=resource.model_position,
-                    scale=resource.model_size,
-                    hpr=resource.model_hpr,
-                )
+    def _is_model_drawn(self, model_path: str) -> bool:
+        """
+        Check if a model with the given path is already drawn on this tile.
+        Returns True if the model is found, False otherwise.
+        """
+        for child in self.geometry_node.getChildren():
+            if child.getTag(NET_TYPE_FIELD) == str(NET_TYPE.RESOURCE.value):
+                if child.getTag(NET_NODE_TAG_ID_FIELD) == model_path:
+                    return True
+        return False
 
     def _draw_yield_and_population_icons(self) -> None:
         """Generate a UV card showing population and yield icons from the atlas."""
@@ -252,6 +278,10 @@ class TileRenderer:
         for idx, entry in enumerate(slots):
             if not entry or (isinstance(entry, BaseResource) and entry.value == 0.0):
                 continue
+
+            if idx != 0 and isinstance(entry, BaseResource) and entry.value > 0.0:
+                # If it's a resource with a value, we use its icon
+                entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
 
             path = self._get_icon_virtual_path(entry, idx == 0 and not self.tile.city)
             if not path:
@@ -387,9 +417,19 @@ class TileRenderer:
             else:
                 node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
 
+            self.models.append(node)
+
             if Debug.world_spawning():
                 self.tile.logger.debug(
                     f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}."
                 )
 
         self.base.loader.loadModel(full_path, callback=on_model_loaded)  # type: ignore
+
+    def remove_model(self, net_id: str) -> None:
+        """
+        Remove any model under geometry_node with NET_NODE_TAG_ID_FIELD == net_id.
+        """
+        # iterate over a copy, since we may be mutating children
+        for model in self.models[:]:
+            model.removeNode()

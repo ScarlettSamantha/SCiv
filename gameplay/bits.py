@@ -224,26 +224,23 @@ class BitsRenderer:
         self.tile: "Tile" = tile
         # reference the tile's prop slots
         self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.prop_slots
-        self._bit_slot_assignments: Dict[str, str] = {}
+        self._bit_slot_assignments: Dict[str, Bit] = {}
 
     def render(self) -> None:
-        active = {b.id: b for b in self.tile.get_terrain().get_bits()}
-        # remove disabled or missing bits
-        for bit_id, slot in list(self._bit_slot_assignments.items()):
-            b = active.get(bit_id)
-            if b is None or b.is_disabled():
-                self._unrender_slot(slot)
-                del self._bit_slot_assignments[bit_id]
+        active_bits = {b.id: b for b in self.tile.get_terrain().get_bits() if not b.is_disabled()}
 
-        # render new bits
-        for b in active.values():
-            if b.id in self._bit_slot_assignments or b.is_disabled():
+        for slot, bit in list(self._bit_slot_assignments.items()):
+            if bit.id not in active_bits:
+                self._unrender_slot(slot)
+                del self._bit_slot_assignments[slot]
+
+        for bit in active_bits.values():
+            if bit in self._bit_slot_assignments.values():
                 continue
-            slot = self._choose_slot_for(b)
-            # if no slot available, skip spawning
+            slot = self._choose_slot_for(bit)
             if not slot:
                 continue
-            self._render_bit(b, slot)
+            self._render_bit(bit, slot)
 
     def enable_bit(self, bit: Bit, slot: Optional[str] = None) -> None:
         bit.disabled = False
@@ -256,19 +253,20 @@ class BitsRenderer:
     def disable_bit(self, bit: Bit) -> None:
         bit.disabled = True
         if bit.id in self._bit_slot_assignments:
-            self._unrender_slot(self._bit_slot_assignments.pop(bit.id))
+            slot_name = next((name for name, b in self._bit_slot_assignments.items() if b.id == bit.id), None)
+            if slot_name:
+                self._unrender_slot(slot_name)
+                del self._bit_slot_assignments[slot_name]
 
     def search_bit(self, bit_id: str) -> Optional[Bit]:
         return self.tile.get_terrain().bits.search_bit(bit_id)
 
     def _choose_slot_for(self, bit: Bit) -> Optional[str]:
-        # if bit requests a specific slot
         if bit.has_preferred_slot():
             name = bit.get_preferred_slot_name()
             if name in self.prop_slots and self._slot_free(name):
                 return name
             return None
-        # otherwise pick any free slot
         free = [s for s in self.prop_slots if self._slot_free(s)]
         return random.choice(free) if free else None
 
@@ -278,8 +276,7 @@ class BitsRenderer:
     def _render_bit(self, bit: Bit, slot_name: str) -> None:
         from helpers.model import ModelHelper
 
-        # reserve the slot immediately
-        self._bit_slot_assignments[bit.id] = slot_name
+        self._bit_slot_assignments[slot_name] = bit
         self.tile.renderer.add_model(
             model_path=bit.model,
             net_type=NET_TYPE.BIT,
@@ -300,8 +297,25 @@ class BitsRenderer:
         )
 
     def _unrender_slot(self, slot_name: str) -> None:
-        node = self._bit_slot_assignments.pop(slot_name, None)
-        if node:
-            if node in self.tile.models:  # type: ignore
-                self.tile.models.remove(node)  # type: ignore
-            node.removeNode()  # type: ignore
+        bit = self._bit_slot_assignments.get(slot_name)
+        if not bit:
+            return
+
+        self.tile.renderer.remove_model(bit.model)
+
+    def disable_all(self) -> None:
+        for bit in self.tile.get_terrain().get_bits():
+            if not bit.is_disabled():
+                self.disable_bit(bit)
+        self._bit_slot_assignments.clear()
+
+    def enable_all(self) -> None:
+        for bit in self.tile.get_terrain().get_bits():
+            if bit.is_disabled():
+                self.enable_bit(bit)
+        self._bit_slot_assignments.clear()
+
+    def clear(self) -> None:
+        for slot_name, _ in list(self._bit_slot_assignments.items()):
+            self._unrender_slot(slot_name)
+        self._bit_slot_assignments.clear()

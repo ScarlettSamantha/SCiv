@@ -385,6 +385,11 @@ class Resources:
         # Also to counter the issue of circular imports.
         return self.resources[ResourceTypeBasic]
 
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        state["resources"] = {k: v for k, v in self.resources.items() if v}  # Remove empty sub-dictionaries
+        return state
+
     def get(
         self, _type: Type[ResourceTypeBase] | None = None, key: str | None = None
     ) -> Dict[Type[ResourceTypeBase], Dict[str, BaseResource]] | BaseResource | Dict[str, BaseResource]:

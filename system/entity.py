@@ -190,7 +190,9 @@ class BaseEntity(ABC, DirectObject):
         return self.owner
 
     def set_owner(self, owner: Optional[Union["Player", weakref.ReferenceType["Player"]]] = None) -> None:
-        if isinstance(owner, "Player"):
+        from gameplay.player import Player
+
+        if isinstance(owner, Player):
             self.owner = weakref.ref(owner)
             return
         self.owner = owner

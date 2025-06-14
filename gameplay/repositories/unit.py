@@ -1,5 +1,6 @@
 from typing import Dict, Type
 
+
 from gameplay.promotion import Promotion, PromotionTree
 from gameplay.unit import Unit
 from system.pyload import PyLoad
@@ -12,12 +13,18 @@ class UnitRepository:
     def all(cls, use_cache: bool = True) -> Dict[str, Type[Unit]]:
         if use_cache and len(cls._cache) > 0:
             return cls._cache
-
-        classes: Dict[str, Type[Unit]] = PyLoad.load_classes(
-            ["gameplay/units/core/classes/civilian", "gameplay/units/core/classes/military"], base_classes=Unit
+        classes_civilian: Dict[str, Type[Unit]] = PyLoad.load_classes(
+            ["gameplay/units/core/classes/civilian"],
+            base_classes=Unit,
+            package="gameplay.units.core.classes.civilian",
+        )
+        classes_military: Dict[str, Type[Unit]] = PyLoad.load_classes(
+            ["gameplay/units/core/classes/military"],
+            base_classes=Unit,
+            package="gameplay.units.core.classes.military",
         )
         filtered: Dict[str, Type[Unit]] = {}
-        for key, _class in classes.items():
+        for key, _class in (classes_civilian | classes_military).items():
             if issubclass(_class, (Promotion, PromotionTree)):
                 continue
             filtered[key] = _class

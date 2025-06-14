@@ -245,7 +245,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
         def units():
             for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
-                class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile())  # type: ignore
+                class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
 
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
