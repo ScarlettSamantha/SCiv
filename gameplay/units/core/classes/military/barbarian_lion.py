@@ -11,7 +11,7 @@ class BarbarianLion(CoreMilitaryBaseClass):
     key = "core.units.military.barbarian.lion"
     name = t_("content.units.core.units.military.barbarian.lion.name")
     description = t_("content.units.core.units.military.barbarian.lion.description")
-    icon = "lions.png"
+    icon = "units/lions.png"
     model_size = 0.06
 
     can_retaliate = True
