@@ -22,8 +22,8 @@ class Core(TechTree):
     def _add_items(self) -> None:
         from system.pyload import PyLoad
 
-        classes = PyLoad.load_classes("gameplay/techs/")
-        ages = PyLoad.load_classes("gameplay/ages/core/")
+        classes = PyLoad.load_classes("gameplay/techs/", package="gameplay.techs")
+        ages = PyLoad.load_classes("gameplay/ages/core/", package="gameplay.ages.core")
 
         # Just a type hint proxy
         def get_tech(self: Self, classes: Dict[str, Type[Tech]], key: str) -> Type[Tech]:

@@ -14,7 +14,9 @@ class CoreCivicTree(CivicTree):
         )
 
     def _load_subclasses(self) -> Dict[str, Type[CivicSubtree]]:
-        return PyLoad.load_classes("gameplay/civics/core/subs", lambda x: not x.startswith("_"))
+        return PyLoad.load_classes(
+            "gameplay/civics/core/subs", lambda x: not x.startswith("_"), package="gameplay.civics.core.subs"
+        )
 
     def register_subtrees(self):
         # We just load all the classes in the subs directory and add them as subtrees

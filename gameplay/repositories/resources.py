@@ -22,7 +22,9 @@ class ResourceRepository:
     def load_into_cache(cls):
         for resource_type, folder in folder_mapping.items():
             resource_classes: Dict[str, Type[BaseResource]] = PyLoad.load_classes(  # type: ignore
-                str(Path(__file__).parent.parent / "resources" / "core" / folder), base_classes=BaseResource
+                str(Path(__file__).parent.parent / "resources" / "core" / folder),
+                base_classes=BaseResource,
+                package=f"gameplay.resources.core.{folder}",  # type: ignore
             )
 
             for _class in list(resource_classes.values()):

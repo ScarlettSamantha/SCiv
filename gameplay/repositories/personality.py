@@ -8,19 +8,25 @@ from system.pyload import PyLoad
 class PersonalityRepository:
     @classmethod
     def all(cls) -> List[Type[BasePersonality]]:
-        classes = PyLoad.load_classes("gameplay/personalities", base_classes=BasePersonality)
-        for key, _class in classes.items():
+        classes = PyLoad.load_classes(
+            "gameplay/personalities", base_classes=BasePersonality, package="gameplay.personalities"
+        )
+        for key, _class in list(classes.items()):
             if _class == BasePersonality:
-                del classes[key]
+                classes.pop(key)
         return list(classes.values())
 
     @classmethod
     def random(cls, num: int = 1, unique: bool = False) -> Type[BasePersonality] | List[Type[BasePersonality]]:
         _selected_personalities: List[Type[BasePersonality]] = []
 
+        items = cls.all()
         for _ in range(num):
             while True:
-                _selected_personality: Type[BasePersonality] = choice(cls.all())
+                if len(items) == 0:
+                    _selected_personality: Type[BasePersonality] = BasePersonality
+                else:
+                    _selected_personality: Type[BasePersonality] = choice(items)
 
                 if unique and _selected_personality in _selected_personalities:
                     continue
