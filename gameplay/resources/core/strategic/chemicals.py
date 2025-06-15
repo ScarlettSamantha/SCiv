@@ -19,6 +19,8 @@ class Chemicals(BaseStrategicResource):
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.BOTH
     spawn_amount = 3.0
     coverage = 0.8
+    model = ("assets/models/resources/barrels_chemicals.glb", None)
+    model_scale = 0.35
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

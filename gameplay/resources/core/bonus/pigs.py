@@ -29,7 +29,7 @@ class Pigs(BaseBonusResource):
     coverage = 0.7
     improvement_required = [Farm]
     model = "assets/models/resources/pig.glb"
-    model_size = 5
+    model_size = 7
     model_hpr = (0, 270, 0)
 
     def __init__(self, value: int | float = 0):

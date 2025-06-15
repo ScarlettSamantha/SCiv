@@ -24,6 +24,8 @@ class Clay(BaseBonusResource):
     spawn_amount = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     improvement_required = [Quarry]
+    model = "assets/models/resources/pile_clay.glb"
+    model_size = 0.35
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
