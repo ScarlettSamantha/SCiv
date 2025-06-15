@@ -6,7 +6,6 @@ from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
 from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase  # type: ignore
-
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
@@ -30,6 +29,9 @@ class Camera(Singleton, DirectObject):
         self.active = True
         self.mouseWatcherNode: MouseWatcher = self.base.mouseWatcherNode  # type: ignore
         self.logger: Logger = self.base.logger.engine.getChild("camera")
+
+        # Field-of-View parameters
+        self.fov: float = 70.0
 
         # Zoom parameters
         self.zoom: float = 20.0
@@ -55,9 +57,9 @@ class Camera(Singleton, DirectObject):
         self.target: Optional[NodePath] = None
 
         # Window dimensions & aspect
-        self._aspect_ratio = self.base.win.getXSize() / self.base.win.getYSize()  # type: ignore
-        self.win_x: int = self.base.win.getXSize()  # type: ignore # type: int
-        self.win_y: int = self.base.win.getYSize()  # type: ignore # type: int
+        self.win_x: int = self.base.win.getXSize()  # type: ignore
+        self.win_y: int = self.base.win.getYSize()  # type: ignore
+        self._aspect_ratio: float = self.win_x / self.win_y if self.win_y else 1.0
 
         # Create pivot node
         self.pivot = self.base.render.attachNewNode("cameraPivot")  # type: ignore
@@ -66,6 +68,12 @@ class Camera(Singleton, DirectObject):
         # Attach the camera to this pivot
         self.base.camera.reparentTo(self.pivot)  # type: ignore
         self.update_camera_position()
+
+        # Apply default FOV and aspect ratio
+        lens = self.base.cam.node().getLens()
+        lens.setFov(self.fov)
+        lens.setAspectRatio(self._aspect_ratio)
+        self.base.cam.node().setLens(lens)
 
         # --- Throttling state ---
         # Desired state variables
@@ -107,6 +115,13 @@ class Camera(Singleton, DirectObject):
         self.pivot.setPos(0, 0, 0)  # type: ignore
         self.base.camera.setPos(0, 0, 0)  # type: ignore
         self.base.camera.setHpr(0, 0, 0)  # type: ignore
+
+        # Reset lens FOV and aspect
+        lens = self.base.cam.node().getLens()
+        lens.setFov(self.fov)
+        lens.setAspectRatio(self._aspect_ratio)
+        self.base.cam.node().setLens(lens)
+
         self.yaw = 0.0
         self._update_yaw_trig()
         self.zoom = 20.0
@@ -218,8 +233,13 @@ class Camera(Singleton, DirectObject):
 
         self.win_x = window.getXSize()  # type: ignore
         self.win_y = window.getYSize()  # type: ignore
-        self._aspect_ratio: float = int(self.win_x) / int(self.win_y) if int(self.win_y) else 1  # type: ignore
+        self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0  #   type: ignore
         self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")  # type: ignore
+
+        # update lens aspect ratio
+        lens = self.base.cam.node().getLens()
+        lens.setAspectRatio(self._aspect_ratio)  # type: ignore
+        self.base.cam.node().setLens(lens)
 
     def update_camera_position(self):
         """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
@@ -332,7 +352,7 @@ class Camera(Singleton, DirectObject):
             self.last_mouse_pos = (x, y)
 
         # commit new pivot pos
-        self._desired_pivot_pos = LPoint3f(px, py, pz)
+        self._desired_pivot_pos = LPoint3f(px, py, pz)  # type: ignore
 
     def _flush_to_gpu(self):
         # apply accumulated desired state
