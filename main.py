@@ -20,10 +20,13 @@ from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
 from managers.log import LogManager
 from managers.unit import UnitManager
+from panda3d.core import loadPrcFile
 
 Config.set("modules", "inspector", "")  # type: ignore
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 monkey.patch_kivy()  # this is needed to make kivy work with panda3d we need to attach the window to the current panda3d window # type: ignore
+
+loadPrcFile("config.prc")  # Load the Panda3D configuration file
 
 
 class SCIV(ShowBase):
