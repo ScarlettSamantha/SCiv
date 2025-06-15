@@ -28,6 +28,7 @@ class Gems(BaseLuxuryResource):
     }
     model = "assets/models/resources/pile_gems.glb"
     model_size = 1.0
+    coverage = 0.3
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
