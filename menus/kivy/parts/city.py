@@ -248,6 +248,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         def units():
             for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
                 class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+                class_instance.is_being_build = True
 
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
@@ -486,7 +487,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.hidden = True
 
         for unit in self.buildable_units.values():
-            unit.destroy()  # cleanup temporary units
+            try:
+                unit.destroy()  # cleanup temporary units
+            except Exception as e:
+                self.logger.error(f"Error destroying temporary unit {unit.name}: {e}")
 
     def is_hidden(self) -> bool:
         """Returns True if the City View is hidden."""
