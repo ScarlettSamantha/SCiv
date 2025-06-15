@@ -35,16 +35,8 @@ class Basic(BaseGenerator):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
 
-        def random_seed() -> int:
-            """Generates a random seed based on the current timestamp."""
-            time = str(crc32(str(int(datetime.now().timestamp() * 1000)).encode()))[:-3]
-            rand = str(randrange(2**12, 2**30))[:-3]
-            micro = str(datetime.now().microsecond)[:-3]
-
-            return int(f"{time}{rand}{micro}")
-
-        self.seed = config.seed if config.seed is not None else random_seed()
-        config.seed = self.seed  # Ensure the seed is set in the config
+        self.seed: Optional[int] = config.seed if config.seed is not None else None
+        self.generate_seed = self.seed is None
 
         # Load tile definitions
         self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
@@ -77,11 +69,21 @@ class Basic(BaseGenerator):
             "craters": True,
             "volcanoes": True,
             "volcano_area_size": 1,
-            "num_volcanoes": max(5, self.number_of_tiles // 1000),
+            "num_volcanoes": max(1, self.number_of_tiles // 1500),
             "num_rivers": self.number_of_tiles // 100,
             # territories
             "num_territories": self.number_of_tiles // 100,
         }
+
+    def randomize_seed(self) -> None:
+        """Randomizes the seed for the map generation."""
+        time = str(crc32(str(int(datetime.now().timestamp() * 1000)).encode()))[:-3]
+        rand = str(randrange(2**12, 2**30))[:-3]
+        micro = str(datetime.now().microsecond)[:-3]
+
+        self.seed = int(f"{time}{rand}{micro}")
+        self.map_params["random_seed"] = self.seed
+        self.config.seed = self.seed
 
     def load_tiles(self) -> Dict[str, Type["Tile"]]:
         """Loads tile classes dynamically."""
@@ -96,6 +98,10 @@ class Basic(BaseGenerator):
     def generate(self) -> bool:
         """Generates the hex map, instantiates tiles without their default models, then builds GPU meshes using the tile's own Z calculation."""
         from system.subsystems.hexgen.mapgen import MapGen
+
+        if self.generate_seed:
+            self.seed = self.randomize_seed()
+            self.config.seed = self.seed
 
         # Step 1: Generate raw world data via HexGen
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
