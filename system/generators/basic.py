@@ -359,7 +359,7 @@ class Basic(BaseGenerator):
         tile.geoform_type = hex.geoform_type.id  # type: ignore
         tile.features = hex.features
         tile.is_water = hex.is_water
-        tile.is_land = hex.is_land
+        tile.is_land = hex.is_land and not hex.is_water and HexFeature.lake not in hex.features
         tile.is_coast = hex.is_coast
         tile.terrain = hex.terrain  # This is  set by classify_terrain # type: ignore
         tile.hemisphere = hex.hemisphere.name
