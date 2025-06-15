@@ -279,9 +279,10 @@ class Tile(BaseEntity):
         return f"tile_{self.x}_{self.y}"
 
     def on_load(self) -> None:
+        self.register()
+
         self.base = Cache.get_showbase_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
-        self.renderer = TileRenderer(self)
         self.effects = Effects(self)
 
         self.renderer.render()
