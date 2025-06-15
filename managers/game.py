@@ -144,7 +144,7 @@ class Game(Singleton, DirectObject):
         self.turn.activate()
         self.properties = self.entities.get_all(EntityType.GAME_SETTINGS).get("game_settings")  # type: ignore
         self.game_settings = self.properties
-
+        self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
         turn = self.entities.get_meta_data("turn")
         if turn is None:
             raise ValueError("No turn data found")
