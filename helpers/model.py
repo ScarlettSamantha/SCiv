@@ -10,6 +10,16 @@ class ModelHelper:
     _position_cache: Dict[Tuple[float, float], Dict[str, Tuple[float, float, float]]] = {}
 
     @classmethod
+    def reset(cls):
+        """
+        Reset the position cache to clear any cached slot positions.
+        This is useful if the radius or slot radius changes.
+        """
+        cls._position_cache.clear()
+        cls.asset_manager_cache = AssetManager.get_singleton_instance()
+        cls.asset_manager_cache.reset()
+
+    @classmethod
     def calculate_hex_slot_positions(
         cls, radius: float = 1.0, slot_radius: float = 0.25
     ) -> Dict[str, Tuple[float, float, float]]:

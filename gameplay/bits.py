@@ -274,8 +274,6 @@ class BitsRenderer:
         return slot not in self._bit_slot_assignments
 
     def _render_bit(self, bit: Bit, slot_name: str) -> None:
-        from helpers.model import ModelHelper
-
         self._bit_slot_assignments[slot_name] = bit
         self.tile.renderer.add_model(
             model_path=bit.model,
@@ -285,13 +283,7 @@ class BitsRenderer:
                 bit.offset[1] + self.prop_slots[slot_name][1],
                 bit.offset[2] + self.prop_slots[slot_name][2],
             ),
-            scale=(
-                ModelHelper.calculate_slot_scale_factor(
-                    ModelHelper.load_model(bit.model), slot_positions=self.prop_slots[slot_name]
-                )
-                if bit.allow_auto_scale
-                else bit.scale
-            ),
+            scale=(bit.scale),
             hpr=bit.hpr,
             net_id=bit.id,
         )
@@ -318,12 +310,4 @@ class BitsRenderer:
     def clear(self) -> None:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
             self._unrender_slot(slot_name)
-        self._bit_slot_assignments.clear()
-
-    def destroy(self) -> None:
-        """
-        Cleanup the renderer and remove all bits.
-        """
-        self.clear()
-        self.prop_slots.clear()
         self._bit_slot_assignments.clear()

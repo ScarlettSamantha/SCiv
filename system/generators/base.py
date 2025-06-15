@@ -288,3 +288,15 @@ class BaseGenerator(ABC):
                 units.append(companion_unit)
 
         return len(units) > 0
+
+    @abstractmethod
+    def randomize_seed(self) -> int:
+        """
+        Randomizes the seed for the generator.
+        This is used to ensure that each generation is unique.
+        """
+        import random
+
+        seed = random.randint(0, 2**31 - 1)
+        self.config.seed = seed
+        return seed

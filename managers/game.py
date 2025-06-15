@@ -111,6 +111,7 @@ class Game(Singleton, DirectObject):
     def get_game_settings(self) -> GameSettings:
         if self.game_settings is None:
             raise ValueError("Game settings not initialized")
+
         return self.game_settings
 
     def on_main_menu(self):
@@ -131,15 +132,18 @@ class Game(Singleton, DirectObject):
 
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
 
+        self.mesh_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
+        if self.mesh_grid is None:
+            raise ValueError("Mesh grid has not been generated yet")
+
         self.world.load(world_tiles)
         self.players.load(players)
         self.unit.load(units)
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
-        self.border = Borders(self.world.get_size(), self.players, self.shaders, self.base.render)  # type: ignore
-
-        self.accept("ui.request.update.borders", self.border.update_borders)
+        self.properties = self.entities.get_all(EntityType.GAME_SETTINGS).get("game_settings")  # type: ignore
+        self.game_settings = self.properties
 
         turn = self.entities.get_meta_data("turn")
         if turn is None:
@@ -371,6 +375,9 @@ class Game(Singleton, DirectObject):
         self.entities.session = f"{player.name}"
 
         self.logger.info("Starting map generator")
+        seed = self.active_generator.randomize_seed()
+        self.active_generator.config.seed = seed
+        self.properties.seed = seed  # type: ignore
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
 
@@ -392,7 +399,11 @@ class Game(Singleton, DirectObject):
 
         self.calculate_vision()
 
-        self.mesh_grid: Optional[HexGrid] = self.active_generator.mesh_grid  # type: ignore
+        if (mesh_grid := self.active_generator.mesh_grid) is None:  # type: ignore
+            raise ValueError("Mesh grid has not been generated yet. Call generate_world() first.")
+
+        self.mesh_grid = mesh_grid
+        self.entities.register(type=EntityType.WORLD, entity=self.mesh_grid, key="world_grid")  # type: ignore
         self.players.on_game_start()
         self.border.setup_borders()
 
