@@ -34,11 +34,13 @@ class PlayerList(FloatLayout, DirectObject):
             rows=1,
             spacing=-10,
             padding=10,
-            size_hint=(None, None),
+            size_hint=(0.1, 0.1),
             width=600,
             height=200,
-            pos_hint={"top": 0.985},
+            pos_hint={"top": 0.985, "right": 0.85},
         )
+        self.size_hint = (0.5, 0.1)  # type: ignore
+        self.pos_hint = {"right": 0.75, "top": 0.985}
 
         self.add_widget(self.grid)
 
@@ -56,6 +58,8 @@ class PlayerList(FloatLayout, DirectObject):
         self.players = list(PlayerManager.all().values())
 
         for player in self.players:
+            if player.is_nature or player.is_barbarian:
+                continue
             widget = self._generate_player_widget(player)
             self.grid.add_widget(widget)
 
