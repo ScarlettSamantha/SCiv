@@ -35,6 +35,8 @@ class Bit:
         disabled: bool = False,
         blocks_resource_model_spawning: bool = False,
         id: Optional[str] = None,
+        default_shader: bool = True,
+        default_lighting: bool = True,
     ):
         self.id: str = id or uuid.uuid4().hex
         self.model: str = model if model.startswith(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
@@ -46,6 +48,8 @@ class Bit:
         self.allow_auto_scale: bool = allow_auto_scale
         self.disabled: bool = disabled
         self.blocks_resource_model_spawning: bool = blocks_resource_model_spawning
+        self.default_shader: bool = default_shader
+        self.default_lighting: bool = default_lighting
 
     def copy(
         self,
@@ -174,15 +178,8 @@ class Bits:
         container = self if group is None else self.groups.get(group)
         if container is None or not container.enabled:
             return []
-        collected = container._collect_recursive()
-        if not collected:
-            return []
-        if container.mode == GroupMode.OR:
-            if num == 1:
-                return [random.choice(collected)]
-            return random.sample(collected, min(num, len(collected)))
-        # AND mode
-        return collected
+
+        return container._collect_recursive()
 
     def is_disabled(self) -> bool:
         if not self.enabled:
@@ -286,6 +283,8 @@ class BitsRenderer:
             scale=(bit.scale),
             hpr=bit.hpr,
             net_id=bit.id,
+            disable_lighting=not bit.default_lighting,
+            disable_shader=not bit.default_shader,
         )
 
     def _unrender_slot(self, slot_name: str) -> None:

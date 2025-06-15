@@ -69,7 +69,7 @@ class Settler(CoreCivilianBaseClass):
     description = t_("content.units.core.units.civilian.settler.description")
     icon = "units/settler.png"
     promotion_tree = SettlerPromotionTree
-    model_size = 0.5
+    model_size = 0.75
 
     def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):
         super().__init__(

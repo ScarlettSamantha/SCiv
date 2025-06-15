@@ -10,6 +10,7 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     LRGBColor,
+    NodePath,
 )
 
 from gameplay._units import Units
@@ -260,6 +261,9 @@ class Tile(BaseEntity):
         if isinstance(edge, weakref.ReferenceType):
             return edge()
         return edge
+
+    def get_node(self) -> NodePath:
+        return self.renderer.geometry_node
 
     def get_edges(self, as_reference: bool = True) -> Dict[str, Union["Edge", None, weakref.ReferenceType["Edge"]]]:
         data: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = {}

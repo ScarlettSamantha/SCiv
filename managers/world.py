@@ -66,6 +66,8 @@ class World(Singleton, DirectObject):
         ModelHelper.reset()
 
     def load(self, data: Dict[str, "Tile"]):
+        from gameplay.unit import Unit
+
         self.logger.info("Loading world data.")
         for map_item in data.values():
             item_tag: str | None = map_item.tag

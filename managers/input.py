@@ -64,6 +64,7 @@ class Input(Singleton, DirectObject):
         self.accept("f3", self.de_activate)
 
         self.accept("f9", self.force_render_selected_tile)
+        self.accept("f12", self.inspect_element)
 
         # Escape key
         self.accept("escape", self.on_escape)
@@ -80,6 +81,17 @@ class Input(Singleton, DirectObject):
 
         self.logger.info(f"Rendering selected tile: {self.selected_tile.tag}")
         self.selected_tile.render()
+
+    def inspect_element(self, element: Optional[NodePath] = None) -> None:
+        from direct.tkpanels.Inspector import inspect
+
+        if element is None:
+            if self.selected_tile is not None:
+                element = self.selected_tile.get_node()
+            else:
+                self.logger.warning("No element to inspect. Please select a tile or unit.")
+                return
+        inspect(element)
 
     def delay_activate(self, delay: int | float):
         self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore

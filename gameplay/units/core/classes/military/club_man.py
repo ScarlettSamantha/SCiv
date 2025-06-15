@@ -21,13 +21,13 @@ class Beserk(MelePromotion):
 
 
 class ClubMan(CoreMilitaryBaseClass):
-    _model = "assets/models/units/peasant.glb"
+    _model = "assets/models/units/axemen.glb"
     buildable = True
     key = "core.unit.class.clubman"
     name = t_("content.units.core.units.military.clubman.name")
     description = t_("content.units.core.units.military.clubman.description")
     icon = "units/clubman.png"
-    model_size = 0.2
+    model_size = 0.33
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
