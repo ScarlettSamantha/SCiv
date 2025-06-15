@@ -28,6 +28,7 @@ class HillsForest(BaseTerrain):
                 preferred_slot="center",
                 allow_auto_scale=False,
                 blocks_resource_model_spawning=True,
+                offset=(0, 0, -0.3),
             )
         )
         return super().register_bits()

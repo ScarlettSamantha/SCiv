@@ -69,6 +69,55 @@ class HexGrid:
         self.root_np.reparent_to(render)  # type: ignore  # noqa: F821
         self.root_np.flatten_light()
 
+    def __getstate__(self) -> Dict[str, Any]:
+        return {
+            "tiles": self.tiles,
+            "radius": self.radius,
+            "cols": self.cols,
+            "rows": self.rows,
+            "wall_color": self.wall_color,
+        }
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.tiles = state["tiles"]
+        self.radius = state["radius"]
+        self.cols = state["cols"]
+        self.rows = state["rows"]
+        self.wall_color = state["wall_color"]
+        self.wall_starts = []
+        self.wall_vertex_counts = []
+        self.mesh_vertices = []
+        self.mesh_triangles = []
+        self.hex_starts = []
+        self.centers = []
+        self.center_height = 0.0
+        self._hex_uvs = []
+        self.grid_np = None
+        self.walls_np = None
+
+        self.root_np = NodePath(PandaNode("hexgrid_root"))
+
+        self._tile_index_map = {(t.x, t.y): i for i, t in enumerate(self.tiles)}
+
+        if not hasattr(HexGrid, "shader"):
+            HexGrid.shader = Shader.make(
+                Shader.SL_GLSL,
+                vertex="assets/shaders/hex_mesh.vert.glsl",
+                fragment="assets/shaders/hex_mesh.frag.glsl",
+            )
+
+        self.generate_hex_uvs()
+        self.generate_mesh()
+        self.build_nodes()
+
+        # 6) reparent into the scene (if Panda3D is available)
+        try:
+            self.root_np.reparent_to(render)  # type: ignore
+            self.root_np.flatten_light()
+        except NameError:
+            # no `render` in this context; skip
+            pass
+
     def reset(self):
         self.tiles.clear()
         self.mesh_vertices.clear()

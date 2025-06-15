@@ -117,12 +117,6 @@ class AtlasGenerator:
         tex = Texture()
         tex.load(pnm)
 
-        tex.set_format(Texture.F_srgb_alpha)
-        tex.set_minfilter(Texture.FT_linear_mipmap_linear)
-        tex.set_magfilter(Texture.FT_linear)
-        tex.set_wrap_u(Texture.WM_clamp)
-        tex.set_wrap_v(Texture.WM_clamp)
-
         return tex
 
     def _generate_individual_textures(self) -> None:

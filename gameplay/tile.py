@@ -10,6 +10,7 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     LRGBColor,
+    NodePath,
 )
 
 from gameplay._units import Units
@@ -190,6 +191,7 @@ class Tile(BaseEntity):
         self.effects: Effects = Effects(self)
         self.needs_tile_proecessing: bool = False
         self.block_resource_model_spawning: bool = False
+        self.visible_sides: Dict[int, bool] = {i: True for i in range(6)}
 
         self.renderer: TileRenderer = TileRenderer(self)
 
@@ -260,6 +262,9 @@ class Tile(BaseEntity):
             return edge()
         return edge
 
+    def get_node(self) -> NodePath:
+        return self.renderer.geometry_node
+
     def get_edges(self, as_reference: bool = True) -> Dict[str, Union["Edge", None, weakref.ReferenceType["Edge"]]]:
         data: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = {}
         for side, edge in self.edges.items():
@@ -274,9 +279,11 @@ class Tile(BaseEntity):
         return f"tile_{self.x}_{self.y}"
 
     def on_load(self) -> None:
-        self.models = []
+        self.register()
+
         self.base = Cache.get_showbase_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
+        self.effects = Effects(self)
 
         self.renderer.render()
         self.pos_x, self.pos_y, self.pos_z = self.calculate_z_pos_on_altitude()
@@ -315,6 +322,24 @@ class Tile(BaseEntity):
             del state["effects"]
 
         return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self.base = Cache.get_showbase_instance()
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
+        self._entity_manager = EntityManager.get_singleton_instance()
+        self.renderer = TileRenderer(self)
+        self.effects = Effects(self)
+        self.visible_sides = state.get("visible_sides", {i: True for i in range(6)})
+
+        if "tile_yield" not in state:
+            self.tile_yield = Yields.nullYield()
+
+        if "effects" not in state:
+            self.effects = Effects(self)
+
+        for key, value in state.items():
+            setattr(self, key, value)
 
     def set_visible_sides(self, sides: Dict[int, bool]) -> None:
         if len(sides) != 6:

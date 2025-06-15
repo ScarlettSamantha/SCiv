@@ -11,7 +11,7 @@ from gameplay.resource import BaseResource
 
 from helpers.tiles import Tiles
 from managers import game
-from managers.entity import EntityManager
+from managers.entity import EntityManager, EntityType
 from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
 from system.pyload import PyLoad
@@ -75,7 +75,7 @@ class Basic(BaseGenerator):
             "num_territories": self.number_of_tiles // 100,
         }
 
-    def randomize_seed(self) -> None:
+    def randomize_seed(self) -> int:
         """Randomizes the seed for the map generation."""
         time = str(crc32(str(int(datetime.now().timestamp() * 1000)).encode()))[:-3]
         rand = str(randrange(2**12, 2**30))[:-3]
@@ -84,6 +84,7 @@ class Basic(BaseGenerator):
         self.seed = int(f"{time}{rand}{micro}")
         self.map_params["random_seed"] = self.seed
         self.config.seed = self.seed
+        return self.seed
 
     def load_tiles(self) -> Dict[str, Type["Tile"]]:
         """Loads tile classes dynamically."""
@@ -98,10 +99,6 @@ class Basic(BaseGenerator):
     def generate(self) -> bool:
         """Generates the hex map, instantiates tiles without their default models, then builds GPU meshes using the tile's own Z calculation."""
         from system.subsystems.hexgen.mapgen import MapGen
-
-        if self.generate_seed:
-            self.seed = self.randomize_seed()
-            self.config.seed = self.seed
 
         # Step 1: Generate raw world data via HexGen
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
@@ -150,6 +147,7 @@ class Basic(BaseGenerator):
         )
         self.mesh_grid.grid_np.instance_to(self.base.render)  # type: ignore
         game.Game.get_singleton_instance().game_settings = self.config
+        EntityManager.get_singleton_instance().register(EntityType.GAME_SETTINGS, self.config, "game_settings")  # type: ignore
         game.Game.get_singleton_instance().mesh_grid = self.mesh_grid
 
         for tile in hexes:

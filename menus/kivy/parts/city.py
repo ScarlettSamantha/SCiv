@@ -97,6 +97,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
     def update(self):
         if self.city is None:
             return
+
+        self.update_debug_rect(self.frame, None)  # type: ignore
         self.logger.debug(f"Updating City UI for city: {self.city.name}")
 
         self.city_name = self.city.name
@@ -246,6 +248,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         def units():
             for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
                 class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+                class_instance.is_being_build = True
 
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
@@ -313,6 +316,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             f"game.gameplay.city.request_cancel_building_improvement_{self.city.tag}", [self.city]
         )
 
+    def update_debug_rect(self, instance: Widget, value: Any):
+        self.rect.size = instance.size  # type: ignore
+        self.rect.pos = instance.pos  # type: ignore
+
     def build(self) -> BoxLayout:
         self.logger.debug("Building City UI")
         self.background_color = (0, 0, 0, 1)  # Black background
@@ -332,11 +339,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
             Color(0, 0, 0, 0.7)  # Black background with 70% opacity
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
-        def update_debug_rect(instance: Widget, value: Any):
-            self.rect.size = instance.size  # type: ignore
-            self.rect.pos = instance.pos  # type: ignore
-
-        self.frame.bind(size=update_debug_rect, pos=update_debug_rect)
+        self.frame.bind(size=self.update_debug_rect, pos=self.update_debug_rect)
 
         # City name label (Top)
         self.city_label = Label(text=str(self.city_name), size_hint=(1, None), height=50, bold=True, font_size=24)
@@ -484,7 +487,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.hidden = True
 
         for unit in self.buildable_units.values():
-            unit.destroy()  # cleanup temporary units
+            try:
+                unit.destroy()  # cleanup temporary units
+            except Exception as e:
+                self.logger.error(f"Error destroying temporary unit {unit.name}: {e}")
 
     def is_hidden(self) -> bool:
         """Returns True if the City View is hidden."""

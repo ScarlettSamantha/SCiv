@@ -74,7 +74,7 @@ class BaseTerrain(ABC):
         pass
 
     def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List[Bit]:
-        self.active_bits = self.bits.choose(group=group, num=num)
+        self.active_bits = self.bits.choose()
         return self.active_bits
 
     def get_bits(self, choose_if_empty: bool = True) -> List[Bit]:

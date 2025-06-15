@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     from gameplay.unit import Unit
     from main import SCIV
     from system.effects import Effect
+    from system.mesh import HexGrid
+    from system.game_settings import GameSettings
 
 
 class EntityType(Enum):
@@ -32,6 +34,7 @@ class EntityType(Enum):
     PLAYER = ("_players_", None)
     EFFECT = ("_effects_", None)
     WORLD = ("_world_", None)
+    GAME_SETTINGS = ("_game_settings_", None)
 
     def __init__(self, storage_key: str, base_type: Type["BaseEntity"] | None):
         self.storage_key = storage_key
@@ -40,7 +43,7 @@ class EntityType(Enum):
     @property
     def base_type(
         self,
-    ) -> "type[Tile] | type[Unit] | type[Improvement] | type[City] | type[Player] | type[Effect] | Type[BaseEntity]":
+    ) -> "type[Tile] | type[Unit] | type[Improvement] | type[City] | type[Player] | type[Effect] | Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]":
         """Lazy import to avoid circular dependencies."""
         if self._base_type is None:
             if self == EntityType.TILE:
@@ -67,6 +70,14 @@ class EntityType(Enum):
                 from system.effects import Effect
 
                 self._base_type = Effect
+            elif self == EntityType.WORLD:
+                from system.mesh import HexGrid
+
+                self._base_type = HexGrid
+            elif self == EntityType.GAME_SETTINGS:
+                from system.game_settings import GameSettings
+
+                self._base_type = GameSettings
             else:
                 raise NotImplementedError(f"Entity type {self} not implemented.")
 

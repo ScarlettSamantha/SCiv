@@ -148,6 +148,8 @@ class BaseResource(ABC):
     model_size: float = 1.0
     model_position: Tuple[float, float, float] = (0.0, 0.0, 0.10)
     model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    model_disable_default_lighting: bool = False
+    model_disable_default_shader: bool = False
 
     def __init__(
         self,

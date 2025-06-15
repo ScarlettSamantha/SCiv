@@ -111,7 +111,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def on_game_start(self, *args: Any):
         self.player = PlayerManager.session_player()
         self.build_player_list()
-        self.build_player_info()
         self.build_combat_log()
 
         if self.debug_map_stats is not None:
@@ -177,7 +176,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         screen: PauseMenu | Screen = self.ui_manager.get_screen("pause_menu")
 
-        if screen.pause_menu._is_open or self.player_info.is_open:  # type: ignore
+        if screen.pause_menu._is_open or self.player_info is not None:  # type: ignore
             MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
         else:
             if self.civics is not None and self.civics.is_open:
@@ -394,8 +393,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def build_player_info(self) -> PlayerInfo:
         self.player_info = PlayerInfo()
-        # self.player_info.build()
-        # self.player_info.hide_popup()
+        self.player_info.build()
         self.add_widget(self.player_info)
         return self.player_info
 
@@ -625,6 +623,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.add_widget(self.civics)
             self.lock_input()
 
+    def open_player_info(self, player: Player):
+        if self.player_info is None:
+            self.player_info = self.build_player_info()
+            self.register_non_collidable(self.player_info)
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.add_widget(self.player_info)
+            self.lock_input()
+
     def close_research(self):
         if self.research is not None:
             self.unregister_non_collidable(self.research)
@@ -643,6 +650,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.civics)
             self.popup_disabled = True
             self.civics = None
+            self.unlock_input()
+
+    def close_player_info(self):
+        if self.player_info is not None:
+            self.unregister_non_collidable(self.player_info)
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.remove_widget(self.player_info)
+            self.popup_disabled = True
+            self.player_info = None
             self.unlock_input()
 
     def toggle_research(self):

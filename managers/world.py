@@ -9,6 +9,8 @@ from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
+from helpers.model import ModelHelper
+from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
@@ -60,8 +62,12 @@ class World(Singleton, DirectObject):
             tile.destroy()
 
         TileRepository.reset_caches()  # Reset the tile repository caches as these are used in the generation of the map.
+        AssetManager.reset()
+        ModelHelper.reset()
 
     def load(self, data: Dict[str, "Tile"]):
+        from gameplay.unit import Unit
+
         self.logger.info("Loading world data.")
         for map_item in data.values():
             item_tag: str | None = map_item.tag
@@ -74,13 +80,15 @@ class World(Singleton, DirectObject):
         self.rows = max([tile.y for tile in data.values()]) + 1  # y
         self.calculate_middle()
         self.logger.info(f"World size is {self.cols}x{self.rows}")
+        TileRepository.grid = self.grid
 
         for tile in self.map.values():  # Place the tiles
             tile.on_load()
 
-        unit: "Unit"
-        for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
-            unit.on_load()
+        for unit in EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values():  # type: ignore
+            if isinstance(unit, Unit):
+                if not unit.is_being_build:
+                    unit.spawn()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0

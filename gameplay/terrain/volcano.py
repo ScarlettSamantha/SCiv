@@ -8,7 +8,7 @@ from ._base_terrain import BaseTerrain
 class Volcano(BaseTerrain):
     _name = "world.terrain.volcano"
 
-    _fallback_color = (0, 119, 255)
+    _fallback_color = (30, 0, 0)  # Dark red color for volcano
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -26,9 +26,13 @@ class Volcano(BaseTerrain):
         self.bits.add_bit(
             Bit(
                 model="volcano.glb",
-                scale=1.0,
-                hpr=(0, 0, 0),
-                offset=(0, 0, 0),
+                scale=1.5,
+                hpr=(-90, 0, 0),
+                offset=(0, 0, -0.3),
+                default_lighting=False,
+                default_shader=False,
+                blocks_resource_model_spawning=True,
+                preferred_slot="center",
             )
         )
 

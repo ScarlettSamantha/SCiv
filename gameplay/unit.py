@@ -94,6 +94,8 @@ class Unit(BaseEntity, ABC):
         self.can_pillage: bool = True
         self.can_build: bool = False
 
+        self.is_being_build: bool = False
+
         self.resource_needed: Type["BasicBaseResource"] = Production
         self.amount_resource_needed: Yields = Yields(production=10)
 
@@ -123,6 +125,15 @@ class Unit(BaseEntity, ABC):
 
     def on_load(self):
         self.base = Cache.get_showbase_instance()
+        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        self.effects = Effects(self)
+        self.actions = []
+        self.model = None
+        self.model_cache = None
+        self.health_left: float = self.max_health
+        self.moves_left = self.max_moves
+        self.tag = self.generate_unit_tag()
+        self.register()
         self.spawn(ignore_constraints=True)
 
     def register(self) -> None:
@@ -168,6 +179,9 @@ class Unit(BaseEntity, ABC):
         Spawns the unit at its assigned tile, loading the model into Panda3D.
         Returns True if successful, False otherwise.
         """
+        if self.is_being_build:
+            return False
+
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
@@ -411,6 +425,20 @@ class Unit(BaseEntity, ABC):
         state.pop("actions", None)  # Remove actions to avoid circular references
         state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
         return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        from gameplay.resources.core.basic.production import Production
+
+        self.base = Cache.get_showbase_instance()
+        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        self.model = None
+        self.model_cache = None
+        self.effects = Effects(self)
+        self.actions = []
+        self.resource_needed = Production if state.get("resource_needed") == "Production" else BasicBaseResource
+        self.tile = state.get("tile")  # type: ignore
+        for key, value in state.items():
+            setattr(self, key, value)
 
     @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:

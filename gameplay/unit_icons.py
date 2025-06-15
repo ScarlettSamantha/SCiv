@@ -33,7 +33,7 @@ class UnitIcons(DirectObject):
 
         # Hook our update into Panda3D's task manager
         self.base = Cache.get_showbase_instance()
-        # self.base.taskMgr.add(self._update_positions, "unit_icons_billboard_update")  # type: ignore
+        self.base.taskMgr.add(self._update_positions, "unit_icons_billboard_update", delay=1)  # type: ignore
 
     def _get_texture(self, path: str) -> Texture:
         """

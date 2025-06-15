@@ -46,15 +46,15 @@ if TYPE_CHECKING:
 
 class TileRenderer:
     ICON_SLOT_POSITIONS = {
-        "center": (0.0, 0.0, 0.3),
-        "n": (0.0, 0.45, 0.3),
-        "ne": (0.375, 0.35, 0.3),
-        "e": (0.45, 0.0, 0.3),
-        "se": (0.375, -0.35, 0.3),
-        "s": (0.0, -0.45, 0.3),
-        "sw": (-0.375, -0.35, 0.3),
-        "w": (-0.45, 0.0, 0.3),
-        "nw": (-0.375, 0.35, 0.3),
+        "center": (0.0, 0.0, -0.3),
+        "n": (0.0, 0.45, -0.3),
+        "ne": (0.375, 0.35, -0.3),
+        "e": (0.45, 0.0, -0.3),
+        "se": (0.375, -0.35, -0.3),
+        "s": (0.0, -0.45, -0.3),
+        "sw": (-0.375, -0.35, -0.3),
+        "w": (-0.45, 0.0, -0.3),
+        "nw": (-0.375, 0.35, -0.3),
     }
 
     def __init__(self, tile: "Tile") -> None:
@@ -110,7 +110,6 @@ class TileRenderer:
         self.clear_models()
         self.unit_icons.destroy()  # type: ignore
         self.unit_icons = None
-        self.bits_renderer.destroy()
         self.base = None
 
     def render(self, update_yields: bool = True) -> None:
@@ -157,6 +156,7 @@ class TileRenderer:
         overlay.setHpr(0, -90, 0)
         overlay.setScale(1.0)
         overlay.setZ(0.001)
+        overlay.setShaderOff()
 
         texture = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(str(self.tile.tile_terrain.texture()))
 
@@ -207,6 +207,8 @@ class TileRenderer:
                 pos_offset=resource.model_position,
                 scale=resource.model_size,
                 hpr=resource.model_hpr,
+                disable_lighting=resource.model_disable_default_lighting,
+                disable_shader=resource.model_disable_default_shader,
             )
 
     def _is_model_drawn(self, model_path: str) -> bool:
@@ -368,6 +370,7 @@ class TileRenderer:
         node.setBin("fixed", 50)
         node.setTwoSided(True)
         node.setAntialias(AntialiasAttrib.MAuto)
+        node.setBillboardAxis()
         self.city_nameplate_node = node
 
     def add_model(
@@ -378,7 +381,9 @@ class TileRenderer:
         scale: float = 1.0,
         hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         net_id: Optional[str] = None,
-    ) -> None:
+        disable_lighting: bool = False,
+        disable_shader: bool = False,
+    ) -> Optional[NodePath]:
         if self.base is None:
             raise ValueError("TileRenderer base is not initialized.")
 
@@ -400,6 +405,11 @@ class TileRenderer:
             node.setPos(x, y, z)
             node.setCollideMask(BitMask32.bit(1))
             node.setTag(NET_TYPE_FIELD, str(net_type.value))
+
+            if disable_lighting:
+                node.setLightOff()
+            if disable_shader:
+                node.setShaderOff()
 
             if net_id is not None:
                 node.setTag(NET_NODE_TAG_ID_FIELD, net_id)

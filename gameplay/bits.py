@@ -35,6 +35,8 @@ class Bit:
         disabled: bool = False,
         blocks_resource_model_spawning: bool = False,
         id: Optional[str] = None,
+        default_shader: bool = True,
+        default_lighting: bool = True,
     ):
         self.id: str = id or uuid.uuid4().hex
         self.model: str = model if model.startswith(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
@@ -46,6 +48,8 @@ class Bit:
         self.allow_auto_scale: bool = allow_auto_scale
         self.disabled: bool = disabled
         self.blocks_resource_model_spawning: bool = blocks_resource_model_spawning
+        self.default_shader: bool = default_shader
+        self.default_lighting: bool = default_lighting
 
     def copy(
         self,
@@ -174,15 +178,8 @@ class Bits:
         container = self if group is None else self.groups.get(group)
         if container is None or not container.enabled:
             return []
-        collected = container._collect_recursive()
-        if not collected:
-            return []
-        if container.mode == GroupMode.OR:
-            if num == 1:
-                return [random.choice(collected)]
-            return random.sample(collected, min(num, len(collected)))
-        # AND mode
-        return collected
+
+        return container._collect_recursive()
 
     def is_disabled(self) -> bool:
         if not self.enabled:
@@ -274,8 +271,6 @@ class BitsRenderer:
         return slot not in self._bit_slot_assignments
 
     def _render_bit(self, bit: Bit, slot_name: str) -> None:
-        from helpers.model import ModelHelper
-
         self._bit_slot_assignments[slot_name] = bit
         self.tile.renderer.add_model(
             model_path=bit.model,
@@ -285,15 +280,11 @@ class BitsRenderer:
                 bit.offset[1] + self.prop_slots[slot_name][1],
                 bit.offset[2] + self.prop_slots[slot_name][2],
             ),
-            scale=(
-                ModelHelper.calculate_slot_scale_factor(
-                    ModelHelper.load_model(bit.model), slot_positions=self.prop_slots[slot_name]
-                )
-                if bit.allow_auto_scale
-                else bit.scale
-            ),
+            scale=(bit.scale),
             hpr=bit.hpr,
             net_id=bit.id,
+            disable_lighting=not bit.default_lighting,
+            disable_shader=not bit.default_shader,
         )
 
     def _unrender_slot(self, slot_name: str) -> None:
@@ -318,12 +309,4 @@ class BitsRenderer:
     def clear(self) -> None:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
             self._unrender_slot(slot_name)
-        self._bit_slot_assignments.clear()
-
-    def destroy(self) -> None:
-        """
-        Cleanup the renderer and remove all bits.
-        """
-        self.clear()
-        self.prop_slots.clear()
         self._bit_slot_assignments.clear()

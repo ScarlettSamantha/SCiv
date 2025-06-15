@@ -42,6 +42,16 @@ class AssetManager(Singleton):
             self._logger = self.base.logger.engine.getChild("manager.asset")
 
     @classmethod
+    def reset(cls) -> None:
+        """Reset the asset manager caches."""
+        cls.texture_cache.clear()
+        cls.font_cache.clear()
+        cls.model_cache.clear()
+        cls.kivy_image_cache.clear()
+        cls.pil_image_cache.clear()
+        cls.pil_font_cache.clear()
+
+    @classmethod
     def logger(cls) -> Logger:
         if cls._logger is None and cls.base is not None:
             cls._logger = cls.base.logger.engine.getChild("manager.asset")
