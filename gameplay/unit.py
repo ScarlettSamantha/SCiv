@@ -94,6 +94,8 @@ class Unit(BaseEntity, ABC):
         self.can_pillage: bool = True
         self.can_build: bool = False
 
+        self.is_being_build: bool = False
+
         self.resource_needed: Type["BasicBaseResource"] = Production
         self.amount_resource_needed: Yields = Yields(production=10)
 
@@ -131,6 +133,7 @@ class Unit(BaseEntity, ABC):
         self.health_left: float = self.max_health
         self.moves_left = self.max_moves
         self.tag = self.generate_unit_tag()
+        self.register()
         self.spawn(ignore_constraints=True)
 
     def register(self) -> None:
@@ -176,6 +179,9 @@ class Unit(BaseEntity, ABC):
         Spawns the unit at its assigned tile, loading the model into Panda3D.
         Returns True if successful, False otherwise.
         """
+        if self.is_being_build:
+            return False
+
         if self.tile is None:
             raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
 
