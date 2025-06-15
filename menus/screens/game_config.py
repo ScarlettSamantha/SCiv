@@ -134,6 +134,7 @@ class GameConfigMenu(Screen):
                 "Map sizes",
                 on_select=self.select_size,  # type: ignore
                 items={
+                    "10x10 (Testing)": (10, 10),
                     "25x25 (UI test)": (25, 25),
                     "50x50 (Small)": (50, 50),
                     "50x90 (Small 16:9)": (50, 90),
