@@ -49,6 +49,7 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
             "entity_manager_total_units": 0,
             "entity_manager_total_tiles": 0,
             "entity_manager_total_effects": 0,
+            "total_panda_nodes": self.base.render.get_num_children(),  # type: ignore
         }
 
         self.register()
@@ -117,6 +118,7 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
         self._periodicals["entity_manager_total_units"] = entity_stats["total_units"]
         self._periodicals["entity_manager_total_tiles"] = entity_stats["total_tiles"]
         self._periodicals["entity_manager_total_effects"] = entity_stats["total_effects"]
+        self._periodicals["total_panda_nodes"] = self.base.render.get_num_children()  # type: ignore
 
     def build(self) -> FloatLayout:
         # --- Camera Panel (Top-Right Corner) ---
@@ -210,6 +212,7 @@ class StatsPanel(FloatLayout, DirectObject):  # type: ignore
             f"Tiles: {self._periodicals['entity_manager_total_tiles']}",
             f"Effects: {self._periodicals['entity_manager_total_effects']}",
             f"Seed: {str(seed) if seed is not None else 'None'}",
+            f"Total Panda Nodes: {self._periodicals['total_panda_nodes']}",
         ]
         if self.label:
             self.label.text = "\n".join(parts)
