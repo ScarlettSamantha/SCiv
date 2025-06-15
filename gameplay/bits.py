@@ -319,3 +319,11 @@ class BitsRenderer:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
             self._unrender_slot(slot_name)
         self._bit_slot_assignments.clear()
+
+    def destroy(self) -> None:
+        """
+        Cleanup the renderer and remove all bits.
+        """
+        self.clear()
+        self.prop_slots.clear()
+        self._bit_slot_assignments.clear()

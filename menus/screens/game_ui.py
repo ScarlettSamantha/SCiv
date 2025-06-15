@@ -668,3 +668,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         MessengerGlobal.messenger.send("system.input.raycaster_on")
         MessengerGlobal.messenger.send("system.input.enable_zoom")
         MessengerGlobal.messenger.send("system.input.enable_control")
+
+    def destroy(self):
+        self.logger.info("Destroying GameUIScreen.")
+        self.unregister()
+        self.clear_action_bar()
+        self.clear_selected_unit()
+        self.ignore_all()

@@ -10,7 +10,6 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from panda3d.core import (
     LRGBColor,
-    Texture,
 )
 
 from gameplay._units import Units
@@ -60,20 +59,6 @@ class CantBuildReason(Enum):
 
 
 class Tile(BaseEntity):
-    texture_cache: Dict[str, Texture] = {}
-    prop_size_scale_factor: float = 0.3
-    prop_slots: Dict[str, Tuple[float, float, float]] = {
-        "e": (0.45, 0.0, prop_size_scale_factor),
-        "ne": (0.375, 0.35, prop_size_scale_factor),
-        "nw": (-0.375, 0.35, prop_size_scale_factor),
-        "w": (-0.45, 0.0, prop_size_scale_factor),
-        "sw": (-0.375, -0.35, prop_size_scale_factor),
-        "se": (0.375, -0.35, prop_size_scale_factor),
-        "center": (0.0, 0.0, prop_size_scale_factor),
-        "n": (0.0, 0.45, prop_size_scale_factor),
-        "s": (0.0, -0.45, prop_size_scale_factor),
-    }
-
     def __init__(
         self,
         x: int = 0,
@@ -108,6 +93,19 @@ class Tile(BaseEntity):
         self.is_land: bool = False
         self.is_sea: bool = False
         self.is_lake: bool = False
+
+        self.prop_size_scale_factor: float = 0.3
+        self.prop_slots: Dict[str, Tuple[float, float, float]] = {
+            "e": (0.45, 0.0, self.prop_size_scale_factor),
+            "ne": (0.375, 0.35, self.prop_size_scale_factor),
+            "nw": (-0.375, 0.35, self.prop_size_scale_factor),
+            "w": (-0.45, 0.0, self.prop_size_scale_factor),
+            "sw": (-0.375, -0.35, self.prop_size_scale_factor),
+            "se": (0.375, -0.35, self.prop_size_scale_factor),
+            "center": (0.0, 0.0, self.prop_size_scale_factor),
+            "n": (0.0, 0.45, self.prop_size_scale_factor),
+            "s": (0.0, -0.45, self.prop_size_scale_factor),
+        }
 
         self._edges: Dict[str, Optional[Union[Edge, weakref.ReferenceType[Edge]]]] = {
             "e": None,
@@ -193,7 +191,7 @@ class Tile(BaseEntity):
         self.needs_tile_proecessing: bool = False
         self.block_resource_model_spawning: bool = False
 
-        self.renderer = TileRenderer(self)
+        self.renderer: TileRenderer = TileRenderer(self)
 
         self.register()
 
@@ -370,8 +368,6 @@ class Tile(BaseEntity):
         return improved_resources
 
     def register(self):
-        from managers.entity import EntityType  # Prevent circular import
-
         self._entity_manager.register(entity=self, key=str(self.tag), type=EntityType.TILE)
 
     def select(self) -> None:
@@ -387,8 +383,6 @@ class Tile(BaseEntity):
     def on_deselect(self) -> None: ...
 
     def unregister(self):
-        from managers.entity import EntityType  # Prevent circular import
-
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
 
     def compute_hex_center(self, x: int, y: int, radius: float = 1) -> Tuple[float, float]:
@@ -603,7 +597,9 @@ class Tile(BaseEntity):
         self.resources.add(resource(3), auto_instance=True)
 
     def destroy(self, as_system: bool = False) -> None:
-        self._entity_manager.unregister(entity=self, type=EntityType.TILE)
         self.renderer.clear_ui()
-        self.renderer.anchor_node.removeNode()
+        self.renderer.destroy()
+        del self.renderer
+        self.unregister()
         self.destroyed = True
+        del self

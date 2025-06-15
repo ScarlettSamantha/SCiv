@@ -58,7 +58,7 @@ class TileRenderer:
     }
 
     def __init__(self, tile: "Tile") -> None:
-        self.tile = tile
+        self.tile: Tile = tile
         self.base = Cache.get_showbase_instance()
         self.atlas_width: int = 0
         self.atlas_height: int = 0
@@ -100,38 +100,43 @@ class TileRenderer:
         self.unit_markers_node = None
         self.city_nameplate_node = None
 
+    def destroy(self) -> None:
+        """
+        Clean up the tile renderer, removing all nodes and references.
+        """
+        self.clear_ui()
+        self.anchor_node.removeNode()
+        self.geometry_node.removeNode()
+        self.clear_models()
+        self.unit_icons.destroy()  # type: ignore
+        self.unit_icons = None
+        self.bits_renderer.destroy()
+        self.base = None
+
     def render(self, update_yields: bool = True) -> None:
         """
         Redraw the entire tile each frame or when its state changes.
         """
         if update_yields:
-            self.tile.calculate()
+            self.tile.calculate()  # type: ignore
 
-        # Position and scale tile root
-        self.anchor_node.setPos(self.tile.pos_x, self.tile.pos_y, self.tile.pos_z)
+        self.anchor_node.setPos(*self.tile.get_cords())
         self.anchor_node.setScale(1)
 
-        # Clear previous UI elements
         self.clear_ui()
 
-        # Draw base terrain and geometry
         self._draw_terrain_overlay()
         self._draw_improvements()
 
-        # Draw resource model if no city occupies the tile
         self._draw_resource_model()
 
-        # Draw yield and population icons
         self._draw_yield_and_population_icons()
 
-        # Draw units and city nameplate
         self._draw_unit_markers()
         self._draw_city_nameplate()
 
-        # Only render bits overlays when the tile is not occupied by a city
         self.bits_renderer.render()
 
-        # Optimize node hierarchy
         self.anchor_node.flatten_medium()
         self.geometry_node.flatten_medium()
 
@@ -141,7 +146,6 @@ class TileRenderer:
         self.anchor_node.setCollideMask(BitMask32.bit(1))
 
     def _draw_terrain_overlay(self) -> None:
-        """Render the flat overlay showing terrain texture and wall color."""
         cm = CardMaker(f"terrain_overlay_{self.tile.id}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         overlay = self.ui_node.attachNewNode(cm.generate())
@@ -359,7 +363,6 @@ class TileRenderer:
         node = self.ui_node.attachNewNode(cm.generate())
         node.setTexture(tex)
         node.setTransparency(TransparencyAttrib.M_alpha)
-        node.setBillboardPointEye()
         node.setPos(0, 0, 2.0)
         node.setScale(0.75)
         node.setBin("fixed", 50)
@@ -376,9 +379,9 @@ class TileRenderer:
         hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0),
         net_id: Optional[str] = None,
     ) -> None:
-        """
-        Asynchronously load a model and attach it under geometry_node.
-        """
+        if self.base is None:
+            raise ValueError("TileRenderer base is not initialized.")
+
         full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
 
         def on_model_loaded(loaded_model: Optional[NodePath]):
@@ -393,7 +396,7 @@ class TileRenderer:
             loaded_model.setHpr(*hpr)
 
             node = loaded_model.instanceTo(self.geometry_node)
-            node.reparentTo(self.base.render)
+            node.reparentTo(self.base.render)  # type: ignore
             node.setPos(x, y, z)
             node.setCollideMask(BitMask32.bit(1))
             node.setTag(NET_TYPE_FIELD, str(net_type.value))
@@ -413,9 +416,10 @@ class TileRenderer:
         self.base.loader.loadModel(full_path, callback=on_model_loaded)  # type: ignore
 
     def remove_model(self, net_id: str) -> None:
-        """
-        Remove any model under geometry_node with NET_NODE_TAG_ID_FIELD == net_id.
-        """
-        # iterate over a copy, since we may be mutating children
         for model in self.models[:]:
             model.removeNode()
+
+    def clear_models(self) -> None:
+        for model in self.models:
+            model.removeNode()
+        self.models.clear()

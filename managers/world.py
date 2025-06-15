@@ -7,6 +7,7 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 
+from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
@@ -57,6 +58,8 @@ class World(Singleton, DirectObject):
         tile: "Tile"
         for tile in list(EntityManager.get_singleton_instance().get_all(EntityType.TILE).values()):  # type: ignore
             tile.destroy()
+
+        TileRepository.reset_caches()  # Reset the tile repository caches as these are used in the generation of the map.
 
     def load(self, data: Dict[str, "Tile"]):
         self.logger.info("Loading world data.")

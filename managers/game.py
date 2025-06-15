@@ -296,6 +296,7 @@ class Game(Singleton, DirectObject):
     def generate_world(self):
         # Generate the world
         # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
+        self.world.reset()
         self.world.generate(
             self.properties.width,  # type: ignore has already been checked on game start if not None
             self.properties.height,  # type: ignore has already been checked on game start if not None
@@ -305,6 +306,9 @@ class Game(Singleton, DirectObject):
         assert self.properties is not None
 
         self.active_generator = self.properties.generator(self.properties, self.base)
+
+        if self.mesh_grid is not None:
+            self.mesh_grid.reset()
 
         self.ui.map = self.world
 

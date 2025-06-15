@@ -22,6 +22,7 @@ class SCivGUI(App, DirectObject):
         self.is_build: bool = False
         super().__init__(panda_app, **kwargs)  # type: ignore
         self.screen_manager: Optional[ScreenManager] = None
+        self.game_ui_screen: Optional[GameUIScreen] = None
 
         self.register()
 
@@ -36,7 +37,13 @@ class SCivGUI(App, DirectObject):
     def reset(self):
         if self.screen_manager is None:
             return
-        self.screen_manager.get_screen("game_ui").reset()  # type: ignore
+        self.screen_manager.remove_widget(self.game_ui_screen)  # type: ignore
+        self.game_ui_screen.destroy()  # type: ignore
+        self.screen_manager.current = "pause_menu"  # type: ignore
+        del self.game_ui_screen
+        self.game_ui_screen = GameUIScreen(name="game_ui", base=self._base)
+        self.screen_manager.add_widget(self.game_ui_screen)  # type: ignore
+        self.screen_manager.current = "game_ui"  # type: ignore
 
     def set_screen(self, screen_name: str) -> None:
         self.get_screen_manager().current = screen_name
@@ -70,10 +77,13 @@ class SCivGUI(App, DirectObject):
 
     def build(self, default_screen: str = "main_menu"):
         screen_manager = ScreenManager()
+
+        self.game_ui_screen = GameUIScreen(name="game_ui", base=self._base)  # type: ignore
+
         screen_manager.add_widget(MainMenuScreen(name="main_menu"))  # type: ignore
         screen_manager.add_widget(GameConfigMenu(name="game_config_screen"))  # type: ignore
         screen_manager.add_widget(loading.Loading(name="loading_screen"))  # type: ignore
-        screen_manager.add_widget(GameUIScreen(name="game_ui", base=self._base))  # type: ignore
+        screen_manager.add_widget(self.game_ui_screen)  # type: ignore
         screen_manager.add_widget(OptionsScreen(name="options_screen"))  # type: ignore
         screen_manager.add_widget(PauseScreen(name="pause_menu", base=self._base))  # type: ignore
         screen_manager.add_widget(SaveLoadScreen(name="save_load_screen", base=self._base))  # type: ignore

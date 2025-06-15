@@ -61,13 +61,30 @@ class HexGrid:
                 fragment="assets/shaders/hex_mesh.frag.glsl",  # type: ignore
             )  # type: ignore
 
-        # Initialize mesh data and build nodes
+        self.root_np = NodePath(PandaNode("hexgrid_root"))
         self.generate_hex_uvs()
         self.generate_mesh()
         self.build_nodes()
 
-        if self.grid_np:
-            self.grid_np.flattenStrong()
+        self.root_np.reparent_to(render)  # type: ignore  # noqa: F821
+        self.root_np.flatten_light()
+
+    def reset(self):
+        self.tiles.clear()
+        self.mesh_vertices.clear()
+        self.mesh_triangles.clear()
+        self.hex_starts.clear()
+        self.centers.clear()
+        self.center_height = 0.0
+        self.wall_starts.clear()
+        self.wall_vertex_counts.clear()
+
+        if hasattr(self, "root_np") and self.root_np:
+            self.root_np.removeNode()
+            self.root_np = None
+
+        self.grid_np = None
+        self.walls_np = None
 
     @staticmethod
     def create_flat_top_hexagon_vertices(
@@ -296,12 +313,12 @@ class HexGrid:
     def build_nodes(self):
         # build mesh
         self.grid_np = self.build_geom_node()
+        self.grid_np.reparentTo(self.root_np)  # type: ignore
 
-        # build walls as before
-        self.walls_np = self.build_merged_hex_walls(bottom_z=0.0, color=Colors.MAGENTA)
+        self.walls_np = self.build_merged_hex_walls(bottom_z=0.0, color=self.wall_color)
         self.walls_np.setLightOff()
         self.walls_np.setTwoSided(True)
-        self.walls_np.reparentTo(self.grid_np)
+        self.walls_np.reparentTo(self.root_np)  # type: ignore
 
     def generate_hex_uvs(self):
         self._hex_uvs = []
@@ -355,7 +372,6 @@ class HexGrid:
         np.flatten_medium()  # type: ignore
         np.setShader(self.shader)  # type: ignore
         np.setTwoSided(True)
-        np.setLightOff()
 
         return np
 

@@ -97,8 +97,7 @@ class ui(Singleton, DirectObject):
         self.previous_screen_name = ""
         self.showing_escape = False
 
-        if self.game_gui is not None:
-            self.game_gui.reset()  # We reset the game gui so we can start fresh
+        self.game_gui.reset()  # type: ignore # We reset the game gui so we can start fresh
 
     def reset_game_ui(self):
         self.get_screen("game_ui").reset()  # type: ignore

@@ -33,7 +33,7 @@ class UnitIcons(DirectObject):
 
         # Hook our update into Panda3D's task manager
         self.base = Cache.get_showbase_instance()
-        self.base.taskMgr.add(self._update_positions, "unit_icons_billboard_update")  # type: ignore
+        # self.base.taskMgr.add(self._update_positions, "unit_icons_billboard_update")  # type: ignore
 
     def _get_texture(self, path: str) -> Texture:
         """
@@ -133,3 +133,12 @@ class UnitIcons(DirectObject):
         for quad, _, _ in self.markers:
             quad.remove_node()  # type: ignore
         self.markers.clear()
+
+    def destroy(self) -> None:
+        """
+        Cleanup the task and remove all billboards.
+        """
+        self.remove_all()
+        self._tex_cache.clear()
+        self.parent = None
+        self.base = None

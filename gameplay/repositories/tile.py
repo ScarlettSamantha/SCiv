@@ -21,6 +21,11 @@ class TileRepository:
     grid: Optional[Dict[Tuple[int, int], "Tile"]] = None
     _neigh_cache: Dict[Tuple[int, int], List["Tile"]] = {}
 
+    @classmethod
+    def reset_caches(cls) -> None:
+        cls.grid = None
+        cls._neigh_cache = {}
+
     def __init__(self) -> None:
         pass
 
