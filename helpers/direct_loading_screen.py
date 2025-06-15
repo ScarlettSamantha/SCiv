@@ -69,7 +69,6 @@ class LoadingScreen:
 
         self.step_count.setText(f"{round(percent, 2)}% ({self.current_step}/{self.total_steps}): {message}")
         self.bar["value"] = percent
-        self.base.graphicsEngine.renderFrame()  # type: ignore
 
         # If done, show continue
         if self.current_step >= self.total_steps and not self.continue_button:
