@@ -54,6 +54,8 @@ class Player(BaseEntity):
 
         super().__init__(tile=None)
         self.turn_order: int = turn_order
+        self.civilization: Civilization = civilization
+        self.leader: Leader = leader
         self.tag = self.generate_tag()
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
@@ -75,8 +77,6 @@ class Player(BaseEntity):
         self.instance_controller: int = 0
 
         self.personality: Personality = personality
-        self.civilization: Civilization = civilization
-        self.leader: Leader = leader
 
         self.mood: Mood = Mood()
         self.moods: Moods = Moods()
@@ -168,7 +168,7 @@ class Player(BaseEntity):
         self.votes = Votes()
 
     def generate_tag(self) -> str:
-        return f"player.{self.name}.{self.turn_order}"
+        return f"player.{str(self.leader.name)}.{self.turn_order}"
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
