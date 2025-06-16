@@ -49,9 +49,12 @@ class Player(BaseEntity):
         leader: Leader,
         color: Optional[Tuple4f] = None,
     ) -> None:
-        super().__init__(tile=None)
         from gameplay._units import Units
         from gameplay.resource import Resources
+
+        super().__init__(tile=None)
+        self.turn_order: int = turn_order
+        self.tag = self.generate_tag()
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
         self.name: T_TranslationOrStrOrNone = name
@@ -62,8 +65,6 @@ class Player(BaseEntity):
         self.ai: Optional["AI"] = None
 
         self.vision: Vision = Vision()
-
-        self.turn_order: int = turn_order
 
         self.is_human: int = 0
         self.is_nature: bool = False
@@ -157,12 +158,13 @@ class Player(BaseEntity):
 
         return state
 
+    def generate_tag(self) -> str:
+        return f"player.{self.name}.{self.turn_order}"
+
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
 
-        EntityManager.get_singleton_instance().register(
-            entity=self, type=EntityType.PLAYER, key=f"{self.name}-{self.turn_order}"
-        )
+        EntityManager.get_singleton_instance().register(entity=self, type=EntityType.PLAYER, key=self.get_tag())
 
         if self.is_human:
             self.accept(
@@ -354,3 +356,6 @@ class Player(BaseEntity):
         self.unregister()
         self.is_defeated = True
         self.destroy(as_system=True)
+
+    def get_tag(self) -> str:
+        return self.tag
