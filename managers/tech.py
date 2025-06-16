@@ -1,9 +1,10 @@
 from collections import OrderedDict
-from typing import Any, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from direct.showbase import MessengerGlobal
 
 from gameplay.tech import Tech, TechTree
+from gameplay.techs.trees.core import Core
 from helpers.cache import Cache
 from managers.base import BaseManager
 from system.pyload import PyLoad
@@ -32,6 +33,13 @@ class TechManager(BaseManager):
         state.pop("logger", None)
         state.pop("_tech_tree", None)
         return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        # Restore the state after deserialization.
+        self.__dict__.update(state)
+        self.parent = Cache.get_showbase_instance()
+        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild("tech_manager")
+        self.set_tech_tree(Core())
 
     @property
     def needed_science(self) -> int:

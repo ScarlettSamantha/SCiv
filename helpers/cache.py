@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 from weakref import ReferenceType, ref
 from gameplay.rules import get_game_rules
+from managers.log import LogManager
 
 if TYPE_CHECKING:
     from main import SCIV
@@ -13,16 +14,24 @@ class Cache:
     _icon_atlas: Optional["AtlasGenerator"] = None
     _terrain_atlas: Optional["AtlasGenerator"] = None
     _active_rules: Optional["GameRules"] = get_game_rules()
+    _core_logger: Optional[LogManager] = None
 
     @classmethod
     def set_showbase_instance(cls, instance: "SCIV"):
         cls._instance = instance
+        cls._logger = instance.logger
 
     @classmethod
     def get_showbase_instance(cls) -> "SCIV":
         if cls._instance is None:
             raise AssertionError("Cache instance is not set.")
         return cls._instance
+
+    @classmethod
+    def core_logger(cls) -> LogManager:
+        if cls._core_logger is None:
+            cls._core_logger = cls.get_showbase_instance().logger
+        return cls._core_logger
 
     @classmethod
     def get_weakref(cls) -> ReferenceType["SCIV"]:

@@ -2,6 +2,7 @@ from logging import Logger
 from typing import Any, List, Optional, Type
 
 from gameplay.civic import Civic, CivicSubtree, CivicTree
+from gameplay.civics.core.tree.core import CoreCivicTree
 from helpers.cache import Cache
 from managers.base import BaseManager
 
@@ -10,7 +11,7 @@ class CivicsManager(BaseManager):
     def __init__(self, *args: Any, **kwargs: Any):
         BaseManager.__init__(self, *args, **kwargs)
 
-        self.logger: Logger = Cache.get_showbase_instance().logger.gameplay.getChild("civics_manager")
+        self.logger: Logger = Cache.core_logger().gameplay.getChild("civics_manager")
 
         self.civic_points: int = 0
 
@@ -21,12 +22,17 @@ class CivicsManager(BaseManager):
         self.civics_activated: List[Civic] = []
 
     def __getstate__(self) -> object:
-        # Prepare the state for serialization.
         state = self.__dict__.copy()
         state.pop("parent", None)
         state.pop("logger", None)
         state.pop("civic_tree", None)
         return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self.parent = Cache.get_showbase_instance()
+        self.logger = Cache.core_logger().gameplay.getChild("civics_manager")
+        self.set_tree(CoreCivicTree())
 
     def process_civics(self):
         if self.civic_tree is None:
