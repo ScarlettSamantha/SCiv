@@ -8,7 +8,7 @@ from direct.showbase.MessengerGlobal import messenger
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from panda3d.core import PStatClient  # type: ignore
-
+from kivy.clock import Clock
 from gameplay.lose import LoseConditions
 from gameplay.player import Player
 from gameplay.tech import Tech
@@ -100,7 +100,8 @@ class ui(Singleton, DirectObject):
 
     def reset_game_ui(self):
         self.get_screen("game_ui").reset()  # type: ignore
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
+        ui: GameUIScreen | Screen = self.get_main_game_ui()
+        Clock.schedule_once(lambda dt: ui.refresh_top_bar(dt), 2)  # type: ignore # This is needed to ensure the top bar is refreshed after the game UI is reset
 
     def get_gui(self) -> "SCivGUI":
         if self.game_gui is None:
