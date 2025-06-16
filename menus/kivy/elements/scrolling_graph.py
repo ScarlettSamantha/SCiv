@@ -44,8 +44,8 @@ class ScrollingGraph(Widget):
         }
 
         # Persistent instruction groups
-        self.axis_group = InstructionGroup()
-        self.data_group = InstructionGroup()
+        self.axis_group: InstructionGroup = InstructionGroup()
+        self.data_group: InstructionGroup = InstructionGroup()
         self.canvas.before.add(self.axis_group)  # type: ignore
         self.canvas.add(self.data_group)  # type: ignore
 
