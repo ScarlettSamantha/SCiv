@@ -2,7 +2,7 @@ variables:
   compare_branch: dev-v0.2.0
   GIT_DEPTH: 0
   kivy_stubs_repo: git@github.com:ScarlettSamantha/python-kivy-stubs.git
-  panda3d_stubs_repo: git@github.com:WMOkiishi/types-panda3d.git
+  panda3d_stubs_repo: https://github.com/WMOkiishi/types-panda3d.git
 
 stages:
   - verify
