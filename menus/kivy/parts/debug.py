@@ -108,9 +108,6 @@ class DebugPanel(FloatLayout):
             _units.append(f"{data['tag']} {data['name']}")
 
         yields = tile.get_tile_yield()
-        if tile.city is not None:
-            city_yields = tile.city.get_yield()
-            yields += city_yields
 
         data: Dict[str, Any] = {
             "tag": tile.tag,
