@@ -1,7 +1,10 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, cast
 from direct.showbase.Loader import Loader
-from panda3d.core import BitMask32, LVector3, NodePath
+from direct.task import Task
+from panda3d.core import BitMask32, LVector3, NodePath, LineSegs, GeomNode, Shader, Vec4
+import numpy as np
 
+from helpers.cache import Cache
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 
 if TYPE_CHECKING:
@@ -9,17 +12,32 @@ if TYPE_CHECKING:
 
 
 class UnitRenderer:
-    def __init__(self, unit: "Unit"):
+    def __init__(self, unit: "Unit", selection_radius: float = 0.75):
         self.unit: Unit = unit
         self.loader: Loader = Loader(unit.base)
+        self.base = Cache.get_showbase_instance()
         self.model_cache: Optional[NodePath] = None
         self.current_model: Optional[NodePath] = None
 
+        # Selection indicator configuration
+        self.selection_circle: Optional[NodePath] = None
+        self.selection_enabled: bool = False
+        self.selection_radius: float = selection_radius
+        self._load_selection_shader()
+        self.unit.base.taskMgr.add(self._rotate_indicator_task, f"rotate-indicator-{id(self)}")  # type: ignore
+
+    def _load_selection_shader(self):
+        try:
+            self.selection_shader = Shader.load(
+                Shader.SL_GLSL,
+                vertex="assets/shaders/unit_selection_vert.glsl",
+                fragment="assets/shaders/frag.glsl",
+            )
+        except Exception:
+            self.selection_shader = None
+
     def get_node(self) -> Optional[NodePath]:
-        """
-        Returns the current model node if it exists, otherwise None.
-        """
-        return self.current_model if self.current_model else None
+        return self.current_model
 
     def load_model(self) -> NodePath:
         path = self.unit.get_model_path()
@@ -50,6 +68,61 @@ class UnitRenderer:
         model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
         model.setTag(NET_NODE_TAG_ID_FIELD, self.unit.tag)
 
+    def _create_selection_circle(self) -> NodePath:
+        # Create a dotted circle using LineSegs with fixed radius
+        segs = LineSegs()
+
+        segs.setThickness(12.0)
+        segs.setColor(
+            cast(
+                Vec4,
+                self.unit.get_owner().color,
+            )
+        )  # white color with some transparency
+        num_segments = 64
+
+        radius = self.selection_radius
+        angle_step = 360.0 / num_segments
+        dash_length = 2
+
+        for i in range(num_segments):
+            if (i // dash_length) % 2 == 0:
+                angle1 = np.radians(i * angle_step)
+                angle2 = np.radians((i + 1) * angle_step)
+                segs.moveTo(radius * np.cos(angle1), radius * np.sin(angle1), 0.0)
+                segs.drawTo(radius * np.cos(angle2), radius * np.sin(angle2), 0.0)
+
+        node = segs.create()
+        circle_np = NodePath(GeomNode(f"sel-circle-{id(self)}"))
+        circle_np.node().addGeomsFrom(node)
+        circle_np.setHpr(90, 0, 0)
+
+        circle_np.setPos(self.unit.pos_x, self.unit.pos_y, self.unit.pos_z + 0.1)
+
+        if self.selection_shader:
+            circle_np.setShader(self.selection_shader)
+
+        parent = self.unit.base.render
+        circle_np.reparentTo(parent)
+        return circle_np
+
+    def _rotate_indicator_task(self, task: Task.Task) -> Task.Task:
+        if self.selection_enabled and self.selection_circle:
+            # rotate around Z axis
+            self.selection_circle.setH(task.time * 60.0)
+        return Task.cont  # type: ignore
+
+    def toggle_selection_indicator(self, enable: bool) -> None:
+        """
+        Enable or disable the rotating dotted selection circle around the unit.
+        """
+        if enable and not self.selection_circle:
+            self.selection_circle = self._create_selection_circle()
+        elif not enable and self.selection_circle:
+            self.selection_circle.removeNode()
+            self.selection_circle = None
+        self.selection_enabled = enable
+
     def get_unit(self) -> "Unit":
         return self.unit
 
@@ -58,10 +131,16 @@ class UnitRenderer:
         if self.current_model:
             self.unload()
         self.current_model = self.load_model()
+        # reparent indicator if active
+        if self.selection_enabled and self.selection_circle:
+            self.selection_circle.reparentTo(self.current_model)
         return self.current_model
 
     def unload(self) -> None:
         if self.current_model:
+            if self.selection_circle:
+                self.selection_circle.removeNode()
+                self.selection_circle = None
             self.current_model.removeNode()
             self.current_model = None
 

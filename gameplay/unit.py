@@ -312,6 +312,12 @@ class Unit(BaseEntity, ABC):
         self.pos_x, self.pos_y, self.pos_z = tile_pos
         self.renderer.update_position()
 
+    def select(self):
+        self.renderer.toggle_selection_indicator(True)
+
+    def deselect(self):
+        self.renderer.toggle_selection_indicator(False)
+
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
 

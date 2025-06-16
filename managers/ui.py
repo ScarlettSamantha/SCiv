@@ -423,6 +423,16 @@ class ui(Singleton, DirectObject):
         if self.previous_tile is not None:
             self.previous_tile.deselect()
 
+        if self.current_tile is not None:
+            self.previous_tile = self.current_tile
+            self.previous_tile.deselect()
+            self.current_tile = None
+
+        if self.current_unit is not None:
+            self.previous_unit = self.current_unit
+            self.previous_unit.deselect()
+            self.current_unit = None
+
         tile.select()
 
         if tile.is_city() and tile.city is not None and tile.city.player is not None:
@@ -445,14 +455,16 @@ class ui(Singleton, DirectObject):
 
         if self.current_tile is not None:
             self.previous_tile = self.current_tile
+            self.previous_tile.deselect()
             self.current_tile = None
 
         if self.current_unit is not None:
             self.previous_unit = self.current_unit
+            self.previous_unit.deselect()
 
         if isinstance(object, Unit):
-            if object.model is not None:
-                self.current_unit = object
+            self.current_unit = object
+            self.current_unit.select()
 
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore

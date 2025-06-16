@@ -406,11 +406,8 @@ class Tile(BaseEntity):
 
     def deselect(self) -> None:
         self.is_selected = False
-        self.on_deselect()
 
     def on_select(self) -> None: ...
-
-    def on_deselect(self) -> None: ...
 
     def unregister(self):
         self._entity_manager.unregister(entity=self, type=EntityType.TILE)
