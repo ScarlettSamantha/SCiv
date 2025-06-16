@@ -142,12 +142,40 @@ class Unit(BaseEntity, ABC):
         self.model_cache = None
         self.health_left: float = self.max_health
         self.moves_left = self.max_moves
-
-        if not hasattr(self, "tag"):  # Ensure tag is set
-            self.tag = self.generate_unit_tag()
-
+        self.register_actions()
         self.register()
+        UnitManager.get_singleton_instance().add_unit(self)
+
+        self.renderer = UnitRenderer(self)
+
         self.spawn(ignore_constraints=True)
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state = super().__getstate__()
+        state.pop("base", None)
+        state.pop("_logger", None)
+        state.pop("model", None)
+        state.pop("model_cache", None)
+        state.pop("effects", None)
+        state.pop("actions", None)
+        state.pop("renderer", None)
+        state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        from gameplay.resources.core.basic.production import Production
+
+        self.base = Cache.get_showbase_instance()
+        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        self.model = None
+        self.model_cache = None
+        self.effects = Effects(self)
+        self.actions = []
+        self.resource_needed = Production if state.get("resource_needed") == "Production" else BasicBaseResource
+        self.tile = state.get("tile")  # type: ignore
+        self.tag = str(state.get("tag"))
+        for key, value in state.items():
+            setattr(self, key, value)
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -323,6 +351,7 @@ class Unit(BaseEntity, ABC):
 
         self.unload_model()
         self.renderer.destroy()
+        UnitManager.get_singleton_instance().remove_unit(self)
         del self.renderer
         self.get_tile().remove_unit(self)
 
@@ -340,31 +369,6 @@ class Unit(BaseEntity, ABC):
             messenger.send("system.unit.destroyed", [self])
         else:
             messenger.send("game.gameplay.unit.destroyed", [self])
-
-    def __getstate__(self) -> Dict[str, Any]:
-        state = super().__getstate__()
-        state.pop("base", None)  # Remove base reference to avoid circular references
-        state.pop("_logger", None)
-        state.pop("model", None)  # Remove model reference to avoid circular references
-        state.pop("model_cache", None)
-        state.pop("effects", None)  # Remove effects reference to avoid circular references
-        state.pop("actions", None)  # Remove actions to avoid circular references
-        state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
-        return state
-
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        from gameplay.resources.core.basic.production import Production
-
-        self.base = Cache.get_showbase_instance()
-        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
-        self.model = None
-        self.model_cache = None
-        self.effects = Effects(self)
-        self.actions = []
-        self.resource_needed = Production if state.get("resource_needed") == "Production" else BasicBaseResource
-        self.tile = state.get("tile")  # type: ignore
-        for key, value in state.items():
-            setattr(self, key, value)
 
     @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:

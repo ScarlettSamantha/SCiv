@@ -189,7 +189,46 @@ class BaseResource(ABC):
             )
 
     def __getstate__(self) -> object:
-        return {"class": self.__class__, "value": self.value, "type": self.value_storage}
+        return {
+            "class": self.__class__,
+            "value": self.value,
+            "value_storage": self.value_storage,
+            "tile_yield": self.tile_yield,
+            "tile_yield_on_improvement": self.tile_yield_on_improvement,
+        }
+
+    def __setstate__(self, state: object) -> None:
+        if not isinstance(state, dict):
+            raise TypeError(f"Expected dict, got {type(state)}")
+
+        if "class" in state:
+            self.type = state["class"]
+
+        if "value_storage" in state:
+            self.value_storage = state["value_storage"]
+
+        if "tile_yield" in state:
+            self.tile_yield_on_improvement = state["tile_yield"]
+        else:
+            from gameplay.yields import Yields
+
+            self.tile_yield_on_improvement = Yields.nullYield()
+
+        if "tile_yield_on_improvement" in state:
+            self.tile_yield = state["tile_yield_on_improvement"]
+        else:
+            from gameplay.yields import Yields
+
+            self.tile_yield = Yields.nullYield()
+
+        if "type" in state:
+            self.type = state["type"]
+
+        if "value_storage" in state:
+            self.value_storage = state["value_storage"]
+
+        if "value" in state:
+            self.value = state["value"]
 
     # Overloaded operators
     def __add__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:

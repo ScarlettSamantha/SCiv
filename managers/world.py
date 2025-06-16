@@ -88,6 +88,7 @@ class World(Singleton, DirectObject):
         for unit in EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values():  # type: ignore
             if isinstance(unit, Unit):
                 if not unit.is_being_build:
+                    unit.on_load()
                     unit.spawn()
 
     def calculate_middle(self):
