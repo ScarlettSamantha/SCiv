@@ -27,7 +27,7 @@ class DebugApp:
         self.console.rule(f"[bold green]Profiling → {output}")
         self.console.print(f"[blue]Running:[/] {cmd}\n")
         try:
-            subprocess.run(cmd, check=True, shell=True, env=os.environ.copy())  # nosec B603
+            subprocess.run(cmd, check=True, shell=True, env=os.environ.copy())  # nosec B602
         except subprocess.CalledProcessError as exc:
             self.console.print(f"[red]py-spy failed with exit code {exc.returncode}[/]")
         else:
