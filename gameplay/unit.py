@@ -350,9 +350,10 @@ class Unit(BaseEntity, ABC):
         self.health_left = 0
 
         self.unload_model()
-        self.renderer.destroy()
+        if hasattr(self, "renderer") and self.renderer is not None:  # type: ignore
+            self.renderer.destroy()
+            del self.renderer
         UnitManager.get_singleton_instance().remove_unit(self)
-        del self.renderer
         self.get_tile().remove_unit(self)
 
         if self.owner is not None:
