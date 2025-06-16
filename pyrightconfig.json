@@ -1,13 +1,7 @@
 {
   "typeCheckingMode": "strict",
-  "typeStubPath": [
-    "./typings",
-    "/home/scarlett/.pyenv/versions/3.13.2/lib/python3.13/site-packages",
-    "~/Code/Stubs",
-    "./stubs"
-  ],
-  "exclude": ["assets", "scripts", "system/subsystems/hexgen/**", "./stubs"],
   "stubPath": "./stubs",
+  "exclude": ["assets", "scripts", "system/subsystems/hexgen/**", "./stubs"],
   "reportMissingTypeStubs": "none",
   "reportUnknownLambdaType": "none",
   "reportMissingModuleSource": "none",
