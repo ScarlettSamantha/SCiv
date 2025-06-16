@@ -4,9 +4,8 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
-from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import BitMask32, LVector3, NodePath, PandaNode
+from panda3d.core import NodePath
 
 
 from direct.showbase import MessengerGlobal
@@ -14,17 +13,16 @@ from gameplay.condition import Condition
 from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
-from helpers.debug import Debug
 from main import Cache
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
-from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from managers.unit import UnitManager
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
+from system.unit_renderer import UnitRenderer
 
 if TYPE_CHECKING:
     from gameplay.improvement import BasicBaseResource
@@ -107,6 +105,7 @@ class Unit(BaseEntity, ABC):
         self._logger = None
 
         self.model_cache: Optional[NodePath] = None
+        self.renderer: UnitRenderer = UnitRenderer(self)
 
         self.register_actions()
         if self.is_registered is False:
@@ -177,48 +176,13 @@ class Unit(BaseEntity, ABC):
         UnitManager.get_singleton_instance().remove_unit(self)
 
     def render(self) -> NodePath | None:
-        if self.model is not None:
-            self.unload_model()
+        return self.renderer.render()
 
-        self.model = self.load_model()
-
-        if self.model is None:
-            self.logger.error(f"Failed to load model for unit {self.key} at path {self._model}")
-            return None
-
-        return self.model
-
-    def spawn(self, ignore_constraints: bool = False) -> bool:
-        """
-        Spawns the unit at its assigned tile, loading the model into Panda3D.
-        Returns True if successful, False otherwise.
-        """
-        if self.is_being_build:
-            return False
-
-        if self.tile is None:
-            raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
-
-        if not isinstance(self._model, str):
-            raise ValueError(f"Unit {self.key} has no model assigned.")
-
-        # Load the Panda3D model and position it at the tile
-        self.render()
-
-        if self.model:
-            self.model.setCollideMask(BitMask32.bit(1))
-
-        if not self._model:
-            raise RuntimeError(f"Failed to load model for unit {self.key}")
-
-        if Debug.world_spawning():
-            self.logger.debug(f"Unit {self.key} spawned at {self.get_tile().get_cords()} with model {self._model}")
-        return True
+    def spawn(self, ignore_constraints: bool = False) -> NodePath | None:
+        self.calculate_model_position()
+        return self.renderer.spawn()
 
     def get_model_path(self) -> Optional[str]:
-        """
-        Returns the model path of the unit.
-        """
         if isinstance(self._model, str):
             return self._model
         return None
@@ -316,17 +280,9 @@ class Unit(BaseEntity, ABC):
         self.get_tile().render()
 
     def calculate_model_position(self) -> None:
-        """
-        Calculates the position of the model based on the tile's coordinates and the unit's model position offset.
-        This is used to ensure the model is positioned correctly on the tile.
-        """
-        if self.model is None:
-            return None
-
-        self.pos_x, self.pos_y, self.pos_z = pos = self.get_tile().calculate_z_pos_on_altitude()
-        self.model.setPos(*pos)  # type: ignore
-        self.model.setHpr(LVector3(*self.model_rotation))
-        self.model.setScale(self.model_size)
+        tile_pos = self.get_tile().get_cords()
+        self.pos_x, self.pos_y, self.pos_z = tile_pos
+        self.renderer.update_position()
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -335,55 +291,10 @@ class Unit(BaseEntity, ABC):
         self.actions.remove(action)
 
     def unload_model(self) -> None:
-        """
-        Unloads the model from the scene and clears the reference.
-        This is used when the unit is destroyed or removed from the scene.
-        """
-        if self.model is not None:
-            self.model.removeNode()
-            self.model = None
-        else:
-            self.logger.warning(f"Unit {self.key} has no model to unload.")
+        self.renderer.unload()
 
     def load_model(self) -> NodePath | None:
-        loader: Loader = Loader(self.base)
-        model_path: Optional[str] = self.get_model_path()
-
-        if model_path is None:
-            raise ValueError(f"Unit {self.key} has no model path defined.")
-
-        if not self.model_cache:
-            model: NodePath[PandaNode] | None = loader.loadModel(model_path)  # type: ignore
-            if model is None:  # type: ignore
-                raise RuntimeError(f"Failed to load model for unit {self.key} at path {model_path}")
-            self.model_cache = model
-
-        model: NodePath = self.model_cache.copyTo(self.base.render)
-
-        if self.tile is None:
-            raise ValueError(f"Unit {self.key} cannot spawn without an assigned tile.")
-
-        tile_pos = self.get_tile().get_cords()
-        pos = (
-            tile_pos[0],
-            tile_pos[1],
-            self.get_tile().calculate_z_pos_on_altitude()[2],
-        )
-        model.setPos(*pos)
-        model.setHpr(LVector3(*self.model_rotation))
-        model.setScale(self.model_size)
-
-        self.pos_x, self.pos_y, self.pos_z = pos
-
-        if self.collides:
-            model.setCollideMask(BitMask32.bit(1))  # type: ignore
-        else:
-            model.setCollideMask(BitMask32.allOff())  # type: ignore
-
-        model.setTag(NET_TYPE_FIELD, NET_TYPE.MODEL.value)
-        model.setTag(NET_NODE_TAG_ID_FIELD, self.tag)
-
-        return model
+        return self.renderer.load_model()
 
     def generate_unit_tag(self) -> str:
         return f"unit_{self.key}_{random.randint(0, 1000000)}"
@@ -410,6 +321,9 @@ class Unit(BaseEntity, ABC):
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
         self.health_left = 0
 
+        self.unload_model()
+        self.renderer.destroy()
+        del self.renderer
         self.get_tile().remove_unit(self)
 
         if self.owner is not None:
@@ -417,8 +331,6 @@ class Unit(BaseEntity, ABC):
 
         self.set_owner(None)
         self.unregister()
-        if self.model:  # type: ignore
-            self.unload_model()
 
         self.actions.clear()
         if hasattr(self, "tag"):
@@ -481,3 +393,6 @@ class Unit(BaseEntity, ABC):
             target.kill()
 
         return outcome
+
+    def get_tag(self) -> str:
+        return self.tag

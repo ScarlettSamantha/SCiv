@@ -183,7 +183,7 @@ class City(BaseEntity, DirectObject.DirectObject):
                     raise AssertionError("Could not find a tile to spawn the unit on.")
 
                 building.is_being_build = False  # Reset the building state for the unit.
-                building.spawn_on(tile_to_spawn, self.player)  # type: ignore
+                building.spawn_on(self.tile(), self.player)  # type: ignore
 
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_unit", [self, building])
             self.logger.debug(f"City {self.name} has finished building improvement.")

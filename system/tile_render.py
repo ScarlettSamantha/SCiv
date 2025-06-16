@@ -174,8 +174,10 @@ class TileRenderer:
         )
         self.terrain_overlay_node = overlay
 
+    def is_city(self) -> bool:
+        return self.tile.city is not None
+
     def _draw_improvements(self) -> None:
-        """Place each improvement's 3D model on the geometry group."""
         for improvement in self.tile.improvements().get_all():
             path = improvement.model
             if not path:
@@ -189,8 +191,9 @@ class TileRenderer:
             )
 
     def _draw_resource_model(self) -> None:
-        """Render a resource 3D model if present on the tile."""
         if self.tile.city is not None or self.tile.block_resource_model_spawning is True:
+            if self._is_model_drawn(self.tile.tag):
+                self.unload_resource_model()
             return
 
         if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
@@ -209,6 +212,7 @@ class TileRenderer:
                 hpr=resource.model_hpr,
                 disable_lighting=resource.model_disable_default_lighting,
                 disable_shader=resource.model_disable_default_shader,
+                net_id=self.tile.tag,  # Use the resource icon as a unique identifier
             )
 
     def _is_model_drawn(self, model_path: str) -> bool:
@@ -222,8 +226,12 @@ class TileRenderer:
                     return True
         return False
 
+    def unload_resource_model(self) -> None:
+        for child in self.geometry_node.getChildren():
+            if child.getTag(NET_TYPE_FIELD) == str(NET_TYPE.RESOURCE.value):
+                child.removeNode()
+
     def _draw_yield_and_population_icons(self) -> None:
-        """Generate a UV card showing population and yield icons from the atlas."""
         cm = CardMaker(f"icon_overlay_{self.tile.id}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         cm.setHasUvs(True)

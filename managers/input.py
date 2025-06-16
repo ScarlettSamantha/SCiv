@@ -33,6 +33,7 @@ class NET_TYPE(Enum):
     BIT = "bit"
     GEOM = "geom"
     ANCHOR = "anchor"
+    UNIT = "unit"
 
 
 class Input(Singleton, DirectObject):
@@ -188,7 +189,7 @@ class Input(Singleton, DirectObject):
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
                 selected_object = False
-                if NET_TYPE.MODEL.value == net_type:
+                if net_type in (NET_TYPE.MODEL.value, NET_TYPE.UNIT.value):
                     messenger.send("system.input.user.unit_clicked", [net_id])
                     selected_object = True
                     self.selected_tile = None
