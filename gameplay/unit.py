@@ -171,7 +171,7 @@ class Unit(BaseEntity, ABC):
         self.model_cache = None
         self.effects = Effects(self)
         self.actions = []
-        self.resource_needed = Production if state.get("resource_needed") == "Production" else BasicBaseResource
+        self.resource_needed = Production
         self.tile = state.get("tile")  # type: ignore
         self.tag = str(state.get("tag"))
         for key, value in state.items():
