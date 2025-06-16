@@ -390,7 +390,7 @@ class EntityManager(Singleton):
 
         from graphviz import Digraph
 
-        dot = Digraph(comment="Pickle Object Graph", format="png")
+        dot: Digraph = Digraph(comment="Pickle Object Graph", format="png")
         for src, dst in edges:
             dot.edge(src, dst)  # type: ignore
         dot.render(filename=out_dot, cleanup=False)  # type: ignore

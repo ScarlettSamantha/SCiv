@@ -18,8 +18,9 @@ dill[graph] # for debugging save games
 setuptools
 pre-commit  # for building and QA - dev
 py_trees # for behavior trees
-matplotlib # for graph visualization
+matplotlib # for graph visualization - dev-ish
 mypy 
 gprof2dot # for profiling - dev
 pmw # this is needed for the inspector for some reason panda3d does not include it by default nor does tk
 rich # for better console output - dev
+graphviz # for dot graph visualization - Dev
