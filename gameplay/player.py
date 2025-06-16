@@ -146,7 +146,6 @@ class Player(BaseEntity):
     def __getstate__(self) -> Dict[str, Any]:
         state: Dict[str, Any] = self.__dict__.copy()
         state.pop("logger", None)
-        state.pop("ai", None)
         state.pop("effects", None)
         state.pop("citizens", None)
         state.pop("relationships", None)
@@ -154,9 +153,19 @@ class Player(BaseEntity):
         state.pop("vision", None)
         state.pop("trades", None)
         state.pop("votes", None)
-        state.pop("resources", None)
 
         return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
+        self.effects = Effects(self)
+        self.citizens = Citizens()
+        self.relationships = Relationships()
+        self.moods = Moods()
+        self.vision = Vision()
+        self.trades = Trades()
+        self.votes = Votes()
 
     def generate_tag(self) -> str:
         return f"player.{self.name}.{self.turn_order}"
@@ -177,6 +186,7 @@ class Player(BaseEntity):
         self.register()
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
         self.tech.on_game_load()
+        self.effects = Effects(self)
 
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
