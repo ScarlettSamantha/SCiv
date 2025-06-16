@@ -57,7 +57,7 @@ class BaseEntity(ABC, DirectObject):
         super().__init__()
         from gameplay.tile import Tile
 
-        self.tag: Optional[str] = str(uuid4().hex)
+        self.tag: str = str(uuid4().hex)
         self.entity_key: Optional[str] = None
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False

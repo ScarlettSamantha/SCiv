@@ -1,5 +1,5 @@
 from logging import Logger
-from random import randint
+from random import randint, randrange
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from direct.showbase import DirectObject, MessengerGlobal
@@ -82,7 +82,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.register()
 
     def generate_tag(self):
-        self.tag = f"city_{str(randint(1, 100000000))}"
+        self.tag = f"city_{self.get_tile().x}_{str(self.get_tile().y)}_{str(self.name).replace(' ', '_').lower()}_{str(randrange(2**5, 2**8))}"
 
     def register(self):
         from managers.entity import EntityManager, EntityType

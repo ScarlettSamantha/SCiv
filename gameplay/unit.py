@@ -70,11 +70,11 @@ class Unit(BaseEntity, ABC):
         BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
 
         self.key: str = key if key else uuid4().hex
+        self.tag = self.generate_unit_tag()
 
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
-        self.tag: str | None = self.generate_unit_tag()
         self.actions: List[Action] = []
 
         self.pos_y: float = 0.0
@@ -143,16 +143,15 @@ class Unit(BaseEntity, ABC):
         self.model_cache = None
         self.health_left: float = self.max_health
         self.moves_left = self.max_moves
-        if not hasattr(self, "tag") or self.tag is None:  # Ensure tag is set
+
+        if not hasattr(self, "tag"):  # Ensure tag is set
             self.tag = self.generate_unit_tag()
+
         self.register()
         self.spawn(ignore_constraints=True)
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
-
-        if self.tag is None:
-            raise ValueError("Unit tag cannot be None. Ensure the tag is set before registering.")
 
         self.is_registered = True
 
@@ -347,9 +346,6 @@ class Unit(BaseEntity, ABC):
             self.logger.warning(f"Unit {self.key} has no model to unload.")
 
     def load_model(self) -> NodePath | None:
-        if self.tag is None:
-            raise ValueError("Unit tag cannot be None. Ensure the tag is set before loading the model.")
-
         loader: Loader = Loader(self.base)
         model_path: Optional[str] = self.get_model_path()
 

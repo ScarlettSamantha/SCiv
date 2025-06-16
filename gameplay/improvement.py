@@ -90,8 +90,6 @@ class Improvement(BaseEntity):
 
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
 
-        self.tag: str = ""
-
     @classmethod
     def on_tooltip(cls) -> str:
         tile_yield_improvement = cls.tile_yield_improvement.props(only_non_nul=True)
@@ -133,7 +131,9 @@ class Improvement(BaseEntity):
         if self.tile is None:
             self.tag = f"improvement_{self.name}_{random.randrange(0, 10000)}"
         else:
-            self.tag = f"improvement_{self.get_tile().x}_{self.get_tile().y}_{self.name}_{random.randrange(0, 10000)}"
+            self.tag = (
+                f"improvement_{self.get_tile().x}_{self.get_tile().y}_{str(self.name)}_{random.randrange(0, 10000)}"
+            )
 
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
