@@ -3,7 +3,7 @@ from enum import Enum
 from logging import Logger
 import os
 from pickletools import genops
-import subprocess
+import subprocess  # nosec B404
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar
 from uuid import uuid4
 from weakref import ReferenceType, ref
@@ -411,8 +411,8 @@ class EntityManager(Singleton):
         except Exception as e:
             cmd_g2d = ["/usr/bin/python3", "-m", "gprof2dot", "-f", "pstats", prof_filename]
             cmd_dot = ["dot", "-Tpng", "-o", png_filename]
-            proc = subprocess.Popen(cmd_g2d, stdout=subprocess.PIPE)
-            subprocess.run(cmd_dot, stdin=proc.stdout, check=True)
+            proc = subprocess.Popen(cmd_g2d, stdout=subprocess.PIPE)  # nosec B603
+            subprocess.run(cmd_dot, stdin=proc.stdout, check=True)  # nosec B603
             proc.wait()
 
             try:
