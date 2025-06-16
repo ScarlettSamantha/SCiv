@@ -3,7 +3,9 @@ from typing import Any
 from direct.showbase.MessengerGlobal import messenger
 
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
+from gameplay.tile import Tile
 from gameplay.unit import CantMoveReason, Unit
+from managers.combat import T_TARGET
 from managers.i18n import t_
 from system.actions import Action
 
@@ -24,9 +26,11 @@ class WalkAction(BaseUnitAction):
         self.targeting_tile_action = True
         self.get_return_as_failure_argument = True
 
-    def move_wrapper(self, *args: Any, **kwargs: Any) -> CantMoveReason:
-        tile = args[2]["tile"]
-        result = self.unit.move(tile)
+    def move_wrapper(self, action: Action, executor: Unit, target: T_TARGET) -> CantMoveReason:
+        if not isinstance(target, Tile):
+            raise TypeError("Target must be a Tile instance.")
+
+        result = executor.move(target)
         self._result = result
         return result
 

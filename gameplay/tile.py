@@ -304,6 +304,9 @@ class Tile(BaseEntity):
         for effect in self.effects.get_effects().values():
             new_yield += effect.yield_impact
 
+        for resource in self.resources.flatten_non_mechanic().values():
+            new_yield += resource.tile_yield
+
         self.tile_yield = new_yield
 
     def __getstate__(self) -> Dict[str, Any]:

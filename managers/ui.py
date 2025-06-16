@@ -14,7 +14,6 @@ from gameplay.player import Player
 from gameplay.tech import Tech
 from gameplay.tile import Tile
 from gameplay.unit import Unit
-from helpers.colors import Colors
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, Translation, t_
 from managers.player import PlayerManager
@@ -449,17 +448,10 @@ class ui(Singleton, DirectObject):
 
         if self.current_unit is not None:
             self.previous_unit = self.current_unit
-            if self.previous_unit.model is not None:  # type: ignore # type: "NodePath"
-                self.previous_unit.set_color(Colors.RESTORE)
 
         if isinstance(object, Unit):
-            if object.owner == PlayerManager.session_player():
-                # Green for player units
-                object.set_color(Colors.GREEN)
-            else:
-                # Red for enemy units
-                object.set_color(Colors.RED)
-            self.current_unit = object
+            if object.model is not None:
+                self.current_unit = object
 
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore

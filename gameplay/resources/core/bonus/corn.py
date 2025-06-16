@@ -22,7 +22,7 @@ class Corn(BaseBonusResource):
         BaseTerrain: 0.0,
     }
     spawn_amount = 5.0
-    coverage = 0.4
+    coverage = 0.5
     improvement_required = [Farm]
 
     def __init__(self, value: int | float = 0):

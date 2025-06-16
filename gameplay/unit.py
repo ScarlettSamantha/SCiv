@@ -1,5 +1,5 @@
 import random
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
@@ -16,7 +16,7 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from helpers.debug import Debug
 from main import Cache
-from managers.combat import T_TARGET, Combat, CombatResults
+from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
@@ -74,7 +74,7 @@ class Unit(BaseEntity, ABC):
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
-        self.tag: str = self.generate_unit_tag()
+        self.tag: str | None = self.generate_unit_tag()
         self.actions: List[Action] = []
 
         self.pos_y: float = 0.0
@@ -112,7 +112,18 @@ class Unit(BaseEntity, ABC):
         if self.is_registered is False:
             self.register()
 
-    def register_actions(self): ...
+    @abstractmethod
+    def register_actions(self):
+        if self.can_move:
+            from gameplay.actions.unit.move import WalkAction
+
+            self.add_action(WalkAction(self))
+
+        if self.can_attack:
+            if self.attack_power_mele > 0:
+                from gameplay.actions.unit.attack_mele import AttackAction
+
+                self.add_action(AttackAction(self))
 
     @property
     def logger(self):
@@ -132,12 +143,16 @@ class Unit(BaseEntity, ABC):
         self.model_cache = None
         self.health_left: float = self.max_health
         self.moves_left = self.max_moves
-        self.tag = self.generate_unit_tag()
+        if not hasattr(self, "tag") or self.tag is None:  # Ensure tag is set
+            self.tag = self.generate_unit_tag()
         self.register()
         self.spawn(ignore_constraints=True)
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
+
+        if self.tag is None:
+            raise ValueError("Unit tag cannot be None. Ensure the tag is set before registering.")
 
         self.is_registered = True
 
@@ -332,6 +347,9 @@ class Unit(BaseEntity, ABC):
             self.logger.warning(f"Unit {self.key} has no model to unload.")
 
     def load_model(self) -> NodePath | None:
+        if self.tag is None:
+            raise ValueError("Unit tag cannot be None. Ensure the tag is set before loading the model.")
+
         loader: Loader = Loader(self.base)
         model_path: Optional[str] = self.get_model_path()
 
@@ -452,16 +470,18 @@ class Unit(BaseEntity, ABC):
     def look(self, radius: int) -> List["Tile"]:
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)
 
-    def attack(self, target: T_TARGET) -> None:
+    def attack(self, target: T_TARGET) -> CombatOutcome:
         outcome = Combat.attack(self, target)
         entry = CombatLog.entry_from_outcome(outcome=outcome, text=CombatLog.outcome_to_text(outcome=outcome))  # type: ignore
 
         MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
 
-        if isinstance(target, Unit):
+        if isinstance(target, Unit) and outcome.attacker_damage > 0.0:
             spawn_damage_text(target, outcome.attacker_damage)
 
         if outcome.status == CombatResults.ATTACKER_KILLED:
             self.kill()
         elif outcome.status == CombatResults.DEFENDER_KILLED:
             target.kill()
+
+        return outcome

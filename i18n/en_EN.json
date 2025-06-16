@@ -493,6 +493,50 @@
               "title": "Unit can't build (error)",
               "message": "This unit can't build improvements, this is a bug. (Please report this issue)"
             }
+          },
+          "combat": {
+            "attack_success": {
+              "title": "Attack successful",
+              "message": "{attacking_unit} killed {defending_unit} with a strike of {damage} damage."
+            },
+            "attack_errors": {
+              "no_range": {
+                "title": "Unit can't attack",
+                "message": "This unit can't attack this tile, it has no range to attack."
+              },
+              "no_movement": {
+                "title": "Unit can't attack",
+                "message": "This unit can't attack this tile, it has no movement points left."
+              },
+              "no_points": {
+                "title": "Unit can't attack",
+                "message": "This unit can't attack this tile, it has no points left."
+              },
+              "defender_killed": {
+                "title": "Defender killed",
+                "message": "{attacking_unit} has killed {defending_unit} for {damage} damage."
+              },
+              "defender_damaged": {
+                "title": "Defender damaged",
+                "message": "{attacking_unit} has damaged {defending_unit} for {damage} damage."
+              },
+              "attacker_killed": {
+                "title": "Attacker killed",
+                "message": "{defending_unit} has killed {attacking_unit} for {damage} damage."
+              },
+              "attacker_damaged": {
+                "title": "Attacker damaged",
+                "message": "{defending_unit} has damaged {attacking_unit} for {damage} damage."
+              },
+              "interrupted_attack": {
+                "title": "Attack interrupted",
+                "message": "{defending_unit} has interrupted the attack of {attacking_unit} and killed it for {damage} damage."
+              },
+              "own_unit_attack_disabled": {
+                "title": "Unit can't attack",
+                "message": "This unit can't attack its own units (this is a changeable game rule)."
+              }
+            }
           }
         },
         "civic": {
@@ -599,7 +643,8 @@
       "unit": {
         "move": "Move",
         "found_city": "Found City",
-        "self_destroy": "Suicide"
+        "self_destroy": "Suicide",
+        "attack": "Attack"
       }
     },
     "world": {

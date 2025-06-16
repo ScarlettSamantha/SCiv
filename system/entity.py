@@ -1,6 +1,7 @@
 from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from uuid import uuid4
 from weakref import ReferenceType
 import weakref
 
@@ -40,11 +41,11 @@ class BaseEntity(ABC, DirectObject):
     attack_range: int = 1
     attack_armor_penetration: float = 0.0
     attack_points: float = 0.0
-    attack_points_cost_mele: float = 0.0
-    attack_points_cost_ranged: float = 0.0
+    attack_points_cost_mele: float = 1.0
+    attack_points_cost_ranged: float = 1.0
 
-    defense_mele: float = 0.0
-    defense_ranged: float = 0.0
+    defense_mele: float = 1.0
+    defense_ranged: float = 1.0
 
     def __init__(
         self,
@@ -56,6 +57,7 @@ class BaseEntity(ABC, DirectObject):
         super().__init__()
         from gameplay.tile import Tile
 
+        self.tag: Optional[str] = str(uuid4().hex)
         self.entity_key: Optional[str] = None
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False
@@ -92,16 +94,18 @@ class BaseEntity(ABC, DirectObject):
             self._owner = weakref.ref(value)
 
     def get_tile(self) -> "Tile":
+        from gameplay.tile import Tile
+
+        if isinstance(self, Tile):
+            return self
+
         if self.tile is None:
             raise ValueError("Tile is None")
-
-        from gameplay.tile import Tile
 
         if isinstance(self.tile, Tile):
             return self.tile
 
-        tile_obj = self.tile()
-        if tile_obj is None:
+        if (tile_obj := self.tile()) is None:
             raise ValueError("Tile reference is dead (None)")
         return tile_obj
 

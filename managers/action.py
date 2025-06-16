@@ -7,6 +7,11 @@ from system.actions import Action
 class ActionManager:
     registered_actions: Dict[T_TranslationOrStr, Action] = {}
     staged_actions: Dict[T_TranslationOrStr, Action] = {}
+    waiting_for_player_input: bool = False
+    waiting_for_player_unit_click: bool = True
+    waiting_for_player_tile_click: bool = False
+
+    keep_selection_after_action: bool = True
 
     @classmethod
     def add_timed_action(cls, action: Action, run_on_add: bool = True):

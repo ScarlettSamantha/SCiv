@@ -178,8 +178,10 @@ class Input(Singleton, DirectObject):
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())  # type: ignore
         self.picker.traverse(self.base.render)  # type: ignore
+
         if self.pq.getNumEntries() > 0:  # type: ignore
             self.pq.sortEntries()  # type: ignore
+
             for entry in self.pq.getEntries():
                 picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
@@ -187,20 +189,21 @@ class Input(Singleton, DirectObject):
 
                 selected_object = False
                 if NET_TYPE.MODEL.value == net_type:
-                    # This is a unit, not a tile
                     messenger.send("system.input.user.unit_clicked", [net_id])
                     selected_object = True
-                    self.selected_tile = None  # Clear selected tile if a unit is clicked
+                    self.selected_tile = None
+
                 elif NET_TYPE.TILE.value == net_type:
-                    # This is a tile
                     if (tile := TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
+
                     self.selected_tile = tile
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                     selected_object = True
+
                 else:
-                    self.selected_tile = None  # Clear selected tile if not a tile
+                    self.selected_tile = None
 
                 if selected_object:
                     return picked_obj  # type: ignore
@@ -211,10 +214,4 @@ class Input(Singleton, DirectObject):
             return None
 
     def on_escape(self):
-        """
-        Method fires a message when the user presses the Escape key.
-
-        You can handle this in your code by listening for
-        'system.input.user.escaped' with an appropriate handler.
-        """
         messenger.send("game.input.user.escape_pressed")
