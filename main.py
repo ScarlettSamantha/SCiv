@@ -60,12 +60,6 @@ class SCIV(ShowBase):
         simplepbr.init()
         loading_screen.next_stage("Loading Panda3D")
         self.disableMouse()
-        Cache.set_showbase_instance(self)
-
-        loading_screen.next_stage("Loading Messenger")
-        self.base_path = pathlib.Path(__file__).parent.absolute()
-        # Base messenger object from panda3d
-        self.messenger: Messenger = Messenger()
 
         loading_screen.next_stage("Setting up logging")
         self.logger: LogManager = LogManager.get_singleton_instance()
@@ -73,6 +67,13 @@ class SCIV(ShowBase):
 
         self.engine_logger: Logger = self.logger.engine.getChild("Main")
         self.engine_logger.info("Starting OpenCiv")
+
+        Cache.set_showbase_instance(self)  # needs to come after logging.
+
+        loading_screen.next_stage("Loading Messenger")
+        self.base_path = pathlib.Path(__file__).parent.absolute()
+        # Base messenger object from panda3d
+        self.messenger: Messenger = Messenger()
 
         # I18n system
         loading_screen.next_stage("Loading translations for English(en_EN)")
