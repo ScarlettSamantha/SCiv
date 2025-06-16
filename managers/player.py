@@ -27,8 +27,10 @@ class PlayerManager(BaseManager):
                 cls._session_player = player
             if player.is_nature:
                 cls._nature_player = player
+                continue
             if player.is_barbarian:
                 cls._barbarian_player = player
+                continue
             cls._players[player.turn_order] = player
             player.on_game_load()
 
