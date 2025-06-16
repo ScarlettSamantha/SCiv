@@ -1,7 +1,8 @@
 variables:
   compare_branch: dev-v0.2.0
   GIT_DEPTH: 0
-  stubs_repo: https://git.scarlettbytes.nl/scarlett/sciv-stubs.git
+  kivy_stubs_repo: git@github.com:ScarlettSamantha/python-kivy-stubs.git
+  panda3d_stubs_repo: git@github.com:WMOkiishi/types-panda3d.git
 
 stages:
   - verify
@@ -20,8 +21,9 @@ stages:
     - pip config set global.cache-dir .cache/pip
     - pip install --upgrade pip --root-user-action=ignore
     - pip install -r requirements.txt --root-user-action=ignore
-    - git clone --depth 1 $stubs_repo ./stubs
-
+    - git clone --depth 1 $panda3d_stubs_repo stubs/types-panda3d
+    - git clone --depth 1 $kivy_stubs_repo stubs/python-kivy
+  
 pyright-full-check:
   <<: *default-python-job
   stage: verify
