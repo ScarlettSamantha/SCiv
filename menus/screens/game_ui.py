@@ -1,7 +1,6 @@
 from functools import partial
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
-from weakref import ReferenceType
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -20,7 +19,7 @@ from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
-from managers.combat import test_combat_outcome
+from managers.combat import T_TARGET, test_combat_outcome
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -72,8 +71,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.waiting_for_world_input: bool = False
 
         self.wait_for_next_input_of_user: bool = False
-        self.wait_for_action_of_user: Optional[partial[Callable[[Optional[Tile]], None]]] = None
+        self.wait_for_action_of_user: Optional[partial[Callable[[Optional[Tile] | Optional[Unit]], None]]] = None
         self.unit_waiting_for_action: Optional[Unit] = None
+        self.wait_for_action: Optional[Action] = None
 
         self.debug_panel: Optional[Label] = None
         self.camera_panel: Optional[Label] = None
@@ -483,16 +483,34 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def process_unit_click(self, unit: str):
         self.logger.debug(f"Unit clicked: {unit}")
-        _unit: ReferenceType[BaseEntity] = EntityManager.get_singleton_instance().get_ref_weak(EntityType.UNIT, unit)
+        _unit: Optional[BaseEntity] = EntityManager.get_singleton_instance().get(EntityType.UNIT, unit)
+        selected_unit: bool = True
+
+        if _unit is None or not isinstance(_unit, Unit):
+            self.logger.warning(f"Unit {unit} not found or is not a Unit instance.")
+            return
+
+        if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
+            self.wait_for_action_of_user(_unit)  # Call the stored action with the tile
+            self.wait_for_next_input_of_user = False
+            self.wait_for_action_of_user = None  # Reset state
+            if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True:
+                selected_unit = False
+
+            self.wait_for_action = None
+
+        if selected_unit is True:
+            self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
 
         if unit != self.ui_manager.current_unit:
-            self.generate_buttons_for_unit_actions(unit)
+            if selected_unit is True:
+                self.generate_buttons_for_unit_actions(unit)
+                if self.debug_frame is not None:
+                    self.debug_frame.update_debug_info_for_unit(_unit)
 
         if self.showing_city is not None:
             self.get_city_ui().hide()
             self.showing_city = None
-
-        self.debug_frame.update_debug_info_for_unit(_unit())  # type: ignore # We know it exists because it's initialized in build_screen
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         if self.action_bar_frame is None:
@@ -585,15 +603,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.wait_for_next_input_of_user = True
         self.wait_for_action_of_user = partial(self.execute_action, action, unit)  # type: ignore
+        self.wait_for_action = action
         self.unit_waiting_for_action = unit
         self.waiting_for_world_input = True  # type: ignore # We know it exists because it's initialized in build_screen
 
-    def execute_action(self, action: Action, unit: Unit, tile: Optional[Tile]):
+    def execute_action(self, action: Action, executor: T_TARGET, target: Optional[T_TARGET] = None):
         """Executes the action after tile selection (if required)."""
-        action.action_kwargs["unit"] = unit
+        action.action_kwargs["executor"] = executor
 
-        if tile is not None:
-            action.action_kwargs["tile"] = tile  # Assign the selected tile
+        if target is not None and (action.targeting_tile_action or action.targeting_unit_action):
+            action.action_kwargs["target"] = target  # Assign the selected tile
 
         action.run()
 

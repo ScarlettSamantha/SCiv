@@ -224,7 +224,7 @@ class EntityManager(Singleton):
         storage[key] = entity
 
     def unregister(self, type: EntityType, entity: BaseEntity):
-        key = entity.entity_key
+        key = entity.tag if hasattr(entity, "tag") else entity.entity_key
 
         if key is None:
             self.logger.warning(f"Entity {str(entity)} has no key, cannot unregister.")

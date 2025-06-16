@@ -29,6 +29,11 @@ class ClubMan(CoreMilitaryBaseClass):
     icon = "units/clubman.png"
     model_size = 0.33
 
+    attack_points = 1
+    attack_armor_penetration = 1
+    attack_power_mele = 2
+    attack_power_ranged = 0
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             *args,
@@ -36,8 +41,4 @@ class ClubMan(CoreMilitaryBaseClass):
         )
 
     def register_actions(self):
-        from gameplay.actions.unit.move import WalkAction
-
-        self.add_action(WalkAction(self))
-
         return super().register_actions()

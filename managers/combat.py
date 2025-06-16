@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import random
 
 from gameplay.border import PlayerManager
+from gameplay.rules import GameRules
+from helpers.cache import Cache
 
 
 if TYPE_CHECKING:
@@ -26,6 +28,7 @@ class CombatResults(Enum):
     NO_RANGE = 5  # Target out of range
     NO_MOVEMENT = 6  # Attacker has moved already
     NO_POINTS = 7  # Not enough attack points
+    OWN_UNIT_ATTACK_DISABLED = 8  # Cannot attack own unit (if rules disallow it)
 
 
 class CombatOutcome(NamedTuple):
@@ -73,8 +76,8 @@ def gather_stats(unit: Union["Unit", T_TARGET]) -> CombatStats:
         armor_penetration=unit.get_attack_armor_penetration(),
         min_range=getattr(unit, "get_min_attack_range", lambda: 1)(),
         max_range=unit.get_attack_range(),
-        melee_cost=getattr(unit, "attack_points_cost_mele", 0),
-        ranged_cost=getattr(unit, "attack_points_cost_ranged", 0),
+        melee_cost=getattr(unit, "attack_points_cost_mele", 1),
+        ranged_cost=getattr(unit, "attack_points_cost_ranged", 1),
         can_retaliate=getattr(unit, "can_retaliate", False),
     )
 
@@ -83,6 +86,8 @@ class Combat:
     COMBAT_VARIANCE = 0.1  # ±10% random variation
     RNG = random  # injectable RNG for deterministic tests
     MELE_RANGE = 1  # Melee combat range
+
+    rules: GameRules = Cache.get_active_rules()
 
     @classmethod
     def _zero(cls, status: CombatResults, attacker: "Player", defender: "Player") -> CombatOutcome:
@@ -141,17 +146,22 @@ class Combat:
         if dist < attack_stats.min_range or dist > attack_stats.max_range:
             return cls._zero(CombatResults.NO_RANGE, attacker.get_owner(), defender.get_owner())
 
-        # 4. Attack points cost check
+        # 4. Check if rules allow targeting own units and if this is the case.
+        if attacker.get_owner() == defender.get_owner() and cls.rules.get_allow_friendly_fire_rule() is False:
+            if isinstance(defender, "Unit") and defender.get_owner() == attacker.get_owner():
+                return cls._zero(CombatResults.OWN_UNIT_ATTACK_DISABLED, attacker.get_owner(), defender.get_owner())
+
+        # 5. Attack points cost check
         cost = attack_stats.melee_cost if dist == cls.MELE_RANGE else attack_stats.ranged_cost
         if getattr(attacker, "attack_points_left", 0) < cost:  # Not enough attack points
             return cls._zero(CombatResults.NO_POINTS, attacker.get_owner(), defender.get_owner())
 
-        # 5. Compute attack damage
+        # 6. Compute attack damage
         raw_atk = cls._roll(attack_stats.melee_attack if dist == cls.MELE_RANGE else attack_stats.ranged_attack)
         defense_val = defend_stats.melee_defense if dist == cls.MELE_RANGE else defend_stats.ranged_defense
         net_atk = max(0.0, raw_atk - max(defense_val - attack_stats.armor_penetration, 0.0))
 
-        # 6. Apply damage to defender
+        # 7. Apply damage to defender
         defender_killed = defender.receive_damage(net_atk)
         attacker.attack_points_left -= cost
         if defender_killed:
@@ -166,7 +176,7 @@ class Combat:
                 defender,
             )
 
-        # 7. Retaliation
+        # 8. Retaliation
         if defend_stats.can_retaliate and dist <= defend_stats.max_range:
             raw_ret = cls._roll(defend_stats.melee_attack if dist == 1 else defend_stats.ranged_attack)
             atk_def_val = attack_stats.melee_defense if dist == 1 else attack_stats.ranged_defense
@@ -185,7 +195,7 @@ class Combat:
                 defender,
             )
 
-        # 8. No retaliation: defender damaged
+        # 9. Done, attacker damaged the defender and survived
         return cls._make_outcome(
             CombatResults.DEFENDER_DAMAGED,
             net_atk,

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Self, Tuple
+from typing import Any, Callable, Dict, Optional, Self, Tuple
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.log import LogManager
@@ -26,8 +26,8 @@ class Action:
         icon: str | None = None,
         usable: bool = True,
         description: T_TranslationOrStrOrNone = None,
-        *args: Any,
-        **kwargs: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Dict[str, Any],
     ):
         self.key: str = ""
         self.name: T_TranslationOrStr = name
@@ -37,13 +37,13 @@ class Action:
         self.logger = LogManager.get_singleton_instance().engine.getChild("actions")
 
         self.condition: Optional[Callable[[Self], bool] | bool] = condition
-        self.action: Callable[[Self, List[Any] | Tuple[Any], Dict[Any, Any]], Optional[bool]] = action
+        self.action: Callable[..., Optional[Any]] = action
 
         self.on_success: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = on_success
         self.on_failure: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = on_failure
         self.success_condition: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], bool]] = success_condition
 
-        self.action_args: Tuple[Any] = args
+        self.action_args: Tuple[Any, ...] = args
         self.action_kwargs: Dict[str, Any] = kwargs
 
         self.get_return_as_failure_argument: bool = False
@@ -51,6 +51,7 @@ class Action:
         self.on_the_spot_action: bool = True
         self.targeting_tile_action: bool = False
         self.targeting_unit_action: bool = False
+        self.keep_targeting_after_use: bool = False
 
         self.remove_actions_after_use: bool = False
         self.failure_reason: Any = None
@@ -74,7 +75,7 @@ class Action:
             return
 
         # We actually run the action here
-        self.action_result = self.action(self, self.action_args, self.action_kwargs)
+        self.action_result = self.action(self, **self.action_kwargs)
 
         if self.success_condition is not None:
             """We test for true as the system works that you can return anything that is not False to be a success and that will be passed to the on_success callback."""

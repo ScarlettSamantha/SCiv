@@ -260,11 +260,10 @@ class Game(Singleton, DirectObject):
             tiles = [tiles]
         messenger.send("ui.update.user.tile_clicked", tiles)
 
-    def handle_unit_click(self, units: Union[List[str], str]):
+    def handle_unit_click(self, units: Union[List[str], str], select_unit: bool = True):
         if isinstance(units, str):
             units = [units]
         messenger.send("ui.update.user.unit_clicked", units)
-        self.ui.select_unit(units)
 
     def choose_generator(self, random: bool = False, name: Optional[str] = None):
         from gameplay.repositories.generators import GeneratorRepository

@@ -82,12 +82,7 @@ class Settler(CoreCivilianBaseClass):
         self.model_position_offset = (0, 0, 0.0)
 
     def register_actions(self):
+        super().register_actions()
         from gameplay.actions.unit.found import FoundAction
 
         self.actions.append(FoundAction(self))
-
-        from gameplay.actions.unit.move import WalkAction
-
-        self.actions.append(WalkAction(self))
-
-        super().register_actions()

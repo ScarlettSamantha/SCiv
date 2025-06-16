@@ -20,6 +20,7 @@ class CombatResultText(Enum):
     NO_RANGE = t_("ui.player_ui.combat_log.results.no_range")
     NO_MOVEMENT = t_("ui.player_ui.combat_log.results.no_movement")
     NO_POINTS = t_("ui.player_ui.combat_log.results.no_points")
+    OWN_UNIT_ATTACK_DISABLED = t_("ui.player_ui.combat_log.results.own_unit_attack_disabled")
 
 
 class CombatLogEntry:
@@ -120,5 +121,7 @@ class CombatLog:
             return str(CombatResultText.NO_MOVEMENT.value).format(**param_list)
         elif outcome.status == CombatResults.NO_POINTS:
             return str(CombatResultText.NO_POINTS.value).format(**param_list)
+        elif outcome.status == CombatResults.OWN_UNIT_ATTACK_DISABLED:
+            return str(CombatResultText.OWN_UNIT_ATTACK_DISABLED.value).format(**param_list)
         else:
             raise ValueError(f"Unknown combat result: {outcome.status}")
