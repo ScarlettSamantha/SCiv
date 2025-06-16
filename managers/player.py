@@ -25,6 +25,10 @@ class PlayerManager(BaseManager):
         ) in data.items():  # We need to find the player that is human and assign them to the session player.
             if player.is_human:
                 cls._session_player = player
+            if player.is_nature:
+                cls._nature_player = player
+            if player.is_barbarian:
+                cls._barbarian_player = player
             cls._players[player.turn_order] = player
             player.on_game_load()
 
