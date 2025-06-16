@@ -534,7 +534,7 @@
               },
               "own_unit_attack_disabled": {
                 "title": "Unit can't attack",
-                "message": "This unit can't attack its own units(this is a change-able game rule)."
+                "message": "This unit can't attack its own units (this is a changeable game rule)."
               }
             }
           }
