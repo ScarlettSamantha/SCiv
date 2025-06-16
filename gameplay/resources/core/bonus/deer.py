@@ -25,7 +25,7 @@ class Deer(BaseBonusResource):
         HillsTundra: 40.0,
         HillsForest: 30.0,
         HillsGrass: 30.0,
-        FlatForest: 30.0,
+        FlatForest: 50.0,
         FlatGrass: 10.0,
         FlatPineForest: 100.0,
     }
@@ -33,7 +33,7 @@ class Deer(BaseBonusResource):
     coverage = 0.8
     improvement_required = [HuntingCamp]
     model = "assets/models/resources/deer.glb"
-    model_size = 0.25
+    model_size = 0.33
     model_position = (0, 0, 0.20)
 
     def __init__(self, value: int | float = 0):

@@ -25,7 +25,7 @@ class Ivory(BaseLuxuryResource):
     spawn_amount = 5.0
     improvement_required = [HuntingCamp]
     model = "assets/models/resources/elephant.glb"
-    model_size = 0.5
+    model_size = 0.33
     model_disable_default_lighting = True
     model_disable_default_shader = True
 

@@ -8,6 +8,7 @@ from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_grass import HillsGrass
+from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStr, t_
 
 
@@ -34,3 +35,5 @@ class Cows(BaseBonusResource):
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
+        self.tile_yield = Yields(food=1)
+        self.tile_yield_on_improvement = Yields(food=2)
