@@ -410,9 +410,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.add_widget(self.player_combat_log)
         return self.player_combat_log
 
-    def refresh_top_bar(self):
+    def refresh_top_bar(self, dt: Optional[float] = None):
+        if self.top_bar is None:
+            self.build_top_bar()
+
         if self.top_bar is None:
             raise AssertionError("Top bar is not initialized.")
+
         self.top_bar.update()
 
     def clear_selected_unit(self):
