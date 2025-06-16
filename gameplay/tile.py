@@ -298,8 +298,12 @@ class Tile(BaseEntity):
         base = self._tile_terrain.get_tile_yield()
         new_yield += base
 
-        for improvement in self._improvements.get_all():
-            new_yield += improvement.tile_yield
+        if self.is_city() and self.city is not None:
+            city_yield = self.city.get_yield()
+            new_yield += city_yield
+        else:
+            for improvement in self._improvements.get_all():
+                new_yield += improvement.tile_yield
 
         for effect in self.effects.get_effects().values():
             new_yield += effect.yield_impact
@@ -319,8 +323,6 @@ class Tile(BaseEntity):
             del state["renderer"]
         if "_entity_manager" in state:
             del state["_entity_manager"]
-        if "tile_yield" in state:
-            del state["tile_yield"]
         if "effects" in state:
             del state["effects"]
 

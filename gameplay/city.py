@@ -184,6 +184,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
                 building.is_being_build = False  # Reset the building state for the unit.
                 building.spawn_on(self.tile(), self.player)  # type: ignore
+                self.get_tile().render()
 
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_unit", [self, building])
             self.logger.debug(f"City {self.name} has finished building improvement.")
@@ -382,9 +383,6 @@ class City(BaseEntity, DirectObject.DirectObject):
         tile.city = instance
         tile.city_owner = instance
 
-        if is_capital:
-            instance.build(Palace(tile, owner))
-
         if auto_claim_radius > 0:
             from gameplay.repositories.tile import TileRepository
 
@@ -398,6 +396,9 @@ class City(BaseEntity, DirectObject.DirectObject):
                     f"City {instance.name} is requesting claiming tile {adjacent_tile.tag}, sending message."
                 )
                 messenger.send("game.gameplay.city.requests_tile", [instance, adjacent_tile])
+
+        if is_capital:
+            instance.build(Palace(tile, owner))
 
         return instance
 
@@ -415,6 +416,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
     def get_yield(self) -> Yields:
         _yield = Yields.nullYield()
+
         for improvement in self._improvements.get_all():
             _yield += improvement.tile_yield_improvement
 

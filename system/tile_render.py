@@ -262,8 +262,6 @@ class TileRenderer:
         # Prepare slots: population or first resource + base yields
         base_yields = self.tile.get_tile_yield()
         if self.tile.city:
-            base_yields += self.tile.city.get_yield()
-
             slots: List[Union[str, BaseResource, None]] = [
                 self.tile.city.get_population_icon(),
             ]
@@ -358,7 +356,7 @@ class TileRenderer:
             star_img=atlas.get_pil_image_by_virtual_path("capital_icon.png"),
             star_offset_y=32,
             star_offset_x=-16,
-            text_color=normalize_color_to_bytes(self.tile.owner.color),  # type: ignore[call-arg]
+            text_color=normalize_color_to_bytes(self.tile.get_owner().color),  # type: ignore[call-arg]
         )
         plate = plate.transpose(
             Image.FLIP_TOP_BOTTOM  # type: ignore[no-untyped-call]
