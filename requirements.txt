@@ -22,3 +22,4 @@ matplotlib # for graph visualization
 mypy 
 gprof2dot # for profiling - dev
 pmw # this is needed for the inspector for some reason panda3d does not include it by default nor does tk
+rich # for better console output - dev
