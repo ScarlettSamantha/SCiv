@@ -30,7 +30,8 @@ class UnitManager(Singleton):
     def remove_unit(self, unit: "Unit"):
         if not hasattr(unit, "tag"):  # This is a bug
             return
-        del self.units[str(unit.tag)]
+        if str(unit.tag) in self.units:
+            del self.units[str(unit.tag)]
 
     def reset(self):
         self.units = {}
