@@ -183,6 +183,9 @@ class Unit(BaseEntity, ABC):
             raise ValueError(f"Unit {self.key} model could not be loaded.")
 
         self.model.reparent_to(self.base.render)
+
+        self.model.flatten_medium()
+
         self.model.setHpr(LVector3(*self.model_rotation))
         self.model.setPos(*pos)
         self.model.setScale(self.model_size)

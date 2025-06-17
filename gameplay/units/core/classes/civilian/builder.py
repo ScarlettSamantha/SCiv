@@ -123,7 +123,7 @@ class Builder(CoreCivilianBaseClass):
     key = "core.unit.class.builder"
     name = t_("content.units.core.units.civilian.builder.name")
     description = t_("content.units.core.units.civilian.builder.description")
-    model_size = 0.2
+    model_size = 0.35
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(

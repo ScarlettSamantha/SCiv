@@ -13,7 +13,7 @@ class SceneOptimizer:
         """
         Collapse transform nodes and merge Geoms sharing render attributes.
         """
-        root.flattenMedium()
+        # root.flattenMedium() # This breaks the game
 
     @staticmethod
     def setup_lod(

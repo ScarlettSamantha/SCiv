@@ -96,7 +96,9 @@ class TileRenderer:
         self.selector_enabled: bool = False
 
         self._build_selector_quad()
-        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 30)  # type: ignore
+        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 5)  # type: ignore
+
+        self.geometry_node.flatten_medium()
 
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
@@ -435,6 +437,7 @@ class TileRenderer:
             raise ValueError("TileRenderer base is not initialized.")
 
         full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
+        self.last_result = None
 
         def on_model_loaded(loaded_model: Optional[NodePath]):
             if loaded_model is None:
@@ -463,14 +466,17 @@ class TileRenderer:
             else:
                 node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
 
-            self.models.append(node)
+            node.flatten_medium()
 
+            self.models.append(node)
+            self.last_result = node
             if Debug.world_spawning():
                 self.tile.logger.debug(
                     f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}."
                 )
 
         self.base.loader.loadModel(full_path, callback=on_model_loaded)  # type: ignore
+        return self.last_result
 
     def remove_model(self, net_id: str) -> None:
         for model in self.models[:]:
