@@ -148,7 +148,7 @@ class TileRenderer:
                     color = self.tile.get_owner().color[:3]
                 else:
                     color = Colors.WHITE[:3]
-                self.selector_np.setShaderInput("color", Colors.to_normalized_float(color, 1.0))  # type: ignore
+                self.selector_np.setShaderInput("color", color)  # type: ignore
                 self.selector_np.show()
             else:
                 self.selector_np.hide()
@@ -201,10 +201,8 @@ class TileRenderer:
         if self.selector_np:
             self.selector_np.reparentTo(self.anchor_node)
 
-        self.anchor_node.flatten_medium()
         self.geometry_node.flatten_medium()
 
-        # Network tagging for selection/clicks
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
