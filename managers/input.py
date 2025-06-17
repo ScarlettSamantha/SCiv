@@ -87,7 +87,7 @@ class Input(Singleton, DirectObject):
 
         if selected_entity is not None and hasattr(selected_entity, "tag"):
             self.logger.info(f"Rendering selected entity: {selected_entity.tag}")
-            selected_entity.render()
+            selected_entity.render()  # type: ignore
 
     def inspect_element(self, element: Optional[NodePath] = None) -> None:
         from direct.tkpanels.Inspector import inspect
