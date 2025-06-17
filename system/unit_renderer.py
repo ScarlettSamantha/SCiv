@@ -31,8 +31,8 @@ class UnitRenderer:
         try:
             self.selection_shader = Shader.load(
                 Shader.SL_GLSL,
-                vertex="assets/shaders/unit_selection_vert.glsl",
-                fragment="assets/shaders/frag.glsl",
+                vertex="assets/shaders/unit_selection.vert.glsl",
+                fragment="assets/shaders/unit_selection.frag.glsl",
             )
         except Exception:
             self.selection_shader = None
@@ -165,3 +165,7 @@ class UnitRenderer:
         if self.model_cache:
             self.model_cache.removeNode()
             self.model_cache = None
+        self.unit.base.taskMgr.remove(f"rotate-indicator-{id(self)}")
+        if self.selection_circle:
+            self.selection_circle.removeNode()
+            self.selection_circle = None

@@ -105,7 +105,7 @@ class Unit(BaseEntity, ABC):
         self._logger = None
 
         self.model_cache: Optional[NodePath] = None
-        self.renderer: UnitRenderer = UnitRenderer(self)
+        self.renderer: Optional[UnitRenderer] = UnitRenderer(self)
 
         self.register_actions()
         if self.is_registered is False:
@@ -204,11 +204,13 @@ class Unit(BaseEntity, ABC):
         UnitManager.get_singleton_instance().remove_unit(self)
 
     def render(self) -> NodePath | None:
-        return self.renderer.render()
+        if self.renderer is not None:
+            return self.renderer.render()
 
     def spawn(self, ignore_constraints: bool = False) -> NodePath | None:
         self.calculate_model_position()
-        return self.renderer.spawn()
+        if self.renderer is not None:
+            return self.renderer.spawn()
 
     def get_model_path(self) -> Optional[str]:
         if isinstance(self._model, str):
@@ -310,13 +312,16 @@ class Unit(BaseEntity, ABC):
     def calculate_model_position(self) -> None:
         tile_pos = self.get_tile().get_cords()
         self.pos_x, self.pos_y, self.pos_z = tile_pos
-        self.renderer.update_position()
+        if self.renderer is not None:
+            self.renderer.update_position()
 
     def select(self):
-        self.renderer.toggle_selection_indicator(True)
+        if self.renderer is not None:
+            self.renderer.toggle_selection_indicator(True)
 
     def deselect(self):
-        self.renderer.toggle_selection_indicator(False)
+        if self.renderer is not None:
+            self.renderer.toggle_selection_indicator(False)
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -325,10 +330,12 @@ class Unit(BaseEntity, ABC):
         self.actions.remove(action)
 
     def unload_model(self) -> None:
-        self.renderer.unload()
+        if self.renderer is not None:
+            self.renderer.unload()
 
     def load_model(self) -> NodePath | None:
-        return self.renderer.load_model()
+        if self.renderer is not None:
+            return self.renderer.load_model()
 
     def generate_unit_tag(self) -> str:
         return f"unit_{self.key}_{random.randint(0, 1000000)}"

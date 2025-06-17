@@ -6,6 +6,7 @@ using Panda3D. Handles terrain and overlay cards, improvement models,
 resource icons, unit markers, city nameplates, and model loading.
 """
 
+import math
 from typing import TYPE_CHECKING, Optional, Tuple, List, Union, cast
 from pathlib import Path
 from PIL import Image
@@ -23,6 +24,7 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
+from direct.task import Task
 from gameplay.unit_icons import UnitIcons
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
@@ -91,6 +93,66 @@ class TileRenderer:
         self.bits_renderer = BitsRenderer(tile)
         self.unit_icons = UnitIcons(self.ui_node)
 
+        # shader for tile selection
+        self.selector_shader = Shader.load(
+            Shader.SL_GLSL,
+            vertex="assets/shaders/tile_selector.vert.glsl",
+            fragment="assets/shaders/tile_selector.frag.glsl",
+        )
+        self.selector_np: Optional[NodePath] = None
+        self.selector_enabled: bool = False
+
+        self._build_selector_quad()
+        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 30)  # type: ignore
+
+    def _build_selector_quad(self) -> None:
+        cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
+        size = 1.0
+        cm.setFrame(-size, size, -size, size)
+        cm.setUvRange((0, 0), (1, 1))  # ensure we get uv coords
+
+        self.selector_np = self.anchor_node.attachNewNode(cm.generate())
+        self.selector_np.setHpr(0, -90, 0)
+        self.selector_np.setTransparency(TransparencyAttrib.M_alpha)
+        self.selector_np.setBin("fixed", 45)
+        self.selector_np.setDepthWrite(False)
+        self.selector_np.hide()
+
+        # apply our flat-top hex shader
+        self.selector_np.setShader(self.selector_shader)
+
+        # border thickness in UV-space (0–1), dash count & speed
+        self.selector_np.setShaderInput("borderWidth", 0.03)  #  type: ignore
+        self.selector_np.setShaderInput(  # type: ignore
+            "hexRadius", math.sqrt(3) / 2.05
+        )  # Just a bit of offset from the hex radius # type: ignore
+        self.selector_np.setShaderInput("dashFreq", 18.0)  # type: ignore
+        self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
+        self.selector_np.setShaderInput("color", (1.0, 1.0, 1.0, 1.0))  # type: ignore
+
+        self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, str(self.tile.tag))
+        self.selector_np.setCollideMask(BitMask32.bit(1))
+
+    def _update_selector_task(self, task: Task.Task) -> Task.Task:
+        if not self.selector_enabled or self.selector_np is None:
+            return Task.cont  # type: ignore
+        # update time uniform
+        self.selector_np.setShaderInput("time", task.time)  #    type: ignore
+        return Task.cont  # type: ignore
+
+    def toggle_tile_selector(self, enable: bool) -> None:
+        self.selector_enabled = enable
+        if self.selector_np:
+            if enable:
+                if self.tile.owner is not None:
+                    color = self.tile.get_owner().color[:3]
+                else:
+                    color = Colors.WHITE[:3]
+                self.selector_np.setShaderInput("color", Colors.to_normalized_float(color, 1.0))  # type: ignore
+                self.selector_np.show()
+            else:
+                self.selector_np.hide()
+
     def clear_ui(self) -> None:
         """Remove all child nodes under the UI group."""
         for child in self.ui_node.getChildren():
@@ -135,6 +197,9 @@ class TileRenderer:
         self._draw_city_nameplate()
 
         self.bits_renderer.render()
+
+        if self.selector_np:
+            self.selector_np.reparentTo(self.anchor_node)
 
         self.anchor_node.flatten_medium()
         self.geometry_node.flatten_medium()

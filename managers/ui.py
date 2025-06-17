@@ -430,10 +430,9 @@ class ui(Singleton, DirectObject):
 
         if self.current_unit is not None:
             self.previous_unit = self.current_unit
-            self.previous_unit.deselect()
+            if self.previous_unit.is_alive():
+                self.previous_unit.deselect()
             self.current_unit = None
-
-        tile.select()
 
         if tile.is_city() and tile.city is not None and tile.city.player is not None:
             if PlayerManager.is_session_player(tile.city.player):
@@ -443,6 +442,9 @@ class ui(Singleton, DirectObject):
 
         self.previous_tile = self.current_tile
         self.current_tile = tile
+        self.current_tile.select()
+        if self.previous_tile is not None:
+            self.previous_tile.deselect()
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
