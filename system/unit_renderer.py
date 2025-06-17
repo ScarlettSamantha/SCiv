@@ -5,6 +5,7 @@ from panda3d.core import BitMask32, LVector3, NodePath, LineSegs, GeomNode, Shad
 import numpy as np
 
 from helpers.cache import Cache
+from helpers.colors import Tuple4f
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 
 if TYPE_CHECKING:
@@ -68,22 +69,29 @@ class UnitRenderer:
         model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
         model.setTag(NET_NODE_TAG_ID_FIELD, self.unit.tag)
 
-    def _create_selection_circle(self) -> NodePath:
-        # Create a dotted circle using LineSegs with fixed radius
+    def _create_selection_circle(
+        self,
+        num_segments: int = 64,
+        dash_length: int = 2,
+        color: Optional[Tuple4f] = None,
+        line_thickness: float = 12.0,
+    ) -> NodePath:
         segs = LineSegs()
 
-        segs.setThickness(12.0)
+        segs.setThickness(line_thickness)
         segs.setColor(
             cast(
                 Vec4,
                 self.unit.get_owner().color,
             )
-        )  # white color with some transparency
-        num_segments = 64
+            if color is None
+            else Vec4(*color)  # type: ignore
+        )
+        num_segments = num_segments if num_segments > 0 else 64
 
         radius = self.selection_radius
         angle_step = 360.0 / num_segments
-        dash_length = 2
+        dash_length = dash_length if dash_length > 0 else 2
 
         for i in range(num_segments):
             if (i // dash_length) % 2 == 0:
@@ -113,9 +121,6 @@ class UnitRenderer:
         return Task.cont  # type: ignore
 
     def toggle_selection_indicator(self, enable: bool) -> None:
-        """
-        Enable or disable the rotating dotted selection circle around the unit.
-        """
         if enable and not self.selection_circle:
             self.selection_circle = self._create_selection_circle()
         elif not enable and self.selection_circle:
