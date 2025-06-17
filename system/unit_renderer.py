@@ -109,6 +109,13 @@ class UnitRenderer:
 
         if self.selection_shader:
             circle_np.setShader(self.selection_shader)
+            circle_np.setShaderInput("dashLength", dash_length)  # type: ignore
+            circle_np.setShaderInput("dashFreq", 18.0)  # type: ignore
+            circle_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
+            circle_np.setShaderInput("borderWidth", 0.1)  # type: ignore
+            circle_np.setShaderInput("radius", self.selection_radius)  # type: ignore
+            circle_np.setShaderInput("time", 0.0)  # type: ignore
+            circle_np.setShaderInput("color", (0, 0, 0, 0))  # type: ignore
 
         parent = self.unit.base.render
         circle_np.reparentTo(parent)
@@ -138,14 +145,13 @@ class UnitRenderer:
         self.current_model = self.load_model()
         # reparent indicator if active
         if self.selection_enabled and self.selection_circle:
-            self.selection_circle.reparentTo(self.current_model)
+            self.selection_circle.show()
         return self.current_model
 
     def unload(self) -> None:
         if self.current_model:
             if self.selection_circle:
-                self.selection_circle.removeNode()
-                self.selection_circle = None
+                self.selection_circle.hide()
             self.current_model.removeNode()
             self.current_model = None
 

@@ -114,7 +114,7 @@ class TileRenderer:
         self.selector_np = self.anchor_node.attachNewNode(cm.generate())
         self.selector_np.setHpr(0, -90, 0)
         self.selector_np.setTransparency(TransparencyAttrib.M_alpha)
-        self.selector_np.setBin("fixed", 45)
+        self.selector_np.setBin("fixed", 70)
         self.selector_np.setDepthWrite(False)
         self.selector_np.hide()
 
@@ -129,8 +129,10 @@ class TileRenderer:
         self.selector_np.setShaderInput("dashFreq", 18.0)  # type: ignore
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
         self.selector_np.setShaderInput("color", (1.0, 1.0, 1.0, 1.0))  # type: ignore
+        self.selector_np.setShaderInput("time", 0.0)  # type: ignore
 
         self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, str(self.tile.tag))
+        self.selector_np.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.selector_np.setCollideMask(BitMask32.bit(1))
 
     def _update_selector_task(self, task: Task.Task) -> Task.Task:
