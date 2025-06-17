@@ -138,8 +138,4 @@ class Builder(CoreCivilianBaseClass):
         self.build_charges_left: int = 3
 
     def register_actions(self):
-        from gameplay.actions.unit.move import WalkAction
-
-        self.add_action(WalkAction(self))
-
         return super().register_actions()
