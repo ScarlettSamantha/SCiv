@@ -12,7 +12,7 @@ from gameplay.civilizations.rome import Rome
 from gameplay.lose import Lose, LoseConditions
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 
-from gameplay.unit import Unit
+
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from main import SCIV
     from system.generators.base import BaseGenerator
     from gameplay.tile import Tile
+    from gameplay.unit import Unit
 
 
 class Game(Singleton, DirectObject):

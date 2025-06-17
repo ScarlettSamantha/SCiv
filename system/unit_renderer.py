@@ -164,9 +164,8 @@ class UnitRenderer:
         return self.unit
 
     def render(self):
-        if self.current_model:
-            self.current_model.removeNode()
-        self.current_model = self.load_model()
+        if self.current_model is None:
+            self.current_model = self.load_model()
         # parent model to render
         self.current_model.reparentTo(self.base.render)
 

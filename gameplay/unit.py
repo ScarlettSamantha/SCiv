@@ -2,17 +2,20 @@ import random
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import NodePath
+import numpy as np
+from panda3d.core import BitMask32, GeomNode, LVector3, LineSegs, NodePath, PythonTask, Shader, Vec4
 
 
 from direct.showbase import MessengerGlobal
+from direct.task import Task
 from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
+from helpers.colors import Tuple4f
 from main import Cache
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog
@@ -22,6 +25,7 @@ from managers.unit import UnitManager
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
+
 from system.unit_renderer import UnitRenderer
 
 if TYPE_CHECKING:
@@ -82,6 +86,12 @@ class Unit(BaseEntity, ABC):
         self.max_moves: int = 2
         self.moves_left: int | float = 2.0
 
+        self.model: Optional[NodePath] = None
+        self.selection_radius: float = 1.0
+        self.selection_enabled: bool = True
+        self.selection_circle: Optional[NodePath] = None
+        self.rotation_task: Optional[PythonTask] = None
+
         self.can_cross_water: bool = self.can_spawn_on_water
         self.can_cross_land: bool = self.can_spawn_on_land
         self.can_fly: bool = False
@@ -106,6 +116,12 @@ class Unit(BaseEntity, ABC):
 
         self.model_cache: Optional[NodePath] = None
         self.renderer: Optional[UnitRenderer] = UnitRenderer(self)
+
+        self.selection_shader = Shader.load(
+            Shader.SL_GLSL,
+            vertex="assets/shaders/unit_selection.vert.glsl",
+            fragment="assets/shaders/unit_selection.frag.glsl",
+        )
 
         self.register_actions()
         if self.is_registered is False:
@@ -133,6 +149,92 @@ class Unit(BaseEntity, ABC):
     def get_pos(self) -> Tuple[float, float, float]:
         return (self.pos_x, self.pos_y, self.pos_z)
 
+    def load_model(self) -> NodePath | None:
+        from system.tile_render import NET_NODE_TAG_ID_FIELD, NET_TYPE_FIELD, NET_TYPE
+
+        if self.model is not None:
+            return self.model
+
+        if self._model is None:
+            raise ValueError(f"Unit {self.key} has no model assigned.")
+
+        pos = self.get_tile().calculate_z_pos_on_altitude()
+
+        self.model = self.base.loader.loadModel(self._model)
+
+        if self.model is None:
+            raise ValueError(f"Unit {self.key} model could not be loaded.")
+
+        self.model.reparent_to(self.base.render)
+        self.model.setHpr(LVector3(*self.model_rotation))
+        self.model.setPos(*pos)
+        self.model.setScale(self.model_size)
+        self.model.setCollideMask(BitMask32.bit(1))
+        self.model.setTag(NET_NODE_TAG_ID_FIELD, self.tag)
+        self.model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
+
+        return self.model
+
+    def _create_selection_circle(
+        self,
+        num_segments: int = 64,
+        dash_length: int = 2,
+        color: Optional[Tuple4f] = None,
+        line_thickness: float = 4.0,
+    ) -> NodePath:
+        if not self.model:
+            raise ValueError(f"No model loaded for unit {self.key}.")
+
+        segs = LineSegs()
+
+        segs.setThickness(line_thickness)
+        segs.setColor(
+            cast(
+                Vec4,
+                self.get_owner().color,
+            )
+            if color is None
+            else Vec4(*color)  # type: ignore
+        )
+        num_segments = num_segments if num_segments > 0 else 64
+
+        radius = self.selection_radius
+        angle_step = 360.0 / num_segments
+        dash_length = dash_length if dash_length > 0 else 2
+
+        for i in range(num_segments):
+            if (i // dash_length) % 2 == 0:
+                angle1 = np.radians(i * angle_step)
+                angle2 = np.radians((i + 1) * angle_step)
+                segs.moveTo(radius * np.cos(angle1), radius * np.sin(angle1), 0.0)
+                segs.drawTo(radius * np.cos(angle2), radius * np.sin(angle2), 0.0)
+
+        node = segs.create()
+        circle_np = NodePath(GeomNode(f"sel-circle-{id(self)}"))
+        circle_np.node().addGeomsFrom(node)
+        circle_np.setHpr(90, 0, 0)
+
+        circle_np.setPos(0, 0, 0 + 0.1)  # type: ignore
+
+        if self.selection_shader:
+            circle_np.setShader(self.selection_shader)
+            circle_np.setShaderInput("dashLength", dash_length)  # type: ignore
+            circle_np.setShaderInput("dashFreq", 18.0)  # type: ignore
+            circle_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
+            circle_np.setShaderInput("borderWidth", 12)  # type: ignore
+            circle_np.setShaderInput("radius", 1)  # type: ignore
+            circle_np.setShaderInput("time", 0.0)  # type: ignore
+            circle_np.setShaderInput("color", (0, 0, 0, 0))  # type: ignore
+
+        circle_np.hide()
+        circle_np.reparentTo(self.model)
+        return circle_np
+
+    def _rotate_indicator_task(self, task: Task.Task) -> Task.Task:
+        if self.selection_enabled and self.selection_circle:
+            self.selection_circle.setH(task.time * 60.0)
+        return Task.cont  # type: ignore
+
     def on_load(self):
         self.base = Cache.get_showbase_instance()
         self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
@@ -145,8 +247,6 @@ class Unit(BaseEntity, ABC):
         self.register_actions()
         self.register()
         UnitManager.get_singleton_instance().add_unit(self)
-
-        self.renderer = UnitRenderer(self)
 
         self.spawn(ignore_constraints=True)
 
@@ -203,14 +303,9 @@ class Unit(BaseEntity, ABC):
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.UNIT)
         UnitManager.get_singleton_instance().remove_unit(self)
 
-    def render(self) -> NodePath | None:
-        if self.renderer is not None:
-            return self.renderer.render()
-
     def spawn(self, ignore_constraints: bool = False) -> NodePath | None:
         self.calculate_model_position()
-        if self.renderer is not None:
-            return self.renderer.spawn()
+        self.load_model()
 
     def get_model_path(self) -> Optional[str]:
         if isinstance(self._model, str):
@@ -296,8 +391,6 @@ class Unit(BaseEntity, ABC):
 
     def _clear_departing_tile(self, tile: "Tile") -> None:
         tile.remove_unit(self)
-        self.unload_model()
-        self.get_tile().render()
 
     def _move_to_tile(self, tile: "Tile", clear_departing_tile: Optional["Tile"] = None) -> None:
         if clear_departing_tile is not None:
@@ -312,16 +405,23 @@ class Unit(BaseEntity, ABC):
     def calculate_model_position(self) -> None:
         tile_pos = self.get_tile().get_cords()
         self.pos_x, self.pos_y, self.pos_z = tile_pos
-        if self.renderer is not None:
-            self.renderer.update_position()
+        if self.model is not None:
+            self.model.setPos(
+                self.pos_x + self.model_position_offset[0],
+                self.pos_y + self.model_position_offset[1],
+                self.pos_z + self.model_position_offset[2],
+            )
 
     def select(self):
-        if self.renderer is not None:
-            self.renderer.toggle_selection_indicator(True)
+        if self.selection_circle is None:
+            self.selection_circle = self._create_selection_circle()
+        self.selection_circle.show()
+        self.rotation_task = self.add_task(self._rotate_indicator_task, "rotate_selection_circle", delay=1 / 30)  # type: ignore
 
     def deselect(self):
-        if self.renderer is not None:
-            self.renderer.toggle_selection_indicator(False)
+        if self.selection_circle is not None:
+            self.selection_circle.hide()
+            self.remove_task("rotate_selection_circle")  # type: ignore
 
     def add_action(self, action: Action) -> None:
         self.actions.append(action)
@@ -330,12 +430,9 @@ class Unit(BaseEntity, ABC):
         self.actions.remove(action)
 
     def unload_model(self) -> None:
-        if self.renderer is not None:
-            self.renderer.unload()
-
-    def load_model(self) -> NodePath | None:
-        if self.renderer is not None:
-            return self.renderer.load_model()
+        if self.model is not None:
+            self.model.removeNode()
+            self.model = None
 
     def generate_unit_tag(self) -> str:
         return f"unit_{self.key}_{random.randint(0, 1000000)}"
@@ -363,9 +460,7 @@ class Unit(BaseEntity, ABC):
         self.health_left = 0
 
         self.unload_model()
-        if hasattr(self, "renderer") and self.renderer is not None:  # type: ignore
-            self.renderer.destroy()
-            del self.renderer
+
         UnitManager.get_singleton_instance().remove_unit(self)
         self.get_tile().remove_unit(self)
 

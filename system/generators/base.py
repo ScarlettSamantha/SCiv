@@ -16,7 +16,7 @@ from gameplay.repositories.personality import (
 from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
 
-from gameplay.unit import Unit
+
 from gameplay.units.core.classes.military.club_man import ClubMan
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from main import SCIV
     from gameplay.tile import Tile
     from gameplay.player import Player
+    from gameplay.unit import Unit
 
 
 class WorldParams:
