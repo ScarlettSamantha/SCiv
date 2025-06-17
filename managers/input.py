@@ -15,11 +15,13 @@ from panda3d.core import (
 )
 
 from gameplay.repositories.tile import TileRepository
+from managers.unit import UnitManager
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from main import SCIV
     from gameplay.tile import Tile
+    from gameplay.unit import Unit
 
 NET_NODE_TAG_ID_FIELD: str = "net_node_tag_id"  # tag for the node path to identify it as a net node
 NET_TYPE_FIELD: str = "net_type"  # tag for the node path to identify it as a net node
@@ -47,6 +49,7 @@ class Input(Singleton, DirectObject):
 
         self.hovered_tile_id: Optional[str] = None
         self.selected_tile: Optional["Tile"] = None
+        self.selected_unit: Optional["Unit"] = None
 
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
@@ -64,7 +67,7 @@ class Input(Singleton, DirectObject):
         self.accept("f2", self.activate)
         self.accept("f3", self.de_activate)
 
-        self.accept("f9", self.force_render_selected_tile)
+        self.accept("f9", self.force_render_selected_entity)
         self.accept("f12", self.inspect_element)
 
         # Escape key
@@ -75,13 +78,16 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
 
-    def force_render_selected_tile(self) -> None:
-        if self.selected_tile is None:
-            self.logger.warning("No selected tile to render.")
+    def force_render_selected_entity(self) -> None:
+        if self.selected_tile is None and self.selected_unit is None:
+            self.logger.warning("No selected tile/unit to render.")
             return
 
-        self.logger.info(f"Rendering selected tile: {self.selected_tile.tag}")
-        self.selected_tile.render()
+        selected_entity = self.selected_tile if self.selected_tile else self.selected_unit
+
+        if selected_entity is not None and hasattr(selected_entity, "tag"):
+            self.logger.info(f"Rendering selected entity: {selected_entity.tag}")
+            selected_entity.render()
 
     def inspect_element(self, element: Optional[NodePath] = None) -> None:
         from direct.tkpanels.Inspector import inspect
@@ -190,9 +196,13 @@ class Input(Singleton, DirectObject):
 
                 selected_object = False
                 if net_type in (NET_TYPE.MODEL.value, NET_TYPE.UNIT.value):
+                    if (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is None:
+                        self.logger.warning(f"Unit with ID {net_id} not found.")
+                        return None
                     messenger.send("system.input.user.unit_clicked", [net_id])
                     selected_object = True
                     self.selected_tile = None
+                    self.selected_unit = unit
 
                 elif NET_TYPE.TILE.value == net_type:
                     if (tile := TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))) is None:
@@ -200,6 +210,7 @@ class Input(Singleton, DirectObject):
                         return None
 
                     self.selected_tile = tile
+                    self.selected_unit = None
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                     selected_object = True
 
