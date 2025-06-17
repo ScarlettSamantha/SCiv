@@ -256,7 +256,7 @@ class TileRenderer:
             )
 
     def _draw_resource_model(self) -> None:
-        if self.tile.city is not None or self.tile.block_resource_model_spawning is True:
+        if self.tile.is_city() or self.tile.block_resource_model_spawning is True:
             if self._is_model_drawn(self.tile.tag):
                 self.unload_resource_model()
             return
@@ -280,14 +280,10 @@ class TileRenderer:
                 net_id=self.tile.tag,  # Use the resource icon as a unique identifier
             )
 
-    def _is_model_drawn(self, model_path: str) -> bool:
-        """
-        Check if a model with the given path is already drawn on this tile.
-        Returns True if the model is found, False otherwise.
-        """
+    def _is_model_drawn(self, model_tag: str) -> bool:
         for child in self.geometry_node.getChildren():
             if child.getTag(NET_TYPE_FIELD) == str(NET_TYPE.RESOURCE.value):
-                if child.getTag(NET_NODE_TAG_ID_FIELD) == model_path:
+                if child.getTag(NET_NODE_TAG_ID_FIELD) == model_tag:
                     return True
         return False
 
