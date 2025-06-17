@@ -1,8 +1,15 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from gameplay.civic import Conditions
+from gameplay.condition import BuildCondition
+from gameplay.improvements.core.city.barracks import Barracks
 from gameplay.promotion import Promotion
 from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
+
+if TYPE_CHECKING:
+    from gameplay.tile import Tile
+    from gameplay.player import Player
 
 
 class MelePromotion(Promotion):
@@ -23,6 +30,7 @@ class Beserk(MelePromotion):
 class ClubMan(CoreMilitaryBaseClass):
     _model = "assets/models/units/axemen.glb"
     buildable = True
+
     key = "core.unit.class.clubman"
     name = t_("content.units.core.units.military.clubman.name")
     description = t_("content.units.core.units.military.clubman.description")
@@ -34,11 +42,14 @@ class ClubMan(CoreMilitaryBaseClass):
     attack_power_mele = 2
     attack_power_ranged = 0
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):
         super().__init__(
+            tile=tile,
+            player=player,
             *args,
             **kwargs,
         )
+        self.build_conditions = Conditions(BuildCondition(tile=tile, improvement=Barracks))
 
     def register_actions(self):
         return super().register_actions()

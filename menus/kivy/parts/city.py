@@ -221,6 +221,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         def buildings():
             for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
                 class_instance: BaseCityImprovement = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+
+                if not class_instance.conditions.are_met():
+                    continue
+
                 if self.city is None:
                     continue
 
@@ -248,6 +252,10 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         def units():
             for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
                 class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+
+                if not class_instance.build_conditions.are_met():
+                    continue
+
                 class_instance.is_being_build = True
 
                 button = ButtonValue(

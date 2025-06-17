@@ -9,7 +9,7 @@ from panda3d.core import NodePath
 
 
 from direct.showbase import MessengerGlobal
-from gameplay.condition import Condition
+from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
@@ -50,7 +50,7 @@ class Unit(BaseEntity, ABC):
     _model: Optional[str] = None
 
     buildable: bool = False
-    build_conditions: Dict[str, Condition] = {}
+    build_conditions: Conditions = Conditions()
     name: T_TranslationOrStrOrNone
     description: T_TranslationOrStrOrNone
     icon: str | Path | None
