@@ -7,6 +7,8 @@ if TYPE_CHECKING:
     from gameplay.civic import Civic, CivicSubtree, CivicTree
     from gameplay.player import Player
     from gameplay.tech import Tech
+    from gameplay.tile import Tile
+    from gameplay.improvement import Improvement
 
 
 class ConditionalTypes(Enum):
@@ -115,9 +117,17 @@ class Conditions:
 
 
 class BuildCondition(Condition):
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, tile: "Tile", improvement: Type["Improvement"], *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.required_params = ["tile", "improvement"]
+        self.params["tile"] = tile
+        self.params["improvement"] = improvement
+        self._condition = self._build_condition
+
+    def _build_condition(self, tile: "Tile", improvement: Type["Improvement"]) -> bool:
+        return tile.improvements().has(improvement) or (
+            tile.city is not None and tile.city.get_improvements().has(improvement)
+        )
 
 
 class ResearchCondition(Condition):
