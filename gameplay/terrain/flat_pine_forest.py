@@ -1,6 +1,6 @@
 from typing import Any
 
-from gameplay.bits import Bit, GroupMode
+from gameplay.bits import Bit
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.yields import Yields
 
@@ -22,27 +22,14 @@ class FlatPineForest(BaseTerrain):
         self._texture = "flat_pine_forest.png"
 
     def register_bits(self) -> None:
-        small_pine: Bit = Bit(model="tree_pine_green_small.glb", scale=0.15)
-        medium_pine: Bit = Bit(model="tree_pine_green_middle.glb", scale=0.15)
-        large_pine: Bit = Bit(model="tree_pine_green_large.glb", scale=0.15)
-
-        self.bits.mode = GroupMode.OR
-
-        one_tree_group = self.bits.add_group("one_tree", mode=GroupMode.OR)
-        one_tree_group.add_bit(small_pine)
-        one_tree_group.add_bit(medium_pine)
-        one_tree_group.add_bit(large_pine)
-
-        two_tree_group = self.bits.add_group("two_tree", mode=GroupMode.OR)
-        two_varient = two_tree_group.add_group("two_tree_varient", mode=GroupMode.OR)
-        two_varient_two = two_tree_group.add_group("two_tree_varient_two", mode=GroupMode.OR)
-        two_varient.add_bit(small_pine)
-        two_varient.add_bit(large_pine)
-
-        two_varient_two.add_bit(small_pine)
-        two_varient_two.add_bit(medium_pine)
-
-        three_tree_group = self.bits.add_group("three_tree", mode=GroupMode.AND)
-        three_tree_group.add_bit(small_pine)
-        three_tree_group.add_bit(medium_pine)
-        three_tree_group.add_bit(large_pine)
+        self.bits.add_bit(
+            Bit(
+                model="tree_heavy_forest.glb",
+                scale=0.5,
+                preferred_slot="center",
+                disabled=False,
+                id="tree_pine_forest_combined",
+                default_lighting=False,
+                offset=(0, 0, -0.1),
+            )
+        )
