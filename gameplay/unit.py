@@ -224,7 +224,7 @@ class Unit(BaseEntity, ABC):
             circle_np.setShaderInput("borderWidth", 12)  # type: ignore
             circle_np.setShaderInput("radius", 1)  # type: ignore
             circle_np.setShaderInput("time", 0.0)  # type: ignore
-            circle_np.setShaderInput("color", (0, 0, 0, 0))  # type: ignore
+            circle_np.setShaderInput("color", self.get_owner().color)  # type: ignore
 
         circle_np.hide()
         circle_np.reparentTo(self.model)
