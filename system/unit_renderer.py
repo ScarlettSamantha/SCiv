@@ -1,12 +1,11 @@
-from typing import Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Optional, cast
 from direct.showbase.Loader import Loader
 from direct.task import Task
-from panda3d.core import BitMask32, LVector3, NodePath, LineSegs, GeomNode, Shader, Vec4
-import numpy as np
-
+from panda3d.core import CardMaker, GeomNode, LVector3, LineSegs, NodePath, Shader, TransparencyAttrib, BitMask32, Vec4
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
+import numpy as np
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
@@ -14,31 +13,57 @@ if TYPE_CHECKING:
 
 class UnitRenderer:
     def __init__(self, unit: "Unit", selection_radius: float = 0.75):
-        self.unit: Unit = unit
-        self.loader: Loader = Loader(unit.base)
+        self.unit: "Unit" = unit
         self.base = Cache.get_showbase_instance()
-        self.model_cache: Optional[NodePath] = None
-        self.current_model: Optional[NodePath] = None
+        self.loader = Loader(self.base)
+        self.current_model = None
+        self.model_cache = None
+        self.selection_circle = None
 
-        # Selection indicator configuration
-        self.selection_circle: Optional[NodePath] = None
-        self.selection_enabled: bool = False
-        self.selection_radius: float = selection_radius
-        self._load_selection_shader()
-        self.unit.base.taskMgr.add(self._rotate_indicator_task, f"rotate-indicator-{id(self)}")  # type: ignore
+        # shader selection
+        self.selection_shader = Shader.load(
+            Shader.SL_GLSL,
+            vertex="assets/shaders/unit_selection.vert.glsl",
+            fragment="assets/shaders/unit_selection.frag.glsl",
+        )
 
-    def _load_selection_shader(self):
-        try:
-            self.selection_shader = Shader.load(
-                Shader.SL_GLSL,
-                vertex="assets/shaders/unit_selection.vert.glsl",
-                fragment="assets/shaders/unit_selection.frag.glsl",
-            )
-        except Exception:
-            self.selection_shader = None
+        # selection‐quad node & state
+        self.selector_np = None
 
-    def get_node(self) -> Optional[NodePath]:
-        return self.current_model
+        self.selection_enabled = False
+        self.selection_radius = selection_radius
+
+        # task to advance shader time
+        self.base.taskMgr.add(self._update_selector_task, f"update-unit-selector-{id(self)}")
+
+    def _build_selector_quad(self):
+        # make a flat card under the unit
+        cm = CardMaker(f"unit_selector_{id(self)}")
+        cm.setFrame(-self.selection_radius, self.selection_radius, -self.selection_radius, self.selection_radius)
+        self.selector_np = NodePath(cm.generate())
+        self.selector_np.setTransparency(TransparencyAttrib.M_alpha)
+        self.selector_np.setBin("fixed", 70)
+        self.selector_np.setDepthWrite(False)
+        self.selector_np.setHpr(0, -90, 0)
+        self.selector_np.setShader(self.selection_shader)
+
+        # initialize shader inputs
+        self.selector_np.setShaderInput("borderWidth", 0.1)  # type: ignore
+        self.selector_np.setShaderInput("dashFreq", 32.0)  # type: ignore
+        self.selector_np.setShaderInput("pulseSpeed", 2.0)  #    type: ignore
+        self.selector_np.setShaderInput("color", tuple(self.unit.get_owner().color))  # type: ignore
+        self.selector_np.setShaderInput("time", 0.0)  # type: ignore
+
+        # networking tags & picking
+        self.selector_np.setTag(NET_TYPE_FIELD, str(NET_TYPE.UNIT.value))
+        self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, self.unit.tag)  # type: ignore
+        self.selector_np.setCollideMask(BitMask32.bit(1))
+
+    def _update_selector_task(self, task: Task.Task):
+        if self.selection_enabled and self.selector_np:
+            # update the time uniform
+            self.selector_np.setShaderInput("time", task.time)  # type: ignore
+        return Task.cont
 
     def load_model(self) -> NodePath:
         path = self.unit.get_model_path()
@@ -74,7 +99,7 @@ class UnitRenderer:
         num_segments: int = 64,
         dash_length: int = 2,
         color: Optional[Tuple4f] = None,
-        line_thickness: float = 12.0,
+        line_thickness: float = 4.0,
     ) -> NodePath:
         segs = LineSegs()
 
@@ -105,15 +130,15 @@ class UnitRenderer:
         circle_np.node().addGeomsFrom(node)
         circle_np.setHpr(90, 0, 0)
 
-        circle_np.setPos(self.unit.pos_x, self.unit.pos_y, self.unit.pos_z + 0.1)
+        circle_np.setPos(self.unit.pos_x, self.unit.pos_y, self.unit.pos_z + 0.1)  # type: ignore
 
         if self.selection_shader:
             circle_np.setShader(self.selection_shader)
             circle_np.setShaderInput("dashLength", dash_length)  # type: ignore
             circle_np.setShaderInput("dashFreq", 18.0)  # type: ignore
             circle_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
-            circle_np.setShaderInput("borderWidth", 0.1)  # type: ignore
-            circle_np.setShaderInput("radius", self.selection_radius)  # type: ignore
+            circle_np.setShaderInput("borderWidth", 12)  # type: ignore
+            circle_np.setShaderInput("radius", 1)  # type: ignore
             circle_np.setShaderInput("time", 0.0)  # type: ignore
             circle_np.setShaderInput("color", (0, 0, 0, 0))  # type: ignore
 
@@ -138,14 +163,18 @@ class UnitRenderer:
     def get_unit(self) -> "Unit":
         return self.unit
 
-    def render(self) -> NodePath:
-        # unload old
+    def render(self):
         if self.current_model:
-            self.unload()
+            self.current_model.removeNode()
         self.current_model = self.load_model()
-        # reparent indicator if active
-        if self.selection_enabled and self.selection_circle:
-            self.selection_circle.show()
+        # parent model to render
+        self.current_model.reparentTo(self.base.render)
+
+        # if selection is on, ensure quad is positioned underneath
+        if self.selection_enabled and self.selector_np:
+            x, y, z = self.unit.tile.get_cords()  # type: ignore
+            self.selector_np.setPos(x, y, z + 0.01)  # type: ignore
+
         return self.current_model
 
     def unload(self) -> None:
