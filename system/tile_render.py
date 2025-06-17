@@ -25,7 +25,6 @@ from panda3d.core import (
 )
 
 from direct.task import Task
-from gameplay.unit_icons import UnitIcons
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.images import (
@@ -35,7 +34,6 @@ from helpers.images import (
 )
 from helpers.debug import Debug
 from system.atlas import AtlasGenerator
-from gameplay._units import Units
 from gameplay.resource import BaseResource
 from managers.assets import AssetManager
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
@@ -79,10 +77,6 @@ class TileRenderer:
         # UI group: overlays, icons, unit markers, city nameplate
         self.ui_node: NodePath = self.anchor_node.attachNewNode("ui_group")
 
-        # Helpers
-        self.unit_icon_helper = Units()
-        self.unit_icons: Optional[UnitIcons] = None
-
         # Dynamic nodes
         self.terrain_overlay_node: Optional[NodePath] = None
         self.icon_overlay_node: Optional[NodePath] = None
@@ -91,7 +85,6 @@ class TileRenderer:
         self.models: List[NodePath] = []
 
         self.bits_renderer = BitsRenderer(tile)
-        self.unit_icons = UnitIcons(self.ui_node)
 
         # shader for tile selection
         self.selector_shader = Shader.load(
@@ -195,7 +188,6 @@ class TileRenderer:
 
         self._draw_yield_and_population_icons()
 
-        self._draw_unit_markers()
         self._draw_city_nameplate()
 
         self.bits_renderer.render()
@@ -203,7 +195,7 @@ class TileRenderer:
         if self.selector_np:
             self.selector_np.reparentTo(self.anchor_node)
 
-        self.geometry_node.flatten_medium()
+        # self.geometry_node.flatten_medium()
 
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
@@ -382,18 +374,6 @@ class TileRenderer:
         if hasattr(entry, "get_numeric_icon") and getattr(entry, "value", 0) > 0:
             return entry.get_numeric_icon().replace("resources/", "")
         return None
-
-    def _draw_unit_markers(self) -> None:
-        """Add small icons above the tile for each unit present."""
-        node = self.ui_node.attachNewNode("unit_markers")
-        for unit in self.tile.units.all():
-            if unit.icon and self.unit_icons is not None:
-                self.unit_icons.add_marker(
-                    (self.tile.pos_x, self.tile.pos_y, self.tile.pos_z + 1.5),  # world offset
-                    (0.2, 0.2),  # icon size
-                    str(unit.icon),
-                )
-        self.unit_markers_node = node
 
     def _draw_city_nameplate(self) -> None:
         """Generate a billboarding nameplate for the city on this tile."""

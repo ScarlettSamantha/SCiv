@@ -50,6 +50,8 @@ class ClubMan(CoreMilitaryBaseClass):
             **kwargs,
         )
         self.build_conditions = Conditions(BuildCondition(tile=tile, improvement=Barracks))
+        self.unit_icons_z_offset = 3
+        self.unit_icons_scale = 0.75
 
     def register_actions(self):
         return super().register_actions()

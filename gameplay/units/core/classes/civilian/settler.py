@@ -69,7 +69,7 @@ class Settler(CoreCivilianBaseClass):
     description = t_("content.units.core.units.civilian.settler.description")
     icon = "units/settler.png"
     promotion_tree = SettlerPromotionTree
-    model_size = 0.75
+    model_size = 0.50
 
     def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):
         super().__init__(
@@ -80,6 +80,7 @@ class Settler(CoreCivilianBaseClass):
         )
         self.model_rotation = (0, 0, 0)
         self.model_position_offset = (0, 0, 0.0)
+        self.unit_icons_z_offset = 1.5
 
     def register_actions(self):
         super().register_actions()

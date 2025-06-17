@@ -6,7 +6,21 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from direct.showbase.MessengerGlobal import messenger
 import numpy as np
-from panda3d.core import BitMask32, GeomNode, LVector3, LineSegs, NodePath, PythonTask, Shader, Vec4
+from panda3d.core import (
+    BitMask32,
+    CardMaker,
+    ColorBlendAttrib,
+    GeomNode,
+    LVector3,
+    LVecBase3f,
+    LineSegs,
+    NodePath,
+    PythonTask,
+    Shader,
+    Texture,
+    TextureStage,
+    Vec4,
+)
 
 
 from direct.showbase import MessengerGlobal
@@ -91,6 +105,9 @@ class Unit(BaseEntity, ABC):
         self.selection_enabled: bool = True
         self.selection_circle: Optional[NodePath] = None
         self.rotation_task: Optional[PythonTask] = None
+        self.unit_icons: Optional[NodePath] = None
+        self.unit_icons_z_offset: float = 0.3
+        self.unit_icons_scale: float = 0.5
 
         self.can_cross_water: bool = self.can_spawn_on_water
         self.can_cross_land: bool = self.can_spawn_on_land
@@ -172,6 +189,54 @@ class Unit(BaseEntity, ABC):
         self.model.setCollideMask(BitMask32.bit(1))
         self.model.setTag(NET_NODE_TAG_ID_FIELD, self.tag)
         self.model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
+
+        if self.icon is not None:
+            texture = Cache.get_icon_atlas().get_panda3d_texture_by_virtual_path(str(self.icon))
+            if texture is None:
+                raise ValueError(f"Icon texture for unit {self.key} not found at path: {self.icon}")
+
+            cm = CardMaker("marker_quad")
+            cm.set_frame(-0.5, 0.5, -0.5, 0.5)
+            self.unit_icons = self.model.attachNewNode(cm.generate())
+
+            bounds = self.model.getTightBounds() if self.model else None
+            height = bounds[1].z - bounds[0].z if bounds else 0
+            self.unit_icons.setPos(0, 0, height + self.unit_icons_z_offset)  # type: ignore
+
+            # texture + transparency + blending
+            ts = TextureStage("icon")
+
+            texture.setFormat(Texture.F_srgb_alpha)
+            self.unit_icons.setScale(self.unit_icons_scale)  # Scale the texture
+            self.unit_icons.set_texture(ts, texture)  # type: ignore
+            self.unit_icons.setTransparency(1)  # type: ignore
+
+            self.unit_icons.setAttrib(  # type: ignore
+                ColorBlendAttrib.make(  # type: ignore
+                    ColorBlendAttrib.MAdd,
+                    ColorBlendAttrib.OIncomingAlpha,
+                    ColorBlendAttrib.OOneMinusIncomingAlpha,
+                )
+            )
+
+            # draw on top of opaque geometry
+            self.unit_icons.set_depth_write(True)  # type: ignore
+            self.unit_icons.set_depth_test(True)  # type: ignore
+            self.unit_icons.setTwoSided(True)  # type: ignore
+
+            self.unit_icons.set_bin("transparent", 90)  # type: ignore
+
+            # shader & uniforms
+            self.unit_icons.set_shader(  # type: ignore
+                Shader.load(  # type: ignore
+                    Shader.SL_GLSL,
+                    "assets/shaders/unit_icon.vert",
+                    "assets/shaders/unit_icon.frag",
+                )
+            )
+            self.unit_icons.set_shader_input("billboard_position", pos)  # type: ignore
+            self.unit_icons.set_shader_input("size", LVecBase3f(0.2, 0.2, 0))  # type: ignore
+            self.unit_icons.set_shader_input("iconTex", texture)  # type: ignore
 
         return self.model
 
@@ -415,6 +480,7 @@ class Unit(BaseEntity, ABC):
     def select(self):
         if self.selection_circle is None:
             self.selection_circle = self._create_selection_circle()
+
         self.selection_circle.show()
         self.rotation_task = self.add_task(self._rotate_indicator_task, "rotate_selection_circle", delay=1 / 30)  # type: ignore
 
