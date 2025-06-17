@@ -473,9 +473,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.hidden = False
 
     def hide(self, auto_forget: bool = True):
-        """Hides the City View."""
-        if self.frame is None:
-            raise AssertionError("City view has not been built yet.")
+        if self.frame is None or self.frame.disabled is True:
+            self.logger.debug("City UI is already hidden, skipping hide operation.")
+            return
 
         self.logger.debug("Hiding City UI")
 
@@ -488,10 +488,9 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
         for unit in self.buildable_units.values():
             try:
-                unit.destroy()  # cleanup temporary units
+                unit.destroy()
             except Exception as e:
                 self.logger.error(f"Error destroying temporary unit {unit.name}: {e}")
 
     def is_hidden(self) -> bool:
-        """Returns True if the City View is hidden."""
         return self.hidden
