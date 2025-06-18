@@ -66,6 +66,7 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
 - `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
+
 - `game.gameplay.unit.build_improvement_success` (E: action-build)
 - `game.gameplay.unit.build_improvement_failure` (E: action-build)
 
@@ -136,6 +137,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.refresh_city_ui` (E: manager-ui | L: ui-part-city)
 - `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
+- `ui.update.ui.refresh_action_bar` (E: unit | L : manager-game-ui )
 
 - `ui.update.ui.combat_log.add` (E: * | L: ui-player-combat-log )
 

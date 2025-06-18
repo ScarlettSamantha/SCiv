@@ -35,6 +35,7 @@ from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog
 from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
+from managers.player import PlayerManager
 from managers.unit import UnitManager
 from system.actions import Action
 from system.effects import Effects
@@ -470,6 +471,9 @@ class Unit(BaseEntity, ABC):
         self.calculate_model_position()
         self.get_tile().add_unit(self)
         self.get_tile().render()
+
+        if self.owner == PlayerManager.session_player():
+            MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
 
     def calculate_model_position(self) -> None:
         tile_pos = self.get_tile().get_cords()

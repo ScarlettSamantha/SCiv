@@ -160,6 +160,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.hide_research_ui", self.close_research)
         self.accept("ui.update.ui.show_civics_ui", self.open_civics)
         self.accept("ui.update.ui.hide_civics_ui", self.close_civics)
+        self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
 
         self.accept("t", self.toggle_research)
         self.accept("c", self.toggle_civics)
@@ -522,14 +523,23 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if unit != self.ui_manager.current_unit:
             if should_select_unit is True:
-                self.clear_action_bar()
-                self.generate_buttons_for_unit_actions(unit)
                 if self.debug_frame is not None:
                     self.debug_frame.update_debug_info_for_unit(_unit)
+
+        self.clear_action_bar()
+        self.generate_buttons_for_unit_actions(unit)
 
         if self.showing_city is not None:
             self.get_city_ui().hide()
             self.showing_city = None
+
+    def refresh_action_bar(self, dt: Optional[float] = None):
+        if self.ui_manager.current_unit is None:
+            self.clear_action_bar()
+            return
+
+        self.clear_action_bar()
+        self.generate_buttons_for_unit_actions(self.ui_manager.current_unit)
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
         _unit: Optional[Unit] = None
