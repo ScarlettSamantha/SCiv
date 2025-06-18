@@ -1,14 +1,9 @@
-import uuid
-from abc import ABC
 from enum import Enum
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Type, Union
 import weakref
 
 from gameplay.yields import Yields
 from managers.entity import EntityType
-from managers.i18n import T_TranslationOrStrOrNone
-from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -16,6 +11,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from gameplay.effect import Effect
     from managers.world import World
 
 
@@ -55,6 +51,8 @@ class Effects:
         execute_on_add: bool = True,
         auto_add_parent_on_effect: bool = True,
     ) -> None:
+        if effect.tag in self._effects:
+            raise ValueError(f"Effect with tag {effect.tag} already exists in this Effects instance.")
         self._effects[effect.tag] = effect
 
         if auto_register and effect.is_registered is False:
@@ -137,6 +135,14 @@ class Effects:
     def get_effect(self, tag: str) -> "Effect":
         return self._effects[tag]
 
+    def has(self, effect: Union["Effect", Type["Effect"]]) -> bool:
+        if isinstance(effect, str):
+            return effect in self._effects
+        elif isinstance(effect, type):
+            return any(isinstance(e, effect) for e in self._effects.values())
+        else:
+            return effect.tag in self._effects
+
     def get_effects(self) -> Dict[str, "Effect"]:
         return self._effects
 
@@ -194,6 +200,7 @@ def _place_on_world(world: "World", effect: "Effect") -> None:
 
 def _place_on_improvement(improvement: "Improvement", effect: "Effect") -> None:
     improvement.effects.add_effect(effect)
+    improvement.get_tile().render()
 
 
 def _place_on_unit(unit: "Unit", effect: "Effect") -> None:
@@ -210,11 +217,12 @@ class EffectPlacers(Enum):
     PLACE_ON_UNIT = 6
     PLACE_ON_IMPROVEMENT = 7
 
-    def place(self, base_object: "Tile | City | Player | World", effect: "Effect") -> None:
+    def place(self, base_object: "Tile | City | Player | World | Improvement", effect: "Effect") -> None:
         from gameplay.city import City
         from gameplay.player import Player
         from gameplay.tile import Tile
         from managers.world import World
+        from gameplay.improvement import Improvement
 
         if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, Tile):
             _place_on_tile(base_object, effect)
@@ -228,163 +236,9 @@ class EffectPlacers(Enum):
             _place_on_player(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_WORLD and isinstance(base_object, World):
             _place_on_world(base_object, effect)
-        elif self == EffectPlacers.PLACE_ON_IMPROVEMENT and isinstance(base_object, "Improvement"):
+        elif self == EffectPlacers.PLACE_ON_IMPROVEMENT and isinstance(base_object, Improvement):
             _place_on_improvement(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_UNIT and isinstance(base_object, "Unit"):
             _place_on_unit(base_object, effect)
         else:
             raise ValueError("Invalid place method.")
-
-
-class Effect(BaseEntity, ABC):
-    name: T_TranslationOrStrOrNone = None
-    description: T_TranslationOrStrOrNone = None
-    icon: None | Path | str = None
-    visible_to_user: bool = True
-
-    # We can allow both an EffectPlacers enum or a direct Callable as a place_method.
-    # But we will store them separately or do a union type. Then when we apply, we check the type.
-    place_method: EffectPlacers | Callable[[BaseEntity, "Effect"], None] = EffectPlacers.PLACE_ON_TILE
-
-    activate_on_add: bool = True
-    effect_types: Tuple[EffectType] = tuple()  # type: ignore
-
-    def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any) -> None:
-        BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
-
-        self.id: str = uuid.uuid4().hex
-
-        self.city: "City | None" = None
-        self.player: "Player | None" = None
-        self.world: "World | None" = None
-        self.improvement: "Improvement | None" = None
-        self.unit: "Unit | None" = None
-
-        self.yield_impact: Yields = Yields.nullYield()  # Will be read on turn change
-        self.maintenance_impact: Yields = (
-            Yields.nullYield()
-        )  # Will be read on turn change for the impact it will have on empire wide maintenance.
-
-        self.is_timed: bool = False
-        self.duration: int = 0
-        self.turns_left: int = 0
-
-        self.active: bool = True
-
-        self.tag: str = self.generate_tag()
-
-    def __del__(self) -> None:
-        if self.is_registered:
-            self.unregister()
-
-    def __getstate__(self) -> Dict[str, Any]:
-        state = self.__dict__.copy()
-        if "base" in state:
-            del state["base"]
-        if "_logger" in state:
-            del state["_logger"]
-        if "tile" in state:
-            del state["tile"]
-        if "city" in state:
-            del state["city"]
-        if "player" in state:
-            del state["player"]
-        if "world" in state:
-            del state["world"]
-        if "improvement" in state:
-            del state["improvement"]
-        if "unit" in state:
-            del state["unit"]
-        if "effects" in state:
-            del state["effects"]
-
-        return state
-
-    def register(self):
-        from managers.entity import EntityManager
-
-        if self.is_registered:
-            return
-
-        self.id = uuid.uuid4().hex
-        self.tag = self.generate_tag()
-
-        EntityManager.get_singleton_instance().register(EntityType.EFFECT, self, self.id)
-        self.is_registered = True
-
-    def unregister(self):
-        from managers.entity import EntityManager
-
-        EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, self)
-        self.is_registered = False
-
-    def generate_tag(self) -> str:
-        if self.tile is None and self.city is not None:  # is a city effect
-            return f"{self.__class__.__name__}_city_{self.city.name}_{self.id}"
-        elif self.city is None:  # is a tile effect
-            return f"{self.__class__.__name__}_tile_{self.get_tile().x}_{self.get_tile().y}_{self.id}"
-        else:  # is a global effect
-            return f"{self.__class__.__name__}_{self.id}"
-
-    def apply(self, base_object: "Tile | City | Player | World") -> None:
-        if isinstance(self.place_method, EffectPlacers):
-            self.place_method.place(base_object, self)
-        elif callable(self.place_method) and isinstance(base_object, BaseEntity):
-            self.place_method(base_object, self)
-        else:
-            raise ValueError("Invalid place method.")
-
-        self.on_place()
-
-    def activate(self, execute_on_activate: bool = True) -> None:
-        self.active = True
-
-        if execute_on_activate:
-            self.on_activate()
-
-    def deactivate(self, execute_on_deactivate: bool = True) -> None:
-        self.active = False
-
-        if execute_on_deactivate:
-            self.on_deactivate()
-
-    def on_turn_end(self) -> None:
-        if self.active is not True:
-            return  # If the effect is not active, we don't want to do anything.
-
-        if self.is_timed:
-            self.turns_left -= 1
-
-        if self.turns_left <= 0:
-            self.on_effect_expire()
-
-        if EffectType.CITY in self.effect_types:
-            self.on_city_turn_end()
-        if EffectType.TILE in self.effect_types:
-            self.on_tile_turn_end()
-        if EffectType.PLAYER in self.effect_types:
-            self.on_player_turn_end()
-        if EffectType.GLOBAL in self.effect_types:
-            self.on_global_turn_end()
-        if EffectType.IMPROVEMENT in self.effect_types:
-            self.on_improvement_turn_end()
-        if EffectType.UNIT in self.effect_types:
-            self.on_unit_turn_end()
-
-    def is_expired(self) -> bool:
-        return self.turns_left <= 0
-
-    def on_city_turn_end(self) -> None: ...  # If the object has a city effect, this will be called on turn end.
-    def on_tile_turn_end(self) -> None: ...  # If the object has a tile effect, this will be called on turn end.
-    def on_player_turn_end(self) -> None: ...  # If the object has a player effect, this will be called on turn end.
-    def on_global_turn_end(self) -> None: ...  # If the object has a global effect, this will be called on turn end.
-    def on_improvement_turn_end(self) -> None: ...
-    def on_unit_turn_end(self) -> None: ...
-
-    def on_place(self) -> None: ...
-    def on_activate(self) -> None: ...  # Will be called when the effect is activated.
-    def on_deactivate(self) -> None: ...  # Will be called when the effect is deactivated.
-    def on_effect_applied(self) -> None: ...  # Will be called when the effect is applied.
-    def on_effect_expire(self) -> None: ...  # Will be called when the effect expires.
-    def on_clear(self) -> None: ...  # Will be called when a clear has been called on the parent.
-    def on_remove(self) -> None: ...  # Will be called when the effect is removed from the parent.

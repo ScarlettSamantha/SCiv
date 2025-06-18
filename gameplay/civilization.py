@@ -5,7 +5,7 @@ from typing import List, Self
 from gameplay.leader import Leader
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr
-from system.effects import Effect
+from gameplay.effect import Effect
 
 
 class Civilization:

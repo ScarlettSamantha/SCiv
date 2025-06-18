@@ -1,5 +1,7 @@
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
+from weakref import ReferenceType
+import weakref
 
 from direct.showbase import MessengerGlobal
 
@@ -9,9 +11,12 @@ from helpers.cache import Cache
 from managers.base import BaseManager
 from system.pyload import PyLoad
 
+if TYPE_CHECKING:
+    from gameplay.player import Player
+
 
 class TechManager(BaseManager):
-    def __init__(self, technology_folders: List[str] = [], *args: Any, **kwargs: Any):
+    def __init__(self, player: "Player", technology_folders: List[str] = [], *args: Any, **kwargs: Any):
         BaseManager.__init__(self, *args, **kwargs)
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild("tech_manager")
@@ -19,12 +24,19 @@ class TechManager(BaseManager):
         self.queue: OrderedDict[int, Tech] = OrderedDict()
         self.registered_techs: List[Type[Tech]] = []
         self.researched_techs: List[Tech] = []
+        self.player: ReferenceType["Player"] = weakref.ref(player)
 
         self._needed_science: int = 1
         self._current_science_pool: int = 0
         self._tech_tree: Optional[TechTree] = None
 
         self.process_folders(technology_folders)
+
+    def get_player(self) -> "Player":
+        player = self.player()
+        if player is None:
+            raise ValueError("Player reference is no longer valid.")
+        return player
 
     def __getstate__(self) -> object:
         # Prepare the state for serialization.
@@ -135,6 +147,8 @@ class TechManager(BaseManager):
 
     def process_queue(self, complete_research: bool = True) -> None:
         if self.researching and complete_research:
+            self.logger.debug(f"Completing research {str(self.researching.name)}")
+            self.researching.on_unlock(self.get_player())
             self.researched_techs.append(self.researching)
             self.researching = None
 

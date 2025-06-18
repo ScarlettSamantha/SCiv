@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
-from system.effects import Effect
+from gameplay.effect import Effect
 
 
 class Leader:

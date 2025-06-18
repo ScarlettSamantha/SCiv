@@ -29,14 +29,15 @@ class BuildAction(BaseUnitAction):
         self.on_the_spot_action = True
         self.targeting_tile_action = False
         self.get_return_as_failure_argument = True
+        self.building: Optional[Improvement] = None
 
         self.unit_looses_movement_after_building_rule: bool = (
             get_game_rules().get_unit_looses_movement_after_building_rule()
         )
 
     def build_wrapper(self, *args: Any, **kwargs: Any) -> CantBuildReason | bool:
-        building: Improvement = self.improvement(tile=self.tile, owner=self.unit.owner)
-        result = self.tile.build(building)
+        self.building = self.improvement(tile=self.tile, owner=self.unit.owner)
+        result = self.tile.build(self.building)
         self._result = result
         return result
 
@@ -88,7 +89,7 @@ class BuildAction(BaseUnitAction):
         return self.unit.can_build
 
     def on_success(self, _self: Any, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
-        MessengerGlobal.messenger.send("game.gameplay.unit.build_improvement_success", [self.improvement, self.unit])
+        MessengerGlobal.messenger.send("game.gameplay.unit.build_improvement_success", [self.building, self.unit])
         if self.unit_looses_movement_after_building_rule:
             self.unit.drain_movement_points(None)  # Will set the unit to 0 movement points.
 
@@ -102,5 +103,5 @@ class BuildAction(BaseUnitAction):
     def on_fail(self, action: Action, *args: Any, **kwargs: Any):
         result = action.get_result()
         MessengerGlobal.messenger.send(
-            "game.gameplay.unit.build_improvement_failure", [result, self.improvement, self.unit]
+            "game.gameplay.unit.build_improvement_failure", [result, self.building, self.unit]
         )

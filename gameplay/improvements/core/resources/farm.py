@@ -26,4 +26,6 @@ class Farm(Improvement):
             **kwargs,
         )
 
-        self.effects.add_effect(FarmEffect(self.get_tile(), self.get_owner()))
+    def on_construct(self):
+        self.effects.add_effect(FarmEffect(base_object=self, player=self.get_owner()))
+        return super().on_construct()

@@ -1,7 +1,11 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gameplay.tech import Tech
 from managers.i18n import t_
+from gameplay.effects.techs.astrology import Astrology as AstrologyEffect
+
+if TYPE_CHECKING:
+    from gameplay.player import Player
 
 
 class Astrology(Tech):
@@ -15,3 +19,14 @@ class Astrology(Tech):
             *args,
             **kwargs,
         )
+
+    def on_unlock(self, player: "Player") -> None:
+        AstrologyEffect.apply_to_entity(player=player, base_object=player)
+
+        super().on_unlock(player)
+
+    @classmethod
+    def unlocks(cls) -> list[type]:
+        from gameplay.effects.techs.astrology import Astrology
+
+        return [Astrology] + super().unlocks()

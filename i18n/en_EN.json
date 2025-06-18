@@ -1359,6 +1359,14 @@
         "description": "Systematic recording of information and ideas."
       }
     },
+    "effects": {
+      "techs": {
+        "astrology": {
+          "name": "Astrology",
+          "description": "Understanding the stars helps us improve our farming techniques, leading to better crop yields and prosperity.\n\n Effects:\n\n{effects}"
+        }
+      }
+    },
     "content": {
       "planes": {
         "core": {

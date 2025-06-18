@@ -7,6 +7,7 @@ from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
     from system.entity import BaseEntity
+    from gameplay.player import Player
 
 
 class Tech:
@@ -65,6 +66,8 @@ class Tech:
     @classmethod
     def set_icon(cls, value: T_TranslationOrStr) -> None:
         cls._icon = value
+
+    def on_unlock(self, player: "Player") -> None: ...
 
 
 class TechTree:

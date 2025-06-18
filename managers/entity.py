@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from gameplay.tile import Tile
     from gameplay.unit import Unit
     from main import SCIV
-    from system.effects import Effect
+    from gameplay.effect import Effect
     from system.mesh import HexGrid
     from system.game_settings import GameSettings
 
@@ -67,7 +67,7 @@ class EntityType(Enum):
 
                 self._base_type = Player
             elif self == EntityType.EFFECT:
-                from system.effects import Effect
+                from gameplay.effect import Effect
 
                 self._base_type = Effect
             elif self == EntityType.WORLD:
@@ -275,6 +275,21 @@ class EntityManager(Singleton):
 
     def get_meta_data(self, key: str) -> Any:
         return self._meta_data[key]
+
+    def get_all_improvements(self) -> Dict[str, "Improvement"]:
+        return self.get_all(type=EntityType.IMPROVEMENT)  # type: ignore # its fine it does not know that the base entity can only be an Improvement
+
+    def get_all_units(self) -> Dict[str, "Unit"]:
+        return self.get_all(type=EntityType.UNIT)  # type: ignore # its fine it does not know that the base entity can only be a Unit
+
+    def get_all_tiles(self) -> Dict[str, "Tile"]:
+        return self.get_all(type=EntityType.TILE)  # type: ignore # its fine it does not know that the base entity can only be a Tile
+
+    def get_all_cities(self) -> Dict[str, "City"]:
+        return self.get_all(type=EntityType.CITY)  # type: ignore # its fine it does not know that the base entity can only be a City
+
+    def get_all_players(self) -> Dict[str, "Player"]:
+        return self.get_all(type=EntityType.PLAYER)  # type: ignore # its fine it does not know that the base entity can only be a Player
 
     def get_all(self, type: Optional[EntityType] = None) -> Dict[str, BaseEntity]:
         if type is None:

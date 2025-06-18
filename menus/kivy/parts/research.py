@@ -163,7 +163,9 @@ class ResearchButton(TooltippedButton):
         for tech_type in self._unlocks:
             src = getattr(tech_type, "icon", placeholder())
             tip = getattr(tech_type, "name", "Unknown Tech Type")
+
             border_color = getattr(tech_type, "icon_border_color", (1, 1, 1, 1))
+
             if isinstance(src, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
                 src = str(self.atlas.get_real_path_for_virtual_path(str(src)))
             if isinstance(tip, (T_TranslationOrStrOrNone, T_TranslationOrStr)):

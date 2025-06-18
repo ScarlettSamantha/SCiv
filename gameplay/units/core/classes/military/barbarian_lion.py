@@ -33,3 +33,5 @@ class BarbarianLion(CoreMilitaryBaseClass):
             **kwargs,
         )
         self.model_position_offset = (0, 0, 0.01)
+
+    def register_actions(self): ...

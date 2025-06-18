@@ -29,7 +29,8 @@ from helpers.debug import Debug
 from managers.civics import Civic, CivicsManager, CivicTree
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
-from system.effects import Effect, Effects
+from gameplay.effect import Effect
+from system.effects import Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -133,7 +134,7 @@ class Player(BaseEntity):
         self.faith: Yields = Yields(faith=0)
         self.gold: Yields = Yields(gold=0)
 
-        self.tech: TechManager = TechManager()
+        self.tech: TechManager = TechManager(player=self)
         self.civics: CivicsManager = CivicsManager()
         self.icon = self.civilization.icon
         self.introduction: T_TranslationOrStr = (
