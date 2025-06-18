@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 
 
 class CantMoveReason(Enum):
+    USER_INPUT_ERROR = -3  # This is when the user input is invalid, e.g. trying to move to a non-tile target.
     SAME_TILE = -2  # This is a special case where the unit is already on the tile
     COULD_MOVE = -1  # This is more of a ok unit could move.
     NO_MOVES = 0  # This is when the unit has no moves left

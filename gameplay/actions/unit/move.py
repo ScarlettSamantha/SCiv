@@ -29,7 +29,7 @@ class WalkAction(BaseUnitAction):
 
     def move_wrapper(self, action: Action, executor: Unit, target: T_TARGET) -> CantMoveReason:
         if not isinstance(target, Tile):
-            raise TypeError("Target must be a Tile instance.")
+            return CantMoveReason.USER_INPUT_ERROR
 
         result = executor.move(target)
         self._result = result
@@ -45,6 +45,10 @@ class WalkAction(BaseUnitAction):
 
     def show_cant_move_popup(self, action: Action, *args: Any, **kwargs: Any):
         result = action.get_result()
+
+        if result == CantMoveReason.USER_INPUT_ERROR:
+            return
+
         text, description = "", ""
         if result == CantMoveReason.NO_MOVES:
             text, description = (
