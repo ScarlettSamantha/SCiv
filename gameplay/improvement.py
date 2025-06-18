@@ -174,9 +174,6 @@ class Improvement(BaseEntity):
             self.generate_tag()
             self.register()
 
-        for effect in self.effects.get_effects().values():
-            effect.apply(self.get_tile())
-
     def on_destroy(self):
         if self.is_registered is True:
             self.unregister()

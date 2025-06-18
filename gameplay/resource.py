@@ -167,6 +167,8 @@ class BaseResource(ABC):
         self.tile_yield_on_improvement: Yields = Yields.nullYield()
         self.tile_yield: Yields = Yields.nullYield()
 
+        self.is_improved: bool = False  # This is set to True when the resource is improved by an improvement.
+
     def get_numeric_icon(self, generated: bool = True) -> str:
         path = self.icon
         if generated:
@@ -177,7 +179,9 @@ class BaseResource(ABC):
         return path
 
     def get_yield(self) -> "Yields":
-        return self.tile_yield_on_improvement  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
+        if self.is_improved:
+            return self.tile_yield_on_improvement
+        return self.tile_yield
 
     def add_to_yield_modifier(self, yields: "Yields") -> None:
         self.tile_yield_on_improvement.add(yields)  # type: ignore # Pyright is wrong here. It is not None. its in the setup method.
@@ -434,6 +438,28 @@ class Resources:
         state = self.__dict__.copy()
         state["resources"] = {k: v for k, v in self.resources.items() if v}  # Remove empty sub-dictionaries
         return state
+
+    def remove_improvement(self, improvement: "Improvement") -> None:
+        for sub_dict in self.resources.values():
+            for resource in sub_dict.values():
+                if resource.improvement_required:
+                    if isinstance(resource.improvement_required, list):
+                        if improvement.__class__ in resource.improvement_required:
+                            resource.is_improved = True
+                    elif improvement.__class__ == resource.improvement_required:
+                        resource.is_improved = True
+                    resource.is_improved = False
+
+    def add_improvement(self, improvement: "Improvement") -> None:
+        for sub_dict in self.resources.values():
+            for resource in sub_dict.values():
+                if resource.improvement_required:
+                    if isinstance(resource.improvement_required, list):
+                        if improvement.__class__ in resource.improvement_required:
+                            resource.is_improved = True
+                    elif improvement.__class__ == resource.improvement_required:
+                        resource.is_improved = True
+                    resource.is_improved = True
 
     def get(
         self, _type: Type[ResourceTypeBase] | None = None, key: str | None = None

@@ -420,4 +420,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         for improvement in self._improvements.get_all():
             _yield += improvement.tile_yield_improvement
 
+            for improvement_effect in improvement.effects.get_effects().values():
+                _yield += improvement_effect.yield_impact
+
         return _yield

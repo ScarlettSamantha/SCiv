@@ -305,11 +305,14 @@ class Tile(BaseEntity):
             for improvement in self._improvements.get_all():
                 new_yield += improvement.tile_yield
 
+                for improvement_effect in improvement.effects.get_effects().values():
+                    new_yield += improvement_effect.yield_impact
+
         for effect in self.effects.get_effects().values():
             new_yield += effect.yield_impact
 
         for resource in self.resources.flatten_non_mechanic().values():
-            new_yield += resource.tile_yield
+            new_yield += resource.get_yield()
 
         self.tile_yield = new_yield
 
@@ -575,8 +578,10 @@ class Tile(BaseEntity):
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:
         if not improvement.placeable_on_tiles:
             return CantBuildReason.NOT_PLACEABLE_UPON_TILES
+
         if improvement.placeable_on_city is False and self.city is not None:
             return CantBuildReason.NOT_PLACEABLE_UPON_CITY
+
         if improvement.placeable_on_condition and isinstance(improvement.placeable_on_condition, Conditions):
             condition_check_result: bool = improvement.placeable_on_condition.are_met(
                 {"tile": self, "improvement": improvement}
@@ -586,8 +591,10 @@ class Tile(BaseEntity):
 
         improvement.set_tile(self)
         improvement.on_construct()
+        self.resources.add_improvement(improvement)
         self._improvements.add(improvement)
         self.get_terrain().on_build_upon(improvement)
+
         self.render()
         return True
 
