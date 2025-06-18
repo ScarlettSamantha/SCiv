@@ -123,6 +123,7 @@ class Builder(CoreCivilianBaseClass):
     key = "core.unit.class.builder"
     name = t_("content.units.core.units.civilian.builder.name")
     description = t_("content.units.core.units.civilian.builder.description")
+    icon = "units/builder_ancient.png"
     model_size = 0.35
 
     def __init__(self, *args: Any, **kwargs: Any):
@@ -133,7 +134,8 @@ class Builder(CoreCivilianBaseClass):
         self.model_rotation = (0, 0, 0)
         self.model_position_offset = (0, 0, 0.1)
         self.can_build = True
-
+        self.unit_icons_z_offset = 1.5
+        self.unit_icons_scale = 0.75
         self.build_charges: int = 3
         self.build_charges_left: int = 3
 
