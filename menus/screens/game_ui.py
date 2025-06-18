@@ -524,7 +524,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if unit != self.ui_manager.current_unit:
             if should_select_unit is True:
                 if self.debug_frame is not None:
-                    self.debug_frame.update_debug_info_for_unit(_unit)
+                    if _unit.is_alive():
+                        self.debug_frame.update_debug_info_for_unit(_unit)
 
         self.clear_action_bar()
         self.generate_buttons_for_unit_actions(unit)

@@ -4,6 +4,7 @@ from direct.showbase.MessengerGlobal import messenger
 
 from direct.showbase import MessengerGlobal
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
+from gameplay.tile import Tile
 from gameplay.unit import Unit
 from managers.combat import T_TARGET, CombatOutcome, CombatResults
 from managers.i18n import t_
@@ -29,7 +30,7 @@ class AttackAction(BaseUnitAction):
         self.keep_targeting_after_use = True
 
     def attack_wrapper(self, _: Action, executor: T_TARGET, target: T_TARGET) -> CombatOutcome:
-        if isinstance(executor, Unit):
+        if isinstance(executor, Unit) and not isinstance(target, Tile):
             outcome = executor.attack(target)
             self._result = outcome
             return outcome

@@ -8,17 +8,18 @@ from direct.showbase.MessengerGlobal import messenger
 import numpy as np
 from panda3d.core import (
     BitMask32,
-    CardMaker,
     ColorBlendAttrib,
     GeomNode,
     LVector3,
     LVecBase3f,
     LineSegs,
+    CardMaker,
     NodePath,
     PythonTask,
     Shader,
     Texture,
     TextureStage,
+    TransparencyAttrib,
     Vec4,
 )
 
@@ -243,6 +244,40 @@ class Unit(BaseEntity, ABC):
             self.unit_icons.set_shader_input("size", LVecBase3f(0.2, 0.2, 0))  # type: ignore
             self.unit_icons.set_shader_input("iconTex", texture)  # type: ignore
 
+            # 1) create the healthbar root
+            self.healthbar_np = self.unit_icons.attachNewNode("healthbar")
+            self.healthbar_np.setPos(0, 0, 0.75)
+            self.healthbar_np.setScale(1.25, 1, 1.5)
+
+            cm = CardMaker("healthbar_quad")
+            cm.setFrame(-0.625, 0.625, -0.1125, 0.1125)
+            bar_np = self.healthbar_np.attachNewNode(cm.generate())
+
+            # 3) transparency, blending, draw order
+            bar_np.setTransparency(TransparencyAttrib.MAlpha)
+            bar_np.setAttrib(
+                ColorBlendAttrib.make(
+                    ColorBlendAttrib.MAdd, ColorBlendAttrib.OIncomingAlpha, ColorBlendAttrib.OOneMinusIncomingAlpha
+                )
+            )
+            bar_np.setBin("fixed", 50)
+            bar_np.setDepthTest(False)
+            bar_np.setDepthWrite(False)
+            bar_np.setTransparency(TransparencyAttrib.MAlways, 1)  #     type: ignore
+
+            # 4) apply your healthbar shader & init
+            self.healthbar_shader = Shader.load(
+                Shader.SL_GLSL,
+                "assets/shaders/unit_healthbar.vert.glsl",
+                "assets/shaders/unit_healthbar.frag.glsl",
+            )
+            bar_np.setShader(self.healthbar_shader)
+            bar_np.setShaderInput("health_ratio", 1.0)  # type: ignore
+            bar_np.setShaderInput("border", 0.025)  # 2% border thickness # type: ignore
+            bar_np.setShaderInput("color", self.get_owner().color)  # green color # type: ignore
+            # 5) store quad for updates
+            self._healthbar_quad = bar_np
+
         return self.model
 
     def _create_selection_circle(
@@ -398,6 +433,7 @@ class Unit(BaseEntity, ABC):
             raise ValueError(f"Unit {cls.__name__} cannot spawn on impassable tile {tile.tag}.")
 
         instance = cls(tile=tile, player=player)
+        instance.owner = player
         instance.spawn()
 
         tile.add_unit(instance)
@@ -561,6 +597,21 @@ class Unit(BaseEntity, ABC):
         if isinstance(entity, Unit):
             return entity
         return None
+
+    def receive_damage(self, damage: float) -> bool:
+        if damage < 0:
+            raise ValueError("Damage cannot be negative.")
+
+        self.health_left = max(0.0, self.health_left - damage)
+        ratio = self.health_left / self.max_health
+
+        # update the shader
+        if hasattr(self, "_healthbar_quad"):
+            self._healthbar_quad.setShaderInput("health_ratio", ratio)  # type: ignore
+
+        if self.health_left <= 0:
+            return True
+        return False
 
     def look(self, radius: int) -> List["Tile"]:
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)
