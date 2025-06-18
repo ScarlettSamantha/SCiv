@@ -249,7 +249,7 @@ class Research(FloatLayout, DirectObject):
         self._level_colors: Dict[int, Tuple[float, float, float, float]] = {}
         self._hovered_tech: Type[Tech] | None = None
         self.is_open: bool = True
-        self.popup_disabled = False  # Dont remove this otherwise kivy starts behaving strange due to a dependence on this later on in the chain.
+        self.popup_disabled = True  # Dont remove this otherwise kivy starts behaving strange due to a dependence on this later on in the chain.
         self.register()
 
     def register(self) -> None:
@@ -295,6 +295,7 @@ class Research(FloatLayout, DirectObject):
 
         self.add_widget(self.scroll_view)  # type: ignore
         self._is_build = True
+        self.popup_disabled = False
 
     def _update_rect(self, instance: FloatLayout, value: Any) -> None:
         self._bg_rect.pos = instance.pos  # type: ignore
