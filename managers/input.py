@@ -83,7 +83,7 @@ class Input(Singleton, DirectObject):
             self.logger.warning("No selected tile/unit to render.")
             return
 
-        selected_entity = self.selected_tile if self.selected_tile else self.selected_unit
+        selected_entity = self.selected_tile if self.selected_tile else None
 
         if selected_entity is not None and hasattr(selected_entity, "tag"):
             self.logger.info(f"Rendering selected entity: {selected_entity.tag}")
