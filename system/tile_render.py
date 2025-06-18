@@ -222,6 +222,7 @@ class TileRenderer:
         if texture is None:
             self.tile.logger.error(f"Terrain texture not found for tile {self.tile.id}.")
             return
+        texture.set_format(Texture.F_srgb_alpha)
 
         overlay.setTexture(texture, 1)
 
