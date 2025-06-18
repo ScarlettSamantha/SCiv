@@ -45,6 +45,7 @@ class ui(Singleton, DirectObject):
         self.current_tile: Optional[Tile] = None
         self.previous_tile: Optional[Tile] = None
         self.current_tiles: List[Tile] = []
+        self.keep_target_after_click: bool = False  # If true, the current tile will not be cleared after a click this is used for unit actions like moving or attacking. its a flag that will be reset its self after the action is done.
 
         self.neighboring_tiles: List[Tile] = []
         self.previous_tiles: List[Tile] = []
@@ -126,7 +127,6 @@ class ui(Singleton, DirectObject):
         self.game_gui.run()  # type: ignore
 
     def register(self) -> bool:
-        self.accept("ui.update.user.tile_clicked", self.select_tile)
         self.accept("ui.update.user.tile_hover", self.on_tile_hover)
         self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
 
@@ -393,6 +393,7 @@ class ui(Singleton, DirectObject):
         if self.current_unit is None:
             return
 
+        self.current_unit.deselect()
         self.current_unit = None
         self.previous_unit = None
 
@@ -412,12 +413,26 @@ class ui(Singleton, DirectObject):
         if len(tiles) == 0:
             return
 
+    def ignore_next_click(self):
+        self.keep_target_after_click = True
+
     def select_tile(self, tile_coords: str):
         x, y = tile_coords.split("_")[-2:]
         tile = self.map.grid.get((int(x), int(y)))
 
         if tile is None:
             messenger.send("ui.update.user.tile_not_found", [tile_coords])
+            return
+
+        if self.keep_target_after_click is True:
+            self.keep_target_after_click = False
+            if (
+                tile.is_city() and tile.city is not None and tile.city.player is not None
+            ):  # We still need to send the city clicked event as the action system will otherwise not know what to do as it wont receive a tile clicked event.
+                if PlayerManager.is_session_player(tile.city.player):
+                    messenger.send("ui.update.user.city_clicked", [tile.city])
+                else:
+                    messenger.send("ui.update.user.enemy_city_clicked", [tile.city])
             return
 
         if self.previous_tile is not None:
@@ -451,9 +466,14 @@ class ui(Singleton, DirectObject):
             result = self.get_entities().get(EntityType.UNIT, unit[0])
             if result is None:
                 return
+
             object: BaseEntity | Unit = result
         else:
             object: BaseEntity | Unit = unit
+
+        if self.keep_target_after_click is True:
+            self.keep_target_after_click = False
+            return
 
         if self.current_tile is not None:
             self.previous_tile = self.current_tile

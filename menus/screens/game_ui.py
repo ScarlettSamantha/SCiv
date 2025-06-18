@@ -10,7 +10,6 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
 from gameplay.city import City
@@ -19,6 +18,7 @@ from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
+from kivy.uix.label import Label
 from managers.combat import T_TARGET, test_combat_outcome
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
@@ -476,19 +476,30 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.wait_for_next_input_of_user is False:
             self.clear_selected_unit()  # Clear the action bar
 
+        generate_buttons: bool = True
         # If we are waiting for an action, execute it now
-        if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
+        if self.wait_for_next_input_of_user and self.wait_for_action_of_user is not None:
             self.wait_for_action_of_user(_tile)  # Call the stored action with the tile
             self.wait_for_next_input_of_user = False
-            self.wait_for_action_of_user = None  # Reset state
 
-        if (unit := self.ui_manager.current_unit) is not None:
+            if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is False:
+                self.ui_manager.select_tile(tile)
+            else:
+                generate_buttons = False
+
+            self.wait_for_action_of_user = None  # Reset state
+            self.action_waiting_for = None  # Reset action waiting state
+
+        else:
+            self.ui_manager.select_tile(tile)
+
+        if (unit := self.ui_manager.current_unit) is not None and generate_buttons is True:
             self.generate_buttons_for_unit_actions(unit)  # Update
 
     def process_unit_click(self, unit: str):
         self.logger.debug(f"Unit clicked: {unit}")
         _unit: Optional[BaseEntity] = EntityManager.get_singleton_instance().get(EntityType.UNIT, unit)
-        selected_unit: bool = True
+        should_select_unit: bool = True
 
         if _unit is None or not isinstance(_unit, Unit):
             self.logger.warning(f"Unit {unit} not found or is not a Unit instance.")
@@ -498,16 +509,19 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.wait_for_action_of_user(_unit)  # Call the stored action with the tile
             self.wait_for_next_input_of_user = False
             self.wait_for_action_of_user = None  # Reset state
-            if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True:
-                selected_unit = False
+            if (
+                self.wait_for_action_of_user is not None
+                and self.wait_for_action_of_user.keep_targeting_after_use is True
+            ):
+                should_select_unit = False
 
             self.wait_for_action = None
 
-        if selected_unit is True:
+        if should_select_unit is True:
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
 
         if unit != self.ui_manager.current_unit:
-            if selected_unit is True:
+            if should_select_unit is True:
                 self.generate_buttons_for_unit_actions(unit)
                 if self.debug_frame is not None:
                     self.debug_frame.update_debug_info_for_unit(_unit)
@@ -517,9 +531,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.showing_city = None
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
-        if self.action_bar_frame is None:
-            return
-
         _unit: Optional[Unit] = None
         if isinstance(unit, str):
             _unit: Optional[Unit] = self.unit_manager.find_unit(unit)
@@ -527,7 +538,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             _unit: Optional[Unit] = unit if isinstance(unit, Unit) else None
 
         if _unit is not None:
-            self.action_bar_frame.clear_buttons()
+            if self.action_bar_frame is None:
+                raise AssertionError("Action bar frame is not initialized.")
+
             actions = _unit.get_actions()
             for action in actions:
                 button = Button(
@@ -581,7 +594,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def clear_action_bar(self):
         if self.action_bar_frame is None:
             return
-
         self.action_bar_frame.clear_buttons()
 
     def prepare_build_action(self, improvement: Type[Improvement], unit: Unit):
@@ -606,6 +618,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             return
 
         self.wait_for_next_input_of_user = True
+        self.action_waiting_for = action
         self.wait_for_action_of_user = partial(self.execute_action, action, unit)  # type: ignore
         self.wait_for_action = action
         self.unit_waiting_for_action = unit
@@ -624,6 +637,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.wait_for_next_input_of_user = False
         self.wait_for_action_of_user = None
         self.unit_waiting_for_action = None
+        self.action_waiting_for = None
 
         if action.remove_actions_after_use:
             self.clear_action_bar()

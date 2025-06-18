@@ -25,6 +25,7 @@ class WalkAction(BaseUnitAction):
         self.on_the_spot_action = False
         self.targeting_tile_action = True
         self.get_return_as_failure_argument = True
+        self.keep_targeting_after_use = True
 
     def move_wrapper(self, action: Action, executor: Unit, target: T_TARGET) -> CantMoveReason:
         if not isinstance(target, Tile):
