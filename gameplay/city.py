@@ -117,6 +117,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self._process_food()
         if self.is_building and self.building is not None:
             self._process_production(yields)
+
         self._process_owner_contributions(yields)
         self._process_border_growth()
 
@@ -412,6 +413,10 @@ class City(BaseEntity, DirectObject.DirectObject):
             tile_yields += improvement.tile_yield_improvement
             tile_yields -= improvement.maintenance_cost
 
+            for improvement_effect in improvement.effects.get_effects().values():
+                tile_yields += improvement_effect.yield_impact
+                tile_yields -= improvement_effect.maintenance_impact
+
         return tile_yields
 
     def get_yield(self) -> Yields:
@@ -424,3 +429,6 @@ class City(BaseEntity, DirectObject.DirectObject):
                 _yield += improvement_effect.yield_impact
 
         return _yield
+
+    def has_improvement(self, improvement: "BaseCityImprovement") -> bool:
+        return self._improvements.has(improvement)
