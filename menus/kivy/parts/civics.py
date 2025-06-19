@@ -315,6 +315,7 @@ class Civics(FloatLayout, DirectObject):
 
         self._is_build = True
         self.disabled = True
+        self.popup_disabled = False
 
     def draw_dependency_lines(self) -> None:
         """
@@ -373,3 +374,18 @@ class Civics(FloatLayout, DirectObject):
     def _update_rect(self, *args: Any) -> None:
         self._bg_rect.pos = self.pos  # type: ignore
         self._bg_rect.size = self.size
+
+    def destroy(self) -> None:
+        self._is_build = False
+        self.disabled = True
+        self.popup_disabled = True
+
+        if self.scroll_view:
+            self.scroll_view.clear_widgets()
+            self.scroll_view = None
+
+        if self.layout:
+            self.layout.clear_widgets()
+            self.layout = None
+
+        self.civic_node_map.clear()

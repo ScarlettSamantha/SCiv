@@ -708,6 +708,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.unregister_non_collidable(self.civics)
             if self.root_layout is None:
                 raise AssertionError("Root layout is not initialized.")
+            self.civics.destroy()
             self.root_layout.remove_widget(self.civics)
             self.popup_disabled = True
             self.civics = None
