@@ -65,6 +65,6 @@ repos:
       # 6) Markdown linting
       - id: markdown-lint
         name: Markdown lint
-        entry: pymarkdownlnt -d MD013,MD028,MD033,MD007 --config .markdownlnt.json scan '**/*.md'
+        entry: pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
         language: system
         types: [markdown]
