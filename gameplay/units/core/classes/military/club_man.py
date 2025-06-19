@@ -55,3 +55,7 @@ class ClubMan(CoreMilitaryBaseClass):
 
     def register_actions(self):
         return super().register_actions()
+
+    @classmethod
+    def on_tooltip(cls) -> str:
+        return str(t_("content.units.core.units.military.clubman.tooltip"))

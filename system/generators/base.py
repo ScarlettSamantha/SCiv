@@ -17,7 +17,6 @@ from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
 
 
-from gameplay.units.core.classes.military.club_man import ClubMan
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from system.game_settings import GameSettings
@@ -285,6 +284,8 @@ class BaseGenerator(ABC):
                     break
 
             if companion_spawn_tile:
+                from gameplay.units.core.classes.military.club_man import ClubMan
+
                 companion_unit = ClubMan.spawn_on(companion_spawn_tile, player)
                 units.append(companion_unit)
 

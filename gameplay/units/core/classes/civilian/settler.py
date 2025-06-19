@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Any
 
+from gameplay.condition import Conditions, ResearchCondition
 from gameplay.promotion import Promotion, PromotionTree
+
 
 from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from managers.i18n import t_
@@ -78,6 +80,9 @@ class Settler(CoreCivilianBaseClass):
             *args,
             **kwargs,
         )
+        from gameplay.techs.pottery import Pottery
+
+        self.build_conditions = Conditions(ResearchCondition(tech=Pottery, player=player))
         self.model_rotation = (0, 0, 0)
         self.model_position_offset = (0, 0, 0.0)
         self.unit_icons_z_offset = 1.5
@@ -87,3 +92,7 @@ class Settler(CoreCivilianBaseClass):
         from gameplay.actions.unit.found import FoundAction
 
         self.actions.append(FoundAction(self))
+
+    @classmethod
+    def on_tooltip(cls) -> str:
+        return str(t_("content.units.core.units.civilian.settler.tooltip"))

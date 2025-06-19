@@ -15,3 +15,9 @@ class HuntingGathering(Tech):
             *args,
             **kwargs,
         )
+
+    @classmethod
+    def unlocks(cls) -> list[type]:
+        from gameplay.units.core.classes.military.club_man import ClubMan
+
+        return [ClubMan] + super().unlocks()

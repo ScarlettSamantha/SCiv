@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, List, Type
 
 from gameplay.tech import Tech
+from gameplay.units.core.classes.civilian.settler import Settler
 from managers.i18n import t_
 
 if TYPE_CHECKING:
@@ -23,4 +24,4 @@ class Pottery(Tech):
     def unlocks(cls) -> List[Type["BaseEntity"] | Type["Tech"]]:
         from gameplay.improvements.core.resources.farm import Farm
 
-        return [Farm] + super().unlocks()
+        return [Farm] + [Settler] + super().unlocks()
