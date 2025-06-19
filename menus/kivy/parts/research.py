@@ -301,20 +301,26 @@ class Research(FloatLayout, DirectObject):
 
     def _update_rect(self, instance: FloatLayout, value: Any) -> None:
         self._bg_rect.pos = instance.pos  # type: ignore
-        self._bg_rect.size = instance.size  # type: ignore
+        self._bg_rect.size = instance.size
 
     def _calculate_button_state(self) -> None:
         for btn in list(self._buttons.values()):  # type: ignore
             btn: ResearchButton = btn
+
             btn.disabled = self.player_tech_manager.is_tech_researched(
                 btn.value
             ) or not self.player_tech_manager.are_tech_requirements_met(btn.value)
+
             if self.player_tech_manager.is_tech_researched(btn.value):
-                btn.background_color = (0.0, 0.5, 0.0, 1)  # type: ignore
-            elif type(self.player_tech_manager.researching) == btn.value:
-                btn.background_color = (0, 0, 0.5, 1)  # type: ignore
+                btn.background_color = Colors.YELLOW[:3] + (0.8,)
+            elif (
+                type(self.player_tech_manager.researching) == btn.value
+            ):  # This has to be above the are_tech_requirements_met check
+                btn.background_color = Colors.BLUE[:3] + (0.8,)
+            elif self.player_tech_manager.are_tech_requirements_met(btn.value):
+                btn.background_color = Colors.GREEN[:3] + (0.8,)
             else:
-                btn.background_color = (0.5, 0.5, 0.5, 0.7)  # type: ignore
+                btn.background_color = Colors.GREY[:3] + (0.8,)
 
     def _calculate_levels(self, techs: List[Type[Tech]]) -> Dict[Type[Tech], int]:
         level_map: Dict[Type[Tech], int] = {}

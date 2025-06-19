@@ -243,7 +243,7 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
     background_normal: str = StringProperty("atlas://data/images/defaulttheme/button")  # type: ignore
     background_down: str = StringProperty("atlas://data/images/defaulttheme/button_pressed")  # type: ignore
     border: List[int] = ListProperty([16, 16, 16, 16])  # type: ignore
-    background_color: List[float] = ListProperty([1, 1, 1, 1])  # type: ignore
+    background_color: Tuple[float, float, float, float] = ListProperty([1, 1, 1, 1])  # type: ignore
 
     def __init__(self, **kwargs: Any):
         if "primary_text" in kwargs and isinstance(
