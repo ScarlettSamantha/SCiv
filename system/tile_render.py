@@ -243,12 +243,11 @@ class TileRenderer:
             )
 
     def _draw_resource_model(self) -> None:
-        if self.tile.is_city() or self.tile.block_resource_model_spawning is True or self.tile.units.has_any():
-            if self._is_model_drawn(self.tile.tag):
-                self.unload_resource_model()
+        if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
             return
 
-        if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
+        if self.tile.is_city() or self.tile.block_resource_model_spawning is True or self.tile.units.has_any():
+            self.unload_resource_model()
             return
 
         resource = res_list[0]
@@ -266,10 +265,10 @@ class TileRenderer:
                 disable_shader=resource.model_disable_default_shader,
                 net_id=self.tile.tag,  # Use the resource icon as a unique identifier
                 parent=self.geometry_node,
-                flatten_model=True,
+                flatten_model=False,
             )
 
-    def _is_model_drawn(self, model_tag: str) -> bool:
+    def _is_model_drawn(self) -> bool:
         return self.resource_model is not None
 
     def unload_resource_model(self) -> None:
@@ -433,49 +432,47 @@ class TileRenderer:
         full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
         self.last_result = None
 
-        def on_model_loaded(loaded_model: Optional[NodePath]):
-            if loaded_model is None:
-                self.tile.logger.error(f"Model {full_path} failed to load.")
-                return
+        loaded_model = AssetManager.load_model(full_path)
 
-            if parent is None:
-                x = self.tile.pos_x + pos_offset[0]
-                y = self.tile.pos_y + pos_offset[1]
-                z = self.tile.pos_z + pos_offset[2]
-            else:
-                x, y, z = pos_offset
+        if not loaded_model:
+            self.tile.logger.error(f"Model {full_path} could not be loaded.")
+            return None
 
-            loaded_model.setScale(max(0.01, scale))
-            loaded_model.setHpr(*hpr)
+        if parent is None:
+            x = self.tile.pos_x + pos_offset[0]
+            y = self.tile.pos_y + pos_offset[1]
+            z = self.tile.pos_z + pos_offset[2]
+        else:
+            x, y, z = pos_offset
 
-            node = loaded_model.instanceTo(self.geometry_node)
-            node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
-            node.setPos(x, y, z)
-            node.setCollideMask(BitMask32.bit(1))
-            node.setTag(NET_TYPE_FIELD, str(net_type.value))
+        loaded_model.setScale(max(0.01, scale))
+        loaded_model.setHpr(*hpr)
 
-            if disable_lighting:
-                node.setLightOff()
-            if disable_shader:
-                node.setShaderOff()
+        node = loaded_model.instanceTo(self.geometry_node)
+        node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
+        node.setPos(x, y, z)
+        node.setCollideMask(BitMask32.bit(1))
+        node.setTag(NET_TYPE_FIELD, str(net_type.value))
 
-            if net_id is not None:
-                node.setTag(NET_NODE_TAG_ID_FIELD, net_id)
-            else:
-                node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
+        if disable_lighting:
+            node.setLightOff()
+        if disable_shader:
+            node.setShaderOff()
 
-            if flatten_model:
-                node.flatten_medium()
+        if net_id is not None:
+            node.setTag(NET_NODE_TAG_ID_FIELD, net_id)
+        else:
+            node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
 
-            self.models.append(node)
-            self.last_result = node
-            if Debug.world_spawning():
-                self.tile.logger.debug(
-                    f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}."
-                )
+        if flatten_model:
+            node.flatten_medium()
 
-        self.base.loader.loadModel(full_path, callback=on_model_loaded)  # type: ignore
-        return self.last_result
+        self.models.append(node)
+        self.last_result = node
+        if Debug.world_spawning():
+            self.tile.logger.debug(f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}.")
+
+        return node
 
     def remove_model(self, net_id: str) -> None:
         for model in self.models[:]:
