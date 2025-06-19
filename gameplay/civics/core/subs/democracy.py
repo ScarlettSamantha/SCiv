@@ -29,32 +29,31 @@ class Democracy(BaseCoreSubtree):
         cls.add_civic(electoral_process)
 
         rule_of_law = RuleOfLaw
-        rule_of_law.add_requirement(CivicCondition(electoral_process))
+        rule_of_law.set_requirements([CivicCondition(electoral_process)])
         rule_of_law.tier = 1
         rule_of_law.unlocks = [SeparationOfPowers, ParticipatoryGovernance]
         cls.add_civic(rule_of_law)
 
         separation_of_powers = SeparationOfPowers
-        separation_of_powers.add_requirement(CivicCondition(rule_of_law))
+        separation_of_powers.set_requirements([CivicCondition(rule_of_law)])
         separation_of_powers.tier = 2
         separation_of_powers.unlocks = [HumanRights]
         cls.add_civic(separation_of_powers)
 
         human_rights = HumanRights
-        human_rights.add_requirement(CivicCondition(separation_of_powers))
+        human_rights.set_requirements([CivicCondition(separation_of_powers)])
         human_rights.tier = 3
         human_rights.unlocks = [ParticipatoryGovernance, TransparentGovernment]
         cls.add_civic(human_rights)
 
         participatory_governance = ParticipatoryGovernance
-        participatory_governance.add_requirement(CivicCondition(rule_of_law))
-        participatory_governance.add_requirement(CivicCondition(human_rights))
+        participatory_governance.set_requirements([CivicCondition(rule_of_law), CivicCondition(human_rights)])
         participatory_governance.unlocks = [TransparentGovernment]
         participatory_governance.tier = 4
         cls.add_civic(participatory_governance)
 
         transparent_government = TransparentGovernment
-        transparent_government.add_requirement(CivicCondition(human_rights))
+        transparent_government.set_requirements([CivicCondition(human_rights)])
         transparent_government.tier = 4
         cls.add_civic(transparent_government)
 

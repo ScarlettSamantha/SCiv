@@ -1,6 +1,7 @@
 from typing import Any, List, Type
 
 from gameplay.civic import Civic
+from gameplay.civics.core.private_property import PrivateProperty
 from gameplay.civics.core.subs._base import BaseCoreSubtree
 from gameplay.condition import CivicCondition
 from managers.i18n import t_
@@ -28,36 +29,36 @@ class Anarchy(BaseCoreSubtree):
 
         self_governance = SelfGovernance
         self_governance.tier = 0
+        self_governance.set_requirements([CivicCondition(PrivateProperty)])
         self_governance.unlocks = [MutualAid]
         cls.add_civic(self_governance)
 
         mutual_aid = MutualAid
-        mutual_aid.add_requirement(CivicCondition(self_governance))
+        mutual_aid.set_requirements([CivicCondition(self_governance)])
         mutual_aid.unlocks = [DirectAction, Decentralization]
         mutual_aid.tier = 1
         cls.add_civic(mutual_aid)
 
         direct_action = DirectAction
-        direct_action.add_requirement(CivicCondition(self_governance))
+        direct_action.set_requirements([CivicCondition(self_governance)])
         direct_action.unlocks = [Decentralization]
         direct_action.tier = 1
         cls.add_civic(direct_action)
 
         decentralization = Decentralization
-        decentralization.add_requirement(CivicCondition(mutual_aid))
-        decentralization.add_requirement(CivicCondition(direct_action))
+        decentralization.set_requirements([CivicCondition(mutual_aid), CivicCondition(direct_action)])
         decentralization.tier = 2
         decentralization.unlocks = [VoluntaryAssociations]
         cls.add_civic(decentralization)
 
         voluntary_associations = VoluntaryAssociations
-        voluntary_associations.add_requirement(CivicCondition(decentralization))
+        voluntary_associations.set_requirements([CivicCondition(decentralization)])
         voluntary_associations.tier = 3
         voluntary_associations.unlocks = [Autonomy]
         cls.add_civic(voluntary_associations)
 
         autonomy = Autonomy
-        autonomy.add_requirement(CivicCondition(decentralization))
+        autonomy.set_requirements([CivicCondition(decentralization)])
         autonomy.tier = 4
         cls.add_civic(autonomy)
 

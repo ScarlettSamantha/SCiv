@@ -32,32 +32,31 @@ class Nationalism(BaseCoreSubtree):
         cls.add_civic(patriotic_education)
 
         cultural_preservation = CulturalPreservation
-        cultural_preservation.add_requirement(CivicCondition(patriotic_education))
+        cultural_preservation.set_requirements([CivicCondition(patriotic_education)])
         cultural_preservation.tier = 1
         cultural_preservation.unlocks = [EconomicNationalism]
         cls.add_civic(cultural_preservation)
 
         economic_nationalism = EconomicNationalism
-        economic_nationalism.add_requirement(CivicCondition(patriotic_education))
+        economic_nationalism.set_requirements([CivicCondition(patriotic_education)])
         economic_nationalism.tier = 1
         economic_nationalism.unlocks = [NationalSovereignty]
         cls.add_civic(economic_nationalism)
 
         military_strength = MilitaryStrength
-        military_strength.add_requirement(CivicCondition(cultural_preservation))
+        military_strength.set_requirements([CivicCondition(cultural_preservation)])
         military_strength.tier = 2
         military_strength.unlocks = [NationalSovereignty]
         cls.add_civic(military_strength)
 
         national_sovereignty = NationalSovereignty
-        national_sovereignty.add_requirement(CivicCondition(economic_nationalism))
-        national_sovereignty.add_requirement(CivicCondition(military_strength))
+        national_sovereignty.set_requirements([CivicCondition(economic_nationalism), CivicCondition(military_strength)])
         national_sovereignty.tier = 3
         national_sovereignty.unlocks = [NationalUnity]
         cls.add_civic(national_sovereignty)
 
         national_unity = NationalUnity
-        national_unity.add_requirement(CivicCondition(national_sovereignty))
+        national_unity.set_requirements([CivicCondition(national_sovereignty)])
         national_unity.tier = 4
         cls.add_civic(national_unity)
 

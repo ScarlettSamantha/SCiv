@@ -29,32 +29,31 @@ class Oligarchy(BaseCoreSubtree):
         cls.add_civic(elite_rule)
 
         economic_control = EconomicControl
-        economic_control.add_requirement(CivicCondition(elite_rule))
+        economic_control.set_requirements([CivicCondition(elite_rule)])
         economic_control.tier = 1
         economic_control.unlocks = [WealthAccumulation]
         cls.add_civic(economic_control)
 
         limited_participation = LimitedParticipation
-        limited_participation.add_requirement(CivicCondition(elite_rule))
+        limited_participation.set_requirements([CivicCondition(elite_rule)])
         limited_participation.tier = 1
         limited_participation.unlocks = [WealthAccumulation]
         cls.add_civic(limited_participation)
 
         wealth_accumulation = WealthAccumulation
-        wealth_accumulation.add_requirement(CivicCondition(economic_control))
-        wealth_accumulation.add_requirement(CivicCondition(limited_participation))
+        wealth_accumulation.set_requirements([CivicCondition(economic_control), CivicCondition(limited_participation)])
         wealth_accumulation.tier = 2
         wealth_accumulation.unlocks = [ExclusiveNetworks]
         cls.add_civic(wealth_accumulation)
 
         exclusive_networks = ExclusiveNetworks
-        exclusive_networks.add_requirement(CivicCondition(wealth_accumulation))
+        exclusive_networks.set_requirements([CivicCondition(wealth_accumulation)])
         exclusive_networks.tier = 3
         exclusive_networks.unlocks = [PoliticalManipulation]
         cls.add_civic(exclusive_networks)
 
         political_manipulation = PoliticalManipulation
-        political_manipulation.add_requirement(CivicCondition(exclusive_networks))
+        political_manipulation.set_requirements([CivicCondition(exclusive_networks)])
         political_manipulation.tier = 4
         cls.add_civic(political_manipulation)
 

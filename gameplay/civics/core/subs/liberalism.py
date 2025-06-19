@@ -32,31 +32,31 @@ class Liberalism(BaseCoreSubtree):
         cls.add_civic(individual_rights)
 
         free_market = FreeMarket
-        free_market.add_requirement(CivicCondition(individual_rights))
+        free_market.set_requirements([CivicCondition(individual_rights)])
         free_market.tier = 1
         free_market.unlocks = [CivilLiberties]
         cls.add_civic(free_market)
 
         civil_liberties = CivilLiberties
-        civil_liberties.add_requirement(CivicCondition(individual_rights))
+        civil_liberties.set_requirements([CivicCondition(individual_rights)])
         civil_liberties.tier = 1
         civil_liberties.unlocks = [SocialWelfare]
         cls.add_civic(civil_liberties)
 
         representative_democracy = RepresentativeDemocracy
-        representative_democracy.add_requirement(CivicCondition(individual_rights))
+        representative_democracy.set_requirements([CivicCondition(individual_rights)])
         representative_democracy.unlocks = [CivilLiberties]
         representative_democracy.tier = 1
         cls.add_civic(representative_democracy)
 
         social_welfare = SocialWelfare
-        social_welfare.add_requirement(CivicCondition(free_market))
+        social_welfare.set_requirements([CivicCondition(free_market)])
         social_welfare.unlocks = [GlobalCooperation]
         social_welfare.tier = 2
         cls.add_civic(social_welfare)
 
         global_cooperation = GlobalCooperation
-        global_cooperation.add_requirement(CivicCondition(representative_democracy))
+        global_cooperation.set_requirements([CivicCondition(representative_democracy)])
         global_cooperation.tier = 2
         cls.add_civic(global_cooperation)
 

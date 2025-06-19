@@ -34,11 +34,22 @@ class Civic:
 
         if cls.key not in list(cls.requires.keys()):
             cls.requires[cls.key] = Conditions()
-
-        if requirement in cls.requires[cls.key]:
+        elif requirement in cls.requires[cls.key]:
             return
 
         cls.requires[cls.key].add(requirement)
+
+    @classmethod
+    def set_requirements(cls, requirements: List[Condition | Type["Civic"]]):
+        cls.requires[cls.key] = Conditions()
+
+        if cls.key not in list(cls.requires.keys()):
+            cls.requires[cls.key] = Conditions()
+
+        for requirement in requirements:
+            if not isinstance(requirement, Condition):
+                requirement = CivicCondition(requirement)
+            cls.requires[cls.key].add(requirement)
 
     @classmethod
     def get_tier(cls) -> int:
@@ -92,15 +103,11 @@ class Civic:
         self.completed = True
         return self
 
-    def is_unlockable(self) -> bool:
-        required = self.get_requirements()
-        if not required:
-            return True  # No requirements means always unlockable
-
-        completed = [c().completed for c in required]
-        if len(required) == 1:
-            return completed[0]
-        return all(completed)
+    @classmethod
+    def is_unlockable(cls) -> bool:
+        if cls.key in cls.requires.keys():
+            return cls.requires[cls.key].are_met()
+        return True
 
 
 class CivicSubtree:

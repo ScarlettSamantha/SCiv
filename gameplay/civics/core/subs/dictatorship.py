@@ -29,32 +29,31 @@ class Dictatorship(BaseCoreSubtree):
         cls.add_civic(autocratic_rule)
 
         state_surveillance = StateSurveillance
-        state_surveillance.add_requirement(CivicCondition(autocratic_rule))
+        state_surveillance.set_requirements([CivicCondition(autocratic_rule)])
         state_surveillance.unlocks = [Censorship]
         state_surveillance.tier = 1
         cls.add_civic(state_surveillance)
 
         censorship = Censorship
-        censorship.add_requirement(CivicCondition(state_surveillance))
+        censorship.set_requirements([CivicCondition(state_surveillance)])
         censorship.tier = 2
         censorship.unlocks = [Repression]
         cls.add_civic(censorship)
 
         repression = Repression
-        repression.add_requirement(CivicCondition(autocratic_rule))
-        repression.add_requirement(CivicCondition(censorship))
+        repression.set_requirements([CivicCondition(autocratic_rule), CivicCondition(censorship)])
         repression.tier = 3
         repression.unlocks = [Propaganda]
         cls.add_civic(repression)
 
         propaganda = Propaganda
-        propaganda.add_requirement(CivicCondition(repression))
+        propaganda.set_requirements([CivicCondition(repression)])
         propaganda.tier = 4
         propaganda.unlocks = [CentralizedPower]
         cls.add_civic(propaganda)
 
         centralized_power = CentralizedPower
-        centralized_power.add_requirement(CivicCondition(propaganda))
+        centralized_power.set_requirements([CivicCondition(propaganda)])
         centralized_power.tier = 5
         cls.add_civic(centralized_power)
 

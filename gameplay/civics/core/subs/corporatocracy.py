@@ -31,34 +31,31 @@ class Corporatocracy(BaseCoreSubtree):
         cls.add_civic(corporate_influence)
 
         lobbying_power = LobbyingPower
-        lobbying_power.add_requirement(CivicCondition(corporate_influence))
+        lobbying_power.set_requirements([CivicCondition(corporate_influence)])
         lobbying_power.unlocks = [EconomicFocus]
         lobbying_power.tier = 1
         cls.add_civic(lobbying_power)
 
         business_privileges = BusinessPrivileges
-        business_privileges.add_requirement(CivicCondition(corporate_influence))
+        business_privileges.set_requirements([CivicCondition(corporate_influence)])
         business_privileges.unlocks = [EconomicFocus]
         business_privileges.tier = 1
         cls.add_civic(business_privileges)
 
         economic_focus = EconomicFocus
-        economic_focus.add_requirement(CivicCondition(business_privileges))
-        economic_focus.add_requirement(CivicCondition(lobbying_power))
+        economic_focus.set_requirements([CivicCondition(business_privileges), CivicCondition(lobbying_power)])
         economic_focus.unlocks = [RegulatoryCapture]
         economic_focus.tier = 2
         cls.add_civic(economic_focus)
 
         regulatory_capture = RegulatoryCapture
-        regulatory_capture.add_requirement(CivicCondition(economic_focus))
-        regulatory_capture.add_requirement(CivicCondition(lobbying_power))
+        regulatory_capture.set_requirements([CivicCondition(economic_focus), CivicCondition(lobbying_power)])
         regulatory_capture.tier = 2
         regulatory_capture.unlocks = [CorporateGovernance]
         cls.add_civic(regulatory_capture)
 
         corporate_governance = CorporateGovernance
-        corporate_governance.add_requirement(CivicCondition(economic_focus))
-        corporate_governance.add_requirement(CivicCondition(regulatory_capture))
+        corporate_governance.set_requirements([CivicCondition(economic_focus), CivicCondition(regulatory_capture)])
         corporate_governance.tier = 3
         cls.add_civic(corporate_governance)
 

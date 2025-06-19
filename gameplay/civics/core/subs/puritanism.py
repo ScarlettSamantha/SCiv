@@ -29,32 +29,31 @@ class Puritanism(BaseCoreSubtree):
         cls.add_civic(religious_discipline)
 
         moral_purity = MoralPurity
-        moral_purity.add_requirement(CivicCondition(religious_discipline))
+        moral_purity.set_requirements([CivicCondition(religious_discipline)])
         moral_purity.tier = 1
         moral_purity.unlocks = [SimplifiedLiving]
         cls.add_civic(moral_purity)
 
         community_surveillance = CommunitySurveillance
-        community_surveillance.add_requirement(CivicCondition(religious_discipline))
+        community_surveillance.set_requirements([CivicCondition(religious_discipline)])
         community_surveillance.tier = 1
         community_surveillance.unlocks = [SimplifiedLiving]
         cls.add_civic(community_surveillance)
 
         simplified_living = SimplifiedLiving
-        simplified_living.add_requirement(CivicCondition(moral_purity))
-        simplified_living.add_requirement(CivicCondition(community_surveillance))
+        simplified_living.set_requirements([CivicCondition(moral_purity), CivicCondition(community_surveillance)])
         simplified_living.tier = 2
         simplified_living.unlocks = [ReligiousGovernance]
         cls.add_civic(simplified_living)
 
         religious_governance = ReligiousGovernance
-        religious_governance.add_requirement(CivicCondition(simplified_living))
+        religious_governance.set_requirements([CivicCondition(simplified_living)])
         religious_governance.tier = 3
         religious_governance.unlocks = [MoralLegislation]
         cls.add_civic(religious_governance)
 
         moral_legislation = MoralLegislation
-        moral_legislation.add_requirement(CivicCondition(religious_governance))
+        moral_legislation.set_requirements([CivicCondition(religious_governance)])
         moral_legislation.tier = 4
         cls.add_civic(moral_legislation)
 

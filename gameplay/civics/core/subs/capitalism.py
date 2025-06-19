@@ -32,31 +32,30 @@ class Capitalism(BaseCoreSubtree):
         cls.add_civic(private_property)
 
         entrepreneurship = Entrepreneurship
-        entrepreneurship.add_requirement(CivicCondition(private_property))
+        entrepreneurship.set_requirements([CivicCondition(private_property)])
         entrepreneurship.tier = 1
         entrepreneurship.unlocks = [FreeTrade, MinimalRegulation]
         cls.add_civic(entrepreneurship)
 
         free_trade = FreeTrade
-        free_trade.add_requirement(CivicCondition(entrepreneurship))
+        free_trade.set_requirements([CivicCondition(entrepreneurship)])
         free_trade.tier = 2
         free_trade.unlocks = [MinimalRegulation, CapitalAccumulation]
         cls.add_civic(free_trade)
 
         minimal_regulation = MinimalRegulation
-        minimal_regulation.add_requirement(CivicCondition(entrepreneurship))
-        minimal_regulation.add_requirement(CivicCondition(free_trade))
+        minimal_regulation.set_requirements([CivicCondition(entrepreneurship), CivicCondition(free_trade)])
         minimal_regulation.tier = 3
         cls.add_civic(minimal_regulation)
 
         capital_accumulation = CapitalAccumulation
-        capital_accumulation.add_requirement(CivicCondition(free_trade))
+        capital_accumulation.set_requirements([CivicCondition(free_trade)])
         capital_accumulation.tier = 3
         capital_accumulation.unlocks = [MarketCompetition]
         cls.add_civic(capital_accumulation)
 
         market_competition = MarketCompetition
-        market_competition.add_requirement(CivicCondition(capital_accumulation))
+        market_competition.set_requirements([CivicCondition(capital_accumulation)])
         market_competition.tier = 4
         cls.add_civic(market_competition)
 

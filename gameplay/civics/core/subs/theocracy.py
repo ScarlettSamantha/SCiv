@@ -32,32 +32,31 @@ class Theocracy(BaseCoreSubtree):
         cls.add_civic(religious_law)
 
         clerical_rule = ClericalRule
-        clerical_rule.add_requirement(CivicCondition(religious_law))
+        clerical_rule.set_requirements([CivicCondition(religious_law)])
         clerical_rule.tier = 1
         clerical_rule.unlocks = [FaithBasedEducation]
         cls.add_civic(clerical_rule)
 
         moral_policing = MoralPolicing
-        moral_policing.add_requirement(CivicCondition(religious_law))
+        moral_policing.set_requirements([CivicCondition(religious_law)])
         moral_policing.tier = 1
         moral_policing.unlocks = [FaithBasedEducation]
         cls.add_civic(moral_policing)
 
         faith_based_education = FaithBasedEducation
-        faith_based_education.add_requirement(CivicCondition(clerical_rule))
-        faith_based_education.add_requirement(CivicCondition(moral_policing))
+        faith_based_education.set_requirements([CivicCondition(clerical_rule), CivicCondition(moral_policing)])
         faith_based_education.tier = 2
         faith_based_education.unlocks = [DivineGovernance]
         cls.add_civic(faith_based_education)
 
         divine_governance = DivineGovernance
-        divine_governance.add_requirement(CivicCondition(faith_based_education))
+        divine_governance.set_requirements([CivicCondition(faith_based_education)])
         divine_governance.tier = 3
         divine_governance.unlocks = [ReligiousUnity]
         cls.add_civic(divine_governance)
 
         religious_unity = ReligiousUnity
-        religious_unity.add_requirement(CivicCondition(divine_governance))
+        religious_unity.set_requirements([CivicCondition(divine_governance)])
         religious_unity.tier = 4
         cls.add_civic(religious_unity)
 

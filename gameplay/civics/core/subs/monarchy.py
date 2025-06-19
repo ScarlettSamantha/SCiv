@@ -29,31 +29,31 @@ class Monarchy(BaseCoreSubtree):
         cls.add_civic(hereditary_rule)
 
         divine_right = DivineRight
-        divine_right.add_requirement(CivicCondition(hereditary_rule))
+        divine_right.set_requirements([CivicCondition(hereditary_rule)])
         divine_right.tier = 1
         divine_right.unlocks = [NobilitySystem]
         cls.add_civic(divine_right)
 
         nobility_system = NobilitySystem
-        nobility_system.add_requirement(CivicCondition(divine_right))
+        nobility_system.set_requirements([CivicCondition(divine_right)])
         nobility_system.tier = 2
         nobility_system.unlocks = [FeudalObligations]
         cls.add_civic(nobility_system)
 
         feudal_obligations = FeudalObligations
-        feudal_obligations.add_requirement(CivicCondition(nobility_system))
+        feudal_obligations.set_requirements([CivicCondition(nobility_system)])
         feudal_obligations.tier = 3
         feudal_obligations.unlocks = [CentralizedAuthority]
         cls.add_civic(feudal_obligations)
 
         centralized_authority = CentralizedAuthority
-        centralized_authority.add_requirement(CivicCondition(feudal_obligations))
+        centralized_authority.set_requirements([CivicCondition(feudal_obligations)])
         centralized_authority.tier = 4
         centralized_authority.unlocks = [RoyalPatronage]
         cls.add_civic(centralized_authority)
 
         royal_patronage = RoyalPatronage
-        royal_patronage.add_requirement(CivicCondition(centralized_authority))
+        royal_patronage.set_requirements([CivicCondition(centralized_authority)])
         royal_patronage.tier = 5
         cls.add_civic(royal_patronage)
 

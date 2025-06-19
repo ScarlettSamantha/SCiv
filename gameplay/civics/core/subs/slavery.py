@@ -29,32 +29,31 @@ class Slavery(BaseCoreSubtree):
         cls.add_civic(forced_labor)
 
         ownership_rights = OwnershipRights
-        ownership_rights.add_requirement(CivicCondition(forced_labor))
+        ownership_rights.set_requirements([CivicCondition(forced_labor)])
         ownership_rights.tier = 1
         ownership_rights.unlocks = [SocialHierarchy]
         cls.add_civic(ownership_rights)
 
         labor_exploitation = LaborExploitation
-        labor_exploitation.add_requirement(CivicCondition(forced_labor))
+        labor_exploitation.set_requirements([CivicCondition(forced_labor)])
         labor_exploitation.tier = 1
         labor_exploitation.unlocks = [SocialHierarchy]
         cls.add_civic(labor_exploitation)
 
         social_hierarchy = SocialHierarchy
-        social_hierarchy.add_requirement(CivicCondition(ownership_rights))
-        social_hierarchy.add_requirement(CivicCondition(labor_exploitation))
+        social_hierarchy.set_requirements([CivicCondition(ownership_rights), CivicCondition(labor_exploitation)])
         social_hierarchy.tier = 2
         social_hierarchy.unlocks = [Oppression]
         cls.add_civic(social_hierarchy)
 
         oppression = Oppression
-        oppression.add_requirement(CivicCondition(social_hierarchy))
+        oppression.set_requirements([CivicCondition(social_hierarchy)])
         oppression.tier = 3
         oppression.unlocks = [EconomicDependence]
         cls.add_civic(oppression)
 
         economic_dependence = EconomicDependence
-        economic_dependence.add_requirement(CivicCondition(oppression))
+        economic_dependence.set_requirements([CivicCondition(oppression)])
         economic_dependence.tier = 4
         cls.add_civic(economic_dependence)
 

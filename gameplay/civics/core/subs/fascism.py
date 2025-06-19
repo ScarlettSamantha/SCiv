@@ -32,31 +32,31 @@ class Fascism(BaseCoreSubtree):
         cls.add_civic(totalitarian_control)
 
         state_propaganda = StatePropaganda
-        state_propaganda.add_requirement(CivicCondition(totalitarian_control))
+        state_propaganda.set_requirements([CivicCondition(totalitarian_control)])
         state_propaganda.tier = 1
         state_propaganda.unlocks = [Militarization, CorporateState]
         cls.add_civic(state_propaganda)
 
         militarization = Militarization
-        militarization.add_requirement(CivicCondition(state_propaganda))
+        militarization.set_requirements([CivicCondition(state_propaganda)])
         militarization.tier = 2
         militarization.unlocks = [LeaderWorship]
         cls.add_civic(militarization)
 
         corporate_state = CorporateState
-        corporate_state.add_requirement(CivicCondition(state_propaganda))
+        corporate_state.set_requirements([CivicCondition(state_propaganda)])
         corporate_state.tier = 2
         corporate_state.unlocks = [NationalPurity]
         cls.add_civic(corporate_state)
 
         national_purity = NationalPurity
-        national_purity.add_requirement(CivicCondition(corporate_state))
+        national_purity.set_requirements([CivicCondition(corporate_state)])
         national_purity.tier = 3
         national_purity.unlocks = [LeaderWorship]
         cls.add_civic(national_purity)
 
         leader_worship = LeaderWorship
-        leader_worship.add_requirement(CivicCondition(militarization))
+        leader_worship.set_requirements([CivicCondition(militarization)])
         leader_worship.tier = 3
         cls.add_civic(leader_worship)
 

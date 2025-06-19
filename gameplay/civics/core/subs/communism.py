@@ -32,32 +32,33 @@ class Communism(BaseCoreSubtree):
         cls.add_civic(class_abolition)
 
         communal_living = CommunalLiving
-        communal_living.add_requirement(CivicCondition(class_abolition))
+        communal_living.set_requirements([CivicCondition(class_abolition)])
         communal_living.unlocks = [CentralizedEconomy, CollectivizedAgriculture]
         communal_living.tier = 1
         cls.add_civic(communal_living)
 
         centralized_economy = CentralizedEconomy
-        centralized_economy.add_requirement(CivicCondition(communal_living))
+        centralized_economy.set_requirements([CivicCondition(communal_living)])
         centralized_economy.unlocks = [ProletarianDictatorship]
         centralized_economy.tier = 2
         cls.add_civic(centralized_economy)
 
         proletarian_dictatorship = ProletarianDictatorship
-        proletarian_dictatorship.add_requirement(CivicCondition(centralized_economy))
+        proletarian_dictatorship.set_requirements([CivicCondition(centralized_economy)])
         proletarian_dictatorship.unlocks = [CollectivizedAgriculture]
         proletarian_dictatorship.tier = 3
         cls.add_civic(proletarian_dictatorship)
 
         collectivized_agriculture = CollectivizedAgriculture
-        collectivized_agriculture.add_requirement(CivicCondition(proletarian_dictatorship))
-        collectivized_agriculture.add_requirement(CivicCondition(communal_living))
+        collectivized_agriculture.set_requirements(
+            [CivicCondition(proletarian_dictatorship), CivicCondition(communal_living)]
+        )
         collectivized_agriculture.unlocks = [InternationalSolidarity]
         collectivized_agriculture.tier = 4
         cls.add_civic(collectivized_agriculture)
 
         international_solidarity = InternationalSolidarity
-        international_solidarity.add_requirement(CivicCondition(collectivized_agriculture))
+        international_solidarity.set_requirements([CivicCondition(collectivized_agriculture)])
         international_solidarity.tier = 5
         cls.add_civic(international_solidarity)
 

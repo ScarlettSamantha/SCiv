@@ -32,32 +32,31 @@ class Socialism(BaseCoreSubtree):
         cls.add_civic(collective_ownership)
 
         workers_rights = WorkersRights
-        workers_rights.add_requirement(CivicCondition(collective_ownership))
+        workers_rights.set_requirements([CivicCondition(collective_ownership)])
         workers_rights.tier = 1
         workers_rights.unlocks = [FreeEducation]
         cls.add_civic(workers_rights)
 
         free_education = FreeEducation
-        free_education.add_requirement(CivicCondition(collective_ownership))
+        free_education.set_requirements([CivicCondition(collective_ownership)])
         free_education.tier = 1
         free_education.unlocks = [SocialEquality]
         cls.add_civic(free_education)
 
         universal_healthcare = UniversalHealthcare
-        universal_healthcare.add_requirement(CivicCondition(workers_rights))
+        universal_healthcare.set_requirements([CivicCondition(workers_rights)])
         universal_healthcare.tier = 2
         universal_healthcare.unlocks = [SocialEquality]
         cls.add_civic(universal_healthcare)
 
         social_equality = SocialEquality
-        social_equality.add_requirement(CivicCondition(universal_healthcare))
-        social_equality.add_requirement(CivicCondition(free_education))
+        social_equality.set_requirements([CivicCondition(universal_healthcare), CivicCondition(free_education)])
         social_equality.tier = 3
         social_equality.unlocks = [StatePlanning]
         cls.add_civic(social_equality)
 
         state_planning = StatePlanning
-        state_planning.add_requirement(CivicCondition(social_equality))
+        state_planning.set_requirements([CivicCondition(social_equality)])
         state_planning.tier = 4
         cls.add_civic(state_planning)
 

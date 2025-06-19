@@ -29,31 +29,31 @@ class Unionism(BaseCoreSubtree):
         cls.add_civic(cooperative_governance)
 
         shared_sovereignty = SharedSovereignty
-        shared_sovereignty.add_requirement(CivicCondition(cooperative_governance))
+        shared_sovereignty.set_requirements([CivicCondition(cooperative_governance)])
         shared_sovereignty.tier = 1
         shared_sovereignty.unlocks = [EconomicIntegration]
         cls.add_civic(shared_sovereignty)
 
         economic_integration = EconomicIntegration
-        economic_integration.add_requirement(CivicCondition(shared_sovereignty))
+        economic_integration.set_requirements([CivicCondition(shared_sovereignty)])
         economic_integration.tier = 1
         economic_integration.unlocks = [CulturalExchange]
         cls.add_civic(economic_integration)
 
         cultural_exchange = CulturalExchange
-        cultural_exchange.add_requirement(CivicCondition(economic_integration))
+        cultural_exchange.set_requirements([CivicCondition(economic_integration)])
         cultural_exchange.tier = 2
         cultural_exchange.unlocks = [CollectiveSecurity]
         cls.add_civic(cultural_exchange)
 
         collective_security = CollectiveSecurity
-        collective_security.add_requirement(CivicCondition(cultural_exchange))
+        collective_security.set_requirements([CivicCondition(cultural_exchange)])
         collective_security.tier = 3
         collective_security.unlocks = [UnifiedPolicy]
         cls.add_civic(collective_security)
 
         unified_policy = UnifiedPolicy
-        unified_policy.add_requirement(CivicCondition(collective_security))
+        unified_policy.set_requirements([CivicCondition(collective_security)])
         unified_policy.tier = 4
         cls.add_civic(unified_policy)
 

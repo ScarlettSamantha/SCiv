@@ -32,32 +32,31 @@ class Technocracy(BaseCoreSubtree):
         cls.add_civic(expert_governance)
 
         scientific_management = ScientificManagement
-        scientific_management.add_requirement(CivicCondition(expert_governance))
+        scientific_management.set_requirements([CivicCondition(expert_governance)])
         scientific_management.tier = 1
         scientific_management.unlocks = [DataDrivenPolicy]
         cls.add_civic(scientific_management)
 
         innovation_focus = InnovationFocus
-        innovation_focus.add_requirement(CivicCondition(expert_governance))
+        innovation_focus.set_requirements([CivicCondition(expert_governance)])
         innovation_focus.tier = 1
         innovation_focus.unlocks = [DataDrivenPolicy]
         cls.add_civic(innovation_focus)
 
         data_driven_policy = DataDrivenPolicy
-        data_driven_policy.add_requirement(CivicCondition(scientific_management))
-        data_driven_policy.add_requirement(CivicCondition(innovation_focus))
+        data_driven_policy.set_requirements([CivicCondition(scientific_management), CivicCondition(innovation_focus)])
         data_driven_policy.tier = 2
         data_driven_policy.unlocks = [EfficientAdministration]
         cls.add_civic(data_driven_policy)
 
         efficient_administration = EfficientAdministration
-        efficient_administration.add_requirement(CivicCondition(data_driven_policy))
+        efficient_administration.set_requirements([CivicCondition(data_driven_policy)])
         efficient_administration.tier = 3
         efficient_administration.unlocks = [Meritocracy]
         cls.add_civic(efficient_administration)
 
         meritocracy = Meritocracy
-        meritocracy.add_requirement(CivicCondition(efficient_administration))
+        meritocracy.set_requirements([CivicCondition(efficient_administration)])
         meritocracy.tier = 4
         cls.add_civic(meritocracy)
 
