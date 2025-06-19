@@ -356,14 +356,17 @@ class Basic(BaseGenerator):
         Enriches the Tile instance with additional data from the Hex object.
         This method is called during tile instantiation to set properties like altitude, temperature, etc.
         """
+        land = hex.is_land and not hex.is_water and HexFeature.lake not in hex.features
+        water = not land
+
         tile.altitude = float(hex.altitude)
         tile.temperature = hex.base_temperature[0]
         tile.moisture = hex.moisture
         tile.biome = hex.biome.list()[0]  # This is set by classify_terrain # type: ignore
         tile.geoform_type = hex.geoform_type.id  # type: ignore
         tile.features = hex.features
-        tile.is_water = hex.is_water
-        tile.is_land = hex.is_land and not hex.is_water and HexFeature.lake not in hex.features
+        tile.is_water = water  # Sea is geoform_type 2 # type: ignore
+        tile.is_land = land
         tile.is_coast = hex.is_coast
         tile.terrain = hex.terrain  # This is  set by classify_terrain # type: ignore
         tile.hemisphere = hex.hemisphere.name
