@@ -417,24 +417,28 @@ class ui(Singleton, DirectObject):
     def ignore_next_click(self):
         self.keep_target_after_click = True
 
-    def select_tile(self, tile_coords: str):
-        x, y = tile_coords.split("_")[-2:]
-        tile = self.map.grid.get((int(x), int(y)))
+    def select_tile(self, tile: str | Tile) -> bool:
+        _tile: Optional[Tile] = None
+        if isinstance(tile, str):
+            x, y = tile.split("_")[-2:]
+            _tile = self.map.grid.get((int(x), int(y)))
+        else:
+            _tile = tile
 
-        if tile is None:
-            messenger.send("ui.update.user.tile_not_found", [tile_coords])
-            return
+        if _tile is None:
+            messenger.send("ui.update.user.tile_not_found", [_tile])
+            return False
 
         if self.keep_target_after_click is True:
             self.keep_target_after_click = False
             if (
-                tile.is_city() and tile.city is not None and tile.city.player is not None
+                _tile.is_city() and _tile.city is not None and _tile.city.player is not None
             ):  # We still need to send the city clicked event as the action system will otherwise not know what to do as it wont receive a tile clicked event.
-                if PlayerManager.is_session_player(tile.city.player):
-                    messenger.send("ui.update.user.city_clicked", [tile.city])
+                if PlayerManager.is_session_player(_tile.city.player):
+                    messenger.send("ui.update.user.city_clicked", [_tile.city])
                 else:
-                    messenger.send("ui.update.user.enemy_city_clicked", [tile.city])
-            return
+                    messenger.send("ui.update.user.enemy_city_clicked", [_tile.city])
+            return False
 
         if self.previous_tile is not None:
             self.previous_tile.deselect()
@@ -450,17 +454,19 @@ class ui(Singleton, DirectObject):
                 self.previous_unit.deselect()
             self.current_unit = None
 
-        if tile.is_city() and tile.city is not None and tile.city.player is not None:
-            if PlayerManager.is_session_player(tile.city.player):
-                messenger.send("ui.update.user.city_clicked", [tile.city])
+        if _tile.is_city() and _tile.city is not None and _tile.city.player is not None:
+            if PlayerManager.is_session_player(_tile.city.player):
+                messenger.send("ui.update.user.city_clicked", [_tile.city])
             else:
-                messenger.send("ui.update.user.enemy_city_clicked", [tile.city])
+                messenger.send("ui.update.user.enemy_city_clicked", [_tile.city])
 
         self.previous_tile = self.current_tile
-        self.current_tile = tile
+        self.current_tile = _tile
         self.current_tile.select()
         if self.previous_tile is not None:
             self.previous_tile.deselect()
+
+        return True
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):

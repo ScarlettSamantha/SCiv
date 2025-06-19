@@ -1,6 +1,6 @@
 from functools import partial
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Union
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -142,8 +142,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def register(self):
         self.logger.info("Registering event listeners.")
 
-        self.accept("ui.update.user.tile_clicked", self.process_tile_click)
-        self.accept("ui.update.user.unit_clicked", self.process_unit_click)
         self.accept("ui.update.user.city_clicked", self.process_city_click)
         self.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
 
@@ -463,10 +461,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             frame.hide()
             self.register_non_collidable(self.stats_frame.frame)  # type: ignore
 
-    def process_tile_click(self, tile: str):
-        _tile: Optional[Tile] = self.world_manager.lookup_on_tag(tile)
+    def process_tile_click(self, tile: Optional[Union[str, Tile]] = None) -> bool:
+        if isinstance(tile, str):
+            _tile: Optional[Tile] = self.world_manager.lookup_on_tag(tile)
+        else:
+            _tile: Optional[Tile] = tile if isinstance(tile, Tile) else None
+
+        tile_change: bool = False
+
         if _tile is None:
-            return
+            return False
 
         if not _tile.is_city():
             self.get_city_ui().hide()
@@ -484,7 +488,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.wait_for_next_input_of_user = False
 
             if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is False:
-                self.ui_manager.select_tile(tile)
+                if self.ui_manager.select_tile(_tile):
+                    tile_change = True  # We changed the selected tile, so we need to update the unit selection
             else:
                 generate_buttons = False
 
@@ -492,19 +497,26 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.action_waiting_for = None  # Reset action waiting state
 
         else:
-            self.ui_manager.select_tile(tile)
+            self.ui_manager.select_tile(_tile)
+            tile_change = True
 
         if (unit := self.ui_manager.current_unit) is not None and generate_buttons is True:
             self.generate_buttons_for_unit_actions(unit)  # Update
 
-    def process_unit_click(self, unit: str):
+        return tile_change
+
+    def process_unit_click(self, unit: Optional[Union[str, "Tile"]] = None) -> bool:
         self.logger.debug(f"Unit clicked: {unit}")
-        _unit: Optional[BaseEntity] = EntityManager.get_singleton_instance().get(EntityType.UNIT, unit)
+        if isinstance(unit, str):
+            _unit: Optional[BaseEntity] = EntityManager.get_singleton_instance().get(EntityType.UNIT, unit)
+        else:
+            _unit: Optional[BaseEntity] = unit if isinstance(unit, Unit) else None
+
         should_select_unit: bool = True
 
         if _unit is None or not isinstance(_unit, Unit):
-            self.logger.warning(f"Unit {unit} not found or is not a Unit instance.")
-            return
+            self.logger.warning(f"Unit {_unit} not found or is not a Unit instance.")
+            return False
 
         if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
             self.wait_for_action_of_user(_unit)  # Call the stored action with the tile
@@ -521,18 +533,20 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if should_select_unit is True:
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
 
-        if unit != self.ui_manager.current_unit:
+        if _unit != self.ui_manager.current_unit:
             if should_select_unit is True:
                 if self.debug_frame is not None:
                     if _unit.is_alive():
                         self.debug_frame.update_debug_info_for_unit(_unit)
 
         self.clear_action_bar()
-        self.generate_buttons_for_unit_actions(unit)
+        self.generate_buttons_for_unit_actions(_unit)
 
         if self.showing_city is not None:
             self.get_city_ui().hide()
             self.showing_city = None
+
+        return should_select_unit
 
     def refresh_action_bar(self, dt: Optional[float] = None):
         if self.ui_manager.current_unit is None:

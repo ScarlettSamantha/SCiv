@@ -175,6 +175,8 @@ class Input(Singleton, DirectObject):
         self.base.render.analyze()  # type: ignore
 
     def pick_object(self) -> NodePath | None:
+        from managers.game import Game
+
         if not self.active:
             return  # Input is disabled
 
@@ -200,20 +202,22 @@ class Input(Singleton, DirectObject):
                         self.logger.warning(f"Unit with ID {net_id} not found.")
                         return None
                     messenger.send("system.input.user.unit_clicked", [net_id])
-                    selected_object = True
-                    self.selected_tile = None
-                    self.selected_unit = unit
+                    if Game.get_singleton_instance().handle_unit_click(unit):
+                        selected_object = True
+                        self.selected_tile = None
+                        self.selected_unit = unit
 
                 elif NET_TYPE.TILE.value == net_type:
                     if (tile := TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
 
-                    self.selected_tile = tile
-                    self.selected_unit = None
+                    if Game.get_singleton_instance().handle_tile_click(tile):
+                        self.selected_tile = tile
+                        self.selected_unit = None
+                    else:
+                        selected_object = True
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
-                    selected_object = True
-
                 else:
                     self.selected_tile = None
 

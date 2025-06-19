@@ -218,8 +218,6 @@ class Game(Singleton, DirectObject):
             self.config.save_config()
 
     def register_callback_inputs(self):
-        self.accept("system.input.user.tile_clicked", self.handle_tile_click)
-        self.accept("system.input.user.unit_clicked", self.handle_unit_click)
         self.accept("system.input.user.tile_hovered", self.handle_tile_hover)
         self.accept("system.input.user.tile_unhovered", self.handle_tile_hover_end)
         self.accept("system.game.player_game_over", self.on_game_end)
@@ -256,15 +254,24 @@ class Game(Singleton, DirectObject):
             tile = [tile]
         messenger.send("ui.update.user.tile_unhovered", tile)
 
-    def handle_tile_click(self, tiles: Union[List[str], str]):
+    def handle_tile_click(self, tiles: Union[str, "Tile"]) -> bool:
+        forward: Optional[Union["Tile", str]] = None
         if isinstance(tiles, str):
-            tiles = [tiles]
-        messenger.send("ui.update.user.tile_clicked", tiles)
+            forward = tiles
+        else:
+            forward = tiles
 
-    def handle_unit_click(self, units: Union[List[str], str], select_unit: bool = True):
+        messenger.send("ui.update.user.tile_clicked", [forward])
+        return self.ui.get_main_game_ui().process_tile_click(forward)  # type: ignore # @todo this is correct but mypy doesn't understand it
+
+    def handle_unit_click(self, units: Union[str, "Unit"], select_unit: bool = True) -> bool:
+        forward: Optional[Union["Unit", str]] = None
         if isinstance(units, str):
-            units = [units]
-        messenger.send("ui.update.user.unit_clicked", units)
+            forward = units
+        else:
+            forward = units
+        messenger.send("ui.update.user.unit_clicked", [forward])
+        return self.ui.get_main_game_ui().process_unit_click(forward)  # type: ignore # @todo this is correct but mypy doesn't understand it
 
     def choose_generator(self, random: bool = False, name: Optional[str] = None):
         from gameplay.repositories.generators import GeneratorRepository

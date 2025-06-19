@@ -105,8 +105,8 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `ui.refresh.frame_insert` (E: * | L: manager-ui )
 
-- `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
-- `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
+- `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui)
+- `ui.update.user.unit_clicked` (E: manager-game | L: )
 - `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
 - `ui.update.user.tile_hover` (E: manager-game | L: manager-ui)
 - `ui.update.user.tile_unhover` (E: manager-game | L: manager-ui)
