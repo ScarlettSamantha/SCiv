@@ -17,11 +17,13 @@ from gameplay.civic import Civic, CivicSubtree, CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from helpers.cache import Cache
 from helpers.placeholder import Placeholder
+from managers.player import PlayerManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
 
 if TYPE_CHECKING:
     from menus.screens.game_ui import GameUIScreen  # type: ignore
+    from gameplay.player import Player
 
 
 class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
@@ -34,10 +36,10 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
     ):
         TooltipBehavior.__init__(self, **kwargs)
         super().__init__(size_hint=(None, None), size=(icon_px + 4, icon_px + 4), **kwargs)  # type: ignore
-
+        player: "Player" = PlayerManager.session_player()  # type: ignore
         self.on_click = on_click
         self.civic = civic
-        _civic = civic()
+        _civic = civic(player)
         self.atlas = Cache.get_icon_atlas()
 
         icon_src = str(
@@ -53,7 +55,7 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         requires = civic.get_requirements()
 
         def civic_name_list(cls_list: List[Type[Civic]]) -> str:
-            return "\n".join(f"• {getattr(_cls(), 'name', str(_cls))}" for _cls in cls_list)
+            return "\n".join(f"• {getattr(_cls(player), 'name', str(_cls))}" for _cls in cls_list)
 
         tooltip_parts = [
             f"[b]{name}[/b]",
@@ -230,7 +232,7 @@ class Civics(FloatLayout, DirectObject):
         player = PlayerManager.session_player()  # or whatever method you use
 
         for civic_type, node in self.civic_node_map.items():
-            instance = civic_type()
+            instance = civic_type(player)
             completed = player.civics.is_civic_activated(civic_type)
             unlockable = instance.is_unlockable()
             cost = instance.get_cost()
@@ -241,8 +243,10 @@ class Civics(FloatLayout, DirectObject):
             unlocks = civic_type.get_unlocks()
             requires = civic_type.get_requirements()
 
+            unlocks_entities = instance.get_unlock_entities()
+
             def civic_name_list(cls_list: List[Type[Civic]]) -> str:
-                return "\n".join(f"• {getattr(_cls(), 'name', str(_cls))}" for _cls in cls_list)
+                return "\n".join(f"• {getattr(_cls(player), 'name', str(_cls))}" for _cls in cls_list)
 
             tooltip_parts = [
                 f"[b]{name}[/b]",
@@ -254,6 +258,16 @@ class Civics(FloatLayout, DirectObject):
             if unlocks:
                 tooltip_parts.append("[b]Unlocks:[/b]")
                 tooltip_parts.append(civic_name_list(unlocks))
+                tooltip_parts.append("")
+
+            if unlocks_entities:
+                text: List[str] = []
+                for entity in unlocks_entities:
+                    if hasattr(entity, "description"):
+                        text.append(f"- {str(entity.description)}")
+
+                tooltip_parts.append("[b]Unlocks Entities:[/b]")
+                tooltip_parts.append("\n".join(text))
                 tooltip_parts.append("")
 
             if requires:

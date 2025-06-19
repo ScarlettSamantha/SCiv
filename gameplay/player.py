@@ -210,7 +210,7 @@ class Player(BaseEntity):
 
     def on_request_purchase_civic(self, civic: Type[Civic]) -> None:
         self.logger.debug(f"Player {str(self.name)} requested to purchase civic {civic.__name__}")
-        instanced_civic: Civic = civic()
+        instanced_civic: Civic = civic(self)
 
         if self.culture.culture.value < instanced_civic.cost:
             self.logger.warning(
@@ -379,3 +379,8 @@ class Player(BaseEntity):
 
     def get_color(self) -> Tuple4f:
         return self.color
+
+    def get_capital(self) -> "City":
+        if self.capital is None:
+            raise ValueError("Player has no capital city.")
+        return self.capital

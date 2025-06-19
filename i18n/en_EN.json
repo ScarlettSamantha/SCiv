@@ -1365,6 +1365,12 @@
           "name": "Astrology",
           "description": "Understanding the stars helps us improve our farming techniques, leading to better crop yields and prosperity.\n\n Effects:\n\n{effects}"
         }
+      },
+      "civics": {
+        "divine_right": {
+          "name": "Divine Right",
+          "description": "Divine right: {effects}"
+        }
       }
     },
     "content": {

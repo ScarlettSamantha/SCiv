@@ -3,9 +3,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Self, Type
 
 from gameplay.condition import CivicCondition, Condition, Conditions
 from managers.i18n import T_TranslationOrStr
+from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.civic import Civic
+    from gameplay.player import Player
 
 
 class Civic:
@@ -15,10 +17,12 @@ class Civic:
     requires: Dict[str, Conditions] = {}
     tier: int = 0
     unlocks: List[Type["Civic"]] = []
+    unlocks_entities: List[Type[BaseEntity]] = []
     base_cost: int = 10
 
     def __init__(
         self,
+        player: "Player",
         cost_modifier: int = 0,
         *args: Any,
         **kwargs: Any,
@@ -26,6 +30,7 @@ class Civic:
         self.requires_civics: List["Civic"] = []
         self._cost: int = (self.base_cost * (self.tier if self.tier != 0 else 1)) + cost_modifier
         self._completed: bool = False
+        self.player: "Player" = player
 
     @classmethod
     def add_requirement(cls, requirement: Condition | Type["Civic"]):
@@ -111,6 +116,16 @@ class Civic:
         if cls.key in cls.requires.keys():
             return cls.requires[cls.key].are_met()
         return True
+
+    def get_player(self) -> "Player":
+        return self.player
+
+    def add_unlock_entity(self, entity: Type[BaseEntity]):
+        if entity not in self.unlocks_entities:
+            self.unlocks_entities.append(entity)
+
+    def get_unlock_entities(self) -> List[Type[BaseEntity]]:
+        return self.unlocks_entities
 
 
 class CivicSubtree:

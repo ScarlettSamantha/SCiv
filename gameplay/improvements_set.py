@@ -31,6 +31,12 @@ class ImprovementsSet:
         self._improvements.remove(value)
         self._num_improvements -= 1
 
+    def get(self, value: Type["Improvement"]) -> Optional["Improvement"]:
+        for item in self._improvements:
+            if isinstance(item, value):
+                return item
+        return None
+
     def has(self, value: "Improvement" | Type["Improvement"]) -> bool:
         if isinstance(value, type):
             return any(isinstance(i, value) for i in self._improvements)
