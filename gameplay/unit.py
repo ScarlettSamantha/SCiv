@@ -498,6 +498,7 @@ class Unit(BaseEntity, ABC):
 
     def _clear_departing_tile(self, tile: "Tile") -> None:
         tile.remove_unit(self)
+        tile.render()
 
     def _move_to_tile(self, tile: "Tile", clear_departing_tile: Optional["Tile"] = None) -> None:
         if clear_departing_tile is not None:
