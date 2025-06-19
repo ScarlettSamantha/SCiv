@@ -83,7 +83,9 @@ class ResearchButton(TooltippedButton):
             )
         )
 
+        requires = [str(entry.name) for entry in self.value.requires]
         tooltip_text = value.on_tooltip() if hasattr(value, "on_tooltip") else getattr(value, "name", "Unknown Tech")
+        tooltip_text += f"\n\nRequires:\n- {'\n- '.join(requires) if requires else 'None'}"
 
         tech_icon = TooltippedImage(
             source=tech_icon_src,
