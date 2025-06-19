@@ -116,7 +116,7 @@ class AI(ABC):
         """
         Execute the action registered for the given turn.
         """
-        if turn in self.turn_action_register:
+        if turn in self.turn_action_register.keys():
             for action in self.turn_action_register[turn]:
                 action()
             del self.turn_action_register[turn]

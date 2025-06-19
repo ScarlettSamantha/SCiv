@@ -164,7 +164,7 @@ class NatureAI(AI):
         if not self._spawn_tiles_cache:
             return
 
-        if (count := len(self._spawn_tiles_cache) // 30) <= 0:
+        if (count := len(self._spawn_tiles_cache) // 100) <= 0:
             return
 
         tiles_to_spawn = random.sample(self._spawn_tiles_cache, k=count)
