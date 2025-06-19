@@ -1,4 +1,5 @@
 from enum import Enum
+import time
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
@@ -50,6 +51,8 @@ class Input(Singleton, DirectObject):
         self.hovered_tile_id: Optional[str] = None
         self.selected_tile: Optional["Tile"] = None
         self.selected_unit: Optional["Unit"] = None
+        self._last_pick_time: float = 0.0
+        self.pick_timeout: float = 1 / 15
 
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
@@ -177,6 +180,10 @@ class Input(Singleton, DirectObject):
     def pick_object(self) -> NodePath | None:
         from managers.game import Game
 
+        now = time.time()
+        if now - self._last_pick_time < self.pick_timeout:
+            return None
+        self._last_pick_time = now
         if not self.active:
             return  # Input is disabled
 
@@ -206,7 +213,8 @@ class Input(Singleton, DirectObject):
                         selected_object = True
                         self.selected_tile = None
                         self.selected_unit = unit
-
+                    else:
+                        return None
                 elif NET_TYPE.TILE.value == net_type:
                     if (tile := TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
