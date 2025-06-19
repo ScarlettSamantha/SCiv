@@ -458,7 +458,7 @@ class Tile(BaseEntity):
 
     def calculate_z_pos_on_altitude(self) -> Tuple[float, float, float]:
         pos_z = scale_value(min(self.altitude, 240), 44, 240, 0, 1.5)
-        pos_z = scaled_pos_z(pos_z, -0.25, 0.75, self.z_scale)
+        pos_z = scaled_pos_z(pos_z, 0, 0.75, self.z_scale)
         return (self.pos_x, self.pos_y, float(pos_z))
 
     def get_units(self) -> Units:

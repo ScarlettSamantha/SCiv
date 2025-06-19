@@ -48,13 +48,13 @@ class WorldParams:
     desert_temperature_threshold = 20
     grass_temperature_upper_threshold = 30
     grass_temperature_lower_threshold = 10
-    forest_lower_threshold = 2
+    forest_lower_threshold = 1.5
     moisture_threshold_mangrove_jungle = 12
     moisture_threshold_heavy_forest = 8
     light_jungle_temperature_threshold = 25
     cold_forrest_temperature_threshold = 8
     scrubland_temperature_threshold = 4
-    flat_to_hills_threshold = 175
+    flat_to_hills_threshold = 170
     hills_to_mountains_threshold = 217
 
 

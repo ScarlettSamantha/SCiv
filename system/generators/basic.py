@@ -45,7 +45,6 @@ class Basic(BaseGenerator):
         self.mesh_grid: Optional[HexGrid] = None
 
         self.resource_allocator: Optional[ResourceAllocator] = None
-
         self.world_generation_stats: Dict[str, Any] = {}
         self.number_of_tiles: int = self.config.width * self.config.height
 
@@ -61,10 +60,10 @@ class Basic(BaseGenerator):
             "hydrosphere": True,
             "ocean_type": [OceanType.water],
             "random_seed": self.seed,
-            "roughness": 20,  # below 10 it seems to generate huge patches, 18 is nice, above 24 # it gets too rough
+            "roughness": 18,  # below 10 it seems to generate huge patches, 18 is nice, above 24 # it gets too rough
             "height_range": (0, 240),
             "pressure": 1,  # bar
-            "axial_tilt": 12,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
+            "axial_tilt": 18,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
             # features
             "craters": True,
             "volcanoes": True,
@@ -228,23 +227,18 @@ class Basic(BaseGenerator):
             # Check for hills
             else:
                 if int(hex_alt) > WorldParams.flat_to_hills_threshold:
-                    if biome_id not in (
-                        WorldParams.scrubland,
-                        WorldParams.savanna,
-                        WorldParams.desert,
+                    if (
+                        biome_id
+                        not in (
+                            WorldParams.scrubland,
+                            WorldParams.savanna,
+                            WorldParams.desert,
+                        )
+                        and hex_temp < 0
                     ):
-                        if hex_temp < 0:
-                            return "HillsSnow"
-                        else:
-                            return "HillsForest"
-                    elif biome_id in (WorldParams.savanna, WorldParams.desert, WorldParams.scrubland):
+                        return "HillsSnow"
+                    elif biome_id in (WorldParams.savanna, WorldParams.desert):
                         return "HillsDesert"
-                    elif hex_temp < WorldParams.forest_lower_threshold and biome_id not in (
-                        WorldParams.scrubland,
-                        WorldParams.savanna,
-                        WorldParams.desert,
-                    ):
-                        return "HillsTundra"
                     elif (
                         biome_id
                         in (
@@ -253,8 +247,25 @@ class Basic(BaseGenerator):
                         )
                         and hex_temp >= WorldParams.forest_lower_threshold
                         and hex_temp <= WorldParams.grass_temperature_upper_threshold
+                        and hex_tile.moisture < WorldParams.forest_lower_threshold
                     ):
                         return "HillsGrassland"
+                    elif biome_id in (
+                        WorldParams.grasslands,
+                        WorldParams.tropical_forest,
+                        WorldParams.temperate_rainforest,
+                        WorldParams.temperate_forest,
+                        WorldParams.boreal_forest,
+                        WorldParams.scrubland,
+                    ):
+                        return "HillsForest"
+                    elif hex_temp < WorldParams.forest_lower_threshold and biome_id not in (
+                        WorldParams.scrubland,
+                        WorldParams.savanna,
+                        WorldParams.desert,
+                    ):
+                        return "HillsTundra"
+
                 else:
                     if (
                         biome_id in (WorldParams.desert,) and hex_temp > WorldParams.desert_temperature_threshold
@@ -278,6 +289,7 @@ class Basic(BaseGenerator):
                         biome_id in (WorldParams.grasslands,)
                         and hex_temp > WorldParams.grass_temperature_lower_threshold
                         and hex_temp < WorldParams.grass_temperature_upper_threshold
+                        and hex_tile.moisture < WorldParams.forest_lower_threshold
                     ):  # Grassland and when its a "desert" but to cold to be a desert
                         return "FlatGrass"
                     elif biome_id in (
@@ -288,14 +300,10 @@ class Basic(BaseGenerator):
                     ):  # forest
                         if hex_temp < WorldParams.cold_forrest_temperature_threshold:
                             return "FlatPineForest"
-                        elif moisture < WorldParams.moisture_threshold_heavy_forest:
+                        elif moisture < WorldParams.moisture_threshold_heavy_forest - 1:
                             return "FlatForest"
                         else:
                             return "FlatHeavyForest"
-                    elif biome_id in (WorldParams.scrubland,) or (
-                        biome_id == WorldParams.grasslands and hex_temp < WorldParams.scrubland_temperature_threshold
-                    ):  # Virtual Mangrove Actual scrubland with low moister
-                        return "FlatScrubland"
                     elif biome_id in (WorldParams.savanna,):  # Savanna
                         return "FlatSavanna"
                     elif biome_id in (
@@ -317,7 +325,7 @@ class Basic(BaseGenerator):
                                 return choice(("FlatTundra", "FlatForest"))
                     elif biome_id in (13,):  # Wasteland
                         return "FlatWasteland"
-                    return choice(("FlatTundra", "FlatForest", "FlatGrass"))
+                    return choice(("FlatForest", "FlatGrass"))
 
         raise ValueError(
             f"Terrain not found for hex_tile: {hex_tile}|{hex_tile.biome}[{biome_id}]|{hex_tile.geoform_type}|{int(hex_tile.temperature[0])}|{hex_tile.altitude}"
