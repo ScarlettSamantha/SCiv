@@ -2640,7 +2640,8 @@
             "civilian": {
               "settler": {
                 "name": "Settler",
-                "description": "Unit that founds new cities"
+                "description": "Unit that founds new cities",
+                "tooltip": "Settlers\n\nThey are used to establish new cities.\nThey can move to unoccupied land and create a new city there, expanding your civilization's territory."
               },
               "builder": {
                 "name": "Builder",
@@ -2670,7 +2671,8 @@
             "military": {
               "clubman": {
                 "name": "Clubman",
-                "description": "Basic melee unit"
+                "description": "Basic melee unit",
+                "tooltip": "Clubmen\n\nThey are the most basic melee unit, armed with clubs or similar weapons.\nThey are effective against unarmored units and can be used to defend early settlements."
               },
               "barbarian": {
                 "lion": {
