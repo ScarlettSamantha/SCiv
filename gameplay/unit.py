@@ -186,6 +186,7 @@ class Unit(BaseEntity, ABC):
             raise ValueError(f"Unit {self.key} model could not be loaded.")
 
         self.model.reparent_to(self.base.render)
+        self.model.setName(f"unit_{self.key}")
 
         self.model.flatten_medium()
 

@@ -4,6 +4,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import uuid
 from managers.input import NET_TYPE
+from panda3d.core import NodePath
 
 
 if TYPE_CHECKING:
@@ -217,11 +218,12 @@ class Bits:
 
 
 class BitsRenderer:
-    def __init__(self, tile: "Tile"):
+    def __init__(self, tile: "Tile", parent: Optional[NodePath] = None) -> None:
         self.tile: "Tile" = tile
         # reference the tile's prop slots
         self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.prop_slots
         self._bit_slot_assignments: Dict[str, Bit] = {}
+        self.parent = parent if parent else tile.renderer.geometry_node
 
     def render(self) -> None:
         active_bits = {b.id: b for b in self.tile.get_terrain().get_bits() if not b.is_disabled()}
@@ -285,6 +287,8 @@ class BitsRenderer:
             net_id=bit.id,
             disable_lighting=not bit.default_lighting,
             disable_shader=not bit.default_shader,
+            parent=self.parent,
+            flatten_model=True,
         )
 
     def _unrender_slot(self, slot_name: str) -> None:

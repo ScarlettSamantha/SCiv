@@ -73,6 +73,7 @@ class TileRenderer:
         self.geometry_node.set_collide_mask(BitMask32.bit(1))
         self.geometry_node.set_tag(NET_TYPE_FIELD, str(NET_TYPE.GEOM.value))
         self.geometry_node.set_tag(NET_NODE_TAG_ID_FIELD, tile.tag)
+        self.resource_model: Optional[NodePath] = None
 
         # UI group: overlays, icons, unit markers, city nameplate
         self.ui_node: NodePath = self.anchor_node.attachNewNode("ui_group")
@@ -84,7 +85,7 @@ class TileRenderer:
         self.city_nameplate_node: Optional[NodePath] = None
         self.models: List[NodePath] = []
 
-        self.bits_renderer = BitsRenderer(tile)
+        self.bits_renderer = BitsRenderer(tile, self.geometry_node)
 
         # shader for tile selection
         self.selector_shader = Shader.load(
@@ -97,8 +98,6 @@ class TileRenderer:
 
         self._build_selector_quad()
         self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 5)  # type: ignore
-
-        self.geometry_node.flatten_medium()
 
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
@@ -151,7 +150,6 @@ class TileRenderer:
                 self.selector_np.hide()
 
     def clear_ui(self) -> None:
-        """Remove all child nodes under the UI group."""
         for child in self.ui_node.getChildren():
             child.removeNode()
         self.terrain_overlay_node = None
@@ -160,9 +158,6 @@ class TileRenderer:
         self.city_nameplate_node = None
 
     def destroy(self) -> None:
-        """
-        Clean up the tile renderer, removing all nodes and references.
-        """
         self.clear_ui()
         self.anchor_node.removeNode()
         self.geometry_node.removeNode()
@@ -172,9 +167,6 @@ class TileRenderer:
         self.base = None
 
     def render(self, update_yields: bool = True) -> None:
-        """
-        Redraw the entire tile each frame or when its state changes.
-        """
         if update_yields:
             self.tile.calculate()  # type: ignore
 
@@ -251,7 +243,7 @@ class TileRenderer:
             )
 
     def _draw_resource_model(self) -> None:
-        if self.tile.is_city() or self.tile.block_resource_model_spawning is True:
+        if self.tile.is_city() or self.tile.block_resource_model_spawning is True or self.tile.units.has_any():
             if self._is_model_drawn(self.tile.tag):
                 self.unload_resource_model()
             return
@@ -264,7 +256,7 @@ class TileRenderer:
         model_def = resource.get_land_model() if self.tile.is_land else resource.get_water_model()
 
         if model_def:
-            self.add_model(
+            self.resource_model = self.add_model(
                 model_path=model_def,
                 net_type=NET_TYPE.RESOURCE,
                 pos_offset=resource.model_position,
@@ -273,19 +265,18 @@ class TileRenderer:
                 disable_lighting=resource.model_disable_default_lighting,
                 disable_shader=resource.model_disable_default_shader,
                 net_id=self.tile.tag,  # Use the resource icon as a unique identifier
+                parent=self.geometry_node,
+                flatten_model=True,
             )
 
     def _is_model_drawn(self, model_tag: str) -> bool:
-        for child in self.geometry_node.getChildren():
-            if child.getTag(NET_TYPE_FIELD) == str(NET_TYPE.RESOURCE.value):
-                if child.getTag(NET_NODE_TAG_ID_FIELD) == model_tag:
-                    return True
-        return False
+        return self.resource_model is not None
 
     def unload_resource_model(self) -> None:
-        for child in self.geometry_node.getChildren():
-            if child.getTag(NET_TYPE_FIELD) == str(NET_TYPE.RESOURCE.value):
-                child.removeNode()
+        if self.resource_model is None:
+            return
+        self.resource_model.remove_node()
+        self.resource_model = None
 
     def _draw_yield_and_population_icons(self) -> None:
         cm = CardMaker(f"icon_overlay_{self.tile.id}")
@@ -433,6 +424,8 @@ class TileRenderer:
         net_id: Optional[str] = None,
         disable_lighting: bool = False,
         disable_shader: bool = False,
+        parent: Optional[NodePath] = None,
+        flatten_model: bool = False,
     ) -> Optional[NodePath]:
         if self.base is None:
             raise ValueError("TileRenderer base is not initialized.")
@@ -444,15 +437,19 @@ class TileRenderer:
             if loaded_model is None:
                 self.tile.logger.error(f"Model {full_path} failed to load.")
                 return
-            x = self.tile.pos_x + pos_offset[0]
-            y = self.tile.pos_y + pos_offset[1]
-            z = self.tile.pos_z + pos_offset[2]
+
+            if parent is None:
+                x = self.tile.pos_x + pos_offset[0]
+                y = self.tile.pos_y + pos_offset[1]
+                z = self.tile.pos_z + pos_offset[2]
+            else:
+                x, y, z = pos_offset
 
             loaded_model.setScale(max(0.01, scale))
             loaded_model.setHpr(*hpr)
 
             node = loaded_model.instanceTo(self.geometry_node)
-            node.reparentTo(self.base.render)  # type: ignore
+            node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
             node.setPos(x, y, z)
             node.setCollideMask(BitMask32.bit(1))
             node.setTag(NET_TYPE_FIELD, str(net_type.value))
@@ -467,7 +464,8 @@ class TileRenderer:
             else:
                 node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
 
-            node.flatten_medium()
+            if flatten_model:
+                node.flatten_medium()
 
             self.models.append(node)
             self.last_result = node
