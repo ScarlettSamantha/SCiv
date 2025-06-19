@@ -24,6 +24,7 @@ from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
 from system.mesh import HexGrid
+from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 
 if TYPE_CHECKING:
@@ -443,8 +444,6 @@ class Game(Singleton, DirectObject):
     def render_field(self):
         for tile in self.world.grid.values():
             tile.render()
-
-        from system.scene_optimizer import SceneOptimizer
 
         SceneOptimizer.flatten_scene(self.base.render)
 
