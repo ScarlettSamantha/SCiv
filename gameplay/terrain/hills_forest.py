@@ -24,7 +24,7 @@ class HillsForest(BaseTerrain):
         self.bits.add_bit(
             Bit(
                 model="hill_grass_tree_rock.glb",
-                scale=0.25,
+                scale=0.45,
                 preferred_slot="center",
                 allow_auto_scale=False,
                 blocks_resource_model_spawning=True,

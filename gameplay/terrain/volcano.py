@@ -26,8 +26,8 @@ class Volcano(BaseTerrain):
         self.bits.add_bit(
             Bit(
                 model="volcano.glb",
-                scale=1.5,
-                hpr=(-90, 0, 0),
+                scale=1.3,
+                hpr=(-75, 0, 0),
                 offset=(0, 0, -0.3),
                 default_lighting=False,
                 default_shader=False,
