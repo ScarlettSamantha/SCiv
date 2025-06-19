@@ -520,15 +520,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
             self.wait_for_action_of_user(_unit)  # Call the stored action with the tile
+            if (self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True) or (
+                self.action_waiting_for is not None and self.action_waiting_for.keep_targeting_after_use is True
+            ):
+                # If the action keeps targeting, we don't change the selected unit
+                should_select_unit = False
             self.wait_for_next_input_of_user = False
             self.wait_for_action_of_user = None  # Reset state
-            if (
-                self.wait_for_action_of_user is not None
-                and self.wait_for_action_of_user.keep_targeting_after_use is True
-            ):
-                should_select_unit = False
-
-            self.wait_for_action = None
+            # self.wait_for_action = None
+            self.action_waiting_for = None
 
         if should_select_unit is True:
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
@@ -540,7 +540,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                         self.debug_frame.update_debug_info_for_unit(_unit)
 
         self.clear_action_bar()
-        self.generate_buttons_for_unit_actions(_unit)
+        if self.ui_manager.current_unit is not None:
+            self.generate_buttons_for_unit_actions(self.ui_manager.current_unit)
 
         if self.showing_city is not None:
             self.get_city_ui().hide()
