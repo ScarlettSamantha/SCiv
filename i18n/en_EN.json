@@ -627,10 +627,10 @@
         "combat_log": {
           "combat_log": "Combat Log",
           "results": {
-            "defender_killed": "Defender({defending_unit}) was attack by {attacking_unit} and killed by {damage}.",
-            "defender_damaged": "Defender({defending_unit}) was attack by {attacking_unit} and damaged for {damage}.",
-            "attacker_killed": "Attacker({attacking_unit}) was counter attacked by {defending_unit} and killed for {damage}.",
-            "attacker_damaged": "Attacker({attacking_unit}) was counter attacked by {defending_unit} and damaged for {damage}.",
+            "defender_killed": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and killed by {damage}.",
+            "defender_damaged": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and damaged for {damage}.",
+            "attacker_killed": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and killed for {damage}.",
+            "attacker_damaged": "Attacker {attacking_unit}(attacker_owner_name) was counter attacked by {defending_unit}({defender_owner_name}) and damaged for {damage}.",
             "interrupted": "Attacker({attacking_unit}) was interrupted by {defending_unit} and killed for {damage}.",
             "no_range": "Attacker({attacking_unit}) has no range to attack {defending_unit}.",
             "no_movement": "Attacker({attacking_unit}) has no movement to attack {defending_unit}.",

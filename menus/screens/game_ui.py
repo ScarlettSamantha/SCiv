@@ -19,7 +19,7 @@ from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
 from kivy.uix.label import Label
-from managers.combat import T_TARGET, test_combat_outcome
+from managers.combat import T_TARGET
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -398,11 +398,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def build_combat_log(self) -> PlayerCombatLog:
         combat_log = CombatLog()
-        test_objects = test_combat_outcome()
-        for obj in test_objects:
-            combat_log.add_entry(CombatLog.entry_from_outcome(obj), both_sides=False)
         logs = combat_log.get_entries(PlayerManager.session_player())
-
         self.player_combat_log = PlayerCombatLog(log=logs)
         self.player_combat_log.build()
         self.player_combat_log.update()

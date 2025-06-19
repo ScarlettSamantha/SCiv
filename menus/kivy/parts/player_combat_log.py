@@ -10,7 +10,6 @@ from menus.kivy.elements.clipping import ClippingScrollList
 
 class PlayerCombatLog(BoxLayout, DirectObject):
     def __init__(self, log: List[CombatLogEntry], **kwargs: Any):
-        # force absolute size/position
         kwargs.setdefault("size_hint", (0.3, 0.2))
         kwargs.setdefault("pos", (0, 0))
         kwargs.setdefault("pos_hint", {"right": 0.935, "top": 0.21})
@@ -35,18 +34,14 @@ class PlayerCombatLog(BoxLayout, DirectObject):
         header = Label(text="[b]Combat Log[/b]", markup=True, size_hint_y=None, height=dp(32))
         self.add_widget(header)
 
-        # Initialize ClippingScrollList for automatic clipping of off-screen entries
-        # Scroll widget fills remaining box area, header fixed
         self.scroll = ClippingScrollList(
             cols=1, smooth_scroll_speed=0.05, size_hint=(1, 1), bar_width=dp(4), invert_scroll=False
         )
 
-        # Create a black background behind entries
         with self.canvas.before:
             Color(0, 0, 0, 0.7)
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)  # type: ignore
 
-        # Keep the background in sync with container size and position
         self.bind(
             size=lambda inst, val: setattr(self.bg_rect, "size", val),
             pos=lambda inst, val: setattr(self.bg_rect, "pos", val),
@@ -56,23 +51,16 @@ class PlayerCombatLog(BoxLayout, DirectObject):
         self.is_built = True
 
     def update(self):
-        """
-        Refresh displayed entries, clipping off-screen automatically.
-        """
-        # Clear any existing log entries
         if self.scroll:
             self.scroll.clear_widgets()
 
-            # Add each log entry as a Label
             for entry in self.logRef:
                 ts = entry.timestamp.strftime("%H:%M:%S")
                 line = f"[{ts}]: {entry.text}"
 
                 lbl = Label(text=line, markup=True, size_hint_y=None)
 
-                # Wrap text to width minus padding
                 lbl.bind(width=lambda inst, val: setattr(inst, "text_size", (val - dp(24), None)))  # type: ignore
-                # Auto-resize height to fit text
                 lbl.bind(texture_size=lambda inst, size: setattr(inst, "height", size[1]))  # type: ignore
 
                 self.scroll.add_widget(lbl)
@@ -81,9 +69,6 @@ class PlayerCombatLog(BoxLayout, DirectObject):
             self.scroll.scroll_to_bottom()
 
     def add_entry(self, entry: CombatLogEntry):
-        """
-        Append a new entry and update the view.
-        """
         self.logRef.append(entry)
         line = f"[{entry.timestamp.strftime('%H:%M:%S')}]: {entry.text}"
 

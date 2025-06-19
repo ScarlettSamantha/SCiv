@@ -62,7 +62,14 @@ class AttackAction(BaseUnitAction):
                 [
                     "unit_attack_success",
                     t_("ui.dialogs.unit.combat.attack_success.title"),
-                    t_("ui.dialogs.unit.combat.attack_success.message"),
+                    t_(
+                        "ui.dialogs.unit.combat.attack_success.message",
+                        {
+                            "attacker": result.attacker_entity.name if result.attacker_entity else "Unknown Attacker",
+                            "defender": result.defender_entity.name if result.defender_entity else "Unknown Defender",
+                            "damage": f"{result.attacker_damage.__round__(2)}" if result.attacker_damage > 0 else "",
+                        },
+                    ),
                 ],
             )
 

@@ -370,3 +370,12 @@ class Player(BaseEntity):
 
     def get_tag(self) -> str:
         return self.tag
+
+    def get_name(self) -> str:
+        return str(t_(f"civilizations.{self.name}.name") if self.name is None else self.name)
+
+    def get_name_short(self) -> str:
+        return str(self.leader.name)
+
+    def get_color(self) -> Tuple4f:
+        return self.color

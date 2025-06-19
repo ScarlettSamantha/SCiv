@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Dict, List, TYPE_CHECKING, Optional
 
 
+from helpers.colors import Colors
 from managers.combat import CombatOutcome, CombatResults
 from managers.i18n import T_TranslationOrStr, t_
 from collections import OrderedDict
@@ -92,18 +93,23 @@ class CombatLog:
 
     @classmethod
     def outcome_to_text(cls, outcome: CombatOutcome) -> str:
-        """
-        Convert combat outcome to a human-readable string.
-        """
-        defender_name = (
-            f"{str(outcome.defender_entity.name)}-{str(outcome.defender_entity.get_owner().name)}"
-            if outcome.defender_entity
-            else "Unknown"
-        )
-        attacker_name = str(outcome.attacker_entity.name) if outcome.attacker_entity else "Unknown"
-        damage_text = f"{outcome.attacker_damage.__round__(2)}" if outcome.attacker_damage > 0 else ""
-
-        param_list = {"defending_unit": defender_name, "attacking_unit": attacker_name, "damage": damage_text}
+        param_list = {
+            "defending_unit": str(outcome.defender_entity.name) if outcome.defender_entity else "Unknown Defender",
+            "attacking_unit": str(outcome.attacker_entity.name) if outcome.attacker_entity else "Unknown Attacker",
+            "damage": f"{outcome.attacker_damage.__round__(2)}" if outcome.attacker_damage > 0 else "",
+            "defender_owner_name": f"[color={Colors.to_hex(outcome.defender_player.get_color())}]{outcome.defender_player.get_name_short()}[/color]"
+            if outcome.defender_player
+            else "Unknown Defender Owner",
+            "attacker_owner_name": f"[color={Colors.to_hex(outcome.attacker_player.get_color())}]{outcome.attacker_player.get_name_short()}[/color]"
+            if outcome.attacker_player
+            else "Unknown Attacker Owner",
+            "defender_owner_color": Colors.to_hex(outcome.defender_player.get_color())
+            if outcome.defender_player
+            else Colors.to_hex(Colors.WHITE),
+            "attacker_owner_color": Colors.to_hex(outcome.attacker_player.get_color())
+            if outcome.attacker_player
+            else Colors.to_hex(Colors.WHITE),
+        }
 
         if outcome.status == CombatResults.DEFENDER_KILLED:
             return str(CombatResultText.DEFENDER_KILLED.value).format(**param_list)
