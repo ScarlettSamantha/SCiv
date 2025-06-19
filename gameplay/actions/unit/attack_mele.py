@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from direct.showbase.MessengerGlobal import messenger
 
@@ -29,11 +29,14 @@ class AttackAction(BaseUnitAction):
         self.get_return_as_failure_argument = True
         self.keep_targeting_after_use = True
 
-    def attack_wrapper(self, _: Action, executor: T_TARGET, target: T_TARGET) -> CombatOutcome:
+    def attack_wrapper(self, _: Action, executor: T_TARGET, target: T_TARGET) -> Optional[CombatOutcome]:
         if isinstance(executor, Unit) and not isinstance(target, Tile):
             outcome = executor.attack(target)
             self._result = outcome
             return outcome
+        elif isinstance(executor, Unit) and isinstance(target, Tile):
+            self._result = None
+            return None
         else:
             raise TypeError(f"Executor of type {type(executor).__name__} does not support 'attack'")
 

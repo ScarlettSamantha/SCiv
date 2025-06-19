@@ -99,8 +99,11 @@ class Civic:
     def get_cost(self) -> int:
         return self.cost
 
+    def on_complete(self): ...
+
     def complete(self) -> Self:
         self.completed = True
+        self.on_complete()
         return self
 
     @classmethod

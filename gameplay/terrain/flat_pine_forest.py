@@ -25,7 +25,7 @@ class FlatPineForest(BaseTerrain):
         self.bits.add_bit(
             Bit(
                 model="tree_heavy_forest.glb",
-                scale=0.5,
+                scale=0.9,
                 preferred_slot="center",
                 disabled=False,
                 id="tree_pine_forest_combined",
