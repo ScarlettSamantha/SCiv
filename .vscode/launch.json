@@ -9,9 +9,9 @@
             "name": "Python Debugger: Main Game File",
             "type": "debugpy",
             "request": "launch",
-            "program": "__main__.py",
+            "program": "run.py",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/sciv",
+            "cwd": "${workspaceFolder}",
         },
         {
             "name": "Python Profile: Main Game File",

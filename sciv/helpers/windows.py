@@ -1,5 +1,5 @@
 import re
-from os import PathLike
+from os import PathLike, name
 from typing import Optional
 
 
@@ -10,7 +10,7 @@ class WindowsHelper:
     def is_windows(cls) -> bool:
         """Check if the current operating system is Windows."""
         if cls._is_windows is None:
-            cls._is_windows = re.match(r"^win", str(__import__("os").name), re.IGNORECASE) is not None
+            cls._is_windows = name != "posix"
         return cls._is_windows
 
     @staticmethod
