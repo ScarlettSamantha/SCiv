@@ -87,10 +87,14 @@ markdown-check:
 
 package-linux:
   <<: *default-python-job
+  image: python:3.13
   inherit: {}
   stage: package
   script:
+    - python3 --version
+    - ln -sf /usr/local/bin/python3.13 /usr/bin/python3
     - pip install briefcase --root-user-action=ignore
+    - briefcase create linux
     - briefcase update -r
     - briefcase update
     - briefcase build linux

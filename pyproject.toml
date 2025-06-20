@@ -52,7 +52,7 @@ cleanup_paths = ["build"]
 
 [tool.poetry]
 authors = ["Scarlett Samantha Verheul <scarlett.verheul@gmail.com>"]
-dependencies.python = "^3.12"
+dependencies.python = "^3.13"
 description = "A Python project for Civ-like game"
 license = "MIT"
 name = "SCiv"
