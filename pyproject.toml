@@ -3,20 +3,11 @@ project_name = "SCiv"
 version = "0.1.5"
 package = "nl.scarlettbytes.sciv"
 bundle = "nl.scarlettbytes.sciv"
+author = "Scarlett Samantha Verheul"
+author_email = "scarlett.verheul@gmail.com."
 
 [tool.briefcase.app.sciv]
-assets = [
-  "assets",
-  "exceptions",
-  "gameplay",
-  "helpers",
-  "i18n",
-  "managers",
-  "menus",
-  "mixins",
-  "system",
-  "world",
-]
+
 formal_name = "Sciv"
 description = "An open-source Civ-like game"
 long_description = "A Python project for Civ-like game made in panda3d."
@@ -45,6 +36,19 @@ requires = [
   "matplotlib",
   "gprof2dot",
 ]
+assets = [
+  "assets",
+  "exceptions",
+  "gameplay",
+  "helpers",
+  "i18n",
+  "managers",
+  "menus",
+  "mixins",
+  "system",
+  "world",
+]
+cleanup_paths = ["build"]
 
 [tool.poetry]
 authors = ["Scarlett Samantha Verheul <scarlett.verheul@gmail.com>"]
