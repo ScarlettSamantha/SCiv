@@ -4,9 +4,9 @@
     "clock-frame-rate": 144
   },
   "window": {
-    "screen-mode": "bordered",
-    "win-origin": [400, 2188],
-    "win-size": [3440, 1360],
+    "screen-mode": "fullscreen",
+    "win-origin": [0, 0],
+    "win-size": [1920, 1080],
     "window-title": "SCIV",
     "sync-video": false,
     "show-frame-rate-meter": false

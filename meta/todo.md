@@ -11,7 +11,10 @@ These are not features more things that exist right now and needs to be done som
 
 ## CI/CD
 
-- [ ] Implement basic CI/CD as I have my gitlab server in any case which can use its runners.
+- [X] Implement basic CI/CD as I have my gitlab server in any case which can use its runners.
+- [ ] Automate building for linux
+- [ ] Automate building for windows
+- [ ] Install script.
 
 ## Refactors
 
@@ -44,3 +47,8 @@ These are not features more things that exist right now and needs to be done som
 ## Features
 
 - [ ] Upgradable buildings, the skeleton is in there but its not yet working.
+
+## UI/Window
+
+- [ ] Fix window its position remembrance and make fullscreen/borderless and the resolution and primary screen options.
+- [ ] Civic/Debug ui's break on 1080p
