@@ -24,6 +24,7 @@ from managers.tech import TechManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
 
+from sciv.helpers.windows import WindowsHelper
 from system.entity import BaseEntity
 
 
@@ -82,6 +83,9 @@ class ResearchButton(TooltippedButton):
                 getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
             )
         )
+
+        if WindowsHelper.is_windows():
+            tech_icon_src = WindowsHelper.unix_to_win32_path(tech_icon_src)
 
         requires = [str(entry.name) for entry in self.value.requires]
         tooltip_text = value.on_tooltip() if hasattr(value, "on_tooltip") else getattr(value, "name", "Unknown Tech")
@@ -172,6 +176,9 @@ class ResearchButton(TooltippedButton):
                 src = str(self.atlas.get_real_path_for_virtual_path(str(src)))
             if isinstance(tip, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
                 tip = str(self.atlas.get_real_path_for_virtual_path(str(tip)))
+
+            if WindowsHelper.is_windows():
+                src = WindowsHelper.unix_to_win32_path(src)
 
             tooltip_text = tech_type.on_tooltip() if hasattr(tech_type, "on_tooltip") else tip  # type: ignore
 

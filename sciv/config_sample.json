@@ -4,7 +4,7 @@
     "clock-frame-rate": 144
   },
   "window": {
-    "screen-mode": "fullscreen",
+    "screen-mode": "windowed",
     "win-origin": [0, 0],
     "win-size": [1920, 1080],
     "window-title": "SCIV",

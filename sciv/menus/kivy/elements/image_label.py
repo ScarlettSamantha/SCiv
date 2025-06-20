@@ -7,6 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
 from helpers.cache import Cache
+from sciv.helpers.windows import WindowsHelper
 
 
 class ImageLabel(BoxLayout):
@@ -31,9 +32,18 @@ class ImageLabel(BoxLayout):
         self.size_hint_y = None
         self.height = max(image_size[1], dp(30))
 
+        path = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(img_source))
+
+        if not path:
+            raise ValueError(f"Image source '{img_source}' not found in icon atlas.")
+
+        if WindowsHelper.is_windows():
+            # Convert to Unix path if not on Windows
+            path = WindowsHelper.unix_to_win32_path(path)
+
         # Image with fixed width
         self.img = Image(
-            source=str(Cache.get_icon_atlas().get_real_path_for_virtual_path(img_source)),
+            source=path,
             size_hint_x=None,
             width=image_size[0],
             size_hint_y=None,

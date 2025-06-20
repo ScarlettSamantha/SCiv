@@ -20,6 +20,7 @@ from helpers.placeholder import Placeholder
 from managers.player import PlayerManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
+from sciv.helpers.windows import WindowsHelper
 
 if TYPE_CHECKING:
     from menus.screens.game_ui import GameUIScreen  # type: ignore
@@ -47,6 +48,10 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
                 getattr(_civic, "icon_path", Placeholder.getPlaceholderImagePathSmallIcon())
             )
         )
+
+        if WindowsHelper.is_windows():
+            icon_src = WindowsHelper.unix_to_win32_path(icon_src)
+
         name = str(getattr(_civic, "name", ""))
         description = str(getattr(_civic, "description", ""))
         cost = _civic.get_cost()

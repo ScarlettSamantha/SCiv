@@ -24,6 +24,7 @@ from helpers.geometry import generate_flat_top_hex
 from helpers.tiles import Tiles
 from managers.player import PlayerManager
 from managers.world import World
+from sciv.helpers.windows import WindowsHelper
 from system.shaders import Shaders
 from helpers.colors import Colors, Tuple4f
 
@@ -57,15 +58,27 @@ class Borders(DirectObject):
 
         self.logger = Cache.get_showbase_instance().logger.get_singleton_instance().graphics.getChild("borders")
 
+        path_border_vert = str(self.base.base_path / "assets/shaders/border.vert")
+        path_border_frag = str(self.base.base_path / "assets/shaders/border_ring.frag")
+
+        path_hex_border_vert = str(self.base.base_path / "assets/shaders/hex_border.vert")
+        path_hex_border_frag = str(self.base.base_path / "assets/shaders/hex_border.frag")
+
+        if WindowsHelper.is_windows():
+            path_border_vert = WindowsHelper.win32_to_unix_path(path_border_vert)
+            path_border_frag = WindowsHelper.win32_to_unix_path(path_border_frag)
+            path_hex_border_vert = WindowsHelper.win32_to_unix_path(path_hex_border_vert)
+            path_hex_border_frag = WindowsHelper.win32_to_unix_path(path_hex_border_frag)
+
         self.shader = self.shader_system.load_shader(
             "borders",
-            str(self.base.base_path / "assets/shaders/border.vert"),
-            str(self.base.base_path / "assets/shaders/border_ring.frag"),
+            path_border_vert,
+            path_border_frag,
         )
         self.hex_border_shader: Shader = self.shader_system.load_shader(
             "hex_borders",
-            str(self.base.base_path / "assets/shaders/hex_border.vert"),
-            str(self.base.base_path / "assets/shaders/hex_border.frag"),
+            path_hex_border_vert,
+            path_hex_border_frag,
         )
 
         # create a threaded TaskChain named "borders"

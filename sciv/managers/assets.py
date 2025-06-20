@@ -21,6 +21,7 @@ from gameplay.resources.core.basic.science import Science
 from helpers.debug import Debug
 from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
+from sciv.helpers.windows import WindowsHelper
 
 if TYPE_CHECKING:
     from sciv.game import OpenCiv
@@ -72,6 +73,9 @@ class AssetManager(Singleton):
         if cls.base is None:  # only have to check this here as cache does not need base.
             raise ValueError("Base not set for AssetManager")
 
+        if WindowsHelper.is_windows():
+            path = WindowsHelper.win32_to_unix_path(path)
+
         texture: Texture = cls.base.loader.load_texture(path)
 
         if use_cache:
@@ -89,6 +93,9 @@ class AssetManager(Singleton):
 
         if cls.base is None:  # only have to check this here as cache does not need base.
             raise ValueError("Base not set for AssetManager")
+
+        if WindowsHelper.is_windows():
+            path = WindowsHelper.win32_to_unix_path(path)
 
         font: TextFont = cls.base.loader.load_font(path)
 
@@ -110,6 +117,9 @@ class AssetManager(Singleton):
 
         if cls.base is None:
             raise ValueError("Base not set for AssetManager")
+
+        if WindowsHelper.is_windows():
+            path = WindowsHelper.win32_to_unix_path(path)
 
         model: NodePath | None = cls.base.loader.load_model(path)
 
@@ -134,6 +144,9 @@ class AssetManager(Singleton):
             if cls.base is None:
                 raise ValueError("Base not set for AssetManager")
 
+            if WindowsHelper.is_windows():
+                path = WindowsHelper.win32_to_unix_path(path)
+
             texture: Texture = cls.base.loader.load_texture(path)
 
             if use_cache:
@@ -155,6 +168,9 @@ class AssetManager(Singleton):
     def load_kivy_image(
         cls, path: str, size_hint_y: Optional[int] = None, height: Optional[int] = None, use_cache: bool = True
     ) -> KivyImage:
+        if WindowsHelper.is_windows():
+            path = WindowsHelper.win32_to_unix_path(path)
+
         resolved_path: str = resource_find(path)  # type: ignore
         if not resolved_path or not isinstance(resolved_path, str):  # type: ignore
             raise FileNotFoundError(f"Could not resolve path for Kivy image: {path}")

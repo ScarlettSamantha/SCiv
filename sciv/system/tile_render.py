@@ -33,6 +33,7 @@ from helpers.images import (
     pil_image_to_panda3d_texture,
 )
 from helpers.debug import Debug
+from sciv.helpers.windows import WindowsHelper
 from system.atlas import AtlasGenerator
 from gameplay.resource import BaseResource
 from managers.assets import AssetManager
@@ -87,12 +88,15 @@ class TileRenderer:
 
         self.bits_renderer = BitsRenderer(tile, self.geometry_node)
 
+        shader_vertex_path: str = str(self.base.base_path / "assets" / "shaders" / "tile_selector.vert.glsl")
+        shader_fragment_path: str = str(self.base.base_path / "assets" / "shaders" / "tile_selector.frag.glsl")
+
+        if WindowsHelper.is_windows():
+            shader_vertex_path = WindowsHelper.win32_to_unix_path(shader_vertex_path)
+            shader_fragment_path = WindowsHelper.win32_to_unix_path(shader_fragment_path)
+
         # shader for tile selection
-        self.selector_shader = Shader.load(
-            Shader.SL_GLSL,
-            vertex=str(self.base.base_path / "assets" / "shaders" / "tile_selector.vert.glsl"),
-            fragment=str(self.base.base_path / "assets" / "shaders" / "tile_selector.frag.glsl"),
-        )
+        self.selector_shader = Shader.load(Shader.SL_GLSL, vertex=shader_vertex_path, fragment=shader_fragment_path)
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
 
@@ -376,9 +380,20 @@ class TileRenderer:
         if not self.tile.city:
             return
         atlas = self.icon_atlas
-        left = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_left.png")))
-        mid = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_middle.png")))
-        right = AssetManager.load_pil_image(str(atlas.get_real_path_for_virtual_path("city_plate_right.png")))
+
+        path_left = atlas.get_real_path_for_virtual_path("city_plate_left.png")
+        path_mid = atlas.get_real_path_for_virtual_path("city_plate_middle.png")
+        path_right = atlas.get_real_path_for_virtual_path("city_plate_right.png")
+
+        if WindowsHelper.is_windows():
+            # Convert to Unix path if not on Windows
+            path_left = WindowsHelper.unix_to_win32_path(str(path_left))
+            path_mid = WindowsHelper.unix_to_win32_path(str(path_mid))
+            path_right = WindowsHelper.unix_to_win32_path(str(path_right))
+
+        left = AssetManager.load_pil_image(str(path_left))
+        mid = AssetManager.load_pil_image(str(path_mid))
+        right = AssetManager.load_pil_image(str(path_right))
         font = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
 
         plate = generate_city_nameplate(

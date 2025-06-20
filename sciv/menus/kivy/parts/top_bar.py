@@ -20,6 +20,7 @@ from managers.player import PlayerManager
 from managers.turn import Turn
 from menus.kivy.elements.button_self_resizable import SelfResizableButton
 from menus.screens.loading import ImageLabel
+from sciv.helpers.windows import WindowsHelper
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -33,7 +34,12 @@ class BaseButton(SelfResizableButton):
             self.image_widget.source = value
             self.image_widget.opacity = 1
         else:
-            self.image_widget.source = self.placeholder
+            placeholder_path = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(self.placeholder))
+
+            if WindowsHelper.is_windows():
+                placeholder_path = WindowsHelper.unix_to_win32_path(placeholder_path)
+
+            self.image_widget.source = placeholder_path
             self.image_widget.opacity = 0
             self.image_widget.width = 0
         self._update_size()
@@ -128,21 +134,30 @@ class TopBar(BoxLayout, DirectObject):
             background_color=(0, 0, 0, 0),
         )
 
+        gold_path = Gold.icon
+        faith_path = Faith.icon
+        turn_path = "assets/icons/turn.png"
+
         self.gold_label = ImageLabel(
             text="Gold: 0",
             size_hint=(None, 1),
             width=100,
             img_y_offset=-0.05,
-            img_source=Gold.icon,
+            img_source=gold_path,
         )
 
-        self.faith_label = ImageLabel(text="Faith: 0", size_hint=(None, 1), width=100, img_source=Faith.icon)
+        self.faith_label = ImageLabel(
+            text="Faith: 0",
+            size_hint=(None, 1),
+            width=100,
+            img_source=faith_path,
+        )
 
         self.turn_label = ImageLabel(
             text="Turn: 0",
             size_hint=(None, 1),
             width=100,
-            img_source="assets/icons/turn.png",
+            img_source=turn_path,
         )
 
         # Add them to the respective container

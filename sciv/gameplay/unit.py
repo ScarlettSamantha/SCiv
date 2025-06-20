@@ -38,6 +38,7 @@ from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
 from managers.unit import UnitManager
+from sciv.helpers.windows import WindowsHelper
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -177,7 +178,11 @@ class Unit(BaseEntity, ABC):
 
         pos = self.get_tile().calculate_z_pos_on_altitude()
 
-        self.model = self.base.loader.loadModel(str(self.base.base_path / self._model))
+        model_path: str = str(self.base.base_path / self._model)
+        if WindowsHelper.is_windows():
+            model_path = WindowsHelper.win32_to_unix_path(model_path)
+
+        self.model = self.base.loader.loadModel(model_path)
 
         if self.model is None:
             raise ValueError(f"Unit {self.key} model could not be loaded.")

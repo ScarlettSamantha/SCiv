@@ -15,4 +15,9 @@ class WindowsHelper:
 
     @staticmethod
     def win32_to_unix_path(path: str | PathLike[str]) -> str:
-        return re.sub(r"^([a-zA-Z]):", r"/\1", str(path).replace("\\", "/"))
+        return re.sub(r"^([a-zA-Z]):", lambda match: f"/{match.group(1).lower()}", str(path).replace("\\", "/"))
+
+    @staticmethod
+    def unix_to_win32_path(path: str | PathLike[str]) -> str:
+        path = str(path).replace("\\", "/")
+        return re.sub(r"^/([a-z])", lambda match: f"{match.group(1).upper()}:/", path)

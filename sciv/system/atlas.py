@@ -10,6 +10,7 @@ from panda3d.core import PNMImage, StringStream, Texture  # type: ignore
 from PIL import Image
 
 from managers.assets import AssetManager
+from sciv.helpers.windows import WindowsHelper
 
 
 class AtlasGenerator:
@@ -160,6 +161,8 @@ class AtlasGenerator:
             self._individual_texture_cache[key] = tex  # type: ignore
 
     def get_pil_image_by_virtual_path(self, virtual_path: str) -> Optional[Image.Image]:
+        if WindowsHelper.is_windows():
+            virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
         entry = self.lookup_by_virtual_path(virtual_path)
         if not entry:
             return None
@@ -282,11 +285,16 @@ class AtlasGenerator:
                 raise ValueError(f"Could not determine base directory for {icon_file}")
 
             virtual_path = str(icon_file.relative_to(base_dir))
+            full_path = str(icon_file)
+
+            if WindowsHelper.is_windows():
+                virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
+                full_path = WindowsHelper.win32_to_unix_path(full_path)
 
             manifest[virtual_path] = {
                 "index": idx,
                 "virtual_path": virtual_path,
-                "full_path": str(icon_file),
+                "full_path": full_path,
                 "atlas_x": x,
                 "atlas_y": y,
                 "width": self.icon_size[0],
@@ -439,6 +447,8 @@ class AtlasGenerator:
         return None
 
     def get_dimensions_for_virtual_path(self, virtual_path: str) -> Optional[Tuple[int, int]]:
+        if WindowsHelper.is_windows():
+            virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
         entry = self.lookup_by_virtual_path(virtual_path)
         if entry:
             return entry["width"], entry["height"]
@@ -451,6 +461,8 @@ class AtlasGenerator:
         return None
 
     def get_real_path_for_virtual_path(self, virtual_path: str) -> Optional[Path]:
+        if WindowsHelper.is_windows():
+            virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
         entry = self.lookup_by_virtual_path(virtual_path)
         if entry:
             full_path = entry.get("full_path")
