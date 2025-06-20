@@ -83,4 +83,4 @@ markdown-check:
     - merge_requests
   script:
     - pip3 install pymarkdownlnt --root-user-action=ignore
-    - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
+    - markdownlnt --config .markdownlnt.json scan '**/*.md'
