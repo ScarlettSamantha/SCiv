@@ -39,7 +39,7 @@ class ClubMan(CoreMilitaryBaseClass):
 
     attack_points = 1
     attack_armor_penetration = 1
-    attack_power_mele = 2
+    attack_power_mele = 3.5
     attack_power_ranged = 0
 
     def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):
