@@ -1,6 +1,5 @@
 from importlib.metadata import PackageNotFoundError, version
 
-# Try importing pkg_resources, if available.
 try:
     import pkg_resources
 except ImportError:

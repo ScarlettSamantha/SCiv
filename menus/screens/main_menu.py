@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+
 from direct.showbase.MessengerGlobal import messenger
 from kivy.app import Widget
 from kivy.graphics import Color, Rectangle
@@ -66,6 +67,7 @@ class MainMenuScreen(Screen):
 
         self.continue_button = Button(text="Continue", size_hint=(None, None), height=50, width=button_width)
         self.continue_button.pos_hint = {"center_x": 0.5}
+        self.continue_button.disabled = True
         self.continue_button.bind(on_release=self.hide)
 
         self.new_button = Button(text="New", size_hint=(None, None), height=50, width=button_width)
@@ -78,12 +80,14 @@ class MainMenuScreen(Screen):
 
         self.options_button = Button(text="Options", size_hint=(None, None), height=50, width=button_width)
         self.options_button.pos_hint = {"center_x": 0.5}
-        self.options_button.on_press = self.to_config_screen
+        self.options_button.bind(on_release=self.to_config_screen)
 
         self.credit_button = Button(text="Credits", size_hint=(None, None), height=50, width=button_width)
+        self.credit_button.disabled = True
         self.credit_button.pos_hint = {"center_x": 0.5}
 
         self.code_button = Button(text="Code", size_hint=(None, None), height=50, width=button_width)
+        self.code_button.bind(on_release=self.open_browser_to_code)
         self.code_button.pos_hint = {"center_x": 0.5}
 
         self.exit_button = Button(text="Exit", size_hint=(None, None), height=50, width=button_width)
@@ -113,6 +117,12 @@ class MainMenuScreen(Screen):
 
     def switch_to_save_screen(self, _: Any):
         messenger.send("ui.update.ui.show_save")
+
+    def open_browser_to_code(self, _: Optional[Button] = None):
+        from system.vars import REPOSITORY
+        import webbrowser
+
+        webbrowser.open_new_tab(REPOSITORY)
 
     def exit(self):
         messenger.send("game.input.user.quit_game")

@@ -36,13 +36,14 @@ class SCIV(ShowBase):
         from managers.world import World
         from system.camera import Camera
         from system.lights import setup_lights
-        from version import __version__
+        from system.vars import __version__, get_git_commit
 
         self.debug = debug
 
-        self.version = __version__
+        self.version: str = __version__
+
         # Get the commit hash from git if available, otherwise 'Unknown'
-        self.commit = self._get_git_commit()
+        self.commit: str = get_git_commit()
 
         # config_mgr must be applied BEFORE ShowBase to set up prc data
         ShowBase.__init__(self)
@@ -205,20 +206,6 @@ class SCIV(ShowBase):
 
         Cache.set_icon_atlas(icon_generator)
         Cache.set_terrain_atlas(terrain_atlas)
-
-    def _get_git_commit(self) -> str:
-        """
-        Retrieve the current git commit hash if the git package is available.
-
-        Returns "Unknown" if git is not installed or the repository isn't available.
-        """
-        try:
-            import git  # type: ignore
-
-            repo = git.Repo(search_parent_directories=True)  # type: ignore
-            return repo.head.object.hexsha  # type: ignore
-        except Exception:
-            return "Unknown"
 
     def get_base_path(self) -> pathlib.Path:
         return self.base_path
