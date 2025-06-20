@@ -9,7 +9,7 @@
             "name": "Python Debugger: Main Game File",
             "type": "debugpy",
             "request": "launch",
-            "program": "main.py",
+            "program": "__main__.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/sciv",
         },
