@@ -82,5 +82,5 @@ markdown-check:
     - branches
     - merge_requests
   script:
-    - npm install --global markdownlint-cli --root-user-action=ignore
-    - markdownlint '**/*.md'
+    - pip3 install pymarkdownlnt --root-user-action=ignore
+    - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'

@@ -43,7 +43,7 @@ requires = [
   "rich",
   "graphviz",
   "matplotlib",
-  "gprof2dot"
+  "gprof2dot",
 ]
 
 [tool.poetry]
@@ -54,7 +54,7 @@ license = "MIT"
 name = "SCiv"
 
 [tool.ruff]
-ignore = ["E501", "F841", "E721"]
+ignore = ["E501", "F841", "E721", "E402"]
 line-length = 120
 select = ["E", "W", "F"]
 exclude = ["**/stubs", "**/.pyenv", "**/site-packages", "**/*.pyi"]
@@ -69,7 +69,7 @@ exclude = [
   "**/stubs",
   "**/site-packages",
   "**/*.pyi",
-  "system/subsystems/hexgen/",
+  "sciv/system/subsystems/hexgen/",
 ]
 stubPath = "./typings"
 pythonPlatform = "Linux"
