@@ -708,7 +708,17 @@
       "nature": {
         "name": "Nature",
         "description": "The natural world and environment",
-        "introduction": "Nature is the natural world and environment, including plants, animals, and landscapes. It is often seen as a source of beauty and inspiration."
+        "introduction": "Nature is the natural world and environment, including plants, animals, and landscapes. It is often seen as a source of beauty and inspiration.",
+        "leaders": {
+          "gaia": {
+            "name": "Gaia",
+            "description": "Personification of the Earth in Greek mythology"
+          },
+          "pan": {
+            "name": "Pan",
+            "description": "Greek god of nature, shepherds, and flocks"
+          }
+        }
       },
       "rome": {
         "name": "Rome",
