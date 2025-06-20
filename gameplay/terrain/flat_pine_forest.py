@@ -1,3 +1,4 @@
+from random import uniform
 from typing import Any
 
 from gameplay.bits import Bit
@@ -25,11 +26,12 @@ class FlatPineForest(BaseTerrain):
         self.bits.add_bit(
             Bit(
                 model="tree_heavy_forest.glb",
-                scale=0.9,
+                scale=uniform(0.8, 0.95),
                 preferred_slot="center",
                 disabled=False,
                 id="tree_pine_forest_combined",
                 default_lighting=False,
-                offset=(0, 0, -0.1),
+                offset=(0, 0, -0.3),
+                hpr=(uniform(-180, 180), 0, 0),
             )
         )
