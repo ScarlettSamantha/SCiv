@@ -220,8 +220,7 @@ class Yields:
         # Create a deep copy of the TileYield instance.
         return copy.deepcopy(self)
 
-    def total_value(self) -> float:
-        # Sum the .value of each calculatable property.
+    def total_value(self) -> int:
         return sum(getattr(self, prop).value for prop in self.calculatable_properties())
 
     def __repr__(self) -> str:
