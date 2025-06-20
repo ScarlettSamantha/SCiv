@@ -78,7 +78,6 @@ security-check:
 markdown-check:
   <<: *default-python-job
   stage: verify
-  image: node:latest
   only:
     - branches
     - merge_requests
