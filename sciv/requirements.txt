@@ -1,0 +1,27 @@
+panda3d
+panda3d_kivy
+types-panda3d
+noise
+pytest # for testing - dev
+pytest-cov  # for coverage - dev
+poetry-core # for building - dev
+webcolors
+pymarkdownlnt # for building - dev
+sentry-sdk # for error tracking - dev
+python-dotenv # for environment variables
+numpy 
+panda3d-simplepbr
+pillow
+panda3d-gltf
+dill # for serialization of objects
+dill[graph] # for debugging save games
+setuptools
+pre-commit  # for building and QA - dev
+py_trees # for behavior trees
+matplotlib # for graph visualization - dev-ish
+mypy 
+gprof2dot # for profiling - dev
+pmw # this is needed for the inspector for some reason panda3d does not include it by default nor does tk
+rich # for better console output - dev
+graphviz # for dot graph visualization - Dev
+briefcase # for building the app - dev
