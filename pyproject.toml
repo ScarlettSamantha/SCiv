@@ -19,7 +19,6 @@ license.file = "LICENSE"
 requires = [
   "panda3d",
   "panda3d_kivy",
-  "noise",
   "webcolors",
   "python-dotenv",
   "sentry-sdk",

@@ -94,11 +94,11 @@ package-linux:
     - python3 --version
     - ln -sf /usr/local/bin/python3.13 /usr/bin/python3
     - pip install briefcase --root-user-action=ignore
-    - briefcase create linux
-    - briefcase update -r
-    - briefcase update
-    - briefcase build linux
-    - briefcase package linux
+    - /usr/bin/python3.13 -m briefcase create linux
+    - /usr/bin/python3.13 -m briefcase update -r
+    - /usr/bin/python3.13 -m briefcase update
+    - /usr/bin/python3.13 -m briefcase build linux
+    - /usr/bin/python3.13 -m briefcase package linux
     - mkdir -p builds
     - cp dist/*.deb builds/
   artifacts:

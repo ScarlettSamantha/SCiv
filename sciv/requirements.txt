@@ -1,7 +1,6 @@
 panda3d
 panda3d_kivy
 types-panda3d
-noise
 pytest # for testing - dev
 pytest-cov  # for coverage - dev
 poetry-core # for building - dev
