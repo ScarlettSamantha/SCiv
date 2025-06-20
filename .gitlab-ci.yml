@@ -86,9 +86,27 @@ markdown-check:
     - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
 
 package-linux:
-  <<: *default-python-job
-  image: python:3.13
-  inherit: {}
+  image: ubuntu:24.04          
+  only:
+    - branches
+    - merge_requests
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  cache:
+    key: shared-pip-cache
+    paths:
+      - .cache/pip
+    policy: pull-push
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends software-properties-common curl git build-essential python3-dev
+    - add-apt-repository ppa:deadsnakes/ppa -y
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends python3.13 python3.13-dev
+    - curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
+    - update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
+    - pip3 install --upgrade pip --root-user-action=ignore
+    - pip3 install -r requirements.txt --root-user-action=ignore
   stage: package
   script:
     - python3 --version
