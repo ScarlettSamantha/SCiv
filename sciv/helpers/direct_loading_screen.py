@@ -6,6 +6,8 @@ from direct.interval.LerpInterval import LerpFunc
 from direct.task.Task import Task
 from panda3d.core import CardMaker, NodePath, TextNode, TransparencyAttrib
 
+from sciv.helpers.windows import WindowsHelper
+
 if TYPE_CHECKING:
     from game import OpenCiv
 
@@ -33,6 +35,10 @@ class LoadingScreen:
 
         # Logo image
         logo_path = choice(logo_paths)
+
+        if WindowsHelper.is_windows():
+            logo_path = WindowsHelper.win32_to_unix_path(logo_path)
+
         self.logo = OnscreenImage(
             image=logo_path,
             pos=(0, 0, 0.55),
@@ -41,6 +47,11 @@ class LoadingScreen:
         self.logo.setTransparency(TransparencyAttrib.MAlpha)
         self.logo.setScale(self._scale_logo(self.logo.getImage()))
 
+        font_path = str(self.base.base_path / "assets" / "fonts" / "OpenSans.ttf")
+
+        if WindowsHelper.is_windows():
+            font_path = WindowsHelper.win32_to_unix_path(font_path)
+
         # Step count
         self.step_count = OnscreenText(
             text=f"0/{self.total_steps}",
@@ -48,7 +59,7 @@ class LoadingScreen:
             scale=0.07,
             fg=(1, 1, 1, 1),
             align=TextNode.ACenter,  # type: ignore
-            font=self.base.loader.loadFont(str(self.base.base_path / "assets" / "fonts" / "OpenSans.ttf")),
+            font=self.base.loader.loadFont(font_path),
             mayChange=True,
         )
 
