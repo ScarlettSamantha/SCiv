@@ -45,7 +45,7 @@ from system.camera import Camera
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
@@ -56,7 +56,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def __init__(self, *args: Any, **kwargs: Any):
         if "base" not in kwargs:
             raise ValueError("GameUIScreen requires a 'base' keyword argument.")
-        self._base: "SCIV" = kwargs.pop("base", None)
+        self._base: "OpenCiv" = kwargs.pop("base", None)
 
         from managers.ui import ui
 

@@ -18,11 +18,11 @@ from menus.kivy.elements.sticky_text_input import StickyTextInput
 from menus.kivy.parts.city import ClippingScrollList
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
-    def __init__(self, base: "SCIV", auto_dismiss: bool = False, **kwargs: Any):
+    def __init__(self, base: "OpenCiv", auto_dismiss: bool = False, **kwargs: Any):
         super().__init__(  # type: ignore
             title="Save Game",
             base=base,
@@ -32,7 +32,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
             disable_zoom=False,
             **kwargs,
         )
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.manager = self.base.ui_manager
 
         # Use (1, 1) so the layout expands to fill the entire popup

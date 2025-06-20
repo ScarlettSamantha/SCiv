@@ -22,7 +22,7 @@ from menus.kivy.elements.button_self_resizable import SelfResizableButton
 from menus.screens.loading import ImageLabel
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class BaseButton(SelfResizableButton):
@@ -56,7 +56,7 @@ class CultureButton(BaseButton):
 class TopBar(BoxLayout, DirectObject):
     def __init__(
         self,
-        base: "SCIV",
+        base: "OpenCiv",
         background_color: Tuple4f = (0, 0, 0, 0.9),
         border: Tuple4f = (0, 0, 0, 0),
         *args: Any,
@@ -67,7 +67,7 @@ class TopBar(BoxLayout, DirectObject):
 
         self.is_build: bool = False
         self.pos_hint = {"center_x": 0.5, "top": 1}
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.background_color: Tuple4f = background_color
         self.border: Tuple4f = border
 

@@ -16,14 +16,14 @@ from system.camera import Camera
 if TYPE_CHECKING:
     from direct.showbase.ShowBase import ShowBase
 
-    from game import SCIV
+    from game import OpenCiv
 
 
 class StatsPanel(FloatLayout, DirectObject):  # type: ignore
-    def __init__(self, base: "SCIV | ShowBase", **kwargs: Any):
+    def __init__(self, base: "OpenCiv | ShowBase", **kwargs: Any):
         FloatLayout.__init__(self, **kwargs)
         DirectObject.__init__(self, **kwargs)  # type: ignore
-        self.base: "SCIV | ShowBase" = base
+        self.base: "OpenCiv | ShowBase" = base
         self.camera: Camera = Camera.get_singleton_instance()
 
         self.frame: Optional[FloatLayout] = None

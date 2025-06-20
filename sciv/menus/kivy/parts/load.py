@@ -15,11 +15,11 @@ from menus.kivy.elements.sticky_text_input import StickyTextInput
 from menus.kivy.parts.city import ClippingScrollList
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
-    def __init__(self, base: "SCIV", auto_dismiss: bool = False, **kwargs: Any):
+    def __init__(self, base: "OpenCiv", auto_dismiss: bool = False, **kwargs: Any):
         super().__init__(  # type: ignore
             title="Load Game",
             base=base,
@@ -28,7 +28,7 @@ class LoadPopup(Popup, CollisionPreventionMixin, DirectObject):
             pos_hint={"center_x": 0.5, "center_y": 0.5},
             **kwargs,
         )
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
 
         # Use (1, 1) so the layout expands to fill the entire popup
         self.main_layout = GridLayout(orientation="lr-tb", rows=3, cols=2, spacing=10, size_hint=(1, 1))

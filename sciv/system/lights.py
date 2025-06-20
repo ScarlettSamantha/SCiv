@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 from panda3d.core import AmbientLight, DirectionalLight, NodePath, Vec3, Vec4
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
-def setup_lights(base: "SCIV"):
+def setup_lights(base: "OpenCiv"):
     # 1) Ambient fill so shadows aren’t pitch-black:
     ambient = AmbientLight("ambient")
     ambient.setColor(Vec4(1, 1, 1, 1))  # ~30% white

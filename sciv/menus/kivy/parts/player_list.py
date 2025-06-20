@@ -17,13 +17,13 @@ from game import Cache
 from managers.player import PlayerManager
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class PlayerList(FloatLayout, DirectObject):
-    def __init__(self, base: "SCIV", **kwargs: Any):
+    def __init__(self, base: "OpenCiv", **kwargs: Any):
         super().__init__(**kwargs)
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.players: Optional[List[Player]] = None
         self.is_build: bool = False
         self.window: "GraphicsWindow" = self.base.win  # type: ignore

@@ -9,14 +9,14 @@ from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
     from gameplay.tile import Tile
     from gameplay.city import City
     from gameplay.unit import Unit
 
 
 class DebugPanel(FloatLayout):
-    def __init__(self, base: "SCIV", offset: int = 10, **kwargs: Any):
+    def __init__(self, base: "OpenCiv", offset: int = 10, **kwargs: Any):
         super().__init__(**kwargs)
         self.base = base
         self.offset = offset  # Fixed pixel offset from the top

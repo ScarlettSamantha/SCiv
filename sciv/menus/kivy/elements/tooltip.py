@@ -18,7 +18,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 from managers.ui import ui
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class TooltipLabel(BoxLayout):
@@ -74,7 +74,7 @@ class TooltipBehavior:
     tooltip_delay = 0.2
 
     def __init__(self, **kwargs: Any):
-        self.base: "SCIV" = Cache.get_showbase_instance()
+        self.base: "OpenCiv" = Cache.get_showbase_instance()
         self.base.taskMgr.add(self._poll_mouse_pos, "_poll_mouse_pos")  # type: ignore
         self.tooltip_label: TooltipLabel | None = None
         self._tooltip_trigger = None

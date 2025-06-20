@@ -6,7 +6,7 @@ from panda3d_kivy.app import App
 
 
 from gameplay.civilization import Civilization
-from game import SCIV
+from game import OpenCiv
 from menus.screens import loading
 from menus.screens.game_config import GameConfigMenu
 from menus.screens.game_ui import GameUIScreen
@@ -17,8 +17,8 @@ from menus.screens.save_load import SaveLoadScreen
 
 
 class SCivGUI(App, DirectObject):
-    def __init__(self, panda_app: SCIV, **kwargs: Any):
-        self._base: "SCIV" = panda_app
+    def __init__(self, panda_app: OpenCiv, **kwargs: Any):
+        self._base: "OpenCiv" = panda_app
         self.is_build: bool = False
         super().__init__(panda_app, **kwargs)  # type: ignore
         self.screen_manager: Optional[ScreenManager] = None

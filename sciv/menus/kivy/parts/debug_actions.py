@@ -12,7 +12,7 @@ from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class MapActionsValues(Enum):
@@ -47,7 +47,7 @@ class DebugActions(
 ):
     def __init__(
         self,
-        base: "SCIV",
+        base: "OpenCiv",
         logger: Logger,
         background_color: Tuple4f = (0, 0, 0, 0),
         border: Tuple4f = (0, 0, 0, 0),

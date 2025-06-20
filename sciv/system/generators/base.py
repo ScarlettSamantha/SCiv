@@ -22,7 +22,7 @@ from managers.player import PlayerManager
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
     from gameplay.tile import Tile
     from gameplay.player import Player
     from gameplay.unit import Unit
@@ -61,11 +61,11 @@ class BaseGenerator(ABC):
     NAME = t_("generic.unimplemented")
     DESCRIPTION = t_("generic.unimplemented")
 
-    def __init__(self, config: GameSettings, base: "SCIV") -> None:
+    def __init__(self, config: GameSettings, base: "OpenCiv") -> None:
         from managers.world import World
 
         self.config: GameSettings = config
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.world: World = World.get_singleton_instance()
         self.world_generation_stats: Dict[str, Any] = {}
 

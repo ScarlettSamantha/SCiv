@@ -9,13 +9,13 @@ from kivy.uix.floatlayout import FloatLayout
 from managers.i18n import t_
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class PlayerTurnControl(FloatLayout, DirectObject):
-    def __init__(self, base: "SCIV", **kwargs: Any):
+    def __init__(self, base: "OpenCiv", **kwargs: Any):
         super().__init__(**kwargs)  # type: ignore
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
 
         self.frame: Optional[FloatLayout] = None
         self.button: Optional[Button] = None

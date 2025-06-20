@@ -14,11 +14,11 @@ from managers.i18n import t_
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
-    def __init__(self, base: "SCIV", **kwargs: Any):
+    def __init__(self, base: "OpenCiv", **kwargs: Any):
         CollisionPreventionMixin.__init__(self, base=base, **kwargs)
         Popup.__init__(self, base=base, **kwargs)  # type: ignore
         DirectObject.__init__(self)
@@ -26,7 +26,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         self.title = str(t_("ui.player_ui.pause.popup.title"))
         self.size_hint = (0.5, 0.6)
         self.auto_dismiss = False
-        self._base: "SCIV" = base
+        self._base: "OpenCiv" = base
 
         self.container: Optional[BoxLayout] = None
         self.rect: Optional[Rectangle] = None
@@ -137,7 +137,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
 
 
 class PauseScreen(Screen):
-    def __init__(self, base: "SCIV", **kwargs: Any):
+    def __init__(self, base: "OpenCiv", **kwargs: Any):
         super().__init__(**kwargs)  # type: ignore
         self.pause_menu = PauseMenu(base=base)
         self.build: bool = False

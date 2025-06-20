@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from game import SCIV
+    from sciv.game import OpenCiv
     from gameplay.effect import Effect
     from system.mesh import HexGrid
     from system.game_settings import GameSettings
@@ -131,14 +131,14 @@ class EntityManager(Singleton):
 
     def __setup__(
         self,
-        base: "SCIV",
+        base: "OpenCiv",
         serializer: Optional[Type["BaseEntityManagerSerializer"]] = None,
         saver: Optional[Type["BaseSaver"]] = None,
         session_name: Optional[str] = None,
         *args: Any,
         **kwargs: Any,
     ):
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.serializer: BaseEntityManagerSerializer = (
             serializer() if serializer is not None else self._default_serializer()
         )

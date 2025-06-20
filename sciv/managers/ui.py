@@ -24,7 +24,7 @@ from mixins.singleton import Singleton
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from sciv.game import OpenCiv
     from managers.game import Game
     from menus.kivy.core import SCivGUI
     from menus.screens.game_ui import GameUIScreen
@@ -33,11 +33,11 @@ if TYPE_CHECKING:
 class ui(Singleton, DirectObject):
     current_menu = None
 
-    def __init__(self, base: "SCIV"):
+    def __init__(self, base: "OpenCiv"):
         from managers.game import Game
 
         self.menus = []
-        self._base: "SCIV" = base
+        self._base: "OpenCiv" = base
         self.current_menu = None
         self.game: Optional["Game"] = Game.get_singleton_instance()
         self.map: World = World.get_singleton_instance()
@@ -73,7 +73,7 @@ class ui(Singleton, DirectObject):
         self.highlighted_tiles: List[Tile] = []
         self.highlight_tile_radius: int = 2
 
-    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
+    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
         super().__setup__(*args, **kwargs)
         self._base = base
         self.registered = False

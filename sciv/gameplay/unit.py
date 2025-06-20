@@ -177,7 +177,7 @@ class Unit(BaseEntity, ABC):
 
         pos = self.get_tile().calculate_z_pos_on_altitude()
 
-        self.model = self.base.loader.loadModel(self.base.base_path / self._model)
+        self.model = self.base.loader.loadModel(str(self.base.base_path / self._model))
 
         if self.model is None:
             raise ValueError(f"Unit {self.key} model could not be loaded.")

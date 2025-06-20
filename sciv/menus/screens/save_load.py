@@ -6,13 +6,13 @@ from menus.kivy.parts.load import LoadPopup
 from menus.kivy.parts.save import SavePopup
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class SaveLoadScreen(Screen):
-    def __init__(self, base: "SCIV", **kwargs: Any):
+    def __init__(self, base: "OpenCiv", **kwargs: Any):
         super().__init__(**kwargs)  # type: ignore
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
 
         self.save_menu = SavePopup(base=base)
 

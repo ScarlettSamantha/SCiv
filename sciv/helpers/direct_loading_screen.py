@@ -7,12 +7,16 @@ from direct.task.Task import Task
 from panda3d.core import CardMaker, NodePath, TextNode, TransparencyAttrib
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class LoadingScreen:
     def __init__(
-        self, base: "SCIV", logo_paths: list[str], total_steps: int, on_continue: Optional[Callable[..., None]] = None
+        self,
+        base: "OpenCiv",
+        logo_paths: list[str],
+        total_steps: int,
+        on_continue: Optional[Callable[..., None]] = None,
     ):
         self.base = base
         self.total_steps = max(1, total_steps)

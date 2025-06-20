@@ -29,21 +29,21 @@ from system.shaders import Shaders
 
 if TYPE_CHECKING:
     from gameplay.player import Player
-    from game import SCIV
+    from sciv.game import OpenCiv
     from system.generators.base import BaseGenerator
     from gameplay.tile import Tile
     from gameplay.unit import Unit
 
 
 class Game(Singleton, DirectObject):
-    def __init__(self, base: "SCIV", camera: Camera):
+    def __init__(self, base: "OpenCiv", camera: Camera):
         from managers.ui import ui
         from managers.unit import UnitManager
 
         self.game_active: bool = False
         self.game_over: bool = False
         self.game_won: bool = False
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")  # type: ignore
 
         self.ui: ui = ui.get_singleton_instance(base=self.base)
@@ -226,7 +226,7 @@ class Game(Singleton, DirectObject):
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
 
-    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any) -> None:
+    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any) -> None:
         super().__setup__(*args, **kwargs)
         self.base = base
 

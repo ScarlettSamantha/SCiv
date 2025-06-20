@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from game import SCIV
+    from sciv.game import OpenCiv
     from managers.player import Player
     from system.generators.base import BaseGenerator
 
@@ -45,8 +45,8 @@ class World(Singleton, DirectObject):
         self.effects: Effects = Effects(self)
         self.register()
 
-    def __init__(self, base: "SCIV"):
-        self.base: "SCIV" = base
+    def __init__(self, base: "OpenCiv"):
+        self.base: "OpenCiv" = base
 
     def reset(self):
         self.map = {}

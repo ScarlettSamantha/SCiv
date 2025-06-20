@@ -14,11 +14,11 @@ from managers.game import World
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
-    from game import SCIV
+    from game import OpenCiv
 
 
 class DebugMapStats(FloatLayout):
-    def __init__(self, base: "SCIV", logger: Logger, offset: int = 10, **kwargs: Any):
+    def __init__(self, base: "OpenCiv", logger: Logger, offset: int = 10, **kwargs: Any):
         self.logger = logger
         super().__init__(**kwargs)
         self.base = base

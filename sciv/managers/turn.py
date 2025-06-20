@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.player import Player
     from gameplay.unit import Unit  # Prevent circular import
-    from game import SCIV
+    from sciv.game import OpenCiv
 
 
 class TurnStage(Enum):
@@ -36,16 +36,16 @@ class Turn(Singleton, DirectObject):
 
     turn: int = PREPARE_FOR_GAME
 
-    def __init__(self, base: "SCIV"):
-        self.base: "SCIV" = base
+    def __init__(self, base: "OpenCiv"):
+        self.base: "OpenCiv" = base
         self.active = False
         self.logger: Logger = self.base.logger.engine.getChild("manager.turn")
         self.turn_stage: TurnStage = TurnStage.NO_TURN_CHANGE
         super().__init__()
         self.register()
 
-    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any):
-        self.base: "SCIV" = base
+    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
+        self.base: "OpenCiv" = base
         self.logger: Logger = self.base.get_child_logger("manager.turn")
         self.register()
         return super().__setup__(*args, **kwargs)

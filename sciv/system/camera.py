@@ -9,7 +9,7 @@ from panda3d_kivy.core.window import WindowBase  # type: ignore
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class Camera(Singleton, DirectObject):
@@ -24,8 +24,8 @@ class Camera(Singleton, DirectObject):
       - WASD/arrow keys => optional panning
     """
 
-    def __init__(self, base: "SCIV"):
-        self.base: "SCIV" = base
+    def __init__(self, base: "OpenCiv"):
+        self.base: "OpenCiv" = base
         self.active = True
         self.mouseWatcherNode: MouseWatcher = self.base.mouseWatcherNode  # type: ignore
         self.logger: Logger = self.base.logger.engine.getChild("camera")

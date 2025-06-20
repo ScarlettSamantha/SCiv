@@ -10,7 +10,7 @@ from gameplay.city import messenger
 from managers.input import Input
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class CollisionPreventionMixin:
@@ -22,9 +22,9 @@ class CollisionPreventionMixin:
     tick_rate: float = 0.5  # How often to check for mouse movement
     ui_geometry_update_interval: float = 1.0  # Seconds between UI geometry cache updates
 
-    def __init__(self, base: "SCIV", disable_zoom: bool = False):
+    def __init__(self, base: "OpenCiv", disable_zoom: bool = False):
         self._input = Input.get_singleton_instance()
-        self._base: "SCIV" = base
+        self._base: "OpenCiv" = base
 
         self.disable_zoom: bool = disable_zoom
 

@@ -1,7 +1,7 @@
 def bootstrap():
-    from .game import SCIV
+    from .game import OpenCiv
 
-    app = SCIV(debug=True)
+    app = OpenCiv(debug=True)
 
     try:
         app.run()

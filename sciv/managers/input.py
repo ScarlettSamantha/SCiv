@@ -20,7 +20,7 @@ from managers.unit import UnitManager
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
     from gameplay.tile import Tile
     from gameplay.unit import Unit
 
@@ -40,9 +40,9 @@ class NET_TYPE(Enum):
 
 
 class Input(Singleton, DirectObject):
-    def __init__(self, base: "SCIV"):
+    def __init__(self, base: "OpenCiv"):
         super().__init__()
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.active: bool = False
         self.sequence: Optional[Sequence] = None
 
@@ -115,7 +115,7 @@ class Input(Singleton, DirectObject):
         self.logger.info("Activating input raycaster.")
         self.active = True
 
-    def __setup__(self, base: "SCIV", *args: Any, **kwargs: Any) -> None:
+    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any) -> None:
         from managers.world import World
 
         self.base = base

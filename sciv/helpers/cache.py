@@ -4,25 +4,25 @@ from gameplay.rules import get_game_rules
 from managers.log import LogManager
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from sciv.game import OpenCiv
     from system.atlas import AtlasGenerator
     from gameplay.rules import GameRules
 
 
 class Cache:
-    _instance: Optional["SCIV"] = None
+    _instance: Optional["OpenCiv"] = None
     _icon_atlas: Optional["AtlasGenerator"] = None
     _terrain_atlas: Optional["AtlasGenerator"] = None
     _active_rules: Optional["GameRules"] = get_game_rules()
     _core_logger: Optional[LogManager] = None
 
     @classmethod
-    def set_showbase_instance(cls, instance: "SCIV"):
+    def set_showbase_instance(cls, instance: "OpenCiv"):
         cls._instance = instance
         cls._logger = instance.logger
 
     @classmethod
-    def get_showbase_instance(cls) -> "SCIV":
+    def get_showbase_instance(cls) -> "OpenCiv":
         if cls._instance is None:
             raise AssertionError("Cache instance is not set.")
         return cls._instance
@@ -34,7 +34,7 @@ class Cache:
         return cls._core_logger
 
     @classmethod
-    def get_weakref(cls) -> ReferenceType["SCIV"]:
+    def get_weakref(cls) -> ReferenceType["OpenCiv"]:
         if cls._instance is None:
             raise AssertionError("Cache instance is not set.")
 

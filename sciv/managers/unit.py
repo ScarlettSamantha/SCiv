@@ -4,16 +4,16 @@ from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
-    from game import SCIV
+    from sciv.game import OpenCiv
 
 
 class UnitManager(Singleton):
-    def __setup__(self, base: "SCIV"):
-        self.base: "SCIV" = base
+    def __setup__(self, base: "OpenCiv"):
+        self.base: "OpenCiv" = base
         self.units: Dict[str, "Unit"] = {}
 
-    def __init__(self, base: "SCIV"):
-        self.base: "SCIV" = base
+    def __init__(self, base: "OpenCiv"):
+        self.base: "OpenCiv" = base
 
     def all(self) -> Dict[str, "Unit"]:
         return self.units

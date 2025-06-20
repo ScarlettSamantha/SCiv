@@ -14,7 +14,7 @@ from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from sciv.game import OpenCiv
     from gameplay.tile import Tile
     from gameplay.player import Player
 
@@ -73,7 +73,7 @@ class BaseEntity(ABC, DirectObject):
         if Cache.has_instance() is False:
             raise AssertionError("Cache instance is not set.")
 
-        self.base: "SCIV" = Cache.get_showbase_instance()
+        self.base: "OpenCiv" = Cache.get_showbase_instance()
 
     @property
     def owner(self) -> Optional[Union[ReferenceType["Player"], "Player"]]:

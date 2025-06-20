@@ -23,13 +23,13 @@ from menus.kivy.elements.image_label import ImageLabel
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
 
 
 class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
     def __init__(
         self,
-        base: "SCIV",
+        base: "OpenCiv",
         name: str,
         background_color: Tuple[int, int, int, int] = (0, 0, 0, 0),
         border: Tuple[int, int, int, int] = (0, 0, 0, 0),
@@ -44,7 +44,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        self.base: "SCIV" = base
+        self.base: "OpenCiv" = base
         self.logger = base.logger.gameplay.getChild("ui.city_ui")
         self.frame: Optional[BoxLayout] = None
         self.hidden: bool = False

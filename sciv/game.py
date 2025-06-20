@@ -33,7 +33,7 @@ monkey.patch_kivy()  # attach Kivy to the Panda3D window # type: ignore
 loadPrcFile("config.prc")  # Load the Panda3D configuration file
 
 
-class SCIV(ShowBase):
+class OpenCiv(ShowBase):
     def __init__(self, debug: bool = False):
         from managers.assets import AssetManager
         from managers.ui import ui
@@ -227,7 +227,7 @@ class SCIV(ShowBase):
 
 
 if __name__ == "__main__":
-    app = SCIV(debug=True)
+    app = OpenCiv(debug=True)
 
     try:
         app.run()

@@ -23,7 +23,7 @@ from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from sciv.game import OpenCiv
 
 
 class AssetManager(Singleton):
@@ -34,7 +34,7 @@ class AssetManager(Singleton):
     pil_image_cache: Dict[str, PILImage.Image] = {}
     pil_font_cache: Dict[Tuple[str, str], PILImageFont.FreeTypeFont] = {}
 
-    base: Optional["SCIV"] = None
+    base: Optional["OpenCiv"] = None
     _logger: Optional[Logger] = None
 
     def __setup__(self):
@@ -178,7 +178,7 @@ class AssetManager(Singleton):
         return img_widget
 
     @classmethod
-    def set_base(cls, base: "SCIV") -> None:
+    def set_base(cls, base: "OpenCiv") -> None:
         cls.base = base
 
     @classmethod

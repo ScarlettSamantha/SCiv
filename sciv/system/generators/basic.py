@@ -20,7 +20,7 @@ from system.generators.base import WorldParams
 from system.mesh import HexGrid
 
 if TYPE_CHECKING:
-    from game import SCIV
+    from game import OpenCiv
     from system.game_settings import GameSettings
     from system.subsystems.hexgen.grid import Grid
     from gameplay.tile import Tile
@@ -31,7 +31,7 @@ class Basic(BaseGenerator):
     NAME = "CivLike"
     DESCRIPTION = "Generates a hex-based map using HexGen."
 
-    def __init__(self, config: "GameSettings", base: "SCIV"):
+    def __init__(self, config: "GameSettings", base: "OpenCiv"):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
 
