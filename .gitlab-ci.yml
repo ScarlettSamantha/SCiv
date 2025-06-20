@@ -76,11 +76,11 @@ security-check:
     - bandit -r . -c pyproject.toml
 
 markdown-check:
+  <<: *default-python-job
   stage: verify
   image: node:latest
   only:
     - branches
     - merge_requests
   script:
-    - pip install pymarkdownlnt --root-user-action=ignore
     - markdownlnt --config .markdownlnt.json scan '**/*.md'
