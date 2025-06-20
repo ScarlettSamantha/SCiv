@@ -82,4 +82,4 @@ markdown-check:
     - branches
     - merge_requests
   script:
-    - markdownlnt --config .markdownlnt.json scan '**/*.md'
+    - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
