@@ -6,8 +6,10 @@ bundle = "nl.scarlettbytes.sciv"
 author = "Scarlett Samantha Verheul"
 author_email = "scarlett.verheul@gmail.com."
 
-[tool.briefcase.app.sciv]
+[tool.briefcase.app.sciv.windows]
+use_full_install_path = false
 
+[tool.briefcase.app.sciv]
 formal_name = "Sciv"
 description = "An open-source Civ-like game"
 long_description = "A Python project for Civ-like game made in panda3d."
