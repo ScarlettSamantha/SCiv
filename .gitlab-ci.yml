@@ -7,6 +7,7 @@ variables:
 
 stages:
   - verify
+  - package
 
 .default-python-job: &default-python-job
   image: python:3.13
@@ -76,11 +77,49 @@ security-check:
     - bandit -r . -c pyproject.toml
 
 markdown-check:
+  <<: *default-python-job
   stage: verify
-  image: node:latest
   only:
     - branches
     - merge_requests
   script:
-    - npm install --global markdownlint-cli --root-user-action=ignore
-    - markdownlint '**/*.md'
+    - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
+
+package-linux:
+  image: ubuntu:24.04          
+  only:
+    - tags
+    - merge_requests
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  cache:
+    key: shared-pip-cache
+    paths:
+      - .cache/pip
+    policy: pull-push
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends software-properties-common curl git build-essential python3-dev
+    - add-apt-repository ppa:deadsnakes/ppa -y
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends python3.13 python3.13-dev
+    - curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13
+    - update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
+    - pip3 install --upgrade pip --root-user-action=ignore
+    - pip3 install -r requirements.txt --root-user-action=ignore
+  stage: package
+  script:
+    - python3 --version
+    - ln -sf /usr/local/bin/python3.13 /usr/bin/python3
+    - pip install briefcase --root-user-action=ignore
+    - /usr/bin/python3.13 -m briefcase create linux
+    - /usr/bin/python3.13 -m briefcase update -r
+    - /usr/bin/python3.13 -m briefcase update
+    - /usr/bin/python3.13 -m briefcase build linux
+    - /usr/bin/python3.13 -m briefcase package linux
+    - mkdir -p builds
+    - cp dist/*.deb builds/
+  artifacts:
+    paths:
+      - builds/*.deb
+    expire_in: 1 week

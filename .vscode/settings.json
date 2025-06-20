@@ -249,5 +249,6 @@
     "editor.formatOnPaste": true,
     "[jsonc]": {
         "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
-    }
+    },
+    "python.createEnvironment.contentButton": "show"
 }

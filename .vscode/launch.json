@@ -9,7 +9,7 @@
             "name": "Python Debugger: Main Game File",
             "type": "debugpy",
             "request": "launch",
-            "program": "./main.py",
+            "program": "run.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
         },

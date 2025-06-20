@@ -109,7 +109,7 @@ The goal is to have an actual semi playable and resumable game and improved buil
 - [X] Map regeneration/reroll (with same settings)
 - [X] CI/CD, Would like a auto builder and checker running on my gitlab instance.
 - [X] Working research
-    - [X] Resource specific improvements and resource system improvements.
+  - [X] Resource specific improvements and resource system improvements.
 - [X] Civic system implementation + city borders
 - [X] City/Empire borders drawn
 - [X] Barbarians + Nature player + Very basic AI

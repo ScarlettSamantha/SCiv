@@ -1,7 +1,14 @@
 {
   "typeCheckingMode": "strict",
   "stubPath": "./stubs",
-  "exclude": ["assets", "scripts", "system/subsystems/hexgen/**", "./stubs"],
+  "exclude": [
+    "sciv/assets",
+    "scripts",
+    "sciv/system/subsystems/hexgen/**",
+    "./stubs",
+    "./build",
+    "./dist"
+  ],
   "reportMissingTypeStubs": "none",
   "reportUnknownLambdaType": "none",
   "reportMissingModuleSource": "none",

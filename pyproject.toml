@@ -1,17 +1,68 @@
+[tool.briefcase]
+project_name = "SCiv"
+version = "0.1.5"
+package = "nl.scarlettbytes.sciv"
+bundle = "nl.scarlettbytes.sciv"
+author = "Scarlett Samantha Verheul"
+author_email = "scarlett.verheul@gmail.com."
+
+[tool.briefcase.app.sciv.windows]
+use_full_install_path = false
+
+[tool.briefcase.app.sciv]
+formal_name = "Sciv"
+description = "An open-source Civ-like game"
+long_description = "A Python project for Civ-like game made in panda3d."
+sources = ["sciv"]
+distributions = ["appdir"]
+bundle = "nl.scarlettbytes.sciv"
+entry_point = "main:main"
+license.file = "LICENSE"
+requires = [
+  "panda3d",
+  "panda3d_kivy",
+  "webcolors",
+  "python-dotenv",
+  "sentry-sdk",
+  "numpy",
+  "panda3d-simplepbr",
+  "pillow",
+  "panda3d-gltf",
+  "dill",
+  "dill[graph]",
+  "py_trees",
+  "Pmw",
+  "rich",
+  "graphviz",
+  "matplotlib",
+  "gprof2dot",
+]
+assets = [
+  "assets",
+  "exceptions",
+  "gameplay",
+  "helpers",
+  "i18n",
+  "managers",
+  "menus",
+  "mixins",
+  "system",
+  "world",
+]
+cleanup_paths = ["build"]
+
 [tool.poetry]
 authors = ["Scarlett Samantha Verheul <scarlett.verheul@gmail.com>"]
-dependencies.python = "^3.12"
+dependencies.python = "^3.13"
 description = "A Python project for Civ-like game"
 license = "MIT"
 name = "SCiv"
 
 [tool.ruff]
-ignore = ["E501", "F841", "E721"]
+ignore = ["E501", "F841", "E721", "E402"]
 line-length = 120
 select = ["E", "W", "F"]
-exclude = [
-  "**/stubs", "**/.pyenv", "**/site-packages", "**/*.pyi"
-]
+exclude = ["**/stubs", "**/.pyenv", "**/site-packages", "**/*.pyi"]
 
 [tool.pydocstyle]
 add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
@@ -19,7 +70,12 @@ ignore = ["system/subsystems/"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
-exclude = ["**/stubs", "**/site-packages", "**/*.pyi", "system/subsystems/hexgen/"]
+exclude = [
+  "**/stubs",
+  "**/site-packages",
+  "**/*.pyi",
+  "sciv/system/subsystems/hexgen/",
+]
 stubPath = "./typings"
 pythonPlatform = "Linux"
 
