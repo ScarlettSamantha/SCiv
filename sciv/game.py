@@ -24,6 +24,7 @@ from panda3d_kivy import monkey  # type: ignore
 from helpers.cache import Cache
 from helpers.debug import Debug
 from helpers.direct_loading_screen import LoadingScreen
+from helpers.windows import WindowsHelper
 from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
@@ -64,6 +65,9 @@ class OpenCiv(ShowBase):
         config_mgr.disable_vsync()
         self.config_manager: ConfigManager = config_mgr
         self.base_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
+
+        if WindowsHelper.is_windows():
+            WindowsHelper.load_dll(str(self.base_path / "libs/win-amd64/glew32.dll"))
 
         # Loading screen
         loading_screen = LoadingScreen(

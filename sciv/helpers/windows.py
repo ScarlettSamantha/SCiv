@@ -7,6 +7,16 @@ class WindowsHelper:
     _is_windows: Optional[bool] = None
 
     @classmethod
+    def load_dll(cls, dll_name: str) -> None:
+        if cls.is_windows():
+            try:
+                import ctypes  # type: ignore
+
+                ctypes.CDLL(dll_name)
+            except OSError as e:
+                raise RuntimeError(f"Failed to load DLL '{dll_name}': {e}")
+
+    @classmethod
     def is_windows(cls) -> bool:
         """Check if the current operating system is Windows."""
         if cls._is_windows is None:
