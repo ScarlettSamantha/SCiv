@@ -33,7 +33,7 @@ from helpers.images import (
     pil_image_to_panda3d_texture,
 )
 from helpers.debug import Debug
-from sciv.helpers.windows import WindowsHelper
+from helpers.windows import WindowsHelper
 from system.atlas import AtlasGenerator
 from gameplay.resource import BaseResource
 from managers.assets import AssetManager

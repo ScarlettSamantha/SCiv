@@ -1,7 +1,7 @@
 import random
 import weakref
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
 
 from gameplay._units import Units
 from gameplay.ai.goal import Goal, Goals
@@ -29,7 +29,7 @@ class AI(ABC):
     UNIT_REAL_VISION_RADIUS: int = 3  # The real vision radius of a unit is how the engine actually sees the world
 
     def __init__(self, player: "Player"):
-        self.player: "Player" = player
+        self._player: weakref.ReferenceType["Player"] = weakref.ref(player)
         self.turn_action_register: Dict[int, List[Callable[..., None]]] = {}
         self.logger = self.player.logger.getChild("ai")
         self.logger.debug(f"AI created for player {str(self.player.name)} with personality {self.player.personality}")
@@ -46,6 +46,37 @@ class AI(ABC):
         self.memory: Memories = Memories()
         self.tasks: Tasks = Tasks()
         self.personality: Personality = self.player.personality
+
+    def on_load(self) -> None:
+        self.logger = self.player.logger.getChild("ai")
+        self.control_cities = weakref.ref(self.player.cities)
+        self.control_units = weakref.ref(self.player.units)
+        self.control_tiles = weakref.ref(self.player.tiles)
+        self.vision = weakref.ref(self.player.vision)
+
+    def __getstate__(self) -> object:
+        return {
+            "player": self._player,
+            "memory": self.memory,
+            "tasks": self.tasks,
+            "personality": self.personality,
+            "end_goal": self.end_goal,
+            "goals": self.goals,
+            "unit_directions": self.unit_directions,
+        }
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self._player = state["player"]
+        state.pop("player", None)  # Remove player from state to avoid circular reference
+
+        self.__dict__.update(state)
+
+    @property
+    def player(self) -> "Player":
+        player = self._player()
+        if player is None:
+            raise ValueError("Player reference is None")
+        return player
 
     def get_memories(self) -> Memories:
         return self.memory

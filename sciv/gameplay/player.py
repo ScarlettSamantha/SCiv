@@ -169,7 +169,7 @@ class Player(BaseEntity):
         self.votes = Votes()
 
     def generate_tag(self) -> str:
-        return f"player.{str(self.leader.name)}.{self.turn_order}"
+        return f"player.{str(self.leader.name).lower().replace(' ', '_')}.{self.turn_order}"
 
     def register(self) -> None:
         from managers.entity import EntityManager, EntityType
@@ -187,6 +187,8 @@ class Player(BaseEntity):
         self.register()
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
         self.tech.on_game_load()
+        if self.ai is not None:
+            self.ai.on_load()
         self.effects = Effects(self)
 
     def unregister(self) -> None:

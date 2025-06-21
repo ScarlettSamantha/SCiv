@@ -21,7 +21,7 @@ from gameplay.resources.core.basic.science import Science
 from helpers.debug import Debug
 from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
-from sciv.helpers.windows import WindowsHelper
+from helpers.windows import WindowsHelper
 
 if TYPE_CHECKING:
     from sciv.game import OpenCiv

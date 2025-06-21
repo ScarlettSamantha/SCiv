@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Type, TypeVar
 
+
 T = TypeVar("T", bound="Singleton")
 
 
