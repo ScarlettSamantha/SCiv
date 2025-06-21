@@ -79,6 +79,10 @@ class AttackAction(BaseUnitAction):
     def attack_failure_popup(self, action: Action, *args: Any, **kwargs: Any):
         result = action.get_result()
 
+        if result is None:
+            # We dont have to do anything with it as None indicates that action was not applicable.
+            return
+
         if not isinstance(result, CombatOutcome):
             raise TypeError(f"Expected CombatOutcome, got {type(result).__name__}")
 
