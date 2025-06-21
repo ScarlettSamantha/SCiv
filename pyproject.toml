@@ -51,8 +51,9 @@ assets = [
   "world",
   "assets",
   "saves",
+  "libs",
 ]
-cleanup_paths = ["build"]
+cleanup_paths = ["build", "sciv/assets/generated", "sciv/logs/", "sciv/saves/"]
 
 [tool.poetry]
 authors = ["Scarlett Samantha Verheul <scarlett.verheul@gmail.com>"]

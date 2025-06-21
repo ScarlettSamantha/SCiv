@@ -28,6 +28,9 @@ RUN pip3 install -r /tmp/requirements.txt \
 
 WORKDIR /app
 COPY . /app
+RUN rm -rf /app/.git /app/sciv/logs /app/**/__pycache__/  /app/sciv/saves/ /app/sciv/assets/generated/ \
+    && find /app -type d -name "__pycache__" -exec rm -rf {} + \
+    && find /app -type f -name "*.py[c|o|d]" -delete
 
 ENTRYPOINT ["bash", "-lc"]
 CMD ["python3 --version \
