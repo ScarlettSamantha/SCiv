@@ -2,14 +2,22 @@ from subprocess import run
 import pathlib
 import sys
 import os
+import ctypes
 
 requirements_command: str = "python -m briefcase update -r"
 build_command: str = "python -m briefcase build"
-compile_command: str = "python -m briefcase compile"
+compile_command: str = "python -m briefcase package"
+
+
+def is_admin() -> bool:
+    try:
+        return os.getuid() == 0
+    except AttributeError:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore
 
 
 def cleanup_build():
-    base = pathlib.Path(__file__).parent / "build" / "sciv" / "windows" / "app" / "src" / "app" / "sciv"
+    base = pathlib.Path(__file__).parent.parent / "build" / "sciv" / "windows" / "app" / "src" / "app" / "sciv"
     remove = [
         "assets/generated",
         "logs/",
@@ -22,6 +30,7 @@ def cleanup_build():
                 for sub_item in path.iterdir():
                     sub_item.unlink(missing_ok=True)
                 path.rmdir()
+                print(f"[Build-Cleanup]Removing {path}")
             else:
                 path.unlink(missing_ok=True)
 
@@ -59,4 +68,7 @@ def main():
 
 
 if __name__ == "__main__":
+    if not is_admin():
+        print("This script requires administrative privileges. Please run it as an administrator.")
+        sys.exit(1)
     main()
