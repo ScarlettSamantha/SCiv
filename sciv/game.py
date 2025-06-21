@@ -32,6 +32,7 @@ from managers.unit import UnitManager
 from panda3d.core import loadPrcFile
 
 Config.set("modules", "inspector", "")  # type: ignore
+Config.set("graphics", "gl_backend", "angle_sdl2")  # type: ignore
 
 monkey.patch_kivy()  # attach Kivy to the Panda3D window # type: ignore
 
