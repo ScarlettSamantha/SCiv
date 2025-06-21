@@ -8,6 +8,7 @@ author_email = "scarlett.verheul@gmail.com."
 
 [tool.briefcase.app.sciv.windows]
 use_full_install_path = false
+support_package = "file://libs/win-amd64/glew32.dll"
 
 [tool.briefcase.app.sciv]
 formal_name = "Sciv"
