@@ -86,6 +86,8 @@ pythonPlatform = "Linux"
 
 [tool.bandit]
 skips = ["B311", "B301", "B101", "B403"]
+exclude_dirs = ["scripts"]
+
 
 [tool.semantic_release]
 changelog_function = "changelog.py:openciv_changelog"
