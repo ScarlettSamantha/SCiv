@@ -48,6 +48,8 @@ assets = [
   "mixins",
   "system",
   "world",
+  "assets",
+  "saves",
 ]
 cleanup_paths = ["build"]
 
