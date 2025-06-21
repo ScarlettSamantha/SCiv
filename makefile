@@ -1,8 +1,8 @@
 COMPARE_BRANCH ?= dev-v0.2.0
 
-.PHONY: all pyright-diff pyright-full lint format security markdown precommit
+.PHONY: all pyright-diff pyright-full lint format security markdown precommit build-linux build-windows
 
-all: pyright-diff lint format security markdown
+all: pyright-diff lint format security markdown build-linux build-windows
 
 precommit:
 	pre-commit run --all-files
@@ -24,3 +24,9 @@ security:
 
 markdown:
 	markdownlint '**/*.md'
+
+build-linux-docker:
+	sh scripts/linux_build.sh
+
+build-windows:
+	python scripts/build_windows.py

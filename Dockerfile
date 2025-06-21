@@ -35,7 +35,6 @@ RUN rm -rf /app/.git /app/sciv/logs /app/**/__pycache__/  /app/sciv/saves/ /app/
 ENTRYPOINT ["bash", "-lc"]
 CMD ["python3 --version \
     && python3 -m briefcase update -r \
-    && python3 -m briefcase update \
     && python3 -m briefcase build linux \
     && python3 -m briefcase package linux \
     && mkdir -p builds \
