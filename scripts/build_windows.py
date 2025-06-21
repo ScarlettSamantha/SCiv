@@ -2,19 +2,11 @@ from subprocess import run
 import pathlib
 import sys
 import os
-import ctypes
-import pyuac
+from pyuac import main_requires_admin
 
 requirements_command: str = "python -m briefcase update -r"
 build_command: str = "python -m briefcase build"
 compile_command: str = "python -m briefcase package"
-
-
-def is_admin() -> bool:
-    try:
-        return os.getuid() == 0
-    except AttributeError:
-        return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore
 
 
 def cleanup_build():
@@ -29,13 +21,15 @@ def cleanup_build():
         if path.exists():
             if path.is_dir():
                 for sub_item in path.iterdir():
-                    sub_item.unlink(missing_ok=True)
-                path.rmdir()
+                    run(["del", "/F", "/Q", str(sub_item)], shell=True)
+                run(["rmdir", "/S", "/Q", str(path)], shell=True)
                 print(f"[Build-Cleanup]Removing {path}")
             else:
-                path.unlink(missing_ok=True)
+                run(["del", "/F", "/Q", str(path)], shell=True)
+                print(f"[Build-Cleanup]Removing {path}")
 
 
+@main_requires_admin(return_output=True)  # type: ignore
 def main():
     project_root = pathlib.Path(__file__).parent.parent
     if not project_root.exists():
@@ -69,8 +63,10 @@ def main():
 
 
 if __name__ == "__main__":
-    if not pyuac.isUserAdmin():
-        print("Re-launching as admin!")
-        pyuac.runAsAdmin()  # type: ignore
-    else:
-        main()
+    instance = main()
+    if instance:
+        admin_stdout_str, admin_stderr_str, *_ = instance  # type: ignore
+        if admin_stdout_str:
+            print(admin_stdout_str)  # type: ignore
+        if admin_stderr_str:
+            print(admin_stderr_str)  # type: ignore
