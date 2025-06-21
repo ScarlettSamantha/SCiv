@@ -64,7 +64,7 @@ class OpenCiv(ShowBase):
         config_mgr.apply_config_to_prc()
         config_mgr.disable_vsync()
         self.config_manager: ConfigManager = config_mgr
-        self.base_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
+        self.base_path: pathlib.Path = pathlib.Path.cwd().absolute()
 
         if WindowsHelper.is_windows():
             WindowsHelper.load_dll(str(self.base_path / "libs/win-amd64/glew32.dll"))
