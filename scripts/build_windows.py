@@ -3,6 +3,7 @@ import pathlib
 import sys
 import os
 import ctypes
+import pyuac
 
 requirements_command: str = "python -m briefcase update -r"
 build_command: str = "python -m briefcase build"
@@ -68,7 +69,8 @@ def main():
 
 
 if __name__ == "__main__":
-    if not is_admin():
-        print("This script requires administrative privileges. Please run it as an administrator.")
-        sys.exit(1)
-    main()
+    if not pyuac.isUserAdmin():
+        print("Re-launching as admin!")
+        pyuac.runAsAdmin()  # type: ignore
+    else:
+        main()
