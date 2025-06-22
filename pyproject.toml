@@ -1,6 +1,6 @@
 [tool.briefcase]
 project_name = "SCiv"
-version = "0.1.5"
+version = "0.1.6"
 package = "nl.scarlettbytes.sciv"
 bundle = "nl.scarlettbytes.sciv"
 author = "Scarlett Samantha Verheul"
