@@ -124,7 +124,7 @@ class MainMenuScreen(Screen):
 
         webbrowser.open_new_tab(REPOSITORY)
 
-    def exit(self):
+    def exit(self, _: Optional[Button] = None):
         messenger.send("game.input.user.quit_game")
 
     def hide(self, _: Optional[Button] = None):
