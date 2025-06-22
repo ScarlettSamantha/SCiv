@@ -1,0 +1,14 @@
+from typing import Any
+from gameplay.terrain.flat_light_jungle import FlatLightJungle as FlatLightJungleTerrain
+from gameplay.tile import Tile
+
+
+class FlatLightJungle(Tile):
+    _terrain = FlatLightJungleTerrain
+    _model = _terrain.model
+    _cache_name = "FlatLightJungle"
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+
+        self.set_terrain(FlatLightJungleTerrain())

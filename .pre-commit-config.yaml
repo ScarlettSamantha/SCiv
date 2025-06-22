@@ -1,28 +1,70 @@
 repos:
   - repo: local
     hooks:
+      # 1) Automatically apply all auto-fixable Ruff formatting
+      - id: ruff-fix
+        name: Ruff auto-fix
+        entry: ruff format
+        language: system
+        types: [python]
+
+      # 2) Pyright on changed files
       - id: pyright-diff
         name: Pyright on changed files
         entry: bash .pre-commit-hooks/pyright-diff.sh
         language: system
         types: [python]
+
+      # 3) Full Pyright check on merge commits
       - id: pyright-full
         name: Full Pyright check
-        entry: pyright .
+        entry: >
+          bash -c 'if [ -f .git/MERGE_HEAD ]; then pyright .; else echo "Skipping full pyright (not a merge)"; fi'
         language: system
         types: [python]
+
+      # 4) Ruff linting (after auto-fix) on staged files, or full if merging
       - id: ruff-lint
         name: Ruff lint check
-        entry: ruff check .
+        entry: |
+          bash -c '
+            if [ -f .git/MERGE_HEAD ]; then
+              ruff check .
+            else
+              # collect staged .py files
+              files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" || true)
+              if [ -z "$files" ]; then
+                echo "No staged Python files to lint."
+                exit 0
+              fi
+              echo "$files" | xargs ruff check
+            fi
+          '
         language: system
         types: [python]
+
+      # 5) Verify no remaining formatting changes for staged files, or full if merging
       - id: ruff-format
         name: Ruff format check
-        entry: ruff format --check --diff .
+        entry: |
+          bash -c '
+            if [ -f .git/MERGE_HEAD ]; then
+              ruff format --check --diff
+            else
+              files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" || true)
+              if [ -z "$files" ]; then
+                echo "No staged Python files to check format."
+                exit 0
+              fi
+              echo "$files" | xargs ruff format --check --diff
+            fi
+          '
         language: system
         types: [python]
+
+      # 6) Markdown linting
       - id: markdown-lint
         name: Markdown lint
-        entry: markdownlint '**/*.md' -c .markdownlint.json -i stubs
+        entry: pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
         language: system
         types: [markdown]

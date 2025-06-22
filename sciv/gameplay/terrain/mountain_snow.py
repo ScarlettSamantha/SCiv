@@ -1,0 +1,28 @@
+import random
+from typing import Any
+from managers.i18n import T_TranslationOrStr
+
+from ._base_terrain import BaseTerrain
+
+
+class MountainSnow(BaseTerrain):
+    _name = "world.terrain.mountain_snow"
+    _fallback_color = (255, 255, 255)
+    can_spawn_resources = False
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+
+        self.movement_modifier = 3
+        self.water_availability = 0
+
+        self.passable: bool = False
+        self.passable_without_tech: bool = False
+        self.enable_random_rotation: bool = True
+        self._texture = "mountain_ice.png"
+
+    def random_rotation(self) -> int:
+        return (270 + random.randint(0, 5) * 60) % 360
+
+    def model(self) -> T_TranslationOrStr:
+        return str(self._model)

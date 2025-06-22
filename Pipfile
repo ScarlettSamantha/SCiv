@@ -7,9 +7,8 @@ name = "pypi"
 panda3d = "*"
 panda3d-kivy = "*"
 types-panda3d = "*"
-noise = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.12"
+python_version = "3.13"

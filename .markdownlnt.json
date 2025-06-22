@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "md007": {
+      "enabled": true,
+      "code_block_line_length": 160
+    },
+    "md013": {
+      "enabled": true,
+      "line_length": 1000,
+      "code_blocks": false,
+      "tables": false
+    },
+    "md026": {
+      "enabled": true,
+      "punctuation": ".,;:!?"
+    },
+    "md028": {
+      "enabled": false
+    },
+    "md033": {
+      "enabled": false
+    }
+  }
+}

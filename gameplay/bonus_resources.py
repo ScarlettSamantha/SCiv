@@ -1,2 +1,0 @@
-class BonusResources:
-    pass

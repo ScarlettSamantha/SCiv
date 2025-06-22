@@ -10,14 +10,16 @@ These are all used by the camera system and are used for mainly controlling the 
 - `arrow-down` (E: engine | L: camera)
 - `arrow-left` (E: engine | L: camera)
 - `arrow-right` (E: engine | L: camera)
+
 - `w` (E: engine | L: camera)
 - `s` (E: engine | L: camera)
 - `d` (E: engine | L: camera)
 - `q` (E: engine | L: camera)
 - `e` (E: engine | L: camera)
+- `r` (E: engine | L: camera)
+
 - `wheel_up` (E: engine | L: camera)
 - `wheel-down` (E: engine | L: camera)
-- `r` (E: engine | L: camera)
 - `mouse1` (E: engine | L: camera)
 - `mouse3` (E: engine | L: camera)
 - `escape` (E: engine | L: ui-part-load, L: ui-part-save, ui-part-pause)
@@ -26,11 +28,15 @@ These are all used by the camera system and are used for mainly controlling the 
 
 These are used by the UI manager to control some debug actions these may disappear.
 
-- `f7` (E: engine | L: manager-ui)
+- `f2` (E: engine | L: manager-input) (debug: activate input system)
+- `f3` (E: engine | L: manager-input) (debug: deactivate input system)
+- `f7` (E: engine | L: manager-ui) (debug: run analysis)
+- `f9` (E: engine | L: `tile<selected>`) (debug: trigger rerender on selected tile)
+- `f10` (E: engine | L: `tile<selected>`) (debug: render bits on selected tile)
+- `f11` (E: engine | L: `tile<selected>`) (debug: unrender bits on selected tile)
+
 - `p` (E: engine | L: manager-ui)
 - `l` (E: engine | L: manager-ui)
-- `n` (E: engine | L: manager-ui)
-- `m` (E: engine | L: manager-ui)
 - `b` (E: engine | L: manager-ui)
 - `z` (E: engine | L: manager-ui)
 - `x` (E: engine | L: manager-ui)
@@ -60,6 +66,7 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
 - `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
+
 - `game.gameplay.unit.build_improvement_success` (E: action-build)
 - `game.gameplay.unit.build_improvement_failure` (E: action-build)
 
@@ -91,15 +98,15 @@ These are used by the UI manager to control some debug actions these may disappe
 
 ### Units
 
-- `unit.action.move.visiting_tile` (E: BaseTile | L: manager-ui)
+- `unit.action.move.visiting_tile` (E: Tile | L: manager-ui)
 - `unit.action.found_city.success` (E: action-found | )
 
 ## UI
 
 - `ui.refresh.frame_insert` (E: * | L: manager-ui )
 
-- `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui, L: screen-game-ui)
-- `ui.update.user.unit_clicked` (E: manager-game | L: screen-game-ui)
+- `ui.update.user.tile_clicked"` (E: manager-game | L: manager-ui)
+- `ui.update.user.unit_clicked` (E: manager-game | L: )
 - `ui.update.user.city_clicked` (E: manager-ui | L: screen-game-ui)
 - `ui.update.user.tile_hover` (E: manager-game | L: manager-ui)
 - `ui.update.user.tile_unhover` (E: manager-game | L: manager-ui)
@@ -124,9 +131,15 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.show_load` (E: pause-menu-game-ui, E: main-menu-game-ui | L: ui-manager)
 - `ui.update.ui.hide_load` (E: saveload-menu-game-ui | L: ui-manager)
 
+- `ui.update.ui.show_player_info` (E: ui-player-list | L: manager-game )
+- `ui.update.ui.hide_player_info` (E: ui-player-list | L: manager-game )
+
 - `ui.update.ui.refresh_city_ui` (E: manager-ui | L: ui-part-city)
 - `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
+- `ui.update.ui.refresh_action_bar` (E: unit | L : manager-game-ui )
+
+- `ui.update.ui.combat_log.add` (E: * | L: ui-player-combat-log )
 
 - `ui.update.ui.debug_ui_toggle` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)
@@ -160,5 +173,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `system.input.camera_unlock` (E: ui-part-save, E: ui-part-load | L: camera)
 
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
+- `system.game.player_game_over` (E: Lose | L: manager-game)
+- `system.game.opponent_game_over` (E: Lose | L: manager-ui )
 
 - `system.unit.destroyed` (E: unit-base)

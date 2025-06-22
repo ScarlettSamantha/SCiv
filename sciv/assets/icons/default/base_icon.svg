@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+    <defs>
+        <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffe28a"/>
+            <stop offset="100%" stop-color="#c2a032"/>
+        </linearGradient>
+    </defs>
+    <g>
+        <!-- Outer hex border -->
+        <polygon
+            points="128,16 232,72 232,184 128,240 24,184 24,72"
+            fill="url(#gold)"
+            stroke="#8d7b35"
+            stroke-width="6"
+            />
+        <!-- Inner hex (fill) -->
+        <polygon
+            points="128,40 212,88 212,168 128,216 44,168 44,88"
+            fill="#6c2ca7"
+            stroke="none"
+            />
+        </g>
+    </svg>

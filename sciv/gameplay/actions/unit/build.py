@@ -1,0 +1,107 @@
+from typing import Any, Dict, Optional, Tuple, Type
+
+from direct.showbase import MessengerGlobal
+
+from gameplay.actions.unit.base_unit_action import BaseUnitAction
+from gameplay.improvement import Improvement
+from gameplay.rules import get_game_rules
+from gameplay.tile import Tile, CantBuildReason
+from gameplay.unit import Unit
+from managers.i18n import t_
+from system.actions import Action
+
+
+class BuildAction(BaseUnitAction):
+    def __init__(self, improvement: Type[Improvement], unit: Unit):
+        self.unit: Unit = unit
+
+        self.tile: Tile = self.unit.get_tile()
+        self._condition_result: bool | CantBuildReason = False
+        self.improvement: Type[Improvement] = improvement
+        super().__init__(
+            name=t_("actions.unit.move"),
+            action=self.build_wrapper,
+            condition=self.can_build,
+            on_failure=self.on_fail,
+            on_success=self.on_success,
+        )
+
+        self.on_the_spot_action = True
+        self.targeting_tile_action = False
+        self.get_return_as_failure_argument = True
+        self.building: Optional[Improvement] = None
+
+        self.unit_looses_movement_after_building_rule: bool = (
+            get_game_rules().get_unit_looses_movement_after_building_rule()
+        )
+
+    def build_wrapper(self, *args: Any, **kwargs: Any) -> CantBuildReason | bool:
+        self.building = self.improvement(tile=self.tile, owner=self.unit.owner)
+        result = self.tile.build(self.building)
+        self._result = result
+        return result
+
+    def can_build(self, *args: Any, **kwargs: Any) -> bool:
+        if len(self.tile.improvements()) > 0:
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.unit.build_improvement.improvement_already_exists.title"),
+                    t_("ui.dialogs.unit.build_improvement.improvement_already_exists.message"),
+                ],
+            )
+            self._condition_result = CantBuildReason.IMPROVEMENT_ALREADY_EXISTS
+            return False
+        if self.tile.is_passable() is False:
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.unit.build_improvement.improvement_not_passable.title"),
+                    t_("ui.dialogs.unit.build_improvement.improvement_not_passable.message"),
+                ],
+            )
+            self._condition_result = CantBuildReason.IMPROVEMENT_TILE_NOT_PASSABLE
+            return False
+        if self.unit.can_build is False:
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.unit.build_improvement.unit_cant_build.title"),
+                    t_("ui.dialogs.unit.build_improvement.unit_cant_build.message"),
+                ],
+            )
+            self._condition_result = CantBuildReason.NOT_CONSTRUCTABLE_BUILDER
+            return False
+        if self.unit.owner != self.tile.owner:
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.unit.build_improvement.improvement_not_owned.title"),
+                    t_("ui.dialogs.unit.build_improvement.improvement_not_owned.message"),
+                ],
+            )
+            self._condition_result = CantBuildReason.NOT_PLACEABLE_ON_ENEMY_TILE
+            return False
+        return self.unit.can_build
+
+    def on_success(self, _self: Any, args: Tuple[Any], kwargs: Dict[Any, Any]) -> Optional[bool]:  # type: ignore
+        MessengerGlobal.messenger.send("game.gameplay.unit.build_improvement_success", [self.building, self.unit])
+        if self.unit_looses_movement_after_building_rule:
+            self.unit.drain_movement_points(None)  # Will set the unit to 0 movement points.
+
+        # @TODO we might want to move this to the unit class as properties
+        if self.unit.build_charges != 0:
+            self.unit.build_charges_left -= 1
+
+        if self.unit.build_charges_left == 0:
+            self.unit.destroy()
+
+    def on_fail(self, action: Action, *args: Any, **kwargs: Any):
+        result = action.get_result()
+        MessengerGlobal.messenger.send(
+            "game.gameplay.unit.build_improvement_failure", [result, self.building, self.unit]
+        )

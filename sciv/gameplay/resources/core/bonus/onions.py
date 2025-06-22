@@ -1,0 +1,37 @@
+from typing import Dict, Type
+
+from gameplay.improvements.core.resources.farm import Farm
+from gameplay.resource import ResourceSpawnablePlace
+from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.terrain.flat_desert import FlatDesert
+from gameplay.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_scrubland import FlatScrubland
+from gameplay.terrain.flat_tundra import FlatTundra
+from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.hills_grass import HillsGrass
+from managers.i18n import T_TranslationOrStr, t_
+
+
+class Onions(BaseBonusResource):
+    key: str = "resource.core.bonus.onions"
+    name: T_TranslationOrStr = t_("content.resources.core.onions.name")
+    description: T_TranslationOrStr = t_("content.resources.core.onions.description")
+    _color = (1.0, 0.0, 1.0)
+    spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
+    icon: str = "assets/icons/resources/core/bonus/bordered_onions.png"
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        BaseTerrain: 0.0,
+        FlatTundra: 40.0,
+        FlatForest: 40.0,
+        FlatDesert: 20.0,
+        FlatScrubland: 45.0,
+        HillsForest: 50.0,
+        HillsGrass: 45.0,
+    }
+    coverage = 0.9
+    spawn_amount = 5.0
+    improvement_required = [Farm]
+
+    def __init__(self, value: int | float = 0):
+        super().__init__(value=value)
