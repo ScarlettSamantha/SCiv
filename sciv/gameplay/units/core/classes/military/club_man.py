@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING, Any
 
 from gameplay.civic import Conditions
-from gameplay.condition import BuildCondition
+from gameplay.condition import BuildCondition, ResearchCondition
 from gameplay.improvements.core.city.barracks import Barracks
 from gameplay.promotion import Promotion
 from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
+from sciv.gameplay.techs.hunting_gathering import HuntingGathering
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -49,7 +50,13 @@ class ClubMan(CoreMilitaryBaseClass):
             *args,
             **kwargs,
         )
-        self.build_conditions = Conditions(BuildCondition(tile=tile, improvement=Barracks))
+        self.build_conditions = Conditions(
+            conditions=[
+                BuildCondition(tile=tile, improvement=Barracks),
+                ResearchCondition(tech=HuntingGathering, player=player),
+            ],
+            player=player,
+        )
         self.unit_icons_z_offset = 3
         self.unit_icons_scale = 0.75
 

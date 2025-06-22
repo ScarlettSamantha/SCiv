@@ -102,6 +102,13 @@ class NatureAI(AI):
             for goal in self.get_goals():
                 if not goal.is_for_unit():
                     continue
+                if goal.executing_unit is not None and goal.executing_unit.is_alive() is False:
+                    if self.should_log:
+                        self.logger.debug(
+                            f"Unit {str(goal.executing_unit.name)} is dead, removing goal {str(goal.name)}"
+                        )
+                    self.remove_goal(goal)
+                    continue
                 if goal.needs_turn_processing:
                     goal.turn_tick()
                 if goal.is_achieved():

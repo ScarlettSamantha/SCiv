@@ -68,8 +68,12 @@ class AttackAction(BaseUnitAction):
                     t_(
                         "ui.dialogs.unit.combat.attack_success.message",
                         {
-                            "attacker": result.attacker_entity.name if result.attacker_entity else "Unknown Attacker",
-                            "defender": result.defender_entity.name if result.defender_entity else "Unknown Defender",
+                            "attacking_unit": result.attacker_entity.name
+                            if result.attacker_entity
+                            else "Unknown Attacker",
+                            "defending_unit": result.defender_entity.name
+                            if result.defender_entity
+                            else "Unknown Defender",
                             "damage": f"{result.attacker_damage.__round__(2)}" if result.attacker_damage > 0 else "",
                         },
                     ),
@@ -114,6 +118,9 @@ class AttackAction(BaseUnitAction):
                 t_("ui.dialogs.unit.combat.attack_errors.no_range.message"),
             )
 
+        if not text or not description:
+            # If we don't have a specific error, we can just return.
+            return
         MessengerGlobal.messenger.send(
             "ui.request.open.popup",
             ["unit_attack_error", text, description],

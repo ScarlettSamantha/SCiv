@@ -228,9 +228,6 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
                 if self.city is None:
                     continue
 
-                if not class_instance.conditions.are_met():
-                    continue
-
                 if type(class_instance) in self.city.get_improvements():  # We already have this improvement
                     continue
 
