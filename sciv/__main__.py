@@ -11,7 +11,7 @@ os.chdir(SCRIPT_DIR)
 def bootstrap():
     from game import OpenCiv
 
-    app = OpenCiv(debug=True)
+    app = OpenCiv()
 
     try:
         app.run()

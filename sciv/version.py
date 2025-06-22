@@ -8,9 +8,18 @@ except ImportError:
 __major__: int = 0
 __minor__: int = 1
 __patch__: int = 5
+__revision__: int = 1
+__isdev__: bool = True
 
-__version__: str = f"{__major__}.{__minor__}.{__patch__}"
-__version_name__ = "Alpha"
+if __isdev__:
+    __pre_release__: str = ".dev"
+    __build__: str = str(__revision__)
+else:
+    __pre_release__: str = ""
+    __build__: str = ""
+
+__version__: str = f"{__major__}.{__minor__}.{__patch__}{__pre_release__}{__build__}"
+__version_name__ = "Barbarians systems"
 
 
 def get_package_version(package_name: str) -> str:

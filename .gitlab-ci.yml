@@ -85,6 +85,16 @@ markdown-check:
   script:
     - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
 
+check-isdev-flag:
+  <<: *default-python-job
+  stage: verify
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME !~ /^dev-/'
+      when: on_success
+    - when: never
+  script:
+    - scripts/check_isdev.py
+
 package-linux:
   image: ubuntu:24.04          
   only:

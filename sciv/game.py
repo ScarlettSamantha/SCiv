@@ -41,15 +41,15 @@ loadPrcFile("config.prc")  # Load the Panda3D configuration file
 
 
 class OpenCiv(ShowBase):
-    def __init__(self, debug: bool = False):
+    def __init__(self):
         from managers.assets import AssetManager
         from managers.ui import ui
         from managers.world import World
         from system.camera import Camera
         from system.lights import setup_lights
-        from system.vars import __version__, get_git_commit
+        from system.vars import __version__, get_git_commit, DEBUG
 
-        self.debug = debug
+        self.debug: bool = DEBUG
 
         self.version: str = __version__
         self.commit: str = get_git_commit()
@@ -237,7 +237,7 @@ class OpenCiv(ShowBase):
 
 
 if __name__ == "__main__":
-    app = OpenCiv(debug=True)
+    app = OpenCiv()
 
     try:
         app.run()
