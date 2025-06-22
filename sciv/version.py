@@ -9,7 +9,7 @@ __major__: int = 0
 __minor__: int = 1
 __patch__: int = 5
 __revision__: int = 1
-__isdev__: bool = True
+__isdev__: bool = False
 
 if __isdev__:
     __pre_release__: str = ".dev"
