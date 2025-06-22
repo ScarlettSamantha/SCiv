@@ -2,7 +2,7 @@ import random
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 from direct.showbase.MessengerGlobal import messenger
 import numpy as np
@@ -20,7 +20,6 @@ from panda3d.core import (
     Texture,
     TextureStage,
     TransparencyAttrib,
-    Vec4,
 )
 
 
@@ -212,7 +211,6 @@ class Unit(BaseEntity, ABC):
             height = bounds[1].z - bounds[0].z if bounds else 0
             self.unit_icons.setPos(0, 0, height + self.unit_icons_z_offset)  # type: ignore
 
-            # texture + transparency + blending
             ts = TextureStage("icon")
 
             texture.setFormat(Texture.F_srgb_alpha)
@@ -228,14 +226,12 @@ class Unit(BaseEntity, ABC):
                 )
             )
 
-            # draw on top of opaque geometry
             self.unit_icons.set_depth_write(True)  # type: ignore
             self.unit_icons.set_depth_test(True)  # type: ignore
             self.unit_icons.setTwoSided(True)  # type: ignore
 
             self.unit_icons.set_bin("transparent", 90)  # type: ignore
 
-            # shader & uniforms
             self.unit_icons.set_shader(  # type: ignore
                 Shader.load(  # type: ignore
                     Shader.SL_GLSL,
@@ -247,7 +243,6 @@ class Unit(BaseEntity, ABC):
             self.unit_icons.set_shader_input("size", LVecBase3f(0.2, 0.2, 0))  # type: ignore
             self.unit_icons.set_shader_input("iconTex", texture)  # type: ignore
 
-            # 1) create the healthbar root
             self.healthbar_np = self.unit_icons.attachNewNode("healthbar")
             self.healthbar_np.setPos(0, 0, 0.75)
             self.healthbar_np.setScale(1.25, 1, 1.5)
@@ -256,7 +251,6 @@ class Unit(BaseEntity, ABC):
             cm.setFrame(-0.625, 0.625, -0.1125, 0.1125)
             bar_np = self.healthbar_np.attachNewNode(cm.generate())
 
-            # 3) transparency, blending, draw order
             bar_np.setTransparency(TransparencyAttrib.MAlpha)
             bar_np.setAttrib(
                 ColorBlendAttrib.make(
@@ -268,7 +262,6 @@ class Unit(BaseEntity, ABC):
             bar_np.setDepthWrite(False)
             bar_np.setTransparency(TransparencyAttrib.MAlways, 1)  #     type: ignore
 
-            # 4) apply your healthbar shader & init
             self.healthbar_shader = Shader.load(
                 Shader.SL_GLSL,
                 self.base.base_path / "assets/shaders/unit_healthbar.vert.glsl",
@@ -293,17 +286,11 @@ class Unit(BaseEntity, ABC):
         if not self.model:
             raise ValueError(f"No model loaded for unit {self.key}.")
 
+        color = self.get_owner().get_color()
         segs = LineSegs()
 
         segs.setThickness(line_thickness)
-        segs.setColor(
-            cast(
-                Vec4,
-                self.get_owner().color,
-            )
-            if color is None
-            else Vec4(*color)  # type: ignore
-        )
+        segs.setColor(color)
         num_segments = num_segments if num_segments > 0 else 64
 
         radius = self.selection_radius
@@ -329,10 +316,10 @@ class Unit(BaseEntity, ABC):
             circle_np.setShaderInput("dashLength", dash_length)  # type: ignore
             circle_np.setShaderInput("dashFreq", 18.0)  # type: ignore
             circle_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
-            circle_np.setShaderInput("borderWidth", 12)  # type: ignore
+            circle_np.setShaderInput("borderWidth", 0.05)  # type: ignore
             circle_np.setShaderInput("radius", 1)  # type: ignore
             circle_np.setShaderInput("time", 0.0)  # type: ignore
-            circle_np.setShaderInput("color", self.get_owner().color)  # type: ignore
+            circle_np.setShaderInput("color", color)  # type: ignore
 
         circle_np.hide()
         circle_np.reparentTo(self.model)

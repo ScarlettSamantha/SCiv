@@ -1,6 +1,7 @@
 // assets/shaders/unit_selection.frag.glsl
 #version 330 core
-in vec2 v_uv;
+in vec4 gl_Position;
+vec2 v_pos = gl_Position.xy
 out vec4 fragColor;
 
 uniform float time;        // driven each frame
