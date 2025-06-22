@@ -28,7 +28,7 @@ class Volcano(BaseTerrain):
                 model="volcano.glb",
                 scale=1.3,
                 hpr=(-75, 0, 0),
-                offset=(0, 0, -0.3),
+                offset=(0, 0, 0),
                 default_lighting=False,
                 default_shader=False,
                 blocks_resource_model_spawning=True,

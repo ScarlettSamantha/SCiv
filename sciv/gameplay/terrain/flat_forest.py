@@ -28,11 +28,11 @@ class FlatForest(BaseTerrain):
         self._texture = "flat_light_forest.png"
 
     def register_bits(self) -> None:
-        tree_bit = Bit(model="large_tree_green.glb", scale=random.uniform(0.50, 0.575), offset=(0, 0, -0.3))
+        tree_bit = Bit(model="large_tree_green.glb", scale=random.uniform(0.50, 0.575), offset=(0, 0, 0))
         bush_bit = Bit(
             model="bush_small_green.glb",
             scale=0.4,
-            offset=(0, 0, -0.3),
+            offset=(0, 0, 0),
         )
         bush2 = bush_bit.copy()
 

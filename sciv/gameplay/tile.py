@@ -97,15 +97,15 @@ class Tile(BaseEntity):
 
         self.prop_size_scale_factor: float = 0.3
         self.prop_slots: Dict[str, Tuple[float, float, float]] = {
-            "e": (0.45, 0.0, self.prop_size_scale_factor),
-            "ne": (0.375, 0.35, self.prop_size_scale_factor),
-            "nw": (-0.375, 0.35, self.prop_size_scale_factor),
-            "w": (-0.45, 0.0, self.prop_size_scale_factor),
-            "sw": (-0.375, -0.35, self.prop_size_scale_factor),
-            "se": (0.375, -0.35, self.prop_size_scale_factor),
-            "center": (0.0, 0.0, self.prop_size_scale_factor),
-            "n": (0.0, 0.45, self.prop_size_scale_factor),
-            "s": (0.0, -0.45, self.prop_size_scale_factor),
+            "e": (0.45, 0.0, 0),
+            "ne": (0.375, 0.35, 0),
+            "nw": (-0.375, 0.35, 0),
+            "w": (-0.45, 0.0, 0),
+            "sw": (-0.375, -0.35, 0),
+            "se": (0.375, -0.35, 0),
+            "center": (0.0, 0.0, 0),
+            "n": (0.0, 0.45, 0),
+            "s": (0.0, -0.45, 0),
         }
 
         self._edges: Dict[str, Optional[Union[Edge, weakref.ReferenceType[Edge]]]] = {

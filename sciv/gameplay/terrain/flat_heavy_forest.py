@@ -26,9 +26,9 @@ class FlatHeavyForest(BaseTerrain):
         self._texture = "flat_heavy_forest.png"
 
     def register_bits(self) -> None:
-        small_pine: Bit = Bit(model="tree_pine_green_small.glb", scale=0.45, offset=(0, 0, -0.25))
-        medium_pine: Bit = Bit(model="tree_pine_green_middle.glb", scale=0.45, offset=(0, 0, -0.25))
-        large_pine: Bit = Bit(model="tree_pine_green_large.glb", scale=0.45, offset=(0, 0, -0.25))
+        small_pine: Bit = Bit(model="tree_pine_green_small.glb", scale=0.45, offset=(0, 0, 0.05))
+        medium_pine: Bit = Bit(model="tree_pine_green_middle.glb", scale=0.45, offset=(0, 0, 0.05))
+        large_pine: Bit = Bit(model="tree_pine_green_large.glb", scale=0.45, offset=(0, 0, 0.05))
 
         self.bits.mode = GroupMode.OR
 

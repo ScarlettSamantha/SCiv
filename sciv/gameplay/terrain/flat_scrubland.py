@@ -25,14 +25,14 @@ class FlatScrubland(BaseTerrain):
         grass_bit = Bit(
             model="cluster_grass_one.glb",
             scale=0.5,
-            offset=(0, 0, -0.3),
+            offset=(0, 0, 0),
             allow_auto_scale=False,
             preferred_slot="center",
         )
         grass_bit2 = Bit(
             model="cluster_grass_two.glb",
             scale=0.5,
-            offset=(0, 0, -0.3),
+            offset=(0, 0, 0),
             allow_auto_scale=False,
             preferred_slot="center",
         )

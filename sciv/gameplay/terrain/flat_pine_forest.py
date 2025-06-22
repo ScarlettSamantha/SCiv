@@ -31,7 +31,7 @@ class FlatPineForest(BaseTerrain):
                 disabled=False,
                 id="tree_pine_forest_combined",
                 default_lighting=False,
-                offset=(0, 0, -0.3),
+                offset=(0, 0, 0),
                 hpr=(uniform(-180, 180), 0, 0),
             )
         )
