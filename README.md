@@ -1,22 +1,42 @@
 # SCiv
 
-> 🚨 **Warning:** This project is in a very early development phase and is likely fully functional yet. It may lack gameplay elements and is currently focused on testing system implementations.
+> 🚨 **Warning:** This project is in a very early development phase and is likely not fully functional yet. It may lack gameplay elements and is currently focused on testing system implementations.
 
-> ⚠️ **Danger:** This code is highly dynamic and can be vulnerable to arbitrary remote code execution if modified or when using downloaded files. Malicious actors could exploit this to run harmful code(*!There is no sandbox!*). Be extremely cautious and only load trusted, verified sources.
+> ⚠️ **Danger:** This code is highly dynamic and can be vulnerable to arbitrary remote code execution if modified or when using downloaded files. Malicious actors could exploit this to run harmful code (*There is no sandbox*). Be cautious and only load trusted, verified sources.
 
-## Running it
+This project is a hobby and an exercise in something semi-related to my profession. I am trying to make a Civ-like game as I really enjoy the franchise, but not the direction it's currently heading with Civ7.
+
+The main goal (BFG) is to create something functionally similar to Civ. I don't intend to make a clone or a port, but I believe Civ5 and Civ6 had some good ideas, just like Stellaris.
+
+I am building this in a project called [panda3d](https://github.com/panda3d/panda3d), which is a Python game engine written in C++ for the performance-critical parts. I'm using [kivy](https://github.com/kivy/kivy) as the main GUI, as the old DirectGUI system is very outdated. I am aiming for this to remain as much as possible in python as possible with little databases or other systems, more so as to see if I can then out of practicality.
+
+## Requirements
+
+It currently requires (*for now*) a Unix/Windows-based OS, Python 3.13 or greater. Hardware requirements depend on map size: I can run a 150x150 map at zoom levels with a *7800XT*. Normal map sizes (e.g. *90x190*) require about `~3GB` RAM; I expect this to be around `2-4GB`. VRAM usage is about `900MB`, which may grow to `2-4GB` depending on textures and models. It's mostly single-core usage, so a CPU with strong single-thread performance is preferred. At normal zoom levels, it is currently CPU-bound on my Intel 13th-gen i5.
+
+## How to run it
 
 > Known Bugs: [Known Bugs](meta/known_bugs.md)
 
-At the moment it will run a basic POC as of version 0.2 it contains some gameplay elements but is still more about implementation.
+At the moment, it will remain a basic POC until around version *0.2* It contains some gameplay elements but is still primarily focused on implementation.
 
-### How to run it
+It's not difficult to run, thanks to Panda3D. Please check out the development branch for now, as the main branch is outdated. Dev branches should work semi-okay since most features are developed in feature branches.
 
-Its not that hard to actually run it as its panda3d now. Please do checkout the development branch for now as the main branch will be very outdated and the dev benches should work semi ok as most features are made in feature branches.
+There might be builds available for your OS, but they're probably outdated minor versions. For now, I suggest running it via Python.
 
-#### Ubuntu
+When installed via binary releases, the packages are not signed and require administrator rights on Windows and sudo on Linux to run. This is because, for now, it writes logs and data files to its own directory, which requires elevated rights on both OSes. This will change in the future.
 
-It might give you the standard error when trying to install python packages but ether pip or venv are required. or you need to pull your own packages from the distro's repository (eg: apt install python packages). This is why I have provided a venv route, you can choose to just system install the packages.
+If you install it via Python, it doesn't need admin rights if you place it somewhere it can write to its own directory.
+
+### Ubuntu
+
+#### Binary
+
+You can download the latest release of the `.deb` release and install that it will install its self in `/usr/local` and you can run it via `sudo sciv`(see above on why `sudo`) or via the menu entry it creates in your start menu.
+
+#### GIT
+
+You might encounter standard errors when installing Python packages. Either `pip` or `venv` is required, or you need to install packages via your distro's package manager (e.g., `apt install python3-packages`). I've provided a venv setup, but you can also use system-wide packages.
 
 ```bash
 sudo apt install git python3-pip python3-venv
@@ -28,267 +48,137 @@ cd SCiv
 python3 -m venv .
 source bin/activate
 bin/pip install -r requirements.txt
-python3 main.py
+python3 run.py
 ```
 
-#### Requirements
+### Windows
 
-It requires (*for now*) a unix OS, Python3.11 or greater and hardware spec wise it depends on map size I can run a 150x150 map at zoom levels with a *7800XT* when using normal map sizes eg: *90x120* ish requires about `750MB` ram and I expect this to grow to about `2-4GB` ram required. VRAM it seems to use around `500MB` I expect this to row to some `3-6GB` In the end depending on the textures and models. its mostly single core usage so a strong single core performing cpu should be better. its also at normal zoom levels at the moment of writing on my pc cpu bound (Intel 13th gen i5).
+As of version `0.1.5`, Windows should work decently. Some images may be missing due to paths not converting properly, but it should still run.
+
+I'm somewhat dependent on friends for Windows testing, as I don't have a Windows PC capable of running the game properly.
+
+Releases (e.g., `.msi`) should work and are usually tested, but dev branches might not.
+
+#### Installer
+
+There should be a `.msi` installer which is just a windows installer format based on the wix installer. You can install that and from that it should create system menu entry for the application and you can run that with administrator rights (see above why `administrator`). If you choose to install it for all users it will install its self in `C://Program Files/sciv` there is no folder selection option yet that I can find but maybe in the future.
+
+#### Git
+
+Install [Python 3.13+](https://www.python.org/downloads/windows/) and [Git](https://gitforwindows.org/).
+
+Clone the repo into a folder of your choice. I recommend using Git Bash, or PowerShell if you're more familiar with that.
+
+```bash
+git clone https://github.com/ScarlettSamantha/SCiv.git
+chdir SCiv
+python -m pip install -r requirements.txt
+python run.py
+```
+
+Note: use `python` and not `python3`, because Windows links the `python3` command to the Microsoft Store for some reason.
 
 ### Debugging
 
-I don't have windows or used it in a while so I cant help with windows debugging.
+I don't have a Windows machine and haven't used it in a while, so I can't help much with Windows debugging.
 
-You can connect it to pstats you need to have it listening on the default port `5185` then you press `p` to activate pstats broadcasting and `l` to stop it again.
+You can connect it to `pstats`. Start it listening on the default port `5185`, then press `p` to activate pstats broadcasting and `l` to stop it.
 
-In the `config.prc` is defined it will also debug GPU data but if this is causing issues you can disable it there.
-
-#### Lenses
-
-There are also lenses for debugging or you can use the buttons in the debug ui they will trigger the same functions.
-Beware the menu and button states don't update each other tough
-
-- `b`: Highlights units in `blue` while tiles that have no units in `red`
-- `n`: Highlights resources and their types on the map `yellow` for strategic, `green`/`yellow` for bonus, `red` for none. please note colors might look different
-- `m`: Highlights water and different types of it, `tiel` is coastal and shallow, `blue` deeper and sea
-- `z`: Calculates and toggles major icons on tiles
-- `x`: Toggles big buttons on tiles
-- `c`: Toggles small icons on tiles
-
-#### Issues
-
-- Its reporting module missing: Please make a bug report forgot to add it to requirements.txt
-- Why venv: Because if I tell you to break system packages and something goes wrong people get mad.
+In `config.prc`, GPU debug data is enabled by default. You can disable it there if it causes issues.
 
 ## Project
 
-> Structure [Project Structure](meta/structure.md)
+> Structure: [Project Structure](meta/structure.md)  
+> Improvements/ToDo's: [TODO](meta/todo.md)
 
-> Improvements/ToDo's [TODO](meta/todo.md)
-
-### 0.1.0 Goals - Poc/Demo
+### 0.1.0 Goals - PoC/Demo
 
 The aim of the 0.1.0 release is to have core systems (engine, managers, rendering, and world mechanics) functional and testable.
 
 #### Key Objective
 
-At this stage, I want the core gameplay loop to work at a basic level, meaning:
+At this stage, I want the core gameplay loop to function at a basic level:
 
 - A city can build a builder unit.
 - The builder can construct an improvement on a tile.
-- The improvement will modify tile yields, affecting production.
-- A playable PoC or demo would be ideal, but this might be pushed to 0.2.0 since saving/loading mechanics are not planned for 0.1.0 but are a priority for 0.2.0.
+- The improvement modifies tile yields, affecting production.
+- A playable PoC or demo would be ideal, but this might be pushed to 0.2.0 since saving/loading is not planned for 0.1.0 and is a priority for 0.2.0.
 
 <details>
 
-- [x] Have world render
-- [x] Have resource system
-- [x] Have ok at least map generator
-- [x] Manage entities
-- [x] Spawn units
-- [x] Unit actions
-- [x] Process a minimal turn
-- [x] Cities that can build something
-- [x] Basic player ownership and city being aware of tiles around it
-- [x] UI city show ownership of tiles around it.
-- [x] Basic UI element
-- [x] Movement for units both path find-ed and weighted + UI
-- [x] Basic backend system integration like managers, systems, logging
-- [x] Proper Implementation UI system (kivy)
-- [x] Effects implementation
-- [x] Improvements on Tiles
+- [x] Have world render  
+- [x] Have resource system  
+- [x] Have a usable map generator  
+- [x] Manage entities  
+- [x] Spawn units  
+- [x] Unit actions  
+- [x] Process a minimal turn  
+- [x] Cities that can build something  
+- [x] Basic player ownership and tile awareness  
+- [x] UI shows city ownership of nearby tiles  
+- [x] Basic UI elements  
+- [x] Movement for units with pathfinding and weighted cost + UI  
+- [x] Basic backend systems: managers, systems, logging  
+- [x] Proper implementation of UI system (Kivy)  
+- [x] Effects implementation  
+- [x] Tile improvements  
 
 </details>
 
 ### 0.2.0 Goals - Dev
 
-The goal is to have an actual semi playable and resumable game and improved building/developer experience to improve speed for future implementations.
+The goal is to have a semi-playable and resumable game, with improved building/dev experience for future development.
 
-- [X] Saving/Loading + GUI
-- [X] Improve map generator with fixed resource type spawns to prevent deadlocks in smaller games due to critical resources lacking.
-- [X] Map regeneration/reroll (with same settings)
-- [X] CI/CD, Would like a auto builder and checker running on my gitlab instance.
-- [X] Working research
-  - [X] Resource specific improvements and resource system improvements.
-- [X] Civic system implementation + city borders
-- [X] City/Empire borders drawn
-- [X] Barbarians + Nature player + Very basic AI
-- [X] Units dumb fighting (no war or detection of rivers etc, just mele no range), maybe UI for this.
-- [ ] Map gen parameters in GUI
-- [ ] Better Development tools.
-- [ ] Hide development things behind a toggle.
-- [ ] Settings menu
-- [ ] Basic documentation
-- [ ] Dynamic spawning of models when buildings/improvements get build
+- [x] Saving/Loading + GUI  
+- [x] Improved map generator with fixed resource type spawns to prevent deadlocks in small games  
+- [x] Map regeneration/reroll (same settings)  
+- [x] CI/CD with auto-builder and checker on GitLab  
+- [x] Working research system  
+  - [x] Resource-specific improvements and resource system improvements  
+- [x] Civic system implementation + city borders  
+- [x] City/Empire borders rendered  
+- [x] Barbarians + Nature player + basic AI  
+- [x] Basic combat (melee only, no range, river detection, etc.) + UI  
+- [ ] Map generator parameters in GUI  
+- [ ] Better development tools  
+- [ ] Hide development tools behind a toggle  
+- [ ] Settings menu  
+- [ ] Basic documentation  
+- [ ] Dynamic spawning of models when buildings/improvements are constructed  
 
-### (Provisional) 0.3.0 Goals - Alpha
+### (Planning) 0.3.0 Goals - Alpha
 
-Adding more functionality to already existing systems and flushing out the combat system and working on units that can inhabit a other plane eg: air, water and space(satellites) units.
+Add more functionality to existing systems, flesh out the combat system, and introduce unit types for different planes (air, sea, satellites).
 
-This should be the first real "playable" version that should be some level of fun.
-
-<details>
-
-- [ ] Unit embarkation/disembarkation.
-- [ ] Fog + Discovery
-- [ ] Sea/Air units
-- [ ] Show result before moving
-- [ ] Wonders
-- [ ] (?) Basic enemy AI
-- [ ] Unit promotions and exp
-- [ ] Auto move if a move action is to far to do it at the end of the next turn
-- [ ] Build queue
-- [ ] Battle result calculation UI
-- [ ] Basic in-game codex UI (not fully implemented)
-- [ ] Better looking tiles
-- [ ] Rivers (navigable ?)
-- [ ] City renaming/manual naming
-- [ ] Rule customizer
-
-</details>
-
-### Other information
-
-- [Roadmap](meta/roadmap.md) - A rough roadmap (without timelines as this is a hobby project).
-- [Contribution Guide](CONTRIBUTE.md) - Guidelines for contributing.
-- [Changelog](CHANGELOG.md) - Automatically generated changelog.
-- [File Structure](meta/structure.md) - The project structure
-- [Todo](meta/todo.md) - Things that still need to be done in current codebase.
-- [Signals](meta/technical/signals.md) - Signals used to send to other elements of the code
-- [Rules](meta/technical/rules.md) - The rules that are customizable for the players. (customizer in later version ~0.3)
-- [Workings](meta/technical/workings.md) - How the systems work in a abstract way.
-
-## Game
-
-### Mechanics
-
-> @todo
-
-### Wonders
-
-> @todo
-
-### Greats
-
-> @todo
-
-### Resources
+This should be the first truly playable version that's somewhat fun.
 
 <details>
 
-| Resource          | Type                                                    | Code                                                  | Docs                                               |
-| ----------------- | ------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------- |
-| Bison             | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](resources/core/bonus/bison.py)                 | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Cheese            | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/cheese.py)                   | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Copper            | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/copper.py)                   | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Cows              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/cows.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Deer              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/deer.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Ember             | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/ember.py)                    | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Fish              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/fish.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Furs              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/furs.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Glass             | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/glass.py)                    | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Hardwood          | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/hardwood.py)                 | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Mercury           | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/murcury.py)                  | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Obsidian          | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/obsidian.py)                 | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Pigs              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/pigs.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Potato            | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/potato.py)                   | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Rice              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/rice.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Salt              | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/salt.py)                     | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Tin               | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/tin.py)                      | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Whales            | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/whales.py)                   | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Wheat             | [Bonus](meta/ideas/gameplay/resources/BONUS.md)         | [Code](ources/core/bonus/wheat.py)                    | [Docs](meta/ideas/gameplay/resources/BONUS.md)     |
-| Cats              | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](ources/core/luxury/cats.py)                    | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Diamonds          | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](ources/core/luxury/diamonds.py)                | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Dogs              | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](ources/core/luxury/dogs.py)                    | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Gold              | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](ources/core/luxury/gold.py)                    | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Ivory             | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](ources/core/luxury/ivory.py)                   | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Jade              | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](resources/core/luxury/jade.py)                 | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Marble            | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](resources/core/luxury/marble.py)               | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Silver            | [Luxury](meta/ideas/gameplay/resources/LUXURY.md)       | [Code](resources/core/luxury/silver.py)               | [Docs](meta/ideas/gameplay/resources/LUXURY.md)    |
-| Aluminium         | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/aluminium.py)         | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Coal              | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/coal.py)              | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Gas               | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/gas.py)               | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Graphite          | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/graphite.py)          | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Horses            | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/horses.py)            | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Oil               | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/oil.py)               | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Rare Earth Metals | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/rare_earth_metals.py) | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
-| Uranium           | [Strategic](meta/ideas/gameplay/resources/STRATEGIC.md) | [Code](resources/core/strategic/uranium.py)           | [Docs](meta/ideas/gameplay/resources/STRATEGIC.md) |
+- [ ] Unit embarkation/disembarkation  
+- [ ] Fog of war + discovery  
+- [ ] Sea/Air units  
+- [ ] Show move result before committing  
+- [ ] Wonders  
+- [ ] (?) Basic enemy AI  
+- [ ] Unit promotions and experience  
+- [ ] Auto-move for long distance actions across turns  
+- [ ] Build queue  
+- [ ] Battle result calculation UI  
+- [ ] In-game codex UI (basic)  
+- [ ] Better tile visuals  
+- [ ] Rivers (navigable?)  
+- [ ] City renaming/manual naming  
+- [ ] Rule customizer  
 
 </details>
 
-### Civilizations
+### Other Information
 
-<details>
-
-| Civilization                                                  | Wikipedia Link                                                         | Code                                                     |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
-| [Akkadian](./ideas/civs/akkadian.md)               | [Akkadian Empire](https://en.wikipedia.org/wiki/Akkadian_Empire)       | [code](openciv/gameplay/civilization/akkadian.py)        |
-| [American Empire](./ideas/civs/american_empire.md) | [American Empire](https://en.wikipedia.org/wiki/American_Empire)       | [code](openciv/gameplay/civilization/american_empire.py) |
-| [Byzantine](./ideas/civs/byzantine.md)             | [Byzantine Empire](https://en.wikipedia.org/wiki/Byzantine_Empire)     | [code](openciv/gameplay/civilization/byzantine.py)       |
-| [China](./ideas/civs/china.md)                     | [History of China](https://en.wikipedia.org/wiki/History_of_China)     | [code](openciv/gameplay/civilization/china.py)           |
-| [Egypt](./ideas/civs/egypt.md)                     | [Ancient Egypt](https://en.wikipedia.org/wiki/Ancient_Egypt)           | [code](openciv/gameplay/civilization/egypt.py)           |
-| [England](./ideas/civs/england.md)                 | [History of England](https://en.wikipedia.org/wiki/History_of_England) | [code](openciv/gameplay/civilization/england.py)         |
-| [France](./ideas/civs/france.md)                   | [History of France](https://en.wikipedia.org/wiki/History_of_France)   | [code](openciv/gameplay/civilization/france.py)          |
-| [Germany](./ideas/civs/germany.md)                 | [History of Germany](https://en.wikipedia.org/wiki/History_of_Germany) | [code](openciv/gameplay/civilization/germany.py)         |
-| [Greece](./ideas/civs/greece.md)                   | [Ancient Greece](https://en.wikipedia.org/wiki/Ancient_Greece)         | [code](openciv/gameplay/civilization/greece.py)          |
-| [Japan](./ideas/civs/japan.md)                     | [History of Japan](https://en.wikipedia.org/wiki/History_of_Japan)     | [code](openciv/gameplay/civilization/japan.py)           |
-| [Korea](./ideas/civs/korea.md)                     | [History of Korea](https://en.wikipedia.org/wiki/History_of_Korea)     | [code](openciv/gameplay/civilization/korea.py)           |
-| [Low Countries](./ideas/civs/netherlands.md)     | [Low Countries](https://en.wikipedia.org/wiki/netherlands)           | [code](openciv/gameplay/civilization/netherlands.py)   |
-| [Ottoman](./ideas/civs/ottoman.md)                 | [Ottoman Empire](https://en.wikipedia.org/wiki/Ottoman_Empire)         | [code](openciv/gameplay/civilization/ottoman.py)         |
-| [Persia](./ideas/civs/persia.md)                   | [Persian Empire](https://en.wikipedia.org/wiki/Persian_Empire)         | [code](openciv/gameplay/civilization/persia.py)          |
-| [Rome](./ideas/civs/rome.md)                       | [Ancient Rome](https://en.wikipedia.org/wiki/Ancient_Rome)             | [code](openciv/gameplay/civilization/rome.py)            |
-| [Spain](./ideas/civs/spain.md)                     | [History of Spain](https://en.wikipedia.org/wiki/History_of_Spain)     | [code](openciv/gameplay/civilization/spain.py)           |
-| [USSR](./ideas/civs/ussr.md)                       | [Soviet Union](https://en.wikipedia.org/wiki/Soviet_Union)             | [code](openciv/gameplay/civilization/ussr.py)            |
-| [Vikings](./ideas/civs/vikings.md)                 | [Vikings](https://en.wikipedia.org/wiki/Vikings)                       | [code](openciv/gameplay/civilization/vikings.py)         |
-
-</details>
-
-### Leaders
-
-<details>
-
-| Leader                                                        | Wikipedia Link                                                                                   | Code                                                        |
-|--------------------------------------------------------------|------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| [Abraham Lincoln](./ideas/gameplay/leaders/abraham_lincoln.md) | [Abraham Lincoln (American Empire)](https://en.wikipedia.org/wiki/Abraham_Lincoln)             | [code](openciv/gameplay/leaders/abraham_lincoln.py)         |
-| [Alexander the Great](./ideas/gameplay/leaders/alexander.md) | [Alexander the Great (Greece)](https://en.wikipedia.org/wiki/Alexander_the_Great)             | [code](openciv/gameplay/leaders/alexander.py)               |
-| [Ambiorix](./ideas/gameplay/leaders/ambiorix.md)            | [Ambiorix (Low Countries)](https://en.wikipedia.org/wiki/Ambiorix)                            | [code](openciv/gameplay/leaders/ambiorix.py)                |
-| [Mustafa Kemal Atatürk](./ideas/gameplay/leaders/ataturk.md) | [Mustafa Kemal Atatürk (Ottoman)](https://en.wikipedia.org/wiki/Mustafa_Kemal_Atat%C3%BCrk)   | [code](openciv/gameplay/leaders/ataturk.py)                 |
-| [Augustus Caesar](./ideas/gameplay/leaders/augustus.md)     | [Augustus (Rome)](https://en.wikipedia.org/wiki/Augustus)                                     | [code](openciv/gameplay/leaders/augustus.py)                |
-| [Julius Caesar](./ideas/gameplay/leaders/caesar.md)         | [Julius Caesar (Rome)](https://en.wikipedia.org/wiki/Julius_Caesar)                           | [code](openciv/gameplay/leaders/caesar.py)                  |
-| [Charlemagne](./ideas/gameplay/leaders/charlemagne.md)      | [Charlemagne (France)](https://en.wikipedia.org/wiki/Charlemagne)                             | [code](openciv/gameplay/leaders/charlemagne.py)             |
-| [Charles III of Spain](./ideas/gameplay/leaders/charles_iii.md) | [Charles III of Spain](https://en.wikipedia.org/wiki/Charles_III_of_Spain)                 | [code](openciv/gameplay/leaders/charles_iii.py)             |
-| [Charles V, Holy Roman Emperor](./ideas/gameplay/leaders/charles_v.md) | [Charles V, Holy Roman Emperor](https://en.wikipedia.org/wiki/Charles_V,_Holy_Roman_Emperor) | [code](openciv/gameplay/leaders/charles_v.py)               |
-| [Cleopatra VII](./ideas/gameplay/leaders/cleopatra.md)      | [Cleopatra (Egypt)](https://en.wikipedia.org/wiki/Cleopatra)                                 | [code](openciv/gameplay/leaders/cleopatra.py)               |
-| [Cnut the Great](./ideas/gameplay/leaders/cnut.md)         | [Cnut the Great (Vikings)](https://en.wikipedia.org/wiki/Cnut)                              | [code](openciv/gameplay/leaders/cnut.py)                    |
-| [Constantine the Great](./ideas/gameplay/leaders/constantine.md) | [Constantine the Great (Byzantine)](https://en.wikipedia.org/wiki/Constantine_the_Great) | [code](openciv/gameplay/leaders/constantine.py)             |
-| [Darius I](./ideas/gameplay/leaders/darius.md)             | [Darius the Great (Persia)](https://en.wikipedia.org/wiki/Darius_the_Great)                  | [code](openciv/gameplay/leaders/darius.py)                  |
-| [Charles de Gaulle](./ideas/gameplay/leaders/de_gaulle.md) | [Charles de Gaulle (France)](https://en.wikipedia.org/wiki/Charles_de_Gaulle)               | [code](openciv/gameplay/leaders/de_gaulle.py)               |
-| [Elizabeth I](./ideas/gameplay/leaders/elizabeth.md)       | [Elizabeth I (England)](https://en.wikipedia.org/wiki/Elizabeth_I)                          | [code](openciv/gameplay/leaders/elizabeth.py)               |
-| [Franklin D. Roosevelt](./ideas/gameplay/leaders/fdr.md)   | [Franklin D. Roosevelt (American Empire)](https://en.wikipedia.org/wiki/Franklin_D._Roosevelt) | [code](openciv/gameplay/leaders/fdr.py)                     |
-| [Giovanni di Bicci de' Medici](./ideas/gameplay/leaders/goi.md) | [Giovanni di Bicci de' Medici (Italy)](https://en.wikipedia.org/wiki/Giovanni_di_Bicci_de%27_Medici) | [code](openciv/gameplay/leaders/goi.py) |
-| [Mikhail Gorbachev](./ideas/gameplay/leaders/gorbachev.md) | [Mikhail Gorbachev (USSR)](https://en.wikipedia.org/wiki/Mikhail_Gorbachev)                 | [code](openciv/gameplay/leaders/gorbachev.py)               |
-| [Harald Fairhair](./ideas/gameplay/leaders/harald.md)      | [Harald Fairhair (Vikings)](https://en.wikipedia.org/wiki/Harald_Fairhair)                  | [code](openciv/gameplay/leaders/harald.py)                  |
-| [Isabella I of Castile](./ideas/gameplay/leaders/isabella.md) | [Isabella I of Castile (Spain)](https://en.wikipedia.org/wiki/Isabella_I_of_Castile)       | [code](openciv/gameplay/leaders/isabella.py)                |
-| [James VI and I](./ideas/gameplay/leaders/james.md)       | [James VI and I (England)](https://en.wikipedia.org/wiki/James_VI_and_I)                   | [code](openciv/gameplay/leaders/james.py)                   |
-| [Joan van Oldenbarnevelt](./ideas/gameplay/leaders/joan_van_oldenbarnevelt.md) | [Johan van Oldenbarnevelt (Low Countries)](https://en.wikipedia.org/wiki/Johan_van_Oldenbarnevelt) | [code](openciv/gameplay/leaders/joan_van_oldenbarnevelt.py) |
-| [Justinian I](./ideas/gameplay/leaders/justinian.md)      | [Justinian I (Byzantine)](https://en.wikipedia.org/wiki/Justinian_I)                        | [code](openciv/gameplay/leaders/justinian.py)               |
-| [Kamehameha I](./ideas/gameplay/leaders/kamehameha.md)    | [Kamehameha I (Hawaii)](https://en.wikipedia.org/wiki/Kamehameha_I)                         | [code](openciv/gameplay/leaders/kamehameha.py)              |
-| [Kublai Khan](./ideas/gameplay/leaders/kublai.md)         | [Kublai Khan (Mongolia)](https://en.wikipedia.org/wiki/Kublai_Khan)                         | [code](openciv/gameplay/leaders/kublai.py)                  |
-| [Vladimir Lenin](./ideas/gameplay/leaders/lenin.md)       | [Vladimir Lenin (USSR)](https://en.wikipedia.org/wiki/Vladimir_Lenin)                       | [code](openciv/gameplay/leaders/lenin.py)                   |
-
-</details>
-
-### Win Conditions
-
-<details>
-
-| Condition                                        | Mechanic                              | Meta-Docs                                           | Code |
-| ------------------------------------------------ | ------------------------------------- | --------------------------------------------------- | ---- |
-| [Alliance](./ideas/gameplay/victory/alliance.md) | State Building/Diplomacy              | [alliance.md](./ideas/gameplay/victory/alliance.md) | code |
-| [Commerce](./ideas/gameplay/victory/gold.md)     | Gold/Corporations/Trade               | [gold.md](./ideas/gameplay/victory/gold.md)         | code |
-| [Military](./ideas/gameplay/victory/military.md) | War/Military                          | [military.md](./ideas/gameplay/victory/military.md) | code |
-| [Religion](./ideas/gameplay/victory/religion.md) | Religion/War/Spy/Instability          | [religion.md](./ideas/gameplay/victory/religion.md) | code |
-| [Science](./ideas/gameplay/victory/science.md)   | State Building/Diplomacy              | [science.md](./ideas/gameplay/victory/science.md)   | code |
-| [Culture](./ideas/gameplay/victory/culture.md)   | Culture/Tourism/Archaeology/Diplomacy | [culture.md](./ideas/gameplay/victory/culture.md)   | code |
-
-</details>
+- [Roadmap](meta/roadmap.md) - Rough outline (no timelines; hobby project)  
+- [Contribution Guide](CONTRIBUTE.md) - How to contribute  
+- [Changelog](CHANGELOG.md) - Automatically generated  
+- [File Structure](meta/structure.md) - Project layout  
+- [Todo](meta/todo.md) - Remaining tasks  
+- [Signals](meta/technical/signals.md) - Internal signal definitions  
+- [Rules](meta/technical/rules.md) - Customizable game rules (editor coming ~0.3)  
+- [Workings](meta/technical/workings.md) - System overviews  

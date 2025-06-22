@@ -9,6 +9,9 @@
 - [x] Window drifts up and right very slightly over time (maybe because of write-back system?)
 - [X] Unit action bar does not clear properly.
 - [ ] Sometimes actions are triggered twice or more and should be debounced.
+- [ ] Sometimes unit clicks are not registered the first time after they are build.
+- [ ] Unit selection radical scaling with zoom level in a weird way.
+- [ ] Player lists internal ui object is positioned in a weird way due to the calculation needing to be done for the children fields width.
 
 ### Things that seem like bugs
 
@@ -18,6 +21,7 @@
 
 - [ ] When citizens reach zero it will not disappear yes. This has not been implemented together with a failure condition in general.
 - [X] Found actions is broken
+- [ ] Loading does not work from ingame but does from the ingame menu.
 
 ### Units
 
@@ -28,3 +32,9 @@
 ## Map/World
 
 - [X] When generating it will sometimes with smaller maps get stuck on generating aquifers I think I know why this is, it might have to do that its trying to spawn many aquifers but cant find a place for them all and gets stuck infinity. (@after-fixed: Refactored it into a sum instead of a flat hardcoded parameterized random_int)
+
+## Engine
+
+- [ ] Find the unknown loaded images
+- [ ] Remove old callback system (seems to still be integrated in the citizens system)
+- [ ] Issue with kivy having a hard dependence on a tool for clipboard control. this is known upstream at kivy but does not seem to get fixed.
