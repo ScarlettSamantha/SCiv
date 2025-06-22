@@ -7,6 +7,7 @@ from direct.task import Task
 from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase  # type: ignore
 from mixins.singleton import Singleton
+from managers.game import debounce
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -204,12 +205,14 @@ class Camera(Singleton, DirectObject):
     def enable_control(self):
         self.active = True
 
+    @debounce(0.25)
     def disable_zoom(self):
         if self.lock:
             return
         self.logger.debug("Disabling zoom")
         self.zoom_enabled = False
 
+    @debounce(0.25)
     def enable_zoom(self):
         if self.lock:
             return
@@ -234,7 +237,6 @@ class Camera(Singleton, DirectObject):
         self.win_x = window.getXSize()  # type: ignore
         self.win_y = window.getYSize()  # type: ignore
         self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0  #   type: ignore
-        self.logger.debug(f"Window resized: {self.win_x}x{self.win_y}, aspect={self._aspect_ratio:.2f}")  # type: ignore
 
         # update lens aspect ratio
         lens = self.base.cam.node().getLens()

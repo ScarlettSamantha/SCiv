@@ -4,11 +4,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from kivy.animation import Animation
-from kivy.graphics import Color, Line, Rectangle  # type: ignore
+from kivy.graphics import Color, Instruction, Line, Rectangle  # type: ignore
 from kivy.metrics import dp  # type: ignore
 from kivy.properties import NumericProperty
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -23,8 +22,8 @@ from managers.player import PlayerManager
 from managers.tech import TechManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
-
-from sciv.helpers.windows import WindowsHelper
+from helpers.optimizations import throttle
+from helpers.windows import WindowsHelper
 from system.entity import BaseEntity
 
 
@@ -259,16 +258,37 @@ class Research(FloatLayout, DirectObject):
         self._hovered_tech: Type[Tech] | None = None
         self.is_open: bool = True
         self.popup_disabled = True  # Dont remove this otherwise kivy starts behaving strange due to a dependence on this later on in the chain.
+        self._buttons: Dict[Type[Tech], ResearchButton] = {}
+        self._line_refs: List[Dict[str, Any]] = []
+        self._arrow_head_refs: List[Dict[str, Instruction | Line]] = []
         self.register()
 
     def register(self) -> None:
         self.accept("ui.update.ui.refresh_research_ui", self.update)
-        # Bind to height for live resizing
         self.bind(height=lambda *_: self.rebuild_layout())
 
     def update(self, *args: Any) -> None:
         if self.is_open:
             self._calculate_button_state()
+
+    def clear(self) -> None:
+        for child in list(self._float_layout.children):
+            if isinstance(child, ResearchButton):
+                child.unbind(on_release=self.on_research_button_click)
+
+        for ref in self._line_refs:
+            self._float_layout.canvas.before.remove(ref["line"])  # type: ignore
+            self._float_layout.canvas.before.remove(ref["color"])  # type: ignore
+        self._line_refs.clear()
+
+        for arrow in self._arrow_head_refs:
+            self._float_layout.canvas.before.remove(arrow["line1"])  # type: ignore
+            self._float_layout.canvas.before.remove(arrow["line2"])  # type: ignore
+            self._float_layout.canvas.before.remove(arrow["color"])  # type: ignore
+        self._arrow_head_refs.clear()
+
+        self._float_layout.clear_widgets()
+        self._buttons.clear()
 
     def build(self) -> None:
         if self._is_build:
@@ -296,7 +316,6 @@ class Research(FloatLayout, DirectObject):
             self._bg_rect = Rectangle(pos=self._float_layout.pos, size=self._float_layout.size)  # type: ignore
         self._float_layout.bind(pos=self._update_rect, size=self._update_rect)
         self.scroll_view.add_widget(self._float_layout)  # type: ignore
-        self._buttons: Dict[Type[Tech], Button] = {}
 
         self._column_bounds: Dict[int, Tuple[float, float]] = {}
 
@@ -422,8 +441,9 @@ class Research(FloatLayout, DirectObject):
         self._float_layout.height = total_height
         self._calculate_button_state()
 
+    @throttle(0.1)
     def rebuild_layout(self):
-        # Clear previous widgets, reset data
+        self.clear()
         self._place_tech_buttons()
         self._draw_dependency_lines()
 
@@ -571,7 +591,7 @@ class Research(FloatLayout, DirectObject):
         tgt_level: int,
         sx: float,
         sy: float,
-        to_btn: Button,
+        to_btn: ResearchButton,
         arrival_y: float,
         travel_lanes: Dict[int, float],
     ) -> List[float]:
@@ -665,6 +685,14 @@ class Research(FloatLayout, DirectObject):
         righty = tipy - (ndy * arrow_length) + (ndx * perp_len) + spacing_arrow_points
 
         # Apply given color
-        Color(*color)
-        Line(points=[tipx, tipy, leftx, lefty], width=1.5)
-        Line(points=[tipx, tipy, rightx, righty], width=1.5)
+        _color = Color(*color)
+        line1 = Line(points=[tipx, tipy, leftx, lefty], width=1.5)
+        line2 = Line(points=[tipx, tipy, rightx, righty], width=1.5)
+
+        self._arrow_head_refs.append(
+            {
+                "line1": line1,
+                "line2": line2,
+                "color": _color,
+            }
+        )

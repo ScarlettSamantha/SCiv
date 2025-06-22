@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, Optional, Tuple
 
 from panda3d.core import loadPrcFileData  # type: ignore
-
+from io import TextIOWrapper
 from mixins.singleton import Singleton
 
 
@@ -14,6 +14,7 @@ class ConfigManager(Singleton):
     def __setup__(self, *args: Any, **kwargs: Any) -> None:
         self.config_file = self.config_file
         self.config_data = self._load_config()
+        self.config_fp: Optional[TextIOWrapper] = None
         self.apply_config_to_prc()
         return super().__setup__(*args, **kwargs)
 
@@ -60,22 +61,20 @@ class ConfigManager(Singleton):
         return data if data else default
 
     def set_by_key(self, value: Any, *args: Any):
-        """
-        Set a value in the config by key.
-        Example: set_by_key([1280, 720], "window", "win-size")
-        """
         data = self.config_data
         for key in args[:-1]:
             data = data.get(key, {})
         data[args[-1]] = value
 
     def save_config(self):
-        """Persist current config to the JSON file."""
-        try:
-            with open(self.config_file, "w") as f:
-                json.dump(self.config_data, f, indent=2)
-        except Exception as e:
-            print(f"Could not save config: {e}")
+        if self.config_fp is None or self.config_fp.closed:
+            self.config_fp = open(self.config_file, "w")
+        with self.config_fp as f:
+            try:
+                json.dump(self.config_data, f, indent=4)
+                print(f"Config saved to {self.config_file}")
+            except Exception as e:
+                print(f"Could not save config: {e}")
 
     def apply_config_to_prc(self):
         """

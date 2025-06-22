@@ -18,6 +18,7 @@ from panda3d.core import (
 from gameplay.repositories.tile import TileRepository
 from managers.unit import UnitManager
 from mixins.singleton import Singleton
+from sciv.helpers.optimizations import debounce
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -107,10 +108,12 @@ class Input(Singleton, DirectObject):
         self.sequence = Sequence(Wait(delay), Func(self.activate))  # type: ignore
         self.sequence.start()
 
+    @debounce(0.25)
     def de_activate(self):
         self.logger.info("Deactivating input raycaster.")
         self.active = False
 
+    @debounce(0.25)
     def activate(self):
         self.logger.info("Activating input raycaster.")
         self.active = True

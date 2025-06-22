@@ -12,7 +12,7 @@ from gameplay.civilizations.rome import Rome
 from gameplay.lose import Lose, LoseConditions
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 
-
+from helpers.optimizations import debounce
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input
@@ -198,22 +198,29 @@ class Game(Singleton, DirectObject):
         self.base.win.requestProperties(props)  # type: ignore
 
     def environment_writeback(self) -> bool:
-        self.logger.info("Writing back window properties to config")
         props: WindowProperties = self.base.win.getProperties()  # type: ignore
-        win_size = (props.getXSize(), props.getYSize())  # type: ignore # Get current window size
-        win_origin = (props.getXOrigin(), props.getYOrigin())  # type: ignore # Get window position
+        win_size: Tuple[int, int] = (props.getXSize(), props.getYSize())  # type: ignore # Get current window size
+        win_origin: Tuple[int, int] = (props.get_x_origin(), props.get_y_origin())  # type: ignore # Get window position
 
-        old_win_size = tuple(self.config.get_by_key(("window", "win-size")))
-        old_win_origin = tuple(self.config.get_by_key(("window", "win-origin")))
+        old_win_size: Tuple[int, int] = tuple(self.config.get_by_key(("window", "win-size")))
+        old_win_origin: Tuple[int, int] = tuple(self.config.get_by_key(("window", "win-origin")))
 
-        if old_win_size == win_size and old_win_origin == win_origin:
-            self.logger.info("No changes to write back")
+        size_diff = abs(old_win_size[0] - win_size[0]) > 2 or abs(old_win_size[1] - win_size[1]) > 2
+        origin_diff = abs(old_win_origin[0] - win_origin[0]) > 2 or abs(old_win_origin[1] - win_origin[1]) > 2
+
+        if not size_diff and not origin_diff:
+            self.logger.info("No significant changes to write back")
             return False
 
         self.config.set_by_key([win_size[0], win_size[1]], "window", "win-size")
-        self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
+        if win_origin[0] == 0 and win_origin[1] == 0:
+            self.logger.info("Window origin is at (0, 0), not writing back, this is a bug in Panda3D")
+        else:
+            self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
+
         return True
 
+    @debounce(0.5)
     def config_saveback(self, *args: Any, **kwargs: Any) -> None:
         if self.environment_writeback() is True:
             self.config.save_config()
