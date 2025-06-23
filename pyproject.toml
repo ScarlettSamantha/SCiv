@@ -37,6 +37,7 @@ requires = [
   "graphviz",
   "matplotlib",
   "gprof2dot",
+  "xdg",
 ]
 assets = [
   "assets",
