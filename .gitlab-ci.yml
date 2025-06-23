@@ -104,9 +104,14 @@ check-isdev-flag:
 
 package-linux:
   image: ubuntu:24.04          
-  only:
-    - tags
-    - merge_requests
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /^dev-.*$/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - when: never
   variables:
     DEBIAN_FRONTEND: noninteractive
   cache:
