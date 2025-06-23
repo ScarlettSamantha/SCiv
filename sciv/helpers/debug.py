@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 import re
-import subprocess
+import subprocess  # nosec: B404
 from typing import Any, Dict, List, NoReturn, Optional
 
 from sentry_sdk import init
@@ -234,7 +234,7 @@ class Debug:
                     if line.startswith("model name"):
                         info["cpu"] = line.split(":", 1)[1].strip()
                         break
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
         # RAM from /proc/meminfo
@@ -248,12 +248,12 @@ class Debug:
                             info["ram_bytes"] = kb * 1024
                             break
                         continue
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
         # GPUs via lspci
         try:
-            out = subprocess.check_output(["lspci", "-nn"], text=True)
+            out = subprocess.check_output(["lspci", "-nn"], text=True)  # nosec: B603, B607
             gpus: List[str] = []
             for line in out.splitlines():
                 if "VGA compatible controller" in line or "3D controller" in line:
@@ -261,7 +261,7 @@ class Debug:
                     name = re.sub(r"\[.*?\]", "", line).split(":", 2)[-1].strip()
                     gpus.append(name)
             info["gpus"] = gpus
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
         return info
@@ -272,18 +272,18 @@ class Debug:
 
         # CPU
         try:
-            out = subprocess.check_output(
+            out = subprocess.check_output(  # nosec: B603, B607
                 ["wmic", "cpu", "get", "Name", "/value"], text=True, stderr=subprocess.DEVNULL
             )
             matches = re.search(r"Name=(.+)", out)
             if matches:
                 info["cpu"] = matches.group(1).strip()
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
         # RAM
         try:
-            out = subprocess.check_output(
+            out = subprocess.check_output(  # nosec: B603, B607
                 ["wmic", "ComputerSystem", "get", "TotalPhysicalMemory", "/value"],
                 text=True,
                 stderr=subprocess.DEVNULL,
@@ -291,12 +291,12 @@ class Debug:
             matches = re.search(r"TotalPhysicalMemory=(\d+)", out)
             if matches:
                 info["ram_bytes"] = int(matches.group(1))
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
         # GPUs
         try:
-            out = subprocess.check_output(
+            out = subprocess.check_output(  # nosec: B603, B607
                 ["wmic", "path", "win32_VideoController", "get", "Name"],
                 text=True,
                 stderr=subprocess.DEVNULL,
@@ -304,7 +304,7 @@ class Debug:
             # skip header line
             lines = [line.strip() for line in out.splitlines() if line.strip()][1:]
             info["gpus"] = lines
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
         return info
