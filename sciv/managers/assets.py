@@ -1,4 +1,6 @@
 from logging import Logger
+from os import path
+import os
 from os.path import exists
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from zlib import crc32
@@ -243,6 +245,7 @@ class AssetManager(Singleton):
     def generate_static_assets(cls, tile_set: str = "default"):
         def generate_static_resource_icons():
             from helpers.images import create_stacked_horizontal_images
+            from helpers.paths import PathsHelper
 
             basic_resources = Gold, Production, Food, Faith, Science, Culture
             for resource in basic_resources:
@@ -252,25 +255,24 @@ class AssetManager(Singleton):
                     if resource_instance.icon.startswith("resources")
                     else f"assets/icons/{tile_set}/resources/"
                 )
-                icon_path = f"{base_path}/{resource_instance.icon}"
+                icon_path = f"{base_path}{resource_instance.icon}"
                 if not icon_path:
                     continue
+
+                output_path: str = f"{PathsHelper.get_data_dir()}/assets/generated/icons/resources/core/basic/"
+
+                if not path.exists(path.dirname(output_path)):
+                    os.makedirs(path.dirname(output_path), exist_ok=True)
 
                 image = Image.open(icon_path).convert("RGBA")
                 font_size = 32
                 text_vertical_offset = 0
                 text_horizontal_offset = 0
 
-                directory = "assets/generated/icons/resources/core/basic"
-                if not exists(directory):
-                    from os import makedirs
-
-                    makedirs(directory)
-
                 # Create a stacked horizontal image with the icon
                 for i in range(1, 6):
                     stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
-                    stacked_image.save(f"{directory}/{str(resource_instance.name).lower()}_{i}.png")
+                    stacked_image.save(f"{output_path}/{str(resource_instance.name).lower()}_{i}.png")
 
                 for i in range(6, 50):
                     img_width, img_height = image.size
@@ -291,7 +293,7 @@ class AssetManager(Singleton):
                         font_path="assets/fonts/Washington.ttf",
                         font_size=46,
                         save=True,
-                        save_path=f"assets/generated/icons/resources/core/basic/{str(resource_instance.name).lower()}_{i}.png",
+                        save_path=f"{output_path}{str(resource_instance.name).lower()}_{i}.png",
                         outline=True,
                         outline_color=(0, 0, 0, 255),
                         outline_width=1,
@@ -301,9 +303,12 @@ class AssetManager(Singleton):
             from PIL import Image
 
             from helpers.images import draw_text_on_image
+            from helpers.paths import PathsHelper
 
             base_icon: str = f"assets/icons/{tile_set}/resources/core/basic/populationx128.png"
-            output_path: str = "assets/generated/icons/resources/core/basic/populationx128_{num}.png"
+            output_path: str = (
+                PathsHelper.get_data_dir() + "/assets/generated/icons/resources/core/basic/populationx128_{num}.png"
+            )
             font_size: int = 46
             text_vertical_offset = 32
             text_color: Tuple[float, float, float, float] = (0, 0, 0, 1)

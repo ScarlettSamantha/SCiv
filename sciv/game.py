@@ -7,11 +7,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 os.chdir(SCRIPT_DIR)
 
-if not os.path.exists("config.json"):
-    import shutil
-
-    shutil.copy("config_sample.json", "config.json")  # We need a config file to start the game
-
 import pathlib
 from logging import Logger
 
@@ -184,17 +179,19 @@ class OpenCiv(ShowBase):
 
     def generate_non_static_assets(self, force: bool = False) -> None:
         from system.atlas import AtlasGenerator
+        from helpers.paths import PathsHelper
 
         icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
         terrain_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "tile-set-tiles"), "default")
+        base_path = pathlib.Path(PathsHelper.get_data_dir()) / "assets" / "generated"
 
         icon_generator = AtlasGenerator(
             input_dir=[
                 pathlib.Path(__file__).parent / "assets" / "icons" / icon_tile_set,
-                pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "resources",
+                base_path / "icons" / "resources",
             ],
-            output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "atlas.png",
-            output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "icons" / "mapping.json",
+            output_image=base_path / "generated" / "icons" / "atlas.png",
+            output_mapping=base_path / "generated" / "icons" / "mapping.json",
             icon_size=(
                 self.config_manager.get_by_key(("assets", "icon_resolution_x")),
                 self.config_manager.get_by_key(("assets", "icon_resolution_y")),
@@ -205,8 +202,8 @@ class OpenCiv(ShowBase):
 
         terrain_atlas = AtlasGenerator(
             input_dir=pathlib.Path(__file__).parent / "assets" / "terrain" / terrain_tile_set,
-            output_image=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "atlas.png",
-            output_mapping=pathlib.Path(__file__).parent / "assets" / "generated" / "terrain" / "mapping.json",
+            output_image=base_path / "terrain" / "atlas.png",
+            output_mapping=base_path / "terrain" / "mapping.json",
             icon_size=(
                 self.config_manager.get_by_key(("assets", "terrain_resolution_x")),
                 self.config_manager.get_by_key(("assets", "terrain_resolution_y")),
