@@ -1,6 +1,5 @@
 __pycache__/
 .pytest_cache
-**/logs/
 config.json
 test.py
 stubs/direct/
@@ -8,9 +7,6 @@ stubs/
 sciv/saves/
 monkeytype.sqlite3
 .ruff_cache
-sciv/assets/generated/
-!assets/generated/.gitkeep
-!assets/generated/icons/.gitkeep
 **/*.kra
 **/*.png~
 lib/
@@ -24,3 +20,4 @@ build/
 dist/
 builds/
 package.json
+*.log
