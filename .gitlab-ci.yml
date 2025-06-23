@@ -9,11 +9,9 @@ stages:
   - verify
   - package
 
-.default-python-job: &default-python-job
+# 1) generic bits only
+.default-python-job-base: &default-python-job-base
   image: python:3.13
-  only:
-    - branches
-    - merge_requests
   cache:
     key: shared-pip-cache
     paths:
@@ -24,8 +22,15 @@ stages:
     - pip install --upgrade pip --root-user-action=ignore
     - pip install -r requirements.txt --root-user-action=ignore
     - git clone --depth 1 $panda3d_stubs_repo stubs/panda3d
-    - git clone --depth 1 $kivy_stubs_repo stubs/kivy
+    - git clone --depth 1 $kivy_stubs_repo   stubs/kivy
     - git clone --depth 1 $direct_stubs_repo stubs/direct
+
+
+.default-python-job: &default-python-job
+  <<: *default-python-job-base
+  only:
+    - branches
+    - merge_requests
   
 pyright-full-check:
   <<: *default-python-job
@@ -86,20 +91,27 @@ markdown-check:
     - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
 
 check-isdev-flag:
-  <<: *default-python-job
+  <<: *default-python-job-base
   stage: verify
-  only:
-    - merge_requests
-  except:
-    - /^dev-.*$/
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /^dev-.*$/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - when: never
   script:
     - scripts/check_isdev.py
 
 package-linux:
   image: ubuntu:24.04          
-  only:
-    - tags
-    - merge_requests
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /^dev-.*$/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - when: never
   variables:
     DEBIAN_FRONTEND: noninteractive
   cache:

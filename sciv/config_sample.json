@@ -38,6 +38,10 @@
       "system_loading": false,
       "system_entity_graph": false
     },
-    "disable_ai_turn_processing": false
+    "disable_ai_turn_processing": false,
+    "sentry": {
+      "enable": false,
+      "dsn": ""
+    }
   }
 }

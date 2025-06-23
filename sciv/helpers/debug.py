@@ -1,5 +1,11 @@
 from enum import Enum
-from typing import Any, Dict, NoReturn, Optional
+import logging
+import re
+import subprocess  # nosec: B404
+from typing import Any, Dict, List, NoReturn, Optional
+
+from sentry_sdk import init
+from sentry_sdk.types import Event, Hint
 
 from managers.config import ConfigManager
 
@@ -22,6 +28,8 @@ class Debugs(Enum):
 class Debug:
     CONFIG_BASE_KEY: str = "debug"
     CONFIG_DEBUGS_BASE_KEY: str = "debugs"
+
+    _system_info: Optional[Dict[str, Any]] = None
 
     config_instance_ref = ConfigManager.get_singleton_instance()
     debug: bool = config_instance_ref.get_by_key((CONFIG_BASE_KEY, "enabled"), default=False)
@@ -145,3 +153,158 @@ class Debug:
             Debugs.SYSTEM_ENTITY_GRAPH,
             override,
         )
+
+    @classmethod
+    def init_sentry(cls, dsn: str) -> init:
+        import sentry_sdk
+        from sentry_sdk.integrations.logging import LoggingIntegration
+        from system.vars import __version__, get_git_commit, DEBUG
+
+        # Set up Sentry logging integration
+        sentry_logging = LoggingIntegration(
+            level=logging.ERROR,  # Capture errors and above as breadcrumbs
+            event_level=logging.ERROR,  # Send errors as events
+        )
+
+        sentry = sentry_sdk.init(
+            dsn=dsn,
+            release=f"Sciv@{__version__}",
+            environment="development",
+            traces_sample_rate=1.0,
+            integrations=[sentry_logging],
+            before_send=Debug.handle_crash,
+        )
+
+        sentry_sdk.set_tag("commit", get_git_commit())
+        sentry_sdk.set_tag("debug", DEBUG)
+        sentry_sdk.set_tag("version", __version__)
+        sentry_sdk.set_context("config", ConfigManager.get_singleton_instance().get_config_full())
+
+        return sentry
+
+    @classmethod
+    def handle_crash(cls, event: Event, hint: Hint) -> Optional[Event]:
+        """
+        This function is called by Sentry when an unhandled exception occurs.
+        It gathers system data if debug mode is enabled and adds it to the event.
+        """
+        if cls._system_info is None:
+            cls._system_info = cls.gether_system_data()
+
+        if cls._system_info:
+            event["extra"]["system_data"] = cls._system_info  # type: ignore[typeddict-item]
+
+        return event
+
+    @classmethod
+    def gether_system_data(cls) -> Dict[str, Any]:
+        """
+        This function is only run if debug mode is enabled. and the user has enabled system data gathering.
+        """
+
+        from platform import uname
+        from helpers.windows import WindowsHelper
+
+        _uname = uname()
+
+        data = {
+            "system": _uname.system,
+            "node": _uname.node,
+            "release": _uname.release,
+            "version": _uname.version,
+            "machine": _uname.machine,
+            "processor": _uname.processor,
+        }
+
+        if WindowsHelper.is_windows():
+            data.update(cls._get_windows_info())
+        else:
+            data.update(cls._get_linux_info())
+
+        return data
+
+    @classmethod
+    def _get_linux_info(cls) -> Dict[str, Any]:
+        info: Dict[str, Any] = {"cpu": "", "ram_bytes": 0, "gpus": []}
+
+        # CPU from /proc/cpuinfo
+        try:
+            with open("/proc/cpuinfo") as f:
+                for line in f:
+                    if line.startswith("model name"):
+                        info["cpu"] = line.split(":", 1)[1].strip()
+                        break
+        except Exception:  # nosec: B110
+            pass
+
+        # RAM from /proc/meminfo
+        try:
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    if line.startswith("MemTotal"):
+                        result = re.search(r"(\d+)", line)
+                        if result:
+                            kb = int(result.group(1))
+                            info["ram_bytes"] = kb * 1024
+                            break
+                        continue
+        except Exception:  # nosec: B110
+            pass
+
+        # GPUs via lspci
+        try:
+            out = subprocess.check_output(["lspci", "-nn"], text=True)  # nosec: B603, B607
+            gpus: List[str] = []
+            for line in out.splitlines():
+                if "VGA compatible controller" in line or "3D controller" in line:
+                    # strip vendor-id tags
+                    name = re.sub(r"\[.*?\]", "", line).split(":", 2)[-1].strip()
+                    gpus.append(name)
+            info["gpus"] = gpus
+        except Exception:  # nosec: B110
+            pass
+
+        return info
+
+    @classmethod
+    def _get_windows_info(cls) -> Dict[str, Any]:
+        info: Dict[str, Any] = {"cpu": "", "ram_bytes": 0, "gpus": []}
+
+        # CPU
+        try:
+            out = subprocess.check_output(  # nosec: B603, B607
+                ["wmic", "cpu", "get", "Name", "/value"], text=True, stderr=subprocess.DEVNULL
+            )
+            matches = re.search(r"Name=(.+)", out)
+            if matches:
+                info["cpu"] = matches.group(1).strip()
+        except Exception:  # nosec: B110
+            pass
+
+        # RAM
+        try:
+            out = subprocess.check_output(  # nosec: B603, B607
+                ["wmic", "ComputerSystem", "get", "TotalPhysicalMemory", "/value"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            )
+            matches = re.search(r"TotalPhysicalMemory=(\d+)", out)
+            if matches:
+                info["ram_bytes"] = int(matches.group(1))
+        except Exception:  # nosec: B110
+            pass
+
+        # GPUs
+        try:
+            out = subprocess.check_output(  # nosec: B603, B607
+                ["wmic", "path", "win32_VideoController", "get", "Name"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            )
+            # skip header line
+            lines = [line.strip() for line in out.splitlines() if line.strip()][1:]
+            info["gpus"] = lines
+        except Exception:  # nosec: B110
+            pass
+
+        return info
