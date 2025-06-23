@@ -54,13 +54,21 @@ class OpenCiv(ShowBase):
         self.version: str = __version__
         self.commit: str = get_git_commit()
 
-        # Initialize base ShowBase
-        ShowBase.__init__(self)
-
         # Configuration manager setup
         config_mgr = ConfigManager()
-        config_mgr.__setup__()
         ConfigManager.set_singleton_instance(config_mgr)
+
+        if (
+            self.debug
+            and (enabled := config_mgr.get_by_key(("debug", "sentry", "enable"), None)) is not None
+            and enabled is True
+            and (sentry_dsn := config_mgr.get_by_key(("debug", "sentry", "dsn"), None)) is not None
+            and sentry_dsn.strip() != ""
+        ):
+            self.sentry = Debug.init_sentry(sentry_dsn)
+
+        # Initialize base ShowBase
+        ShowBase.__init__(self)
         config_mgr.apply_config_to_prc()
         config_mgr.disable_vsync()
         self.config_manager: ConfigManager = config_mgr
