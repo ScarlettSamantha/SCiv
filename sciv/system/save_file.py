@@ -1,6 +1,5 @@
 import gzip
 import json
-import sys
 import zlib
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -11,7 +10,7 @@ from system.vars import APPLICATION_NAME
 
 
 class BaseSaver(ABC):
-    base_path: str = "./saves"
+    _base_path: str = "/saves"
     extension: str = ""
     game_name: str = APPLICATION_NAME
     compression_enabled: bool = False
@@ -19,6 +18,7 @@ class BaseSaver(ABC):
     def __init__(
         self,
     ):
+        self.base_path = self.identify_save_location()
         self.data: bytes
         self.meta_data: Dict[str, Any]  # Will be converted to json
         self.identifier: str
@@ -134,13 +134,9 @@ class BaseSaver(ABC):
         return data
 
     def identify_save_location(self) -> str:
-        if sys.platform == "win32":
-            return str(Path.home() / "AppData" / "Local" / self.game_name)
-        elif sys.platform == "darwin":
-            return str(Path.home() / "Library" / "Application Support" / self.game_name)
-        elif sys.platform.startswith("linux") or sys.platform.startswith("unix"):
-            return str((Path(self.base_path)).absolute())
-        return str((Path(self.base_path)).absolute())
+        from helpers.paths import PathsHelper
+
+        return PathsHelper.get_data_dir() + self._base_path
 
     def generate_save_directory(self) -> str:
         return str(Path(self.identify_save_location()) / self.identifier)
@@ -153,7 +149,7 @@ class BaseSaver(ABC):
 
 
 class SavePickleFile(BaseSaver):
-    base_path = "saves"
+    _base_path = "/saves"
     compression_enabled = True
     extension = "pickle.gz" if compression_enabled else "pickle"
 
