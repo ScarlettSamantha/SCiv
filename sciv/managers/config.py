@@ -9,17 +9,44 @@ from mixins.singleton import Singleton
 
 class ConfigManager(Singleton):
     config_data: Dict[str, Any] = {}
-    config_file = os.path.join(os.path.dirname(__file__), "..", "config.json")
+    config_file = "config.json"
+    config_sample_file = "config_sample.json"
 
     def __setup__(self, *args: Any, **kwargs: Any) -> None:
-        self.config_file = self.config_file
+        self.config_file = self.get_config_file_location()
         self.config_data = self._load_config()
         self.config_fp: Optional[TextIOWrapper] = None
         self.apply_config_to_prc()
         return super().__setup__(*args, **kwargs)
 
+    @classmethod
+    def get_config_file_location(cls) -> str:
+        from helpers.paths import PathsHelper
+
+        return PathsHelper.get_config_dir() + os.sep + cls.config_file
+
+    def create_config_file(self) -> Optional[Dict[str, Any]]:
+        from helpers.paths import PathsHelper
+
+        config_dir = PathsHelper.get_config_dir()
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+
+        sample_path = os.path.join(os.path.dirname(__file__), "../", self.config_sample_file)
+        if not os.path.exists(sample_path):
+            print(f"Sample config file '{self.config_sample_file}' not found. Cannot create default config.")
+            return
+
+        with open(sample_path, "r") as sample_file:
+            default_config = json.load(sample_file)
+
+        with open(self.config_file, "w") as f:
+            json.dump(default_config, f, indent=4)
+            print(f"Default config created at {self.config_file}")
+
+        return default_config
+
     def _load_config(self) -> Any | Dict[str, Dict[str, bool] | Dict[str, str | int] | Dict[str, str | list[int]]]:
-        """Internal method: load config from JSON or return default if missing/invalid."""
         path = os.path.abspath(self.config_file)
         if os.path.exists(path):
             try:
@@ -27,8 +54,11 @@ class ConfigManager(Singleton):
                     return json.load(f)
             except Exception as e:
                 print(f"Failed to parse {self.config_file}: {e}")
-
-        # If not found or failed, return a reasonable default:
+        else:
+            print(f"Config file '{self.config_file}' not found. Creating default config.")
+            created_config_file: Optional[Dict[str, Any]] = self.create_config_file()
+            if created_config_file is not None:
+                return created_config_file
         raise RuntimeError(
             f"Config file '{self.config_file}' not found or invalid. Please create it with default settings."
         )
@@ -77,44 +107,30 @@ class ConfigManager(Singleton):
                 print(f"Could not save config: {e}")
 
     def apply_config_to_prc(self):
-        """
-        Read config_data and apply it to Panda3D via loadPrcFileData.
-        This should be called BEFORE ShowBase is constructed.
-        """
-        # 1) Render / FPS settings
         render_settings = self.config_data.get("render", {})
         for key, val in render_settings.items():
             loadPrcFileData("", f"{key} {val}")
 
-        # 2) Window settings
         window_settings = self.config_data.get("window", {})
 
-        # Screen mode
         screen_mode = window_settings.get("screen-mode", "windowed")  # fallback
         if screen_mode == "fullscreen":
-            # OS fullscreen
             loadPrcFileData("", "fullscreen #t")
             loadPrcFileData("", "undecorated 0")
         elif screen_mode == "borderless":
-            # Borderless window -> typically same as fullscreen but "fullscreen #f"
-            # so it can be sized to the user's monitor resolution.
             loadPrcFileData("", "fullscreen #f")
             loadPrcFileData("", "undecorated 1")
         else:
-            # Normal window
             loadPrcFileData("", "fullscreen #f")
             loadPrcFileData("", "undecorated 0")
 
-        # Window title
         if "window-title" in window_settings:
             loadPrcFileData("", f"window-title {window_settings['window-title']}")
 
-        # Window origin (only relevant if not OS fullscreen)
         if "win-origin" in window_settings:
             x, y = window_settings["win-origin"]
             loadPrcFileData("", f"win-origin {x} {y}")
 
-        # Window size
         if "win-size" in window_settings:
             w, h = window_settings["win-size"]
             loadPrcFileData("", f"win-size {w} {h}")
@@ -130,7 +146,7 @@ class ConfigManager(Singleton):
     def enable_vsync(self):
         """Enable VSync in the config."""
         self.config_data["window"]["sync-video"] = True
-        os.environ["vblank_mode"] = "1"  # Set this to 0 to enable VSync
+        os.environ["vblank_mode"] = "1"
         self.save_config()
 
     def disable_vsync(self):
@@ -140,29 +156,17 @@ class ConfigManager(Singleton):
         self.save_config()
 
     def set_screen_mode(self, mode: str):
-        """
-        Convenience method to switch screen mode at runtime.
-
-        mode = "windowed", "fullscreen", or "borderless"
-        """
         self.config_data["window"]["screen-mode"] = mode
         self.save_config()
 
     def update_window_position_size(self, x: int, y: int, w: int, h: int):
-        """
-        Update stored window position/size in the JSON config (for windowed or borderless).
-        Called typically after the user moves/resizes the window.
-        """
-        # If user is in "fullscreen", typically the OS controls the window size/pos.
         screen_mode = self.config_data["window"].get("screen-mode", "windowed")
         if screen_mode != "fullscreen":
             self.config_data["window"]["win-origin"] = [x, y]
             self.config_data["window"]["win-size"] = [w, h]
             self.save_config()
-        # If in fullscreen, we typically don't track size/pos changes since there's no real "move."
 
     def toggle_fullscreen(self):
-        """Example method to toggle between fullscreen and windowed."""
         current = self.config_data["window"].get("screen-mode", "windowed")
         if current != "fullscreen":
             self.set_screen_mode("fullscreen")

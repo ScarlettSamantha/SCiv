@@ -7,11 +7,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 os.chdir(SCRIPT_DIR)
 
-if not os.path.exists("config.json"):
-    import shutil
-
-    shutil.copy("config_sample.json", "config.json")  # We need a config file to start the game
-
 import pathlib
 from logging import Logger
 

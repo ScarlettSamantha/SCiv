@@ -15,6 +15,8 @@ class LogManager(Singleton):
         self.setup_loggers()
 
     def setup_loggers(self) -> None:
+        from helpers.paths import PathsHelper
+
         log_types: Dict[str, int] = {
             "gameplay": logging.DEBUG,
             "engine": logging.DEBUG,
@@ -31,8 +33,10 @@ class LogManager(Singleton):
             for handler in logger.handlers[:]:
                 logger.removeHandler(hdlr=handler)
 
+            base_path = PathsHelper.get_data_dir()
+
             # Create log directory structure
-            log_dir: str = f"logs/{log_type}"
+            log_dir: str = f"{base_path}/logs/{log_type}"
             os.makedirs(name=log_dir, exist_ok=True)
             log_file_name: str = f"log_{datetime.now().timestamp()}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.log"
             log_file: str = os.path.join(log_dir, log_file_name)

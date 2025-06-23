@@ -24,4 +24,5 @@ pmw # this is needed for the inspector for some reason panda3d does not include 
 rich # for better console output - dev
 graphviz # for dot graph visualization - Dev
 briefcase # for building the app - dev
-pyuac - # for windows admin privileges - dev
+pyuac # for windows admin privileges - dev
+xdg # for path handling on linux - not dev not needed on windows
