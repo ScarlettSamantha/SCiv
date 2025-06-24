@@ -2,9 +2,14 @@ import json
 import os
 from typing import Any, Dict, Optional, Tuple
 
-from panda3d.core import loadPrcFileData  # type: ignore
+from panda3d.core import WindowProperties, loadPrcFileData  # type: ignore
 from io import TextIOWrapper
 from mixins.singleton import Singleton
+from helpers.cache import Cache
+
+WINDOW_MODE_FULLSCREEN = "fullscreen"
+WINDOW_MODE_BORDERLESS = "fullscreen-borderless"
+WINDOW_MODE_WINDOW = "windowed"
 
 
 class ConfigManager(Singleton):
@@ -158,6 +163,25 @@ class ConfigManager(Singleton):
     def set_screen_mode(self, mode: str):
         self.config_data["window"]["screen-mode"] = mode
         self.save_config()
+        props = WindowProperties()
+        if mode == WINDOW_MODE_FULLSCREEN:
+            props.setFullscreen(True)
+            props.setUndecorated(False)
+        elif mode == WINDOW_MODE_BORDERLESS:
+            props.setFullscreen(False)
+            props.setUndecorated(True)
+            # Get the screen resolution
+            pipe = Cache.get_showbase_instance().win.getPipe()  # type: ignore
+            screen_width = pipe.getDisplayWidth()
+            screen_height = pipe.getDisplayHeight()
+            # Set the window size to the screen resolution
+            props.setSize(screen_width, screen_height)
+        elif mode == WINDOW_MODE_WINDOW:  # windowed
+            props.setFullscreen(False)
+            props.setUndecorated(False)
+        else:
+            raise ValueError(f"Unknown screen mode: {mode}")
+        Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
 
     def update_window_position_size(self, x: int, y: int, w: int, h: int):
         screen_mode = self.config_data["window"].get("screen-mode", "windowed")
@@ -172,3 +196,11 @@ class ConfigManager(Singleton):
             self.set_screen_mode("fullscreen")
         else:
             self.set_screen_mode("windowed")
+
+    def set_resolution(self, width: int, height: int, auto_save: bool = True):
+        self.config_data["window"]["win-size"] = [width, height]
+        props = WindowProperties()
+        props.setSize(width, height)
+        Cache.get_showbase_instance().win.requestProperties(props)  #  type: ignore
+        if auto_save:
+            self.save_config()

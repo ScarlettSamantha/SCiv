@@ -85,11 +85,11 @@ class OpenCiv(ShowBase):
         loading_screen.next_stage("Setting up logging")
         self.logger: LogManager = LogManager.get_singleton_instance()
         self.logger.setup_loggers()
-        self.engine_logger: Logger = self.logger.engine.getChild("Main")
-        self.engine_logger.info("Starting OpenCiv")
 
         # Cache
         Cache.set_showbase_instance(self)
+        self.engine_logger: Logger = self.logger.engine.getChild("Main")
+        self.engine_logger.info("Starting OpenCiv")
 
         # Messenger
         loading_screen.next_stage("Loading Messenger")
