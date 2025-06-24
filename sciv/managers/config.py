@@ -162,30 +162,33 @@ class ConfigManager(Singleton):
 
     def set_screen_mode(self, mode: str):
         self.config_data["window"]["screen-mode"] = mode
-        self.save_config()
         props = WindowProperties()
         if mode == WINDOW_MODE_FULLSCREEN:
             props.setFullscreen(True)
             props.setUndecorated(False)
         elif mode == WINDOW_MODE_BORDERLESS:
-            props.setFullscreen(False)
-            props.setUndecorated(True)
-            # Get the screen resolution
             pipe = Cache.get_showbase_instance().win.getPipe()  # type: ignore
+
+            props.setFullscreen(True)
+            props.setUndecorated(True)
+            Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
             screen_width = pipe.getDisplayWidth()
             screen_height = pipe.getDisplayHeight()
-            # Set the window size to the screen resolution
             props.setSize(screen_width, screen_height)
+
         elif mode == WINDOW_MODE_WINDOW:  # windowed
             props.setFullscreen(False)
             props.setUndecorated(False)
+            Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore # Need to first set it to windowed and then set the size
+            props.setSize(1920, 1080)
         else:
             raise ValueError(f"Unknown screen mode: {mode}")
         Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
+        self.save_config()
 
     def update_window_position_size(self, x: int, y: int, w: int, h: int):
         screen_mode = self.config_data["window"].get("screen-mode", "windowed")
-        if screen_mode != "fullscreen":
+        if screen_mode not in [WINDOW_MODE_FULLSCREEN, WINDOW_MODE_BORDERLESS]:
             self.config_data["window"]["win-origin"] = [x, y]
             self.config_data["window"]["win-size"] = [w, h]
             self.save_config()
@@ -204,3 +207,9 @@ class ConfigManager(Singleton):
         Cache.get_showbase_instance().win.requestProperties(props)  #  type: ignore
         if auto_save:
             self.save_config()
+
+    def get_screen_mode(self) -> str:
+        return self.config_data["window"].get("screen-mode", "windowed")
+
+    def get_resolution(self) -> Tuple[int, int]:
+        return tuple(self.config_data["window"].get("win-size", [1280, 720])[:2])

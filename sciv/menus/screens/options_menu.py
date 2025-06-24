@@ -24,6 +24,8 @@ class OptionsScreen(Screen):
         "1680x1050": (1680, 1050),
         "1920x1080": (1920, 1080),
         "2560x1440": (2560, 1440),
+        "2560x1600": (2560, 1600),
+        "3440x1440": (3440, 1440),
         "3840x2160": (3840, 2160),
         "5120x1440": (5120, 1440),
         "5120x2160": (5120, 2160),
@@ -143,8 +145,13 @@ class OptionsScreen(Screen):
         for resolution in self.RESOLUTIONS:
             resolution_options.append(f"{resolution}")
 
+        current_resolution = ConfigManager.get_singleton_instance().get_resolution()
+
         self.resolution_spinner = Spinner(
-            text="Select Resolution", values=resolution_options, size_hint=(None, None), width=200
+            text=f"{current_resolution[0]}x{current_resolution[1]}",
+            values=resolution_options,
+            size_hint=(None, None),
+            width=200,
         )
         self.resolution_spinner.bind(text=self._on_resolution_select)
         self.video_layout.add_widget(self.resolution_spinner)
@@ -153,10 +160,12 @@ class OptionsScreen(Screen):
         self.refresh_rate_slider = Slider(min=30, max=144, step=1)
         self.video_layout.add_widget(self.refresh_rate_slider)
 
+        current_display_mode = ConfigManager.get_singleton_instance().get_screen_mode()
+
         self.video_layout.add_widget(Label(text="2.3 Window Mode"))
         self.window_mode_spinner = Spinner(
-            text="Full Screen",
-            values=["Full Screen", "Windowed", "Full Screen Windowed"],
+            text=current_display_mode,
+            values=[WINDOW_MODE_FULLSCREEN, WINDOW_MODE_BORDERLESS, WINDOW_MODE_WINDOW],
             size_hint=(None, None),
             width=200,
         )
@@ -173,11 +182,11 @@ class OptionsScreen(Screen):
             ConfigManager.get_singleton_instance().set_resolution(*self.selected_resolution, auto_save=True)
 
     def _on_screenmode_select(self, spinner: Spinner, text: str) -> None:
-        if text == "Full Screen":
+        if text == WINDOW_MODE_FULLSCREEN:
             ConfigManager.get_singleton_instance().set_screen_mode(WINDOW_MODE_FULLSCREEN)
-        elif text == "Windowed":
+        elif text == WINDOW_MODE_WINDOW:
             ConfigManager.get_singleton_instance().set_screen_mode(WINDOW_MODE_WINDOW)
-        elif text == "Full Screen Windowed":
+        elif text == WINDOW_MODE_BORDERLESS:
             ConfigManager.get_singleton_instance().set_screen_mode(WINDOW_MODE_BORDERLESS)
 
     def _build_developer_tab(self) -> None:
