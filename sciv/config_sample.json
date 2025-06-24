@@ -26,6 +26,8 @@
   },
   "debug": {
     "enable": false,
+    "developer_mode": false,
+    "fps_counter": false,
     "debugs": {
       "world_generation": false,
       "world_rendering": false,

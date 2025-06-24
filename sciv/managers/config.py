@@ -213,3 +213,43 @@ class ConfigManager(Singleton):
 
     def get_resolution(self) -> Tuple[int, int]:
         return tuple(self.config_data["window"].get("win-size", [1280, 720])[:2])
+
+    def set_framerate_cap(self, fps: int):
+        self.set_by_key(fps, "render", "clock-frame-rate")
+        self.save_config()
+
+    def enable_debug_mode(self):
+        self.set_by_key(True, "debug", "enabled")
+        self.save_config()
+
+    def disable_debug_mode(self):
+        self.set_by_key(False, "debug", "enabled")
+        self.save_config()
+
+    def toggle_debug_flag(self, flag: str, active: bool, auto_save: bool = True):
+        self.config_data.setdefault("debug", {}).setdefault("debugs", {})[flag] = active
+        if auto_save:
+            self.save_config()
+
+    def set_developer_mode(self, enabled: bool):
+        self.set_by_key(enabled, "debug", "developer_mode")
+        self.save_config()
+
+    def set_fps_counter(self, enabled: bool):
+        self.set_by_key(enabled, "debug", "fps-counter")
+        self.save_config()
+
+    def get_fps_counter(self) -> bool:
+        return self.get_by_key(("debug", "fps-counter"), False)
+
+    def get_developer_mode(self) -> bool:
+        return self.get_by_key(("debug", "developer_mode"), False)
+
+    def get_debug_mode(self) -> bool:
+        return self.get_by_key(("debug", "enabled"), False)
+
+    def get_debug_flags(self) -> Dict[str, bool]:
+        return self.get_by_key(("debug", "debugs"), {})
+
+    def get_debug_flag(self, flag: str) -> bool:
+        return self.get_by_key(("debug", "debugs", flag), False)
