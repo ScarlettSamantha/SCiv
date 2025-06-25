@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from sciv.game import OpenCiv
     from system.atlas import AtlasGenerator
     from gameplay.rules import GameRules
-    from sciv.managers.i18n import I18nManager
+    from managers.i18n import I18nManager
 
 
 class Cache:

@@ -277,4 +277,9 @@ class ConfigManager(Singleton):
             self.save_config()
 
     def get_mouse_lock(self) -> bool:
-        return self.get_by_key(("ui", "mouse_lock"), True)
+        return self.get_by_key(("ui", "mouse_lock"), False)
+
+    def set_mouse_lock(self, enabled: bool, auto_save: bool = True):
+        self.set_by_key(enabled, "ui", "mouse_lock")
+        if auto_save:
+            self.save_config()

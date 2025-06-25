@@ -20,7 +20,7 @@ from managers.player import PlayerManager
 from managers.turn import Turn
 from menus.kivy.elements.button_self_resizable import SelfResizableButton
 from menus.screens.loading import ImageLabel
-from sciv.helpers.windows import WindowsHelper
+from helpers.windows import WindowsHelper
 
 if TYPE_CHECKING:
     from game import OpenCiv

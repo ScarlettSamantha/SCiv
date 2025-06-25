@@ -56,12 +56,10 @@ class OptionsScreen(Screen):
 
         self.selected_resolution: Optional[Tuple[int, int]] = None
 
-        # prepare tab contents
         self._build_general_tab()
         self._build_video_tab()
         self._build_developer_tab()
 
-        # assemble
         self.add_widget(self.build_screen())
 
     def _make_version_label(self):
@@ -118,7 +116,9 @@ class OptionsScreen(Screen):
     def _build_general_tab(self) -> None:
         self.general_layout = BoxLayout(orientation="vertical", padding=10, spacing=20)
 
-        self.general_layout.add_widget(Label(text="Language", font_size="18sp", bold=True, color=(1, 1, 1, 1)))
+        self.general_layout.add_widget(
+            Label(text="Language (restart needed)", font_size="18sp", bold=True, color=(1, 1, 1, 1))
+        )
         self.language_spinner = Spinner(
             text=self.LANGUAGES.get(self.config_ref.get_language(), "English (en_EN)"),
             values=list(self.LANGUAGES.values()),
@@ -134,8 +134,12 @@ class OptionsScreen(Screen):
         self.fps_checkbox.bind(active=self._on_fps_toggle)
         self.general_layout.add_widget(self.fps_checkbox)
 
-        self.general_layout.add_widget(Label(text="Mouse Lock", font_size="18sp", bold=True, color=(1, 1, 1, 1)))
+        self.general_layout.add_widget(
+            Label(text="Mouse Lock(Restart/Refocus Needed)", font_size="18sp", bold=True, color=(1, 1, 1, 1))
+        )
         self.mouse_checkbox = CheckBox(size_hint=(None, None), size=(40, 40), pos_hint={"center_x": 0.5})
+        self.mouse_checkbox.active = self.config_ref.get_by_key(("ui", "mouse_lock"), False)
+        self.mouse_checkbox.bind(active=self._on_mouse_lock_toggle)
         self.general_layout.add_widget(self.mouse_checkbox)
 
         self.general_layout.add_widget(self._make_version_label())
@@ -277,6 +281,13 @@ class OptionsScreen(Screen):
         Cache.get_i18n_instance().set_current_language(lang_code)
         self.config_ref.set_language(lang_code, auto_save=True)
 
+    def _on_mouse_lock_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        self.config_ref.set_mouse_lock(active)
+        if active:
+            self.base.input_manager.activate_mouse_lock()
+        else:
+            self.base.input_manager.de_activate_mouse_lock()
+
     def _on_fps_toggle(self, checkbox: CheckBox, active: bool) -> None:
         self.config_ref.set_fps_counter(active)
 
@@ -284,7 +295,6 @@ class OptionsScreen(Screen):
         self.config_ref.set_developer_mode(active)
 
     def _on_debug_enable_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        # enable/disable all debug-related controls, preserving their states
         for cb in self.debug_checkboxes.values():
             cb.disabled = not active
         self.disable_ai_checkbox.disabled = not active
