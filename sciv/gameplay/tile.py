@@ -528,10 +528,14 @@ class Tile(BaseEntity):
 
     def add_unit(self, unit: "Unit") -> None:
         self.units.add_unit(unit)
+        if len(self.units) == 1:
+            self.renderer.on_unit_enter()
 
     def remove_unit(self, unit: "Unit") -> None:
         # Assuming the intent is to remove the unit.
         self.units.remove_unit(unit)
+        if len(self.units) == 0:
+            self.renderer.on_unit_leave()
 
     def is_occupied(self) -> bool:
         return len(self.units._units) > 0 or self.city is not None  # type: ignore

@@ -146,7 +146,7 @@ class Input(Singleton, DirectObject):
         self.picker = CollisionTraverser()
         self.pq = CollisionHandlerQueue()
 
-        picker_node = CollisionNode("mouseRay")
+        picker_node = CollisionNode("inputSystemMouseRayCollisionNode")
         self.pickerRay = CollisionRay()
         picker_node.addSolid(self.pickerRay)  # type: ignore
 
@@ -202,6 +202,7 @@ class Input(Singleton, DirectObject):
         now = time.time()
         if now - self._last_pick_time < self.pick_timeout:
             return None
+
         self._last_pick_time = now
         if not self.active:
             return  # Input is disabled

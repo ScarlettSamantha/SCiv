@@ -274,7 +274,7 @@ class BitsRenderer:
 
     def _render_bit(self, bit: Bit, slot_name: str) -> None:
         self._bit_slot_assignments[slot_name] = bit
-        self.tile.renderer.add_model(
+        model = self.tile.renderer.add_model(
             model_path=bit.model,
             net_type=NET_TYPE.BIT,
             pos_offset=(
@@ -288,8 +288,10 @@ class BitsRenderer:
             disable_lighting=not bit.default_lighting,
             disable_shader=not bit.default_shader,
             parent=self.parent,
-            flatten_model=True,
+            flatten_model=False,
         )
+        if model is not None:
+            model.flatten_strong()
 
     def _unrender_slot(self, slot_name: str) -> None:
         bit = self._bit_slot_assignments.get(slot_name)

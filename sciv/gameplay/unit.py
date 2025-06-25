@@ -74,7 +74,6 @@ class Unit(BaseEntity, ABC):
     description: T_TranslationOrStrOrNone
     icon: str | Path | None
     promotion_tree: Type["PromotionTree"]
-    model: Optional[NodePath] = None
     model_size: float = 1.0
 
     can_spawn_on_land: bool = True
@@ -189,7 +188,7 @@ class Unit(BaseEntity, ABC):
         self.model.reparent_to(self.base.render)
         self.model.setName(f"unit_{self.key}")
 
-        self.model.flatten_medium()
+        self.model.flatten_strong()
 
         self.model.setHpr(LVector3(*self.model_rotation))
         self.model.setPos(*pos)
@@ -487,7 +486,6 @@ class Unit(BaseEntity, ABC):
 
     def _clear_departing_tile(self, tile: "Tile") -> None:
         tile.remove_unit(self)
-        tile.render()
 
     def _move_to_tile(self, tile: "Tile", clear_departing_tile: Optional["Tile"] = None) -> None:
         if clear_departing_tile is not None:
@@ -497,7 +495,6 @@ class Unit(BaseEntity, ABC):
         self.model = self.load_model()
         self.calculate_model_position()
         self.get_tile().add_unit(self)
-        self.get_tile().render()
 
         if self.owner == PlayerManager.session_player():
             MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")

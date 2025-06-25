@@ -281,6 +281,14 @@ class TileRenderer:
         self.resource_model.remove_node()
         self.resource_model = None
 
+    def on_unit_enter(self):
+        if self.resource_model:
+            self.resource_model.hide()
+
+    def on_unit_leave(self):
+        if self.resource_model:
+            self.resource_model.show()
+
     def _draw_yield_and_population_icons(self) -> None:
         if self.base is None:
             return
@@ -467,6 +475,10 @@ class TileRenderer:
         loaded_model.setHpr(*hpr)
 
         node = loaded_model.instanceTo(self.geometry_node)
+
+        if flatten_model:
+            node.flatten_medium()
+
         node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
         node.setPos(x, y, z)
         node.setCollideMask(BitMask32.bit(1))
@@ -481,9 +493,6 @@ class TileRenderer:
             node.setTag(NET_NODE_TAG_ID_FIELD, net_id)
         else:
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
-
-        if flatten_model:
-            node.flatten_medium()
 
         self.models.append(node)
         self.last_result = node
