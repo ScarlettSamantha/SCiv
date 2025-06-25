@@ -37,6 +37,7 @@ loadPrcFile("config.prc")  # Load the Panda3D configuration file
 
 if TYPE_CHECKING:
     from panda3d.core import GraphicsWindow
+    from system.camera import Camera
 
 
 class OpenCiv(ShowBase):
@@ -131,9 +132,9 @@ class OpenCiv(ShowBase):
         # Camera
         loading_screen.next_stage("Setting up camera")
         self.engine_logger.info("Setting up camera")
-        self.civ_camera = Camera(self)
-        Camera.set_singleton_instance(self.civ_camera)
-        self.civ_camera.register()
+        self.game_camera = Camera(self)
+        Camera.set_singleton_instance(self.game_camera)
+        self.game_camera.register()
 
         # Lights
         loading_screen.next_stage("Setting up lights")
@@ -143,7 +144,7 @@ class OpenCiv(ShowBase):
         # Game manager
         self.engine_logger.info("Setting up game manager")
         loading_screen.next_stage("Setting up game manager")
-        self.game_manager_instance = Game(self, self.civ_camera)
+        self.game_manager_instance = Game(self, self.game_camera)
         Game.set_singleton_instance(self.game_manager_instance)
 
         # World
@@ -175,6 +176,9 @@ class OpenCiv(ShowBase):
         from panda3d.core import GraphicsWindow
 
         return cast(GraphicsWindow, self.win)
+
+    def get_camera(self) -> "Camera":
+        return self.game_camera
 
     def __getstate__(self):
         return None

@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
-from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, MouseWatcher, NodePath
+from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, Lens, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase  # type: ignore
 from mixins.singleton import Singleton
 from managers.game import debounce
+from sciv.managers.input import Input
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -71,7 +72,7 @@ class Camera(Singleton, DirectObject):
         self.update_camera_position()
 
         # Apply default FOV and aspect ratio
-        lens = self.base.cam.node().getLens()
+        lens = self.get_lens()
         lens.setFov(self.fov)
         lens.setAspectRatio(self._aspect_ratio)
         self.base.cam.node().setLens(lens)
@@ -102,6 +103,8 @@ class Camera(Singleton, DirectObject):
         # Set up controls & add update task
         self.setup_controls()
 
+        self.input: Input = self.base.input_manager
+
     def _update_yaw_trig(self):
         rad = self.yaw * (pi / 180.0)
         self._cos_yaw = cos(rad)
@@ -118,7 +121,7 @@ class Camera(Singleton, DirectObject):
         self.base.camera.setHpr(0, 0, 0)  # type: ignore
 
         # Reset lens FOV and aspect
-        lens = self.base.cam.node().getLens()
+        lens = self.get_lens()
         lens.setFov(self.fov)
         lens.setAspectRatio(self._aspect_ratio)
         self.base.cam.node().setLens(lens)
@@ -239,12 +242,11 @@ class Camera(Singleton, DirectObject):
         self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0  #   type: ignore
 
         # update lens aspect ratio
-        lens = self.base.cam.node().getLens()
+        lens = self.get_lens()
         lens.setAspectRatio(self._aspect_ratio)  # type: ignore
         self.base.cam.node().setLens(lens)
 
     def update_camera_position(self):
-        """Place camera at (zoom, pitch) around the pivot, and rotate by yaw."""
         rad = self.pitch * (pi / 180.0)
         offset_y = -self.zoom * cos(rad)
         offset_z = self.zoom * sin(rad)
@@ -262,7 +264,16 @@ class Camera(Singleton, DirectObject):
         from managers.game import PlayerManager
 
         center: Tuple[float, float, float] = (0, 0, 0)
-        if PlayerManager.if_has_capital():
+        if (unit := self.input.selected_unit) is not None:
+            if unit.tile is not None:
+                pos = unit.get_tile().get_pos()  # type: ignore
+                center = (pos[0], pos[1], 0)
+            else:
+                self.logger.debug(f"Recentered on unit at {center} but no tile found.")
+        elif (tile := self.input.selected_tile) is not None:
+            pos = tile.get_pos()  # type: ignore
+            center = (pos[0], pos[1], 0)
+        elif PlayerManager.if_has_capital():
             capital = PlayerManager.player().capital
             if capital is None:
                 return
@@ -350,14 +361,11 @@ class Camera(Singleton, DirectObject):
                 px += (-delta_px_x * pan_factor) * self._cos_yaw + (delta_px_y * pan_factor) * self._sin_yaw  # type: ignore
                 py += (-delta_px_x * pan_factor) * self._sin_yaw - (delta_px_y * pan_factor) * self._cos_yaw  # type: ignore
 
-            # update last_mouse_pos always
             self.last_mouse_pos = (x, y)
 
-        # commit new pivot pos
         self._desired_pivot_pos = LPoint3f(px, py, pz)  # type: ignore
 
     def _flush_to_gpu(self):
-        # apply accumulated desired state
         self.pivot.setPos(self._desired_pivot_pos)  # type: ignore
         self.yaw = self._desired_yaw
         self._update_yaw_trig()
@@ -368,11 +376,14 @@ class Camera(Singleton, DirectObject):
         if not self.active and not (self.left_dragging or self.right_dragging or any(self.keys.values())):
             return task.cont
         dt: float = self.base.clock.getDt()  # type: ignore
-        # sample inputs every frame
+
         self._sample_input(dt)  # type: ignore
-        # throttle flush
+
         self._time_since_last_flush += dt
         if self._time_since_last_flush >= float(self.update_interval):  # type: ignore
             self._flush_to_gpu()
             self._time_since_last_flush = 0.0
         return task.cont
+
+    def get_lens(self) -> Lens:
+        return self.base.cam.node().getLens()
