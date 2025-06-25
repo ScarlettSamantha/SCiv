@@ -6,7 +6,7 @@ from gameplay.improvements.core.city.barracks import Barracks
 from gameplay.promotion import Promotion
 from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
-from sciv.gameplay.techs.hunting_gathering import HuntingGathering
+from gameplay.techs.hunting_gathering import HuntingGathering
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile

@@ -308,3 +308,25 @@ class Debug:
             pass
 
         return info
+
+    @classmethod
+    def get_panda_version(cls) -> str:
+        try:
+            import panda3d
+
+            return panda3d.__version__  #  type: ignore
+        except ImportError:
+            return "Panda3D not installed"
+        except Exception as e:
+            return f"Error getting Panda3D version: {e}"
+
+    @classmethod
+    def get_kivy_version(cls) -> str:
+        try:
+            import kivy  # type: ignore[import]
+
+            return kivy.__version__  #  type: ignore
+        except ImportError:
+            return "Kivy not installed"
+        except Exception as e:
+            return f"Error getting Kivy version: {e}"

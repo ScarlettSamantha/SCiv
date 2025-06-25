@@ -2,9 +2,14 @@ import json
 import os
 from typing import Any, Dict, Optional, Tuple
 
-from panda3d.core import loadPrcFileData  # type: ignore
+from panda3d.core import WindowProperties, loadPrcFileData  # type: ignore
 from io import TextIOWrapper
 from mixins.singleton import Singleton
+from helpers.cache import Cache
+
+WINDOW_MODE_FULLSCREEN = "fullscreen"
+WINDOW_MODE_BORDERLESS = "fullscreen-borderless"
+WINDOW_MODE_WINDOW = "windowed"
 
 
 class ConfigManager(Singleton):
@@ -18,6 +23,12 @@ class ConfigManager(Singleton):
         self.config_fp: Optional[TextIOWrapper] = None
         self.apply_config_to_prc()
         return super().__setup__(*args, **kwargs)
+
+    @classmethod
+    def __call__(cls, *args: Any, **kwargs: Any) -> "ConfigManager":
+        if not hasattr(cls, "_instance"):
+            cls._instance = super().__call__(*args, **kwargs)
+        return cls._instance
 
     @classmethod
     def get_config_file_location(cls) -> str:
@@ -77,7 +88,6 @@ class ConfigManager(Singleton):
         return data if data else default
 
     def get_config_full(self) -> Dict[str, Any]:
-        """Return the full config data."""
         return self.config_data
 
     def get_default(self, key: Tuple[str, ...], default: Any) -> Any:
@@ -157,11 +167,33 @@ class ConfigManager(Singleton):
 
     def set_screen_mode(self, mode: str):
         self.config_data["window"]["screen-mode"] = mode
+        props = WindowProperties()
+        if mode == WINDOW_MODE_FULLSCREEN:
+            props.setFullscreen(True)
+            props.setUndecorated(False)
+        elif mode == WINDOW_MODE_BORDERLESS:
+            pipe = Cache.get_showbase_instance().win.getPipe()  # type: ignore
+
+            props.setFullscreen(True)
+            props.setUndecorated(True)
+            Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
+            screen_width = pipe.getDisplayWidth()
+            screen_height = pipe.getDisplayHeight()
+            props.setSize(screen_width, screen_height)
+
+        elif mode == WINDOW_MODE_WINDOW:  # windowed
+            props.setFullscreen(False)
+            props.setUndecorated(False)
+            Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore # Need to first set it to windowed and then set the size
+            props.setSize(1920, 1080)
+        else:
+            raise ValueError(f"Unknown screen mode: {mode}")
+        Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
         self.save_config()
 
     def update_window_position_size(self, x: int, y: int, w: int, h: int):
         screen_mode = self.config_data["window"].get("screen-mode", "windowed")
-        if screen_mode != "fullscreen":
+        if screen_mode not in [WINDOW_MODE_FULLSCREEN, WINDOW_MODE_BORDERLESS]:
             self.config_data["window"]["win-origin"] = [x, y]
             self.config_data["window"]["win-size"] = [w, h]
             self.save_config()
@@ -172,3 +204,82 @@ class ConfigManager(Singleton):
             self.set_screen_mode("fullscreen")
         else:
             self.set_screen_mode("windowed")
+
+    def set_resolution(self, width: int, height: int, auto_save: bool = True):
+        self.config_data["window"]["win-size"] = [width, height]
+        props = WindowProperties()
+        props.setSize(width, height)
+        Cache.get_showbase_instance().win.requestProperties(props)  #  type: ignore
+        if auto_save:
+            self.save_config()
+
+    def get_screen_mode(self) -> str:
+        return self.config_data["window"].get("screen-mode", "windowed")
+
+    def get_resolution(self) -> Tuple[int, int]:
+        return tuple(self.config_data["window"].get("win-size", [1280, 720])[:2])
+
+    def set_framerate_cap(self, fps: int):
+        self.set_by_key(fps, "render", "clock-frame-rate")
+        self.save_config()
+
+    def enable_debug_mode(self):
+        self.set_by_key(True, "debug", "enabled")
+        self.save_config()
+
+    def disable_debug_mode(self):
+        self.set_by_key(False, "debug", "enabled")
+        self.save_config()
+
+    def toggle_debug_flag(self, flag: str, active: bool, auto_save: bool = True):
+        self.config_data.setdefault("debug", {}).setdefault("debugs", {})[flag] = active
+        if auto_save:
+            self.save_config()
+
+    def set_developer_mode(self, enabled: bool):
+        self.set_by_key(enabled, "debug", "developer_mode")
+        self.save_config()
+
+    def set_fps_counter(self, enabled: bool):
+        self.set_by_key(enabled, "debug", "fps-counter")
+        self.save_config()
+
+    def get_fps_counter(self) -> bool:
+        return self.get_by_key(("debug", "fps-counter"), False)
+
+    def get_developer_mode(self) -> bool:
+        return self.get_by_key(("debug", "developer_mode"), False)
+
+    def get_debug_mode(self) -> bool:
+        return self.get_by_key(("debug", "enabled"), False)
+
+    def get_debug_flags(self) -> Dict[str, bool]:
+        return self.get_by_key(("debug", "debugs"), {})
+
+    def get_debug_flag(self, flag: str) -> bool:
+        return self.get_by_key(("debug", "debugs", flag), False)
+
+    def get_available_languages(self) -> Dict[str, str]:
+        return self.get_by_key(("languages", "available"), {})
+
+    def get_default_language(self) -> str:
+        return self.get_by_key(("languages", "default"), "en_EN")
+
+    def get_language(self) -> str:
+        return self.get_by_key(("languages", "selected"), "")
+
+    def set_language(self, language: str, auto_save: bool = True):
+        if language not in self.get_available_languages():
+            raise ValueError(f"Language '{language}' is not available.")
+
+        self.set_by_key(language, "languages", "selected")
+        if auto_save:
+            self.save_config()
+
+    def get_mouse_lock(self) -> bool:
+        return self.get_by_key(("ui", "mouse_lock"), False)
+
+    def set_mouse_lock(self, enabled: bool, auto_save: bool = True):
+        self.set_by_key(enabled, "ui", "mouse_lock")
+        if auto_save:
+            self.save_config()

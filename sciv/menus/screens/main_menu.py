@@ -31,6 +31,9 @@ class MainMenuScreen(Screen):
         self.manager.current = "game_config_screen"
 
     def build_screen(self):
+        from helpers.debug import Debug
+        from system.vars import commit
+
         float_layout = FloatLayout()
         self.layout = float_layout
         # Transparent gray background box
@@ -103,6 +106,24 @@ class MainMenuScreen(Screen):
         container.add_widget(self.exit_button)
 
         float_layout.add_widget(container)
+
+        footer: BoxLayout = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1.0, None),
+            height=50,
+            pos_hint={"center_x": 0.5, "center_y": 0.0},
+        )
+        version_text = f"Git Commit: {commit} | Panda3D: {Debug.get_panda_version()} | Kivy: {Debug.get_kivy_version()}"
+        version_label: Label = Label(
+            text=version_text,
+            size_hint=(1.0, 1.0),
+            font_size=20,
+            halign="center",
+            valign="middle",
+        )
+
+        footer.add_widget(version_label)
+        float_layout.add_widget(footer)
         return float_layout
 
     def to_config_screen(self, _: Any):

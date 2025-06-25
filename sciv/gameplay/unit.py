@@ -37,7 +37,7 @@ from managers.entity import uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
 from managers.unit import UnitManager
-from sciv.helpers.windows import WindowsHelper
+from helpers.windows import WindowsHelper
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity

@@ -18,7 +18,8 @@ from panda3d.core import (
 from gameplay.repositories.tile import TileRepository
 from managers.unit import UnitManager
 from mixins.singleton import Singleton
-from sciv.helpers.optimizations import throttle
+from helpers.optimizations import throttle
+from panda3d.core import WindowProperties
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -59,6 +60,21 @@ class Input(Singleton, DirectObject):
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
 
         self.register()
+
+        if self.base.config_manager.get_mouse_lock():
+            self.activate_mouse_lock()
+        else:
+            self.de_activate_mouse_lock()
+
+    def activate_mouse_lock(self):
+        props = WindowProperties()
+        props.setMouseMode(WindowProperties.M_confined)
+        self.base.window().requestProperties(props)
+
+    def de_activate_mouse_lock(self):
+        props = WindowProperties()
+        props.setMouseMode(WindowProperties.M_relative)
+        self.base.window().requestProperties(props)
 
     def reset(self):
         self.active = False

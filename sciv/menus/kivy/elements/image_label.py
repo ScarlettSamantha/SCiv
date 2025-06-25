@@ -7,7 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
 from helpers.cache import Cache
-from sciv.helpers.windows import WindowsHelper
+from helpers.windows import WindowsHelper
 
 
 class ImageLabel(BoxLayout):

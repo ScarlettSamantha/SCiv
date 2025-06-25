@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+from typing import TYPE_CHECKING, cast
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
@@ -33,6 +34,9 @@ Config.set("graphics", "gl_backend", "angle_sdl2")  # type: ignore
 monkey.patch_kivy()  # attach Kivy to the Panda3D window # type: ignore
 
 loadPrcFile("config.prc")  # Load the Panda3D configuration file
+
+if TYPE_CHECKING:
+    from panda3d.core import GraphicsWindow
 
 
 class OpenCiv(ShowBase):
@@ -85,21 +89,22 @@ class OpenCiv(ShowBase):
         loading_screen.next_stage("Setting up logging")
         self.logger: LogManager = LogManager.get_singleton_instance()
         self.logger.setup_loggers()
-        self.engine_logger: Logger = self.logger.engine.getChild("Main")
-        self.engine_logger.info("Starting OpenCiv")
 
         # Cache
         Cache.set_showbase_instance(self)
+        self.engine_logger: Logger = self.logger.engine.getChild("Main")
+        self.engine_logger.info("Starting OpenCiv")
 
         # Messenger
         loading_screen.next_stage("Loading Messenger")
         self.messenger: Messenger = Messenger()
 
         # Internationalization
-        loading_screen.next_stage("Loading translations for English(en_EN)")
+        loading_screen.next_stage(f"Loading translations for {self.config_manager.get_language()}")
         self.engine_logger.info("Setting up i18n")
         base_file_path = pathlib.Path(__file__).parent.absolute()
-        self.i18n = I18nManager(str(base_file_path / "i18n"), "en_EN", True)
+        self.i18n = I18nManager(str(base_file_path / "i18n"), self.config_manager.get_language(), True)
+        Cache.set_i18n_instance(self.i18n)
         set_i18n(self.i18n)
 
         # Generate assets
@@ -165,6 +170,11 @@ class OpenCiv(ShowBase):
             loading_screen.destroy()
         else:
             loading_screen.next_stage("Ready")
+
+    def window(self) -> "GraphicsWindow":
+        from panda3d.core import GraphicsWindow
+
+        return cast(GraphicsWindow, self.win)
 
     def __getstate__(self):
         return None
