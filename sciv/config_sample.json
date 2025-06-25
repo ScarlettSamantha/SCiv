@@ -46,7 +46,8 @@
       "system_ai": false,
       "system_saving": false,
       "system_loading": false,
-      "system_entity_graph": false
+      "system_entity_graph": false,
+      "system_performance_logging": false
     },
     "disable_ai_turn_processing": false,
     "sentry": {

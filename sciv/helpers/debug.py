@@ -1,13 +1,22 @@
+from datetime import datetime
 from enum import Enum
+import gzip
+import io
+import json
 import logging
+from pathlib import Path
 import re
 import subprocess  # nosec: B404
-from typing import Any, Dict, List, NoReturn, Optional
+from typing import Any, Dict, List, Literal, NoReturn, Optional, Tuple
 
 from sentry_sdk import init
 from sentry_sdk.types import Event, Hint
 
+from direct.task.Task import Task
 from managers.config import ConfigManager
+from helpers.cache import Cache
+from panda3d.core import ClockObject, PythonTask
+from helpers.paths import PathsHelper
 
 
 class Debugs(Enum):
@@ -21,6 +30,7 @@ class Debugs(Enum):
     SYSTEM_SAVING = "system_saving"
     SYSTEM_LOADING = "system_loading"
     SYSTEM_ENTITY_GRAPH = "system_entity_graph"
+    SYSTEM_PERFORMANCE_LOGGING = "system_performance_logging"
 
     DISABLE_AI_TURN_PROCESSING = "disable_ai_turn_processing"
 
@@ -63,6 +73,9 @@ class Debug:
         ),
         Debugs.SYSTEM_ENTITY_GRAPH: config_instance_ref.get_by_key(
             (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_ENTITY_GRAPH.value), default=False
+        ),
+        Debugs.SYSTEM_PERFORMANCE_LOGGING: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_PERFORMANCE_LOGGING.value), default=False
         ),
     }
 
@@ -155,15 +168,21 @@ class Debug:
         )
 
     @classmethod
+    def system_performance_logging(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_PERFORMANCE_LOGGING,
+            override,
+        )
+
+    @classmethod
     def init_sentry(cls, dsn: str) -> init:
         import sentry_sdk
         from sentry_sdk.integrations.logging import LoggingIntegration
         from system.vars import __version__, get_git_commit, DEBUG
 
-        # Set up Sentry logging integration
         sentry_logging = LoggingIntegration(
-            level=logging.ERROR,  # Capture errors and above as breadcrumbs
-            event_level=logging.ERROR,  # Send errors as events
+            level=logging.ERROR,
+            event_level=logging.ERROR,
         )
 
         sentry = sentry_sdk.init(
@@ -330,3 +349,117 @@ class Debug:
             return "Kivy not installed"
         except Exception as e:
             return f"Error getting Kivy version: {e}"
+
+
+class PerformanceLogData:
+    def __init__(self, real_time: datetime, zoom_level: float, camera_pos: Tuple[int, int, int], fps: float):
+        self.real_time: datetime = real_time
+        self.zoom_level: float = zoom_level
+        self.camera_pos: Tuple[int, int, int] = camera_pos
+        self.fps: float = fps
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "real_time": self.real_time.isoformat(),
+            "zoom_level": self.zoom_level,
+            "camera_pos": self.camera_pos,
+            "fps": self.fps,
+        }
+
+
+class PerformanceLogger:
+    PERFORMANCE_LOGGER_TICKS = 1 / 2  # log twice per second
+    TASK_NAME = "PerformanceLogger"
+    FLUSH_EVERY = 100
+
+    def __init__(
+        self,
+        active_on_init: bool,
+        location: str = "/performance_logs/performance_log.json",
+        compress: bool = False,
+    ):
+        self.base = Cache.get_showbase_instance()
+        self.start_time = datetime.now()
+        self.active = active_on_init
+        self.compress = compress
+
+        data_dir = PathsHelper.get_data_dir()
+        full_path = Path(data_dir) / location.lstrip("/")
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        self.log_path = str(full_path) + (".gz" if compress else "")
+
+        mode = "ab" if compress else "a"
+        opener = gzip.open if compress else io.open
+        self.fp = opener(self.log_path, mode, encoding=None if compress else "utf-8")
+
+        self._buffer: list[str] = []
+
+        self.task: Optional[PythonTask] = None
+        if self.active:
+            self.activate()
+
+    def activate(self) -> None:
+        if not self.task:
+            self.task = self.base.add_task(self._log_performance_tick, self.TASK_NAME, priority=0)
+
+    def deactivate(self) -> None:
+        self._flush_buffer()
+        if self.task:
+            self.base.remove_task(self.task)
+            self.task = None
+        try:
+            self.fp.close()  # type: ignore
+        except Exception:
+            pass
+
+    def _log_performance_tick(self, task: Task) -> Literal[1]:
+        entry = self.generate_entry()
+        self._buffer_entry(entry)
+        return task.cont
+
+    def _buffer_entry(self, entry: PerformanceLogData) -> None:
+        delta = (entry.real_time - self.start_time).total_seconds()
+        payload = {"t": delta, **entry.to_dict()}
+        line = json.dumps(payload)
+
+        self._buffer.append(line)
+
+        if len(self._buffer) >= self.FLUSH_EVERY:
+            self._flush_buffer()
+
+    def _flush_buffer(self) -> None:
+        if not self._buffer:
+            return
+
+        for line in self._buffer:
+            if self.compress:
+                self.fp.write((line + "\n").encode("utf-8"))  # type: ignore
+            else:
+                self.fp.write(line + "\n")  # type: ignore
+        try:
+            self.fp.flush()  # type: ignore
+            self._buffer.clear()
+        except Exception:
+            logging.warning("Failed to flush performance log to disk")
+
+    @classmethod
+    def get_zoom_level(cls) -> float:
+        return Cache.get_showbase_instance().game_camera.zoom
+
+    @classmethod
+    def get_fps(cls) -> float:
+        return ClockObject.getGlobalClock().getAverageFrameRate()
+
+    @classmethod
+    def get_camera_pos(cls) -> Tuple[int, int, int]:
+        pos = Cache.get_showbase_instance().game_camera.getPos()  # type: ignore
+        return tuple(map(int, (pos.x, pos.y, pos.z)))  #  type: ignore
+
+    @classmethod
+    def generate_entry(cls) -> PerformanceLogData:
+        return PerformanceLogData(
+            datetime.now(),
+            zoom_level=cls.get_zoom_level(),
+            camera_pos=cls.get_camera_pos(),
+            fps=cls.get_fps(),
+        )

@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
@@ -20,6 +21,7 @@ from managers.player import PlayerManager
 from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
+from helpers.debug import Debug, PerformanceLogger
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
@@ -59,6 +61,14 @@ class Game(Singleton, DirectObject):
         self.unit: UnitManager = UnitManager.get_singleton_instance(base=self.base)
         self.mesh_grid: Optional[HexGrid] = None
         self.game_settings: GameSettings | None = None
+        self.performance_logger: Optional[PerformanceLogger] = (
+            PerformanceLogger(
+                active_on_init=False,
+                location=f"/performance_logs/performance_log_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json",
+            )
+            if Debug.system_performance_logging()
+            else None
+        )
 
         self._rules: Optional[Type[GameRules]] = SCIVRules
         self.rules: GameRules = self._rules()
@@ -406,7 +416,6 @@ class Game(Singleton, DirectObject):
         MessengerGlobal.messenger.send("game.border.refresh")
 
         self.ui.post_game_start()
-        self.camera.recenter()
 
         self.logger.info("Setting up borders")
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
@@ -421,8 +430,12 @@ class Game(Singleton, DirectObject):
         self.entities.register(type=EntityType.WORLD, entity=self.mesh_grid, key="world_grid")  # type: ignore
         self.players.on_game_start()
         self.border.setup_borders()
+        self.base.get_camera().recenter()
 
         self.accept("ui.request.update.borders", self.border.update_borders)
+
+        if self.performance_logger is not None:
+            self.performance_logger.activate()
 
         self.logger.info("Game start complete")
 

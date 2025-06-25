@@ -154,13 +154,11 @@ class ConfigManager(Singleton):
             loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")
 
     def enable_vsync(self):
-        """Enable VSync in the config."""
         self.config_data["window"]["sync-video"] = True
         os.environ["vblank_mode"] = "1"
         self.save_config()
 
     def disable_vsync(self):
-        """Disable VSync in the config."""
         self.config_data["window"]["sync-video"] = False
         os.environ["vblank_mode"] = "0"
         self.save_config()
