@@ -3,6 +3,11 @@
     "clock-mode": "unlimited",
     "clock-frame-rate": 144
   },
+  "languages": {
+    "default": "en_EN",
+    "available": ["en_EN", "nl_NL"],
+    "selected": "en_EN"
+  },
   "window": {
     "screen-mode": "windowed",
     "win-origin": [0, 0],
@@ -13,6 +18,9 @@
   },
   "qol": {
     "intro_skip": false
+  },
+  "ui": {
+    "mouse_lock": false
   },
   "assets": {
     "use-cache": false,

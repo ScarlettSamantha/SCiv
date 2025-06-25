@@ -25,6 +25,12 @@ class ConfigManager(Singleton):
         return super().__setup__(*args, **kwargs)
 
     @classmethod
+    def __call__(cls, *args: Any, **kwargs: Any) -> "ConfigManager":
+        if not hasattr(cls, "_instance"):
+            cls._instance = super().__call__(*args, **kwargs)
+        return cls._instance
+
+    @classmethod
     def get_config_file_location(cls) -> str:
         from helpers.paths import PathsHelper
 
@@ -82,7 +88,6 @@ class ConfigManager(Singleton):
         return data if data else default
 
     def get_config_full(self) -> Dict[str, Any]:
-        """Return the full config data."""
         return self.config_data
 
     def get_default(self, key: Tuple[str, ...], default: Any) -> Any:
@@ -253,3 +258,23 @@ class ConfigManager(Singleton):
 
     def get_debug_flag(self, flag: str) -> bool:
         return self.get_by_key(("debug", "debugs", flag), False)
+
+    def get_available_languages(self) -> Dict[str, str]:
+        return self.get_by_key(("languages", "available"), {})
+
+    def get_default_language(self) -> str:
+        return self.get_by_key(("languages", "default"), "en_EN")
+
+    def get_language(self) -> str:
+        return self.get_by_key(("languages", "selected"), "")
+
+    def set_language(self, language: str, auto_save: bool = True):
+        if language not in self.get_available_languages():
+            raise ValueError(f"Language '{language}' is not available.")
+
+        self.set_by_key(language, "languages", "selected")
+        if auto_save:
+            self.save_config()
+
+    def get_mouse_lock(self) -> bool:
+        return self.get_by_key(("ui", "mouse_lock"), True)

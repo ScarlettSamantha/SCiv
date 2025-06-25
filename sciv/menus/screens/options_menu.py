@@ -35,6 +35,11 @@ class OptionsScreen(Screen):
         "5120x2160": (5120, 2160),
     }
 
+    LANGUAGES: Dict[str, str] = {
+        "en_EN": "English (en_EN)",
+        "nl_NL": "Nederlands (nl_NL)",
+    }
+
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         from helpers.debug import Debug
@@ -115,12 +120,13 @@ class OptionsScreen(Screen):
 
         self.general_layout.add_widget(Label(text="Language", font_size="18sp", bold=True, color=(1, 1, 1, 1)))
         self.language_spinner = Spinner(
-            text="English (en_EN)",
-            values=["English (en_EN)", "Dutch (nl_NL)"],
+            text=self.LANGUAGES.get(self.config_ref.get_language(), "English (en_EN)"),
+            values=list(self.LANGUAGES.values()),
             size_hint=(None, None),
             width=200,
             pos_hint={"center_x": 0.5},
         )
+        self.language_spinner.bind(text=self._on_language_select)
         self.general_layout.add_widget(self.language_spinner)
 
         self.general_layout.add_widget(Label(text="FPS Counter", font_size="18sp", bold=True, color=(1, 1, 1, 1)))
@@ -265,6 +271,11 @@ class OptionsScreen(Screen):
 
     def toggle_debug_flag(self, flag: str, active: bool) -> None:
         self.config_ref.toggle_debug_flag(flag, active)
+
+    def _on_language_select(self, spinner: Spinner, text: str) -> None:
+        lang_code = next((code for code, name in self.LANGUAGES.items() if name == text), "en_EN")
+        Cache.get_i18n_instance().set_current_language(lang_code)
+        self.config_ref.set_language(lang_code, auto_save=True)
 
     def _on_fps_toggle(self, checkbox: CheckBox, active: bool) -> None:
         self.config_ref.set_fps_counter(active)

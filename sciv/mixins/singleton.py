@@ -30,3 +30,7 @@ class Singleton(ABC):
     def set_singleton_instance(cls: Type[T], instance: T) -> T:
         cls.__instance = instance
         return instance
+
+    @classmethod
+    def __call__(cls: Type[T], *args: Any, **kwargs: Any) -> T:
+        return cls.get_singleton_instance(*args, **kwargs)
