@@ -409,7 +409,7 @@ class PerformanceLogger:
             self.task = None
         try:
             self.fp.close()  # type: ignore
-        except Exception:
+        except Exception:  # nosec: B110
             pass
 
     def _log_performance_tick(self, task: Task) -> Literal[1]:
