@@ -323,8 +323,6 @@ class Game(Singleton, DirectObject):
         self.active_generator = generator_cls(self.properties, self.base)  # Now self.generator is an instance.
 
     def generate_world(self):
-        # Generate the world
-        # 1) Width, 2) Height, 3) Radius stay around scale very minor = very big change, 4) Spacing between hexes
         self.world.reset()
         self.world.generate(
             self.properties.width,  # type: ignore has already been checked on game start if not None
@@ -342,10 +340,8 @@ class Game(Singleton, DirectObject):
         self.ui.map = self.world
 
     def camera_setup(self):
-        # Some camera stuff
         self.camera.active = True
 
-        # Setup input for camera
         self.input.inject_into_camera()
         self.input.activate()
 

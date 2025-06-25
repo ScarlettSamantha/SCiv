@@ -1,5 +1,6 @@
 from math import floor
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+import weakref
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -20,22 +21,26 @@ from managers.i18n import t_
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
 from menus.kivy.elements.image_label import ImageLabel
-from menus.kivy.mixins.collidable import CollisionPreventionMixin
+from helpers.debug import Debug
+
 
 if TYPE_CHECKING:
     from game import OpenCiv
+    from menus.screens.game_ui import GameUIScreen
 
 
-class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
+class CityUI(BoxLayout, DirectObject):
     def __init__(
         self,
         base: "OpenCiv",
+        screen: "GameUIScreen",
         name: str,
         background_color: Tuple[int, int, int, int] = (0, 0, 0, 0),
         border: Tuple[int, int, int, int] = (0, 0, 0, 0),
         **kwargs: Any,
     ):
-        super().__init__(base=base, disable_zoom=True, orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
+        super().__init__(orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
+        self.ref_screen: weakref.ReferenceType[GameUIScreen] = weakref.ref(screen)
         self.pos_hint = {"x": 0, "center_y": 0.65}  # Align left & center vertically
         self.size_hint = (0.50, 0.2)  # type: ignore # Ensure fixed width and height
         self.background_color = (0, 0, 0, 1)  # Black background
@@ -79,6 +84,8 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.buildable_improvements: Dict[str, BaseCityImprovement] = {}
         self.buildable_units: Dict[str, CivilianBaseClass | MilitaryBaseClass] = {}
 
+        self.should_log: bool = Debug.system_input()
+
         self.add_widget(self.build())
         self.register()
 
@@ -93,6 +100,12 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
 
     def set_city(self, city: City):
         self.city = city
+
+    def get_screen(self) -> "GameUIScreen":
+        screen = self.ref_screen()
+        if screen is None:
+            raise RuntimeError("CityUI screen reference is None.")
+        return screen
 
     def update(self):
         if self.city is None:
@@ -476,10 +489,12 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
         self.frame.opacity = 1
         self.frame.disabled = False
         self.hidden = False
+        self.get_screen().register_non_collidable(self.frame)
 
     def hide(self, auto_forget: bool = True):
         if self.frame is None or self.frame.disabled is True:
-            self.logger.debug("City UI is already hidden, skipping hide operation.")
+            if self.should_log:
+                self.logger.debug("City UI is already hidden, skipping hide operation.")
             return
 
         self.logger.debug("Hiding City UI")
@@ -496,6 +511,7 @@ class CityUI(BoxLayout, CollisionPreventionMixin, DirectObject):
                 unit.destroy()
             except Exception as e:
                 self.logger.error(f"Error destroying temporary unit {unit.name}: {e}")
+        self.get_screen().unregister_non_collidable(self.frame)
 
     def is_hidden(self) -> bool:
         return self.hidden

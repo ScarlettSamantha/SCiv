@@ -31,6 +31,7 @@ class Debugs(Enum):
     SYSTEM_LOADING = "system_loading"
     SYSTEM_ENTITY_GRAPH = "system_entity_graph"
     SYSTEM_PERFORMANCE_LOGGING = "system_performance_logging"
+    SYSTEM_INPUT = "system_input"
 
     DISABLE_AI_TURN_PROCESSING = "disable_ai_turn_processing"
 
@@ -76,6 +77,9 @@ class Debug:
         ),
         Debugs.SYSTEM_PERFORMANCE_LOGGING: config_instance_ref.get_by_key(
             (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_PERFORMANCE_LOGGING.value), default=False
+        ),
+        Debugs.SYSTEM_INPUT: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_INPUT.value), default=False
         ),
     }
 
@@ -171,6 +175,13 @@ class Debug:
     def system_performance_logging(cls, override: Optional[bool] = None) -> bool:
         return cls._check_with_override(
             Debugs.SYSTEM_PERFORMANCE_LOGGING,
+            override,
+        )
+
+    @classmethod
+    def system_input(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_INPUT,
             override,
         )
 

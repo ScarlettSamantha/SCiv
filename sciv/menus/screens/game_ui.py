@@ -288,7 +288,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.register_non_collidable(self.action_bar_frame.frame)  # type: ignore
         self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
-        self.register_non_collidable(self.city_ui.frame)  # type: ignore
 
         self.logger.info("Non-collidable UI elements registered.")
         self.add_widget(self.root_layout)
@@ -347,7 +346,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         return self.player_turn_control.build_debug_frame()
 
     def build_city_ui(self) -> BoxLayout:
-        self.city_ui = CityUI(base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
+        self.city_ui = CityUI(screen=self, base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
         result = self.city_ui.build()
         self.city_ui.hide()
         return result
