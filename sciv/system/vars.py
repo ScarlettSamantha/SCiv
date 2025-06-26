@@ -1,17 +1,35 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from version import __major__, __minor__, __patch__, __version__, __version_name__, __isdev__
 
+_git_cache: Optional[str] = None
+
 
 def get_git_commit() -> str:
+    global _git_cache
+
+    if _git_cache is not None:
+        return _git_cache
+
     try:
         import git  # type: ignore
 
         repo = git.Repo(search_parent_directories=True)  # type: ignore
-        commit = str(repo.head.object.hexsha)  # type: ignore
+        _git_cache = commit = str(repo.head.object.hexsha)  # type: ignore
     except Exception:
-        commit = "Unknown"
+        _git_cache = commit = "Unknown"
     return commit
+
+
+def get_git_branch() -> str:
+    try:
+        import git  # type: ignore
+
+        repo = git.Repo(search_parent_directories=True)  # type: ignore
+        branch = repo.active_branch.name  # type: ignore
+    except Exception:
+        branch = "Unknown"
+    return branch
 
 
 commit: str = get_git_commit()

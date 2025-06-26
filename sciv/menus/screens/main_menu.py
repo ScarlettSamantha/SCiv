@@ -10,6 +10,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 
+from sciv.helpers.colors import Colors
+
 
 class MainMenuScreen(Screen):
     def __init__(self, **kwargs: Any):
@@ -32,7 +34,6 @@ class MainMenuScreen(Screen):
 
     def build_screen(self):
         from helpers.debug import Debug
-        from system.vars import commit
 
         float_layout = FloatLayout()
         self.layout = float_layout
@@ -111,20 +112,29 @@ class MainMenuScreen(Screen):
             orientation="horizontal",
             size_hint=(1.0, None),
             height=50,
-            pos_hint={"center_x": 0.5, "center_y": 0.0},
+            pos_hint={"center_x": 0.5, "center_y": 0.01},
         )
-        version_text = f"Git Commit: {commit} | Panda3D: {Debug.get_panda_version()} | Kivy: {Debug.get_kivy_version()}"
+
+        dev_color = Colors.to_hex(Colors.RED)
+        path_color = Colors.to_hex(Colors.GREEN)
+        _commit = f"[color={dev_color}]{Debug.get_git_commit()[:8]}[{Debug.get_git_branch()}][/color]"
+        _config_file = f"[color={path_color}]{Debug.get_config_path()}[/color]"
+
+        version_text = f"Git Commit: {_commit} | Panda3D: {Debug.get_panda_version()} | Kivy: {Debug.get_kivy_version()} | Config: {_config_file}"
         version_label: Label = Label(
-            text=version_text,
-            size_hint=(1.0, 1.0),
-            font_size=20,
-            halign="center",
-            valign="middle",
+            text=version_text, size_hint=(1.0, 1.0), font_size=20, halign="center", valign="middle", markup=True
         )
+        version_label.bind(on_touch_up=self._on_label_click)
 
         footer.add_widget(version_label)
         float_layout.add_widget(footer)
         return float_layout
+
+    def _on_label_click(self, *args: Any, **kwargs: Any) -> None:
+        from helpers.debug import Debug
+
+        Debug.open_config_folder()
+        Debug.open_data_folder()
 
     def to_config_screen(self, _: Any):
         self.manager.current = "options_screen"
