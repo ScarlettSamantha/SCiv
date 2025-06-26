@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
-from kivy.input import MotionEvent
+from kivy.input import MotionEvent  #  type:ignore
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
@@ -113,7 +113,7 @@ class PlayerList(FloatLayout, DirectObject):
         container.add_widget(name)
 
         # Add click behavior
-        def on_touch_down(instance: Widget, touch: "MotionEvent"):
+        def on_touch_down(instance: Widget, touch: MotionEvent):  # type: ignore
             if self.disabled:
                 return False
             if container.collide_point(*touch.pos):  # type: ignore

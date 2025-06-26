@@ -1,7 +1,7 @@
 import random
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Type, Union
 from weakref import ReferenceType
 
 from gameplay.condition import Conditions
@@ -223,3 +223,24 @@ class Improvement(BaseEntity):
         _yield.set_prop(property, delta)
         ref.tile_yield = _yield
         return ref
+
+    def on_inspect(self):
+        data = {
+            "name": str(self.name),
+            "description": str(self.description),
+            "tile_yield_improvement": self.tile_yield_improvement.props(only_non_nul=True),
+            "maintenance_cost": self.maintenance_cost.props(only_non_nul=True),
+            "placeable_on_condition": self.placeable_on_condition,
+            "placeable_by_unit": self.placeable_by_unit,
+            "placeable_by_player": self.placeable_by_player,
+            "placeable_on_tiles": self.placeable_on_tiles,
+            "placeable_on_city": self.placeable_on_city,
+            "visible_on_condition": self.visible_on_condition,
+        }
+
+        return data, self.get_children_inspect()
+
+    def get_children_inspect(self) -> Dict[str, Set[BaseEntity | Any]]:
+        return {
+            "effects": set(self.effects.get_effects().values()),
+        }

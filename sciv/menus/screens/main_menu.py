@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 
 from direct.showbase.MessengerGlobal import messenger
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -10,7 +10,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 
-from sciv.helpers.colors import Colors
+from helpers.colors import Colors
+from menus.kivy.elements.clickable_label import ClickableLabel
 
 
 class MainMenuScreen(Screen):
@@ -121,11 +122,15 @@ class MainMenuScreen(Screen):
         _config_file = f"[color={path_color}]{Debug.get_config_path()}[/color]"
 
         version_text = f"Git Commit: {_commit} | Panda3D: {Debug.get_panda_version()} | Kivy: {Debug.get_kivy_version()} | Config: {_config_file}"
-        version_label: Label = Label(
-            text=version_text, size_hint=(1.0, 1.0), font_size=20, halign="center", valign="middle", markup=True
+        version_label: Label = ClickableLabel(
+            text=version_text,
+            size_hint=(0.02, 1.0),
+            font_size=20,
+            halign="center",
+            valign="middle",
+            markup=True,
+            on_click=self._on_label_click,
         )
-        version_label.bind(on_touch_up=self._on_label_click)
-
         footer.add_widget(version_label)
         float_layout.add_widget(footer)
         return float_layout

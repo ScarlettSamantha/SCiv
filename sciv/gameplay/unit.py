@@ -2,7 +2,7 @@ import random
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
 
 from direct.showbase.MessengerGlobal import messenger
 import numpy as np
@@ -622,3 +622,34 @@ class Unit(BaseEntity, ABC):
 
     def get_tag(self) -> str:
         return self.tag
+
+    def on_inspect(self):
+        data = {
+            "name": str(self.name),
+            "description": str(self.description),
+            "health": self.health_left,
+            "max_health": self.max_health,
+            "attack mele": self.attack_power_mele,
+            "defense mele": self.defense_mele,
+            "attack ranged": self.attack_power_ranged,
+            "defense ranged": self.defense_ranged,
+            "attack armor penetration": self.attack_armor_penetration,
+            "attack points": f"{self.attack_points_left}/{self.attack_points}",
+            "attacks cost mele": self.attack_points_cost_mele,
+            "attacks cost ranged": self.attack_points_cost_ranged,
+            "can move": self.can_move,
+            "can attack": self.can_attack,
+            "can heal": self.can_heal,
+            "can pillage": self.can_pillage,
+            "can build": self.can_build,
+            "can cross water": self.can_cross_water,
+            "can cross land": self.can_cross_land,
+            "can fly": self.can_fly,
+        }
+
+        return (data, self.get_children_inspect())
+
+    def get_children_inspect(self) -> Dict[str, Set[BaseEntity | Any]]:
+        return {
+            "effects": set(self.effects.get_effects().values()),
+        }

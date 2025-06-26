@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Tuple, Any
 import uuid
 
-from panda3d_kivy.core.window import DirectObject
+from direct.showbase.DirectObject import DirectObject
 from gameplay.yields import Yields
 from helpers.colors import Colors
 from helpers.placeholder import Placeholder

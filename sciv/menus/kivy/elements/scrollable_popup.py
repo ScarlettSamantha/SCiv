@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.properties import ReferenceListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button

@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.unit import Unit
+    from system.effects import Effect
     from managers.player import Player
 
 
@@ -349,6 +350,42 @@ class Tile(BaseEntity):
         for key, value in state.items():
             setattr(self, key, value)
 
+    def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        yields = self.tile_yield.on_inspect()
+
+        data = {
+            "tag": self.tag,
+            "id": self.id,
+            "x, y": f"{self.x} , {self.y}",
+            "pos": f"({self.pos_x}, {self.pos_y}, {self.pos_z})",
+            "hpr": f"({self.hpr[0]}, {self.hpr[1]}, {self.hpr[2]})",
+            "altitude": self.altitude,
+            "terrain": self.tile_terrain.name if self.tile_terrain else None,
+            "zone": self.zone,
+            "hemisphere": self.hemisphere,
+            "is_water": str(self.is_water),
+            "is_land": str(self.is_land),
+            "is_sea": str(self.is_sea),
+            "is_lake": str(self.is_lake),
+            "is_coast": str(self.is_coast),
+            "is_city": self.is_city(),
+            "city": self.city.tag if self.city else None,
+            "city_owner": self.city_owner.tag if self.city_owner else None,
+            "owner": str(self.player.name) if self.player else "nature",
+            "resources": self.resources.on_inspect(),
+            "features": [feature.name for feature in self.features],
+            "geoforms": str(self.geoforms) if self.geoforms else None,
+            "biome": self.biome,
+            "units": [unit.tag for unit in self.units.all()],
+            "improvements": [improvement.tag for improvement in self._improvements.get_all()],
+            "visible_sides": {side: "true" if edge else "false" for side, edge in self.visible_sides.items()},
+            "moisture": self.moisture,
+            "temperature": self.temperature,
+        }
+        data.update(yields)
+
+        return (data, self.get_children_inspect())
+
     def set_visible_sides(self, sides: Dict[int, bool]) -> None:
         if len(sides) != 6:
             raise ValueError("visible_sides must be a list of length 6.")
@@ -635,6 +672,21 @@ class Tile(BaseEntity):
     def instance_resource(self, resource: Type[BaseResource]):
         """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
+
+    def get_children_inspect(self) -> Dict[str, Set["Unit"] | Set["Improvement"] | Set["Effect"] | Set["City"]]:
+        if self.city is not None:
+            return {
+                "units": set(self.units.all()),
+                "improvements": set(self._improvements.get_all()),
+                "effects": set(self.effects.get_effects().values()),
+                "city": {self.city},
+            }
+        else:
+            return {
+                "units": set(self.units.all()),
+                "improvements": set(self._improvements.get_all()),
+                "effects": set(self.effects.get_effects().values()),
+            }
 
     def destroy(self, as_system: bool = False) -> None:
         self.renderer.clear_ui()

@@ -88,6 +88,7 @@ class Input(Singleton, DirectObject):
         self.accept("f3", self.de_activate)
 
         self.accept("f9", self.force_render_selected_entity)
+        self.accept("f10", self.on_inspect_entity)
         self.accept("f12", self.inspect_element)
 
         # Escape key
@@ -155,6 +156,18 @@ class Input(Singleton, DirectObject):
         self.pickerNP = self.base.camera.attachNewNode(picker_node)  # type: ignore
         self.picker.addCollider(self.pickerNP, self.pq)  # type: ignore
         self.register()  # Ensures key bindings are set
+
+    def on_inspect_entity(self) -> None:
+        if self.selected_tile is None and self.selected_unit is None:
+            self.logger.warning("No selected tile/unit to inspect.")
+            return
+
+        selected_entity = self.selected_tile if self.selected_tile else self.selected_unit
+
+        if selected_entity is not None and hasattr(selected_entity, "tag"):
+            self.logger.info(f"Inspecting selected entity: {selected_entity.tag}")
+
+        self.base.ui_manager.inspect_element(selected_entity)  # type: ignore
 
     def hover_task(self, task: Task.Task) -> Literal[1]:
         if not self.active or not self.base.mouseWatcherNode.hasMouse():  # type: ignore

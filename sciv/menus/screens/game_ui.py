@@ -40,6 +40,7 @@ from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
+from menus.kivy.parts.inspect_entity import InspectEntity
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
@@ -93,6 +94,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_list: Optional[PlayerList] = None
         self.player_info: Optional[PlayerInfo] = None
         self.player_combat_log: Optional[PlayerCombatLog] = None
+        self.inspect: Optional[InspectEntity] = None
 
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
 
@@ -116,10 +118,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.debug_map_stats is not None:
             self.debug_map_stats.update()
 
-        self.root_layout.add_widget(self.build_debug_map_stats())  # type: ignore
-        self.root_layout.add_widget(self.build_debug_frame())  # type: ignore
-        self.root_layout.add_widget(self.build_top_bar())  # type: ignore
-        self.root_layout.add_widget(self.build_stats_frame())  # type: ignore
+        self.add_widget(self.build_debug_map_stats())  # type: ignore
+        self.add_widget(self.build_debug_frame())  # type: ignore
+        self.add_widget(self.build_top_bar())  # type: ignore
+        self.add_widget(self.build_stats_frame())  # type: ignore
+        self.add_widget(self.build_inspect_entity())  # type: ignore
 
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
@@ -178,15 +181,23 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if screen.pause_menu._is_open or self.player_info is not None:  # type: ignore
             MessengerGlobal.messenger.send("ui.update.ui.hide_pause")
         else:
+            show_pause: bool = True
             if self.civics is not None and self.civics.is_open:
                 self.close_civics()
+                show_pause = False
             if self.research is not None and self.research.is_open:
                 self.close_research()
+                show_pause = False
+            if self.inspect is not None and self.inspect.is_open:
+                self.inspect.hide()
+                show_pause = False
 
             self.clear_selected_unit()
+            self.clear_selected_tile()
             self.clear_action_bar()
 
-            MessengerGlobal.messenger.send("ui.update.ui.show_pause")
+            if show_pause:
+                MessengerGlobal.messenger.send("ui.update.ui.show_pause")
 
     def on_unit_destroyed(self, unit: BaseEntity):
         self.clear_action_bar()
@@ -318,6 +329,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             # this is a workaround for kivy not allowing to add a widget at index=0
             self.add_widget(widget, index=len(self.children) - 1)
 
+    def build_inspect_entity(self) -> BoxLayout:
+        self.inspect = InspectEntity(self)
+        self.inspect.hide()
+        return self.inspect.frame
+
     def build_action_bar(self) -> GridLayout:
         self.action_bar_frame = ActionBar()
         return self.action_bar_frame.build()
@@ -409,6 +425,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def clear_selected_unit(self):
         self.clear_action_bar()
         self.ui_manager.clear_selected_unit()
+
+    def clear_selected_tile(self):
+        self.ui_manager.clear_selected_tile()
+        if self.city_ui is not None:
+            self.city_ui.hide()
 
     def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
         if self.debug_actions is None or self.debug_frame is None or self.stats_frame is None:
@@ -727,6 +748,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.open_civics()
         else:
             self.close_civics()
+
+    def inspect_element(self, entity: BaseEntity) -> None:
+        if self.inspect is None:
+            self.build_inspect_entity()
+
+        assert self.inspect is not None, "InspectEntity part is not initialized."
+        self.inspect.inspect_entity(entity)
 
     def lock_input(self):
         MessengerGlobal.messenger.send("system.input.raycaster_off")

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -158,8 +158,10 @@ class ui(Singleton, DirectObject):
         self.accept("space", self.on_space_press)
         return True
 
-    def get_main_game_ui(self) -> "Screen | GameUIScreen":
-        return self.get_screen("game_ui")
+    def get_main_game_ui(self) -> "GameUIScreen":
+        from menus.screens.game_ui import GameUIScreen
+
+        return cast(GameUIScreen, self.get_screen("game_ui"))
 
     def insert_refresh_frame(self):
         self._base.task_mgr.step()  # type: ignore
@@ -207,21 +209,14 @@ class ui(Singleton, DirectObject):
         if player != PlayerManager.session_player():
             return
 
-        ui: GameUIScreen | Screen = self.get_main_game_ui()  # type: ignore
-
-        if not isinstance(ui, GameUIScreen):
-            raise ValueError("UI is not a GameUIScreen")
-
+        ui: GameUIScreen = self.get_main_game_ui()
         ui.refresh_top_bar()
 
     def on_cancels_research_session(self, player: Player):
         if player != PlayerManager.session_player():
             return
 
-        ui: GameUIScreen | Screen = self.get_main_game_ui()
-
-        if not isinstance(ui, GameUIScreen):
-            raise ValueError("UI is not a GameUIScreen")
+        ui: GameUIScreen = self.get_main_game_ui()
 
         ui.refresh_top_bar()
 
@@ -398,6 +393,18 @@ class ui(Singleton, DirectObject):
         self.current_unit = None
         self.previous_unit = None
 
+    def clear_selected_tile(self):
+        if self.current_tile is None:
+            return
+
+        self.current_tile.deselect()
+        self.previous_tile = self.current_tile
+        self.current_tile = None
+
+        # Clear the current tiles and previous tiles
+        self.current_tiles = []
+        self.previous_tiles = []
+
     def clear_selection(self):
         self.current_tiles = []
         self.previous_tiles = []
@@ -497,3 +504,6 @@ class ui(Singleton, DirectObject):
 
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore
+
+    def inspect_element(self, element: BaseEntity):
+        self.get_main_game_ui().inspect_element(element)

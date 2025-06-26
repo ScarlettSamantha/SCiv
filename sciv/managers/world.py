@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from sciv.game import OpenCiv
+    from game import OpenCiv
     from managers.player import Player
     from system.generators.base import BaseGenerator
 

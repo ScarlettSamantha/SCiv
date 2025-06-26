@@ -496,6 +496,20 @@ class Resources:
         """This is the len that checks if there is anything actually valuable in the resources and non mechanic resources."""
         return len(self.flatten([ResourceType.BONUS, ResourceType.LUXURY, ResourceType.STRATEGIC]))
 
+    def __str__(self) -> str:
+        main_resource = self.flatten_non_mechanic()
+        if not main_resource:
+            return "Resources(0 items, 0 non-mechanical items) main {}"
+
+        if len(main_resource) == 1:
+            main_key = next(iter(main_resource))
+            return f"Resources(1 item, {self.len()} non-mechanical items) main {main_key}: {main_resource[main_key]}"
+
+        return f"Resources({len(self)} items, {self.len()} non-mechanical items)"
+
+    def on_inspect(self) -> str:
+        return self.__str__()
+
 
 class Costs:
     def __init__(self, costs: List[BaseResource] | BaseResource) -> None:
