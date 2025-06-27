@@ -175,8 +175,6 @@ class TileRenderer:
         self.anchor_node.removeNode()
         self.geometry_node.removeNode()
         self.clear_models()
-        self.unit_icons.destroy()  # type: ignore
-        self.unit_icons = None
         self.base = None
 
     def render(self, update_yields: bool = True) -> None:

@@ -41,6 +41,7 @@ from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
 from menus.kivy.parts.inspect_entity import InspectEntity
+from sciv.helpers.optimizations import throttle
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
@@ -132,6 +133,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def on_game_end(self, *args: Any):
         self.ignore("escape")
+        self.manager.current = "main_menu"
 
     def reset(self):
         self.logger.info("Resetting game UI screen.")
@@ -470,6 +472,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             frame.hide()
             self.register_non_collidable(self.stats_frame.frame)  # type: ignore
 
+    @throttle(0.1)
     def process_tile_click(self, tile: Optional[Union[str, Tile]] = None) -> bool:
         if isinstance(tile, str):
             _tile: Optional[Tile] = self.world_manager.lookup_on_tag(tile)

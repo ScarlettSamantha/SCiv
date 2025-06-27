@@ -128,6 +128,7 @@ class Game(Singleton, DirectObject):
 
     def on_main_menu(self):
         self.reset_game()
+        self.ui.set_screen("main_menu")
 
     def on_request_load(self, session_name: str) -> None:
         self.load(session_name)
@@ -180,6 +181,10 @@ class Game(Singleton, DirectObject):
         self.game_won = False
 
         self.ui.reset()
+
+        if self.mesh_grid is not None:
+            self.mesh_grid.reset()
+
         self.world.reset()
         self.turn.reset()
         self.camera.reset()
