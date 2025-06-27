@@ -377,12 +377,10 @@ class EntityManager(Singleton):
     ):
         import dill
 
-        # 1) Prep paths
         session = self.session or uuid4().hex
         out_dot = out_dot or f"debugging/{session}_object_graph.dot"
         os.makedirs(os.path.dirname(out_dot), exist_ok=True)
 
-        # 2) Try the full dill.dumps first
         try:
             raw = dill.dumps(data, recurse=True)  # type: ignore
         except Exception as full_exc:
@@ -390,16 +388,18 @@ class EntityManager(Singleton):
             class_only = {etype.name: tuple({type(ent) for ent in ents.values()}) for etype, ents in data.items()}
             raw = dill.dumps(class_only)  # type: ignore
 
-        # 3) Walk opcodes to collect edges between successive GLOBAL ops
         edges: list[tuple[str, str]] = []
         last_global: str | None = None
-        for opcode, arg, _ in genops(raw):
+
+        for opcode, arg, _ in genops(raw):  #  type: ignore
             if opcode.name == "GLOBAL" and isinstance(arg, str):
                 module, name = arg.split()
                 node = f"{module}.{name}"
+
                 if last_global:
                     edges.append((last_global, node))
                 last_global = node
+
             elif opcode.name in ("PUT", "BINPUT", "LONG_BINPUT"):
                 last_global = None
 
@@ -408,6 +408,7 @@ class EntityManager(Singleton):
         dot: Digraph = Digraph(comment="Pickle Object Graph", format="png")
         for src, dst in edges:
             dot.edge(src, dst)  # type: ignore
+
         dot.render(filename=out_dot, cleanup=False)  # type: ignore
 
         self.logger.info(f"[graph_pickle] DOT written to {out_dot} (+ .png)")
@@ -435,7 +436,6 @@ class EntityManager(Singleton):
             except Exception as e:
                 self.logger.warning(f"Failed to graph pickle: {e!r}")
 
-            # clean up .prof if not wanted
             if not keep_profile:
                 try:
                     os.remove(prof_filename)

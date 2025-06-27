@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, List
 
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout

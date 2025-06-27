@@ -340,6 +340,56 @@ class Debug:
         return info
 
     @classmethod
+    def get_python_version(cls) -> str:
+        import sys
+
+        return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro} ({sys.platform})"
+
+    @classmethod
+    def get_git_commit(cls) -> str:
+        from system.vars import get_git_commit
+
+        return get_git_commit()
+
+    @classmethod
+    def get_git_branch(cls) -> str:
+        from system.vars import get_git_branch
+
+        return get_git_branch()
+
+    @classmethod
+    def get_config_path(cls) -> str:
+        config = ConfigManager.get_singleton_instance()
+        return config.config_file
+
+    @classmethod
+    def open_config_folder(cls) -> None:
+        config = ConfigManager.get_singleton_instance()
+        config_path = config.config_file
+
+        if not config_path:
+            logging.warning("No config file found.")
+            return
+
+        try:
+            PathsHelper.open_folder(str(Path(config_path).parent))
+        except Exception as e:
+            logging.error(f"Failed to open config folder: {e}")
+
+    @classmethod
+    def open_data_folder(cls) -> None:
+        data_dir = PathsHelper.get_data_dir()
+
+        if not data_dir:
+            logging.warning("No data directory found.")
+            return
+
+        try:
+            PathsHelper.open_folder(data_dir)
+        except Exception as e:
+            logging.error(f"Failed to open data folder: {e}")
+
+    @classmethod
     def get_panda_version(cls) -> str:
         try:
             import panda3d

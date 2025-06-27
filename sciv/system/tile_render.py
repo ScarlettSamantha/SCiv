@@ -7,10 +7,11 @@ resource icons, unit markers, city nameplates, and model loading.
 """
 
 import math
-from typing import TYPE_CHECKING, Optional, Tuple, List, Union, cast
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, List, Union, cast
 from pathlib import Path
 from PIL import Image
 
+from PIL.ImageFont import FreeTypeFont
 from panda3d.core import (
     AntialiasAttrib,
     BitMask32,
@@ -18,6 +19,7 @@ from panda3d.core import (
     ColorBlendAttrib,
     NodePath,
     PTAFloat,
+    PandaNode,
     SamplerState,
     Shader,
     Texture,
@@ -387,11 +389,11 @@ class TileRenderer:
         """Generate a billboarding nameplate for the city on this tile."""
         if not self.tile.city:
             return
-        atlas = self.icon_atlas
+        atlas: AtlasGenerator = self.icon_atlas
 
-        path_left = atlas.get_real_path_for_virtual_path("city_plate_left.png")
-        path_mid = atlas.get_real_path_for_virtual_path("city_plate_middle.png")
-        path_right = atlas.get_real_path_for_virtual_path("city_plate_right.png")
+        path_left: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_left.png")
+        path_mid: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_middle.png")
+        path_right: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_right.png")
 
         if WindowsHelper.is_windows():
             # Convert to Unix path if not on Windows
@@ -399,17 +401,17 @@ class TileRenderer:
             path_mid = WindowsHelper.unix_to_win32_path(str(path_mid))
             path_right = WindowsHelper.unix_to_win32_path(str(path_right))
 
-        left = AssetManager.load_pil_image(str(path_left))
-        mid = AssetManager.load_pil_image(str(path_mid))
-        right = AssetManager.load_pil_image(str(path_right))
-        font = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
+        left: Image.Image = AssetManager.load_pil_image(str(path_left))
+        mid: Image.Image = AssetManager.load_pil_image(str(path_mid))
+        right: Image.Image = AssetManager.load_pil_image(str(path_right))
+        font: FreeTypeFont = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
 
-        plate = generate_city_nameplate(
-            left,
-            mid,
-            right,
-            str(self.tile.city.name),
-            self.tile.city.is_capital,
+        plate: Image.Image = generate_city_nameplate(
+            left_img=left,
+            middle_img=mid,
+            right_img=right,
+            city_name=str(self.tile.city.name),
+            is_capital=self.tile.city.is_capital,
             font=font,
             padding=(20, 8),
             text_offset_y=32,
@@ -428,7 +430,7 @@ class TileRenderer:
         w = 2.5
         h = w / ar
         cm.setFrame(-w / 2, w / 2, -h / 2, h / 2)
-        node = self.ui_node.attachNewNode(cm.generate())
+        node: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
         node.setTexture(tex)
         node.setTransparency(TransparencyAttrib.M_alpha)
         node.setPos(0, 0, 2.0)
@@ -458,7 +460,7 @@ class TileRenderer:
         full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
         self.last_result = None
 
-        loaded_model = AssetManager.load_model(full_path)
+        loaded_model: NodePath[PandaNode] = AssetManager.load_model(full_path)
 
         if not loaded_model:
             self.tile.logger.error(f"Model {full_path} could not be loaded.")
@@ -474,7 +476,7 @@ class TileRenderer:
         loaded_model.setScale(max(0.01, scale))
         loaded_model.setHpr(*hpr)
 
-        node = loaded_model.instanceTo(self.geometry_node)
+        node: NodePath[PandaNode] = loaded_model.instanceTo(self.geometry_node)
 
         if flatten_model:
             node.flatten_medium()
@@ -495,7 +497,7 @@ class TileRenderer:
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
 
         self.models.append(node)
-        self.last_result = node
+        self.last_result: Optional[NodePath[PandaNode]] = node
         if Debug.world_spawning():
             self.tile.logger.debug(f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}.")
 
@@ -509,3 +511,21 @@ class TileRenderer:
         for model in self.models:
             model.removeNode()
         self.models.clear()
+
+    def on_inspect(self, also_bits: bool = True) -> Dict[str, Union[str, int, float]]:
+        loaded_models: List[str] = [str(model.get_name()) for model in self.models]
+
+        data: Dict[str, Union[str, int, float]] = {  # Otherwise mypy complains about the type they are all strings
+            "loaded_models": ",".join(loaded_models) if loaded_models else "",
+            "resource_model": str(self.resource_model.get_name()) if self.resource_model else "",
+            "resource_model_pos": str(self.resource_model.getPos()) if self.resource_model else str((0.0, 0.0, 0.0)),
+            "resource_model_scale": str(self.resource_model.getScale()) if self.resource_model else 1.0,
+            "resource_model_hpr": str(self.resource_model.getHpr()) if self.resource_model else str((0.0, 0.0, 0.0)),
+        }
+
+        if also_bits and (bits := self.bits_renderer.on_inspect()):
+            data["terrain_bits"] = bits.get("terrain_bits", "") or ""
+            data["loaded_bits"] = bits.get("loaded_bits", "") or ""
+            data["assigned_slots"] = bits.get("assigned_slots", "") or ""
+
+        return data

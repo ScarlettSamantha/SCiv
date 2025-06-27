@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button

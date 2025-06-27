@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Ty
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Line, Rectangle, Triangle  # type: ignore
 from kivy.uix.anchorlayout import AnchorLayout  # NEW
 from kivy.uix.behaviors import ButtonBehavior

@@ -52,3 +52,12 @@ class LinuxHelper:
         cls.data_dir = data_dir
 
         return data_dir
+
+    @classmethod
+    def open_folder(cls, folder: str) -> None:
+        import subprocess  # nosec
+
+        try:
+            subprocess.run(["xdg-open", folder], check=True)  # nosec
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to open folder {folder}: {e}")

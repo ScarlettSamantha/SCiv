@@ -406,6 +406,28 @@ class Yields:
             "great_person_holy": self._great_person_holy,
         }
 
+    def on_inspect(self, basic: bool = False) -> Dict[str, str]:
+        data = {
+            "gold": str(self.gold.value),
+            "production": str(self.production.value),
+            "science": str(self.science.value),
+            "food": str(self.food.value),
+            "culture": str(self.culture.value),
+            "housing": str(self.housing.value),
+            "faith": str(self.faith.value),
+        }
+        if basic is True:
+            return data
+        data.update(
+            {
+                "contentment": str(self._contentment),
+                "angre": str(self._angre),
+                "revolt": str(self._revolt),
+                "stability": str(self._stability),
+            }
+        )
+        return data
+
     def export_basic(self) -> List["BaseResource"]:
         resources: List["BaseResource"] = [
             self.gold,

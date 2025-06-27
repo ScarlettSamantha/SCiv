@@ -10,4 +10,4 @@ class StickyTextInput(TextInput):
         if "button" in touch.profile and touch.button == "left":
             self.focus = True
 
-        return retval
+        return retval  # type: ignore

@@ -1,6 +1,6 @@
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Union
 from uuid import uuid4
 from weakref import ReferenceType
 import weakref
@@ -69,6 +69,8 @@ class BaseEntity(ABC, DirectObject):
         self._owner: Optional[ReferenceType["Player"]] = (
             owner if isinstance(owner, weakref.ReferenceType) or owner is None else weakref.ref(owner)
         )
+
+        self._is_alive: bool = True
 
         if Cache.has_instance() is False:
             raise AssertionError("Cache instance is not set.")
@@ -163,6 +165,28 @@ class BaseEntity(ABC, DirectObject):
     @classmethod
     def get_attack_points_cost_ranged(cls) -> float:
         return cls.attack_points_cost_ranged
+
+    def is_alive(self) -> bool:
+        return self.health() > 0
+
+    def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        if not self._is_alive:
+            return {
+                "error": "This entity is not alive, its a phantom. this is a bug, please trace where it does not get destroyed properly.",
+            }, {}
+
+        return {
+            "key": self.entity_key,
+            "tag": self.tag,
+            "name": self.name,
+            "description": self.description,
+            "health_left": self.health_left,
+            "max_health": self.max_health,
+            "tile": self.get_tile().get_pos(),
+            "owner": self.get_owner().name if self.owner else None,
+        }, self.get_children_inspect()
+
+    def get_children_inspect(self) -> Dict[str, Set["BaseEntity | Any"]]: ...
 
     def destroy(self, as_system: bool = False) -> None: ...
 

@@ -1,6 +1,6 @@
 from logging import Logger
 from random import randint, randrange
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 from direct.showbase import DirectObject, MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from gameplay.effect import Effect
 
 
 class City(BaseEntity, DirectObject.DirectObject):
@@ -100,6 +101,38 @@ class City(BaseEntity, DirectObject.DirectObject):
 
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
+
+    def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        data = {
+            "key": self.entity_key,
+            "tag": self.tag,
+            "name": self.name,
+            "description": self.description,
+            "tile": self.get_tile().tag,
+            "owner": str(self.get_owner().name) if self.owner is not None else None,
+            "population": self.population,
+            "population_food_usage": self.population_food_usage,
+            "food_collected": self.food_collected.on_inspect(basic=True),
+            "new_population_food_required": self.new_population_food_required.on_inspect(basic=True),
+            "border_growth_points": self.border_growth_points,
+            "border_growth_cost": self.border_growth_cost,
+            "border_growth_next_tile": self.border_growth_next_tile.tag
+            if self.border_growth_next_tile is not None
+            else None,
+            "is_capital": self.is_capital,
+            "is_building": self.is_building,
+            "building": self.building.tag if self.building is not None else None,
+            "resource_required": self.resource_required if self.resource_required is not None else None,
+            "resource_required_amount": self.resource_required_amount.on_inspect(basic=True),
+            "resource_collected": self.resource_collected.on_inspect(basic=True),
+        }
+        return data, self.get_children_inspect()
+
+    def get_children_inspect(self) -> Dict[str, Set["Unit"] | Set["Improvement"] | Set["Effect"] | Set["City"]]:
+        return {
+            "improvements": set(self._improvements.get_all()),
+            "effects": set(self.effects.get_effects().values()),
+        }
 
     def calculate_food_surplus(self) -> float:
         return self.calculate_yield_from_tiles().only(["food"]).food.value - (

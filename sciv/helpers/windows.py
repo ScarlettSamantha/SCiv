@@ -67,3 +67,13 @@ class WindowsHelper:
         data_dir.mkdir(parents=True, exist_ok=True)
         cls.data_dir = str(data_dir)
         return str(data_dir)
+
+    @classmethod
+    def open_folder(cls, path: str) -> bool:
+        import subprocess  # nosec
+
+        process = subprocess.run(["explorer", path], check=True)  # nosec
+
+        if process.returncode != 0:
+            return False
+        return True

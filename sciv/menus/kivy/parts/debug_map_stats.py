@@ -2,7 +2,7 @@ import copy
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
-from kivy.app import Widget
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
