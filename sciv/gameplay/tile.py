@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.unit import Unit
-    from system.effects import Effect
     from managers.player import Player
 
 
@@ -677,10 +676,9 @@ class Tile(BaseEntity):
         return self.x, self.y
 
     def instance_resource(self, resource: Type[BaseResource]):
-        """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
 
-    def get_children_inspect(self) -> Dict[str, Set["Unit"] | Set["Improvement"] | Set["Effect"] | Set["City"]]:
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]:
         if self.city is not None:
             return {
                 "units": set(self.units.all()),
