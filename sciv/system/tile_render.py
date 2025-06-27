@@ -103,7 +103,6 @@ class TileRenderer:
         self.selector_enabled: bool = False
 
         self._build_selector_quad()
-        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 5)  # type: ignore
 
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
@@ -146,6 +145,7 @@ class TileRenderer:
         self.selector_enabled = enable
         if self.selector_np:
             if enable:
+                self.on_select()
                 if self.tile.owner is not None:
                     color = self.tile.get_owner().color[:3]
                 else:
@@ -154,6 +154,13 @@ class TileRenderer:
                 self.selector_np.show()
             else:
                 self.selector_np.hide()
+                self.on_deselect()
+
+    def on_select(self) -> None:
+        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 10)  # type: ignore
+
+    def on_deselect(self) -> None:
+        self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
 
     def clear_ui(self) -> None:
         for child in self.ui_node.getChildren():
