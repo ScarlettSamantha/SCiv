@@ -119,7 +119,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.debug_map_stats.update()
 
         self.add_widget(self.build_debug_map_stats())  # type: ignore
-        self.add_widget(self.build_debug_frame())  # type: ignore
+        # self.add_widget(self.build_debug_frame())  # type: ignore
         self.add_widget(self.build_top_bar())  # type: ignore
         self.add_widget(self.build_stats_frame())  # type: ignore
         self.add_widget(self.build_inspect_entity())  # type: ignore
@@ -485,7 +485,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.get_city_ui().hide()
             self.showing_city = None
 
-        self.debug_frame.update_debug_info_for_tile(_tile)  # type: ignore # We know it exists because it's initialized in build_screen
+        # self.debug_frame.update_debug_info_for_tile(_tile)  # type: ignore # We know it exists because it's initialized in build_screen
 
         if self.wait_for_next_input_of_user is False:
             self.clear_selected_unit()  # Clear the action bar
@@ -542,11 +542,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if should_select_unit is True:
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
 
-        if _unit != self.ui_manager.current_unit:
-            if should_select_unit is True:
-                if self.debug_frame is not None:
-                    if _unit.is_alive():
-                        self.debug_frame.update_debug_info_for_unit(_unit)
+        # if _unit != self.ui_manager.current_unit:
+        #     if should_select_unit is True:
+        #         if self.debug_frame is not None:
+        #             if _unit.is_alive():
+        #                 self.debug_frame.update_debug_info_for_unit(_unit)
 
         self.clear_action_bar()
         if self.ui_manager.current_unit is not None:
