@@ -228,8 +228,8 @@ class Improvement(BaseEntity):
         data = {
             "name": str(self.name),
             "description": str(self.description),
-            "tile_yield_improvement": self.tile_yield_improvement.props(only_non_nul=True),
-            "maintenance_cost": self.maintenance_cost.props(only_non_nul=True),
+            "tile_yield_improvement": self.tile_yield_improvement.on_inspect(basic=True),
+            "maintenance_cost": self.maintenance_cost.on_inspect(basic=True),
             "placeable_on_condition": self.placeable_on_condition,
             "placeable_by_unit": self.placeable_by_unit,
             "placeable_by_player": self.placeable_by_player,

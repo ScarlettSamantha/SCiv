@@ -167,3 +167,20 @@ class BaseTerrain(ABC):
 
     def get_atlas_uv(self) -> Tuple[int, int]:
         return self.uv_map
+
+    def on_inspect(self) -> Dict[str, Union[str, int, float]]:
+        data: Dict[str, Union[str, int, float]] = {
+            "name": str(self.name),
+            "model": str(self._model) if self._model else "",
+            "texture": str(self.texture()),
+            "fallback_color": str(self.fallback_color),
+            "movement_modifier": self.movement_modifier,
+            "water_availability": self.water_availability,
+            "radiation_level": self.radiation_level,
+            "tile_yield_base": str(self.tile_yield_base.on_inspect()),
+            "tile_modifiers": str(self.tile_modifiers.on_inspect()),
+            "passable": self.passable,
+            "passable_without_tech": self.passable_without_tech,
+            "model_rotation": str(self.model_rotation),
+        }
+        return data

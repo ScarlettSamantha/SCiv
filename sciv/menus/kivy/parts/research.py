@@ -235,7 +235,7 @@ class ResearchButton(TooltippedButton):
     def on_release(self):
         if self.disabled:
             return
-        super().on_release()
+        super().on_release()  #  type: ignore
         self._refresh_content()
 
 

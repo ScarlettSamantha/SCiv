@@ -316,3 +316,14 @@ class BitsRenderer:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
             self._unrender_slot(slot_name)
         self._bit_slot_assignments.clear()
+
+    def on_inspect(self) -> Dict[str, str | None]:
+        bits: List[Bit] = self.tile.get_terrain().get_bits()
+        loaded_bits: List[str] = [bit.id for bit in bits if not bit.is_disabled()]
+        bits_str: str = ", ".join([f"{bit.id} ({bit.model})" for bit in bits])
+        return {
+            "terrain_bits": bits_str,
+            "loaded_bits": ",".join(loaded_bits),
+            "assigned_slots": str(self._bit_slot_assignments),
+            "parent": self.parent.get_name() if self.parent else "None",
+        }

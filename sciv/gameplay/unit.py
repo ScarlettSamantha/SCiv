@@ -38,6 +38,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
 from managers.unit import UnitManager
 from helpers.windows import WindowsHelper
+from managers.combat_log import CombatLogEntry
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -605,8 +606,10 @@ class Unit(BaseEntity, ABC):
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)
 
     def attack(self, target: T_TARGET) -> CombatOutcome:
-        outcome = Combat.attack(self, target)
-        entry = CombatLog.entry_from_outcome(outcome=outcome, text=CombatLog.outcome_to_text(outcome=outcome))  # type: ignore
+        outcome: CombatOutcome = Combat.attack(self, target)
+        entry: CombatLogEntry = CombatLog.entry_from_outcome(
+            outcome=outcome, text=CombatLog.outcome_to_text(outcome=outcome)
+        )  # type: ignore
 
         MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
 
@@ -645,6 +648,12 @@ class Unit(BaseEntity, ABC):
             "can cross water": self.can_cross_water,
             "can cross land": self.can_cross_land,
             "can fly": self.can_fly,
+            "model": str(self.get_model_path()) if self.get_model_path() else "",
+            "model rotation": f"({self.model_rotation[0]}, {self.model_rotation[1]}, {self.model_rotation[2]})",
+            "model position offset": f"({self.model_position_offset[0]}, {self.model_position_offset[1]}, {self.model_position_offset[2]})",
+            "model size": self.model_size,
+            "model_pos": str(self.model.getPos()) if self.model else "(0.0, 0.0, 0.0)",
+            "pos": f"({self.pos_x}, {self.pos_y}, {self.pos_z})",
         }
 
         return (data, self.get_children_inspect())

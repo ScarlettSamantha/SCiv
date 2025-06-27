@@ -109,11 +109,11 @@ class City(BaseEntity, DirectObject.DirectObject):
             "name": self.name,
             "description": self.description,
             "tile": self.get_tile().tag,
-            "owner": self.player.name if self.player is not None else None,
+            "owner": str(self.get_owner().name) if self.owner is not None else None,
             "population": self.population,
             "population_food_usage": self.population_food_usage,
-            "food_collected": self.food_collected.on_inspect(),
-            "new_population_food_required": self.new_population_food_required.on_inspect(),
+            "food_collected": self.food_collected.on_inspect(basic=True),
+            "new_population_food_required": self.new_population_food_required.on_inspect(basic=True),
             "border_growth_points": self.border_growth_points,
             "border_growth_cost": self.border_growth_cost,
             "border_growth_next_tile": self.border_growth_next_tile.tag
@@ -123,8 +123,8 @@ class City(BaseEntity, DirectObject.DirectObject):
             "is_building": self.is_building,
             "building": self.building.tag if self.building is not None else None,
             "resource_required": self.resource_required if self.resource_required is not None else None,
-            "resource_required_amount": self.resource_required_amount.on_inspect(),
-            "resource_collected": self.resource_collected.on_inspect(),
+            "resource_required_amount": self.resource_required_amount.on_inspect(basic=True),
+            "resource_collected": self.resource_collected.on_inspect(basic=True),
         }
         return data, self.get_children_inspect()
 

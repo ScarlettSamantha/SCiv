@@ -353,6 +353,11 @@ class Tile(BaseEntity):
     def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         yields = self.tile_yield.on_inspect()
 
+        render = {}
+        render: Dict[str, str | int | float] = self.renderer.on_inspect()
+
+        terrain = self.tile_terrain.on_inspect() if self.tile_terrain else {}
+
         data = {
             "tag": self.tag,
             "id": self.id,
@@ -370,8 +375,8 @@ class Tile(BaseEntity):
             "is_coast": str(self.is_coast),
             "is_city": self.is_city(),
             "city": self.city.tag if self.city else None,
-            "city_owner": self.city_owner.tag if self.city_owner else None,
-            "owner": str(self.player.name) if self.player else "nature",
+            "city_owner": str(self.city_owner.tag) if self.city_owner else None,
+            "owner": str(self.get_owner().name) if self.owner else "nature",
             "resources": self.resources.on_inspect(),
             "features": [feature.name for feature in self.features],
             "geoforms": str(self.geoforms) if self.geoforms else None,
@@ -383,6 +388,8 @@ class Tile(BaseEntity):
             "temperature": self.temperature,
         }
         data.update(yields)
+        data.update(render)
+        data.update(terrain)
 
         return (data, self.get_children_inspect())
 

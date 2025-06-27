@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from kivy.core.image import Image as CoreImage
-from kivy.core.image import Texture as KivyTexture
+from kivy.core.image import Texture as KivyTexture  # type: ignore
 from kivy.uix.image import Image as KivyImage
 from panda3d.core import PNMImage, StringStream, Texture  # type: ignore
 from PIL import Image
@@ -365,7 +365,7 @@ class AtlasGenerator:
         buf.seek(0)
 
         kivy_tex: KivyTexture = CoreImage(buf, ext="png").texture  # type: ignore
-        return KivyImage(texture=kivy_tex)
+        return KivyImage(texture=kivy_tex)  #  type: ignore
 
     def get_coreimage_by_key(self, key: str) -> Optional[CoreImage]:
         entry = self.lookup_by_key(key)
