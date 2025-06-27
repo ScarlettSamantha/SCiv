@@ -15,6 +15,7 @@ from panda3d.core import (
     NodePath,
 )
 
+from direct.showbase import MessengerGlobal
 from gameplay.repositories.tile import TileRepository
 from managers.unit import UnitManager
 from mixins.singleton import Singleton
@@ -93,6 +94,7 @@ class Input(Singleton, DirectObject):
 
         # Escape key
         self.accept("escape", self.on_escape)
+        self.accept("space", self.on_space)
 
         self.accept("system.input.raycaster_on", self.activate)
         self.accept("system.input.raycaster_off", self.de_activate)
@@ -272,3 +274,6 @@ class Input(Singleton, DirectObject):
 
     def on_escape(self):
         messenger.send("game.input.user.escape_pressed")
+
+    def on_space(self):
+        MessengerGlobal.messenger.send("game.turn.request_end")

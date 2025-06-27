@@ -155,7 +155,6 @@ class ui(Singleton, DirectObject):
         self.accept("p", self.activate_pstat)
         self.accept("l", self.deactivate_pstat)
         self.accept("z", self.calculate_icons_for_tiles)
-        self.accept("space", self.on_space_press)
         return True
 
     def get_main_game_ui(self) -> "GameUIScreen":
@@ -169,9 +168,6 @@ class ui(Singleton, DirectObject):
     def on_tile_hover(self, tile_coords: str) -> None: ...
 
     def on_tile_unhover(self, tile_coords: List[str]) -> None: ...
-
-    def on_space_press(self):
-        MessengerGlobal.messenger.send("game.requests.end_turn")
 
     def on_escape_press(self):
         if self.game is None:
