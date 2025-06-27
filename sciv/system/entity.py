@@ -1,6 +1,6 @@
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union
 from uuid import uuid4
 from weakref import ReferenceType
 import weakref
@@ -12,6 +12,7 @@ from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStrOrNone
+from sciv.mixins.inspectable import Inspectable
 
 if TYPE_CHECKING:
     from sciv.game import OpenCiv
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
 
 
-class BaseEntity(ABC, DirectObject):
+class BaseEntity(ABC, DirectObject, Inspectable):
     name: T_TranslationOrStrOrNone = None
     description: T_TranslationOrStrOrNone = None
 
@@ -55,6 +56,7 @@ class BaseEntity(ABC, DirectObject):
         **kwargs: Any,
     ):
         super().__init__()
+        Inspectable.__init__(self, *args, **kwargs)
         from gameplay.tile import Tile
 
         self.tag: str = str(uuid4().hex)
@@ -182,11 +184,11 @@ class BaseEntity(ABC, DirectObject):
             "description": self.description,
             "health_left": self.health_left,
             "max_health": self.max_health,
-            "tile": self.get_tile().get_pos(),
+            "tile": self.get_tile().get_pos() if self.tile else None,
             "owner": self.get_owner().name if self.owner else None,
         }, self.get_children_inspect()
 
-    def get_children_inspect(self) -> Dict[str, Set["BaseEntity | Any"]]: ...
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]: ...
 
     def destroy(self, as_system: bool = False) -> None: ...
 

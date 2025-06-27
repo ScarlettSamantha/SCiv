@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Dict, Optional
 
+
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from managers.base import BaseManager
 
@@ -66,8 +67,16 @@ class PlayerManager(BaseManager):
         return cls._players[turn]
 
     @classmethod
-    def all(cls) -> Dict[int, "Player"]:
-        return cls._players
+    def all(cls, add_mechanic_players: bool = False) -> Dict[int, "Player"]:
+        players = cls._players.copy()
+        if add_mechanic_players:
+            if cls._session_player is not None:
+                players[cls._session_player.turn_order] = cls._session_player
+            if cls._nature_player is not None:
+                players[cls._nature_player.turn_order] = cls._nature_player
+            if cls._barbarian_player is not None:
+                players[cls._barbarian_player.turn_order] = cls._barbarian_player
+        return players
 
     @classmethod
     def players(cls) -> Dict[int, "Player"]:

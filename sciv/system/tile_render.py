@@ -518,7 +518,7 @@ class TileRenderer:
         self.models.clear()
 
     def on_inspect(self, also_bits: bool = True) -> Dict[str, Union[str, int, float]]:
-        loaded_models: List[str] = [str(model.get_name()) for model in self.models]
+        loaded_models: List[str] = [str(model) for model in self.models]
 
         data: Dict[str, Union[str, int, float]] = {  # Otherwise mypy complains about the type they are all strings
             "loaded_models": ",".join(loaded_models) if loaded_models else "",

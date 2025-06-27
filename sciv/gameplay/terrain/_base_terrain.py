@@ -3,13 +3,13 @@ import random
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, Union
 
 
-from gameplay.bits import Bit, Bits
 from gameplay.yields import Yields
 from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
+    from gameplay.bits import Bit
 
 
 def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | Tuple4f:
@@ -33,6 +33,8 @@ class BaseTerrain(ABC):
     uv_map: Tuple[int, int] = (0, 0)
 
     def __init__(self):
+        from gameplay.bits import Bit, Bits
+
         self.fallback_color: Tuple[float, float, float] = (
             self._fallback_color if self._fallback_color else (0, 119, 255)
         )
@@ -73,11 +75,11 @@ class BaseTerrain(ABC):
     def register_bits(self) -> None:
         pass
 
-    def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List[Bit]:
+    def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List["Bit"]:
         self.active_bits = self.bits.choose()
         return self.active_bits
 
-    def get_bits(self, choose_if_empty: bool = True) -> List[Bit]:
+    def get_bits(self, choose_if_empty: bool = True) -> List["Bit"]:
         if not self.bits:
             if choose_if_empty:
                 return self.choose_bits()

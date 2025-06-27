@@ -42,6 +42,7 @@ from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
 from menus.kivy.parts.inspect_entity import InspectEntity
 from sciv.helpers.optimizations import throttle
+from sciv.mixins.inspectable import Inspectable
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
@@ -752,7 +753,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         else:
             self.close_civics()
 
-    def inspect_element(self, entity: BaseEntity) -> None:
+    def inspect_element(self, entity: Inspectable) -> None:
         if self.inspect is None:
             self.build_inspect_entity()
 

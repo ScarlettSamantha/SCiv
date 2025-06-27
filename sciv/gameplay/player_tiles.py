@@ -36,3 +36,6 @@ class PlayerTiles:
 
     def remove(self, tile: "Tile"):
         self.remove_tile(tile.x, tile.y)
+
+    def __len__(self) -> int:
+        return len(self.tiles)

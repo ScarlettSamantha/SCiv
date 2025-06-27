@@ -21,6 +21,7 @@ from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
 from menus.screens.save_load import SaveLoadScreen
 from mixins.singleton import Singleton
+from mixins.inspectable import Inspectable
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -501,5 +502,5 @@ class ui(Singleton, DirectObject):
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore
 
-    def inspect_element(self, element: BaseEntity):
+    def inspect_element(self, element: Inspectable):
         self.get_main_game_ui().inspect_element(element)

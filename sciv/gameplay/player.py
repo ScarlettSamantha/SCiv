@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Self, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Set, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 
@@ -30,6 +30,8 @@ from managers.civics import Civic, CivicsManager, CivicTree
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
 from gameplay.effect import Effect
+from sciv.gameplay.city import City
+from sciv.gameplay.unit import Unit
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -118,7 +120,7 @@ class Player(BaseEntity):
         self.cities: Cities = Cities()
         self.capital: "City | None" = None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
         self.tiles: PlayerTiles = PlayerTiles()
-        self.claims: Claims = Claims()
+        self.claims: Claims = Claims(self)
         self.units: Units = Units()
         self.votes: Votes = Votes()
 
@@ -386,3 +388,41 @@ class Player(BaseEntity):
         if self.capital is None:
             raise ValueError("Player has no capital city.")
         return self.capital
+
+    def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        data = {
+            "tag": self.tag,
+            "name": str(self.get_name()),
+            "leader": str(self.leader.name),
+            "civilization": self.civilization.name,
+            "color": str(self.color),
+            "is_human": str(self.is_human),
+            "is_nature": str(self.is_nature),
+            "is_barbarian": str(self.is_barbarian),
+            "is_defeated": str(self.is_defeated),
+            "turn_order": self.turn_order,
+            "population": self.population,
+            "citizens_count": len(self.citizens),
+            "cities_count": len(self.cities),
+            "units_count": len(self.units),
+            "claims_count": len(self.claims),
+            "tiles_count": len(self.tiles),
+            "science": str(self.science.total_value()),
+            "culture": str(self.culture.total_value()),
+            "faith": str(self.faith.total_value()),
+            "gold": str(self.gold.total_value()),
+            "revolt": str(self.revolt),
+            "anarchy": str(self.anarchy),
+            "suppression": str(self.suppression),
+            "popularity": str(self.popularity),
+        }
+
+        return data, self.get_children_inspect()
+
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]:
+        return {
+            "effects": set(self.effects.get_effects().values()),
+            "tiles": set(self.tiles.get_tiles().values()),
+            "units": self.units.all(),
+            "cities": self.cities.all(),
+        }
