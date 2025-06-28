@@ -312,14 +312,19 @@ class Unit(BaseEntity, ABC):
         circle_np.setPos(0, 0, 0 + 0.1)  # type: ignore
 
         if self.selection_shader:
-            circle_np.setShader(self.selection_shader)
-            circle_np.setShaderInput("dashLength", dash_length)  # type: ignore
+            circle_np.setShaderInput("radius", self.selection_radius)  # type: ignore
+            circle_np.setShaderInput("borderWidth", 0.05)  # type: ignore
             circle_np.setShaderInput("dashFreq", 18.0)  # type: ignore
             circle_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
-            circle_np.setShaderInput("borderWidth", 0.05)  # type: ignore
-            circle_np.setShaderInput("radius", 1)  # type: ignore
-            circle_np.setShaderInput("time", 0.0)  # type: ignore
-            circle_np.setShaderInput("color", color)  # type: ignore
+            circle_np.setShaderInput("time", 0.0)  # getFrameTime() in your update task # type: ignore
+            # wrap your tuple in a Panda Vec4 so the uniform actually gets passed:
+            from panda3d.core import Vec4
+
+            circle_np.setShaderInput("color", Vec4(*color))  # type: ignore
+            from panda3d.core import TransparencyAttrib
+
+            circle_np.setTransparency(TransparencyAttrib.MAlpha)
+            circle_np.setBin("transparent", 50)
 
         circle_np.hide()
         circle_np.reparentTo(self.model)
