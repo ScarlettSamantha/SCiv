@@ -29,6 +29,7 @@ class HexGrid:
         rows: int = 10,
         wall_color: Tuple4f = Colors.MAGENTA,
     ):
+        self.entity_key: str = "_world_"
         self.radius: float = radius
         self.tiles: List["Tile"] = tiles
         self._tile_index_map: Dict[Tuple[int, int], int] = {(t.x, t.y): i for i, t in enumerate(self.tiles)}
@@ -76,6 +77,7 @@ class HexGrid:
             "cols": self.cols,
             "rows": self.rows,
             "wall_color": self.wall_color,
+            "entity_key": self.entity_key,
         }
 
     def __setstate__(self, state: Dict[str, Any]) -> None:

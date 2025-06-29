@@ -8,7 +8,7 @@ from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, Lens, Mous
 from panda3d_kivy.core.window import WindowBase  # type: ignore
 from mixins.singleton import Singleton
 from managers.game import debounce
-from sciv.managers.input import Input
+from managers.input import Input
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -225,7 +225,6 @@ class Camera(Singleton, DirectObject):
     def zoom_in(self):
         if not self.zoom_enabled:
             return
-        # adjust desired only
         self._desired_zoom = max(self.min_zoom, self._desired_zoom - self.zoom_speed)
 
     def zoom_out(self):

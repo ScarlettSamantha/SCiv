@@ -11,6 +11,7 @@ class UnitManager(Singleton):
     def __setup__(self, base: "OpenCiv"):
         self.base: "OpenCiv" = base
         self.units: Dict[str, "Unit"] = {}
+        self.by_player: Dict[str, Dict[str, "Unit"]] = {}
 
     def __init__(self, base: "OpenCiv"):
         self.base: "OpenCiv" = base
@@ -26,6 +27,10 @@ class UnitManager(Singleton):
 
     def add_unit(self, unit: "Unit"):
         self.units[str(unit.tag)] = unit
+        if unit.owner is not None:
+            if str(unit.owner.tag) not in self.by_player:  # type: ignore
+                self.by_player[str(unit.owner.tag)] = {}  # type: ignore
+            self.by_player[str(unit.owner.tag)][str(unit.tag)] = unit  # type: ignore
 
     def remove_unit(self, unit: "Unit"):
         if not hasattr(unit, "tag"):  # This is a bug

@@ -67,6 +67,13 @@ class PlayerManager(BaseManager):
         return cls._players[turn]
 
     @classmethod
+    def get_by_tag(cls, tag: str) -> "Player | None":
+        for player in cls._players.values():
+            if player.tag == tag:
+                return player
+        return None
+
+    @classmethod
     def all(cls, add_mechanic_players: bool = False) -> Dict[int, "Player"]:
         players = cls._players.copy()
         if add_mechanic_players:
