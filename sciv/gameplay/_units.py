@@ -12,15 +12,18 @@ class Units:
         self._num_units: int = 0
 
     def add_unit(self, unit: "Unit") -> None:
-        if unit in self._units:
-            return
+        for unit in self._units:
+            if unit.tag == unit.tag:
+                return
         self._units.add(unit)
         self._num_units += 1
 
     def remove_unit(self, unit: "Unit"):
-        if unit in self._units:
-            self._units.remove(unit)
-            self._num_units -= 1
+        for unit in list(self._units):
+            if unit.tag == unit.tag:
+                self._units.remove(unit)
+                break
+        self._num_units -= 1
 
     def __len__(self) -> int:
         return len(self._units)

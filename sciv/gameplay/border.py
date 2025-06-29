@@ -23,7 +23,6 @@ from helpers.geometry import generate_flat_top_hex
 
 from helpers.tiles import Tiles
 from managers.player import PlayerManager
-from managers.world import World
 from helpers.windows import WindowsHelper
 from system.shaders import Shaders
 from helpers.colors import Colors, Tuple4f
@@ -227,6 +226,8 @@ class Borders(DirectObject):
         return tex
 
     def generate_world_border_nodes(self) -> List[NodePath]:
+        from managers.world import World
+
         self.world_hexes: List[NodePath] = []
         grid = World.get_singleton_instance().get_grid()
         hex_model = generate_flat_top_hex()
@@ -305,6 +306,8 @@ class Borders(DirectObject):
         return mask
 
     def _get_world_edge_mask(self, x: int, y: int) -> int:
+        from managers.world import World
+
         """bit i is set if neighbor in direction i is a different terrain."""
         mask = 0
         grid = World.get_singleton_instance().get_grid()
