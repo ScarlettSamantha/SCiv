@@ -41,7 +41,6 @@ from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
 from menus.kivy.parts.inspect_entity import InspectEntity
-from sciv.helpers.optimizations import throttle
 from sciv.mixins.inspectable import Inspectable
 from system.actions import Action
 from system.camera import Camera
@@ -124,7 +123,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         # self.add_widget(self.build_debug_frame())  # type: ignore
         self.add_widget(self.build_top_bar())  # type: ignore
         self.add_widget(self.build_stats_frame())  # type: ignore
-        self.add_widget(self.build_inspect_entity())  # type: ignore
 
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
@@ -164,6 +162,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.hide_research_ui", self.close_research)
         self.accept("ui.update.ui.show_civics_ui", self.open_civics)
         self.accept("ui.update.ui.hide_civics_ui", self.close_civics)
+        self.accept("ui.update.ui.show_inspect_ui", self.open_inspect)
+        self.accept("ui.update.ui.hide_inspect_ui", self.close_inspect)
         self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
 
         self.accept("t", self.toggle_research)
@@ -192,7 +192,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 self.close_research()
                 show_pause = False
             if self.inspect is not None and self.inspect.is_open:
-                self.inspect.hide()
+                self.close_inspect()
                 show_pause = False
 
             self.clear_selected_unit()
@@ -321,21 +321,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def send_to_back(self, widget: Widget):
         parent: Widget = widget.parent
         if widget in parent.children:
-            # if the widget is already in the parent, remove it first
             parent.remove_widget(widget)
-            # add without index → goes to the end of children → drawn last → on top
             parent.add_widget(widget, len(parent.children) - 1)
         elif widget in self.children:
-            # if the widget is in the root layout, remove it first
             self.remove_widget(widget)
-            # add at index=0 → goes to the end of children → drawn last → on top
-            # this is a workaround for kivy not allowing to add a widget at index=0
             self.add_widget(widget, index=len(self.children) - 1)
 
-    def build_inspect_entity(self) -> BoxLayout:
+    def build_inspect_entity(self) -> InspectEntity:
         self.inspect = InspectEntity(self)
-        self.inspect.hide()
-        return self.inspect.frame
+        return self.inspect
 
     def build_action_bar(self) -> GridLayout:
         self.action_bar_frame = ActionBar()
@@ -473,7 +467,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             frame.hide()
             self.register_non_collidable(self.stats_frame.frame)  # type: ignore
 
-    @throttle(0.1)
     def process_tile_click(self, tile: Optional[Union[str, Tile]] = None) -> bool:
         if isinstance(tile, str):
             _tile: Optional[Tile] = self.world_manager.lookup_on_tag(tile)
@@ -682,6 +675,27 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if action.remove_actions_after_use:
             self.clear_action_bar()
 
+    def open_inspect(self):
+        if self.inspect is None:
+            self.inspect = self.build_inspect_entity()
+            self.inspect.show()
+            self.register_non_collidable(self.inspect.frame)  # type: ignore
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.add_widget(self.inspect.frame)  # type: ignore
+            self.lock_input()
+
+    def close_inspect(self):
+        if self.inspect is not None:
+            self.unregister_non_collidable(self.inspect.frame)  # type: ignore
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.inspect.hide()
+            self.root_layout.remove_widget(self.inspect.frame)  # type: ignore
+            self.popup_disabled = True
+            self.inspect = None
+            self.unlock_input()
+
     def open_research(self):
         if self.research is None:
             self.research = self.build_research()
@@ -755,10 +769,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def inspect_element(self, entity: Inspectable) -> None:
         if self.inspect is None:
-            self.build_inspect_entity()
-
-        assert self.inspect is not None, "InspectEntity part is not initialized."
-        self.inspect.inspect_entity(entity)
+            self.open_inspect()
+            assert self.inspect is not None, (
+                "Inspect did not get opened properly or assigned to the instance"
+            )  # to make mypy happy
+            self.inspect.inspect_entity(entity)
 
     def lock_input(self):
         MessengerGlobal.messenger.send("system.input.raycaster_off")

@@ -10,6 +10,7 @@ from kivy.uix.button import Button
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.uix.treeview import TreeView, TreeViewLabel
+from direct.showbase import MessengerGlobal
 from sciv.mixins.inspectable import Inspectable
 from system.entity import BaseEntity
 
@@ -78,7 +79,7 @@ class InspectEntity:
         self.left_container: BoxLayout = BoxLayout(orientation="vertical", size_hint_x=0.3)
 
         self.close_button = Button(text="Close", size_hint_y=None, height=dp(30))
-        self.close_button.bind(on_release=lambda *_: self.hide())
+        self.close_button.bind(on_release=lambda *_: MessengerGlobal.messenger.send("ui.update.ui.hide_inspect_ui"))
 
         self.divider: Widget = Widget(size_hint_x=None, width=dp(2))
         with self.divider.canvas:  # type: ignore
@@ -170,16 +171,14 @@ class InspectEntity:
         for key, value in entity.on_inspect()[0].items():
             if key == "children":
                 continue
-            text = f"{key.capitalize() if key else 'None'}: " + (
-                getattr(value, "name", "") if key == "owner" and value else str(value or "")
-            )
-
+            text = f"{key.capitalize() if key else 'None'}: " + str(value or "")
             label = Label(
                 text=text,
                 size_hint_y=None,
                 halign="left",
                 valign="middle",
                 text_size=(self.right_container.width, None),  # type: ignore
+                markup=True,
             )
 
             label.bind(width=lambda lbl, w: setattr(lbl, "text_size", (w, None)))  # type: ignore
@@ -221,10 +220,13 @@ class InspectEntity:
     def show(self) -> None:
         self.frame.disabled = False
         self.frame.opacity = 1
-        self.screen.bring_to_front(self.frame)
         self.is_open = True
 
     def hide(self) -> None:
         self.frame.disabled = True
         self.frame.opacity = 0
         self.is_open = False
+        self.current_entity = None
+        self.left_container.clear_widgets()
+        self.right_container.clear_widgets()
+        MessengerGlobal.messenger.send("ui.update.ui.close_inspect_ui")
