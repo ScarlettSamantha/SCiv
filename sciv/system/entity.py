@@ -1,6 +1,6 @@
 from abc import ABC
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union, cast
 from uuid import uuid4
 from weakref import ReferenceType
 import weakref
@@ -12,7 +12,8 @@ from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStrOrNone
-from sciv.mixins.inspectable import Inspectable
+from mixins.inspectable import Inspectable
+
 
 if TYPE_CHECKING:
     from sciv.game import OpenCiv
@@ -65,12 +66,26 @@ class BaseEntity(ABC, DirectObject, Inspectable):
         self.is_registered: bool = False
         self.tile: Optional[ReferenceType["Tile"] | "Tile"] = weakref.ref(tile) if isinstance(tile, Tile) else None
 
+        if tile is None:
+            self.tile_tag: str | None = None
+        else:
+            self.tile_tag: str | None = tile.get_tag() if isinstance(tile, Tile) else tile().get_tag()  # type: ignore
+
         self.attack_points_left: float = self.attack_points
         self.health_left: float = self.max_health
 
         self._owner: Optional[ReferenceType["Player"]] = (
             owner if isinstance(owner, weakref.ReferenceType) or owner is None else weakref.ref(owner)
         )
+
+        if owner is not None:
+            if isinstance(owner, weakref.ReferenceType):
+                owner_instance = owner()
+                if owner_instance is None:
+                    raise ValueError("Owner reference is dead (None)")
+                self.owner_tag: str = owner_instance.get_tag()
+            else:
+                self.owner_tag = owner.get_tag()
 
         self._is_alive: bool = True
 
@@ -120,7 +135,60 @@ class BaseEntity(ABC, DirectObject, Inspectable):
         state = self.__dict__.copy()
         if "base" in state:
             del state["base"]
+        if "_logger" in state:
+            del state["_logger"]
+
+        if "_owner" in state:
+            if isinstance(self._owner, weakref.ReferenceType):
+                owner: Player | None = self._owner()
+                if owner is not None:
+                    state["owner_tag"] = (
+                        owner.get_tag()
+                    )  # last minute refresh of owner tag to make sure it is up to date
+
+            del state["_owner"]
+
+        if "tile" in state:
+            if isinstance(self.tile, weakref.ReferenceType):
+                tile: Tile | None = self.tile()
+                if tile is not None:
+                    state["tile_tag"] = tile.get_tag()
+
+            del state["tile"]
+
         return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        from managers.log import LogManager
+
+        self.base: "OpenCiv" = Cache.get_showbase_instance()
+        self._logger = LogManager.get_singleton_instance().gameplay.getChild("entity")
+
+        if "tile_tag" in state:
+            if (tile_tag := state.get("tile_tag")) is not None:
+                self.tile = cast(
+                    ReferenceType["Tile"] | None,
+                    EntityManager.get_singleton_instance().get_ref(key=tile_tag, type=EntityType.TILE, weak_ref=True),
+                )
+        else:
+            self.tile = None
+
+        if "owner_tag" in state:
+            if (owner_tag := state.get("owner_tag")) is not None:
+                self._owner = cast(
+                    ReferenceType["Player"] | None,
+                    EntityManager.get_singleton_instance().get_ref(
+                        key=owner_tag, type=EntityType.PLAYER, weak_ref=True
+                    ),
+                )
+                if self._owner is None:
+                    self._logger.warning(f"Owner with tag {owner_tag} not found, setting owner to None.")
+        else:
+            self._owner = None
+
+        self.__dict__.update(state)
 
     def get_registered_status(self) -> bool:
         return self.is_registered
@@ -207,15 +275,27 @@ class BaseEntity(ABC, DirectObject, Inspectable):
 
     def get_owner(self) -> "Player":
         if self.owner is None:
-            raise ValueError("Owner is None")
+            assert self.owner_tag is not None, "Owner tag is not set"
+            from managers.entity import EntityManager, EntityType
+
+            owner = cast(
+                "ReferenceType[Player] | None",
+                EntityManager.get_singleton_instance().get_ref(
+                    key=self.owner_tag, type=EntityType.PLAYER, weak_ref=True
+                ),
+            )
+            if owner is None:
+                raise ValueError(f"Owner with tag {self.owner_tag} not found")
+
+            self._owner = owner
+
+            return owner()  # type: ignore
 
         if isinstance(self.owner, weakref.ReferenceType):
             owner = self.owner()
-
             if owner is None:
                 raise ValueError("Owner reference is dead (None)")
-            else:
-                return owner
+            return owner
 
         return self.owner
 
@@ -240,3 +320,7 @@ class BaseEntity(ABC, DirectObject, Inspectable):
         else:
             tile = self.tile
         return tile.get_pos()
+
+    def get_tag(self) -> str:
+        assert self.tag is not None, "Tag is not set"
+        return self.tag

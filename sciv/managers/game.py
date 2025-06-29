@@ -22,6 +22,7 @@ from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
 from helpers.debug import Debug, PerformanceLogger
+from helpers.cache import Cache
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
@@ -146,12 +147,13 @@ class Game(Singleton, DirectObject):
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
 
         self.mesh_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
+        Cache.set_showbase_instance(self.base)
         if self.mesh_grid is None:
             raise ValueError("Mesh grid has not been generated yet")
 
-        self.world.load(world_tiles)
         self.players.load(players)
         self.unit.load(units)
+        self.world.load(world_tiles)
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()

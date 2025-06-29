@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+import gc
 from logging import Logger
 import os
 from pickletools import genops
@@ -9,7 +10,6 @@ from uuid import uuid4
 from weakref import ReferenceType, ref
 
 
-from helpers.debug import Debug
 from mixins.singleton import Singleton
 from system.entity import BaseEntity
 from system.save_file import BaseSaver, SavePickleFile
@@ -90,26 +90,28 @@ V = TypeVar("V", bound="BaseEntity")
 
 class BaseEntityManagerSerializer(ABC):
     @abstractmethod
-    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
+    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity | Dict[str, Any]]]) -> bytes:
         pass
 
     @abstractmethod
-    def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
+    def load(self, data: Any) -> Dict[EntityType, Dict[str, Dict[str, Any]]]:
         pass
 
 
 class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
-    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity]]) -> bytes:
+    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity | Dict[str, Any]]]) -> bytes:
+        from helpers.debug import Debug
         import dill as pickle  # type: ignore
 
         if Debug.system_saving():
             import dill.detect
 
             with dill.detect.trace():  # Enable tracing for debugging purposes # type: ignore
-                return dill.dumps(data, recurse=True, byref=False)  # type: ignore
-        return pickle.dumps(data, recurse=True, byref=False)  # type: ignore
+                return dill.dumps(data, recurse=False, byref=False)  # type: ignore
+        return pickle.dumps(data, recurse=True, byref=True)  # type: ignore
 
-    def load(self, data: Any) -> Dict[EntityType, Dict[str, BaseEntity]]:
+    def load(self, data: Any) -> Dict[EntityType, Dict[str, Dict[str, Any]]]:
+        from helpers.debug import Debug
         import dill as pickle  # type: ignore
 
         if Debug.system_loading():
@@ -118,11 +120,11 @@ class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
             with dill.detect.trace():  # type: ignore
                 return pickle.loads(data)  # type: ignore
 
-        return pickle.loads(data)  # type: ignore
+        return pickle.loads(data, ignore=True)  # type: ignore
 
 
 class EntityManager(Singleton):
-    _entities: Dict[EntityType, Dict[str, BaseEntity]] = {type_: {} for type_ in EntityType}
+    _entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]] = {type_: {} for type_ in EntityType}
     _meta_data: Dict[str, Dict[str, Any]] = {"system": {}, "game": {}, "stats": {}, "player": {}}
 
     # Default we pick the PickleEntityManagerSerializer
@@ -182,7 +184,9 @@ class EntityManager(Singleton):
         }
         self.session = str(uuid4().hex)
         self.session_incrementor = 0
-        self._entities = {type_: {} for type_ in EntityType}
+        self._entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]] = {
+            type_: {} for type_ in EntityType
+        }
 
     def add_default_meta_data(self) -> None:
         self.add_meta_data("stats", self.stats)
@@ -204,7 +208,7 @@ class EntityManager(Singleton):
         self.stats["total_tiles"] = len(self._entities[EntityType.TILE])
         self.stats["total_effects"] = len(self._entities[EntityType.EFFECT])
 
-    def object_type_to_storage(self, type: EntityType) -> Dict[str, BaseEntity]:
+    def object_type_to_storage(self, type: EntityType) -> Dict[str, "BaseEntity | HexGrid | GameSettings"]:
         return self._entities[type]
 
     def register(self, type: EntityType, entity: BaseEntity, key: str):
@@ -244,12 +248,12 @@ class EntityManager(Singleton):
 
     def get_ref(
         self, type: EntityType, key: str, weak_ref: bool = False
-    ) -> BaseEntity | ReferenceType[BaseEntity] | None:
+    ) -> "BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | HexGrid | GameSettings | None":
         storage = self.object_type_to_storage(type)
         entity = storage.get(key)
         return ref(entity) if weak_ref and entity else entity
 
-    def get_ref_weak(self, type: EntityType, key: str) -> ReferenceType[BaseEntity]:
+    def get_ref_weak(self, type: EntityType, key: str) -> ReferenceType["BaseEntity | HexGrid | GameSettings"]:
         unit_ref = self.get_ref(type, key, weak_ref=True)
 
         if not isinstance(unit_ref, ReferenceType):
@@ -267,7 +271,7 @@ class EntityManager(Singleton):
 
     def get_multiple(
         self, type: EntityType, keys: list[str], weak_refs: bool = False
-    ) -> list[BaseEntity | ReferenceType[BaseEntity] | None]:
+    ) -> list["BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | GameSettings | HexGrid | None"]:
         return [self.get_ref(type, key, weak_ref=weak_refs) for key in keys]
 
     def add_meta_data(self, key: str, value: Any):
@@ -291,12 +295,12 @@ class EntityManager(Singleton):
     def get_all_players(self) -> Dict[str, "Player"]:
         return self.get_all(type=EntityType.PLAYER)  # type: ignore # its fine it does not know that the base entity can only be a Player
 
-    def get_all(self, type: Optional[EntityType] = None) -> Dict[str, BaseEntity]:
+    def get_all(self, type: Optional[EntityType] = None) -> Dict[str, "BaseEntity | HexGrid | GameSettings"]:
         if type is None:
             return {key: entity for storage in self._entities.values() for key, entity in storage.items()}
         return self.object_type_to_storage(type)
 
-    def get_all_refs(self, type: EntityType) -> Dict[str, ReferenceType[BaseEntity]]:
+    def get_all_refs(self, type: EntityType) -> Dict[str, ReferenceType["BaseEntity | HexGrid | GameSettings"]]:
         return {k: ref(v) for k, v in self.object_type_to_storage(type).items()}
 
     def get_all_keys(self, type: EntityType) -> list[str]:
@@ -313,6 +317,8 @@ class EntityManager(Singleton):
         self.serializer = serializer
 
     def dump(self, session_name: str = ""):
+        from helpers.debug import Debug
+
         if not self.serializer:
             raise ValueError("No serializer registered.")
 
@@ -324,7 +330,11 @@ class EntityManager(Singleton):
         if Debug.system_entity_graph() is True:
             data: bytes = self.debug_dump(keep_profile=True)
         else:
-            data: bytes = self.serializer.dump(self._entities)
+            _entity_states: Dict[EntityType, Dict[str, Any]] = {
+                etype: {key: entity.__getstate__() for key, entity in entities.items()}
+                for etype, entities in self._entities.items()
+            }
+            data: bytes = self.serializer.dump(_entity_states)
 
         saver_instance = self.saver()
         saver_instance.set_data(data)
@@ -340,22 +350,74 @@ class EntityManager(Singleton):
         saver_instance.save()
 
     def load(self):
-        if self.session is None:
+        from system.mesh import HexGrid
+        from system.game_settings import GameSettings
+
+        if not self.session:
             raise ValueError("No session name set.")
 
+        saver = self.saver()
+        saver.set_identifier(self.session)
+        raw_data = saver.load()
+
+        self.session_incrementor = saver.get_session_incrementor()
+        self._meta_data = saver.get_saved_meta_data()
+
+        states: Dict[EntityType, Dict[str, Dict[str, Any]]] = self.serializer.load(
+            raw_data,
+        )
+
+        new_entities: Dict[EntityType, Dict[str, BaseEntity | GameSettings | HexGrid]] = {
+            etype: {} for etype in EntityType
+        }
+
+        for entity_type, entries in states.items():
+            for state in entries.values():
+                instance = self._create_instance(entity_type, state)
+
+                if isinstance(instance, BaseEntity):
+                    key = getattr(instance, "entity_key", None)
+                elif isinstance(instance, GameSettings):
+                    key = "game_settings"
+                elif isinstance(instance, HexGrid):  # type: ignore
+                    key = "world_grid"
+                else:
+                    raise TypeError(
+                        f"Unsupported entity type {type(instance)} for entity_type {entity_type.name}. "
+                        "Expected BaseEntity, HexGrid, or GameSettings."
+                    )
+
+                if not isinstance(key, str):
+                    raise ValueError(f"Entity key must be a string, got {type(key)}")
+                # Register loaded instance without altering its state
+
+                assert (
+                    isinstance(instance, BaseEntity)
+                    or isinstance(instance, HexGrid)
+                    or isinstance(instance, GameSettings)
+                ), f"Instance must be a BaseEntity or HexGrid, got {type(instance)}"
+                assert key is not None, f"Entity key cannot be None for {entity_type.name}."
+                new_entities[entity_type][key] = instance
+        del states
         self.clear()
+        gc.collect()
+        self._entities = new_entities
 
-        saver_instance = self.saver()
-        saver_instance.set_identifier(self.session)
-        loaded_data: str = saver_instance.load()
+    def _create_instance(self, entity_type: EntityType, state: Dict[str, Any]) -> "BaseEntity | HexGrid | GameSettings":
+        if entity_type == EntityType.UNIT:
+            class_path = state.get("unit")
+            if not class_path:
+                raise ValueError("Unit class is not defined in the entity data.")
+            module_name, class_name = class_path.rsplit(".", 1)
+            module = __import__(module_name, fromlist=[class_name])
+            cls = getattr(module, class_name)
+        else:
+            cls = entity_type.base_type
 
-        self.session_incrementor = saver_instance.get_session_incrementor()
-        self._meta_data = saver_instance.get_saved_meta_data()
+        instance = cls.__new__(cls)
+        instance.__setstate__(state)
 
-        unserialized_data: Dict[EntityType, Dict[str, BaseEntity]] = self.serializer.load(loaded_data)
-
-        for entity_type, entity_dict in unserialized_data.items():
-            self._entities[entity_type].update(entity_dict)
+        return instance
 
     def get_all_session(self) -> List[str]:
         if self.session is None:
@@ -423,7 +485,7 @@ class EntityManager(Singleton):
         png_filename = f"debugging/{self.session}_serialization.call.png"
 
         try:
-            data = self.serializer.dump(self._entities)
+            data: bytes = self.serializer.dump(self._entities)  #    type: ignore
         except Exception as e:
             cmd_g2d = ["/usr/bin/python3", "-m", "gprof2dot", "-f", "pstats", prof_filename]
             cmd_dot = ["dot", "-Tpng", "-o", png_filename]
@@ -432,7 +494,7 @@ class EntityManager(Singleton):
             proc.wait()
 
             try:
-                self.graph_pickle(self._entities)
+                self.graph_pickle(self._entities)  # type: ignore
             except Exception as e:
                 self.logger.warning(f"Failed to graph pickle: {e!r}")
 
@@ -447,3 +509,17 @@ class EntityManager(Singleton):
                 f"Serialization failed due to error. See {trace_filename} for the dill-detect trace. There is more logging in the debugging folder."
             )
         return data
+
+    def remove(self, type: EntityType, key: str):
+        if not self.has(type, key):
+            self.logger.warning(f"Entity {str(key)} does not exist, cannot remove.")
+            return
+
+        entity = self.get(type, key)
+        if entity is None:
+            self.logger.warning(f"Entity {str(key)} is None, cannot remove.")
+            return
+
+        del self.object_type_to_storage(type)[key]
+        self.unregister(type, entity)
+        self.stats["total_orphan_entities"] = self.stats["total_entities_unregistered"] - self.stats["total_entities"]

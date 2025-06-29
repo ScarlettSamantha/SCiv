@@ -2,7 +2,8 @@ import random
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, cast
+from weakref import ReferenceType
 
 from direct.showbase.MessengerGlobal import messenger
 import numpy as np
@@ -10,6 +11,7 @@ from panda3d.core import (
     BitMask32,
     ColorBlendAttrib,
     GeomNode,
+    LPoint3,
     LVector3,
     LVecBase3f,
     LineSegs,
@@ -29,11 +31,11 @@ from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
-from helpers.colors import Tuple4f
+from helpers.colors import Colors, Tuple4f
 from game import Cache
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog
-from managers.entity import uuid4
+from managers.entity import EntityManager, uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -102,10 +104,12 @@ class Unit(BaseEntity, ABC):
         self.moves_left: int | float = 2.0
 
         self.model: Optional[NodePath] = None
+
         self.selection_radius: float = 1.0
         self.selection_enabled: bool = True
         self.selection_circle: Optional[NodePath] = None
         self.rotation_task: Optional[PythonTask] = None
+
         self.unit_icons: Optional[NodePath] = None
         self.unit_icons_z_offset: float = 0.3
         self.unit_icons_scale: float = 0.5
@@ -131,6 +135,10 @@ class Unit(BaseEntity, ABC):
         self.build_charges_left: int = 0
 
         self._logger = None
+
+        self._healthbar_quad: Optional[NodePath] = None
+        self.healthbar_np: Optional[NodePath] = None
+        self.healthbar_shader: Optional[Shader] = None
 
         self.model_cache: Optional[NodePath] = None
 
@@ -269,9 +277,8 @@ class Unit(BaseEntity, ABC):
             )
             bar_np.setShader(self.healthbar_shader)
             bar_np.setShaderInput("health_ratio", 1.0)  # type: ignore
-            bar_np.setShaderInput("border", 0.025)  # 2% border thickness # type: ignore
-            bar_np.setShaderInput("color", self.get_owner().color)  # green color # type: ignore
-            # 5) store quad for updates
+            bar_np.setShaderInput("border", 0.025)  # type: ignore
+            bar_np.setShaderInput("color", self.get_owner().color)  # type: ignore
             self._healthbar_quad = bar_np
 
         return self.model
@@ -336,6 +343,34 @@ class Unit(BaseEntity, ABC):
         return Task.cont  # type: ignore
 
     def on_load(self):
+        if not hasattr(self, "_owner") or self._owner is None:
+            from managers.entity import EntityManager, EntityType
+
+            owner_ref: ReferenceType[Player] | None = cast(
+                ReferenceType["Player"] | None,
+                EntityManager.get_singleton_instance().get_ref(
+                    key=self.owner_tag, type=EntityType.PLAYER, weak_ref=True
+                ),
+            )
+            if owner_ref is None:
+                raise ValueError(f"Owner with tag {self.owner_tag} not found")
+
+            self._owner = owner_ref
+
+        if not hasattr(self, "tile") or self.tile is None:
+            from managers.entity import EntityManager, EntityType
+
+            assert self.tile_tag is not None, "Tile tag must be set before loading the unit."
+
+            tile_ref: ReferenceType[Tile] | None = cast(
+                ReferenceType["Tile"] | None,
+                EntityManager.get_singleton_instance().get_ref(key=self.tile_tag, type=EntityType.TILE, weak_ref=True),
+            )
+            if tile_ref is None:
+                raise ValueError(f"Tile with tag {self.tile_tag} not found")
+
+            self.tile = tile_ref()
+
         self.base = Cache.get_showbase_instance()
         self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
         self.effects = Effects(self)
@@ -346,39 +381,58 @@ class Unit(BaseEntity, ABC):
         self.moves_left = self.max_moves
         self.register_actions()
         self.register()
-        UnitManager.get_singleton_instance().add_unit(self)
+        self.selection_circle = None
 
+        self.selection_shader = Shader.load(
+            Shader.SL_GLSL,
+            vertex=self.base.base_path / "assets/shaders/unit_selection.vert.glsl",
+            fragment=self.base.base_path / "assets/shaders/unit_selection.frag.glsl",
+        )
         self.spawn(ignore_constraints=True)
 
     def __getstate__(self) -> Dict[str, Any]:
         state = super().__getstate__()
+
+        tile: ReferenceType[Tile] | Tile | None = self.tile
+        if tile is not None:
+            if isinstance(tile, ReferenceType):
+                tile = tile()
+            if tile is None:
+                raise ValueError("Tile reference is dead (None)")
+            state["tile_tag"] = tile.get_tag()
+
+        if self.owner is not None:
+            state["owner_tag"] = self.owner.tag  # type: ignore
+
         state.pop("base", None)
         state.pop("_logger", None)
         state.pop("model", None)
         state.pop("model_cache", None)
         state.pop("effects", None)
         state.pop("actions", None)
-        state.pop("renderer", None)
+        state.pop("selection_circle", None)
+        state.pop("rotation_task", None)
+        state.pop("unit_icons", None)
+        state.pop("healthbar_np", None)
+        state.pop("_healthbar_quad", None)
+        state.pop("selection_shader", None)
+        state.pop("healthbar_shader", None)
         state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
+        state["unit"] = self.__class__.__module__ + "." + self.__class__.__name__
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         from gameplay.resources.core.basic.production import Production
 
-        self.base = Cache.get_showbase_instance()
-        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        super().__setstate__(state)
         self.model = None
         self.model_cache = None
         self.effects = Effects(self)
         self.actions = []
         self.resource_needed = Production
-        self.tile = state.get("tile")  # type: ignore
-        self.tag = str(state.get("tag"))
-        for key, value in state.items():
-            setattr(self, key, value)
 
     def register(self) -> None:
-        from managers.entity import EntityManager, EntityType
+        from managers.entity import EntityType
 
         self.is_registered = True
 
@@ -394,11 +448,16 @@ class Unit(BaseEntity, ABC):
     def set_pos(self, pos: Tuple[float, float, float]) -> None:
         self.pos_x, self.pos_y, self.pos_z = pos
 
+    def get_model_pos(self) -> LPoint3:
+        if self.model is not None:
+            return self.model.getPos(self.base.render)
+        return LPoint3(self.pos_x, self.pos_y, self.pos_z)
+
     def is_alive(self) -> bool:
         return self.health() > 0
 
     def unregister(self) -> None:
-        from managers.entity import EntityManager, EntityType
+        from managers.entity import EntityType
 
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.UNIT)
         UnitManager.get_singleton_instance().remove_unit(self)
@@ -585,7 +644,7 @@ class Unit(BaseEntity, ABC):
 
     @classmethod
     def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:
-        from managers.entity import EntityManager, EntityType
+        from managers.entity import EntityType
 
         entity: Unit | BaseEntity | None = EntityManager.get_singleton_instance().get(EntityType.UNIT, tag)
         if isinstance(entity, Unit):
@@ -635,6 +694,8 @@ class Unit(BaseEntity, ABC):
         data = {
             "name": str(self.name),
             "description": str(self.description),
+            "tag": self.get_tag(),
+            "owner": f"[color={Colors.to_hex(self.get_owner().get_color())}]{str(self.get_owner().get_name())}[/color]",
             "health": self.health_left,
             "max_health": self.max_health,
             "attack mele": self.attack_power_mele,
@@ -663,7 +724,7 @@ class Unit(BaseEntity, ABC):
 
         return (data, self.get_children_inspect())
 
-    def get_children_inspect(self) -> Dict[str, Set[BaseEntity | Any]]:
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]:
         return {
             "effects": set(self.effects.get_effects().values()),
         }

@@ -25,12 +25,11 @@ from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
-from managers.game import Game
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
-from system.generators.basic import HexFeature
+
 from system.mesh import HexGrid
 from system.subsystems.hexgen.enums import GeoformType
 from system.subsystems.hexgen.edge import Edge
@@ -43,6 +42,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.unit import Unit
     from managers.player import Player
+    from system.generators.basic import HexFeature
 
 
 class CantBuildReason(Enum):
@@ -170,7 +170,6 @@ class Tile(BaseEntity):
         self.city: Optional["City"] = None
         self.city_owner: Optional["City"] = None
 
-        self.owner: Optional["Player"] = None
         self.claimants: List[Any] = []
 
         self.inherit_passability_from_terrain: bool = True
@@ -202,7 +201,7 @@ class Tile(BaseEntity):
         return self._features
 
     @features.setter
-    def features(self, value: Set[HexFeature | None]) -> None:
+    def features(self, value: Set["HexFeature | None"]) -> None:
         if len(value) > 0:
             self._features = value
 
@@ -328,7 +327,11 @@ class Tile(BaseEntity):
             del state["_entity_manager"]
         if "effects" in state:
             del state["effects"]
-
+        if "_addTask" in state:
+            del state["_addTask"]
+        if "_clearTask" in state:
+            del state["_clearTask"]
+        state["tag"] = self.tag
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
@@ -482,6 +485,8 @@ class Tile(BaseEntity):
         self.pos_x, self.pos_y = px, py
 
     def set_walls_color(self, color: Tuple[float, ...]) -> None:
+        from managers.game import Game
+
         mesh: HexGrid = Game.get_singleton_instance().get_mesh()
         mesh.set_wall_color_for_tile(mesh.get_tile_index_from_coords(self.x, self.y), cast(Tuple4f, color))
 

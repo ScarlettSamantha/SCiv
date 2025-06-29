@@ -31,3 +31,9 @@ class GameSettings:
         self.difficulty: int = difficulty
         self.num_enemies: int = num_enemies
         self.seed: Optional[int] = seed
+
+    def __getstate__(self) -> object:
+        return self.__dict__.copy()
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)

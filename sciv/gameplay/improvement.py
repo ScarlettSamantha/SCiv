@@ -1,15 +1,15 @@
 import random
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union
 from weakref import ReferenceType
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
 
 from gameplay.yields import Yields
-from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStrOrNone
+from helpers.cache import Cache, LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -117,11 +117,15 @@ class Improvement(BaseEntity):
             self.unregister()
 
     def register(self):
+        from managers.entity import EntityManager, EntityType
+
         if self.is_registered is True:
             return
         EntityManager.get_singleton_instance().register(entity=self, type=EntityType.IMPROVEMENT, key=self.tag)
 
     def unregister(self):
+        from managers.entity import EntityManager, EntityType
+
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.IMPROVEMENT)
 
     def _validate_state(self) -> bool:
@@ -143,9 +147,12 @@ class Improvement(BaseEntity):
             del state["_logger"]
         if "model" in state:
             del state["model"]
-        if "effects" in state:
-            del state["effects"]
         return super().__getstate__()
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self._logger = LogManager.get_singleton_instance().gameplay.getChild("improvement")
+        self.base = Cache.get_showbase_instance()
 
     @property
     def model(self):
@@ -240,7 +247,7 @@ class Improvement(BaseEntity):
 
         return data, self.get_children_inspect()
 
-    def get_children_inspect(self) -> Dict[str, Set[BaseEntity | Any]]:
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]:
         return {
             "effects": set(self.effects.get_effects().values()),
         }

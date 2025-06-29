@@ -15,6 +15,7 @@ from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
+
 from system.effects import Effects
 
 if TYPE_CHECKING:
@@ -66,30 +67,22 @@ class World(Singleton, DirectObject):
         ModelHelper.reset()
 
     def load(self, data: Dict[str, "Tile"]):
-        from gameplay.unit import Unit
-
         self.logger.info("Loading world data.")
         for map_item in data.values():
             item_tag: str | None = map_item.tag
             self.map[item_tag] = map_item
 
-        self.grid = {(tile.x, tile.y): tile for tile in data.values()}
+        self.grid = {(tile.x, tile.y): tile for tile in self.map.values()}
         self.logger.info("World data loaded.")
         self.logger.info("Calculating world size")
-        self.cols = max([tile.x for tile in data.values()]) + 1  # x
-        self.rows = max([tile.y for tile in data.values()]) + 1  # y
+        self.cols = max([tile.x for tile in self.map.values()]) + 1
+        self.rows = max([tile.y for tile in self.map.values()]) + 1
         self.calculate_middle()
         self.logger.info(f"World size is {self.cols}x{self.rows}")
         TileRepository.grid = self.grid
 
         for tile in self.map.values():  # Place the tiles
             tile.on_load()
-
-        for unit in EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values():  # type: ignore
-            if isinstance(unit, Unit):
-                if not unit.is_being_build:
-                    unit.on_load()
-                    unit.spawn()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0
@@ -147,7 +140,7 @@ class World(Singleton, DirectObject):
 
     def set_ownership_of_tile(self, tile: "Tile", player: "Player", city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
-        old_owner: Optional["Player"] = tile.owner
+        old_owner: Optional["Player"] = tile.get_owner() if tile.owner is not None else None
         if old_owner is not None:
             self.logger.info(f"Old owner of tile {tile} is {old_owner}")
             old_owner.tiles.remove(tile)
@@ -197,7 +190,7 @@ class World(Singleton, DirectObject):
             self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
 
             MessengerGlobal.messenger.send("game.gameplay.city.gets_tile_ownership", [city, tile])
-            messenger.send(  # type: ignore
+            MessengerGlobal.messenger.send(
                 f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],
             )

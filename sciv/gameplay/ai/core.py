@@ -1,3 +1,4 @@
+from logging import Logger
 import random
 import weakref
 from abc import ABC, abstractmethod
@@ -31,7 +32,7 @@ class AI(ABC):
     def __init__(self, player: "Player"):
         self._player: weakref.ReferenceType["Player"] = weakref.ref(player)
         self.turn_action_register: Dict[int, List[Callable[..., None]]] = {}
-        self.logger = self.player.logger.getChild("ai")
+        self.logger: Logger = self.player.logger.getChild("ai")
         self.logger.debug(f"AI created for player {str(self.player.name)} with personality {self.player.personality}")
 
         self.control_units: weakref.ReferenceType[Units] = weakref.ref(self.player.units)
@@ -54,28 +55,30 @@ class AI(ABC):
         self.control_tiles = weakref.ref(self.player.tiles)
         self.vision = weakref.ref(self.player.vision)
 
-    def __getstate__(self) -> object:
-        return {
-            "player": self._player,
-            "memory": self.memory,
-            "tasks": self.tasks,
-            "personality": self.personality,
-            "end_goal": self.end_goal,
-            "goals": self.goals,
-            "unit_directions": self.unit_directions,
-        }
+    def __getstate__(self) -> Dict[str, Any]:
+        data = self.__dict__.copy()
+        return data
+        # return {
+        #     "turn_action_register": self.turn_action_register,
+        #     "player": self._player,
+        #     "memory": self.memory,
+        #     "tasks": self.tasks,
+        #     "personality": self.personality,
+        #     "end_goal": self.end_goal,
+        #     "goals": self.goals,
+        #     "unit_directions": self.unit_directions,
+        # }
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        self._player = state["player"]
-        state.pop("player", None)  # Remove player from state to avoid circular reference
-
         self.__dict__.update(state)
 
     @property
     def player(self) -> "Player":
         player = self._player()
         if player is None:
-            raise ValueError("Player reference is None")
+            self._player = weakref.ref(PlayerManager.get_nature())
+            assert self._player() is not None, "Player reference is None"
+            return self._player()  # type: ignore
         return player
 
     def get_memories(self) -> Memories:
@@ -86,7 +89,7 @@ class AI(ABC):
 
     def get_units(self) -> Units:
         if self.control_units() is None:
-            raise ValueError("Units reference is None")
+            self.control_units = weakref.ref(self.player.units)
         units = self.control_units()
         if units is None:
             raise ValueError("Units reference is None")
@@ -144,9 +147,6 @@ class AI(ABC):
     def register_goals(self) -> Goals: ...
 
     def execute_turn_action(self, turn: int) -> None:
-        """
-        Execute the action registered for the given turn.
-        """
         if turn in self.turn_action_register.keys():
             for action in self.turn_action_register[turn]:
                 action()

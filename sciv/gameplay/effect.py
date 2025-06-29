@@ -70,22 +70,16 @@ class Effect(BaseEntity, ABC, DirectObject):
             del state["base"]
         if "_logger" in state:
             del state["_logger"]
-        if "tile" in state:
-            del state["tile"]
-        if "city" in state:
-            del state["city"]
-        if "player" in state:
-            del state["player"]
-        if "world" in state:
-            del state["world"]
-        if "improvement" in state:
-            del state["improvement"]
-        if "unit" in state:
-            del state["unit"]
-        if "effects" in state:
-            del state["effects"]
 
         return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        from managers.log import LogManager
+        from sciv.helpers.cache import Cache
+
+        self._logger = LogManager.get_singleton_instance().gameplay.getChild("effect")
+        self.base = Cache.get_showbase_instance()
 
     def register(self):
         from managers.entity import EntityManager

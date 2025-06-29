@@ -1,6 +1,6 @@
 import datetime
 import random
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from gameplay.ai.core import AI
 from gameplay.ai.goal import Goals
@@ -28,7 +28,7 @@ class NatureAI(AI):
         self._spawn_tiles_cache: List["Tile"] = []
         self._spawn_cache_from_turn: int = 0
         self.logger = self.player.logger.getChild("nature_ai")
-        self.should_log: bool = Debug.system_ai()
+        self._should_log: bool = Debug.system_ai()
         self.rules = Cache.get_active_rules()
 
     def register_fixed_turn_events(self) -> None:
@@ -38,6 +38,32 @@ class NatureAI(AI):
             return
 
         self.on_fixed_turn(self.rules.get_nature_enemy_spawn_grace_period(), self._spawn_initial_threat)
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state: object = super().__getstate__()
+        state["_spawn_tiles_cache"] = self._spawn_tiles_cache
+        state["_spawn_cache_from_turn"] = self._spawn_cache_from_turn
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        super().__setstate__(state)
+        self._spawn_tiles_cache = state.get("_spawn_tiles_cache", [])
+        self._spawn_cache_from_turn = state.get("_spawn_cache_from_turn", 0)
+        self.logger = self.player.logger.getChild("nature_ai")
+        self.rules = Cache.get_active_rules()
+
+    @property
+    def should_log(self) -> bool:
+        if not hasattr(self, "_should_log"):
+            self._should_log = Debug.system_ai()
+        return self._should_log
+
+    @should_log.setter
+    def should_log(self, value: bool):
+        self._should_log = value
+
+    def on_load(self) -> None:
+        super().on_load()
 
     def register_end_goal(self) -> Goals:
         return Goals()

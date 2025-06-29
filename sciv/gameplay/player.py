@@ -25,13 +25,13 @@ from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
-from helpers.debug import Debug
+
 from managers.civics import Civic, CivicsManager, CivicTree
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
 from managers.tech import TechManager
 from gameplay.effect import Effect
-from sciv.gameplay.city import City
-from sciv.gameplay.unit import Unit
+from gameplay.city import City
+from gameplay.unit import Unit
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -60,6 +60,7 @@ class Player(BaseEntity):
         self.civilization: Civilization = civilization
         self.leader: Leader = leader
         self.tag = self.generate_tag()
+        self.entity_key = self.tag
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
         self.name: T_TranslationOrStrOrNone = name
@@ -193,6 +194,10 @@ class Player(BaseEntity):
             self.ai.on_load()
         self.effects = Effects(self)
 
+        for unit in self.units.all():  # This must remain here otherwise ghost units will spawn and I don't know why.
+            unit.on_load()
+            unit.spawn()
+
     def unregister(self) -> None:
         from managers.entity import EntityManager, EntityType
 
@@ -317,6 +322,8 @@ class Player(BaseEntity):
         self.get_ai().on_game_start()
 
     def on_turn_end(self, turn: int):
+        from helpers.debug import Debug
+
         start_time = datetime.datetime.now()
         self.effects.on_turn_end(turn)
         self.logger.debug(f"Effects on turn end took {datetime.datetime.now() - start_time}")
@@ -395,7 +402,7 @@ class Player(BaseEntity):
             "name": str(self.get_name()),
             "leader": str(self.leader.name),
             "civilization": self.civilization.name,
-            "color": str(self.color),
+            "color": f"[color={Colors.to_hex(self.color)}]{str(self.color)}[/color]",
             "is_human": str(self.is_human),
             "is_nature": str(self.is_nature),
             "is_barbarian": str(self.is_barbarian),
@@ -426,3 +433,13 @@ class Player(BaseEntity):
             "units": self.units.all(),
             "cities": self.cities.all(),
         }
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Player):
+            return self.tag == other.tag
+        if isinstance(other, str):
+            return self.tag == other
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.tag)
