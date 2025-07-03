@@ -1,11 +1,11 @@
 {
-	"folders": [
-		{
-			"path": "sciv/"
-		},
-	],
-	"settings": {
-		"kvlang.pythonPath": "python",
-		"python.analysis.stubPath": "~/Code/Stubs"
+  "folders": [
+	{
+		"path": "."
 	}
+],
+  "settings": {
+    "ruff.organizeImports": true,
+    "python.analysis.stubPath": "../stubs"
+  }
 }

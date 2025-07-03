@@ -9,7 +9,6 @@ stages:
   - verify
   - package
 
-# 1) generic bits only
 .default-python-job-base: &default-python-job-base
   image: python:3.13
   cache:
