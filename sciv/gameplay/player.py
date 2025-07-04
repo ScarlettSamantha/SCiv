@@ -2,14 +2,15 @@ import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Set, Tuple, Type
 
 from direct.showbase import MessengerGlobal
-
 from gameplay._units import Units
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
+from gameplay.city import City
 from gameplay.civic import CivicSubtree
 from gameplay.civilization import Civilization
 from gameplay.claims import Claims
+from gameplay.effect import Effect
 from gameplay.government import Government
 from gameplay.leader import Leader
 from gameplay.lose import LoseConditions
@@ -20,18 +21,15 @@ from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
 from gameplay.tech import Tech
 from gameplay.trades import Trades
+from gameplay.unit import Unit
 from gameplay.vision import Vision
 from gameplay.votes import Votes
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
-
 from managers.civics import Civic, CivicsManager, CivicTree
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, t_
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, Translation, t_
 from managers.tech import TechManager
-from gameplay.effect import Effect
-from gameplay.city import City
-from gameplay.unit import Unit
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -149,6 +147,7 @@ class Player(BaseEntity):
 
     def __getstate__(self) -> Dict[str, Any]:
         state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("base")
         state.pop("logger", None)
         state.pop("effects", None)
         state.pop("citizens", None)
@@ -158,10 +157,18 @@ class Player(BaseEntity):
         state.pop("trades", None)
         state.pop("votes", None)
 
+        state["leader"] = self.leader.key if self.leader else None
+        state["personality"] = self.personality.name if self.personality else None
+        state["cities"] = [city.get_tag() for city in self.cities.all()]
+        state["units"] = [unit.get_tag() for unit in self.units.all()]
+        state["tiles"] = [tile.get_tag() for tile in self.tiles.get_tiles().values()]
+        state["introduction"] = self.introduction.get_key() if isinstance(self.introduction, Translation) else ""
+
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
+        self.base = Cache.get_showbase_instance()
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
         self.effects = Effects(self)
         self.citizens = Citizens()

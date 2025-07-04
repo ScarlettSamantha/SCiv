@@ -2,11 +2,11 @@ from enum import Enum
 from typing import (
     Any,
     ClassVar,
-    List,
-    TypeVar,
-    Type,
-    Optional,
     Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
 )
 
 from system.subsystems.hexgen.constants import TERRAIN_TERRAN
@@ -31,6 +31,9 @@ class SuperEnum(Enum):
         rep = {key: getattr(self, key) for key in self.__keys__}
         rep["name"] = self.name
         return rep
+
+    def __getstate__(self) -> object:
+        return super().__getstate__()
 
     @classmethod
     def get(cls: Type[T], id_: Any) -> Optional[T]:

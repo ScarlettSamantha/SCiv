@@ -405,11 +405,6 @@ class Resources:
         # This is a helper method to check if there are any non-mechanical resources in the resources.
         return bool(self.flatten_non_mechanic())
 
-    def __getstate__(self) -> object:
-        state = self.__dict__.copy()
-        state["resources"] = {k: v for k, v in self.resources.items() if v}  # Remove empty sub-dictionaries
-        return state
-
     def remove_improvement(self, improvement: "Improvement") -> None:
         for sub_dict in self.resources.values():
             for resource in sub_dict.values():
@@ -487,6 +482,18 @@ class Resources:
 
     def __getitem__(self, key: str) -> Dict[str, BaseResource] | BaseResource:
         return self.flatten()[key]
+
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        state["resources"] = {
+            f"{i}-{k.__module__}.{k.__class__.__name__}": v.__getstate__()
+            for i, (k, v) in enumerate(self.resources.items())
+            if v
+        }
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
 
     def __len__(self) -> int:
         """This is the true len for check if there is anything in the resources"""

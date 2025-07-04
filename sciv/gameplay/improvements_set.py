@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterator, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
@@ -20,6 +20,12 @@ class ImprovementsSet:
     def __add__(self, value: "Improvement"):
         self.add(value)
         return self
+
+    def __getstate__(self) -> Dict[str, Any]:
+        return {
+            "_improvements": self._improvements,
+            "_num_improvements": self._num_improvements,
+        }
 
     def get_all(self) -> List["Improvement"]:
         return self._improvements

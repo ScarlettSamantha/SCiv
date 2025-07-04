@@ -21,6 +21,9 @@ class GroupMode(Enum):
     OR = "or"
     AND = "and"
 
+    def __getstate__(self) -> object:
+        return {"name": self.name, "value": self.value}
+
 
 class Bit:
     BASE_PATH = "assets/models/bits/"
@@ -65,6 +68,10 @@ class Bit:
         _copy.hpr = hpr if hpr is not None else self.hpr
         return _copy
 
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        return state
+
     def is_disabled(self) -> bool:
         return self.disabled
 
@@ -96,6 +103,20 @@ class Bits:
             parent_path = self.parent.full_path
             return f"{parent_path}.{self.name}" if parent_path else self.name
         return ""
+
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        # Remove parent reference to avoid circular references
+        state.pop("parent", None)
+        state["mode"] = self.mode.name
+        if self.bits:
+            state["bits"] = {
+                k: f"{v.__module__}.{v.__class__.__name__}.{str(v.model.replace('/', '_'))}"
+                for k, v in self.bits.items()
+            }
+        else:
+            state["bits"] = {}
+        return state
 
     def _get_full_bit_key(self, bit_id: str) -> str:
         path = self.full_path

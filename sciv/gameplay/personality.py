@@ -1,3 +1,4 @@
 class Personality:
-    def __init__(self):
-        pass
+    name: str = "Default Personality"
+
+    def __init__(self): ...

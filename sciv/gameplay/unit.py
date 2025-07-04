@@ -5,17 +5,32 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, cast
 from weakref import ReferenceType
 
-from direct.showbase.MessengerGlobal import messenger
 import numpy as np
+from direct.showbase import MessengerGlobal
+from direct.showbase.MessengerGlobal import messenger
+from direct.task import Task
+from game import Cache
+from gameplay.condition import Conditions
+from gameplay.floating_text import spawn_damage_text
+from gameplay.repositories.tile import TileRepository
+from gameplay.resources.core.basic.production import Production
+from helpers.colors import Colors, Tuple4f
+from helpers.windows import WindowsHelper
+from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
+from managers.combat_log import CombatLog, CombatLogEntry
+from managers.entity import EntityManager, uuid4
+from managers.i18n import T_TranslationOrStrOrNone
+from managers.player import PlayerManager
+from managers.unit import UnitManager
 from panda3d.core import (
     BitMask32,
+    CardMaker,
     ColorBlendAttrib,
     GeomNode,
-    LPoint3,
-    LVector3,
-    LVecBase3f,
     LineSegs,
-    CardMaker,
+    LPoint3,
+    LVecBase3f,
+    LVector3,
     NodePath,
     PythonTask,
     Shader,
@@ -23,24 +38,6 @@ from panda3d.core import (
     TextureStage,
     TransparencyAttrib,
 )
-
-
-from direct.showbase import MessengerGlobal
-from direct.task import Task
-from gameplay.condition import Conditions
-from gameplay.floating_text import spawn_damage_text
-from gameplay.repositories.tile import TileRepository
-from gameplay.resources.core.basic.production import Production
-from helpers.colors import Colors, Tuple4f
-from game import Cache
-from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
-from managers.combat_log import CombatLog
-from managers.entity import EntityManager, uuid4
-from managers.i18n import T_TranslationOrStrOrNone
-from managers.player import PlayerManager
-from managers.unit import UnitManager
-from helpers.windows import WindowsHelper
-from managers.combat_log import CombatLogEntry
 from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -175,7 +172,7 @@ class Unit(BaseEntity, ABC):
         return (self.pos_x, self.pos_y, self.pos_z)
 
     def load_model(self) -> NodePath | None:
-        from system.tile_render import NET_NODE_TAG_ID_FIELD, NET_TYPE_FIELD, NET_TYPE
+        from system.tile_render import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 
         if self.model is not None:
             return self.model
@@ -417,6 +414,7 @@ class Unit(BaseEntity, ABC):
         state.pop("_healthbar_quad", None)
         state.pop("selection_shader", None)
         state.pop("healthbar_shader", None)
+        state.pop("build_conditions", None)
         state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
         state["unit"] = self.__class__.__module__ + "." + self.__class__.__name__
         return state

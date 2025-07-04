@@ -155,6 +155,7 @@ class BaseEntity(ABC, DirectObject, Inspectable):
                     state["tile_tag"] = tile.get_tag()
 
             del state["tile"]
+        state["_cls"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
 
         return state
 

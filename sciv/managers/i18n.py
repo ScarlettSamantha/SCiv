@@ -159,6 +159,9 @@ class Translation:
         except I18NTranslationNotFound:
             return self.key
 
+    def get_key(self) -> str:
+        return self.key
+
     def __hash__(self) -> int:
         return hash(self.key)
 

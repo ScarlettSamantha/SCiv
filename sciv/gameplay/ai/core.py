@@ -1,7 +1,7 @@
-from logging import Logger
 import random
 import weakref
 from abc import ABC, abstractmethod
+from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
 
 from gameplay._units import Units
@@ -20,10 +20,12 @@ from managers.game import World
 from managers.player import PlayerManager
 from managers.turn import Turn
 
+from sciv.gameplay.player import Player
+
 if TYPE_CHECKING:
     from gameplay.player import Player
-    from gameplay.vision import Vision
     from gameplay.tile import Tile
+    from gameplay.vision import Vision
 
 
 class AI(ABC):
@@ -57,6 +59,9 @@ class AI(ABC):
 
     def __getstate__(self) -> Dict[str, Any]:
         data = self.__dict__.copy()
+        data.pop("control_units", None)
+        data.pop("logger", None)
+        data.pop("vision", None)
         return data
         # return {
         #     "turn_action_register": self.turn_action_register,
@@ -71,6 +76,9 @@ class AI(ABC):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
+        player_ref: Player | None = self._player()
+        if player_ref is not None:
+            self.logger = player_ref.logger.getChild("ai")
 
     @property
     def player(self) -> "Player":

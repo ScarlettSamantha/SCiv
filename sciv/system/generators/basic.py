@@ -370,7 +370,7 @@ class Basic(BaseGenerator):
         tile.altitude = float(hex.altitude)
         tile.temperature = hex.base_temperature[0]
         tile.moisture = hex.moisture
-        tile.biome = hex.biome.list()[0]  # This is set by classify_terrain # type: ignore
+        tile._biome = hex.biome.list()[0]  # This is set by classify_terrain # type: ignore
         tile.geoform_type = hex.geoform_type.id  # type: ignore
         tile.features = hex.features
         tile.is_water = water  # Sea is geoform_type 2 # type: ignore

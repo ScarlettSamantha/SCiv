@@ -25,6 +25,12 @@ class Units:
                 break
         self._num_units -= 1
 
+    def to_dict(self) -> object:
+        return {
+            "_units": list(self._units),
+            "_num_units": self._num_units,
+        }
+
     def __len__(self) -> int:
         return len(self._units)
 

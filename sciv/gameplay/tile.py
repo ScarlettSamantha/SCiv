@@ -1,18 +1,12 @@
+import math
+import weakref
 from copy import deepcopy
 from enum import Enum
 from logging import Logger
-import math
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
-import weakref
 
-from helpers.colors import Tuple4f
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import (
-    LRGBColor,
-    NodePath,
-)
-
 from gameplay._units import Units
 from gameplay.combat.damage import DamageMode
 from gameplay.condition import Conditions
@@ -23,19 +17,22 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.weather import BaseWeather
 from gameplay.yields import Yields
 from helpers.cache import Cache
+from helpers.colors import Tuple4f
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
+from panda3d.core import (
+    LRGBColor,
+    NodePath,
+)
 from system.effects import Effects
 from system.entity import BaseEntity
-
 from system.mesh import HexGrid
-from system.subsystems.hexgen.enums import GeoformType
 from system.subsystems.hexgen.edge import Edge
+from system.subsystems.hexgen.enums import GeoformType
 from system.tile_render import TileRenderer
 from world.items._base_item import BaseItem
-
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -162,6 +159,7 @@ class Tile(BaseEntity):
         self._features: Set[Any] = set()
         self._geoforms: Optional[GeoformType] = None
         self.biome: int = 1
+        self._biome: Any = None
         self.units: Units = Units()
         self._improvements: ImprovementsSet = ImprovementsSet()
         self.items: List[BaseItem] = list()
@@ -331,6 +329,22 @@ class Tile(BaseEntity):
             del state["_addTask"]
         if "_clearTask" in state:
             del state["_clearTask"]
+        if "_improvements" in state:
+            state["improvements"] = self._improvements.__getstate__()
+            del state["_improvements"]
+        if "units" in state:
+            state["units"] = {"units": [unit.get_tag() for unit in self.units.all()]}
+        if "_tile_terrain" in state:
+            del state["_tile_terrain"]
+        if "_features" in state:
+            state["features"] = [feature.name for feature in self.features]
+            del state["_features"]
+        if "resources" in state:
+            state["resources"] = self.resources.__getstate__()
+        if "tile_yield" in state:
+            state["tile_yield"] = self.tile_yield.__getstate__()
+        if "biome" in state:
+            state["biome"] = self._biome.id
         state["tag"] = self.tag
         return state
 

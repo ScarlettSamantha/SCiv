@@ -148,6 +148,91 @@ class BaseSaver(ABC):
         return self.hash == str(zlib.crc32(data))
 
 
+class SaveJsonFile(BaseSaver):
+    _base_path = "/saves"
+    compression_enabled = True
+    extension = "json"
+
+    def save(self) -> bool:
+        save_dir = Path(self.base_path) / self.identifier
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        data_path = save_dir / f"data.{self.extension}"
+        metadata_path = save_dir / "metadata.json"
+        hash_path = save_dir / "hash.txt"
+
+        self.register_modifications_metadata()
+
+        try:
+            if self.compression_enabled:
+                self.data = self.compress_and_inject_data(self.data)
+                data_path = data_path.with_suffix(f".{self.extension}.gz")
+            with open(data_path, "wb") as file:
+                file.write(self.data)
+                file.flush()
+
+            with open(metadata_path, "w", encoding="utf-8") as file:
+                json.dump(self.meta_data, file, indent=4)
+
+            with open(hash_path, "w", encoding="utf-8") as file:
+                file.write(self.hash)
+
+            return True
+        except Exception as e:
+            print(f"Error saving data: {e}")
+            return False
+
+    def load(self) -> bytes | bool:
+        save_dir = Path(self.base_path) / self.identifier
+        data_path = save_dir / f"data.{self.extension}"
+        metadata_path = save_dir / "metadata.json"
+        hash_path = save_dir / "hash.txt"
+
+        try:
+            if self.compression_enabled:
+                data_path = data_path.with_suffix(f".{self.extension}.gz")
+                with gzip.open(data_path, "rb") as file:
+                    self.data = file.read()
+            else:
+                with open(data_path, "rb") as file:
+                    self.data = json.load(file)
+
+            with open(metadata_path, "r", encoding="utf-8") as file:
+                self.meta_data = json.load(file)
+
+            with open(hash_path, "r", encoding="utf-8") as file:
+                self.hash = file.read().strip()
+
+            if not self.compare_hash(json.dumps(self.data).encode()):
+                print("Warning: Data integrity check failed!")
+                return False
+
+            return self.data
+        except FileNotFoundError:
+            return False
+
+    def get_saved_session(self) -> List[str]:
+        directory = Path(self.base_path)
+
+        if not directory.exists():
+            return []
+
+        return [d.name for d in directory.iterdir() if d.is_dir()]
+
+    def get_saved_meta_data(self) -> Dict[str, Dict[Any, Any]]:
+        directory = Path(self.base_path)
+        meta_data_list: Dict[str, Dict[Any, Any]] = {}
+
+        if not directory.exists():
+            return meta_data_list
+
+        metadata_path = directory / self.identifier / "metadata.json"
+        if metadata_path.exists():
+            with open(metadata_path, "r", encoding="utf-8") as file:
+                meta_data_list = json.load(file)
+        return meta_data_list
+
+
 class SavePickleFile(BaseSaver):
     _base_path = "/saves"
     compression_enabled = True

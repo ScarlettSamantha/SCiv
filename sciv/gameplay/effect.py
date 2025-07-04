@@ -1,16 +1,17 @@
+import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Tuple, Any
-import uuid
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from direct.showbase.DirectObject import DirectObject
 from gameplay.yields import Yields
 from helpers.colors import Colors
 from helpers.placeholder import Placeholder
-from managers.entity import EntityType
 from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import EffectPlacers, EffectType
 from system.entity import BaseEntity
+
+from sciv.managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -28,8 +29,6 @@ class Effect(BaseEntity, ABC, DirectObject):
     icon_border_color = Colors.RED
     visible_to_user: bool = True
 
-    # We can allow both an EffectPlacers enum or a direct Callable as a place_method.
-    # But we will store them separately or do a union type. Then when we apply, we check the type.
     place_method: EffectPlacers | Callable[[BaseEntity, "Effect"], None] = EffectPlacers.PLACE_ON_TILE
 
     activate_on_add: bool = True
@@ -76,6 +75,7 @@ class Effect(BaseEntity, ABC, DirectObject):
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
         from managers.log import LogManager
+
         from sciv.helpers.cache import Cache
 
         self._logger = LogManager.get_singleton_instance().gameplay.getChild("effect")

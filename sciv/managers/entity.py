@@ -1,29 +1,38 @@
-from abc import ABC, abstractmethod
-from enum import Enum
 import gc
-from logging import Logger
+import importlib
+import json
 import os
-from pickletools import genops
 import subprocess  # nosec B404
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar
+import uuid
+import weakref
+from abc import ABC, abstractmethod
+from datetime import datetime
+from enum import Enum
+from inspect import isclass
+from logging import Logger
+from pickletools import genops
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union, cast
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
-
+from graphviz import Digraph
 from mixins.singleton import Singleton
+from mypy.types import JsonDict
 from system.entity import BaseEntity
-from system.save_file import BaseSaver, SavePickleFile
+from system.save_file import BaseSaver, SaveJsonFile
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.effect import Effect
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from sciv.game import OpenCiv
-    from gameplay.effect import Effect
-    from system.mesh import HexGrid
     from system.game_settings import GameSettings
+    from system.mesh import HexGrid
+
+    from sciv.game import OpenCiv
 
 
 class EntityType(Enum):
@@ -36,14 +45,18 @@ class EntityType(Enum):
     WORLD = ("_world_", None)
     GAME_SETTINGS = ("_game_settings_", None)
 
-    def __init__(self, storage_key: str, base_type: Type["BaseEntity"] | None):
-        self.storage_key = storage_key
-        self._base_type = base_type  # Store it privately
+    def __init__(
+        self,
+        storage_key: str,
+        base_type: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | None" = None,
+    ):
+        self.storage_key: str = storage_key
+        self._base_type: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | None" = base_type
 
     @property
     def base_type(
         self,
-    ) -> "type[Tile] | type[Unit] | type[Improvement] | type[City] | type[Player] | type[Effect] | Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]":
+    ) -> "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]":
         """Lazy import to avoid circular dependencies."""
         if self._base_type is None:
             if self == EntityType.TILE:
@@ -87,49 +100,318 @@ class EntityType(Enum):
 K = TypeVar("K", bound=str)
 V = TypeVar("V", bound="BaseEntity")
 
+DumpFn = Callable[[Any], Any]
+LoadFn = Callable[[Any], Any]
+
+HandlerTuple = tuple[DumpFn, LoadFn]
+EntityRegistry = Dict[EntityType, Dict[str, BaseEntity | Dict[str, Any]]]
+ObjectData = Dict[str, Any]
+
 
 class BaseEntityManagerSerializer(ABC):
     @abstractmethod
-    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity | Dict[str, Any]]]) -> bytes:
+    def dump(self, registry: EntityRegistry) -> bytes:
         pass
 
     @abstractmethod
-    def load(self, data: Any) -> Dict[EntityType, Dict[str, Dict[str, Any]]]:
+    def load(self, data: Any) -> EntityRegistry:
         pass
 
 
-class PickleEntityManagerSerializer(BaseEntityManagerSerializer):
-    def dump(self, data: Dict[EntityType, Dict[str, BaseEntity | Dict[str, Any]]]) -> bytes:
-        from helpers.debug import Debug
-        import dill as pickle  # type: ignore
+class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
+    def __init__(self) -> None:
+        self._handlers: Dict[Type[Any], HandlerTuple] = {}
+        self._object_store: Dict[str, ObjectData] = {}
+        self._external_objects: Dict[str, Any] = {}
+        self._cycle_map: Dict[int, str] = {}
 
-        if Debug.system_saving():
-            import dill.detect
+        self.register_handler(
+            typ=datetime, dump_fn=lambda dt: dt.isoformat(), load_fn=lambda s: datetime.fromisoformat(s)
+        )
 
-            with dill.detect.trace():  # Enable tracing for debugging purposes # type: ignore
-                return dill.dumps(data, recurse=False, byref=False)  # type: ignore
-        return pickle.dumps(data, recurse=True, byref=True)  # type: ignore
+    def register_handler(self, typ: Type[Any], dump_fn: DumpFn, load_fn: LoadFn) -> None:
+        self._handlers[typ] = (dump_fn, load_fn)
 
-    def load(self, data: Any) -> Dict[EntityType, Dict[str, Dict[str, Any]]]:
-        from helpers.debug import Debug
-        import dill as pickle  # type: ignore
+    def _find_bad_json_keys(self, obj: Any, path: Optional[List[Any]] = None) -> List[Tuple[List[Any], Any]]:
+        if path is None:
+            path = []
+        errors: List[Tuple[List[Any], Any]] = []
+        if isinstance(obj, dict):
+            for key, value in obj.items():  # type:ignore
+                if not isinstance(key, (str, int, float, bool, type(None))):
+                    errors.append((path + [key], key))  # type:ignore
+                errors.extend(self._find_bad_json_keys(value, path + [key]))
+        elif isinstance(obj, (list, tuple, set)):
+            for idx, item in enumerate(obj):  # type:ignore
+                errors.extend(self._find_bad_json_keys(item, path + [idx]))
+        return errors
 
-        if Debug.system_loading():
-            import dill.detect
+    def _find_bad_json_values(self, obj: Any, path: Optional[List[Any]] = None) -> List[Tuple[List[Any], Any]]:
+        if path is None:
+            path = []
+        errors: List[Tuple[List[Any], Any]] = []
+        if isinstance(obj, dict):
+            for key, value in obj.items():  # type:ignore
+                errors.extend(self._find_bad_json_values(value, path + [key]))
+        elif isinstance(obj, (list, tuple, set)):
+            for idx, item in enumerate(obj):  # type:ignore
+                errors.extend(self._find_bad_json_values(item, path + [idx]))
+        else:
+            if not isinstance(obj, (str, int, float, bool, type(None))):
+                errors.append((path, obj))
+        return errors
 
-            with dill.detect.trace():  # type: ignore
-                return pickle.loads(data)  # type: ignore
+    def dump(self, registry: EntityRegistry, graph_out: Optional[str] = None) -> bytes:
+        from system.game_settings import GameSettings
+        from system.mesh import HexGrid
 
-        return pickle.loads(data, ignore=True)  # type: ignore
+        self._object_store.clear()
+        payload: Dict[str, Any] = {}
+
+        for entity_type, entities in registry.items():
+            section = entity_type.storage_key.strip("_")
+            payload[section] = {}
+            for tag, entity in entities.items():
+                if not hasattr(entity, "__getstate__") and not hasattr(entity, "__dict__"):
+                    raise TypeError(f"Entity {entity} does not have __getstate__ or __dict__ method.")
+                if isinstance(entity, BaseEntity):
+                    state = entity.__getstate__() if hasattr(entity, "__getstate__") else entity.__dict__.copy()
+                elif isinstance(entity, (HexGrid, GameSettings)):
+                    state = entity.__dict__.copy()
+                elif isinstance(entity, dict):  # type:ignore It always a dict but mypy does not know it
+                    state = entity.copy()
+                else:
+                    raise TypeError(f"Unsupported entity type {type(entity)} for serialization.")
+                state = self._apply_handlers(state)
+                state = self._extract_external(state)
+                state = self._convert_references(state, path=[f"{entity_type.storage_key}.{tag}"])
+                state["_cls"] = f"{entity.__class__.__module__}.{entity.__class__.__name__}"
+                payload[section][tag] = state
+
+        payload["_objects"] = self._object_store
+
+        bad_keys: List[Tuple[List[Any], Any]] = self._find_bad_json_keys(payload)
+        if bad_keys:
+            messages: List[str] = []
+            for path, key in bad_keys:
+                messages.append(f"Invalid key at {'->'.join(map(str, path))!r}: {key!r} (type {type(key)})")
+            raise TypeError("Save aborted: non-serializable dict keys detected:\n" + "\n".join(messages))
+
+        bad_values: List[Tuple[List[Any], Any]] = self._find_bad_json_values(payload)
+        if bad_values:
+            messages: List[str] = []
+            for path, val in bad_values:
+                messages.append(f"Invalid value at {'->'.join(map(str, path))!r}: {val!r} (type {type(val)})")
+            raise TypeError("Save aborted: non-serializable dict values detected:\n" + "\n".join(messages))
+
+        return json.dumps(payload, indent=2).encode("utf-8")
+
+    def load(self, data: Union[bytes, str], graph_out: Optional[str] = None) -> EntityRegistry:
+        text = data.decode("utf-8") if isinstance(data, bytes) else data
+        parsed = json.loads(text)
+
+        objects_data = parsed.pop("_objects", {})
+        cycles_meta = objects_data.pop("_cycles", {})
+
+        self._reconstitute_external(objects_data)
+
+        def _inject_cycles(state: Any) -> Any:
+            if isinstance(state, dict):
+                if "__cycle_ref__" in state:
+                    placeholder = state["__cycle_ref__"]  # type: ignore
+                    entry = cycles_meta.get(placeholder)
+                    if entry is None:
+                        raise ValueError(f"Unknown cycle placeholder '{placeholder}'")
+                    return _inject_cycles(entry["state"])
+                return {k: _inject_cycles(v) for k, v in state.items()}  # type: ignore
+            elif isinstance(state, list):
+                return [_inject_cycles(v) for v in state]  # type: ignore
+            else:
+                return state
+
+        for section in list(parsed.keys()):
+            for tag, raw_state in parsed[section].items():
+                parsed[section][tag] = _inject_cycles(raw_state)
+
+        registry: EntityRegistry = {etype: {} for etype in EntityType}
+        for entity_type in EntityType:
+            section = entity_type.storage_key.strip("_")
+            for tag, state in parsed.get(section, {}).items():
+                cls: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]" = entity_type.base_type
+                cls_path = state.pop("_cls", None)
+                if cls_path:
+                    module, name = cls_path.rsplit(".", 1)
+                    cls = getattr(__import__(module, fromlist=[name]), name)
+
+                state: Dict[str, Any] = self._restore_handlers({k: v for k, v in state.items() if k != "_cls"})
+
+                entity: BaseEntity = cls.__new__(cls)  # type: ignore
+                entity.__dict__.update(state)
+                registry[entity_type][tag] = entity
+
+        for entities in registry.values():
+            for ent in entities.values():
+                self._resolve_references(ent, registry)  # type: ignore
+
+        return registry
+
+    def _apply_handlers(self, state: Any) -> Any:
+        if isinstance(state, dict):
+            return {k: self._apply_handlers(v) for k, v in state.items()}  # type: ignore
+        if isinstance(state, list):
+            return [self._apply_handlers(v) for v in state]  # type: ignore
+        for typ, (dump_fn, _) in self._handlers.items():
+            if isinstance(state, typ):
+                return {"__type__": typ.__name__, "value": dump_fn(state)}
+        return state
+
+    def _restore_handlers(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        result: Dict[str, Any] = {}
+        for key, value in state.items():
+            if isinstance(value, dict) and "__type__" in value:
+                typ_name = value["__type__"]  # type: ignore
+                for typ, (_, load_fn) in self._handlers.items():
+                    if typ.__name__ == typ_name:
+                        result[key] = load_fn(value["value"])  # type: ignore
+                        break
+                else:
+                    result[key] = value
+            else:
+                result[key] = value
+        return result
+
+    def _extract_external(self, state: Any) -> Any:
+        if isinstance(state, dict):
+            # check for the “external” marker
+            if state.get("__is_object__"):  # type: ignore
+                obj_key = state.get("entity_key") or uuid.uuid4().hex  # type: ignore
+                self._object_store[obj_key] = {
+                    "__object__": state["__object__"],
+                    "state": state.get("state", {}),  # type: ignore
+                }
+                return {"__objref__": obj_key}  # type: ignore
+            # otherwise recurse
+            return {k: self._extract_external(v) for k, v in state.items()}  # type: ignore
+        if isinstance(state, list):
+            return [self._extract_external(v) for v in state]  # type: ignore
+        return state
+
+    def _reconstitute_external(self, objects: Dict[str, ObjectData]) -> None:
+        self._external_objects.clear()
+        for obj_key, info in objects.items():
+            module_name, class_name = info["__object__"].rsplit(".", 1)
+            cls = getattr(importlib.import_module(module_name), class_name)
+            state = info.get("state", {})
+            obj = cls.from_dict(state) if hasattr(cls, "from_dict") else cls(**state)
+            self._external_objects[obj_key] = obj
+
+    def _convert_references(
+        self, _state: Dict[str, Any], _visited: Optional[Set[int]] = None, path: Optional[List[str]] = None
+    ) -> Any:
+        if path is None:
+            path = []
+        if _visited is None:
+            _visited = set()
+        obj_id = id(_state)
+
+        if isinstance(_state, BaseEntity):
+            return {
+                "__ref__": _state.entity_key,
+                "__class__": _state.__class__.__name__,
+                "__module__": _state.__class__.__module__,
+            }
+
+        if isinstance(_state, weakref.ReferenceType) and (obj := _state()) is not None:  # type: ignore
+            if isinstance(obj, BaseEntity):
+                return {
+                    "__ref__": obj.entity_key,
+                    "__class__": obj.__class__.__name__,
+                    "__module__": obj.__class__.__module__,
+                }
+            state: Any = obj  # type: ignore
+        else:
+            state: Any = _state  # type: ignore
+
+        if isinstance(state, (int, float, str, bool, type(None), tuple, MappingProxyType)):
+            return state  # type: ignore
+
+        if isinstance(state, (set, frozenset)):
+            return list(state)  # type: ignore
+
+        if obj_id in _visited:
+            placeholder = self._cycle_map.get(obj_id)
+            if placeholder is None:
+                placeholder = uuid.uuid4().hex
+                self._cycle_map[obj_id] = placeholder
+                self._object_store.setdefault("_cycles", {})[placeholder] = {"breadcrumb": "->".join(path)}
+            return {"__cycle_ref__": placeholder}
+        _visited.add(obj_id)
+
+        if isinstance(state, dict) and any(k in state for k in ("__ref__", "__objref__", "__cycle_ref__")):
+            return state  # type: ignore
+
+        if isinstance(state, dict):
+            return {k: self._convert_references(v, _visited, path + [k]) for k, v in state.items()}  # type: ignore
+        if isinstance(state, list):
+            return [self._convert_references(v, _visited, path + [f"[{i}]"]) for i, v in enumerate(state)]  #    type: ignore
+        if hasattr(state, "__getstate__"):  # type: ignore
+            if isclass(state):  # type: ignore
+                return {
+                    "__class__": state.__name__,
+                    "__module__": state.__module__,
+                    "__getstate__": "type",
+                }
+            else:
+                st: Dict[str, Dict[str, Any]] = cast(Dict[str, JsonDict], state.__getstate__())  # type: ignore
+            if isinstance(st, dict):  # type: ignore
+                return self._convert_references(st, _visited, path + [state.__class__.__name__ + ".__getstate__()"])  # type: ignore
+        if hasattr(state, "__dict__"):  # type: ignore
+            _state_dict: Dict[str, Any] = cast(Dict[str, Any], state.__dict__)  # type: ignore
+            return self._convert_references(_state_dict, _visited, path + [state.__class__.__name__])  # type: ignore
+        if hasattr(state, "to_dict"):  # type: ignore
+            try:
+                return self._convert_references(
+                    state.to_dict(),  # type: ignore
+                    _visited,
+                    path + [state.__class__.__name__ + ".to_dict()"],  # type: ignore
+                )
+            except Exception:
+                pass
+
+        breadcrumb = "->".join(path) or "<root>"
+        raise ValueError(f"Unsupported type for conversion to references at '{breadcrumb}': {type(state)}")  # type: ignore
+
+    def _resolve_references(self, entity: BaseEntity, registry: EntityRegistry) -> None:
+        for attr, val in list(entity.__dict__.items()):
+            if isinstance(val, dict) and "__ref__" in val:
+                ref_key: str = cast(str, val["__ref__"])
+                for table in registry.values():
+                    if ref_key in table:
+                        setattr(entity, attr, weakref.ref(table[ref_key]))
+                        break
+            elif isinstance(val, dict) and "__objref__" in val:
+                setattr(entity, attr, self._external_objects.get(val["__objref__"]))  # type: ignore
+            elif isinstance(val, list):
+                converted_list: List[Any] = []
+                for item in val:  # type: ignore
+                    if isinstance(item, dict) and "__ref__" in item:
+                        for table in registry.values():
+                            if item["__ref__"] in table:
+                                converted_list.append(table[item["__ref__"]])
+                                break
+                    elif isinstance(item, dict) and "__objref__" in item:
+                        converted_list.append(self._external_objects.get(cast(str, item["__objref__"])))
+                    else:
+                        converted_list.append(item)
+                setattr(entity, attr, converted_list)
 
 
 class EntityManager(Singleton):
     _entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]] = {type_: {} for type_ in EntityType}
     _meta_data: Dict[str, Dict[str, Any]] = {"system": {}, "game": {}, "stats": {}, "player": {}}
 
-    # Default we pick the PickleEntityManagerSerializer
-    _default_serializer: Type[BaseEntityManagerSerializer] = PickleEntityManagerSerializer
-    _default_savefile_handler: Type[BaseSaver] = SavePickleFile
+    _default_serializer: Type[BaseEntityManagerSerializer] = JSONEntityManagerSerializer
+    _default_savefile_handler: Type[BaseSaver] = SaveJsonFile
 
     def __setup__(
         self,
@@ -150,16 +432,11 @@ class EntityManager(Singleton):
         self.logger: Logger = self.base.logger.engine.getChild("manager.entity")
 
         # Stats
-        self.stats = {
-            # Amount of times register is called
+        self.stats: Dict[str, int] = {
             "total_entities_registered": 0,
-            # Amount of times unregister is called
             "total_entities_unregistered": 0,
-            # Amount of entities registered
             "total_entities": 0,
-            # Amount of entities registered but not unregistered.
             "total_orphan_entities": 0,
-            # Dynamic stats
             "total_players": 0,
             "total_units": 0,
             "total_tiles": 0,
@@ -350,8 +627,8 @@ class EntityManager(Singleton):
         saver_instance.save()
 
     def load(self):
-        from system.mesh import HexGrid
         from system.game_settings import GameSettings
+        from system.mesh import HexGrid
 
         if not self.session:
             raise ValueError("No session name set.")
@@ -363,7 +640,7 @@ class EntityManager(Singleton):
         self.session_incrementor = saver.get_session_incrementor()
         self._meta_data = saver.get_saved_meta_data()
 
-        states: Dict[EntityType, Dict[str, Dict[str, Any]]] = self.serializer.load(
+        states: EntityRegistry = self.serializer.load(
             raw_data,
         )
 
@@ -373,7 +650,7 @@ class EntityManager(Singleton):
 
         for entity_type, entries in states.items():
             for state in entries.values():
-                instance = self._create_instance(entity_type, state)
+                instance = self._create_instance(entity_type, state)  # type: ignore
 
                 if isinstance(instance, BaseEntity):
                     key = getattr(instance, "entity_key", None)
@@ -389,7 +666,6 @@ class EntityManager(Singleton):
 
                 if not isinstance(key, str):
                     raise ValueError(f"Entity key must be a string, got {type(key)}")
-                # Register loaded instance without altering its state
 
                 assert (
                     isinstance(instance, BaseEntity)
@@ -412,9 +688,11 @@ class EntityManager(Singleton):
             module = __import__(module_name, fromlist=[class_name])
             cls = getattr(module, class_name)
         else:
-            cls = entity_type.base_type
+            cls: "Type[Tile] | Type[Unit] | Type[Improvement] | Type[City] | Type[Player] | Type[Effect] | Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]" = entity_type.base_type
 
-        instance = cls.__new__(cls)
+        instance: Tile | Unit | Improvement | City | Player | Effect | BaseEntity | HexGrid | GameSettings = (
+            cls.__new__(cls)
+        )
         instance.__setstate__(state)
 
         return instance
@@ -464,8 +742,6 @@ class EntityManager(Singleton):
 
             elif opcode.name in ("PUT", "BINPUT", "LONG_BINPUT"):
                 last_global = None
-
-        from graphviz import Digraph
 
         dot: Digraph = Digraph(comment="Pickle Object Graph", format="png")
         for src, dst in edges:
