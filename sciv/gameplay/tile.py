@@ -1,6 +1,5 @@
 import math
 import weakref
-from copy import deepcopy
 from enum import Enum
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
@@ -57,6 +56,18 @@ class CantBuildReason(Enum):
 
 
 class Tile(BaseEntity):
+    _prop_slots: Dict[str, Tuple[float, float, float]] = {
+        "e": (0.45, 0.0, 0),
+        "ne": (0.375, 0.35, 0),
+        "nw": (-0.375, 0.35, 0),
+        "w": (-0.45, 0.0, 0),
+        "sw": (-0.375, -0.35, 0),
+        "se": (0.375, -0.35, 0),
+        "center": (0.0, 0.0, 0),
+        "n": (0.0, 0.45, 0),
+        "s": (0.0, -0.45, 0),
+    }
+
     def __init__(
         self,
         x: int = 0,
@@ -93,17 +104,7 @@ class Tile(BaseEntity):
         self.is_lake: bool = False
 
         self.prop_size_scale_factor: float = 0.3
-        self.prop_slots: Dict[str, Tuple[float, float, float]] = {
-            "e": (0.45, 0.0, 0),
-            "ne": (0.375, 0.35, 0),
-            "nw": (-0.375, 0.35, 0),
-            "w": (-0.45, 0.0, 0),
-            "sw": (-0.375, -0.35, 0),
-            "se": (0.375, -0.35, 0),
-            "center": (0.0, 0.0, 0),
-            "n": (0.0, 0.45, 0),
-            "s": (0.0, -0.45, 0),
-        }
+        self.prop_slots: Dict[str, Tuple[float]] = self._prop_slots  # type: ignore
 
         self._edges: Dict[str, Optional[Union[Edge, weakref.ReferenceType[Edge]]]] = {
             "e": None,
@@ -345,6 +346,14 @@ class Tile(BaseEntity):
             state["tile_yield"] = self.tile_yield.__getstate__()
         if "biome" in state:
             state["biome"] = self._biome.id
+            del state["_biome"]
+        if "prop_slots" in state:
+            del state["prop_slots"]
+
+        state["pos_x"] = round(self.pos_x, 4)
+        state["pos_y"] = round(self.pos_y, 4)
+        state["pos_z"] = round(self.pos_z, 4)
+        state["hpr"] = tuple(round(angle, 4) for angle in self.hpr)
         state["tag"] = self.tag
         return state
 
@@ -569,7 +578,7 @@ class Tile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        yield_copy = deepcopy(self.tile_yield)
+        yield_copy = self.tile_yield.get_copy()
 
         return yield_copy
 

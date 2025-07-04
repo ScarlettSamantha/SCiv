@@ -16,11 +16,14 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tupl
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
+import orjson
 from graphviz import Digraph
 from mixins.singleton import Singleton
 from mypy.types import JsonDict
 from system.entity import BaseEntity
 from system.save_file import BaseSaver, SaveJsonFile
+
+from helpers.debug import Debug
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -189,22 +192,22 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
                 payload[section][tag] = state
 
         payload["_objects"] = self._object_store
+        if Debug.system_saving():
+            bad_keys: List[Tuple[List[Any], Any]] = self._find_bad_json_keys(payload)
+            if bad_keys:
+                messages: List[str] = []
+                for path, key in bad_keys:
+                    messages.append(f"Invalid key at {'->'.join(map(str, path))!r}: {key!r} (type {type(key)})")
+                raise TypeError("Save aborted: non-serializable dict keys detected:\n" + "\n".join(messages))
 
-        bad_keys: List[Tuple[List[Any], Any]] = self._find_bad_json_keys(payload)
-        if bad_keys:
-            messages: List[str] = []
-            for path, key in bad_keys:
-                messages.append(f"Invalid key at {'->'.join(map(str, path))!r}: {key!r} (type {type(key)})")
-            raise TypeError("Save aborted: non-serializable dict keys detected:\n" + "\n".join(messages))
+            bad_values: List[Tuple[List[Any], Any]] = self._find_bad_json_values(payload)
+            if bad_values:
+                messages: List[str] = []
+                for path, val in bad_values:
+                    messages.append(f"Invalid value at {'->'.join(map(str, path))!r}: {val!r} (type {type(val)})")
+                raise TypeError("Save aborted: non-serializable dict values detected:\n" + "\n".join(messages))
 
-        bad_values: List[Tuple[List[Any], Any]] = self._find_bad_json_values(payload)
-        if bad_values:
-            messages: List[str] = []
-            for path, val in bad_values:
-                messages.append(f"Invalid value at {'->'.join(map(str, path))!r}: {val!r} (type {type(val)})")
-            raise TypeError("Save aborted: non-serializable dict values detected:\n" + "\n".join(messages))
-
-        return json.dumps(payload, indent=2).encode("utf-8")
+        return orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS)
 
     def load(self, data: Union[bytes, str], graph_out: Optional[str] = None) -> EntityRegistry:
         text = data.decode("utf-8") if isinstance(data, bytes) else data
@@ -213,7 +216,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
         objects_data = parsed.pop("_objects", {})
         cycles_meta = objects_data.pop("_cycles", {})
 
-        self._reconstitute_external(objects_data)
+        self._reconstitute_external(objects=objects_data)
 
         def _inject_cycles(state: Any) -> Any:
             if isinstance(state, dict):
@@ -596,6 +599,8 @@ class EntityManager(Singleton):
     def dump(self, session_name: str = ""):
         from helpers.debug import Debug
 
+        self.logger.info(f"Dumping entity manager data to session '{session_name}'")
+
         if not self.serializer:
             raise ValueError("No serializer registered.")
 
@@ -611,7 +616,11 @@ class EntityManager(Singleton):
                 etype: {key: entity.__getstate__() for key, entity in entities.items()}
                 for etype, entities in self._entities.items()
             }
+            before_time = datetime.now()
             data: bytes = self.serializer.dump(_entity_states)
+            self.logger.info(
+                f"Entity serialization took {round((datetime.now() - before_time).total_seconds(), 2)} seconds for {len(_entity_states)} entities."
+            )
 
         saver_instance = self.saver()
         saver_instance.set_data(data)
@@ -624,7 +633,11 @@ class EntityManager(Singleton):
         self.add_meta_data("loaded_data_length", saver_instance.loaded_data_length)
         saver_instance.set_meta_data(self._meta_data)
 
-        saver_instance.save()
+        before_save_time = datetime.now()
+        saver_instance.save(self.logger.getChild("saver"))
+        self.logger.info(
+            f"Entity manager data saved to session '{session_name}' in {round((datetime.now() - before_save_time).total_seconds(), 2)} seconds."
+        )
 
     def load(self):
         from system.game_settings import GameSettings
@@ -635,7 +648,7 @@ class EntityManager(Singleton):
 
         saver = self.saver()
         saver.set_identifier(self.session)
-        raw_data = saver.load()
+        raw_data = saver.load(self.logger.getChild("loader"))
 
         self.session_incrementor = saver.get_session_incrementor()
         self._meta_data = saver.get_saved_meta_data()

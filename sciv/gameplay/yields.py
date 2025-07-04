@@ -85,9 +85,36 @@ class Yields:
         ]
 
     def __getstate__(self) -> object:
-        # Prepare the state for serialization.
         state = self.__dict__.copy()
+        if "_calculatable_great_people" in state:
+            del state["_calculatable_great_people"]
+        if "_mechanic_resources" in state:
+            del state["_mechanic_resources"]
+        if "_calculatable_properties" in state:
+            del state["_calculatable_properties"]
+        for prop in self._calculatable_properties + self._mechanic_resources:
+            prop = f"_{prop}"
+            if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
+                del state[prop]
+        for prop in self._calculatable_great_people:
+            prop = f"_great_person_{prop}"
+            if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
+                del state[prop]
         return state
+
+    def get_copy(self) -> "Yields":
+        new_instance = Yields(
+            name=self._name,
+            gold=self._gold,
+            production=self._production,
+            science=self._science,
+            food=self._food,
+            culture=self._culture,
+            housing=self._housing,
+            faith=self._faith,
+            mode=self.mode,
+        )
+        return new_instance
 
     @property
     def name(self) -> None | str:

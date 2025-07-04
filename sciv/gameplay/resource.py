@@ -276,7 +276,7 @@ class BaseResource(ABC):
         return self.__pow__(other)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, "BaseResource"):
+        if isinstance(other, BaseResource):
             return self.value == other.value
         return False
 

@@ -1,29 +1,26 @@
+import weakref
 from datetime import datetime
 from random import choice, randrange
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
-import weakref
 from zlib import crc32
 
 from direct.showbase import MessengerGlobal
-
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
-
 from helpers.tiles import Tiles
 from managers import game
 from managers.entity import EntityManager, EntityType
-from system.generators.base import BaseGenerator
+from system.generators.base import BaseGenerator, WorldParams
 from system.generators.resource_allocator import ResourceAllocator
-from system.pyload import PyLoad
-from system.subsystems.hexgen.enums import MapType, OceanType, HexFeature
-from system.generators.base import WorldParams
 from system.mesh import HexGrid
+from system.pyload import PyLoad
+from system.subsystems.hexgen.enums import HexFeature, MapType, OceanType
 
 if TYPE_CHECKING:
     from game import OpenCiv
+    from gameplay.tile import Tile
     from system.game_settings import GameSettings
     from system.subsystems.hexgen.grid import Grid
-    from gameplay.tile import Tile
     from system.subsystems.hexgen.hex import Hex
 
 
@@ -368,7 +365,7 @@ class Basic(BaseGenerator):
         water = not land
 
         tile.altitude = float(hex.altitude)
-        tile.temperature = hex.base_temperature[0]
+        tile.temperature = round(hex.base_temperature[0], 2)
         tile.moisture = hex.moisture
         tile._biome = hex.biome.list()[0]  # This is set by classify_terrain # type: ignore
         tile.geoform_type = hex.geoform_type.id  # type: ignore

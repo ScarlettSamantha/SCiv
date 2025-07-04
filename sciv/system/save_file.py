@@ -3,6 +3,7 @@ import json
 import zlib
 from abc import ABC, abstractmethod
 from datetime import datetime
+from logging import Logger
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -81,10 +82,10 @@ class BaseSaver(ABC):
         self.meta_data["saver"]["save_time"] = datetime.now().isoformat()
 
     @abstractmethod
-    def save(self) -> bool: ...
+    def save(self, logger: Logger) -> bool: ...
 
     @abstractmethod
-    def load(self) -> Any: ...
+    def load(self, logger: Logger) -> Any: ...
 
     def get_saved_session(self) -> List[str]:
         save_location = Path(self.identify_save_location())
@@ -153,7 +154,7 @@ class SaveJsonFile(BaseSaver):
     compression_enabled = True
     extension = "json"
 
-    def save(self) -> bool:
+    def save(self, logger: Logger) -> bool:
         save_dir = Path(self.base_path) / self.identifier
         save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -165,10 +166,16 @@ class SaveJsonFile(BaseSaver):
 
         try:
             if self.compression_enabled:
+                start_time = datetime.now()
                 self.data = self.compress_and_inject_data(self.data)
+                logger.debug(
+                    f"Data compression took {round((datetime.now() - start_time).total_seconds(), 2)} seconds."
+                )
                 data_path = data_path.with_suffix(f".{self.extension}.gz")
             with open(data_path, "wb") as file:
+                start_time = datetime.now()
                 file.write(self.data)
+                logger.debug(f"Data saving took {round((datetime.now() - start_time).total_seconds(), 2)} seconds.")
                 file.flush()
 
             with open(metadata_path, "w", encoding="utf-8") as file:
@@ -182,7 +189,7 @@ class SaveJsonFile(BaseSaver):
             print(f"Error saving data: {e}")
             return False
 
-    def load(self) -> bytes | bool:
+    def load(self, logger: Logger) -> bytes | bool:
         save_dir = Path(self.base_path) / self.identifier
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
@@ -238,7 +245,7 @@ class SavePickleFile(BaseSaver):
     compression_enabled = True
     extension = "pickle.gz" if compression_enabled else "pickle"
 
-    def save(self) -> bool:
+    def save(self, logger: Logger) -> bool:
         save_dir = Path(self.base_path) / self.identifier
         save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -263,7 +270,7 @@ class SavePickleFile(BaseSaver):
             print(f"Error saving data: {e}")
             return False
 
-    def load(self) -> bytes | bool:
+    def load(self, logger: Logger) -> bytes | bool:
         save_dir = Path(self.base_path) / self.identifier
         data_path = save_dir / f"data.{self.extension}"
         metadata_path = save_dir / "metadata.json"
