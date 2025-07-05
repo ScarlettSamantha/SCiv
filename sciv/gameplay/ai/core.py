@@ -68,6 +68,7 @@ class AI(ABC):
         data.pop("logger", None)
         data.pop("vision", None)
         data["player"] = player.get_tag()
+        del data["_player"]
         return data
 
     def __setstate__(self, state: Dict[str, Any]) -> None:

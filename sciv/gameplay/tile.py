@@ -104,7 +104,7 @@ class Tile(BaseEntity):
         self.is_lake: bool = False
 
         self.prop_size_scale_factor: float = 0.3
-        self.prop_slots: Dict[str, Tuple[float]] = self._prop_slots  # type: ignore
+        self.prop_slots: Dict[str, Tuple[float, float, float]] = self._prop_slots
 
         self._edges: Dict[str, Optional[Union[Edge, weakref.ReferenceType[Edge]]]] = {
             "e": None,
