@@ -1,20 +1,20 @@
-from typing import Dict, List, Tuple, Optional, TYPE_CHECKING, Any
+import math
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from helpers.colors import Colors, Tuple4f
+from helpers.tiles import Tiles
 from panda3d.core import (
     Geom,
     GeomNode,
+    GeomTriangles,
     GeomVertexData,
     GeomVertexFormat,
     GeomVertexReader,
     GeomVertexWriter,
-    GeomTriangles,
     NodePath,
     PandaNode,
     Shader,  # type: ignore
 )
-import math
-
-from helpers.colors import Colors, Tuple4f
-from helpers.tiles import Tiles
 
 if TYPE_CHECKING:
     from managers.entity import Tile
@@ -69,6 +69,17 @@ class HexGrid:
 
         self.root_np.reparent_to(render)  # type: ignore  # noqa: F821
         self.root_np.flatten_light()
+
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("root_np", None)
+        state.pop("grid_np", None)
+        state.pop("walls_np", None)
+        state.pop("shader", None)
+        state.pop("_tile_index_map", None)
+        state["mesh_vertices"] = [(round(v[0], 3), round(v[1], 3), round(v[2], 3)) for v in self.mesh_vertices]
+
+        return state
 
     def __getstate__(self) -> Dict[str, Any]:
         return {

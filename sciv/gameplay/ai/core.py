@@ -67,6 +67,9 @@ class AI(ABC):
         data.pop("control_tiles", None)
         data.pop("logger", None)
         data.pop("vision", None)
+        data.pop("personality", None)
+        data.pop("turn_action_register", None)
+        data.pop("rules", None)
         data["player"] = player.get_tag()
         del data["_player"]
         return data

@@ -1,15 +1,14 @@
-from abc import ABC
 import random
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, Union
-
+from abc import ABC
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Type, Union
 
 from gameplay.yields import Yields
 from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
-    from gameplay.improvement import Improvement
     from gameplay.bits import Bit
+    from gameplay.improvement import Improvement
 
 
 def rgb(r: int, g: int, b: int) -> Tuple[float, float, float] | Tuple4f:
@@ -43,7 +42,7 @@ class BaseTerrain(ABC):
         self.user_title: T_TranslationOrStr = ""
         self._texture: T_TranslationOrStr = ""
 
-        self.movement_modifier: float = 0.0
+        self.movement_modifier: float = 1.0  # 1.0 is normal, 0.5 is half speed, etc.
         self.water_availability: float = 1.0
         self.radiation_level: float = 0.0
 
@@ -60,6 +59,20 @@ class BaseTerrain(ABC):
         self._supports_improvements: List[Type["Improvement"]] = []
 
         self.register()
+
+    def dump(self) -> Dict[str, Union[str, int, float]]:
+        data: Dict[str, Union[str, int, float]] = {
+            "name": str(self.name),
+            "model": str(self._model) if self._model else "",
+            "water_availability": self.water_availability,
+            "radiation_level": self.radiation_level,
+            "tile_yield_base": str(self.tile_yield_base.dump()),
+            "tile_modifiers": str(self.tile_modifiers.dump()),
+            "passable": self.passable,
+            "passable_without_tech": self.passable_without_tech,
+            "model_rotation": str(self.model_rotation),
+        }
+        return data
 
     def register(self) -> None:
         self.register_bits()

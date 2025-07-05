@@ -1,8 +1,7 @@
-from typing import Any, List, Optional, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
-
 
 if TYPE_CHECKING:
     from system.generators.base import BaseGenerator
@@ -37,3 +36,7 @@ class GameSettings:
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
+
+    def dump(self) -> dict[str, Any]:
+        data: dict[str, Any] = self.__dict__.copy()
+        return data

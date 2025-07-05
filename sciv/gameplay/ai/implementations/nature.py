@@ -43,6 +43,7 @@ class NatureAI(AI):
         state: object = super().__getstate__()
         state["_spawn_tiles_cache"] = self._spawn_tiles_cache
         state["_spawn_cache_from_turn"] = self._spawn_cache_from_turn
+        state.pop("_spawn_tiles_cache", None)
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:

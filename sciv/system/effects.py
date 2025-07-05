@@ -1,17 +1,17 @@
+import weakref
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, Type, Union
-import weakref
 
 from gameplay.yields import Yields
 from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.effect import Effect
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from gameplay.effect import Effect
     from managers.world import World
 
 
@@ -171,6 +171,9 @@ class Effects:
     def __len__(self) -> int:
         return self._effects_num
 
+    def dump(self) -> Dict[str, str]:
+        return {tag: effect.get_tag() for tag, effect in self._effects.items()}
+
 
 def _place_on_tile(tile: "Tile", effect: "Effect") -> None:
     tile.effects.add_effect(effect)
@@ -219,10 +222,10 @@ class EffectPlacers(Enum):
 
     def place(self, base_object: "Tile | City | Player | World | Improvement", effect: "Effect") -> None:
         from gameplay.city import City
+        from gameplay.improvement import Improvement
         from gameplay.player import Player
         from gameplay.tile import Tile
         from managers.world import World
-        from gameplay.improvement import Improvement
 
         if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, Tile):
             _place_on_tile(base_object, effect)

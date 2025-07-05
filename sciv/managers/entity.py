@@ -18,12 +18,11 @@ from weakref import ReferenceType, ref
 
 import orjson
 from graphviz import Digraph
+from helpers.debug import Debug
 from mixins.singleton import Singleton
 from mypy.types import JsonDict
 from system.entity import BaseEntity
 from system.save_file import BaseSaver, SaveJsonFile
-
-from helpers.debug import Debug
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -165,6 +164,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
         return errors
 
     def dump(self, registry: EntityRegistry, graph_out: Optional[str] = None) -> bytes:
+        from gameplay.tile import Tile
         from system.game_settings import GameSettings
         from system.mesh import HexGrid
 
@@ -175,12 +175,13 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             section = entity_type.storage_key.strip("_")
             payload[section] = {}
             for tag, entity in entities.items():
-                if not hasattr(entity, "__getstate__") and not hasattr(entity, "__dict__"):
-                    raise TypeError(f"Entity {entity} does not have __getstate__ or __dict__ method.")
                 if isinstance(entity, BaseEntity):
-                    state = entity.__getstate__() if hasattr(entity, "__getstate__") else entity.__dict__.copy()
+                    if isinstance(entity, (Tile,)):
+                        state = entity.dump()
+                    else:
+                        state = entity.__getstate__() if hasattr(entity, "__getstate__") else entity.__dict__.copy()
                 elif isinstance(entity, (HexGrid, GameSettings)):
-                    state = entity.__dict__.copy()
+                    state = entity.dump()
                 elif isinstance(entity, dict):  # type:ignore It always a dict but mypy does not know it
                     state = entity.copy()
                 else:
@@ -350,6 +351,12 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             return {"__cycle_ref__": placeholder}
         _visited.add(obj_id)
 
+        if hasattr(state, "dump") and callable(state.dump):  # type: ignore
+            return self._convert_references(
+                state.dump(),  # type: ignore
+                _visited,
+                path + [f"{state.__class__.__name__}.dump()"],  # type: ignore
+            )
         if isinstance(state, dict) and any(k in state for k in ("__ref__", "__objref__", "__cycle_ref__")):
             return state  # type: ignore
 
@@ -357,6 +364,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             return {k: self._convert_references(v, _visited, path + [k]) for k, v in state.items()}  # type: ignore
         if isinstance(state, list):
             return [self._convert_references(v, _visited, path + [f"[{i}]"]) for i, v in enumerate(state)]  #    type: ignore
+
         if hasattr(state, "__getstate__"):  # type: ignore
             if isclass(state):  # type: ignore
                 return {
@@ -367,21 +375,9 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             else:
                 st: Dict[str, Dict[str, Any]] = cast(Dict[str, JsonDict], state.__getstate__())  # type: ignore
             if isinstance(st, dict):  # type: ignore
-                return self._convert_references(st, _visited, path + [state.__class__.__name__ + ".__getstate__()"])  # type: ignore
-        if hasattr(state, "__dict__"):  # type: ignore
-            _state_dict: Dict[str, Any] = cast(Dict[str, Any], state.__dict__)  # type: ignore
-            return self._convert_references(_state_dict, _visited, path + [state.__class__.__name__])  # type: ignore
-        if hasattr(state, "to_dict"):  # type: ignore
-            try:
-                return self._convert_references(
-                    state.to_dict(),  # type: ignore
-                    _visited,
-                    path + [state.__class__.__name__ + ".to_dict()"],  # type: ignore
-                )
-            except Exception:
-                pass
+                return self._convert_references(st, _visited, path + [f"{state.__class__.__name__}.__getstate__()"])  # type: ignore
 
-        breadcrumb = "->".join(path) or "<root>"
+        breadcrumb = "->".join([str(p) for p in path]) or "<root>"
         raise ValueError(f"Unsupported type for conversion to references at '{breadcrumb}': {type(state)}")  # type: ignore
 
     def _resolve_references(self, entity: BaseEntity, registry: EntityRegistry) -> None:
@@ -612,10 +608,7 @@ class EntityManager(Singleton):
         if Debug.system_entity_graph() is True:
             data: bytes = self.debug_dump(keep_profile=True)
         else:
-            _entity_states: Dict[EntityType, Dict[str, Any]] = {
-                etype: {key: entity.__getstate__() for key, entity in entities.items()}
-                for etype, entities in self._entities.items()
-            }
+            _entity_states: Dict[EntityType, Dict[str, Any]] = self._entities.copy()
             before_time = datetime.now()
             data: bytes = self.serializer.dump(_entity_states)
             self.logger.info(

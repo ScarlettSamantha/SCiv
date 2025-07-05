@@ -241,8 +241,7 @@ class Bits:
 class BitsRenderer:
     def __init__(self, tile: "Tile", parent: Optional[NodePath] = None) -> None:
         self.tile: "Tile" = tile
-        # reference the tile's prop slots
-        self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.prop_slots
+        self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.get_prop_slots()
         self._bit_slot_assignments: Dict[str, Bit] = {}
         self.parent: NodePath[PandaNode] = parent if parent else tile.renderer.geometry_node
 

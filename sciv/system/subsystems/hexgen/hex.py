@@ -2,21 +2,20 @@ import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
 
 import numpy as np
-
 from gameplay.resource import BaseResource
 from system.subsystems.hexgen.edge import Edge
-from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.enums import (
     Biome,
-    Hemisphere,
-    HexFeature,
     GeoformType,
+    Hemisphere,
     HexEdge,
+    HexFeature,
     HexSide,
     HexType,
     MapType,
     Zones,
 )
+from system.subsystems.hexgen.territory import Territory
 
 if TYPE_CHECKING:
     from system.subsystems.hexgen.grid import Grid
@@ -383,32 +382,28 @@ class Hex:
             return self._neighbors
 
     def bubble(self, distance: int = 1) -> List["Hex"]:
-        """
-        Returns a list of all hexes within a certain number of hexes
-        """
-        around: List["Hex"] = self.surrounding
         if distance == 0:
             return [self]
         elif distance == 1:
-            around.append(self)
-            return around
-        try:
+            return self.surrounding + [self]
+
+        if distance in self.bubble_cache:
             return self.bubble_cache[distance]
-        except KeyError:
 
-            def step(iteration: int, hexes: List["Hex"]) -> List["Hex"]:
-                if iteration < distance - 1:
-                    temp: List["Hex"] = []
-                    for h in hexes:
-                        temp.extend(h.surrounding)
-                    return step(iteration + 1, temp)
-                else:
-                    return hexes
+        def step(iteration: int, hexes: List["Hex"]) -> List["Hex"]:
+            if iteration < distance - 1:
+                temp: List["Hex"] = []
+                for h in hexes:
+                    temp.extend(h.surrounding)
+                return step(iteration + 1, temp)
+            else:
+                return hexes
 
-            around.extend(step(0, around))
-            final = list(set(around))
-            self.bubble_cache[distance] = final
-            return final
+        around: List["Hex"] = self.surrounding
+        around.extend(step(0, around))
+        final = list(set(around))
+        self.bubble_cache[distance] = final
+        return final
 
     @property
     def is_land(self) -> bool:

@@ -1,2 +1,8 @@
+from typing import Any, Dict
+
+
 class Mood:
-    pass
+    def __init__(self): ...
+
+    def dump(self) -> Dict[str, Any]:
+        return {}

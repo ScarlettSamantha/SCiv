@@ -7,41 +7,40 @@ resource icons, unit markers, city nameplates, and model loading.
 """
 
 import math
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, List, Union, cast
 from pathlib import Path
-from PIL import Image
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union, cast
 
-from PIL.ImageFont import FreeTypeFont
+from direct.task import Task
+from gameplay.bits import BitsRenderer
+from gameplay.resource import BaseResource
+from helpers.cache import Cache
+from helpers.colors import Colors, Tuple4f
+from helpers.debug import Debug
+from helpers.images import (
+    generate_city_nameplate,
+    normalize_color_to_bytes,
+    pil_image_to_panda3d_texture,
+)
+from helpers.windows import WindowsHelper
+from managers.assets import AssetManager
+from managers.game import Game
+from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from panda3d.core import (
     AntialiasAttrib,
     BitMask32,
     CardMaker,
     ColorBlendAttrib,
     NodePath,
-    PTAFloat,
     PandaNode,
+    PTAFloat,
     SamplerState,
     Shader,
     Texture,
     TransparencyAttrib,
 )
-
-from direct.task import Task
-from helpers.cache import Cache
-from helpers.colors import Colors, Tuple4f
-from helpers.images import (
-    normalize_color_to_bytes,
-    generate_city_nameplate,
-    pil_image_to_panda3d_texture,
-)
-from helpers.debug import Debug
-from helpers.windows import WindowsHelper
+from PIL import Image
+from PIL.ImageFont import FreeTypeFont
 from system.atlas import AtlasGenerator
-from gameplay.resource import BaseResource
-from managers.assets import AssetManager
-from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
-from managers.game import Game
-from gameplay.bits import BitsRenderer
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -207,7 +206,7 @@ class TileRenderer:
         self.anchor_node.setCollideMask(BitMask32.bit(1))
 
     def _draw_terrain_overlay(self) -> None:
-        cm = CardMaker(f"terrain_overlay_{self.tile.id}")
+        cm = CardMaker(f"terrain_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         overlay = self.ui_node.attachNewNode(cm.generate())
         overlay.setTransparency(TransparencyAttrib.M_alpha)
@@ -223,7 +222,7 @@ class TileRenderer:
         texture = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(str(self.tile.tile_terrain.texture()))
 
         if texture is None:
-            self.tile.logger.error(f"Terrain texture not found for tile {self.tile.id}.")
+            self.tile.logger.error(f"Terrain texture not found for tile {self.tile.get_tag()}.")
             return
         texture.set_format(Texture.F_srgb_alpha)
 
@@ -300,7 +299,7 @@ class TileRenderer:
         if self.base is None:
             return
 
-        cm = CardMaker(f"icon_overlay_{self.tile.id}")
+        cm = CardMaker(f"icon_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         cm.setHasUvs(True)
         icon_node = self.ui_node.attachNewNode(cm.generate())
@@ -430,7 +429,7 @@ class TileRenderer:
         )  # Flip for Panda3D's coordinate system # type: ignore[no-untyped-call]
         tex = pil_image_to_panda3d_texture(plate)
 
-        cm = CardMaker(f"city_nameplate_{self.tile.id}")
+        cm = CardMaker(f"city_nameplate_{self.tile.get_tag()}")
         ar = plate.width / plate.height
         w = 2.5
         h = w / ar

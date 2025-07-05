@@ -357,10 +357,8 @@ class Basic(BaseGenerator):
 
     @classmethod
     def enrich_from_extra_data(cls, hex: "Hex", tile: "Tile") -> "Tile":
-        """
-        Enriches the Tile instance with additional data from the Hex object.
-        This method is called during tile instantiation to set properties like altitude, temperature, etc.
-        """
+        from gameplay.tile import Tile
+
         land = hex.is_land and not hex.is_water and HexFeature.lake not in hex.features and hex.geoform_type != 4  # type: ignore
         water = not land
 
@@ -374,7 +372,7 @@ class Basic(BaseGenerator):
         tile.is_land = land
         tile.is_coast = hex.is_coast
         tile.terrain = hex.terrain  # This is  set by classify_terrain # type: ignore
-        tile.hemisphere = hex.hemisphere.name
+        tile.hemisphere = Tile.HEMISPHERE_NORTH if hex.hemisphere.value == "Northern" else Tile.HEMISPHERE_SOUTH
         tile.is_sea = hex.geoform_type.id == 2  # Sea is geoform_type 2 # type: ignore
         tile.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore
         if hex.geoform_type is not None:

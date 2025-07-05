@@ -25,7 +25,28 @@ class Yields:
         PERCENTAGE_ADDITIVE: "PERCENTAGE_ADDITIVE",
     }
 
-    # Percentages: 0.0 = 0% change, 1.0 = +100%, -1.0 = -100%
+    _calculatable_properties: List[str] = [
+        "gold",
+        "production",
+        "science",
+        "food",
+        "culture",
+        "housing",
+        "faith",
+    ]
+
+    _mechanic_resources: List[str] = ["contentment", "angre", "revolt", "stability"]
+
+    _calculatable_great_people: List[str] = [
+        "science",
+        "production",
+        "artist",
+        "military",
+        "commerce",
+        "hero",
+        "holy",
+    ]
+
     def __init__(
         self,
         name: str | None = None,
@@ -64,35 +85,10 @@ class Yields:
         self._great_person_hero: float | int = 0.0
         self._great_person_holy: float | int = 0.0
 
-        self._calculatable_properties: List[str] = [
-            "gold",
-            "production",
-            "science",
-            "food",
-            "culture",
-            "housing",
-            "faith",
-        ]
-        self._mechanic_resources: List[str] = ["contentment", "angre", "revolt", "stability"]
-        self._calculatable_great_people: List[str] = [
-            "science",
-            "production",
-            "artist",
-            "military",
-            "commerce",
-            "hero",
-            "holy",
-        ]
-
     def __getstate__(self) -> object:
         state = self.__dict__.copy()
-        if "_calculatable_great_people" in state:
-            del state["_calculatable_great_people"]
-        if "_mechanic_resources" in state:
-            del state["_mechanic_resources"]
-        if "_calculatable_properties" in state:
-            del state["_calculatable_properties"]
-        for prop in self._calculatable_properties + self._mechanic_resources:
+
+        for prop in self.calculatable_properties() + self.mechanic_resources():
             prop = f"_{prop}"
             if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
                 del state[prop]
@@ -115,6 +111,13 @@ class Yields:
             mode=self.mode,
         )
         return new_instance
+
+    def dump(self) -> Dict[str, Any]:
+        state = self.__dict__.copy()
+        for key, prop in self.__dict__.items():
+            if prop is None or prop == 0.0:
+                del state[key]
+        return state
 
     @property
     def name(self) -> None | str:
