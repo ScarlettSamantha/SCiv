@@ -20,7 +20,7 @@ from helpers.placeholder import Placeholder
 from managers.player import PlayerManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 
 if TYPE_CHECKING:
     from menus.screens.game_ui import GameUIScreen  # type: ignore

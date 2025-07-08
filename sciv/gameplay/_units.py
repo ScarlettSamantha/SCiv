@@ -58,3 +58,9 @@ class Units:
 
     def count(self) -> int:
         return len(self._units)
+
+    def dump(self) -> dict[str, object]:
+        return {
+            "units": [unit.get_tag() for unit in self._units],
+            "num_units": self._num_units,
+        }

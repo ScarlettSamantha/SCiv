@@ -233,7 +233,7 @@ class Debug:
         """
 
         from platform import uname
-        from helpers.windows import WindowsHelper
+        from helpers.os import WindowsHelper
 
         _uname = uname()
 

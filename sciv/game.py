@@ -19,7 +19,7 @@ from kivy.config import Config
 from panda3d_kivy import monkey  # type: ignore
 from helpers.cache import Cache
 from helpers.direct_loading_screen import LoadingScreen
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
 from managers.input import Input

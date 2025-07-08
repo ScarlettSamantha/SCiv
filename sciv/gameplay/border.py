@@ -23,7 +23,7 @@ from helpers.geometry import generate_flat_top_hex
 
 from helpers.tiles import Tiles
 from managers.player import PlayerManager
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 from system.shaders import Shaders
 from helpers.colors import Colors, Tuple4f
 

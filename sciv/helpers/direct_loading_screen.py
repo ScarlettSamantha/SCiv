@@ -6,7 +6,7 @@ from direct.interval.LerpInterval import LerpFunc
 from direct.task.Task import Task
 from panda3d.core import CardMaker, NodePath, TextNode, TransparencyAttrib
 
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 
 if TYPE_CHECKING:
     from game import OpenCiv

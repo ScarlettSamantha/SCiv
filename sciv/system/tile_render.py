@@ -21,7 +21,7 @@ from helpers.images import (
     normalize_color_to_bytes,
     pil_image_to_panda3d_texture,
 )
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 from managers.assets import AssetManager
 from managers.game import Game
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD

@@ -632,6 +632,11 @@ class EntityManager(Singleton):
             f"Entity manager data saved to session '{session_name}' in {round((datetime.now() - before_save_time).total_seconds(), 2)} seconds."
         )
 
+        if Debug.system_saving():
+            from helpers.paths import PathsHelper
+
+            self.graph_pickle(self._entities, out_dot=f"{PathsHelper.get_debug_dir()}/{session_name}_object_graph.dot")
+
     def load(self):
         from system.game_settings import GameSettings
         from system.mesh import HexGrid
@@ -717,7 +722,7 @@ class EntityManager(Singleton):
 
     def graph_pickle(
         self,
-        data: Dict[EntityType, Dict[str, BaseEntity]],
+        data: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]],
         out_dot: str | None = None,
         out_png: str | None = None,
     ):

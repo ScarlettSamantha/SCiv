@@ -15,7 +15,7 @@ from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from helpers.colors import Colors, Tuple4f
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog, CombatLogEntry
 from managers.entity import EntityManager, uuid4

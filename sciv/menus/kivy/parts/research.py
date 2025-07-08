@@ -23,7 +23,7 @@ from managers.tech import TechManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
 from helpers.optimizations import throttle
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 from system.entity import BaseEntity
 
 

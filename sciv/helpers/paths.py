@@ -1,5 +1,5 @@
-from helpers.windows import WindowsHelper
-from helpers.linux import LinuxHelper
+from helpers.os import LinuxHelper
+from helpers.os import WindowsHelper
 
 
 class PathsHelper:
@@ -30,3 +30,10 @@ class PathsHelper:
             WindowsHelper.open_folder(folder)
         else:
             LinuxHelper.open_folder(folder)
+
+    @classmethod
+    def get_debug_dir(cls) -> str:
+        if WindowsHelper.is_windows():
+            return WindowsHelper.get_debug_dir()
+        else:
+            return LinuxHelper.get_debug_dir()
