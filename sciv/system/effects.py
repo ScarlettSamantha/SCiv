@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.effect import Effect
     from gameplay.improvement import Improvement
+    from gameplay.leader import Leader
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
@@ -24,7 +25,7 @@ class EffectType(Enum):
     IMPROVEMENT = 5
 
 
-parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement"]
+parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement", "Leader"]
 
 
 class Effects:

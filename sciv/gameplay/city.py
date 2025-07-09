@@ -5,21 +5,20 @@ from weakref import ReferenceType, ref
 
 from direct.showbase import DirectObject, MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
-
 from gameplay.citizens import Citizens, population_curve
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
 from gameplay.improvements.core.city.palace import Palace
 from gameplay.improvements_set import ImprovementsSet
+from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStrOrNone
-from managers.log import LogManager
-
 from helpers.cache import Cache
 from helpers.colors import Colors
+from managers.entity import EntityType
+from managers.i18n import T_TranslationOrStrOrNone
+from managers.log import LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
-from gameplay.repositories.tile import TileRepository
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
@@ -42,6 +41,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.is_capital: bool = False
         self.logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("city")
         self.tag = self.generate_tag()
+        self.entity_type_ref = EntityType.CITY.value
         self._tile: ReferenceType[Tile] = ref(tile)
 
         self.active: bool = True

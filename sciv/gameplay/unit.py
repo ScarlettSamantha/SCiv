@@ -18,7 +18,7 @@ from helpers.colors import Colors, Tuple4f
 from helpers.os import WindowsHelper
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog, CombatLogEntry
-from managers.entity import EntityManager, uuid4
+from managers.entity import EntityManager, EntityType, uuid4
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -87,6 +87,7 @@ class Unit(BaseEntity, ABC):
 
         self.key: str = key if key else uuid4().hex
         self.tag = self.generate_unit_tag()
+        self.entity_type_ref = EntityType.UNIT.value
 
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)

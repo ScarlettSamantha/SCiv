@@ -6,10 +6,9 @@ from weakref import ReferenceType
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
-
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStrOrNone
 from helpers.cache import Cache, LogManager
+from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import Effects
 from system.entity import BaseEntity
 
@@ -89,6 +88,7 @@ class Improvement(BaseEntity):
         self._maintenance_cost: Yields = self.maintenance_cost
 
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
+        self.tag = self.generate_tag()
 
     @classmethod
     def on_tooltip(cls) -> str:
@@ -131,13 +131,11 @@ class Improvement(BaseEntity):
     def _validate_state(self) -> bool:
         return True
 
-    def generate_tag(self):
+    def generate_tag(self) -> str:
         if self.tile is None:
-            self.tag = f"improvement_{self.name}_{random.randrange(0, 10000)}"
+            return f"improvement_{self.name}_{random.randrange(0, 10000)}"
         else:
-            self.tag = (
-                f"improvement_{self.get_tile().x}_{self.get_tile().y}_{str(self.name)}_{random.randrange(0, 10000)}"
-            )
+            return f"improvement_{self.get_tile().x}_{self.get_tile().y}_{str(self.name)}_{random.randrange(0, 1000)}"
 
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
@@ -178,7 +176,6 @@ class Improvement(BaseEntity):
             raise ValueError("Tile is not set for the improvement")
 
         if self.is_registered is False:
-            self.generate_tag()
             self.register()
 
     def on_destroy(self):

@@ -8,10 +8,7 @@ from gameplay.yields import Yields
 from helpers.colors import Colors
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStrOrNone
-from system.effects import EffectPlacers, EffectType
 from system.entity import BaseEntity
-
-from sciv.managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -20,6 +17,7 @@ if TYPE_CHECKING:
     from gameplay.tile import Tile
     from gameplay.unit import Unit
     from managers.world import World
+    from system.effects import EffectPlacers, EffectType
 
 
 class Effect(BaseEntity, ABC, DirectObject):
@@ -29,12 +27,14 @@ class Effect(BaseEntity, ABC, DirectObject):
     icon_border_color = Colors.RED
     visible_to_user: bool = True
 
-    place_method: EffectPlacers | Callable[[BaseEntity, "Effect"], None] = EffectPlacers.PLACE_ON_TILE
+    _place_method: "EffectPlacers" | Callable[[BaseEntity, "Effect"], None] | None = None
 
     activate_on_add: bool = True
-    effect_types: Tuple[EffectType] = tuple()  # type: ignore
+    effect_types: Tuple["EffectType"] = tuple()  # type: ignore
 
     def __init__(self, player: "Player", tile: Optional["Tile"] = None, *args: Any, **kwargs: Any) -> None:
+        from system.effects import EffectPlacers
+
         BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
         DirectObject.__init__(self)
 
@@ -45,6 +45,10 @@ class Effect(BaseEntity, ABC, DirectObject):
         self.world: "World | None" = None
         self.improvement: "Improvement | None" = None
         self.unit: "Unit | None" = None
+
+        self.place_method: EffectPlacers | Callable[[BaseEntity, Effect], None] = (
+            self._place_method if self._place_method is not None else EffectPlacers.PLACE_ON_TILE
+        )
 
         self.yield_impact: Yields = Yields.nullYield()  # Will be read on turn change
         self.maintenance_impact: Yields = (
@@ -74,15 +78,14 @@ class Effect(BaseEntity, ABC, DirectObject):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
+        from helpers.cache import Cache
         from managers.log import LogManager
-
-        from sciv.helpers.cache import Cache
 
         self._logger = LogManager.get_singleton_instance().gameplay.getChild("effect")
         self.base = Cache.get_showbase_instance()
 
     def register(self):
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
         if self.is_registered:
             return
@@ -101,7 +104,7 @@ class Effect(BaseEntity, ABC, DirectObject):
     def register_events_handlers(self) -> None: ...
 
     def unregister(self):
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
         EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, self)
         self.is_registered = False
@@ -155,6 +158,8 @@ class Effect(BaseEntity, ABC, DirectObject):
             self.on_deactivate()
 
     def on_turn_end(self) -> None:
+        from system.effects import EffectType
+
         if self.needs_turn_processing is False or self.active is not True or self.is_expired():
             return  # If the effect is not active, we don't want to do anything.
 

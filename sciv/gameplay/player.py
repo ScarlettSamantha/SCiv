@@ -1,5 +1,5 @@
 import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Set, Tuple, Type, cast
 
 from direct.showbase import MessengerGlobal
 from gameplay._units import Units
@@ -33,6 +33,9 @@ from managers.tech import TechManager
 from system.effects import Effects
 from system.entity import BaseEntity
 
+from gameplay.ai import core
+from managers.entity import EntityType
+
 if TYPE_CHECKING:
     from gameplay.ai.core import AI
     from gameplay.city import City
@@ -59,6 +62,7 @@ class Player(BaseEntity):
         self.leader: Leader = leader
         self.tag = self.generate_tag()
         self.entity_key = self.tag
+        self.entity_type_ref = EntityType.PLAYER.value
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
         self.name: T_TranslationOrStrOrNone = name
@@ -186,19 +190,21 @@ class Player(BaseEntity):
 
         EntityManager.get_singleton_instance().register(entity=self, type=EntityType.PLAYER, key=self.get_tag())
 
-        if self.is_human:
-            self.accept(
-                "game.gameplay.research.request_start_research_session_player", self.on_request_start_research_session
-            )
-            self.accept("game.gameplay.civic.request_purchase", self.on_request_purchase_civic)
-
     def on_game_load(self) -> None:
-        """This will be called when the game is restored from a save file."""
         self.register()
+
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
-        self.tech.on_game_load()
-        if self.ai is not None:
-            self.ai.on_load()
+
+        tech_manager = TechManager(player=self)
+        tech_manager.load_from_state(self.tech)  # type: ignore
+        self.tech = tech_manager
+
+        if cast(Dict[str, Any] | None, self.ai) is not None:
+            from managers.entity import EntityManager
+
+            _ai: Type[core.AI] = cast(Type[core.AI], EntityManager.dynamic_import(self.ai["cls_ref"]))  # type: ignore
+            ai: "AI" = _ai(player=self)
+            ai.load_from_state(state=self.ai)  # type: ignore
         self.effects = Effects(self)
 
         for unit in self.units.all():  # This must remain here otherwise ghost units will spawn and I don't know why.

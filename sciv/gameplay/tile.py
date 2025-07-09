@@ -151,6 +151,7 @@ class Tile(BaseEntity):
     ) -> None:
         super().__init__(tile=weakref.ref(self))
 
+        self.entity_type_ref = EntityType.TILE.value
         self.x = x
         self.y = y
         self.pos_x = pos_x
