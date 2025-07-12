@@ -119,6 +119,15 @@ class Yields:
                 del state[key]
         return state
 
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self._name = state.get("_name", None)
+        self.mode = state.get("mode", self.ADDITIVE)
+
+        for prop in self.calculatable_properties() + self.mechanic_resources() + self._calculatable_great_people:
+            prop = f"_{prop}"
+            if prop not in state:
+                setattr(self, prop, 0.0)
+
     @property
     def name(self) -> None | str:
         return self._name
@@ -562,3 +571,13 @@ class Yields:
         for property in self.calculatable_properties():
             total += getattr(self, property)
         return int(total)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Yields":
+        instance = cls()
+        for key, value in data.items():
+            if hasattr(instance, key):
+                setattr(instance, key, value)
+            else:
+                raise ValueError(f"Property {key} does not exist in Yields class.")
+        return instance

@@ -11,5 +11,5 @@ sampler-object-limit 4086
 default-bin opaque,10
 sort-geom true 
 sync-video #f
-want-directtools true
-want-tk true
+#want-directtools true
+#want-tk true

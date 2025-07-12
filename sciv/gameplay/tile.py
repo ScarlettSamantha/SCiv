@@ -14,7 +14,6 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-from helpers.cache import Cache
 from helpers.colors import Tuple4f
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
@@ -177,7 +176,7 @@ class Tile(BaseEntity):
         }
 
         self.z_scale = 1.75
-        self.hpr = (0.0, 0.0, 0.0)
+        self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.destroyed = False
         self.is_water = False
         self.is_land = False
@@ -239,6 +238,10 @@ class Tile(BaseEntity):
         data["pos_x"] = round(self.pos_x, 3)
         data["pos_y"] = round(self.pos_y, 3)
         data["pos_z"] = round(self.pos_z, 3)
+        data["effects"] = self.effects.dump()
+        data["_improvements"] = self._improvements.dump()
+        data["resources"] = self.resources.dump()
+        data["units"] = self.units.dump()
         data.pop("_prop_slots", None)
         data.pop("renderer", None)
         data.pop("logger", None)
@@ -345,19 +348,37 @@ class Tile(BaseEntity):
     def generate_tag(self) -> str:
         return f"tile_{self.x}_{self.y}"
 
-    def on_load(self) -> None:
-        self.register()
+    def load_state(self) -> None:
+        terrain_type: Dict[str, Any] = self._tile_terrain  # type: ignore
+        if terrain_type:
+            import_path: str | None = terrain_type.get("cls_ref", None)
+            assert import_path is not None, "Terrain class reference is missing in state."
+            terrain_class: Type[Any] = cast(
+                Type[BaseTerrain], EntityManager.get_singleton_instance().dynamic_import(import_path=import_path)
+            )
+            self.tile_terrain = terrain_class()
+            self.tile_terrain.load_state(terrain_type)
 
-        self.base = Cache.get_showbase_instance()
-        self.logger = self.base.logger.gameplay.getChild("map.tile")
-        self.effects = Effects(self)
+        resources = Resources()
+        resources.load_state(self.resources)  # type: ignore
+        self.resources = resources
 
-        self.renderer.render()
-        self.pos_x, self.pos_y, self.pos_z = self.calculate_z_pos_on_altitude()
+        self._prop_slots = {k: (float(v[0]), float(v[1]), float(v[2])) for k, v in default_slots.items()}
 
-        if self.city is not None:
-            self.city.base = self.base
-            self.city.register()
+        improvements = ImprovementsSet()
+        improvements.load_state(self._improvements)  # type: ignore
+        self._improvements = improvements
+
+        effects = Effects(self)
+        effects.load_state(self.effects)  # type: ignore
+        self.effects = effects
+
+        units = Units()
+        units.load_state(self.units)  # type: ignore
+        self.units = units
+
+        self.renderer = TileRenderer(self)
+        self.render()
 
     def calculate(self):
         new_yield = Yields.nullYield()

@@ -65,3 +65,13 @@ class ImprovementsSet:
 
     def has_any(self) -> bool:
         return len(self._improvements) > 0
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "improvements": [improvement.dump() for improvement in self._improvements],
+            "num_improvements": self._num_improvements,
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self._improvements = state.get("improvements", [])
+        self._num_improvements = state.get("num_improvements", 0)

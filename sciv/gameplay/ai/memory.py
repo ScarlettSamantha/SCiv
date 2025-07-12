@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Iterator, List
+from typing import Any, Dict, Iterator, List
 
 from managers.i18n import T_TranslationOrStr
 
@@ -78,6 +78,27 @@ class Memory(ABC):
         """Called when the memory is remembered."""
         pass
 
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "associated_value": self.associated_value,
+            "associated_value_type": self.associated_value_type,
+            "acquired_at": self.acquired_at.isoformat(),
+            "lost_at": self.lost_at.isoformat() if self.lost_at else None,
+            "is_lost": self.is_lost,
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self.name = state.get("name", "")
+        self.description = state.get("description", "")
+        self.associated_value = state.get("associated_value")
+        self.associated_value_type = state.get("associated_value_type", "")
+        self.acquired_at = datetime.fromisoformat(state.get("acquired_at", ""))
+        lost_at_value = state.get("lost_at")
+        self.lost_at = datetime.fromisoformat(lost_at_value) if lost_at_value is not None else None
+        self.is_lost = state.get("is_lost", False)
+
 
 class Memories:
     def __init__(self):
@@ -98,3 +119,13 @@ class Memories:
 
     def __iter__(self) -> Iterator[Memory]:
         return iter(self.memories)
+
+    def dump(self) -> List[Dict[str, Any]]:
+        return [memory.dump() for memory in self.memories]
+
+    def load_state(self, state: List[Dict[str, Any]]):
+        self.memories = []
+        for memory_state in state:
+            memory: Memory = Memory.__new__(Memory)
+            memory.load_state(memory_state)
+            self.memories.append(memory)

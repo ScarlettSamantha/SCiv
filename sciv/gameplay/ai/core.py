@@ -2,11 +2,10 @@ import random
 import weakref
 from abc import ABC, abstractmethod
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, cast
 
 from gameplay._units import Units
 from gameplay.ai.goal import Goal, Goals
-from gameplay.ai.goals.eliminate_unit import EliminateUnit
 from gameplay.ai.memory import Memories, Memory
 from gameplay.ai.task import Task, Tasks
 from gameplay.cities import Cities
@@ -14,7 +13,8 @@ from gameplay.personality import Personality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Optional
-from managers.game import World
+from managers.entity import EntityType
+from managers.game import EntityManager, World
 from managers.player import PlayerManager
 from managers.turn import Turn
 
@@ -47,16 +47,8 @@ class AI(ABC):
         self.tasks: Tasks = Tasks()
         self.personality: Personality = self.player.personality
 
-    def on_load(self) -> None:
-        self.logger = self.player.logger.getChild("ai")
-        self.control_cities = weakref.ref(self.player.cities)
-        self.control_units = weakref.ref(self.player.units)
-        self.control_tiles = weakref.ref(self.player.tiles)
-        self.vision = weakref.ref(self.player.vision)
-
     def __getstate__(self) -> Dict[str, Any]:
         data: Dict[str, Any] = self.__dict__.copy()
-        # These can all be recreated from the player reference
 
         player: "Player | None" = self._player()
         if player is None:
@@ -71,6 +63,7 @@ class AI(ABC):
         data.pop("turn_action_register", None)
         data.pop("rules", None)
         data["player"] = player.get_tag()
+        data["cls_ref"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
         del data["_player"]
         return data
 
@@ -79,6 +72,37 @@ class AI(ABC):
         player_ref: "Player | None" = self._player()
         if player_ref is not None:
             self.logger = player_ref.logger.getChild("ai")
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "player": self.player.get_tag(),
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+            "end_goal": self.end_goal.dump(),
+            "goals": self.goals.dump(),
+            "memory": self.memory.dump(),
+            "tasks": self.tasks.dump(),
+        }
+
+    def load_from_state(self, state: Dict[str, Any]) -> None:
+        self._player = cast(
+            weakref.ReferenceType["Player"],
+            EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, state.get("player", "")),
+        )
+        self.logger = self.player.logger.getChild("ai")
+        self.logger.debug("Loading AI state")
+        self.control_cities = weakref.ref(self.player.cities)
+        self.control_units = weakref.ref(self.player.units)
+        self.control_tiles = weakref.ref(self.player.tiles)
+        self.vision = weakref.ref(self.player.vision)
+        self.end_goal = Goals()
+        self.end_goal.load_state(state.get("end_goal", {}))
+        self.goals = Goals()
+        self.goals.load_state(state.get("goals", {}))
+        self.memory = Memories()
+        self.memory.load_state(state.get("memory", {}))
+        self.tasks = Tasks()
+        self.tasks.load_state(state.get("tasks", {}))
+        self.personality = self.player.personality
 
     @property
     def player(self) -> "Player":
@@ -192,6 +216,8 @@ class AI(ABC):
         return targets
 
     def create_goals_for_unit(self, executing_unit: "Unit") -> Optional[Goal]:
+        from gameplay.ai.goals.eliminate_unit import EliminateUnit
+
         targets: Dict[Tuple[int, int], "Tile"] = self.get_target_for_unit(executing_unit)
         if len(targets) == 0:
             return None

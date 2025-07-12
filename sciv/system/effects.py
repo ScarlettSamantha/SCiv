@@ -1,6 +1,6 @@
 import weakref
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Type, Union
+from typing import TYPE_CHECKING, Dict, Type, Union, cast
 
 from gameplay.yields import Yields
 from managers.entity import EntityType
@@ -174,6 +174,25 @@ class Effects:
 
     def dump(self) -> Dict[str, str]:
         return {tag: effect.get_tag() for tag, effect in self._effects.items()}
+
+    def load_state(self, state: Dict[str, str]) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        self._effects = {}
+        self._effects_num = 0
+        for effect_tag in state:
+            _effect: weakref.ReferenceType["Effect"] = cast(
+                weakref.ReferenceType["Effect"],
+                EntityManager.get_singleton_instance().get_ref_weak(EntityType.EFFECT, effect_tag),
+            )
+            effect: "Effect | None" = _effect()
+            if effect is None:
+                raise ValueError(f"Effect with tag {effect_tag} not found in EntityManager.")
+
+            self._effects[effect_tag] = effect
+            self._effects_num += 1
+
+            self.add_effect(effect, auto_register=False, execute_on_add=False, auto_add_parent_on_effect=False)
 
 
 def _place_on_tile(tile: "Tile", effect: "Effect") -> None:

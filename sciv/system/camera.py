@@ -286,10 +286,9 @@ class Camera(Singleton, DirectObject):
         else:
             raise NotImplementedError("No target to recenter on")
 
-        # immediately jump pivot
         self.pivot.setPos(*center)  # type: ignore
         self._desired_pivot_pos: LPoint3f = self.pivot.getPos()  # type: ignore
-        # reset yaw and zoom
+
         self.yaw = 0.0
         self._update_yaw_trig()
         self.zoom = 20.0

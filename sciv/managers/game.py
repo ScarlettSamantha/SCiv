@@ -150,6 +150,7 @@ class Game(Singleton, DirectObject):
         Cache.set_showbase_instance(self.base)
         if self.mesh_grid is None:
             raise ValueError("Mesh grid has not been generated yet")
+        self.mesh_grid.load_state()
 
         self.players.load(players)
         self.unit.load(units)

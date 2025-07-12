@@ -81,8 +81,8 @@ class World(Singleton, DirectObject):
         self.logger.info(f"World size is {self.cols}x{self.rows}")
         TileRepository.grid = self.grid
 
-        for tile in self.map.values():  # Place the tiles
-            tile.on_load()
+        for tile in self.map.values():
+            tile.load_state()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0

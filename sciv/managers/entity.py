@@ -10,18 +10,18 @@ from datetime import datetime
 from enum import Enum
 from inspect import isclass
 from logging import Logger
-from pickletools import genops
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union, cast
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
 import orjson
-from graphviz import Digraph
 from helpers.debug import Debug
 from mixins.singleton import Singleton
 from mypy.types import JsonDict
 from system.entity import BaseEntity
+from system.game_settings import GameSettings
+from system.mesh import HexGrid
 from system.save_file import BaseSaver, SaveJsonFile
 
 if TYPE_CHECKING:
@@ -98,6 +98,13 @@ class EntityType(Enum):
 
         return self._base_type
 
+    @classmethod
+    def fromEntity(cls, entity: "BaseEntity | HexGrid | GameSettings") -> "EntityType":
+        for etype in cls:
+            if isinstance(entity, etype.base_type):
+                return etype
+        raise ValueError(f"Entity {entity} does not match any known EntityType.")
+
 
 K = TypeVar("K", bound=str)
 V = TypeVar("V", bound="BaseEntity")
@@ -164,6 +171,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
         return errors
 
     def dump(self, registry: EntityRegistry, graph_out: Optional[str] = None) -> bytes:
+        from gameplay.player import Player
         from gameplay.tile import Tile
         from system.game_settings import GameSettings
         from system.mesh import HexGrid
@@ -176,7 +184,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             payload[section] = {}
             for tag, entity in entities.items():
                 if isinstance(entity, BaseEntity):
-                    if isinstance(entity, (Tile,)):
+                    if isinstance(entity, (Tile, Player)):
                         state = entity.dump()
                     else:
                         state = entity.__getstate__() if hasattr(entity, "__getstate__") else entity.__dict__.copy()
@@ -343,15 +351,23 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             return list(state)  # type: ignore
 
         if obj_id in _visited:
-            placeholder = self._cycle_map.get(obj_id)
-            if placeholder is None:
-                placeholder = uuid.uuid4().hex
-                self._cycle_map[obj_id] = placeholder
-                self._object_store.setdefault("_cycles", {})[placeholder] = {"breadcrumb": "->".join(path)}
-            return {"__cycle_ref__": placeholder}
+            if isinstance(_state, BaseEntity):
+                return {
+                    "__ref__": _state.get_tag() or _state.entity_key,
+                    "__class__": _state.__class__.__name__,
+                    "__module__": _state.__class__.__module__,
+                }
+            elif isinstance(_state, dict) and "entity_key" in _state:  # type: ignore
+                tag = _state["entity_key"]
+                return {
+                    "__ref__": tag,
+                    "__class__": _state.get("__class__", ""),
+                    "__module__": _state.get("__module__", ""),
+                }
+            return obj_id
         _visited.add(obj_id)
 
-        if hasattr(state, "dump") and callable(state.dump):  # type: ignore
+        if hasattr(state, "dump"):  # type: ignore
             return self._convert_references(
                 state.dump(),  # type: ignore
                 _visited,
@@ -491,7 +507,7 @@ class EntityManager(Singleton):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
 
-        storage = self.object_type_to_storage(type)
+        storage: Dict[str, BaseEntity | HexGrid | GameSettings] = self.object_type_to_storage(type)
         if key in storage:
             return
 
@@ -541,6 +557,12 @@ class EntityManager(Singleton):
         if not isinstance(result, BaseEntity):
             raise AssertionError("Weak reference is not supported in get(), use get_ref() with weak_ref=True")
         return result
+
+    def search_key(self, key: str) -> Tuple[EntityType, BaseEntity | HexGrid | GameSettings] | None:
+        for entity_type, storage in self._entities.items():
+            if key in storage:
+                return entity_type, storage[key]
+        return None
 
     def has(self, type: EntityType, key: str) -> bool:
         return key in self.object_type_to_storage(type)
@@ -632,11 +654,6 @@ class EntityManager(Singleton):
             f"Entity manager data saved to session '{session_name}' in {round((datetime.now() - before_save_time).total_seconds(), 2)} seconds."
         )
 
-        if Debug.system_saving():
-            from helpers.paths import PathsHelper
-
-            self.graph_pickle(self._entities, out_dot=f"{PathsHelper.get_debug_dir()}/{session_name}_object_graph.dot")
-
     def load(self):
         from system.game_settings import GameSettings
         from system.mesh import HexGrid
@@ -660,9 +677,7 @@ class EntityManager(Singleton):
         }
 
         for entity_type, entries in states.items():
-            for state in entries.values():
-                instance = self._create_instance(entity_type, state)  # type: ignore
-
+            for instance in entries.values():
                 if isinstance(instance, BaseEntity):
                     key = getattr(instance, "entity_key", None)
                 elif isinstance(instance, GameSettings):
@@ -720,48 +735,6 @@ class EntityManager(Singleton):
         saver_instance.set_identifier(session_name)
         return saver_instance.get_session_data()
 
-    def graph_pickle(
-        self,
-        data: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]],
-        out_dot: str | None = None,
-        out_png: str | None = None,
-    ):
-        import dill
-
-        session = self.session or uuid4().hex
-        out_dot = out_dot or f"debugging/{session}_object_graph.dot"
-        os.makedirs(os.path.dirname(out_dot), exist_ok=True)
-
-        try:
-            raw = dill.dumps(data, recurse=True)  # type: ignore
-        except Exception as full_exc:
-            self.logger.warning(f"[graph_pickle] full dill.dumps failed: {full_exc!r}; falling back to class-only dump")
-            class_only = {etype.name: tuple({type(ent) for ent in ents.values()}) for etype, ents in data.items()}
-            raw = dill.dumps(class_only)  # type: ignore
-
-        edges: list[tuple[str, str]] = []
-        last_global: str | None = None
-
-        for opcode, arg, _ in genops(raw):  #  type: ignore
-            if opcode.name == "GLOBAL" and isinstance(arg, str):
-                module, name = arg.split()
-                node = f"{module}.{name}"
-
-                if last_global:
-                    edges.append((last_global, node))
-                last_global = node
-
-            elif opcode.name in ("PUT", "BINPUT", "LONG_BINPUT"):
-                last_global = None
-
-        dot: Digraph = Digraph(comment="Pickle Object Graph", format="png")
-        for src, dst in edges:
-            dot.edge(src, dst)  # type: ignore
-
-        dot.render(filename=out_dot, cleanup=False)  # type: ignore
-
-        self.logger.info(f"[graph_pickle] DOT written to {out_dot} (+ .png)")
-
     def debug_dump(self, keep_profile: bool = False) -> bytes:
         # ensure our debug dir exists
         if not os.path.exists("debugging"):
@@ -810,3 +783,12 @@ class EntityManager(Singleton):
         del self.object_type_to_storage(type)[key]
         self.unregister(type, entity)
         self.stats["total_orphan_entities"] = self.stats["total_entities_unregistered"] - self.stats["total_entities"]
+
+    @classmethod
+    def dynamic_import(cls, import_path: str) -> Type[Any]:
+        try:
+            module_name, class_name = import_path.rsplit(".", 1)
+            module = __import__(module_name, fromlist=[class_name])
+            return getattr(module, class_name)
+        except (ImportError, AttributeError) as e:
+            raise ImportError(f"Could not import {import_path}: {e}") from e

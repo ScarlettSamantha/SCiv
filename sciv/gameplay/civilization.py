@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from random import choice
-from typing import List, Self
+from typing import Any, Dict, List, Self, Type
 
+from gameplay.effect import Effect
 from gameplay.leader import Leader
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr
-from gameplay.effect import Effect
 
 
 class Civilization:
@@ -78,3 +78,38 @@ class Civilization:
 
     def __call__(self) -> Self:
         return self
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "introduction": self.introduction,
+            "icon": self.icon,
+            "city_names": self.city_names,
+            "city_name_index": self.city_name_index,
+            "dynamic_name": self.dynamic_name,
+            "leaders": [leader.dump() for leader in self.leaders],
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager
+
+        self.name = state.get("name", "")
+        self.description = state.get("description", "")
+        self.introduction = state.get("introduction", "")
+        self.icon = state.get("icon", Placeholder.getPlaceholderImagePathSmallIcon())
+        self.city_names = state.get("city_names", [])
+        self.city_name_index = state.get("city_name_index", 0)
+        self.dynamic_name = state.get("dynamic_name", self.name)
+
+        leaders_data: List[Dict[str, Any]] = state.get("leaders", [])
+        self.leaders = []
+        for leader_data in leaders_data:
+            _leader_class: Type[Leader] = EntityManager.get_singleton_instance().dynamic_import(
+                leader_data.get("cls_ref", "Leader")
+            )
+
+            leader: Leader = _leader_class.__new__(_leader_class)
+            leader.load_state(leader_data)
+            self.add_leader(leader)

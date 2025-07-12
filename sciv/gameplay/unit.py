@@ -420,15 +420,29 @@ class Unit(BaseEntity, ABC):
         state["unit"] = self.__class__.__module__ + "." + self.__class__.__name__
         return state
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        from gameplay.resources.core.basic.production import Production
+    def load_state(self) -> None:
+        entity_manager = EntityManager.get_singleton_instance()
 
-        super().__setstate__(state)
+        tile_ref: ReferenceType["Tile"] | None = cast(
+            ReferenceType["Tile"] | None,
+            entity_manager.get_ref_weak(EntityType.TILE, self.tile_tag),  # type: ignore
+        )
+        if tile_ref is None:
+            raise ValueError(f"Tile with tag {self.tile_tag} has been garbage collected.")
+
+        self.tile = tile_ref()
+        self._owner = entity_manager.get_ref_weak(EntityType.PLAYER, self.owner_tag)  # type: ignore
+
+        self.base = Cache.get_showbase_instance()
+        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
+        self.effects = Effects(self)
         self.model = None
         self.model_cache = None
         self.effects = Effects(self)
         self.actions = []
         self.resource_needed = Production
+
+        self.spawn()
 
     def register(self) -> None:
         from managers.entity import EntityType

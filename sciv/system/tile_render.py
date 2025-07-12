@@ -240,7 +240,7 @@ class TileRenderer:
         return self.tile.city is not None
 
     def _draw_improvements(self) -> None:
-        for improvement in self.tile.improvements().get_all():
+        for improvement in self.tile._improvements.get_all():  # type: ignore
             path = improvement.model
             if not path:
                 continue

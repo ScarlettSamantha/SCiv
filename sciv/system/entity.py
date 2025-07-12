@@ -1,24 +1,22 @@
+import weakref
 from abc import ABC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Union, cast
 from uuid import uuid4
 from weakref import ReferenceType
-import weakref
 
 from direct.showbase.DirectObject import DirectObject
-
-
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStrOrNone
 from mixins.inspectable import Inspectable
 
-
 if TYPE_CHECKING:
-    from sciv.game import OpenCiv
-    from gameplay.tile import Tile
     from gameplay.player import Player
+    from gameplay.tile import Tile
+
+    from sciv.game import OpenCiv
 
 
 class BaseEntity(ABC, DirectObject, Inspectable):
@@ -161,7 +159,6 @@ class BaseEntity(ABC, DirectObject, Inspectable):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         from managers.entity import EntityManager, EntityType
-
         from managers.log import LogManager
 
         self.base: "OpenCiv" = Cache.get_showbase_instance()
@@ -309,9 +306,6 @@ class BaseEntity(ABC, DirectObject, Inspectable):
         self.owner = owner
 
     def get_pos(self) -> Tuple[float, float, float]:
-        """
-        Get the position of the entity in the world.
-        """
         if self.tile is None:
             raise ValueError("Tile is None")
         if isinstance(self.tile, weakref.ReferenceType):
@@ -325,3 +319,7 @@ class BaseEntity(ABC, DirectObject, Inspectable):
     def get_tag(self) -> str:
         assert self.tag is not None, "Tag is not set"
         return self.tag
+
+    def get_entity_type(self) -> str:
+        assert self.entity_type_ref is not None, "Entity type reference is not set"
+        return self.entity_type_ref

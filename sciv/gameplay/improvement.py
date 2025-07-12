@@ -90,6 +90,24 @@ class Improvement(BaseEntity):
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
         self.tag = self.generate_tag()
 
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("base", None)
+        state.pop("_logger", None)
+        state.pop("model", None)
+        return state
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self._logger = LogManager.get_singleton_instance().gameplay.getChild("improvement")
+        self.base = Cache.get_showbase_instance()
+
+        if "model" in state:
+            self.model = state["model"]
+
+        self.tile_yield_improvement = Yields.from_dict(state.get("tile_yield_improvement", {}))
+        self.maintenance_cost = Yields.from_dict(state.get("maintenance_cost", {}))
+
     @classmethod
     def on_tooltip(cls) -> str:
         tile_yield_improvement = cls.tile_yield_improvement.props(only_non_nul=True)

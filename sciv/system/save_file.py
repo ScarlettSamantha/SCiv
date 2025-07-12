@@ -210,10 +210,6 @@ class SaveJsonFile(BaseSaver):
             with open(hash_path, "r", encoding="utf-8") as file:
                 self.hash = file.read().strip()
 
-            if not self.compare_hash(json.dumps(self.data).encode()):
-                print("Warning: Data integrity check failed!")
-                return False
-
             return self.data
         except FileNotFoundError:
             return False

@@ -4,6 +4,7 @@ from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
+
     from sciv.game import OpenCiv
 
 
@@ -27,10 +28,9 @@ class UnitManager(Singleton):
 
     def add_unit(self, unit: "Unit"):
         self.units[str(unit.tag)] = unit
-        if unit.owner is not None:
-            if str(unit.owner.tag) not in self.by_player:  # type: ignore
-                self.by_player[str(unit.owner.tag)] = {}  # type: ignore
-            self.by_player[str(unit.owner.tag)][str(unit.tag)] = unit  # type: ignore
+        if str(unit.owner.tag) not in self.by_player:  # type: ignore
+            self.by_player[str(unit.owner.tag)] = {}  # type: ignore
+        self.by_player[str(unit.owner.tag)][str(unit.tag)] = unit  # type: ignore
 
     def remove_unit(self, unit: "Unit"):
         if not hasattr(unit, "tag"):  # This is a bug
@@ -42,4 +42,6 @@ class UnitManager(Singleton):
         self.units = {}
 
     def load(self, data: Dict[str, "Unit"]):
-        self.units = data
+        for unit in data.values():
+            unit.load_state()
+            self.add_unit(unit)

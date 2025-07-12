@@ -175,3 +175,33 @@ class Colors:
         _rgba_color: list[str] = rgba_color.lstrip("rgba(").rstrip(")").split(",")
         rgba = tuple(int(_rgba_color[i]) / 255 for i in (0, 1, 2, 3))
         return typing.cast(Tuple4f, rgba)
+
+    @staticmethod
+    def closest_color(requested_color: tuple[int, int, int, int]) -> str:
+        import webcolors
+
+        min_colors = {}
+        for _, name in webcolors.CSS3_NAMES_TO_HEX.items():  # type: ignore
+            r_c, g_c, b_c = webcolors.hex_to_rgb(name)  # type: ignore
+            rd: int = (r_c - requested_color[0]) ** 2
+            gd: int = (g_c - requested_color[1]) ** 2
+            bd: int = (b_c - requested_color[2]) ** 2
+            min_colors[(rd + gd + bd)] = name
+        return min_colors[min(min_colors.keys())]  # type: ignore
+
+    @staticmethod
+    def convert_rgba_to_color_name(rgba: tuple[int, int, int, int]) -> str:
+        import webcolors
+
+        if rgba.__len__() == 4:
+            rgb: Tuple[int, int, int] = rgba[:3]  # type: ignore # Ignore the alpha channel for color matching
+        else:
+            rgb: Tuple[int, int, int, int] = rgba
+        try:
+            # Get the closest color name directly
+            closest_name = webcolors.rgb_to_name(rgb)  # type: ignore ,This is a known issue with the library. It works.
+        except ValueError:
+            from helpers.colors import Colors
+
+            closest_name = Colors.closest_color(rgb)
+        return closest_name

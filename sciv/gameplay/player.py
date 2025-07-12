@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Set,
 
 from direct.showbase import MessengerGlobal
 from gameplay._units import Units
+from gameplay.ai import core
 from gameplay.cities import Cities
 from gameplay.citizen import Citizen
 from gameplay.citizens import Citizens
@@ -28,13 +29,11 @@ from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.civics import Civic, CivicsManager, CivicTree
+from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, Translation, t_
 from managers.tech import TechManager
 from system.effects import Effects
 from system.entity import BaseEntity
-
-from gameplay.ai import core
-from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.ai.core import AI
@@ -149,27 +148,6 @@ class Player(BaseEntity):
         )
         self._register_callbacks()
 
-    def __getstate__(self) -> Dict[str, Any]:
-        state: Dict[str, Any] = self.__dict__.copy()
-        state.pop("base")
-        state.pop("logger", None)
-        state.pop("effects", None)
-        state.pop("citizens", None)
-        state.pop("relationships", None)
-        state.pop("moods", None)
-        state.pop("vision", None)
-        state.pop("trades", None)
-        state.pop("votes", None)
-
-        state["leader"] = self.leader.key if self.leader else None
-        state["personality"] = self.personality.name if self.personality else None
-        state["cities"] = [city.get_tag() for city in self.cities.all()]
-        state["units"] = [unit.get_tag() for unit in self.units.all()]
-        state["tiles"] = [tile.get_tag() for tile in self.tiles.get_tiles().values()]
-        state["introduction"] = self.introduction.get_key() if isinstance(self.introduction, Translation) else ""
-
-        return state
-
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
         self.base = Cache.get_showbase_instance()
@@ -186,33 +164,82 @@ class Player(BaseEntity):
         return f"player.{str(self.leader.name).lower().replace(' ', '_')}.{self.turn_order}"
 
     def register(self) -> None:
-        from managers.entity import EntityManager, EntityType
+        from managers.entity import EntityType
 
         EntityManager.get_singleton_instance().register(entity=self, type=EntityType.PLAYER, key=self.get_tag())
 
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("base")
+        state.pop("logger", None)
+        state.pop("effects", None)
+        state.pop("citizens", None)
+        state.pop("relationships", None)
+        state.pop("moods", None)
+        state.pop("trades", None)
+        state.pop("votes", None)
+
+        state["leader"] = self.leader.key if self.leader else None
+        state["personality"] = self.personality.name if self.personality else None
+        state["cities"] = [city.get_tag() for city in self.cities.all()]
+        state["units"] = [unit.get_tag() for unit in self.units.all()]
+        state["tiles"] = [tile.get_tag() for tile in self.tiles.get_tiles().values()]
+        state["introduction"] = self.introduction.get_key() if isinstance(self.introduction, Translation) else ""
+        state["civics"] = self.civics.dump() if self.civics else {}
+        state["tech"] = self.tech.dump() if self.tech else {}
+        state["vision"] = self.vision.dump() if self.vision else []
+        state["ai"] = self.ai.dump() if self.ai else {}
+        state["civilization"] = self.civilization.dump() if self.civilization else {}
+
+        return state
+
     def on_game_load(self) -> None:
-        self.register()
+        from managers.entity import EntityManager
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
 
         tech_manager = TechManager(player=self)
-        tech_manager.load_from_state(self.tech)  # type: ignore
+        tech_manager.load_state(self.tech)  # type: ignore
         self.tech = tech_manager
 
-        if cast(Dict[str, Any] | None, self.ai) is not None:
-            from managers.entity import EntityManager
+        civics_manager = CivicsManager()
+        civics_manager.load_state(self.civics)  # type: ignore
+        self.civics = civics_manager
 
+        cities: Cities = Cities.__new__(Cities)
+        cities.load_state(state=self.cities)  # type: ignore
+        self.cities = cities
+
+        units: Units = Units.__new__(Units)
+        units.load_state(state=self.units)  # type: ignore
+        self.units = units
+
+        tiles: PlayerTiles = PlayerTiles.__new__(PlayerTiles)
+        tiles.load_state(state=self.tiles)  # type: ignore
+        self.tiles = tiles
+
+        vision: Vision = Vision()
+        self.vision = vision
+
+        self.gold = Yields.from_dict(self.gold)  # type: ignore
+        self.science = Yields.from_dict(self.science)  # type: ignore
+        self.culture = Yields.from_dict(self.culture)  # type: ignore
+        self.faith = Yields.from_dict(self.faith)  # type: ignore
+
+        _civilization_class = EntityManager.dynamic_import(self.civilization["cls_ref"])  # type: ignore
+        civilization: Civilization = _civilization_class.__new__(_civilization_class)  # type: ignore
+        civilization.load_state(state=self.civilization)  # type: ignore
+        self.civilization = civilization
+
+        if cast(Dict[str, Any] | None, self.ai) is not None:
             _ai: Type[core.AI] = cast(Type[core.AI], EntityManager.dynamic_import(self.ai["cls_ref"]))  # type: ignore
-            ai: "AI" = _ai(player=self)
+            ai: "AI" = _ai.__new__(_ai)
             ai.load_from_state(state=self.ai)  # type: ignore
+
         self.effects = Effects(self)
 
-        for unit in self.units.all():  # This must remain here otherwise ghost units will spawn and I don't know why.
-            unit.on_load()
-            unit.spawn()
-
     def unregister(self) -> None:
-        from managers.entity import EntityManager, EntityType
+        from managers.entity import EntityType
 
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.PLAYER)
 

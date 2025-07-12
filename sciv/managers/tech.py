@@ -1,12 +1,10 @@
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
-from weakref import ReferenceType
-import weakref
+from logging import Logger
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from weakref import ReferenceType, ref
 
 from direct.showbase import MessengerGlobal
-
 from gameplay.tech import Tech, TechTree
-from gameplay.techs.trees.core import Core
 from helpers.cache import Cache
 from managers.base import BaseManager
 from system.pyload import PyLoad
@@ -16,15 +14,17 @@ if TYPE_CHECKING:
 
 
 class TechManager(BaseManager):
+    BASE_PATH = "gameplay.techs"
+
     def __init__(self, player: "Player", technology_folders: List[str] = [], *args: Any, **kwargs: Any):
         BaseManager.__init__(self, *args, **kwargs)
 
-        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild("tech_manager")
+        self.logger: Logger = player.logger.getChild("tech_manager")
         self.researching: Tech | None = None
         self.queue: OrderedDict[int, Tech] = OrderedDict()
         self.registered_techs: List[Type[Tech]] = []
         self.researched_techs: List[Tech] = []
-        self.player: ReferenceType["Player"] = weakref.ref(player)
+        self.player: ReferenceType["Player"] = ref(player)
 
         self._needed_science: int = 1
         self._current_science_pool: int = 0
@@ -38,20 +38,27 @@ class TechManager(BaseManager):
             raise ValueError("Player reference is no longer valid.")
         return player
 
-    def __getstate__(self) -> object:
+    def dump(self) -> object:
         # Prepare the state for serialization.
         state = self.__dict__.copy()
         state.pop("parent", None)
         state.pop("logger", None)
         state.pop("_tech_tree", None)
+        state["player"] = self.get_player().get_tag()
+        state["registered_techs"] = [tech.key for tech in self.registered_techs]
+        state["researching"] = self.researching.key if self.researching else None
+        state["queue"] = [tech.key for tech in self.queue.values()]
+        state["researched_techs"] = [tech.key for tech in self.researched_techs]
+        state["needed_science"] = self._needed_science
+        state["current_science"] = self._current_science_pool
+        state["tech_tree"] = self._tech_tree.key if self._tech_tree else None
+
         return state
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        # Restore the state after deserialization.
+    def load_state(self, state: Dict[str, Any]) -> None:
+        player: Player = self.get_player()
+        self.logger = player.logger.getChild("tech_manager")
         self.__dict__.update(state)
-        self.parent = Cache.get_showbase_instance()
-        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild("tech_manager")
-        self.set_tech_tree(Core())
 
     @property
     def needed_science(self) -> int:
@@ -74,7 +81,7 @@ class TechManager(BaseManager):
 
     def process_folders(self, folders: List[str]):
         def process_folder(folder: str):
-            classes = PyLoad.load_classes(folder, package="gameplay.techs")
+            classes = PyLoad.load_classes(folder, package=self.BASE_PATH)
             for _class in classes:
                 if not isinstance(_class, Tech):
                     continue
