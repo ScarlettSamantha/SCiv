@@ -15,6 +15,7 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
+from helpers.cache import Cache
 from helpers.colors import Tuple4f
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
@@ -264,6 +265,10 @@ class Tile(BaseEntity):
         return data
 
     def load_state(self) -> None:
+        self.base = Cache.get_showbase_instance()
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
+        self._entity_manager = EntityManager.get_singleton_instance()
+
         terrain_type: Dict[str, Any] = self._tile_terrain  # type: ignore
         if terrain_type:
             import_path: str | None = terrain_type.get("cls_ref", None)
@@ -317,6 +322,14 @@ class Tile(BaseEntity):
         if self._biome is not None:
             biome_id: int = getattr(self, "biome", 0)
             self._biome = Biome.from_id(biome_id) if biome_id else None
+
+        if self.city:
+            city_ref: weakref.ReferenceType["City"] | None = cast(
+                weakref.ReferenceType["City"] | None,
+                self._entity_manager.get_ref_weak(EntityType.CITY, getattr(self, "city")),
+            )
+            if city_ref is not None:
+                self.city = city_ref()
 
         self.renderer = TileRenderer(self)
         self.render()
@@ -731,12 +744,17 @@ class Tile(BaseEntity):
         return self.city is not None
 
     def add_unit(self, unit: "Unit") -> None:
+        if unit.is_being_build:
+            return
+
         self.units.add_unit(unit)
         if len(self.units) == 1:
             self.renderer.on_unit_enter()
 
     def remove_unit(self, unit: "Unit") -> None:
-        # Assuming the intent is to remove the unit.
+        if unit.is_being_build:
+            return
+
         self.units.remove_unit(unit)
         if len(self.units) == 0:
             self.renderer.on_unit_leave()

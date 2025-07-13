@@ -63,8 +63,10 @@ class NatureAI(AI):
     def should_log(self, value: bool):
         self._should_log = value
 
-    def on_load(self) -> None:
-        super().on_load()
+    def load_state(self, state: Dict[str, Any]) -> None:
+        super().load_state(state)
+        self._spawn_tiles_cache = state.get("_spawn_tiles_cache", [])
+        self._spawn_cache_from_turn = state.get("_spawn_cache_from_turn", 0)
 
     def register_end_goal(self) -> Goals:
         return Goals()

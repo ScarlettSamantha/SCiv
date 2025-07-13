@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import WindowProperties  # type: ignore
-
 from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.lose import Lose, LoseConditions
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
-
+from helpers.cache import Cache
+from helpers.debug import Debug, PerformanceLogger
 from helpers.optimizations import debounce
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
@@ -21,8 +20,7 @@ from managers.player import PlayerManager
 from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
-from helpers.debug import Debug, PerformanceLogger
-from helpers.cache import Cache
+from panda3d.core import WindowProperties  # type: ignore
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
@@ -30,12 +28,15 @@ from system.mesh import HexGrid
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 
+from sciv.gameplay.repositories.tile import TileRepository
+
 if TYPE_CHECKING:
     from gameplay.player import Player
-    from sciv.game import OpenCiv
-    from system.generators.base import BaseGenerator
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from system.generators.base import BaseGenerator
+
+    from sciv.game import OpenCiv
 
 
 class Game(Singleton, DirectObject):
@@ -151,6 +152,8 @@ class Game(Singleton, DirectObject):
         if self.mesh_grid is None:
             raise ValueError("Mesh grid has not been generated yet")
         self.mesh_grid.load_state()
+
+        TileRepository.grid = {(tile.x, tile.y): tile for _, tile in world_tiles.items()}
 
         self.players.load(players)
         self.unit.load(units)

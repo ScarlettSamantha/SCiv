@@ -1,31 +1,29 @@
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Set, Tuple
 
-from PIL import Image
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from direct.task.Task import Task
+from gameplay.repositories.tile import TileRepository
+from helpers.cache import Cache
+from helpers.colors import Colors, Tuple4f
+from helpers.geometry import generate_flat_top_hex
+from helpers.os import WindowsHelper
+from helpers.tiles import Tiles
+from managers.player import PlayerManager
 from panda3d.core import (
     ClockObject,
     LVecBase3f,
     LVecBase4f,
+    NodePath,
     PNMImage,
     Shader,  # type: ignore
     StringStream,  # type: ignore
     Texture,  # type: ignore
     TransparencyAttrib,  # type: ignore
-    NodePath,
 )
-from direct.task.Task import Task
-
-from gameplay.repositories.tile import TileRepository
-from helpers.cache import Cache
-from helpers.geometry import generate_flat_top_hex
-
-from helpers.tiles import Tiles
-from managers.player import PlayerManager
-from helpers.os import WindowsHelper
+from PIL import Image
 from system.shaders import Shaders
-from helpers.colors import Colors, Tuple4f
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -235,7 +233,7 @@ class Borders(DirectObject):
             np = hex_model.copy_to(self.parent)
             np.set_scale(self.TOP_BORDER_SCALE)
             wx, wy, wz = TileRepository.hex_to_world(x, y)
-            np.set_pos(LVecBase3f(wx, wy, wz + 0.030))
+            np.set_pos(LVecBase3f(wx, wy, wz + 0.015))
             np.set_hpr(30, 0, 0)
             self.world_hexes.append(np)
         return self.world_hexes
@@ -258,7 +256,7 @@ class Borders(DirectObject):
             np = generate_flat_top_hex().copy_to(self.parent)
             np.set_scale(self.TOP_BORDER_EMPIRE_SCALE)
             wx, wy, wz = TileRepository.hex_to_world(x, y)
-            np.set_pos(LVecBase3f(wx, wy, wz + 0.07))
+            np.set_pos(LVecBase3f(wx, wy, wz + 0.02))
             np.set_hpr(30, 0, 0)
 
             tex = self.border_textures.get(player.id)  # type: ignore

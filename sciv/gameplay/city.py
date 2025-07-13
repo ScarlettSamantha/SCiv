@@ -1,6 +1,6 @@
 from logging import Logger
 from random import randint, randrange
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
 from weakref import ReferenceType, ref
 
 from direct.showbase import DirectObject, MessengerGlobal
@@ -14,7 +14,7 @@ from gameplay.resource import BaseResource
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors
-from managers.entity import EntityType
+from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.log import LogManager
 from system.effects import Effects
@@ -56,7 +56,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.border_growth_points: int = 0
         self.border_growth_cost: int = 10 * len(self.owned_tiles) + 10
-        self.border_growth_next_tile: Optional[Tile] = None
+        self.border_growth_next_tile: Optional[ReferenceType[Tile]] = None
 
         self.tax_level: float = 0.0
         self.population_food_usage: float = 1.0
@@ -69,18 +69,97 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.resource_required: Optional[type[BaseResource]] = None
         self.resource_required_amount: Yields = Yields.nullYield()  # no-op
         self.resource_collected: Yields = Yields.nullYield()  # no-op # This is the amount of resources collected so far
-        self.building: BaseCityImprovement | Unit | None = None  # can be either improvement or unit
+        self.building: ReferenceType[BaseCityImprovement | Unit] | None = None  # can be either improvement or unit
 
         self._improvements: ImprovementsSet = ImprovementsSet()
 
         # @todo
         self.spies = []
 
-        self._register_object()
-
         self.effects: Effects = Effects(self)
 
         self.register()
+
+    def dumps(self) -> Dict[str, Any]:
+        building: str | None = (
+            None if (self.building is None or (is_building := self.building()) is None) else is_building.get_tag()
+        )
+
+        next_tile: str | None = (
+            _next_tile.get_tag()
+            if self.border_growth_next_tile is not None and ((_next_tile := self.border_growth_next_tile()) is not None)
+            else None
+        )
+
+        return {
+            "name": self.name,
+            "tag": self.tag,
+            "tile": self.get_tile().tag,
+            "owner": self.get_owner().tag if self.get_owner() else None,
+            "improvements": self._improvements.dump(),
+            "population": self.population,
+            "is_capital": self.is_capital,
+            "border_growth_points": self.border_growth_points,
+            "border_growth_cost": self.border_growth_cost,
+            "border_growth_next_tile": next_tile,
+            "is_building": self.is_building,
+            "building": building,
+            "effects": self.effects.dump(),
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+
+        self.name = state.get("name", "")
+        self.tag = state.get("tag", "")
+        tile_tag: str = state.get("tile", "")
+        owner_tag: str = state.get("owner", "")
+        self.population = state.get("population", 1)
+        self.is_capital = state.get("is_capital", False)
+        self.border_growth_points = state.get("border_growth_points", 0)
+        self.border_growth_cost = state.get("border_growth_cost", 0)
+        next_tile_tag: str | None = state.get("border_growth_next_tile")
+        building_tag: str | None = state.get("building")
+
+        if tile_tag:
+            tile: ReferenceType["Tile"] | None = cast(
+                ReferenceType["Tile"] | None, entity_manager.get_ref_weak(EntityType.TILE, tile_tag)
+            )
+            if tile is None:
+                raise ValueError(f"Tile with tag {tile_tag} not found.")
+            self._tile = tile
+
+        if owner_tag:
+            player: ReferenceType["Player"] | None = cast(
+                ReferenceType["Player"] | None, entity_manager.get_ref_weak(EntityType.PLAYER, owner_tag)
+            )
+            if player is None:
+                raise ValueError(f"Player with tag {owner_tag} not found.")
+            self._owner = player
+
+        if next_tile_tag:
+            next_tile: ReferenceType["Tile"] | None = cast(
+                ReferenceType["Tile"] | None, entity_manager.get_ref_weak(EntityType.TILE, next_tile_tag)
+            )
+            if next_tile is not None:
+                self.border_growth_next_tile = next_tile
+
+        if building_tag:
+            building: ReferenceType[BaseCityImprovement | Unit] | None = cast(
+                ReferenceType[BaseCityImprovement | Unit] | None,
+                EntityManager.get_singleton_instance().get_ref(EntityType.IMPROVEMENT, building_tag),
+            )
+            if building is not None:
+                self.building = building
+
+        if "effects" in state:
+            effects = Effects(self)
+            effects.load_state(state["effects"])
+            self.effects = effects
+
+        if "improvements" in state:
+            self._improvements = ImprovementsSet()
+            self._improvements.load_state(state["improvements"])
 
     @property
     def player(self) -> "Player | None":
@@ -115,7 +194,28 @@ class City(BaseEntity, DirectObject.DirectObject):
     def build(self, improvement: "Improvement"):
         self._improvements.add(improvement)
 
+    def get_next_border_growth_tile(self) -> Optional["Tile"]:
+        if self.border_growth_next_tile is None:
+            return None
+        return self.border_growth_next_tile()
+
+    def get_building(self) -> Optional["BaseCityImprovement | Unit"]:
+        if self.building is None:
+            return None
+        return self.building()
+
     def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        is_building: ReferenceType[BaseCityImprovement | Unit] | None = (
+            self.building if self.building is not None else None
+        )
+
+        building = None if is_building is None or (_building := is_building()) is None else _building.get_tag()
+        next_tile = (
+            None
+            if (self.border_growth_next_tile is None or (next_tile := self.border_growth_next_tile()) is None)
+            else next_tile.get_tag()
+        )
+
         data = {
             "key": self.entity_key,
             "tag": self.tag,
@@ -131,12 +231,10 @@ class City(BaseEntity, DirectObject.DirectObject):
             "new_population_food_required": self.new_population_food_required.on_inspect(basic=True),
             "border_growth_points": self.border_growth_points,
             "border_growth_cost": self.border_growth_cost,
-            "border_growth_next_tile": self.border_growth_next_tile.tag
-            if self.border_growth_next_tile is not None
-            else None,
+            "border_growth_next_tile": next_tile,
             "is_capital": self.is_capital,
             "is_building": self.is_building,
-            "building": self.building.tag if self.building is not None else None,
+            "building": building,
             "resource_required": self.resource_required if self.resource_required is not None else None,
             "resource_required_amount": self.resource_required_amount.on_inspect(basic=True),
             "resource_collected": self.resource_collected.on_inspect(basic=True),
@@ -170,7 +268,6 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.effects.on_turn_end(turn)  # Execute before yields are calculated as effects can modify yields.
 
-        # Calculate yield once per turn
         yields: Yields = self.calculate_yield_from_tiles()
 
         self._process_food()
@@ -200,7 +297,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         from gameplay.unit import Unit
 
         if self.resource_collected.only(["production"]) >= self.resource_required_amount and self.building is not None:
-            self.logger.debug(f"City {self.name} has collected enough resources to build {self.building.name}.")
+            self.logger.debug(f"City {self.name} has collected enough resources to build {self.building}.")
             building = self.building
 
             # Reset production state.
@@ -316,9 +413,9 @@ class City(BaseEntity, DirectObject.DirectObject):
                     if tile.resources.flatten():
                         resource_tiles.append(tile)
                 if resource_tiles:
-                    self.border_growth_next_tile = resource_tiles[randint(0, len(resource_tiles) - 1)]
+                    self.border_growth_next_tile = ref(resource_tiles[randint(0, len(resource_tiles) - 1)])
                 else:
-                    self.border_growth_next_tile = available_tiles[randint(0, len(available_tiles) - 1)]
+                    self.border_growth_next_tile = ref(available_tiles[randint(0, len(available_tiles) - 1)])
                 self.border_growth_cost = (5 * (len(self.owned_tiles) - 7)) + (5 * (radius - 1))
                 return
 
@@ -330,11 +427,6 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.recalculate_border_growth_cost()
         self.recalculate_border_growth_next_tile()
         MessengerGlobal.messenger.send("game.gameplay.city.border_growth", [self])
-
-    def get_next_border_growth_tile(self) -> Optional["Tile"]:
-        if self.border_growth_next_tile is None:
-            return None
-        return self.border_growth_next_tile
 
     def on_request_start_building_improvement(self, city: "City", improvement: "BaseCityImprovement"):
         if city != self:  # This does not concern us
@@ -356,7 +448,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.resource_required = improvement.resource_needed
         self.resource_required_amount = improvement.amount_resource_needed
         self.resource_collected = Yields.nullYield()
-        self.building = improvement
+        self.building = ref(improvement)
 
         self.logger.debug(f"City {self.name} is starting to build improvement {improvement.name}. sending message.")
         MessengerGlobal.messenger.send("game.gameplay.city.starts_building_improvement", [self, improvement])
@@ -371,7 +463,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.resource_required = unit.resource_needed
         self.resource_required_amount = unit.amount_resource_needed
         self.resource_collected = Yields.nullYield()
-        self.building = unit
+        self.building = ref(unit)
 
         MessengerGlobal.messenger.send("game.gameplay.city.starts_building_unit", [self, unit])
 

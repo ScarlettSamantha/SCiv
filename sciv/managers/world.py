@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
 from helpers.model import ModelHelper
@@ -15,14 +14,13 @@ from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
-
 from system.effects import Effects
 
 if TYPE_CHECKING:
+    from game import OpenCiv
     from gameplay.city import City
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from game import OpenCiv
     from managers.player import Player
     from system.generators.base import BaseGenerator
 
@@ -156,7 +154,6 @@ class World(Singleton, DirectObject):
         tile.owner = player
 
         self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
-        player.cities.add(city)  # Add the city to the player's cities as its a claim on the tile
         city.player = player
         city.owned_tiles.append(tile)
 

@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Dict, Optional
 
-
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from managers.base import BaseManager
 
@@ -27,9 +26,11 @@ class PlayerManager(BaseManager):
             if player.is_human:
                 cls._session_player = player
             if player.is_nature:
+                player.on_game_load()
                 cls._nature_player = player
                 continue
             if player.is_barbarian:
+                player.on_game_load()
                 cls._barbarian_player = player
                 continue
             cls._players[player.turn_order] = player

@@ -11,8 +11,11 @@ class Cities:
         self.index: int = 0
 
     def add(self, value: "City") -> None:
-        if value not in self._cities:
-            self._cities.append(ref(value))
+        value_ref: ReferenceType["City"] = ref(value)
+        if value_ref not in self._cities:
+            self._cities.append(value_ref)
+        else:
+            raise ValueError(f"City {value.get_tag()} already exists in the cities list.")
 
     def remove(self, value: "City", auto_destroy: bool = True) -> None:
         self._cities.remove(ref(value))

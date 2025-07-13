@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Self, Tuple, Type, Union, cast
-from weakref import ReferenceType, ref
+from weakref import ReferenceType
 
 from exceptions.ai import AIException
 from managers.entity import EntityManager, EntityType
@@ -48,7 +48,7 @@ class Goal:
             "needs_turn_processing": self.needs_turn_processing,
             "achieved": self.achieved,
             "target": self.target.get_tag(),
-            "target_entity_type": self.target.get_entity_type(),
+            "target_type": self.target.get_entity_type(),
             "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
             "player": player.get_tag(),
         }
@@ -69,8 +69,8 @@ class Goal:
         if target_tag is None or player_tag is None or target_type is None:
             raise AIException("Target(type) or player tag is None, cannot load state")
 
-        player: ReferenceType[Player] | None = cast(
-            ReferenceType[Player] | None,
+        player: ReferenceType["Player"] | None = cast(
+            ReferenceType["Player"] | None,
             EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, player_tag),
         )
         if player is None:
@@ -78,7 +78,6 @@ class Goal:
 
         _player: Player | None = player()
         assert _player is not None, f"Player with tag {player_tag} reference is None, cannot load state"
-        instance.parent_ai = ref(_player.get_ai())
 
         search_results: Tuple[EntityType, BaseEntity | HexGrid | GameSettings] | None = (
             EntityManager.get_singleton_instance().search_key(key=target_tag)

@@ -1,5 +1,6 @@
 import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Self, Set, Tuple, Type, cast
+from weakref import ReferenceType
 
 from direct.showbase import MessengerGlobal
 from gameplay._units import Units
@@ -30,7 +31,7 @@ from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from managers.civics import Civic, CivicsManager, CivicTree
 from managers.entity import EntityManager, EntityType
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, Translation, t_
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, Translation, get_i18n, t_
 from managers.tech import TechManager
 from system.effects import Effects
 from system.entity import BaseEntity
@@ -148,18 +149,6 @@ class Player(BaseEntity):
         )
         self._register_callbacks()
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        self.__dict__.update(state)
-        self.base = Cache.get_showbase_instance()
-        self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
-        self.effects = Effects(self)
-        self.citizens = Citizens()
-        self.relationships = Relationships()
-        self.moods = Moods()
-        self.vision = Vision()
-        self.trades = Trades()
-        self.votes = Votes()
-
     def generate_tag(self) -> str:
         return f"player.{str(self.leader.name).lower().replace(' ', '_')}.{self.turn_order}"
 
@@ -179,7 +168,7 @@ class Player(BaseEntity):
         state.pop("trades", None)
         state.pop("votes", None)
 
-        state["leader"] = self.leader.key if self.leader else None
+        state["leader"] = self.leader.dump() if self.leader else None
         state["personality"] = self.personality.name if self.personality else None
         state["cities"] = [city.get_tag() for city in self.cities.all()]
         state["units"] = [unit.get_tag() for unit in self.units.all()]
@@ -190,6 +179,10 @@ class Player(BaseEntity):
         state["vision"] = self.vision.dump() if self.vision else []
         state["ai"] = self.ai.dump() if self.ai else {}
         state["civilization"] = self.civilization.dump() if self.civilization else {}
+        state["capital"] = self.capital.get_tag() if self.capital else None
+        state["resources"] = self.resources.dump() if self.resources else {}
+        state["effects"] = self.effects.dump() if self.effects else {}
+        state["capital"] = self.capital.get_tag() if self.capital else None
 
         return state
 
@@ -198,45 +191,67 @@ class Player(BaseEntity):
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
 
+        self.name = get_i18n().from_key(getattr(self, "name", ""))
+        self.description = get_i18n().from_key(getattr(self, "description", ""))
+
         tech_manager = TechManager(player=self)
-        tech_manager.load_state(self.tech)  # type: ignore
+        tech_manager.load_state(getattr(self, "tech"))
         self.tech = tech_manager
 
         civics_manager = CivicsManager()
-        civics_manager.load_state(self.civics)  # type: ignore
+        civics_manager.load_state(getattr(self, "civics"))
         self.civics = civics_manager
 
         cities: Cities = Cities.__new__(Cities)
-        cities.load_state(state=self.cities)  # type: ignore
+        cities.load_state(state=getattr(self, "cities"))
         self.cities = cities
 
         units: Units = Units.__new__(Units)
-        units.load_state(state=self.units)  # type: ignore
+        units.load_state(state=getattr(self, "units"))
         self.units = units
 
         tiles: PlayerTiles = PlayerTiles.__new__(PlayerTiles)
-        tiles.load_state(state=self.tiles)  # type: ignore
+        tiles.load_state(state=getattr(self, "tiles"))
         self.tiles = tiles
 
         vision: Vision = Vision()
         self.vision = vision
 
-        self.gold = Yields.from_dict(self.gold)  # type: ignore
-        self.science = Yields.from_dict(self.science)  # type: ignore
-        self.culture = Yields.from_dict(self.culture)  # type: ignore
-        self.faith = Yields.from_dict(self.faith)  # type: ignore
+        effects: Effects = Effects(self)
+        effects.load_state(getattr(self, "effects", {}))
+        self.effects = effects
 
-        _civilization_class = EntityManager.dynamic_import(self.civilization["cls_ref"])  # type: ignore
-        civilization: Civilization = _civilization_class.__new__(_civilization_class)  # type: ignore
-        civilization.load_state(state=self.civilization)  # type: ignore
+        self.gold = Yields.from_dict(getattr(self, "gold"))
+        self.science = Yields.from_dict(getattr(self, "science"))
+        self.culture = Yields.from_dict(getattr(self, "culture"))
+        self.faith = Yields.from_dict(getattr(self, "faith"))
+
+        _civilization_class: Type[Civilization] = EntityManager.dynamic_import(getattr(self, "civilization")["cls_ref"])
+        civilization: Civilization = _civilization_class.__new__(_civilization_class)
+        civilization.load_state(state=getattr(self, "civilization"))
         self.civilization = civilization
 
-        if cast(Dict[str, Any] | None, self.ai) is not None:
-            _ai: Type[core.AI] = cast(Type[core.AI], EntityManager.dynamic_import(self.ai["cls_ref"]))  # type: ignore
-            ai: "AI" = _ai.__new__(_ai)
-            ai.load_from_state(state=self.ai)  # type: ignore
+        _leader_class: Type[Leader] = EntityManager.dynamic_import(getattr(self, "leader")["cls_ref"])
+        leader: Leader = _leader_class.__new__(_leader_class)
+        leader.load_state(state=getattr(self, "leader"))
+        self.leader = leader
 
-        self.effects = Effects(self)
+        self.name = f"{self.civilization.name} - {self.leader.name}" if self.leader else self.civilization.name
+
+        if cast(Dict[str, Any] | None, self.ai) is not None:
+            _ai: Type[core.AI] = cast(Type[core.AI], EntityManager.dynamic_import(getattr(self, "ai")["cls_ref"]))
+            ai: "AI" = _ai.__new__(_ai)
+            ai.load_state(state=getattr(self, "ai"))
+            self.ai = ai
+
+        _capital = (
+            cast(
+                ReferenceType["City"],
+                EntityManager.get_singleton_instance().get_ref_weak(EntityType.CITY, getattr(self, "capital")),
+            )
+            if self.capital
+            else None
+        )
 
     def unregister(self) -> None:
         from managers.entity import EntityType
@@ -291,10 +306,10 @@ class Player(BaseEntity):
         self.population += 1
 
     def contribute(self, yield_: Yields) -> None:
-        self.science += yield_
-        self.culture += yield_
-        self.faith += yield_
-        self.gold += yield_
+        self.science += yield_.only(["science"])
+        self.culture += yield_.only(["culture"])
+        self.faith += yield_.only(["faith"])
+        self.gold += yield_.only(["gold"])
 
         if self.tech.is_researching():
             self.tech.add_science(

@@ -66,9 +66,10 @@ class Units:
         return None
 
     def __iter__(self) -> Iterator["Unit"]:
-        item: ReferenceType["Unit"] | None = next(iter(self._units), None)
-        assert item is not None, "No units available to iterate over"
-        return cast(Iterator["Unit"], item())
+        for unit_ref in self._units:
+            unit: "Unit" = cast("Unit", unit_ref())
+            assert unit is not None, "Unit reference is None"
+            yield unit
 
     def count(self) -> int:
         return len(self._units)

@@ -31,6 +31,7 @@ from panda3d.core import (
     LineSegs,
     LPoint3,
     LVecBase3f,
+    LVecBase4f,
     LVector3,
     NodePath,
     PythonTask,
@@ -296,7 +297,7 @@ class Unit(BaseEntity, ABC):
         segs = LineSegs()
 
         segs.setThickness(line_thickness)
-        segs.setColor(color)
+        segs.setColor(color if isinstance(color, LVecBase4f) else LVecBase4f(*color))  # type: ignore
         num_segments = num_segments if num_segments > 0 else 64
 
         radius = self.selection_radius
@@ -444,6 +445,14 @@ class Unit(BaseEntity, ABC):
         self.register_actions()
         self.resource_needed = Production
         self.amount_resource_needed = Yields.from_dict(getattr(self, "amount_resource_needed", 10))  # type: ignore
+        self.selection_circle = None
+        self.selection_shader = Shader.load(
+            Shader.SL_GLSL,
+            vertex=self.base.base_path / "assets/shaders/unit_selection.vert.glsl",
+            fragment=self.base.base_path / "assets/shaders/unit_selection.frag.glsl",
+        )
+        self.health_left: float = getattr(self, "health_left", self.max_health)
+        self.moves_left = getattr(self, "moves_left", self.max_moves)
 
         self.spawn()
 

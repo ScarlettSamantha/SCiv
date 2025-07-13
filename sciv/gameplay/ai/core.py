@@ -83,7 +83,7 @@ class AI(ABC):
             "tasks": self.tasks.dump(),
         }
 
-    def load_from_state(self, state: Dict[str, Any]) -> None:
+    def load_state(self, state: Dict[str, Any]) -> None:
         self._player = cast(
             weakref.ReferenceType["Player"],
             EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, state.get("player", "")),
@@ -103,6 +103,7 @@ class AI(ABC):
         self.tasks = Tasks()
         self.tasks.load_state(state.get("tasks", {}))
         self.personality = self.player.personality
+        self.turn_action_register = state.get("turn_action_register", {})
 
     @property
     def player(self) -> "Player":

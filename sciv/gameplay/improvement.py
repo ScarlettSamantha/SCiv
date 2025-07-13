@@ -95,9 +95,14 @@ class Improvement(BaseEntity):
         state.pop("base", None)
         state.pop("_logger", None)
         state.pop("model", None)
+        state["resource_needed"] = (
+            f"{self.resource_needed.__module__}.{self.resource_needed.__name__}" if self.resource_needed else None
+        )
         return state
 
     def load_state(self, state: Dict[str, Any]) -> None:
+        from gameplay.player import EntityManager
+
         self.__dict__.update(state)
         self._logger = LogManager.get_singleton_instance().gameplay.getChild("improvement")
         self.base = Cache.get_showbase_instance()
@@ -107,6 +112,14 @@ class Improvement(BaseEntity):
 
         self.tile_yield_improvement = Yields.from_dict(state.get("tile_yield_improvement", {}))
         self.maintenance_cost = Yields.from_dict(state.get("maintenance_cost", {}))
+
+        resource_needed_class = state.get("resource_needed", None)
+        if resource_needed_class is None:
+            from gameplay.resources.core.basic.production import Production
+
+            self.resource_needed = Production
+        else:
+            self.resource_needed = EntityManager.get_singleton_instance().dynamic_import(resource_needed_class)
 
     @classmethod
     def on_tooltip(cls) -> str:

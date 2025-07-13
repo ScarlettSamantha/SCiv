@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Self, Type
 from gameplay.effect import Effect
 from gameplay.leader import Leader
 from helpers.placeholder import Placeholder
-from managers.i18n import T_TranslationOrStr
+from managers.i18n import T_TranslationOrStr, get_i18n
 
 
 class Civilization:
@@ -95,11 +95,18 @@ class Civilization:
     def load_state(self, state: Dict[str, Any]) -> None:
         from managers.entity import EntityManager
 
-        self.name = state.get("name", "")
-        self.description = state.get("description", "")
-        self.introduction = state.get("introduction", "")
+        self.name = (
+            get_i18n().from_key(state.get("name", "").get("key", ""))
+            if isinstance(state.get("name"), dict)
+            else state.get("name", "")
+        )
+        self.description = get_i18n().from_key(state.get("description", ""))
+        self.introduction = get_i18n().from_key(state.get("introduction", ""))
         self.icon = state.get("icon", Placeholder.getPlaceholderImagePathSmallIcon())
-        self.city_names = state.get("city_names", [])
+        self.city_names = [
+            get_i18n().from_key(name.get("key")) if isinstance(name, dict) else name  # type: ignore
+            for name in state.get("city_names", [])
+        ]
         self.city_name_index = state.get("city_name_index", 0)
         self.dynamic_name = state.get("dynamic_name", self.name)
 
