@@ -578,6 +578,8 @@ class Yields:
         for key, value in data.items():
             if hasattr(instance, key):
                 setattr(instance, key, value)
+            elif hasattr(instance, f"_{key}"):
+                setattr(instance, f"_{key}", value)
             else:
                 raise ValueError(f"Property {key} does not exist in Yields class.")
         return instance

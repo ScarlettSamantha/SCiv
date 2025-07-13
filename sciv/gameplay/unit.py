@@ -14,6 +14,7 @@ from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
+from gameplay.yields import Yields
 from helpers.colors import Colors, Tuple4f
 from helpers.os import WindowsHelper
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
@@ -266,7 +267,7 @@ class Unit(BaseEntity, ABC):
             bar_np.setBin("fixed", 50)
             bar_np.setDepthTest(False)
             bar_np.setDepthWrite(False)
-            bar_np.setTransparency(TransparencyAttrib.MAlways, 1)  #     type: ignore
+            bar_np.setTransparency(TransparencyAttrib.MAlways, 1)  # type: ignore
 
             self.healthbar_shader = Shader.load(
                 Shader.SL_GLSL,
@@ -321,8 +322,8 @@ class Unit(BaseEntity, ABC):
             circle_np.setShaderInput("borderWidth", 0.05)  # type: ignore
             circle_np.setShaderInput("dashFreq", 18.0)  # type: ignore
             circle_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
-            circle_np.setShaderInput("time", 0.0)  # getFrameTime() in your update task # type: ignore
-            # wrap your tuple in a Panda Vec4 so the uniform actually gets passed:
+            circle_np.setShaderInput("time", 0.0)  # type: ignore
+
             from panda3d.core import Vec4
 
             circle_np.setShaderInput("color", Vec4(*color))  # type: ignore
@@ -440,7 +441,9 @@ class Unit(BaseEntity, ABC):
         self.model_cache = None
         self.effects = Effects(self)
         self.actions = []
+        self.register_actions()
         self.resource_needed = Production
+        self.amount_resource_needed = Yields.from_dict(getattr(self, "amount_resource_needed", 10))  # type: ignore
 
         self.spawn()
 

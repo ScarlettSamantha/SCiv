@@ -79,6 +79,39 @@ class BaseTerrain(ABC):
         }
         return data
 
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self.name = state.get("name", "")
+        self._model = state.get("model", "")
+        self.water_availability = state.get("water_availability", 1.0)
+        self.radiation_level = state.get("radiation_level", 0.0)
+        self.tile_yield_base = Yields.from_dict(state.get("tile_yield_base", {}))
+        self.tile_modifiers = Yields.from_dict(state.get("tile_modifiers", {}))
+        self.passable = state.get("passable", True)
+        self.passable_without_tech = state.get("passable_without_tech", True)
+        self.model_rotation = state.get("model_rotation", 270.0)
+
+        fallback_color: Tuple[float, float, float] = cast(
+            Tuple[float, float, float], tuple(state.get("fallback_color", (0, 119, 255)))
+        )
+
+        if fallback_color:
+            self.fallback_color = fallback_color
+
+        uv_map: Tuple[int, int] = cast(Tuple[int, int], tuple(state.get("uv_map", (0, 0))))
+        if uv_map:
+            self.uv_map = uv_map
+
+        supported_improvements: List[str] = state.get("supported_improvements", [])
+
+        for imp in supported_improvements:
+            improvement_class: Type["Improvement"] = EntityManager.get_singleton_instance().dynamic_import(imp)
+            if improvement_class not in self._supports_improvements:
+                self._supports_improvements.append(improvement_class)
+
+        self._warn_user_before_build = state.get("_warn_user_before_build", False)
+        self._warn_user_before_build_text = state.get("_warn_user_before_build_text", "")
+        self._warn_user_before_build_title = state.get("_warn_user_before_build_title", "")
+
     def register(self) -> None:
         self.register_bits()
 
@@ -212,36 +245,3 @@ class BaseTerrain(ABC):
     @classmethod
     def get_key(cls) -> str:
         return cls._key if cls._key else cls.__name__.lower().replace("_", "-")
-
-    def load_state(self, state: Dict[str, Any]) -> None:
-        self.name = state.get("name", "")
-        self._model = state.get("model", "")
-        self.water_availability = state.get("water_availability", 1.0)
-        self.radiation_level = state.get("radiation_level", 0.0)
-        self.tile_yield_base = Yields()
-        self.tile_yield_base.load_state(state.get("tile_yield_base", {}))
-        self.tile_modifiers = Yields()
-        self.tile_modifiers.load_state(state.get("tile_modifiers", {}))
-        self.passable = state.get("passable", True)
-        self.passable_without_tech = state.get("passable_without_tech", True)
-        self.model_rotation = state.get("model_rotation", 270.0)
-
-        fallback_color: Tuple[float, float, float] = cast(
-            Tuple[float, float, float], tuple(state.get("fallback_color", (0, 119, 255)))
-        )
-        if fallback_color:
-            self.fallback_color = fallback_color
-
-        uv_map: Tuple[int, int] = cast(Tuple[int, int], tuple(state.get("uv_map", (0, 0))))
-        if uv_map:
-            self.uv_map = uv_map
-
-        supported_improvements: List[str] = state.get("supported_improvements", [])
-        for imp in supported_improvements:
-            improvement_class: Type["Improvement"] = EntityManager.get_singleton_instance().dynamic_import(imp)
-            if improvement_class not in self._supports_improvements:
-                self._supports_improvements.append(improvement_class)
-
-        self._warn_user_before_build = state.get("_warn_user_before_build", False)
-        self._warn_user_before_build_text = state.get("_warn_user_before_build_text", "")
-        self._warn_user_before_build_title = state.get("_warn_user_before_build_title", "")

@@ -94,6 +94,13 @@ class Biome(SuperEnum):
     volcanic_molten_river = (19, "mo", "Lavaflow", (207, 10, 10), 0, (207, 10, 10))
     volcanic_solid = (20, "so", "Basaltic Plains", (40, 28, 25), 0)
 
+    @classmethod
+    def from_id(cls, id_: int) -> "Biome | None":
+        for biome in cls.items():
+            if biome.id == id_:
+                return biome
+        return None
+
 
 class OceanType(SuperEnum):
     __keys__: ClassVar[List[str]] = ["id", "title"]
@@ -174,6 +181,13 @@ class HexFeature(Enum):
     sea = "Sea"
     ocean = "Ocean"
 
+    @classmethod
+    def from_name(cls, name: str) -> Optional["HexFeature"]:
+        for feature in HexFeature:
+            if feature.name.lower() == name.lower():
+                return feature
+        return None
+
 
 class GeoformType(SuperEnum):
     __keys__: ClassVar[List[str]] = ["id", "title", "color"]
@@ -187,6 +201,13 @@ class GeoformType(SuperEnum):
     large_island = (7, "Large Island", (100, 255, 100))
     continent = (8, "Continent", (0, 255, 0))
     peninsula = (9, "Peninsula", (0, 200, 0))
+
+    @classmethod
+    def from_id(cls, id: int) -> Optional["GeoformType"]:
+        for geoform in cls:
+            if getattr(geoform, "id") == id:
+                return geoform
+        return None
 
 
 class EdgeDirection(Enum):

@@ -74,6 +74,15 @@ class I18nManager:
         self.load_file(path=str(self.generate_path(path=f"{language}.json")))
         self.clear_cache()  # Clear cache after loading new language data
 
+    def from_key(
+        self,
+        key: str,
+        parameters: Optional[Dict[str, Any]] = None,
+        suffix: str = "",
+        prefix: str = "",
+    ) -> "Translation":
+        return Translation(key=key, parameters=parameters, suffix=suffix, prefix=prefix)
+
     def lookup(
         self,
         key: "str | T_TranslationOrStr",

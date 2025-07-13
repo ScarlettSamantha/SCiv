@@ -176,10 +176,7 @@ class TileRenderer:
         self.clear_models()
         self.base = None
 
-    def render(self, update_yields: bool = True) -> None:
-        if update_yields:
-            self.tile.calculate()  # type: ignore
-
+    def render(self) -> None:
         self.anchor_node.setPos(*self.tile.get_cords())
         self.anchor_node.setScale(1)
 
