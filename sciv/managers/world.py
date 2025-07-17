@@ -1,4 +1,5 @@
 import random
+import weakref
 from logging import Logger
 from math import sqrt
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
@@ -163,6 +164,11 @@ class World(Singleton, DirectObject):
     def on_city_requests_tile(self, city: "City", tile: "Tile"):
         if city.player is None:
             raise AssertionError("City has no player")
+        if isinstance(tile, weakref.ReferenceType):
+            tile = tile()  # type: ignore its a weak reference
+            assert tile is not None, "Tile reference is None, it has been destroyed."
+        elif isinstance(tile, str):
+            tile = self.lookup(tile)
         self.logger.info(f"City {city.name} is requesting tile {tile.tag}.")
 
         can_own_tile: bool = False
@@ -182,9 +188,9 @@ class World(Singleton, DirectObject):
             can_own_tile = False
 
         if can_own_tile:
-            self.logger.info(f"City {city.name} can own tile {tile.tag}.")
+            self.logger.info(f"City {city.name} can own tile {tile.get_tag()}.")
             self.set_ownership_of_tile(tile, city.player, city)
-            self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
+            self.logger.info(f"City {city.name} now owns tile {tile.get_tag()}, sending message")
 
             MessengerGlobal.messenger.send("game.gameplay.city.gets_tile_ownership", [city, tile])
             MessengerGlobal.messenger.send(

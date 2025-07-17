@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Set, TypeVar, cast
 from weakref import ReferenceType, ref
 
-from sciv.gameplay.unit import Unit
+from gameplay.unit import Unit
+from helpers.debug import Debug
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
@@ -32,7 +33,9 @@ class Units:
                 self._units.remove(existing_unit)
                 self._num_units -= 1
                 return
-        raise ValueError(f"Unit with tag {unit.get_tag()} does not exist in this Units instance.")
+
+        if Debug.system_units():
+            raise ValueError(f"Unit with tag {unit.get_tag()} does not exist in this Units instance.")
 
     def __len__(self) -> int:
         return len(self._units)

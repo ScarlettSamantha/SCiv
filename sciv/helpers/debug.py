@@ -1,22 +1,23 @@
-from datetime import datetime
-from enum import Enum
 import gzip
 import io
 import json
 import logging
-from pathlib import Path
 import re
 import subprocess  # nosec: B404
-from typing import Any, Dict, List, Literal, NoReturn, Optional, Tuple
-
-from sentry_sdk import init
-from sentry_sdk.types import Event, Hint
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, NoReturn, Optional, Tuple
 
 from direct.task.Task import Task
-from managers.config import ConfigManager
 from helpers.cache import Cache
-from panda3d.core import ClockObject, PythonTask
 from helpers.paths import PathsHelper
+from managers.config import ConfigManager
+from panda3d.core import ClockObject, PythonTask
+
+if TYPE_CHECKING:
+    from sentry_sdk import init
+    from sentry_sdk.types import Event, Hint
 
 
 class Debugs(Enum):
@@ -32,6 +33,7 @@ class Debugs(Enum):
     SYSTEM_ENTITY_GRAPH = "system_entity_graph"
     SYSTEM_PERFORMANCE_LOGGING = "system_performance_logging"
     SYSTEM_INPUT = "system_input"
+    SYSTEM_UNITS = "system_units"
 
     DISABLE_AI_TURN_PROCESSING = "disable_ai_turn_processing"
 
@@ -80,6 +82,9 @@ class Debug:
         ),
         Debugs.SYSTEM_INPUT: config_instance_ref.get_by_key(
             (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_INPUT.value), default=False
+        ),
+        Debugs.SYSTEM_UNITS: config_instance_ref.get_by_key(
+            (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.SYSTEM_UNITS.value), default=False
         ),
     }
 
@@ -186,10 +191,17 @@ class Debug:
         )
 
     @classmethod
-    def init_sentry(cls, dsn: str) -> init:
+    def system_units(cls, override: Optional[bool] = None) -> bool:
+        return cls._check_with_override(
+            Debugs.SYSTEM_UNITS,
+            override,
+        )
+
+    @classmethod
+    def init_sentry(cls, dsn: str) -> "init":
         import sentry_sdk
         from sentry_sdk.integrations.logging import LoggingIntegration
-        from system.vars import __version__, get_git_commit, DEBUG
+        from system.vars import DEBUG, __version__, get_git_commit
 
         sentry_logging = LoggingIntegration(
             level=logging.ERROR,
@@ -233,6 +245,7 @@ class Debug:
         """
 
         from platform import uname
+
         from helpers.os import WindowsHelper
 
         _uname = uname()
