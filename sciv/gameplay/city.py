@@ -20,6 +20,8 @@ from managers.log import LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
 
+from sciv.gameplay.unit import Unit
+
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
@@ -298,12 +300,12 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         if self.resource_collected.only(["production"]) >= self.resource_required_amount and self.building is not None:
             self.logger.debug(f"City {self.name} has collected enough resources to build {self.building}.")
-            building = self.building
+            building: BaseCityImprovement | Unit | None = self.building()
 
-            # Reset production state.
+            assert building is not None, "Building reference is None, it has been destroyed."
+
             self.is_building = False
-            self.building = None
-            self.resource_collected = Yields.nullYield()
+            self.resource_collected = self.resource_collected - self.resource_required_amount
             self.resource_required = None
 
             if isinstance(building, BaseCityImprovement):
@@ -315,11 +317,11 @@ class City(BaseEntity, DirectObject.DirectObject):
 
                 tile_to_spawn = None
                 if not self.get_tile().get_units().has_any():
-                    tile_to_spawn = self.tile
+                    tile_to_spawn: ReferenceType[Tile] | Tile | None = self.tile
                 else:
                     radius: List[int] = [1, 2, 3, 4]
                     for r in radius:
-                        tiles = TileRepository.get_neighbors(self.get_tile(), r)
+                        tiles: List[Tile] = TileRepository.get_neighbors(self.get_tile(), r)
                         for tile in tiles:
                             if (
                                 not tile.units.has_any()
@@ -340,6 +342,10 @@ class City(BaseEntity, DirectObject.DirectObject):
                 self.get_tile().render()
 
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_unit", [self, building])
+            else:
+                raise RuntimeError("Building is not an instance of BaseCityImprovement or Unit.")
+
+            self.building = None
             self.logger.debug(f"City {self.name} has finished building improvement.")
 
     def _process_food(self) -> None:

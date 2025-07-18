@@ -225,7 +225,7 @@ class Debug:
         return sentry
 
     @classmethod
-    def handle_crash(cls, event: Event, hint: Hint) -> Optional[Event]:
+    def handle_crash(cls, event: "Event", hint: "Hint") -> Optional["Event"]:
         """
         This function is called by Sentry when an unhandled exception occurs.
         It gathers system data if debug mode is enabled and adds it to the event.
