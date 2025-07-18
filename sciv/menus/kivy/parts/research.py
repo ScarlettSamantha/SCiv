@@ -3,6 +3,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from gameplay.age import T_TranslationOrStrOrNone
+from gameplay.tech import Tech, TechTree
+from helpers.cache import Cache
+from helpers.colors import Colors
+from helpers.optimizations import throttle
+from helpers.os import WindowsHelper
+from helpers.placeholder import Placeholder
 from kivy.animation import Animation
 from kivy.graphics import Color, Instruction, Line, Rectangle  # type: ignore
 from kivy.metrics import dp  # type: ignore
@@ -11,23 +18,15 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-
-from gameplay.age import T_TranslationOrStrOrNone
-from gameplay.tech import Tech, TechTree
-from helpers.cache import Cache
-from helpers.colors import Colors
-from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr
 from managers.player import PlayerManager
 from managers.tech import TechManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltippedButton, TooltippedImage
-from helpers.optimizations import throttle
-from helpers.os import WindowsHelper
 from system.entity import BaseEntity
 
-
 if TYPE_CHECKING:
+    from gameplay.player import Player
     from menus.screens.game_ui import GameUIScreen  # type: ignore
 
 
@@ -246,7 +245,8 @@ class Research(FloatLayout, DirectObject):
 
         self.manager: "GameUIScreen" = manager
         self.tree: TechTree = tree
-        self.player_tech_manager: TechManager = PlayerManager.session_player().tech
+        self.player: "Player" = PlayerManager.session_player()
+        self.player_tech_manager: TechManager = self.player.tech
         self._column_width: int = 450
         self._button_width: int = 180
         self._button_height: int = 60
@@ -482,6 +482,7 @@ class Research(FloatLayout, DirectObject):
     def on_research_button_click(self, btn: ResearchButton) -> None:
         if self.disabled is True:
             return
+        self.player.on_request_start_research_session(btn.value)
         MessengerGlobal.messenger.send("game.gameplay.research.request_start_research_session_player", [btn.value])
         MessengerGlobal.messenger.send("ui.update.ui.refresh_research_ui")
 
