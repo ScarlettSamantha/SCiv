@@ -25,7 +25,7 @@ class Units:
         self._units.add(ref(unit))
         self._num_units += 1
 
-    def remove_unit(self, unit: "Unit"):
+    def remove_unit(self, unit: "Unit") -> None:
         for existing_unit in self._units:
             _existing_unit: "Unit" = cast(Unit, existing_unit())
             assert _existing_unit is not None, "Existing unit reference is None"
