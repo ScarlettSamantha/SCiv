@@ -345,6 +345,7 @@ class Tile(BaseEntity):
         if self.is_city() and self.city is not None:
             city_yield = self.city.get_yield()
             new_yield += city_yield
+
         else:
             for improvement in self._improvements.get_all():
                 new_yield += improvement.tile_yield

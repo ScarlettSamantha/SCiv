@@ -45,6 +45,7 @@ class Goal:
 
         if self.calculate_if_achieved():
             self.mark_achieved()
+            return None
 
         if parent_id is None:
             raise AIException("Parent AI reference is None, cannot dump goal")
@@ -60,6 +61,7 @@ class Goal:
                 "for_unit": self.for_unit,
                 "needs_turn_processing": self.needs_turn_processing,
                 "achieved": self.achieved,
+                "executing_unit": self.executing_unit.get_tag() if self.executing_unit else None,
                 "target": self.target.get_tag(),
                 "target_type": self.target.get_entity_type(),
                 "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
@@ -105,6 +107,19 @@ class Goal:
         )
 
         instance.target = cast(T_TARGET, search_results[1])
+
+        executing_unit = state.get("executing_unit")
+        if executing_unit is not None:
+            executing_unit_ref: ReferenceType["Unit"] | None = cast(
+                ReferenceType["Unit"] | None,
+                EntityManager.get_singleton_instance().get_ref_weak(EntityType.UNIT, executing_unit),
+            )
+            if executing_unit_ref is None:
+                raise AIException(f"Executing unit with tag {executing_unit} not found, cannot load state")
+
+            instance.executing_unit = executing_unit_ref()
+        else:
+            instance.executing_unit = None
 
         return instance
 

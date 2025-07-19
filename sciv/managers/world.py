@@ -2,7 +2,7 @@ import random
 import weakref
 from logging import Logger
 from math import sqrt
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -17,11 +17,11 @@ from managers.player import PlayerManager
 from mixins.singleton import Singleton
 from system.effects import Effects
 
-from sciv.gameplay.city import City
-
 if TYPE_CHECKING:
     from game import OpenCiv
     from gameplay.city import City
+    from gameplay.effect import Effect
+    from gameplay.improvement import Improvement
     from gameplay.tile import Tile
     from gameplay.unit import Unit
     from managers.player import Player
@@ -87,6 +87,14 @@ class World(Singleton, DirectObject):
 
         for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
             city.load_state()
+
+        for improvement in cast(
+            List["Improvement"], EntityManager.get_singleton_instance().get_all(EntityType.IMPROVEMENT).values()
+        ):  # type: ignore
+            improvement.load_state()
+
+        for effect in cast(List["Effect"], EntityManager.get_singleton_instance().get_all(EntityType.EFFECT).values()):  # type: ignore
+            effect.load_state()
 
         for tile in self.map.values():
             tile.render()

@@ -30,6 +30,7 @@ from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 
 if TYPE_CHECKING:
+    from gameplay.effect import Effect
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
@@ -145,6 +146,8 @@ class Game(Singleton, DirectObject):
         players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
 
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
+
+        effects: Dict[str, "Effect"] = self.entities.get_all(EntityType.EFFECT)  # type: ignore
 
         self.mesh_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
         Cache.set_showbase_instance(self.base)

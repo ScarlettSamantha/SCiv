@@ -35,7 +35,11 @@ class EliminateUnit(Goal):
         return self.is_achieved()
 
     def is_achieved(self) -> bool:
-        return self.get_target().is_alive() is False or super().is_achieved()
+        return (
+            self.get_target().is_alive() is False
+            or super().is_achieved()
+            or self.get_executing_unit().is_alive() is False
+        )
 
     def turn_tick(self) -> None:
         attacker: "Unit" = self.get_executing_unit()

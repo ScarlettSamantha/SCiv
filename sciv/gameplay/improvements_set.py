@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type, cast
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
@@ -20,12 +20,6 @@ class ImprovementsSet:
     def __add__(self, value: "Improvement"):
         self.add(value)
         return self
-
-    def __getstate__(self) -> Dict[str, Any]:
-        return {
-            "_improvements": self._improvements,
-            "_num_improvements": self._num_improvements,
-        }
 
     def get_all(self) -> List["Improvement"]:
         return self._improvements
@@ -68,21 +62,19 @@ class ImprovementsSet:
 
     def dump(self) -> Dict[str, Any]:
         return {
-            "improvements": [improvement.dump() for improvement in self._improvements],
+            "improvements": [improvement.get_tag() for improvement in self._improvements],
             "num_improvements": self._num_improvements,
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
-        _improvements: List[Dict[str, Any]] = state.get("improvements", [])
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+
+        _improvements: List[str] = state.get("improvements", [])
         for improvement in _improvements:
-            cls_ref: str | None = improvement.get("cls_ref", None)
-            assert cls_ref is not None, "Improvement state must have 'cls_ref' key"
-            _cls: Type[Improvement] = EntityManager.dynamic_import(cls_ref)
-            cls_instance: Improvement | None = _cls.__new__(_cls)
-            assert cls_instance is not None, f"Improvement class {cls_ref} could not be instantiated"
-            cls_instance.load_state(improvement)
-            self.add(cls_instance)
-
-        self._num_improvements = state.get("num_improvements", 0)
+            improvement_instance: "Improvement | None" = cast(
+                "Improvement | None", entity_manager.get_ref(EntityType.IMPROVEMENT, improvement)
+            )
+            assert improvement_instance is not None, f"Improvement {improvement} not found in entity manager"
+            self.add(improvement_instance)

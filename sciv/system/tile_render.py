@@ -324,6 +324,7 @@ class TileRenderer:
         icon_node.set_shader_input("icon_atlas", atlas_tex)  # type: ignore
 
         # Prepare slots: population or first resource + base yields
+        self.tile.calculate()
         base_yields = self.tile.get_tile_yield()
         if self.tile.city:
             slots: List[Union[str, BaseResource, None]] = [

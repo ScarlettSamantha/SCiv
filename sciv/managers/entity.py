@@ -171,6 +171,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
 
     def dump(self, registry: EntityRegistry, graph_out: Optional[str] = None) -> bytes:
         from gameplay.city import City
+        from gameplay.effect import Effect
         from gameplay.improvement import Improvement
         from gameplay.player import Player
         from gameplay.tile import Tile
@@ -186,17 +187,15 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             payload[section] = {}
             for tag, entity in entities.items():
                 if isinstance(entity, BaseEntity):
-                    if isinstance(entity, (Tile, Player, City, Unit, Improvement)):
+                    if isinstance(entity, (Tile, Player, City, Unit, Improvement, Effect)):
                         state = entity.dump()
-                    else:
-                        state = entity.__getstate__() if hasattr(entity, "__getstate__") else entity.__dict__.copy()
                 elif isinstance(entity, (HexGrid, GameSettings)):
                     state = entity.dump()
                 elif isinstance(entity, dict):  # type:ignore It always a dict but mypy does not know it
                     state = entity.copy()
                 else:
                     raise TypeError(f"Unsupported entity type {type(entity)} for serialization.")
-                state = self._apply_handlers(state)
+                state = self._apply_handlers(state)  # type:ignore
                 state = self._extract_external(state)
                 state = self._convert_references(state, path=[f"{entity_type.storage_key}.{tag}"])
                 state["_cls"] = f"{entity.__class__.__module__}.{entity.__class__.__name__}"

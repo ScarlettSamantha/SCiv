@@ -1,3 +1,4 @@
+import datetime
 import random
 import weakref
 from abc import ABC, abstractmethod
@@ -104,6 +105,7 @@ class AI(ABC):
         self.tasks.load_state(state.get("tasks", {}))
         self.personality = self.player.personality
         self.turn_action_register = state.get("turn_action_register", {})
+        self.unit_directions = state.get("unit_directions", {})
 
     def get_logger(self) -> Logger:
         return self.logger
@@ -311,7 +313,9 @@ class AI(ABC):
         return random.choice(neighbors)
 
     def on_wander(self, unit: "Unit") -> None:
-        while unit.moves_left > 0:
+        start_time: datetime.datetime = datetime.datetime.now()
+        timeout: datetime.timedelta = datetime.timedelta(seconds=2)  # this is a timeout to prevent infinite loops
+        while unit.moves_left > 0 and (datetime.datetime.now() - start_time) < timeout:
             current: Tile = unit.get_tile()
             next_tile: Tile | None = self._select_wander_tile(unit)
             if not next_tile:
@@ -320,10 +324,10 @@ class AI(ABC):
             self.unit_directions[id(unit)] = ((next_tile.x - current.x), (next_tile.y - current.y))
             self.move_unit(unit=unit, to=next_tile)
 
-            new_goal: Goal | None = self.create_goals_for_unit(executing_unit=unit)
-            if new_goal:
-                self.add_goal(goal=new_goal)
-                return
+        new_goal: Goal | None = self.create_goals_for_unit(executing_unit=unit)
+        if new_goal:
+            self.add_goal(goal=new_goal)
+            return
 
     def on_fixed_turn(self, turn: int, callable: Callable[[], None]) -> None:
         if turn in self.turn_action_register:

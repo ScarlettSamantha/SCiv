@@ -217,6 +217,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             entity_manager.register(entity=self, type=EntityType.CITY, key=self.tag)
 
     def build(self, improvement: "Improvement"):
+        improvement.register()
         self._improvements.add(improvement)
 
     def get_next_border_growth_tile(self) -> Optional["Tile"]:

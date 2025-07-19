@@ -1,9 +1,8 @@
 import weakref
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Type, Union, cast
+from typing import TYPE_CHECKING, Dict, List, Type, Union, cast
 
 from gameplay.yields import Yields
-from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -84,7 +83,7 @@ class Effects:
             effect.tile = self.parent.get_tile()
         elif isinstance(self.parent, Player) and effect.player is None:
             effect.player = self.parent
-        elif isinstance(self.parent, World) and effect.world is None:
+        elif isinstance(self.parent, World) and effect.world is None:  # type:ignore
             effect.world = self.parent
         elif isinstance(self.parent, Unit) and effect.unit is None:
             effect.unit = self.parent
@@ -98,8 +97,8 @@ class Effects:
             effect.city = None
         elif isinstance(self.parent, "Player") and effect.player is not None:
             effect.player = None
-        elif isinstance(self.parent, "World") and effect.world is not None:
-            effect.world = None
+        elif isinstance(self.parent, "World") and effect.world is not None:  # type:ignore
+            effect.world = False
         elif isinstance(self.parent, "Unit") and effect.unit is not None:
             effect.unit = None
         elif isinstance(self.parent, "Improvement") and effect.improvement is not None:
@@ -129,7 +128,7 @@ class Effects:
         effect.register()
 
     def unregister_from_entity_manager(self, effect: "Effect") -> None:
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
         EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, effect)
 
@@ -172,10 +171,10 @@ class Effects:
     def __len__(self) -> int:
         return self._effects_num
 
-    def dump(self) -> Dict[str, str]:
-        return {tag: effect.get_tag() for tag, effect in self._effects.items()}
+    def dump(self) -> List[str]:
+        return [tag for tag in self._effects.keys()]
 
-    def load_state(self, state: Dict[str, str]) -> None:
+    def load_state(self, state: List[str]) -> None:
         from managers.entity import EntityManager, EntityType
 
         self._effects = {}
@@ -191,8 +190,6 @@ class Effects:
 
             self._effects[effect_tag] = effect
             self._effects_num += 1
-
-            self.add_effect(effect, auto_register=False, execute_on_add=False, auto_add_parent_on_effect=False)
 
 
 def _place_on_tile(tile: "Tile", effect: "Effect") -> None:
