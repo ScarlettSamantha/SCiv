@@ -2,15 +2,15 @@ from typing import TYPE_CHECKING, Any
 
 from gameplay.condition import Conditions, ResearchCondition
 from gameplay.promotion import Promotion, PromotionTree
-
-
 from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
+from sciv.gameplay.city import EntityType
+
 if TYPE_CHECKING:
-    from gameplay.tile import Tile
     from gameplay.player import Player
+    from gameplay.tile import Tile
 
 
 class SettlerPromotion(Promotion):
@@ -82,6 +82,7 @@ class Settler(CoreCivilianBaseClass):
         )
         from gameplay.techs.pottery import Pottery
 
+        self.entity_type_ref = EntityType.UNIT.value
         self.build_conditions = Conditions(ResearchCondition(tech=Pottery, player=player))
         self.model_rotation = (0, 0, 0)
         self.model_position_offset = (0, 0, 0.0)

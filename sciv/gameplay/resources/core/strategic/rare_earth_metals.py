@@ -11,6 +11,8 @@ from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
 from managers.i18n import T_TranslationOrStr, t_
+from sciv.gameplay.terrain.hills_forest import HillsForest
+from sciv.gameplay.terrain.hills_grass import HillsGrass
 
 
 class RareEarthMetals(BaseStrategicResource):
@@ -28,6 +30,8 @@ class RareEarthMetals(BaseStrategicResource):
         HillsTundra: 70.0,
         HillsDesert: 70.0,
         HillsSnow: 70.0,
+        HillsForest: 20.0,
+        HillsGrass: 20.0,
     }
     spawn_amount = 3.0
     coverage = 0.5

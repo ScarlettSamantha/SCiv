@@ -1,15 +1,13 @@
+import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Tuple, Any
-import uuid
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, cast
 
 from direct.showbase.DirectObject import DirectObject
 from gameplay.yields import Yields
 from helpers.colors import Colors
 from helpers.placeholder import Placeholder
-from managers.entity import EntityType
 from managers.i18n import T_TranslationOrStrOrNone
-from system.effects import EffectPlacers, EffectType
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -19,6 +17,7 @@ if TYPE_CHECKING:
     from gameplay.tile import Tile
     from gameplay.unit import Unit
     from managers.world import World
+    from system.effects import EffectPlacers, EffectType
 
 
 class Effect(BaseEntity, ABC, DirectObject):
@@ -28,24 +27,31 @@ class Effect(BaseEntity, ABC, DirectObject):
     icon_border_color = Colors.RED
     visible_to_user: bool = True
 
-    # We can allow both an EffectPlacers enum or a direct Callable as a place_method.
-    # But we will store them separately or do a union type. Then when we apply, we check the type.
-    place_method: EffectPlacers | Callable[[BaseEntity, "Effect"], None] = EffectPlacers.PLACE_ON_TILE
+    _place_method: "EffectPlacers" | Callable[[BaseEntity, "Effect"], None] | None = None
 
     activate_on_add: bool = True
-    effect_types: Tuple[EffectType] = tuple()  # type: ignore
+    effect_types: Tuple["EffectType"] = tuple()  # type: ignore
 
     def __init__(self, player: "Player", tile: Optional["Tile"] = None, *args: Any, **kwargs: Any) -> None:
+        from managers.entity import EntityType
+        from system.effects import EffectPlacers
+
         BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
         DirectObject.__init__(self)
 
-        self.id: str = uuid.uuid4().hex
+        self.tag = self.generate_tag()
+        self.entity_key = self.tag
+        self.entity_type_ref = EntityType.EFFECT.value
         self.owner: "Player" = player
         self.city: "City | None" = None
         self.player: "Player | None" = None
-        self.world: "World | None" = None
+        self.world: bool = False
         self.improvement: "Improvement | None" = None
         self.unit: "Unit | None" = None
+
+        self.place_method: EffectPlacers | Callable[[BaseEntity, Effect], None] = (
+            self._place_method if self._place_method is not None else EffectPlacers.PLACE_ON_TILE
+        )
 
         self.yield_impact: Yields = Yields.nullYield()  # Will be read on turn change
         self.maintenance_impact: Yields = (
@@ -64,38 +70,92 @@ class Effect(BaseEntity, ABC, DirectObject):
         if self.is_registered:
             self.unregister()
 
-    def __getstate__(self) -> Dict[str, Any]:
-        state = self.__dict__.copy()
-        if "base" in state:
-            del state["base"]
-        if "_logger" in state:
-            del state["_logger"]
-        if "tile" in state:
-            del state["tile"]
-        if "city" in state:
-            del state["city"]
-        if "player" in state:
-            del state["player"]
-        if "world" in state:
-            del state["world"]
-        if "improvement" in state:
-            del state["improvement"]
-        if "unit" in state:
-            del state["unit"]
-        if "effects" in state:
-            del state["effects"]
+    def dump(self) -> Dict[str, Any]:
+        data = {
+            "name": self.name,
+            "description": self.description,
+            "icon": str(self.icon),
+            "icon_border_color": self.icon_border_color,
+            "visible_to_user": self.visible_to_user,
+            "place_method": self.place_method.__name__ if callable(self.place_method) else str(self.place_method),
+            "activate_on_add": self.activate_on_add,
+            "effect_types": [et.name for et in self.effect_types],
+            "yield_impact": self.yield_impact.dump(),
+            "maintenance_impact": self.maintenance_impact.dump(),
+            "is_timed": self.is_timed,
+            "duration": self.duration,
+            "turns_left": self.turns_left,
+            "needs_turn_processing": self.needs_turn_processing,
+            "active": self.active,
+            "entity_key": self.entity_key,
+            "entity_type_ref": self.entity_type_ref,
+            "tag": self.tag,
+            "_health_left": self.health_left,
+            "owner_tag": self.owner.get_tag() if self.owner else None,
+        }
 
-        return state
+        owner = self.get_owner().get_tag() if self.get_owner() else None
+        if owner:
+            data["owner"] = owner
+
+        if self.tile:
+            data["tile"] = self.get_tile().get_tag()
+        if self.city:
+            data["city"] = self.city.get_tag()
+        if self.world:
+            data["world"] = self.world
+        if self.improvement:
+            data["improvement"] = self.improvement.get_tag()
+        if self.unit:
+            data["unit"] = self.unit.get_tag()
+
+        return data
+
+    def load_state(self) -> None:
+        from managers.entity import EntityManager, EntityType
+        from system.effects import EffectPlacers
+
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+
+        place_method_name: str | None = self.place_method if isinstance(self.place_method, str) else None
+        if place_method_name:
+            if hasattr(EffectPlacers, place_method_name.split(".")[-1]):
+                self.place_method = getattr(EffectPlacers, place_method_name.split(".")[-1])
+            else:
+                raise ValueError(f"Invalid place method: {place_method_name}")
+
+        self.yield_impact = Yields.from_dict(self.yield_impact)  # type: ignore
+        self.maintenance_impact = Yields.from_dict(self.maintenance_impact)  # type:ignore
+
+        self.owner = cast("Player", entity_manager.get(EntityType.PLAYER, self.owner_tag))  # type:ignore
+        if hasattr(self, "tile") and self.tile:
+            self.tile = cast("Tile", entity_manager.get(EntityType.TILE, self.tile))  # type:ignore
+        else:
+            self.tile = None
+        if hasattr(self, "world") and self.world:
+            self.city = cast("City", entity_manager.get(EntityType.CITY, self.city))  # type:ignore
+        else:
+            self.city = None
+        if hasattr(self, "improvement") and self.improvement:
+            self.improvement = cast("Improvement", entity_manager.get(EntityType.IMPROVEMENT, self.improvement))  # type:ignore
+        else:
+            self.improvement = None
+        if hasattr(self, "unit") and self.unit:
+            self.unit = cast("Unit", entity_manager.get(EntityType.UNIT, self.unit))  # type:ignore
+        else:
+            self.unit = None
+        if not hasattr(self, "world") or not self.world:
+            self.world = False
+
+        self._health_left = getattr(self, "_health_left", getattr(self, "max_health", 100))
 
     def register(self):
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
         if self.is_registered:
             return
 
-        self.id = uuid.uuid4().hex
-
-        EntityManager.get_singleton_instance().register(EntityType.EFFECT, self, self.id)
+        EntityManager.get_singleton_instance().register(EntityType.EFFECT, self, self.get_tag())
         self.is_registered = True
         self.register_events_handlers()
 
@@ -107,13 +167,13 @@ class Effect(BaseEntity, ABC, DirectObject):
     def register_events_handlers(self) -> None: ...
 
     def unregister(self):
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
         EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, self)
         self.is_registered = False
 
     def generate_tag(self) -> str:
-        return f"{self.__class__.__name__}_{self.id}"
+        return f"effect_{uuid.uuid4().hex}"
 
     def apply(self, base_object: "Tile | City | Player | World | Improvement") -> None:
         if isinstance(self.place_method, EffectPlacers):
@@ -122,8 +182,6 @@ class Effect(BaseEntity, ABC, DirectObject):
             self.place_method(base_object, self)
         else:
             raise ValueError("Invalid place method.")
-        if self.tag is None:  # type: ignore
-            self.tag = self.generate_tag()
         self.on_place()
 
     @classmethod
@@ -161,6 +219,8 @@ class Effect(BaseEntity, ABC, DirectObject):
             self.on_deactivate()
 
     def on_turn_end(self) -> None:
+        from system.effects import EffectType
+
         if self.needs_turn_processing is False or self.active is not True or self.is_expired():
             return  # If the effect is not active, we don't want to do anything.
 

@@ -1,30 +1,25 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-
 from gameplay.civic import CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from gameplay.civilization import Civilization
 from gameplay.leader import Leader
-from gameplay.personality import Personality
-
+from gameplay.personalities.base import BasePersonality
 from gameplay.repositories.civilization import Civilization as CivilizationRepository
 from gameplay.repositories.personality import (
     PersonalityRepository as PersonalityRepository,
 )
-
 from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
-
-
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
     from game import OpenCiv
-    from gameplay.tile import Tile
     from gameplay.player import Player
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
 
 
@@ -74,7 +69,7 @@ class BaseGenerator(ABC):
 
     def generate_player(
         self,
-        personality: Personality,
+        personality: BasePersonality,
         civilization: Civilization,
         name: T_TranslationOrStrOrNone = None,
         turn_order: int = 0,
@@ -161,7 +156,7 @@ class BaseGenerator(ABC):
                     if already_ingame is False:  # We try to avoid having the same civilization twice
                         break
 
-            chosen_personality: Type[Personality] = PersonalityRepository.random()  # type: ignore # due to the num argument is 1 it will always return a single instance not a list of instances.
+            chosen_personality: Type[BasePersonality] = PersonalityRepository.random()  # type: ignore # due to the num argument is 1 it will always return a single instance not a list of instances.
 
             if isinstance(chosen_civilization, list):
                 raise AssertionError(
@@ -209,8 +204,8 @@ class BaseGenerator(ABC):
         land_check_radius: int = 4,
         map_edge_buffer: int = 3,
     ) -> bool:
-        from gameplay.units.core.classes.civilian.settler import Settler
         from gameplay.repositories.tile import TileRepository
+        from gameplay.units.core.classes.civilian.settler import Settler
 
         units: List[Unit] = []
         occupied_tiles: List["Tile"] = []  # Track placed player locations

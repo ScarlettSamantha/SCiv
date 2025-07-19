@@ -15,11 +15,13 @@ from panda3d.core import (
     NodePath,
 )
 
+from direct.showbase import MessengerGlobal
 from gameplay.repositories.tile import TileRepository
 from managers.unit import UnitManager
 from mixins.singleton import Singleton
 from helpers.optimizations import throttle
 from panda3d.core import WindowProperties
+
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -89,10 +91,12 @@ class Input(Singleton, DirectObject):
 
         self.accept("f9", self.force_render_selected_entity)
         self.accept("f10", self.on_inspect_entity)
+        self.accept("f11", self.on_inspect_players)
         self.accept("f12", self.inspect_element)
 
         # Escape key
         self.accept("escape", self.on_escape)
+        self.accept("space", self.on_space)
 
         self.accept("system.input.raycaster_on", self.activate)
         self.accept("system.input.raycaster_off", self.de_activate)
@@ -168,6 +172,14 @@ class Input(Singleton, DirectObject):
             self.logger.info(f"Inspecting selected entity: {selected_entity.tag}")
 
         self.base.ui_manager.inspect_element(selected_entity)  # type: ignore
+
+    def on_inspect_players(self) -> None:
+        from managers.player import PlayerManager
+        from menus.kivy.parts.inspect_entity import PlayersWrapper
+
+        players_wrapper: PlayersWrapper = PlayersWrapper(list(PlayerManager.all(add_mechanic_players=True).values()))
+
+        self.base.ui_manager.inspect_element(players_wrapper)
 
     def hover_task(self, task: Task.Task) -> Literal[1]:
         if not self.active or not self.base.mouseWatcherNode.hasMouse():  # type: ignore
@@ -252,12 +264,10 @@ class Input(Singleton, DirectObject):
                     if (tile := TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
-
-                    if Game.get_singleton_instance().handle_tile_click(tile):
-                        self.selected_tile = tile
-                        self.selected_unit = None
-                    else:
-                        selected_object = True
+                    Game.get_singleton_instance().handle_tile_click(tile)
+                    self.selected_tile = tile
+                    self.selected_unit = None
+                    selected_object = True
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                 else:
                     self.selected_tile = None
@@ -272,3 +282,6 @@ class Input(Singleton, DirectObject):
 
     def on_escape(self):
         messenger.send("game.input.user.escape_pressed")
+
+    def on_space(self):
+        MessengerGlobal.messenger.send("game.turn.request_end")

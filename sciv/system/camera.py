@@ -4,11 +4,14 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
-from panda3d.core import Camera as PandaCamera, LPoint3f, LVecBase3f, Lens, MouseWatcher, NodePath
-from panda3d_kivy.core.window import WindowBase  # type: ignore
-from mixins.singleton import Singleton
 from managers.game import debounce
-from sciv.managers.input import Input
+from managers.input import Input
+from mixins.singleton import Singleton
+from panda3d.core import Camera as PandaCamera
+from panda3d.core import Lens, LPoint3f, LVecBase3f, MouseWatcher, NodePath
+from panda3d_kivy.core.window import WindowBase  # type: ignore
+
+from sciv.gameplay.city import City  # type: ignore
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -225,7 +228,6 @@ class Camera(Singleton, DirectObject):
     def zoom_in(self):
         if not self.zoom_enabled:
             return
-        # adjust desired only
         self._desired_zoom = max(self.min_zoom, self._desired_zoom - self.zoom_speed)
 
     def zoom_out(self):
@@ -263,6 +265,9 @@ class Camera(Singleton, DirectObject):
     def recenter(self):
         from managers.game import PlayerManager
 
+        player = PlayerManager.session_player()
+        assert player is not None, "No session player found to recenter camera on."
+
         center: Tuple[float, float, float] = (0, 0, 0)
         if (unit := self.input.selected_unit) is not None:
             if unit.tile is not None:
@@ -270,16 +275,18 @@ class Camera(Singleton, DirectObject):
                 center = (pos[0], pos[1], 0)
             else:
                 self.logger.debug(f"Recentered on unit at {center} but no tile found.")
+
         elif (tile := self.input.selected_tile) is not None:
             pos = tile.get_pos()  # type: ignore
             center = (pos[0], pos[1], 0)
-        elif PlayerManager.if_has_capital():
-            capital = PlayerManager.player().capital
-            if capital is None:
-                return
-            tile = capital.get_tile().get_pos()
-            center = (tile[0], tile[1], 0)
-        elif units := PlayerManager.session_player().get_all_units():
+
+        elif player.capital is not None:
+            capital: City | None = player.capital()
+            assert capital is not None, "Player has no capital to recenter on."
+            capital_pos = capital.get_pos()
+            center = (capital_pos[0], capital_pos[1], 0)
+
+        elif units := player.get_all_units():
             unit = list(units)[0]  # type: ignore
             if unit is not None and unit.tile is not None:  # type: ignore
                 pos = unit.get_tile().get_pos()  # type: ignore
@@ -287,10 +294,9 @@ class Camera(Singleton, DirectObject):
         else:
             raise NotImplementedError("No target to recenter on")
 
-        # immediately jump pivot
         self.pivot.setPos(*center)  # type: ignore
         self._desired_pivot_pos: LPoint3f = self.pivot.getPos()  # type: ignore
-        # reset yaw and zoom
+
         self.yaw = 0.0
         self._update_yaw_trig()
         self.zoom = 20.0

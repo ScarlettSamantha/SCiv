@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from panda3d.core import WindowProperties  # type: ignore
-
 from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.lose import Lose, LoseConditions
+from gameplay.repositories.tile import TileRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
-
+from helpers.cache import Cache
+from helpers.debug import Debug, PerformanceLogger
 from helpers.optimizations import debounce
 from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
@@ -21,7 +21,7 @@ from managers.player import PlayerManager
 from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
-from helpers.debug import Debug, PerformanceLogger
+from panda3d.core import WindowProperties  # type: ignore
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
@@ -30,11 +30,13 @@ from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 
 if TYPE_CHECKING:
+    from gameplay.effect import Effect
     from gameplay.player import Player
-    from sciv.game import OpenCiv
-    from system.generators.base import BaseGenerator
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from system.generators.base import BaseGenerator
+
+    from sciv.game import OpenCiv
 
 
 class Game(Singleton, DirectObject):
@@ -128,6 +130,7 @@ class Game(Singleton, DirectObject):
 
     def on_main_menu(self):
         self.reset_game()
+        self.ui.set_screen("main_menu")
 
     def on_request_load(self, session_name: str) -> None:
         self.load(session_name)
@@ -144,17 +147,26 @@ class Game(Singleton, DirectObject):
 
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
 
+        effects: Dict[str, "Effect"] = self.entities.get_all(EntityType.EFFECT)  # type: ignore
+
         self.mesh_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
+        Cache.set_showbase_instance(self.base)
         if self.mesh_grid is None:
             raise ValueError("Mesh grid has not been generated yet")
+        self.mesh_grid.load_state()
 
-        self.world.load(world_tiles)
+        TileRepository.grid = {(tile.x, tile.y): tile for _, tile in world_tiles.items()}
+
         self.players.load(players)
         self.unit.load(units)
+        self.world.load(world_tiles)
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
+
         self.properties = self.entities.get_all(EntityType.GAME_SETTINGS).get("game_settings")  # type: ignore
+        self.properties.load_state()  # type: ignore
+
         self.game_settings = self.properties
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
         turn = self.entities.get_meta_data("turn")
@@ -180,6 +192,10 @@ class Game(Singleton, DirectObject):
         self.game_won = False
 
         self.ui.reset()
+
+        if self.mesh_grid is not None:
+            self.mesh_grid.reset()
+
         self.world.reset()
         self.turn.reset()
         self.camera.reset()

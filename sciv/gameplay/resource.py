@@ -276,7 +276,7 @@ class BaseResource(ABC):
         return self.__pow__(other)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, "BaseResource"):
+        if isinstance(other, BaseResource):
             return self.value == other.value
         return False
 
@@ -358,6 +358,36 @@ class BaseResource(ABC):
             return cls.model[0] if cls.model[0] is not None else None
         return cls.model
 
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "key": self.key,
+            "name": self.name,
+            "is_improved": self.is_improved,
+            "tile_yield_on_improvement": self.tile_yield_on_improvement.dump(),
+            "tile_yield": self.tile_yield.dump(),
+            "value": self.value,
+            "value_storage": self.value_storage.name,
+            "type": self.type.__name__ if self.type else None,
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self.key = state.get("key", "")
+        self.name = state.get("name", "")
+        self.is_improved = state.get("is_improved", False)
+        self.tile_yield_on_improvement = Yields()
+        self.tile_yield_on_improvement.load_state(state.get("tile_yield_on_improvement", {}))
+        self.tile_yield = Yields()
+        self.tile_yield.load_state(state.get("tile_yield", {}))
+        self.value = state.get("value", 0)
+        value_storage_name: str = state.get("value_storage", ResourceValueType.INT.name)
+        self.value_storage = ResourceValueType[value_storage_name]
+        type_name: str | None = state.get("type")
+        if type_name:
+            self.type = globals().get(type_name, None)
+        else:
+            self.type = None
+
 
 mapping: Dict[ResourceType, Type[ResourceTypeBase]] = {
     ResourceType.MECHANIC: ResourceTypeMechanic,
@@ -369,6 +399,14 @@ mapping: Dict[ResourceType, Type[ResourceTypeBase]] = {
 
 # Inverted mapping to allow lookup by ResourceTypeBase
 inverted_mapping: Dict[Type[ResourceTypeBase], ResourceType] = {v: k for k, v in mapping.items()}
+
+name_mapping: Dict[str, Type[ResourceTypeBase]] = {
+    "ResourceTypeMechanic": ResourceTypeMechanic,
+    "ResourceTypeBasic": ResourceTypeBasic,
+    "ResourceTypeBonus": ResourceTypeBonus,
+    "ResourceTypeStrategic": ResourceTypeStrategic,
+    "ResourceTypeLuxury": ResourceTypeLuxury,
+}
 
 
 class Resources:
@@ -392,23 +430,13 @@ class Resources:
         return {key: resource for sub_dict in self.resources.values() for key, resource in sub_dict.items()}
 
     def flatten_non_mechanic(self) -> Dict[str, BaseResource]:
-        # This is a helper method to get all resources that are not mechanic resources.
-        # Also to counter the issue of circular imports.
         return self.flatten([ResourceType.BONUS, ResourceType.LUXURY, ResourceType.STRATEGIC])
 
     def flatten_basics(self) -> Dict[str, BaseResource]:
-        # This is a helper method to get all resources that are not mechanic resources.
-        # Also to counter the issue of circular imports.
         return self.resources[ResourceTypeBasic]
 
     def has_non_mechanical_resources(self) -> bool:
-        # This is a helper method to check if there are any non-mechanical resources in the resources.
         return bool(self.flatten_non_mechanic())
-
-    def __getstate__(self) -> object:
-        state = self.__dict__.copy()
-        state["resources"] = {k: v for k, v in self.resources.items() if v}  # Remove empty sub-dictionaries
-        return state
 
     def remove_improvement(self, improvement: "Improvement") -> None:
         for sub_dict in self.resources.values():
@@ -488,6 +516,18 @@ class Resources:
     def __getitem__(self, key: str) -> Dict[str, BaseResource] | BaseResource:
         return self.flatten()[key]
 
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        state["resources"] = {
+            f"{i}-{k.__module__}.{k.__class__.__name__}": v.__getstate__()
+            for i, (k, v) in enumerate(self.resources.items())
+            if v
+        }
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        self.__dict__.update(state)
+
     def __len__(self) -> int:
         """This is the true len for check if there is anything in the resources"""
         return len(self.flatten())
@@ -509,6 +549,28 @@ class Resources:
 
     def on_inspect(self) -> str:
         return self.__str__()
+
+    def dump(self) -> Dict[str, Any]:
+        resources_dump: Dict[str, Any] = {}
+        for resource_type, sub_dict in self.resources.items():
+            resources_dump[resource_type.__name__] = {key: resource.dump() for key, resource in sub_dict.items()}
+        return resources_dump
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager
+
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+        self.resources = {}
+        for resource_type_name, sub_dict in state.items():
+            resource_type: Type[ResourceTypeBase] | None = name_mapping.get(resource_type_name, None)
+            if resource_type is None:
+                raise ValueError(f"Invalid resource type name: {resource_type_name}")
+            self.resources[resource_type] = {}
+            for key, resource_state in sub_dict.items():
+                resource_class: Type[BaseResource] = entity_manager.dynamic_import(resource_state["cls_ref"])
+                resource: BaseResource = resource_class()
+                resource.load_state(resource_state)
+                self.resources[resource_type][key] = resource
 
 
 class Costs:

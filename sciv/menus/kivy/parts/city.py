@@ -1,28 +1,26 @@
+import weakref
 from math import floor
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
-import weakref
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from kivy.uix.widget import Widget
-from kivy.graphics import Color, Rectangle
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-
 from gameplay.city import City
 from gameplay.repositories.improvements import BaseCityImprovement
 from gameplay.repositories.unit import UnitRepository
 from gameplay.units.core.classes.civilian._base import CivilianBaseClass
 from gameplay.units.core.classes.military._base import MilitaryBaseClass
 from gameplay.yields import Yields
+from helpers.debug import Debug
+from kivy.graphics import Color, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 from managers.i18n import t_
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
 from menus.kivy.elements.image_label import ImageLabel
-from helpers.debug import Debug
-
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -143,7 +141,9 @@ class CityUI(BoxLayout, DirectObject):
             self.tiles_label.text = str(t_("ui.player_ui.city.tiles_label", {"tiles": len(self.city.owned_tiles)}))
 
         if self.player_label is not None and self.city.player is not None:
-            self.player_label.text = str(t_("ui.player_ui.city.player_label", {"player": self.city.player.name}))
+            self.player_label.text = str(
+                t_("ui.player_ui.city.player_label", {"player": self.city.get_tile().get_owner().name})
+            )
 
         if (
             self.gold_label is not None
@@ -188,11 +188,12 @@ class CityUI(BoxLayout, DirectObject):
 
             resource_got = 0.0 if len(resource_got) == 0 else resource_got[0].value
             resource_required = resource_required[0].value
+            building = self.city.get_building()
             text = str(
                 t_(
                     "ui.player_ui.city.current_button_building",
                     {
-                        "building": self.city.building.name,
+                        "building": building.name if building is not None else "Unknown",
                         "resources_got": str(floor(resource_got)),
                         "resources_required": str(floor(resource_required)),
                     },
@@ -246,9 +247,6 @@ class CityUI(BoxLayout, DirectObject):
 
                 if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city.get_improvements()):
                     continue  # This is not the best way to check if we are already building this, but there was an issue with the __contains__ method it would not do a type check
-
-                if type(class_instance) == type(self.city.building):  # We are already building this
-                    continue
 
                 button = ButtonValue(
                     text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
@@ -342,7 +340,6 @@ class CityUI(BoxLayout, DirectObject):
         self.logger.debug("Building City UI")
         self.background_color = (0, 0, 0, 1)  # Black background
 
-        # Main container (background black box)
         self.frame = BoxLayout(
             orientation="vertical",
             size_hint=(0.15, 0.680),
@@ -354,23 +351,19 @@ class CityUI(BoxLayout, DirectObject):
         )
 
         with self.frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.7)  # Black background with 70% opacity
+            Color(0, 0, 0, 0.7)
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
         self.frame.bind(size=self.update_debug_rect, pos=self.update_debug_rect)
 
-        # City name label (Top)
         self.city_label = Label(text=str(self.city_name), size_hint=(1, None), height=50, bold=True, font_size=24)
         self.frame.add_widget(self.city_label)
 
-        # City Stats Grid (Middle section)
         self.stats_grid = GridLayout(orientation="lr-tb", size_hint=(1, None), height=100, spacing=0, rows=2, cols=2)
 
-        # Row 1
         self.population_label = Label(text="Pop: ?", size_hint=(1, None), height=30, font_size=12)
         self.tiles_label = Label(text="Tiles: ?", size_hint=(1, None), height=30, font_size=12)
 
-        # Row 2
         self.player_label = Label(text="Owner: ?", size_hint=(1, None), height=30, font_size=12)
         self.is_capital_label = Label(text="Capital: ?", size_hint=(1, None), height=30, font_size=12)
 
@@ -398,25 +391,20 @@ class CityUI(BoxLayout, DirectObject):
         )
         self.frame.add_widget(self.actions_label)
 
-        # ScrollView Clipping Container
         self.button_container = ClippingScrollList(size_hint=(1, None), height=400)
 
-        # Add buttons (Actions List)
         for i in range(5):
             btn = Button(text=f"Action {i + 1}", size_hint=(1, None), height=50)
             self.button_container.add_widget(btn)
 
-        # Add ScrollView inside the clipping container
         self.frame.add_widget(self.button_container)
 
         self.improvement_list_label = Label(text="Improvements", size_hint=(1, None), height=30, font_size=16)
         self.frame.add_widget(self.improvement_list_label)
 
-        # Improvements List
         self.improvement_list_scroll = ClippingScrollList(size_hint=(1, None), height=100, cols=3)
         self.frame.add_widget(self.improvement_list_scroll)
 
-        # Footer (Bottom section)
         self.footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
 
         self.gold_label = ImageLabel(
@@ -474,7 +462,6 @@ class CityUI(BoxLayout, DirectObject):
         return self.frame
 
     def show(self, city: Optional[City] = None, auto_update: bool = True):
-        """Makes the City View visible."""
         if self.frame is None:
             raise AssertionError("City view has not been built yet.")
 
@@ -506,11 +493,6 @@ class CityUI(BoxLayout, DirectObject):
         self.frame.disabled = True
         self.hidden = True
 
-        for unit in self.buildable_units.values():
-            try:
-                unit.destroy()
-            except Exception as e:
-                self.logger.error(f"Error destroying temporary unit {unit.name}: {e}")
         self.get_screen().unregister_non_collidable(self.frame)
 
     def is_hidden(self) -> bool:

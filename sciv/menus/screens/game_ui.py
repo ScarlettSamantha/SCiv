@@ -5,21 +5,21 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Uni
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from kivy.uix.widget import Widget
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.screenmanager import Screen
-
 from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
+from kivy.uix.widget import Widget
 from managers.combat import T_TARGET
+from managers.combat_log import CombatLog
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -31,8 +31,8 @@ from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
+from menus.kivy.parts.inspect_entity import InspectEntity
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
-from managers.combat_log import CombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
@@ -40,10 +40,11 @@ from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
-from menus.kivy.parts.inspect_entity import InspectEntity
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
+
+from sciv.mixins.inspectable import Inspectable
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -122,7 +123,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         # self.add_widget(self.build_debug_frame())  # type: ignore
         self.add_widget(self.build_top_bar())  # type: ignore
         self.add_widget(self.build_stats_frame())  # type: ignore
-        self.add_widget(self.build_inspect_entity())  # type: ignore
 
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
@@ -132,6 +132,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def on_game_end(self, *args: Any):
         self.ignore("escape")
+        self.manager.current = "main_menu"
 
     def reset(self):
         self.logger.info("Resetting game UI screen.")
@@ -161,6 +162,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.hide_research_ui", self.close_research)
         self.accept("ui.update.ui.show_civics_ui", self.open_civics)
         self.accept("ui.update.ui.hide_civics_ui", self.close_civics)
+        self.accept("ui.update.ui.show_inspect_ui", self.open_inspect)
+        self.accept("ui.update.ui.hide_inspect_ui", self.close_inspect)
         self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
 
         self.accept("t", self.toggle_research)
@@ -189,7 +192,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 self.close_research()
                 show_pause = False
             if self.inspect is not None and self.inspect.is_open:
-                self.inspect.hide()
+                self.close_inspect()
                 show_pause = False
 
             self.clear_selected_unit()
@@ -318,21 +321,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def send_to_back(self, widget: Widget):
         parent: Widget = widget.parent
         if widget in parent.children:
-            # if the widget is already in the parent, remove it first
             parent.remove_widget(widget)
-            # add without index → goes to the end of children → drawn last → on top
             parent.add_widget(widget, len(parent.children) - 1)
         elif widget in self.children:
-            # if the widget is in the root layout, remove it first
             self.remove_widget(widget)
-            # add at index=0 → goes to the end of children → drawn last → on top
-            # this is a workaround for kivy not allowing to add a widget at index=0
             self.add_widget(widget, index=len(self.children) - 1)
 
-    def build_inspect_entity(self) -> BoxLayout:
+    def build_inspect_entity(self) -> InspectEntity:
         self.inspect = InspectEntity(self)
-        self.inspect.hide()
-        return self.inspect.frame
+        return self.inspect
 
     def build_action_bar(self) -> GridLayout:
         self.action_bar_frame = ActionBar()
@@ -585,6 +582,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                     width=100,
                     height=75,
                 )
+                if action.is_disabled:
+                    button.disabled = True
+                    button.opacity = 0.5
                 button.bind(on_press=partial(self.prepare_action, action, _unit))  # type: ignore
                 self.action_bar_frame.add_button(button)
 
@@ -646,6 +646,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def prepare_action(self, action: Action, unit: Unit, _):
         """Prepares an action and waits for the next tile click before executing."""
+        if action.is_disabled:
+            self.logger.warning(f"Action {action.name} is disabled and cannot be executed.")
+            return
+
         if action.on_the_spot_action:
             action.action_kwargs["unit"] = unit
             action.run()
@@ -677,6 +681,27 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if action.remove_actions_after_use:
             self.clear_action_bar()
+
+    def open_inspect(self):
+        if self.inspect is None:
+            self.inspect = self.build_inspect_entity()
+            self.inspect.show()
+            self.register_non_collidable(self.inspect.frame)  # type: ignore
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.root_layout.add_widget(self.inspect.frame)  # type: ignore
+            self.lock_input()
+
+    def close_inspect(self):
+        if self.inspect is not None:
+            self.unregister_non_collidable(self.inspect.frame)  # type: ignore
+            if self.root_layout is None:
+                raise AssertionError("Root layout is not initialized.")
+            self.inspect.hide()
+            self.root_layout.remove_widget(self.inspect.frame)  # type: ignore
+            self.popup_disabled = True
+            self.inspect = None
+            self.unlock_input()
 
     def open_research(self):
         if self.research is None:
@@ -749,12 +774,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         else:
             self.close_civics()
 
-    def inspect_element(self, entity: BaseEntity) -> None:
+    def inspect_element(self, entity: Inspectable) -> None:
         if self.inspect is None:
-            self.build_inspect_entity()
-
-        assert self.inspect is not None, "InspectEntity part is not initialized."
-        self.inspect.inspect_entity(entity)
+            self.open_inspect()
+            assert self.inspect is not None, (
+                "Inspect did not get opened properly or assigned to the instance"
+            )  # to make mypy happy
+            self.inspect.inspect_entity(entity)
 
     def lock_input(self):
         MessengerGlobal.messenger.send("system.input.raycaster_off")

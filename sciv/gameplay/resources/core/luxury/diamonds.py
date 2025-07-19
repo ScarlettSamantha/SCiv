@@ -5,6 +5,10 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
+from sciv.gameplay.terrain.hills_desert import HillsDesert
+from sciv.gameplay.terrain.hills_grass import HillsGrass
+from sciv.gameplay.terrain.hills_snow import HillsSnow
+from sciv.gameplay.terrain.hills_tundra import HillsTundra
 
 
 class Diamonds(BaseLuxuryResource):
@@ -14,7 +18,12 @@ class Diamonds(BaseLuxuryResource):
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/bordered_diamonds.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        HillsDesert: 50.0,
+        HillsGrass: 50.0,
+        HillsTundra: 80.0,
+        HillsSnow: 80.0,
+    }
     spawn_amount = 5.0
     improvement_required = [Mine]
 

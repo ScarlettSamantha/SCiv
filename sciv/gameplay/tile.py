@@ -1,49 +1,45 @@
-from copy import deepcopy
+import math
+import weakref
+from dataclasses import dataclass, field
 from enum import Enum
 from logging import Logger
-import math
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Type, Union, cast
-import weakref
 
-from helpers.colors import Tuple4f
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
+from gameplay._units import Units
+from gameplay.condition import Conditions
+from gameplay.improvements_set import ImprovementsSet
+from gameplay.player import Player
+from gameplay.repositories.tile import TileRepository
+from gameplay.resource import BaseResource, Resources
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.yields import Yields
+from helpers.cache import Cache
+from helpers.colors import Tuple4f
+from helpers.maths import scale_value, scaled_pos_z
+from managers.entity import EntityManager, EntityType
+from managers.i18n import T_TranslationOrStr
+from managers.player import PlayerManager
 from panda3d.core import (
     LRGBColor,
     NodePath,
 )
-
-from gameplay._units import Units
-from gameplay.combat.damage import DamageMode
-from gameplay.condition import Conditions
-from gameplay.improvements_set import ImprovementsSet
-from gameplay.repositories.tile import TileRepository
-from gameplay.resource import BaseResource, Resources
-from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.weather import BaseWeather
-from gameplay.yields import Yields
-from helpers.cache import Cache
-from helpers.maths import scale_value, scaled_pos_z
-from managers.entity import EntityManager, EntityType
-from managers.game import Game
-from managers.i18n import T_TranslationOrStr
-from managers.player import PlayerManager
 from system.effects import Effects
 from system.entity import BaseEntity
-from system.generators.basic import HexFeature
 from system.mesh import HexGrid
-from system.subsystems.hexgen.enums import GeoformType
 from system.subsystems.hexgen.edge import Edge
+from system.subsystems.hexgen.enums import Biome, GeoformType, HexFeature
 from system.tile_render import TileRenderer
-from world.items._base_item import BaseItem
 
+from sciv.gameplay.city import City
 
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
     from gameplay.unit import Unit
-    from system.effects import Effect
     from managers.player import Player
+    from system.generators.basic import HexFeature
 
 
 class CantBuildReason(Enum):
@@ -60,7 +56,94 @@ class CantBuildReason(Enum):
     IMPROVEMENT_TILE_NOT_PASSABLE = 10
 
 
+default_slots = {
+    "e": (0.45, 0.0, 0),
+    "ne": (0.375, 0.35, 0),
+    "nw": (-0.375, 0.35, 0),
+    "w": (-0.45, 0.0, 0),
+    "sw": (-0.375, -0.35, 0),
+    "se": (0.375, -0.35, 0),
+    "center": (0.0, 0.0, 0),
+    "n": (0.0, 0.45, 0),
+    "s": (0.0, -0.45, 0),
+}
+
+
+@dataclass(init=False, eq=False, unsafe_hash=False)
 class Tile(BaseEntity):
+    HEMISPHERE_UNKNOWN: int = 0b00000000
+    HEMISPHERE_NORTH: int = 0b00000001
+    HEMISPHERE_SOUTH: int = 0b00000010
+
+    _prop_slots: Dict[str, Tuple[float, float, float]] = field(
+        default_factory=lambda: {k: (v[0], v[1], float(v[2])) for k, v in default_slots.items()}, repr=False
+    )
+    z_scale: float = 1.75
+
+    x: int = 0
+    y: int = 0
+    pos_x: float = 0.0
+    pos_y: float = 0.0
+    pos_z: float = 0.0
+
+    tag: str = field(init=False)
+    player: "Player | None" = field(default=None, repr=False)
+    city: "City | None" = field(default=None, repr=False)
+    city_owner: weakref.ReferenceType["City"] | None = field(default=None, repr=False)
+    _entity_manager: EntityManager = field(init=False, repr=False)
+    logger: Logger = field(init=False, repr=False)
+    renderer: TileRenderer = field(init=False, repr=False)
+    effects: Effects = field(init=False, repr=False)
+    resources: Resources = field(default_factory=Resources, repr=False)
+    units: Units = field(default_factory=Units, repr=False)
+
+    _improvements: ImprovementsSet = field(init=False, repr=False)
+    _tile_terrain: BaseTerrain = field(init=False, repr=False)
+    _features: Set["HexFeature | None"] = cast("Set[HexFeature | None]", field(default_factory=set, repr=False))
+    _geoforms: GeoformType | None = field(default=None, repr=False)
+    _edges: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = field(
+        default_factory=lambda: {
+            "n": None,
+            "ne": None,
+            "se": None,
+            "s": None,
+            "sw": None,
+            "nw": None,
+        },
+        repr=False,
+    )
+
+    destroyed: bool = False
+    is_water: bool = False
+    is_land: bool = False
+    is_sea: bool = False
+    is_lake: bool = False
+    is_coast: bool = False
+
+    altitude: float = 0.0
+    hemisphere: int = HEMISPHERE_UNKNOWN
+    temperature: float = 0.0
+    moisture: float = 0.0
+    inherit_passability_from_terrain: bool = True
+    coast_directions: Set[int] = cast(Set[int], field(default_factory=set))
+    biome: int = 0
+    _biome: Any = field(default=None, repr=False)
+    passable: bool = True
+    passable_without_tech: bool = True
+    walkable: bool = True
+    climbable: bool = True
+    block_resource_model_spawning: bool = False
+    needs_tile_proecessing: bool = True
+
+    tile_yield: Yields = field(
+        default_factory=lambda: Yields(
+            gold=0.0, production=1.0, science=0.0, food=1.0, culture=0.0, housing=0.0, mode=Yields.BASE
+        )
+    )
+
+    visible_sides: Dict[int, bool] = field(default_factory=lambda: {i: True for i in range(6)})
+    is_selected: bool = False
+
     def __init__(
         self,
         x: int = 0,
@@ -69,143 +152,233 @@ class Tile(BaseEntity):
         pos_y: float = 0.0,
         pos_z: float = 0.0,
     ) -> None:
-        self.id: int = id(self)
-        self.x: int = x
-        self.y: int = y
-
         super().__init__(tile=weakref.ref(self))
 
+        self.entity_type_ref = EntityType.TILE.value
+        self.x = x
+        self.y = y
+        self.pos_x = pos_x
+        self.pos_y = pos_y
+        self.pos_z = pos_z
+
         self.tag = self.generate_tag()
-        self.pos_x: float = pos_x
-        self.pos_y: float = pos_y
-        self.pos_z: float = pos_z
-        self.z_scale: float = 1.75
 
-        self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.__post_init__()
 
+    def __post_init__(self) -> None:
         self._entity_manager = EntityManager.get_singleton_instance()
-        self.logger: Logger = self.base.logger.gameplay.getChild("map.tile")
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
 
-        self.destroyed: bool = False
-        self.grid_position: Optional[Any] = None
-        self.raw_position: Optional[Any] = None
-
-        self.is_coast: bool = False
-        self.is_water: bool = False
-        self.is_land: bool = False
-        self.is_sea: bool = False
-        self.is_lake: bool = False
-
-        self.prop_size_scale_factor: float = 0.3
-        self.prop_slots: Dict[str, Tuple[float, float, float]] = {
-            "e": (0.45, 0.0, 0),
-            "ne": (0.375, 0.35, 0),
-            "nw": (-0.375, 0.35, 0),
-            "w": (-0.45, 0.0, 0),
-            "sw": (-0.375, -0.35, 0),
-            "se": (0.375, -0.35, 0),
-            "center": (0.0, 0.0, 0),
-            "n": (0.0, 0.45, 0),
-            "s": (0.0, -0.45, 0),
-        }
-
-        self._edges: Dict[str, Optional[Union[Edge, weakref.ReferenceType[Edge]]]] = {
-            "e": None,
+        self._prop_slots = {k: (float(v[0]), float(v[1]), float(v[2])) for k, v in default_slots.items()}
+        self._edges = {
+            "n": None,
             "ne": None,
-            "nw": None,
-            "w": None,
-            "sw": None,
             "se": None,
+            "s": None,
+            "sw": None,
+            "nw": None,
         }
 
-        self.is_selected: bool = False
+        self.z_scale = 1.75
+        self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self.destroyed = False
+        self.is_water = False
+        self.is_land = False
+        self.is_sea = False
+        self.is_lake = False
+        self.is_coast = False
 
-        self.altitude: float = 1
-
-        self.moisture: float = 0.0
-        self.temperature: float = 1
-        self.terrain: str = "plains"
-        self.zone: str = "temperate"
-        self.hemisphere: str = "north"
-
-        self.resource: Optional[Dict[str, Any]] = None
-        self.resources: Resources = Resources()
-        self.gameplay_height: int = 0
-
-        self.player: Optional["Player"] = None  # None is nature.
-
-        self.damagable: bool = False
-        self.damage: int = 0
-
-        self.damage_per_turn_mode: int = DamageMode.DAMAGE_NONE
-        self.damage_per_turn: float = 0.0
-
-        self.damage_per_turn_on_units_mode: int = DamageMode.DAMAGE_NONE
-        self.damage_per_turn_on_units: float = 0.0
-
-        self.damage_per_turn_on_improvements_mode: int = DamageMode.DAMAGE_NONE
-        self.damage_per_turn_on_improvements: float = 0.0
-
-        self.walkable: bool = True
-        self.sailable: bool = False
-        self.deep: bool = False
-        self.flyable: bool = True
-        self.space_above: bool = True
-
-        self.buidable: bool = True
-        self.climbable: bool = True
-        self.claimable: bool = True
-
-        self.movement_cost: float = 1.0
-
-        self.weather: Optional[BaseWeather] = None
-
-        self._features: Set[Any] = set()
-        self._geoforms: Optional[GeoformType] = None
-        self.biome: int = 1
-        self.units: Units = Units()
-        self._improvements: ImprovementsSet = ImprovementsSet()
-        self.items: List[BaseItem] = list()
-        self.states: List[Any] = []
-
-        self.city: Optional["City"] = None
-        self.city_owner: Optional["City"] = None
-
-        self.owner: Optional["Player"] = None
-        self.claimants: List[Any] = []
-
-        self.inherit_passability_from_terrain: bool = True
-
-        self.coast_directions: List[Tuple[int, int]] = []
-
-        self.tile_yield: Yields = Yields(
-            gold=0.0,
-            production=1.0,
-            science=0.0,
-            food=1.0,
-            culture=0.0,
-            housing=0.0,
-            mode=Yields.BASE,
+        self.resources = Resources()
+        self.units = Units()
+        self.tile_yield = Yields(
+            gold=0.0, production=1.0, science=0.0, food=1.0, culture=0.0, housing=0.0, mode=Yields.BASE
         )
-        self.meshCollider: bool = True
+        self.passable = True
+        self.passable_without_tech = True
+        self.walkable = True
+        self.climbable = True
+        self.tile_terrain = BaseTerrain()
 
-        self.effects: Effects = Effects(self)
-        self.needs_tile_proecessing: bool = False
-        self.block_resource_model_spawning: bool = False
-        self.visible_sides: Dict[int, bool] = {i: True for i in range(6)}
+        self.altitude = 0.0
+        self.hemisphere = Tile.HEMISPHERE_UNKNOWN
+        self.temperature = 0.0
+        self.moisture = 0.0
+        self.inherit_passability_from_terrain = True
+        self.coast_directions = set()
+        self.biome = 0
+        self._improvements = ImprovementsSet()
+        self._features = set()
+        self._geoforms = None
 
-        self.renderer: TileRenderer = TileRenderer(self)
+        self.meshCollider = True
+        self.is_selected = False
 
-        self.register()
+        if hasattr(self, "_tile_terrain"):
+            self.tile_terrain = self._tile_terrain
+
+        self.visible_sides = getattr(self, "visible_sides", {i: True for i in range(6)})
+        self.tag = f"tile_{self.x}_{self.y}"
+        self._entity_manager = EntityManager.get_singleton_instance()
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
+        self.renderer = TileRenderer(self)
+        self.effects = Effects(self)
+
+        self.block_resource_model_spawning = False
+        self.needs_tile_proecessing = True
+
+        # register in the world
+        self._entity_manager.register(EntityType.TILE, self, self.tag)
+
+    def dump(self) -> Dict[str, Any]:
+        data = self.__dict__.copy()
+        data["_tile_terrain"] = self.tile_terrain.dump()
+        data["biome"] = self._biome.id if self._biome else 0
+        data["visible_sides"] = self._calculate_visible_sides()
+        data["is"] = self._calculate_is_flags()
+        data["_features"] = [feature.value if feature else None for feature in self.features]
+        data["_edges"] = {
+            side: edge() if isinstance(edge, weakref.ReferenceType) else None for side, edge in self.edges.items()
+        }
+        data["pos_x"], data["pos_y"], data["pos_z"] = round(self.pos_x, 3), round(self.pos_y, 3), round(self.pos_z, 3)
+        data["effects"] = self.effects.dump()
+        data["_improvements"] = self._improvements.dump()
+        data["resources"] = self.resources.dump()
+        data["units"] = self.units.dump()
+        data["owner"] = self.get_owner().get_tag() if self._owner else None
+        data["city"] = self.city.get_tag() if self.city else None
+        data["hidden_in_tree"] = self.hidden_in_tree
+        for key in [
+            "_entity_manager",
+            "base",
+            "logger",
+            "renderer",
+            "tile_yield",  # we don't want to dump the tile yield here, as it is calculated.
+            "is_selected",
+            "is_water",
+            "is_land",
+            "is_sea",
+            "is_lake",
+            "is_coast",
+            "destroyed",
+            "edges",
+            "_biome",
+            "visible_sides",
+        ]:
+            data.pop(key, None)
+        return data
+
+    def load_state(self) -> None:
+        self.base = Cache.get_showbase_instance()
+        self.logger = self.base.logger.gameplay.getChild("map.tile")
+        self._entity_manager = EntityManager.get_singleton_instance()
+
+        terrain_type: Dict[str, Any] = self._tile_terrain  # type: ignore
+        if terrain_type:
+            import_path: str | None = terrain_type.get("cls_ref", None)
+            assert import_path is not None, "Terrain class reference is missing in state."
+            terrain_class: Type[Any] = cast(
+                Type[BaseTerrain], EntityManager.get_singleton_instance().dynamic_import(import_path=import_path)
+            )
+            self.tile_terrain = terrain_class()
+            self.tile_terrain.load_state(terrain_type)
+
+        resources = Resources()
+        resources.load_state(self.resources)  # type: ignore
+        self.resources = resources
+
+        self._prop_slots = {k: (float(v[0]), float(v[1]), float(v[2])) for k, v in default_slots.items()}
+
+        improvements = ImprovementsSet()
+        improvements.load_state(self._improvements)  # type: ignore
+        self._improvements = improvements
+
+        effects = Effects(self)
+        effects.load_state(self.effects)  # type: ignore
+        self.effects = effects
+
+        units = Units()
+        units.load_state(self.units)  # type: ignore
+        self.units = units
+
+        self._from_is_flags(getattr(self, "is", 0))
+
+        if self._owner is not None and isinstance(self._owner, str):
+            _owner_instance_ref: weakref.ReferenceType[Player] | None = cast(
+                weakref.ReferenceType["Player"] | None,
+                self._entity_manager.get_ref_weak(EntityType.PLAYER, self._owner),
+            )
+
+        features: List[str] = getattr(self, "_features", [])
+        if features:
+            self._features = set()
+            for _feature in features:
+                feature: HexFeature | None = HexFeature.from_name(_feature)  # type: ignore
+                if feature is not None:
+                    assert isinstance(feature, HexFeature), "Feature must be of type HexFeature."
+                    self._features.add(feature)
+
+        if self._geoforms is not None:
+            geoform_type: GeoformType | None = GeoformType.from_id(self._geoforms)  # type: ignore
+            if geoform_type is not None:
+                self._geoforms = geoform_type
+
+        if self._biome is not None:
+            biome_id: int = getattr(self, "biome", 0)
+            self._biome = Biome.from_id(biome_id) if biome_id else None
+
+        if self.city:
+            city_ref: weakref.ReferenceType["City"] | None = cast(
+                weakref.ReferenceType["City"] | None,
+                self._entity_manager.get_ref_weak(EntityType.CITY, getattr(self, "city")),
+            )
+            if city_ref is not None:
+                self.city = city_ref()
+
+        self.renderer = TileRenderer(self)
+
+    def calculate(self):
+        new_yield = Yields.nullYield()
+
+        base = self._tile_terrain.get_tile_yield()
+        new_yield += base
+
+        if self.is_city() and self.city is not None:
+            city_yield = self.city.get_yield()
+            new_yield += city_yield
+
+        else:
+            for improvement in self._improvements.get_all():
+                new_yield += improvement.tile_yield
+
+                for improvement_effect in improvement.effects.get_effects().values():
+                    new_yield += improvement_effect.yield_impact
+
+        for effect in self.effects.get_effects().values():
+            new_yield += effect.yield_impact
+
+        for resource in self.resources.flatten_non_mechanic().values():
+            new_yield += resource.get_yield()
+
+        self.tile_yield = new_yield
+
+    def __hash__(self) -> int:
+        return hash(self.tag)
+
+    @property
+    def movement_cost(self) -> float:
+        return 1 * self.tile_terrain.movement_modifier
 
     @property
     def features(self) -> Set[Any]:
         return self._features
 
     @features.setter
-    def features(self, value: Set[HexFeature | None]) -> None:
+    def features(self, value: Set["HexFeature | None"]) -> None:
         if len(value) > 0:
-            self._features = value
+            self._features = set()
+            for feature in value:
+                if isinstance(feature, HexFeature):
+                    self._features.add(feature)
 
     @property
     def geoforms(self) -> Optional[GeoformType]:
@@ -279,76 +452,77 @@ class Tile(BaseEntity):
     def generate_tag(self) -> str:
         return f"tile_{self.x}_{self.y}"
 
-    def on_load(self) -> None:
-        self.register()
-
-        self.base = Cache.get_showbase_instance()
-        self.logger = self.base.logger.gameplay.getChild("map.tile")
-        self.effects = Effects(self)
-
-        self.renderer.render()
-        self.pos_x, self.pos_y, self.pos_z = self.calculate_z_pos_on_altitude()
-
-        if self.city is not None:
-            self.city.base = self.base
-            self.city.register()
-
-    def calculate(self):
-        new_yield = Yields.nullYield()
-
-        base = self._tile_terrain.get_tile_yield()
-        new_yield += base
-
-        if self.is_city() and self.city is not None:
-            city_yield = self.city.get_yield()
-            new_yield += city_yield
-        else:
-            for improvement in self._improvements.get_all():
-                new_yield += improvement.tile_yield
-
-                for improvement_effect in improvement.effects.get_effects().values():
-                    new_yield += improvement_effect.yield_impact
-
-        for effect in self.effects.get_effects().values():
-            new_yield += effect.yield_impact
-
-        for resource in self.resources.flatten_non_mechanic().values():
-            new_yield += resource.get_yield()
-
-        self.tile_yield = new_yield
+    def get_prop_slots(self) -> Dict[str, Tuple[float, float, float]]:
+        return self._prop_slots
 
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
-        if "base" in state:
-            del state["base"]
-        if "logger" in state:
-            del state["logger"]
-        if "renderer" in state:
-            del state["renderer"]
-        if "_entity_manager" in state:
-            del state["_entity_manager"]
-        if "effects" in state:
-            del state["effects"]
 
+        edges = {}
+        for side, edge in self.edges.items():
+            if isinstance(edge, weakref.ReferenceType):
+                _edge: Edge | None = edge()
+                if _edge is None:
+                    edges[side] = None
+                else:
+                    edges[side] = id(_edge)
+            elif edge is not None:
+                edges[side] = edge
+
+        state["edges"] = edges
+        state["improvements"] = self._improvements.__getstate__()
+        state["resources"] = self.resources.__getstate__()
+        state["units"] = [unit.get_tag() for unit in self.units.all()]
+        state["tile_yield"] = self.tile_yield.dump()
+        state["features"] = [feature.name for feature in self.features]
+        state["biome"] = self._biome.id
+        state["pos_x"] = round(self.pos_x, 4)
+        state["pos_y"] = round(self.pos_y, 4)
+        state["pos_z"] = round(self.pos_z, 4)
+        state["hpr"] = tuple(round(angle, 4) for angle in self.hpr)
+        state["visible_sides"] = self._calculate_visible_sides()
+        state["is"] = self._from_is_flags(state.get("is", 0))
+        state.pop("base", None)
+        state.pop("logger", None)
+        state.pop("renderer", None)
+        state.pop("_entity_manager", None)
+        state.pop("effects", None)
+        state.pop("_addTask", None)
+        state.pop("_clearTask", None)
+        state.pop("_improvements", None)
+        state.pop("_tile_terrain", None)
+        state.pop("_features", None)
+        state.pop("_biome", None)
+        state.pop("prop_slots", None)
+        state.pop("is_selected", None)
+        state.pop("destroyed", None)
+        state.pop("is_coast", None)
+        state.pop("is_water", None)
+        state.pop("is_land", None)
+        state.pop("is_sea", None)
+        state.pop("is_lake", None)
+        state.pop("_edges", None)
+        state.pop("tile")
         return state
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        self.__dict__.update(state)
-        self.base = Cache.get_showbase_instance()
-        self.logger = self.base.logger.gameplay.getChild("map.tile")
-        self._entity_manager = EntityManager.get_singleton_instance()
-        self.renderer = TileRenderer(self)
-        self.effects = Effects(self)
-        self.visible_sides = state.get("visible_sides", {i: True for i in range(6)})
+    def _calculate_is_flags(self) -> int:
+        return (
+            (1 if self.is_water else 0)
+            | (2 if self.is_land else 0)
+            | (4 if self.is_sea else 0)
+            | (8 if self.is_lake else 0)
+            | (16 if self.is_coast else 0)
+        )
 
-        if "tile_yield" not in state:
-            self.tile_yield = Yields.nullYield()
+    def _from_is_flags(self, flags: int) -> None:
+        self.is_water = bool(flags & 1)
+        self.is_land = bool(flags & 2)
+        self.is_sea = bool(flags & 4)
+        self.is_lake = bool(flags & 8)
+        self.is_coast = bool(flags & 16)
 
-        if "effects" not in state:
-            self.effects = Effects(self)
-
-        for key, value in state.items():
-            setattr(self, key, value)
+    def _calculate_visible_sides(self) -> int:
+        return sum(1 << i for i, v in self.visible_sides.items() if v)
 
     def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         yields = self.tile_yield.on_inspect()
@@ -360,13 +534,11 @@ class Tile(BaseEntity):
 
         data = {
             "tag": self.tag,
-            "id": self.id,
             "x, y": f"{self.x} , {self.y}",
             "pos": f"({self.pos_x}, {self.pos_y}, {self.pos_z})",
             "hpr": f"({self.hpr[0]}, {self.hpr[1]}, {self.hpr[2]})",
             "altitude": self.altitude,
             "terrain": self.tile_terrain.name if self.tile_terrain else None,
-            "zone": self.zone,
             "hemisphere": self.hemisphere,
             "is_water": str(self.is_water),
             "is_land": str(self.is_land),
@@ -375,7 +547,7 @@ class Tile(BaseEntity):
             "is_coast": str(self.is_coast),
             "is_city": self.is_city(),
             "city": self.city.tag if self.city else None,
-            "city_owner": str(self.city_owner.tag) if self.city_owner else None,
+            "city_owner": str(self.get_city_owner().get_tag()) if self.city_owner else None,  # type: ignore
             "owner": str(self.get_owner().name) if self.owner else "nature",
             "resources": self.resources.on_inspect(),
             "features": [feature.name for feature in self.features],
@@ -393,6 +565,13 @@ class Tile(BaseEntity):
 
         return (data, self.get_children_inspect())
 
+    def get_city_owner(self) -> "City | None":
+        if self.city_owner is not None:
+            city_owner: City | None = self.city_owner()
+            assert city_owner is not None, "City owner reference is invalid."
+            return city_owner
+        return None
+
     def set_visible_sides(self, sides: Dict[int, bool]) -> None:
         if len(sides) != 6:
             raise ValueError("visible_sides must be a list of length 6.")
@@ -408,7 +587,7 @@ class Tile(BaseEntity):
         return self.pos_x, self.pos_y, self.pos_z
 
     def __repr__(self) -> str:
-        return f"{self.id}@{self.x},{self.y}"
+        return f"{self.tag}@{self.x},{self.y}"
 
     def get_improvements(self) -> ImprovementsSet:
         return self._improvements
@@ -483,11 +662,15 @@ class Tile(BaseEntity):
         self.pos_x, self.pos_y = px, py
 
     def set_walls_color(self, color: Tuple[float, ...]) -> None:
+        from managers.game import Game
+
         mesh: HexGrid = Game.get_singleton_instance().get_mesh()
         mesh.set_wall_color_for_tile(mesh.get_tile_index_from_coords(self.x, self.y), cast(Tuple4f, color))
 
     def render(self, auto_calculate: bool = True) -> None:
-        self.renderer.render(update_yields=auto_calculate)
+        if auto_calculate:
+            self.calculate()  # type: ignore
+        self.renderer.render()
 
     def on_turn_end(self, turn: int) -> None:
         if len(self._improvements) > 0:  # We only process improvements if we have any.
@@ -551,7 +734,7 @@ class Tile(BaseEntity):
         self.tile_yield.values += tileYield  # type: ignore
 
     def get_tile_yield(self) -> Yields:
-        yield_copy = deepcopy(self.tile_yield)
+        yield_copy = self.tile_yield.get_copy()
 
         return yield_copy
 
@@ -571,12 +754,17 @@ class Tile(BaseEntity):
         return self.city is not None
 
     def add_unit(self, unit: "Unit") -> None:
+        if unit.is_being_build:
+            return
+
         self.units.add_unit(unit)
         if len(self.units) == 1:
             self.renderer.on_unit_enter()
 
     def remove_unit(self, unit: "Unit") -> None:
-        # Assuming the intent is to remove the unit.
+        if unit.is_being_build:
+            return
+
         self.units.remove_unit(unit)
         if len(self.units) == 0:
             self.renderer.on_unit_leave()
@@ -613,9 +801,10 @@ class Tile(BaseEntity):
         self.owner.add_tile(self)
 
         if self.owner.capital is not None:
-            self.owner.capital.de_capitalize()
+            if (_capital := self.owner.capital()) is not None:
+                _capital.de_capitalize()
 
-        self.owner.capital = self.city
+        self.owner.capital = weakref.ref(self.city)
 
         self.set_terrain(CityTerrain())
         self.render()
@@ -677,10 +866,9 @@ class Tile(BaseEntity):
         return self.x, self.y
 
     def instance_resource(self, resource: Type[BaseResource]):
-        """Just here to decouplel it from enrich from extra data as it will be gone soon."""
         self.resources.add(resource(3), auto_instance=True)
 
-    def get_children_inspect(self) -> Dict[str, Set["Unit"] | Set["Improvement"] | Set["Effect"] | Set["City"]]:
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]:
         if self.city is not None:
             return {
                 "units": set(self.units.all()),

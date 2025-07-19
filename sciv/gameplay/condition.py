@@ -29,6 +29,12 @@ class Condition:
         if missing_params:
             raise ValueError(f"Missing required parameters: {', '.join(missing_params)}")
 
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        state.pop("_condition", None)
+        state["_cls"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
+        return state
+
     def set(self, condition: Callable[..., bool]) -> None:
         """Set the condition function."""
         self._condition = condition

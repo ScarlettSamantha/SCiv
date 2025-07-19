@@ -1,20 +1,20 @@
-from typing import Dict, List, Tuple, Optional, TYPE_CHECKING, Any
+import math
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from helpers.colors import Colors, Tuple4f
+from helpers.tiles import Tiles
 from panda3d.core import (
     Geom,
     GeomNode,
+    GeomTriangles,
     GeomVertexData,
     GeomVertexFormat,
     GeomVertexReader,
     GeomVertexWriter,
-    GeomTriangles,
     NodePath,
     PandaNode,
     Shader,  # type: ignore
 )
-import math
-
-from helpers.colors import Colors, Tuple4f
-from helpers.tiles import Tiles
 
 if TYPE_CHECKING:
     from managers.entity import Tile
@@ -29,6 +29,10 @@ class HexGrid:
         rows: int = 10,
         wall_color: Tuple4f = Colors.MAGENTA,
     ):
+        from managers.entity import EntityType
+
+        self.entity_type_ref = EntityType.WORLD.value
+        self.entity_key: str = "_world_"
         self.radius: float = radius
         self.tiles: List["Tile"] = tiles
         self._tile_index_map: Dict[Tuple[int, int], int] = {(t.x, t.y): i for i, t in enumerate(self.tiles)}
@@ -49,11 +53,9 @@ class HexGrid:
 
         self._hex_uvs: List[Tuple[float, float]] = []
 
-        # Panda3D NodePaths
         self.grid_np: Optional[NodePath] = None
         self.walls_np: Optional[NodePath] = None
 
-        # Create shader only once (class/static)
         if not hasattr(HexGrid, "shader"):
             self.shader: Shader = Shader.make(  # type: ignore
                 Shader.SL_GLSL,  # type: ignore
@@ -61,13 +63,47 @@ class HexGrid:
                 fragment="assets/shaders/hex_mesh.frag.glsl",  # type: ignore
             )  # type: ignore
 
-        self.root_np = NodePath(PandaNode("hexgrid_root"))
+        self.root_np: NodePath[PandaNode] = NodePath(PandaNode("hexgrid_root"))
         self.generate_hex_uvs()
         self.generate_mesh()
         self.build_nodes()
 
         self.root_np.reparent_to(render)  # type: ignore  # noqa: F821
         self.root_np.flatten_light()
+
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("root_np", None)
+        state.pop("grid_np", None)
+        state.pop("walls_np", None)
+        state.pop("shader", None)
+        state.pop("_tile_index_map", None)
+        state["mesh_vertices"] = [
+            (round(v[0], 3), round(v[1], 3), round(v[2], 3)) for v in self.mesh_vertices
+        ]  # rounding for serialization otherwise floats can be too precise which makes compression really bad especially on really big maps.
+
+        return state
+
+    def load_state(self) -> None:
+        self._tile_index_map = {(t.x, t.y): i for i, t in enumerate(self.tiles)}
+
+        self.shader = Shader.make(  # type: ignore
+            Shader.SL_GLSL,  # type: ignore
+            vertex="assets/shaders/hex_mesh.vert.glsl",
+            fragment="assets/shaders/hex_mesh.frag.glsl",  # type: ignore
+        )
+
+        self.root_np = NodePath(PandaNode("hexgrid_root"))
+
+        self.generate_hex_uvs()
+        self.generate_mesh()
+        self.build_nodes()
+
+        try:
+            self.root_np.reparent_to(render)  # type: ignore
+            self.root_np.flatten_light()
+        except NameError:
+            pass
 
     def __getstate__(self) -> Dict[str, Any]:
         return {
@@ -76,6 +112,7 @@ class HexGrid:
             "cols": self.cols,
             "rows": self.rows,
             "wall_color": self.wall_color,
+            "entity_key": self.entity_key,
         }
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
@@ -130,7 +167,7 @@ class HexGrid:
 
         if hasattr(self, "root_np") and self.root_np:
             self.root_np.removeNode()
-            self.root_np = None
+            del self.root_np
 
         self.grid_np = None
         self.walls_np = None

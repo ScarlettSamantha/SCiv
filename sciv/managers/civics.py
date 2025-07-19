@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Any, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from gameplay.civic import Civic, CivicSubtree, CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
@@ -21,14 +21,14 @@ class CivicsManager(BaseManager):
 
         self.civics_activated: List[Civic] = []
 
-    def __getstate__(self) -> object:
-        state = self.__dict__.copy()
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
         state.pop("parent", None)
         state.pop("logger", None)
         state.pop("civic_tree", None)
         return state
 
-    def __setstate__(self, state: dict[str, Any]) -> None:
+    def load_state(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
         self.parent = Cache.get_showbase_instance()
         self.logger = Cache.core_logger().gameplay.getChild("civics_manager")

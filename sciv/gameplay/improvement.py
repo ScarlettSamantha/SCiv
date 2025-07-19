@@ -1,17 +1,18 @@
 import random
-import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple, Type, Union
+from logging import Logger
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
 from weakref import ReferenceType
 
 from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
-
 from gameplay.yields import Yields
-from managers.entity import EntityManager, EntityType
+from helpers.cache import Cache, LogManager
 from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import Effects
 from system.entity import BaseEntity
+
+from sciv.managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -32,7 +33,7 @@ class Improvement(BaseEntity):
     _model: str | None = None
     _model_scale: float = 1.0
     _model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.09)  # to rise above the tile
+    _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.001)  # to rise above the tile
 
     tile_yield_improvement: Yields = Yields.nullYield()
     maintenance_cost: Yields = Yields.nullYield()
@@ -58,7 +59,11 @@ class Improvement(BaseEntity):
         super().__init__(tile=tile, owner=owner, *args, **kwargs)
         from gameplay.resources.core.basic.production import Production
 
-        self.key: str = key if key else uuid.uuid4().hex
+        self.tag = self.generate_tag()
+        self.key: str = self.tag if key is None else key
+        self.entity_key = self.key
+        self.entity_type_ref = EntityType.IMPROVEMENT.value
+
         self.active: bool = True
         self.destroyed: bool = False
 
@@ -73,22 +78,72 @@ class Improvement(BaseEntity):
 
         self.multi_turn_mode: ImprovementBuildTurnMode = ImprovementBuildTurnMode.SINGLE_TURN
 
-        # Following 3 are not needed in single turn mode.
         self.amount_resource_needed: Yields = Yields.nullYield()
         self.resource_needed: type[BasicBaseResource] = Production
 
-        # Dynamic value, will be set by the game.
         self.turns_needed: float | int | None = None
         self.build_progress: float | int | None = None
 
         self.effects: Effects = Effects(self)
         self.conditions: Conditions = Conditions()
 
-        # This will be applied when the resource is placed on the tile.
         self._tile_yield_improvement: Yields = self.tile_yield_improvement
         self._maintenance_cost: Yields = self.maintenance_cost
 
         self._model_offset: Tuple[float, float, float] = self._model_default_offset
+
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = self.__dict__.copy()
+        state.pop("base", None)
+        state.pop("_logger", None)
+        state.pop("model", None)
+        state["resource_needed"] = (
+            f"{self.resource_needed.__module__}.{self.resource_needed.__name__}" if self.resource_needed else None
+        )
+        state["cls_ref"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
+        state["effects"] = self.effects.dump()
+        state["_tile_yield_improvement"] = self._tile_yield_improvement.dump()
+        state["tile_yield_improvement"] = self.tile_yield_improvement.dump()
+        state["_maintenance_cost"] = self._maintenance_cost.dump()
+        state["effects"] = self.effects.dump()
+        state["owner"] = self.get_owner().get_tag()
+        state["tile_tag"] = self.get_tile().get_tag() if self.get_tile() else None
+        state["health_left"] = self.health_left if hasattr(self, "health_left") else 100
+        return state
+
+    def load_state(self) -> None:
+        from gameplay.player import EntityManager, EntityType
+
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+
+        self._logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("improvement")
+        self.base = Cache.get_showbase_instance()
+
+        self._tile_yield_improvement = Yields.from_dict(getattr(self, "_tile_yield_improvement", {}))
+        self.tile_yield_improvement = Yields.from_dict(getattr(self, "tile_yield_improvement", {}))
+        self._maintenance_cost = Yields.from_dict(getattr(self, "_maintenance_cost", {}))
+
+        self.owner = cast(
+            ReferenceType["Player"],
+            EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, getattr(self, "owner", None)),  # type:ignore
+        )
+        self.tile = cast(ReferenceType["Tile"], entity_manager.get_ref_weak(EntityType.TILE, getattr(self, "tile_tag")))  # type:ignore
+
+        resource_needed_class = getattr(self, "resource_needed", None)
+        if resource_needed_class is None:
+            from gameplay.resources.core.basic.production import Production
+
+            self.resource_needed = Production
+        else:
+            self.resource_needed = EntityManager.get_singleton_instance().dynamic_import(resource_needed_class)
+
+        self.amount_resource_needed = Yields.from_dict(getattr(self, "amount_resource_needed", {}))
+
+        effects = Effects(self)
+        effects.load_state(self.effects)  # type:ignore
+        self.effects = effects
+
+        self._health_left = getattr(self, "health_left", getattr(self, "max_health", 100))
 
     @classmethod
     def on_tooltip(cls) -> str:
@@ -112,40 +167,26 @@ class Improvement(BaseEntity):
             + maintenance_cost
         )
 
-    def __del__(self):
-        if self.is_registered is True:
-            self.unregister()
-
     def register(self):
+        from managers.entity import EntityManager, EntityType
+
         if self.is_registered is True:
             return
         EntityManager.get_singleton_instance().register(entity=self, type=EntityType.IMPROVEMENT, key=self.tag)
 
     def unregister(self):
+        from managers.entity import EntityManager, EntityType
+
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.IMPROVEMENT)
 
     def _validate_state(self) -> bool:
         return True
 
-    def generate_tag(self):
+    def generate_tag(self) -> str:
         if self.tile is None:
-            self.tag = f"improvement_{self.name}_{random.randrange(0, 10000)}"
+            return f"improvement_{self.name}_{random.randrange(0, 10000)}"
         else:
-            self.tag = (
-                f"improvement_{self.get_tile().x}_{self.get_tile().y}_{str(self.name)}_{random.randrange(0, 10000)}"
-            )
-
-    def __getstate__(self) -> Dict[str, Any]:
-        state = self.__dict__.copy()
-        if "base" in state:
-            del state["base"]
-        if "_logger" in state:
-            del state["_logger"]
-        if "model" in state:
-            del state["model"]
-        if "effects" in state:
-            del state["effects"]
-        return super().__getstate__()
+            return f"improvement_{self.get_tile().x}_{self.get_tile().y}_{str(self.name)}_{random.randrange(0, 1000)}"
 
     @property
     def model(self):
@@ -171,7 +212,6 @@ class Improvement(BaseEntity):
             raise ValueError("Tile is not set for the improvement")
 
         if self.is_registered is False:
-            self.generate_tag()
             self.register()
 
     def on_destroy(self):
@@ -240,7 +280,10 @@ class Improvement(BaseEntity):
 
         return data, self.get_children_inspect()
 
-    def get_children_inspect(self) -> Dict[str, Set[BaseEntity | Any]]:
+    def get_children_inspect(self) -> Dict[str, Set[Any] | List[Any]]:
         return {
             "effects": set(self.effects.get_effects().values()),
         }
+
+    def get_tile_yield(self) -> Yields:
+        return self.tile_yield

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Generator, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Tuple, Type
 
 from gameplay.age import Age
 from helpers.colors import Colors, Tuple4f
@@ -6,8 +6,8 @@ from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr, t_
 
 if TYPE_CHECKING:
-    from system.entity import BaseEntity
     from gameplay.player import Player
+    from system.entity import BaseEntity
 
 
 class Tech:
@@ -69,8 +69,17 @@ class Tech:
 
     def on_unlock(self, player: "Player") -> None: ...
 
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        pass
+
 
 class TechTree:
+    key: str
     name: T_TranslationOrStr
     description: T_TranslationOrStr
     icon: T_TranslationOrStr | None = None
@@ -89,31 +98,23 @@ class TechTree:
     def add_age(self, age: Age) -> None:
         self._ages.append(age)
 
-    @classmethod
-    def closest_color(cls, requested_color: tuple[int, int, int, int]) -> str:
-        import webcolors
+    def dump(self) -> Dict[str, Any]:
+        data = {
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+            "key": self.key,
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "items": [f"{item.__module__}.{item.__name__}" for item in self._items],
+        }
+        return data
 
-        min_colors = {}
-        for _, name in webcolors.CSS3_NAMES_TO_HEX.items():  # type: ignore
-            r_c, g_c, b_c = webcolors.hex_to_rgb(name)  # type: ignore
-            rd: int = (r_c - requested_color[0]) ** 2
-            gd: int = (g_c - requested_color[1]) ** 2
-            bd: int = (b_c - requested_color[2]) ** 2
-            min_colors[(rd + gd + bd)] = name
-        return min_colors[min(min_colors.keys())]  # type: ignore
+    def load_state(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager
 
-    @classmethod
-    def convert_rgba_to_color_name(cls, rgba: tuple[int, int, int, int]) -> str:
-        import webcolors
+        self.key = state.get("key", "")
+        self.name = state.get("name", "")
+        self.description = state.get("description", "")
+        self.icon = state.get("icon", None)
 
-        if rgba.__len__() == 4:
-            rgb: Tuple[int, int, int] = rgba[:3]  # type: ignore # Ignore the alpha channel for color matching
-        else:
-            rgb: Tuple[int, int, int, int] = rgba
-        try:
-            # Get the closest color name directly
-            closest_name = webcolors.rgb_to_name(rgb)  # type: ignore , This is a known issue with the library. It works.
-        except ValueError:
-            # Find the closest color name using the colormath library
-            closest_name = cls.closest_color(rgb)
-        return closest_name
+        self._items = [EntityManager.dynamic_import(item) for item in state.get("items", [])]

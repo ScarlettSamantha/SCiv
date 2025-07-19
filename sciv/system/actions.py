@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, Optional, Self, Tuple
 
+from direct.showbase import MessengerGlobal
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.log import LogManager
 
@@ -55,8 +56,21 @@ class Action:
 
         self.remove_actions_after_use: bool = False
         self.failure_reason: Any = None
+        self.is_disabled: bool = False
+        self.auto_refresh_action_bar: bool = True
+        self.reset_every_turn: bool = True
 
         self.action_result: Optional[Any] = None
+
+    def on_turn_end(self, turn: int) -> None:
+        if self.reset_every_turn:
+            self.action_result = None
+            self.is_disabled = False
+        else:
+            self.is_disabled = self.should_be_disabled()
+
+    def should_be_disabled(self) -> bool:
+        return False
 
     def get_result(self) -> Optional[Any]:
         return self.action_result
@@ -105,3 +119,7 @@ class Action:
             if self.on_failure is not None:
                 self.logger.info(f"Action: {self.name} has on_failure callback, running it.")
                 self.on_failure(self, self.action_args, self.action_kwargs)
+
+        if self.auto_refresh_action_bar:
+            self.logger.info(f"Action: {self.name} will refresh the action bar.")
+            MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")

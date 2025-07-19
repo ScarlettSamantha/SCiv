@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from typing import Any, Iterable, List, Self
+
 from managers.i18n import T_TranslationOrStr
-from mixins.callbacks import CallbacksMixin
 from system.requires import Requires, RequiresMultiple, T_Requires
 
 
-class Promotion(CallbacksMixin):
+class Promotion:
     def __init__(
         self,
         key: str,
@@ -17,7 +17,6 @@ class Promotion(CallbacksMixin):
         *args: Any,
         **kwargs: Any,
     ):
-        CallbacksMixin.__init__(self, *args, **kwargs)
         self.key: str = key
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
@@ -39,10 +38,6 @@ class Promotion(CallbacksMixin):
             self._requires = requires
         return self
 
-    def declare_events(self) -> None:
-        self._declare_event(event="on_aquire")
-        self._declare_event(event="on_unaquire")
-
     def are_requirements_met(self) -> bool:
         if self.requires is None:
             return True
@@ -54,12 +49,10 @@ class Promotion(CallbacksMixin):
 
     def aquire(self) -> "Promotion":
         self.aquired = True
-        self.trigger_callback(category="on_aquire", promotion=self)
         return self
 
     def unaquire(self) -> "Promotion":
         self.aquired = False
-        self.trigger_callback(category="on_unaquire", promotion=self)
         return self
 
     def is_locked(self) -> bool:
@@ -72,7 +65,7 @@ class Promotion(CallbacksMixin):
         return False
 
 
-class PromotionTree(CallbacksMixin):
+class PromotionTree:
     def __init__(
         self,
         key: str,
@@ -84,7 +77,6 @@ class PromotionTree(CallbacksMixin):
         *args: Any,
         **kwargs: Any,
     ):
-        CallbacksMixin().__init__(*args, **kwargs)
         self.key: str = key
         self.name: T_TranslationOrStr = name
         self.description: T_TranslationOrStr = description
@@ -106,13 +98,6 @@ class PromotionTree(CallbacksMixin):
         self.promotions.remove(promotion)
         return self
 
-    def declare_events(self) -> None:
-        self._declare_event(event="on_unlock")
-        self._declare_event(event="on_lock")
-        self._declare_event(event="on_complete")
-        self._declare_event(event="on_promotion_aquire")
-        self._declare_event(event="on_promotion_unaquire")
-
     def is_locked(self) -> bool:
         if self.requires is None:
             return False
@@ -124,12 +109,10 @@ class PromotionTree(CallbacksMixin):
 
     def unlock(self) -> "PromotionTree":
         self.unlocked = True
-        self.trigger_callback(category="on_unlock", promotion_tree=self)
         return self
 
     def lock(self) -> "PromotionTree":
         self.unlocked = False
-        self.trigger_callback(category="on_lock", promotion_tree=self)
         return self
 
     def completed(self) -> bool:

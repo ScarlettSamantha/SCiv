@@ -21,6 +21,7 @@ from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
 from menus.screens.save_load import SaveLoadScreen
 from mixins.singleton import Singleton
+from mixins.inspectable import Inspectable
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
@@ -155,7 +156,6 @@ class ui(Singleton, DirectObject):
         self.accept("p", self.activate_pstat)
         self.accept("l", self.deactivate_pstat)
         self.accept("z", self.calculate_icons_for_tiles)
-        self.accept("space", self.on_space_press)
         return True
 
     def get_main_game_ui(self) -> "GameUIScreen":
@@ -169,9 +169,6 @@ class ui(Singleton, DirectObject):
     def on_tile_hover(self, tile_coords: str) -> None: ...
 
     def on_tile_unhover(self, tile_coords: List[str]) -> None: ...
-
-    def on_space_press(self):
-        MessengerGlobal.messenger.send("game.requests.end_turn")
 
     def on_escape_press(self):
         if self.game is None:
@@ -505,5 +502,5 @@ class ui(Singleton, DirectObject):
     def trigger_render_analyze(self):
         self._base.render.analyze()  # type: ignore
 
-    def inspect_element(self, element: BaseEntity):
+    def inspect_element(self, element: Inspectable):
         self.get_main_game_ui().inspect_element(element)

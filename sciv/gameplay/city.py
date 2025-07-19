@@ -1,46 +1,48 @@
 from logging import Logger
 from random import randint, randrange
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from weakref import ReferenceType, ref
 
 from direct.showbase import DirectObject, MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
-
 from gameplay.citizens import Citizens, population_curve
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
 from gameplay.improvements.core.city.palace import Palace
 from gameplay.improvements_set import ImprovementsSet
+from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
 from gameplay.yields import Yields
+from helpers.colors import Colors
+from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.log import LogManager
 from system.effects import Effects
 from system.entity import BaseEntity
-from gameplay.repositories.tile import TileRepository
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from gameplay.effect import Effect
 
 
 class City(BaseEntity, DirectObject.DirectObject):
-    logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("city")
-
     FOOD_EXPONENT: float = 1.5
     FOOD_BASE_REQUIREMENT: float = 10
 
     CITY_MAX_BORDER_GROWTH_RADIUS: int = 5
 
-    def __init__(self, name: str, tile: "Tile", *args: Any, **kwargs: Any):
-        super().__init__(tile=tile, *args, **kwargs)
-        from gameplay.player import Player
+    def __init__(self, name: str, tile: "Tile", player: "Player | None", *args: Any, **kwargs: Any):
+        super().__init__(tile=tile, owner=player, *args, **kwargs)
 
         self.name: T_TranslationOrStrOrNone = name
-        self.player: Optional[Player] = None
         self.owned_tiles: List[Tile] = []
         self.is_capital: bool = False
+        self.logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("city")
+        self.tag = self.generate_tag()
+        self.entity_key = self.tag
+        self.entity_type_ref = EntityType.CITY.value
+        self._tile: ReferenceType[Tile] = ref(tile)
 
         self.active: bool = True
         self.destroyed: bool = False
@@ -54,7 +56,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.border_growth_points: int = 0
         self.border_growth_cost: int = 10 * len(self.owned_tiles) + 10
-        self.border_growth_next_tile: Optional[Tile] = None
+        self.border_growth_next_tile: Optional[ReferenceType[Tile]] = None
 
         self.tax_level: float = 0.0
         self.population_food_usage: float = 1.0
@@ -70,24 +72,134 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.building: BaseCityImprovement | Unit | None = None  # can be either improvement or unit
 
         self._improvements: ImprovementsSet = ImprovementsSet()
-        self.tag = ""
-        # @todo
-        self.spies = []
-
-        if self.player is not None:
-            self._register_object()
-
         self.effects: Effects = Effects(self)
 
-        self.generate_tag()
         self.register()
 
+    def dump(self) -> Dict[str, Any]:
+        next_tile: str | None = (
+            _next_tile.get_tag()
+            if self.border_growth_next_tile is not None and ((_next_tile := self.border_growth_next_tile()) is not None)
+            else None
+        )
+
+        if self.building is not None:
+            _building: BaseCityImprovement | Unit | None = self.get_building()
+            assert _building is not None, "Building reference is None, it has been destroyed."
+            building: Dict[str, Any] | None = _building.dump()
+        else:
+            building = None
+
+        return {
+            "name": self.name,  # type: ignore
+            "hidden_in_tree": self.hidden_in_tree,
+            "tag": self.tag,
+            "entity_key": self.entity_key,
+            "entity_type_ref": self.entity_type_ref,
+            "tile_tag": self.get_tile().get_tag(),
+            "owner_tag": self.get_owner().get_tag() if self.get_owner() else None,
+            "_improvements": self._improvements.dump(),
+            "population": self.population,
+            "is_capital": self.is_capital,
+            "border_growth_points": self.border_growth_points,
+            "border_growth_cost": self.border_growth_cost,
+            "border_growth_next_tile": next_tile,
+            "resource_required": {"cls_ref": f"{self.resource_required.__module__}.{self.resource_required.__name__}"}
+            if self.resource_required
+            else None,
+            "resource_required_amount": self.resource_required_amount.dump() if self.resource_required_amount else None,
+            "resource_collected": self.resource_collected.dump(),
+            "food_collected": self.food_collected.dump(),
+            "population_food_usage": self.population_food_usage,
+            "new_population_food_required": self.new_population_food_required.dump(),
+            "is_building": self.is_building,
+            "building": building,
+            "effects": self.effects.dump(),
+            "owned_tiles": [tile.get_tag() for tile in self.owned_tiles],
+        }
+
+    def load_state(self) -> None:
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+
+        self.tile = cast(ReferenceType["Tile"], entity_manager.get_ref_weak(EntityType.TILE, self.tile_tag))  # type:ignore
+        self.owner = cast(ReferenceType["Player"], entity_manager.get_ref_weak(EntityType.PLAYER, self.owner_tag))
+
+        self.logger = (
+            self.get_owner().logger.getChild("city")
+            if self.get_owner()
+            else LogManager.get_singleton_instance().gameplay.getChild("city")
+        )
+
+        self.resource_required = (
+            entity_manager.dynamic_import(self.resource_required["cls_ref"]) if self.resource_required else None  # type:ignore
+        )
+
+        self.resource_required_amount = (
+            Yields.from_dict(self.resource_required_amount) if self.resource_required_amount else Yields.nullYield()  # type:ignore
+        )
+        self.resource_collected = (
+            Yields.from_dict(self.resource_collected) if self.resource_collected else Yields.nullYield()  # type:ignore
+        )
+        self.new_population_food_required: Yields = Yields(
+            food=population_curve(self.population, self.FOOD_EXPONENT, self.FOOD_BASE_REQUIREMENT)
+        )
+        self.food_collected = Yields.from_dict(self.food_collected)  # type:ignore
+
+        _improvements = ImprovementsSet()
+        _improvements.load_state(self._improvements)  # type:ignore
+        self._improvements = _improvements
+
+        _effects = Effects(self)
+        _effects.load_state(self.effects)  # type:ignore
+        self.effects = _effects
+
+        self.get_owner().capital = ref(self) if self.is_capital else None
+
+        self.border_growth_next_tile = cast(
+            ReferenceType["Tile"],
+            entity_manager.get_ref_weak(EntityType.TILE, self.border_growth_next_tile),  # type:ignore
+        )  # type:ignore
+
+        self.owned_tiles = [  #  type:ignore
+            cast("Tile", entity_manager.get_ref(EntityType.TILE, _tile_tag))  #  type:ignore
+            for _tile_tag in self.owned_tiles  # type:ignore
+        ]  # type:ignore
+
+        if self.building is not None:
+            _building_class: str = self.building.get("cls_ref", None)  # type:ignore
+            if _building_class is not None:
+                _building: Type[BaseCityImprovement | Unit] = EntityManager.dynamic_import(_building_class)  # type:ignore
+                building: BaseCityImprovement | Unit = _building.__new__(_building)  # type:ignore
+                building.__dict__.update(self.building)  # type:ignore
+                building.load_state()  # type:ignore
+                self.building = building  # type:ignore
+                self.is_building = True
+        else:
+            self.building = None
+            self.is_building = False
+
+        self.population_food_usage = self.population_food_usage if self.population_food_usage else 1.0
+
+        self.is_registered = True
+        self.register_handlers()
+
+    @property
+    def player(self) -> "Player | None":
+        if self._owner is None:
+            self.logger.error("Player reference is no longer valid.")
+            return None
+        player: Player | None = self.get_owner()
+        assert player is not None, "Player reference is no longer valid."
+        return player
+
+    @player.setter
+    def player(self, value: "Player"):
+        self._owner = ref(value)
+
     def generate_tag(self):
-        self.tag = f"city_{self.get_tile().x}_{str(self.get_tile().y)}_{str(self.name).replace(' ', '_').lower()}_{str(randrange(2**5, 2**8))}"
+        return f"city_{self.get_tile().x}_{str(self.get_tile().y)}_{str(self.name).replace(' ', '_').lower()}_{str(randrange(2**5, 2**8))}"
 
-    def register(self):
-        from managers.entity import EntityManager, EntityType
-
+    def register_handlers(self):
         self.accept(f"game.gameplay.city.gets_tile_ownership_{self.tag}", self.on_tile_ownership_changed)
         self.accept(
             f"game.gameplay.city.request_start_building_improvement_{self.tag}",
@@ -96,43 +208,76 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.accept(f"game.gameplay.city.request_start_building_unit_{self.tag}", self.on_request_start_building_unit)
         self.accept(f"game.gameplay.city.request_cancel_building_improvement_{self.tag}", self.on_cancel_building)
 
-        entity_manager: EntityManager = EntityManager.get_singleton_instance()
-        entity_manager.register(entity=self, type=EntityType.CITY, key=self.tag)
+    def register(self):
+        from managers.entity import EntityManager, EntityType
+
+        if not self.is_registered:
+            self.register_handlers()
+            entity_manager: EntityManager = EntityManager.get_singleton_instance()
+            entity_manager.register(entity=self, type=EntityType.CITY, key=self.tag)
 
     def build(self, improvement: "Improvement"):
+        improvement.register()
         self._improvements.add(improvement)
 
+    def get_next_border_growth_tile(self) -> Optional["Tile"]:
+        if self.border_growth_next_tile is None:
+            return None
+        return self.border_growth_next_tile()
+
+    def get_building(self) -> Optional["BaseCityImprovement | Unit"]:
+        if self.building is None:
+            return None
+        return self.building
+
     def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
+        from gameplay.unit import Unit
+
+        building: BaseCityImprovement | Unit | None = self.building if self.building is not None else None
+        assert building is None or isinstance(building, (BaseCityImprovement, Unit)), (
+            "Building is not an instance of BaseCityImprovement or Unit."
+        )
+
+        next_tile = (
+            None
+            if (self.border_growth_next_tile is None or (next_tile := self.border_growth_next_tile()) is None)
+            else next_tile.get_tag()
+        )
+
         data = {
             "key": self.entity_key,
+            "entity_key": self.entity_key,
+            "entity_type_ref": EntityType.CITY.value,
             "tag": self.tag,
             "name": self.name,
             "description": self.description,
             "tile": self.get_tile().tag,
-            "owner": str(self.get_owner().name) if self.owner is not None else None,
+            "owner": f"[color={Colors.to_hex(self.player.get_color())}]{str(self.player.get_name())}[/color]"
+            if self.player is not None
+            else None,
             "population": self.population,
             "population_food_usage": self.population_food_usage,
             "food_collected": self.food_collected.on_inspect(basic=True),
             "new_population_food_required": self.new_population_food_required.on_inspect(basic=True),
             "border_growth_points": self.border_growth_points,
             "border_growth_cost": self.border_growth_cost,
-            "border_growth_next_tile": self.border_growth_next_tile.tag
-            if self.border_growth_next_tile is not None
-            else None,
+            "border_growth_next_tile": next_tile,
             "is_capital": self.is_capital,
             "is_building": self.is_building,
-            "building": self.building.tag if self.building is not None else None,
+            "building": building,
             "resource_required": self.resource_required if self.resource_required is not None else None,
             "resource_required_amount": self.resource_required_amount.on_inspect(basic=True),
             "resource_collected": self.resource_collected.on_inspect(basic=True),
         }
         return data, self.get_children_inspect()
 
-    def get_children_inspect(self) -> Dict[str, Set["Unit"] | Set["Improvement"] | Set["Effect"] | Set["City"]]:
-        return {
+    def get_children_inspect(self) -> Dict[str, Any]:
+        data = {
             "improvements": set(self._improvements.get_all()),
             "effects": set(self.effects.get_effects().values()),
         }
+        return data
 
     def calculate_food_surplus(self) -> float:
         return self.calculate_yield_from_tiles().only(["food"]).food.value - (
@@ -144,7 +289,6 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.effects.on_turn_end(turn)  # Execute before yields are calculated as effects can modify yields.
 
-        # Calculate yield once per turn
         yields: Yields = self.calculate_yield_from_tiles()
 
         self._process_food()
@@ -169,38 +313,34 @@ class City(BaseEntity, DirectObject.DirectObject):
             self.player.contribute(yields.only(["gold", "faith", "science", "culture"]))
 
     def _process_production(self, tile_yield: Yields) -> None:
-        """Process production: add resources and check if improvement is complete."""
         production = tile_yield.only(["production"])
         self.resource_collected += production
         from gameplay.unit import Unit
 
         if self.resource_collected.only(["production"]) >= self.resource_required_amount and self.building is not None:
-            self.logger.debug(f"City {self.name} has collected enough resources to build {self.building.name}.")
-            # Save current building reference before resetting it.
-            building = self.building
+            self.logger.debug(f"City {self.name} has collected enough resources to build {self.building}.")
+            building: BaseCityImprovement | Unit | None = self.building
+            building.owner = self.get_owner()
+            building.tile = self.get_tile()
 
-            # Reset production state.
+            assert building is not None, "Building reference is None, it has been destroyed."
+
             self.is_building = False
-            self.building = None
-            self.resource_collected = Yields.nullYield()
+            self.resource_collected = self.resource_collected - self.resource_required_amount
             self.resource_required = None
 
             if isinstance(building, BaseCityImprovement):
                 self._improvements.add(building)
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_improvement", [self, building])
-            elif isinstance(building, Unit):  # type: ignore
-                if self.player is not None:
-                    self.player.units.add_unit(building)
 
+            elif isinstance(building, Unit):  # type: ignore
                 tile_to_spawn = None
-                if (
-                    not self.get_tile().get_units().has_any()
-                ):  # If there are no units on the tile, spawn the unit on the city tile.
-                    tile_to_spawn = self.tile
+                if not self.get_tile().get_units().has_any():
+                    tile_to_spawn: ReferenceType[Tile] | Tile | None = self.tile
                 else:
                     radius: List[int] = [1, 2, 3, 4]
-                    for r in radius:  # Check for a tile to spawn the unit on. We check in a radius of 1, 2, 3, 4 tiles.
-                        tiles = TileRepository.get_neighbors(self.get_tile(), r)
+                    for r in radius:
+                        tiles: List[Tile] = TileRepository.get_neighbors(self.get_tile(), r)
                         for tile in tiles:
                             if (
                                 not tile.units.has_any()
@@ -216,11 +356,15 @@ class City(BaseEntity, DirectObject.DirectObject):
                 if tile_to_spawn is None:
                     raise AssertionError("Could not find a tile to spawn the unit on.")
 
-                building.is_being_build = False  # Reset the building state for the unit.
+                building.is_being_build = False
                 building.spawn_on(self.tile(), self.player)  # type: ignore
                 self.get_tile().render()
 
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_unit", [self, building])
+            else:
+                raise RuntimeError("Building is not an instance of BaseCityImprovement or Unit.")
+
+            self.building = None
             self.logger.debug(f"City {self.name} has finished building improvement.")
 
     def _process_food(self) -> None:
@@ -253,14 +397,11 @@ class City(BaseEntity, DirectObject.DirectObject):
         if self.player is not None:
             self.player.cities.add(self)
             if self.is_capital:
-                self.player.capital = self
+                self.player.capital = ref(self)
 
     def birth(self, population: int = 1, *args: Any, **kwargs: Any):
         for _ in range(population):
             self.citizens.create(*args, **kwargs)
-
-    def _register_callbacks(self):
-        self.citizens.register_callback("on_birth", self.on_citizen_birth)
 
     def on_citizen_birth(self, citizen: Any):  # Placeholder
         self.population += 1
@@ -275,6 +416,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.owned_tiles.remove(tile)
 
     def recalculate_border_growth_cost(self) -> int:
+        # @TODO This is a placeholder for the actual border growth cost calculation.
         self.border_growth_cost = 10 * len(self.owned_tiles) + 10
         return self.border_growth_cost
 
@@ -294,9 +436,9 @@ class City(BaseEntity, DirectObject.DirectObject):
                     if tile.resources.flatten():
                         resource_tiles.append(tile)
                 if resource_tiles:
-                    self.border_growth_next_tile = resource_tiles[randint(0, len(resource_tiles) - 1)]
+                    self.border_growth_next_tile = ref(resource_tiles[randint(0, len(resource_tiles) - 1)])
                 else:
-                    self.border_growth_next_tile = available_tiles[randint(0, len(available_tiles) - 1)]
+                    self.border_growth_next_tile = ref(available_tiles[randint(0, len(available_tiles) - 1)])
                 self.border_growth_cost = (5 * (len(self.owned_tiles) - 7)) + (5 * (radius - 1))
                 return
 
@@ -308,11 +450,6 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.recalculate_border_growth_cost()
         self.recalculate_border_growth_next_tile()
         MessengerGlobal.messenger.send("game.gameplay.city.border_growth", [self])
-
-    def get_next_border_growth_tile(self) -> Optional["Tile"]:
-        if self.border_growth_next_tile is None:
-            return None
-        return self.border_growth_next_tile
 
     def on_request_start_building_improvement(self, city: "City", improvement: "BaseCityImprovement"):
         if city != self:  # This does not concern us
@@ -409,13 +546,12 @@ class City(BaseEntity, DirectObject.DirectObject):
         is_capital: bool = False,
         auto_claim_radius: int = 0,
     ) -> "City":
-        instance = City(name=name, tile=tile)
-        instance.player = owner
+        instance = City(name=name, tile=tile, player=owner)
         instance.population = population
         instance.is_capital = is_capital
-        instance.player.add_city(instance)
+        owner.add_city(instance)
         tile.city = instance
-        tile.city_owner = instance
+        tile.city_owner = ref(instance)
 
         if auto_claim_radius > 0:
             from gameplay.repositories.tile import TileRepository
@@ -426,9 +562,6 @@ class City(BaseEntity, DirectObject.DirectObject):
                 check_passable=False,
             )
             for adjacent_tile in adjacent_tiles:
-                cls.logger.debug(
-                    f"City {instance.name} is requesting claiming tile {adjacent_tile.tag}, sending message."
-                )
                 messenger.send("game.gameplay.city.requests_tile", [instance, adjacent_tile])
 
         if is_capital:

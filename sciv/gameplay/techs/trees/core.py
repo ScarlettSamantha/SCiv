@@ -7,6 +7,7 @@ from managers.i18n import t_
 
 
 class Core(TechTree):
+    key = "core"
     name = t_("content.type[tech].trees.core.name")
     description = t_("content.type[tech].trees.core.name")
     icon = t_("content.type[tech].trees.core.icon")

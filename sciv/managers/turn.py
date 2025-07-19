@@ -2,20 +2,19 @@ import weakref
 from datetime import datetime
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict, cast
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
-from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.player import Player
-    from gameplay.unit import Unit  # Prevent circular import
+    from gameplay.unit import Unit
+
     from sciv.game import OpenCiv
 
 
@@ -123,26 +122,18 @@ class Turn(Singleton, DirectObject):
             self.logger.info("Processing unit turn changes.")
             self.turn_stage = TurnStage.TURN_UNITS
 
-            def restore_all_movement_points():
-                entity_manager: EntityManager = EntityManager.get_singleton_instance()
-                for _, entity in entity_manager.get_all_refs(EntityType.UNIT).items():
-                    entity: weakref.ReferenceType["BaseEntity"] = entity
-                    entity_instance: "Unit | None" = entity()  # type: ignore
+            entity_manager: EntityManager = EntityManager.get_singleton_instance()
+            for _, entity in cast(Dict[str, "Unit"], entity_manager.get_all_refs(EntityType.UNIT).items()):  # type: ignore
+                entity: weakref.ReferenceType["Unit"] = entity
+                entity_instance: "Unit | None" = entity()  # type: ignore
 
-                    if entity_instance is not None:
-                        entity_instance.restore_movement_points()
-                    else:
-                        self.logger.warning(f"Unit entity {entity} was None, skipping.")
+                assert entity_instance is not None, f"Unit with tag {entity} not found in EntityManager."
 
-                    if entity_instance is not None:
-                        entity_instance.effects.on_turn_end(self.turn)
+                entity_instance.on_turn_end(self.turn)
 
-            self.logger.info("Restoring all movement points for all units.")
-            restore_all_movement_points()
             timings["units"] = (datetime.now() - _start).total_seconds()
             self.logger.debug(f"Turn {self.turn} processing for units took: {timings['units']:.4f} seconds.")
 
-        # Run stages
         world()
         players()
         units()
@@ -150,10 +141,9 @@ class Turn(Singleton, DirectObject):
         self.turn += 1
         self.turn_stage = TurnStage.NO_TURN_CHANGE
 
-        # Dump a single timing line for the turn
         timing_line = f"Turn {self.turn} timings: " + ", ".join(f"{k}: {v:.4f}s" for k, v in timings.items())
         self.logger.info(timing_line)
-        # You can also send it via messenger if you want
+
         messenger.send("game.turn.timings", [self.turn, timings])
 
         self.logger.info(f"Turn {self.turn} processed, sending end_process signal.")

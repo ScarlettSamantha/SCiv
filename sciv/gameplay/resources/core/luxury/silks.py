@@ -5,6 +5,12 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
+from sciv.gameplay.terrain.flat_forest import FlatForest
+from sciv.gameplay.terrain.flat_grass import FlatGrass
+from sciv.gameplay.terrain.flat_heavy_forest import FlatHeavyForest
+from sciv.gameplay.terrain.flat_scrubland import FlatScrubland
+from sciv.gameplay.terrain.hills_forest import HillsForest
+from sciv.gameplay.terrain.hills_grass import HillsGrass
 
 
 class Silk(BaseLuxuryResource):
@@ -14,7 +20,14 @@ class Silk(BaseLuxuryResource):
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/hex_border_silk.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = 50.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        FlatGrass: 60.0,
+        HillsGrass: 60.0,
+        HillsForest: 80.0,
+        FlatForest: 60.0,
+        FlatHeavyForest: 50.0,
+        FlatScrubland: 70.0,
+    }
     spawn_amount = 5.0
     coverage = 0.35
     improvement_required = [Farm]

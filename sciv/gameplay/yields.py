@@ -25,7 +25,28 @@ class Yields:
         PERCENTAGE_ADDITIVE: "PERCENTAGE_ADDITIVE",
     }
 
-    # Percentages: 0.0 = 0% change, 1.0 = +100%, -1.0 = -100%
+    _calculatable_properties: List[str] = [
+        "gold",
+        "production",
+        "science",
+        "food",
+        "culture",
+        "housing",
+        "faith",
+    ]
+
+    _mechanic_resources: List[str] = ["contentment", "angre", "revolt", "stability"]
+
+    _calculatable_great_people: List[str] = [
+        "science",
+        "production",
+        "artist",
+        "military",
+        "commerce",
+        "hero",
+        "holy",
+    ]
+
     def __init__(
         self,
         name: str | None = None,
@@ -64,30 +85,48 @@ class Yields:
         self._great_person_hero: float | int = 0.0
         self._great_person_holy: float | int = 0.0
 
-        self._calculatable_properties: List[str] = [
-            "gold",
-            "production",
-            "science",
-            "food",
-            "culture",
-            "housing",
-            "faith",
-        ]
-        self._mechanic_resources: List[str] = ["contentment", "angre", "revolt", "stability"]
-        self._calculatable_great_people: List[str] = [
-            "science",
-            "production",
-            "artist",
-            "military",
-            "commerce",
-            "hero",
-            "holy",
-        ]
-
     def __getstate__(self) -> object:
-        # Prepare the state for serialization.
         state = self.__dict__.copy()
+
+        for prop in self.calculatable_properties() + self.mechanic_resources():
+            prop = f"_{prop}"
+            if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
+                del state[prop]
+        for prop in self._calculatable_great_people:
+            prop = f"_great_person_{prop}"
+            if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
+                del state[prop]
         return state
+
+    def get_copy(self) -> "Yields":
+        new_instance = Yields(
+            name=self._name,
+            gold=self._gold,
+            production=self._production,
+            science=self._science,
+            food=self._food,
+            culture=self._culture,
+            housing=self._housing,
+            faith=self._faith,
+            mode=self.mode,
+        )
+        return new_instance
+
+    def dump(self) -> Dict[str, Any]:
+        state = self.__dict__.copy()
+        for key, prop in self.__dict__.items():
+            if prop is None or prop == 0.0:
+                del state[key]
+        return state
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self._name = state.get("_name", None)
+        self.mode = state.get("mode", self.ADDITIVE)
+
+        for prop in self.calculatable_properties() + self.mechanic_resources() + self._calculatable_great_people:
+            prop = f"_{prop}"
+            if prop not in state:
+                setattr(self, prop, 0.0)
 
     @property
     def name(self) -> None | str:
@@ -532,3 +571,15 @@ class Yields:
         for property in self.calculatable_properties():
             total += getattr(self, property)
         return int(total)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Yields":
+        instance = cls()
+        for key, value in data.items():
+            if hasattr(instance, key):
+                setattr(instance, key, value)
+            elif hasattr(instance, f"_{key}"):
+                setattr(instance, f"_{key}", value)
+            else:
+                raise ValueError(f"Property {key} does not exist in Yields class.")
+        return instance

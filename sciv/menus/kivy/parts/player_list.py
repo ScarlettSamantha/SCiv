@@ -2,12 +2,12 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.input import MotionEvent  #  type:ignore
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.image import Image
 from kivy.uix.label import Label
 from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
 
@@ -29,7 +29,7 @@ class PlayerList(FloatLayout, DirectObject):
         self.window: "GraphicsWindow" = self.base.win  # type: ignore
         self.window_properties: WindowProperties = self.window.properties  # type: ignore
         self.background_image = Cache.get_icon_atlas().get_coreimage_by_virtual_path("player_portrait.png")
-        # Create internal GridLayout
+
         self.grid = GridLayout(
             rows=1,
             spacing=-10,
@@ -128,7 +128,9 @@ class PlayerList(FloatLayout, DirectObject):
 
         return container
 
-    def _on_player_left_click(self, player: Player) -> None: ...
+    def _on_player_left_click(self, player: Player) -> None:
+        self.base.ui_manager.get_main_game_ui().inspect_element(player)
+
     def _on_player_right_click(self, player: Player) -> None:
         MessengerGlobal.messenger.send("ui.update.ui.show_player_info", [player])
 

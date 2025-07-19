@@ -2,17 +2,14 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Iterable, List, Union
 
 from exceptions.condition_exception import ConditionObjectPropertyDoesNotExist
-from mixins.callbacks import CallbacksMixin
 
 if TYPE_CHECKING:
     from gameplay.promotion import Promotion, PromotionTree
     from system.requires import Requires, RequiresMultiple
 
 
-class Condition(CallbacksMixin):
+class Condition:
     def __init__(self, obj: object, property: str, required_value: Any, *args: Any, **kwargs: Any) -> None:
-        CallbacksMixin.__init__(self, *args, **kwargs)
-
         self.obj: object = obj
         self.property: str = property
         self.required_value: Any = required_value

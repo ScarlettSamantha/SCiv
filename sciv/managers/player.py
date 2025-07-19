@@ -25,14 +25,19 @@ class PlayerManager(BaseManager):
         ) in data.items():  # We need to find the player that is human and assign them to the session player.
             if player.is_human:
                 cls._session_player = player
+                cls._players[player.turn_order] = player
+                cls._session_player.load_state()
+                continue
             if player.is_nature:
+                player.load_state()
                 cls._nature_player = player
                 continue
             if player.is_barbarian:
+                player.load_state()
                 cls._barbarian_player = player
                 continue
             cls._players[player.turn_order] = player
-            player.on_game_load()
+            player.load_state()
 
     @classmethod
     def reset(cls) -> None:
@@ -66,8 +71,23 @@ class PlayerManager(BaseManager):
         return cls._players[turn]
 
     @classmethod
-    def all(cls) -> Dict[int, "Player"]:
-        return cls._players
+    def get_by_tag(cls, tag: str) -> "Player | None":
+        for player in cls._players.values():
+            if player.tag == tag:
+                return player
+        return None
+
+    @classmethod
+    def all(cls, add_mechanic_players: bool = False) -> Dict[int, "Player"]:
+        players = cls._players.copy()
+        if add_mechanic_players:
+            if cls._session_player is not None:
+                players[cls._session_player.turn_order] = cls._session_player
+            if cls._nature_player is not None:
+                players[cls._nature_player.turn_order] = cls._nature_player
+            if cls._barbarian_player is not None:
+                players[cls._barbarian_player.turn_order] = cls._barbarian_player
+        return players
 
     @classmethod
     def players(cls) -> Dict[int, "Player"]:

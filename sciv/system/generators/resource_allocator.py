@@ -1,9 +1,8 @@
 import random
-from typing import TYPE_CHECKING, Dict, List, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple, Type
 
 from gameplay.resource import BaseResource, ResourceSpawnablePlace
 from gameplay.terrain._base_terrain import BaseTerrain
-
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -121,7 +120,7 @@ class ResourceAllocator:
         self, resource_class: Type[BaseResource], candidate_tiles: List["Tile"], desired_count: int
     ) -> None:
         count_placed = 0
-        remaining_tiles = set(candidate_tiles)
+        remaining_tiles: Set[Tile] = set(candidate_tiles)
 
         # shuffle to make sure we pick random cluster centers
         random.shuffle(candidate_tiles)

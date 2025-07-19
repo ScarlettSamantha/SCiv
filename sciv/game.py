@@ -18,9 +18,8 @@ from kivy.config import Config
 
 from panda3d_kivy import monkey  # type: ignore
 from helpers.cache import Cache
-from helpers.debug import Debug
 from helpers.direct_loading_screen import LoadingScreen
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
@@ -42,9 +41,9 @@ if TYPE_CHECKING:
 
 class OpenCiv(ShowBase):
     def __init__(self):
+        from helpers.cache import Cache
         from managers.assets import AssetManager
         from managers.ui import ui
-        from managers.world import World
         from system.camera import Camera
         from system.lights import setup_lights
         from system.vars import __version__, get_git_commit, DEBUG
@@ -65,6 +64,8 @@ class OpenCiv(ShowBase):
             and (sentry_dsn := config_mgr.get_by_key(("debug", "sentry", "dsn"), None)) is not None
             and sentry_dsn.strip() != ""
         ):
+            from helpers.debug import Debug
+
             self.sentry = Debug.init_sentry(sentry_dsn)
 
         # Initialize base ShowBase
@@ -150,6 +151,8 @@ class OpenCiv(ShowBase):
         # World
         self.engine_logger.info("Setting up world")
         loading_screen.next_stage("Setting up world")
+        from managers.world import World
+
         self.world = World.get_singleton_instance()
         self.world.__setup__()
 
@@ -194,6 +197,7 @@ class OpenCiv(ShowBase):
     def generate_non_static_assets(self, force: bool = False) -> None:
         from system.atlas import AtlasGenerator
         from helpers.paths import PathsHelper
+        from helpers.debug import Debug
 
         icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
         terrain_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "tile-set-tiles"), "default")

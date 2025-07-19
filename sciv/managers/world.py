@@ -1,12 +1,12 @@
 import random
+import weakref
 from logging import Logger
 from math import sqrt
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
 from helpers.model import ModelHelper
@@ -18,10 +18,12 @@ from mixins.singleton import Singleton
 from system.effects import Effects
 
 if TYPE_CHECKING:
+    from game import OpenCiv
     from gameplay.city import City
+    from gameplay.effect import Effect
+    from gameplay.improvement import Improvement
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from game import OpenCiv
     from managers.player import Player
     from system.generators.base import BaseGenerator
 
@@ -66,30 +68,36 @@ class World(Singleton, DirectObject):
         ModelHelper.reset()
 
     def load(self, data: Dict[str, "Tile"]):
-        from gameplay.unit import Unit
-
         self.logger.info("Loading world data.")
         for map_item in data.values():
             item_tag: str | None = map_item.tag
             self.map[item_tag] = map_item
 
-        self.grid = {(tile.x, tile.y): tile for tile in data.values()}
+        self.grid = {(tile.x, tile.y): tile for tile in self.map.values()}
         self.logger.info("World data loaded.")
         self.logger.info("Calculating world size")
-        self.cols = max([tile.x for tile in data.values()]) + 1  # x
-        self.rows = max([tile.y for tile in data.values()]) + 1  # y
+        self.cols = max([tile.x for tile in self.map.values()]) + 1
+        self.rows = max([tile.y for tile in self.map.values()]) + 1
         self.calculate_middle()
         self.logger.info(f"World size is {self.cols}x{self.rows}")
         TileRepository.grid = self.grid
 
-        for tile in self.map.values():  # Place the tiles
-            tile.on_load()
+        for tile in self.map.values():
+            tile.load_state()
 
-        for unit in EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values():  # type: ignore
-            if isinstance(unit, Unit):
-                if not unit.is_being_build:
-                    unit.on_load()
-                    unit.spawn()
+        for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
+            city.load_state()
+
+        for improvement in cast(
+            List["Improvement"], EntityManager.get_singleton_instance().get_all(EntityType.IMPROVEMENT).values()
+        ):  # type: ignore
+            improvement.load_state()
+
+        for effect in cast(List["Effect"], EntityManager.get_singleton_instance().get_all(EntityType.EFFECT).values()):  # type: ignore
+            effect.load_state()
+
+        for tile in self.map.values():
+            tile.render()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0
@@ -147,23 +155,28 @@ class World(Singleton, DirectObject):
 
     def set_ownership_of_tile(self, tile: "Tile", player: "Player", city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
-        old_owner: Optional["Player"] = tile.owner
+        old_owner: Optional["Player"] = tile.get_owner() if tile.owner is not None else None
         if old_owner is not None:
             self.logger.info(f"Old owner of tile {tile} is {old_owner}")
             old_owner.tiles.remove(tile)
 
-            if tile.city_owner is not None:
+            if tile.city is not None:
                 if tile.is_city():
-                    old_owner.cities.remove(tile.city_owner)
+                    old_owner.cities.remove(tile.city)  # type: ignore
                 else:
                     tile.city_owner = None
 
+            if tile.city_owner is not None:
+                _city: City | None = tile.city_owner()
+                assert _city is not None, "City owner reference is None, it has been destroyed."
+                _city.owned_tiles.remove(tile) if city else None
+                tile.city_owner = None
+
         player.tiles.add(tile)
-        tile.city_owner = city
+        tile.city_owner = weakref.ref(city)
         tile.owner = player
 
         self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
-        player.cities.add(city)  # Add the city to the player's cities as its a claim on the tile
         city.player = player
         city.owned_tiles.append(tile)
 
@@ -173,6 +186,11 @@ class World(Singleton, DirectObject):
     def on_city_requests_tile(self, city: "City", tile: "Tile"):
         if city.player is None:
             raise AssertionError("City has no player")
+        if isinstance(tile, weakref.ReferenceType):
+            tile = tile()  # type: ignore its a weak reference
+            assert tile is not None, "Tile reference is None, it has been destroyed."
+        elif isinstance(tile, str):
+            tile = self.lookup(tile)
         self.logger.info(f"City {city.name} is requesting tile {tile.tag}.")
 
         can_own_tile: bool = False
@@ -192,12 +210,12 @@ class World(Singleton, DirectObject):
             can_own_tile = False
 
         if can_own_tile:
-            self.logger.info(f"City {city.name} can own tile {tile.tag}.")
+            self.logger.info(f"City {city.name} can own tile {tile.get_tag()}.")
             self.set_ownership_of_tile(tile, city.player, city)
-            self.logger.info(f"City {city.name} now owns tile {tile.tag}, sending message")
+            self.logger.info(f"City {city.name} now owns tile {tile.get_tag()}, sending message")
 
             MessengerGlobal.messenger.send("game.gameplay.city.gets_tile_ownership", [city, tile])
-            messenger.send(  # type: ignore
+            MessengerGlobal.messenger.send(
                 f"game.gameplay.city.gets_tile_ownership_{city.tag}",
                 [city, tile],
             )

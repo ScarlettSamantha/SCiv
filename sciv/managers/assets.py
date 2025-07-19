@@ -20,10 +20,10 @@ from gameplay.resources.core.basic.food import Food
 from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.production import Production
 from gameplay.resources.core.basic.science import Science
-from helpers.debug import Debug
+
 from helpers.images import draw_text_on_image
 from mixins.singleton import Singleton
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 
 if TYPE_CHECKING:
     from sciv.game import OpenCiv
@@ -108,6 +108,8 @@ class AssetManager(Singleton):
 
     @classmethod
     def load_model(cls, path: str, use_cache: bool = True) -> NodePath:
+        from helpers.debug import Debug
+
         cache_key: str = cls._calculate_cache_key(path)
 
         if use_cache and cache_key in cls.model_cache:

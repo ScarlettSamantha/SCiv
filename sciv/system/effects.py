@@ -1,17 +1,17 @@
-from enum import Enum
-from typing import TYPE_CHECKING, Dict, Type, Union
 import weakref
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Type, Union, cast
 
 from gameplay.yields import Yields
-from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.effect import Effect
     from gameplay.improvement import Improvement
+    from gameplay.leader import Leader
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from gameplay.effect import Effect
     from managers.world import World
 
 
@@ -24,7 +24,7 @@ class EffectType(Enum):
     IMPROVEMENT = 5
 
 
-parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement"]
+parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement", "Leader"]
 
 
 class Effects:
@@ -83,7 +83,7 @@ class Effects:
             effect.tile = self.parent.get_tile()
         elif isinstance(self.parent, Player) and effect.player is None:
             effect.player = self.parent
-        elif isinstance(self.parent, World) and effect.world is None:
+        elif isinstance(self.parent, World) and effect.world is None:  # type:ignore
             effect.world = self.parent
         elif isinstance(self.parent, Unit) and effect.unit is None:
             effect.unit = self.parent
@@ -97,8 +97,8 @@ class Effects:
             effect.city = None
         elif isinstance(self.parent, "Player") and effect.player is not None:
             effect.player = None
-        elif isinstance(self.parent, "World") and effect.world is not None:
-            effect.world = None
+        elif isinstance(self.parent, "World") and effect.world is not None:  # type:ignore
+            effect.world = False
         elif isinstance(self.parent, "Unit") and effect.unit is not None:
             effect.unit = None
         elif isinstance(self.parent, "Improvement") and effect.improvement is not None:
@@ -128,7 +128,7 @@ class Effects:
         effect.register()
 
     def unregister_from_entity_manager(self, effect: "Effect") -> None:
-        from managers.entity import EntityManager
+        from managers.entity import EntityManager, EntityType
 
         EntityManager.get_singleton_instance().unregister(EntityType.EFFECT, effect)
 
@@ -170,6 +170,26 @@ class Effects:
 
     def __len__(self) -> int:
         return self._effects_num
+
+    def dump(self) -> List[str]:
+        return [tag for tag in self._effects.keys()]
+
+    def load_state(self, state: List[str]) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        self._effects = {}
+        self._effects_num = 0
+        for effect_tag in state:
+            _effect: weakref.ReferenceType["Effect"] = cast(
+                weakref.ReferenceType["Effect"],
+                EntityManager.get_singleton_instance().get_ref_weak(EntityType.EFFECT, effect_tag),
+            )
+            effect: "Effect | None" = _effect()
+            if effect is None:
+                raise ValueError(f"Effect with tag {effect_tag} not found in EntityManager.")
+
+            self._effects[effect_tag] = effect
+            self._effects_num += 1
 
 
 def _place_on_tile(tile: "Tile", effect: "Effect") -> None:
@@ -219,10 +239,10 @@ class EffectPlacers(Enum):
 
     def place(self, base_object: "Tile | City | Player | World | Improvement", effect: "Effect") -> None:
         from gameplay.city import City
+        from gameplay.improvement import Improvement
         from gameplay.player import Player
         from gameplay.tile import Tile
         from managers.world import World
-        from gameplay.improvement import Improvement
 
         if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, Tile):
             _place_on_tile(base_object, effect)

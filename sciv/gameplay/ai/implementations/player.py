@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 from gameplay.ai.core import AI
 from gameplay.ai.goal import Goals
@@ -29,3 +29,8 @@ class PlayerAI(AI):
     def on_game_end(self) -> None: ...
 
     def on_game_start(self) -> None: ...
+
+    def __getstate__(self) -> Dict[str, Any]:
+        state = super().__getstate__()
+        state.pop("logger", None)
+        return state

@@ -1,17 +1,16 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-
+from kivy.uix.widget import Widget
 from managers.i18n import T_TranslationOrStr, t_
 from managers.player import PlayerManager
 
 if TYPE_CHECKING:
     from game import OpenCiv
-    from gameplay.tile import Tile
     from gameplay.city import City
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
 
 
@@ -120,7 +119,9 @@ class DebugPanel(FloatLayout):
             "movement_cost": tile.movement_cost,
             "texture": tile.texture(),
             "class": tile.__class__.__name__,
-            "owner": str(tile.owner.name) if tile.owner is not None else str(t_("civilization.nature.name")),
+            "owner": str(tile.get_owner().get_name())
+            if tile.owner is not None
+            else str(t_("civilization.nature.name")),
             "owner_city": str(tile.city_owner.name) if tile.city_owner else str(t_("civilization.nature.name")),
             "city": tile.city,
             "improvements": " | ".join(_improvements),
@@ -130,7 +131,6 @@ class DebugPanel(FloatLayout):
             "features": tile.features,
             "units": ",".join(_units),
             "health": tile.health(),
-            "damage": tile.damage,
             "pos": (tile.pos_x, tile.pos_y, tile.pos_z),
             "Hpr": ",".join(map(str, tile.hpr)),
             "effects": ",".join(tile.effects.get_effects().keys()),
@@ -144,13 +144,9 @@ class DebugPanel(FloatLayout):
             "moisture": tile.moisture,
             r"is_[coast|sea|water|land|lake]": f"{tile.is_coast}|{tile.is_sea}|{tile.is_water}|{tile.is_land}|{tile.is_lake}",
             "is_city": tile.is_city(),
-            "terrain": tile.terrain,
             "features": ",".join(str(feature) for feature in tile.features),
             "geoform": tile.geoforms,
-            "zone": tile.zone,
             "hemisphere": tile.hemisphere,
-            "resource['rating']": tile.resource["rating"] if tile.resource else None,
-            "resource['type']": tile.resource["type"] if tile.resource else None,
         }
 
         if tile.units.has_any():

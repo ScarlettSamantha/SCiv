@@ -7,41 +7,40 @@ resource icons, unit markers, city nameplates, and model loading.
 """
 
 import math
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, List, Union, cast
 from pathlib import Path
-from PIL import Image
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union, cast
 
-from PIL.ImageFont import FreeTypeFont
+from direct.task import Task
+from gameplay.bits import BitsRenderer
+from gameplay.resource import BaseResource
+from helpers.cache import Cache
+from helpers.colors import Colors, Tuple4f
+from helpers.debug import Debug
+from helpers.images import (
+    generate_city_nameplate,
+    normalize_color_to_bytes,
+    pil_image_to_panda3d_texture,
+)
+from helpers.os import WindowsHelper
+from managers.assets import AssetManager
+from managers.game import Game
+from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from panda3d.core import (
     AntialiasAttrib,
     BitMask32,
     CardMaker,
     ColorBlendAttrib,
     NodePath,
-    PTAFloat,
     PandaNode,
+    PTAFloat,
     SamplerState,
     Shader,
     Texture,
     TransparencyAttrib,
 )
-
-from direct.task import Task
-from helpers.cache import Cache
-from helpers.colors import Colors, Tuple4f
-from helpers.images import (
-    normalize_color_to_bytes,
-    generate_city_nameplate,
-    pil_image_to_panda3d_texture,
-)
-from helpers.debug import Debug
-from helpers.windows import WindowsHelper
+from PIL import Image
+from PIL.ImageFont import FreeTypeFont
 from system.atlas import AtlasGenerator
-from gameplay.resource import BaseResource
-from managers.assets import AssetManager
-from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
-from managers.game import Game
-from gameplay.bits import BitsRenderer
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -103,7 +102,6 @@ class TileRenderer:
         self.selector_enabled: bool = False
 
         self._build_selector_quad()
-        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 5)  # type: ignore
 
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
@@ -128,7 +126,7 @@ class TileRenderer:
         )  # Just a bit of offset from the hex radius # type: ignore
         self.selector_np.setShaderInput("dashFreq", 18.0)  # type: ignore
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
-        self.selector_np.setShaderInput("color", (1.0, 1.0, 1.0, 1.0))  # type: ignore
+        self.selector_np.setShaderInput("color", Colors.MAGENTA)  # type: ignore
         self.selector_np.setShaderInput("time", 0.0)  # type: ignore
 
         self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, str(self.tile.tag))
@@ -146,14 +144,22 @@ class TileRenderer:
         self.selector_enabled = enable
         if self.selector_np:
             if enable:
+                self.on_select()
                 if self.tile.owner is not None:
-                    color = self.tile.get_owner().color[:3]
+                    color = self.tile.get_owner().color
                 else:
-                    color = Colors.WHITE[:3]
+                    color = Colors.WHITE
                 self.selector_np.setShaderInput("color", color)  # type: ignore
                 self.selector_np.show()
             else:
                 self.selector_np.hide()
+                self.on_deselect()
+
+    def on_select(self) -> None:
+        self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 10)  # type: ignore
+
+    def on_deselect(self) -> None:
+        self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
 
     def clear_ui(self) -> None:
         for child in self.ui_node.getChildren():
@@ -168,14 +174,9 @@ class TileRenderer:
         self.anchor_node.removeNode()
         self.geometry_node.removeNode()
         self.clear_models()
-        self.unit_icons.destroy()  # type: ignore
-        self.unit_icons = None
         self.base = None
 
-    def render(self, update_yields: bool = True) -> None:
-        if update_yields:
-            self.tile.calculate()  # type: ignore
-
+    def render(self) -> None:
         self.anchor_node.setPos(*self.tile.get_cords())
         self.anchor_node.setScale(1)
 
@@ -202,7 +203,7 @@ class TileRenderer:
         self.anchor_node.setCollideMask(BitMask32.bit(1))
 
     def _draw_terrain_overlay(self) -> None:
-        cm = CardMaker(f"terrain_overlay_{self.tile.id}")
+        cm = CardMaker(f"terrain_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         overlay = self.ui_node.attachNewNode(cm.generate())
         overlay.setTransparency(TransparencyAttrib.M_alpha)
@@ -218,7 +219,7 @@ class TileRenderer:
         texture = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(str(self.tile.tile_terrain.texture()))
 
         if texture is None:
-            self.tile.logger.error(f"Terrain texture not found for tile {self.tile.id}.")
+            self.tile.logger.error(f"Terrain texture not found for tile {self.tile.get_tag()}.")
             return
         texture.set_format(Texture.F_srgb_alpha)
 
@@ -236,7 +237,7 @@ class TileRenderer:
         return self.tile.city is not None
 
     def _draw_improvements(self) -> None:
-        for improvement in self.tile.improvements().get_all():
+        for improvement in self.tile._improvements.get_all():  # type: ignore
             path = improvement.model
             if not path:
                 continue
@@ -295,7 +296,7 @@ class TileRenderer:
         if self.base is None:
             return
 
-        cm = CardMaker(f"icon_overlay_{self.tile.id}")
+        cm = CardMaker(f"icon_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         cm.setHasUvs(True)
         icon_node = self.ui_node.attachNewNode(cm.generate())
@@ -323,6 +324,7 @@ class TileRenderer:
         icon_node.set_shader_input("icon_atlas", atlas_tex)  # type: ignore
 
         # Prepare slots: population or first resource + base yields
+        self.tile.calculate()
         base_yields = self.tile.get_tile_yield()
         if self.tile.city:
             slots: List[Union[str, BaseResource, None]] = [
@@ -425,7 +427,7 @@ class TileRenderer:
         )  # Flip for Panda3D's coordinate system # type: ignore[no-untyped-call]
         tex = pil_image_to_panda3d_texture(plate)
 
-        cm = CardMaker(f"city_nameplate_{self.tile.id}")
+        cm = CardMaker(f"city_nameplate_{self.tile.get_tag()}")
         ar = plate.width / plate.height
         w = 2.5
         h = w / ar
@@ -513,7 +515,7 @@ class TileRenderer:
         self.models.clear()
 
     def on_inspect(self, also_bits: bool = True) -> Dict[str, Union[str, int, float]]:
-        loaded_models: List[str] = [str(model.get_name()) for model in self.models]
+        loaded_models: List[str] = [str(model) for model in self.models]
 
         data: Dict[str, Union[str, int, float]] = {  # Otherwise mypy complains about the type they are all strings
             "loaded_models": ",".join(loaded_models) if loaded_models else "",

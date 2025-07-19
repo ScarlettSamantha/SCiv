@@ -10,7 +10,7 @@ from panda3d.core import PNMImage, StringStream, Texture  # type: ignore
 from PIL import Image
 
 from managers.assets import AssetManager
-from helpers.windows import WindowsHelper
+from helpers.os import WindowsHelper
 
 
 class AtlasGenerator:

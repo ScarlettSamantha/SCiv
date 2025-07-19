@@ -1,11 +1,11 @@
-from copy import copy
 import random
+import uuid
+from copy import copy
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
-import uuid
-from managers.input import NET_TYPE
-from panda3d.core import NodePath
 
+from managers.input import NET_TYPE
+from panda3d.core import NodePath, PandaNode
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -20,6 +20,9 @@ class GroupMode(Enum):
 
     OR = "or"
     AND = "and"
+
+    def __getstate__(self) -> object:
+        return {"name": self.name, "value": self.value}
 
 
 class Bit:
@@ -65,6 +68,10 @@ class Bit:
         _copy.hpr = hpr if hpr is not None else self.hpr
         return _copy
 
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        return state
+
     def is_disabled(self) -> bool:
         return self.disabled
 
@@ -96,6 +103,20 @@ class Bits:
             parent_path = self.parent.full_path
             return f"{parent_path}.{self.name}" if parent_path else self.name
         return ""
+
+    def __getstate__(self) -> object:
+        state = self.__dict__.copy()
+        # Remove parent reference to avoid circular references
+        state.pop("parent", None)
+        state["mode"] = self.mode.name
+        if self.bits:
+            state["bits"] = {
+                k: f"{v.__module__}.{v.__class__.__name__}.{str(v.model.replace('/', '_'))}"
+                for k, v in self.bits.items()
+            }
+        else:
+            state["bits"] = {}
+        return state
 
     def _get_full_bit_key(self, bit_id: str) -> str:
         path = self.full_path
@@ -220,10 +241,9 @@ class Bits:
 class BitsRenderer:
     def __init__(self, tile: "Tile", parent: Optional[NodePath] = None) -> None:
         self.tile: "Tile" = tile
-        # reference the tile's prop slots
-        self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.prop_slots
+        self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.get_prop_slots()
         self._bit_slot_assignments: Dict[str, Bit] = {}
-        self.parent = parent if parent else tile.renderer.geometry_node
+        self.parent: NodePath[PandaNode] = parent if parent else tile.renderer.geometry_node
 
     def render(self) -> None:
         active_bits = {b.id: b for b in self.tile.get_terrain().get_bits() if not b.is_disabled()}
@@ -274,7 +294,7 @@ class BitsRenderer:
 
     def _render_bit(self, bit: Bit, slot_name: str) -> None:
         self._bit_slot_assignments[slot_name] = bit
-        model = self.tile.renderer.add_model(
+        model: NodePath[PandaNode] | None = self.tile.renderer.add_model(
             model_path=bit.model,
             net_type=NET_TYPE.BIT,
             pos_offset=(

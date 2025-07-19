@@ -1,14 +1,15 @@
-from abc import ABC
 import random
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Type, Dict, Union
+from abc import ABC
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Type, Union, cast
 
-
-from gameplay.bits import Bit, Bits
 from gameplay.yields import Yields
 from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
+from sciv.managers.entity import EntityManager
+
 if TYPE_CHECKING:
+    from gameplay.bits import Bit
     from gameplay.improvement import Improvement
 
 
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 
 
 class BaseTerrain(ABC):
+    _key: str = ""
     _name: T_TranslationOrStrOrNone = None
     _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = None
     can_spawn_resources: bool = True
@@ -33,6 +35,8 @@ class BaseTerrain(ABC):
     uv_map: Tuple[int, int] = (0, 0)
 
     def __init__(self):
+        from gameplay.bits import Bit, Bits
+
         self.fallback_color: Tuple[float, float, float] = (
             self._fallback_color if self._fallback_color else (0, 119, 255)
         )
@@ -41,7 +45,7 @@ class BaseTerrain(ABC):
         self.user_title: T_TranslationOrStr = ""
         self._texture: T_TranslationOrStr = ""
 
-        self.movement_modifier: float = 0.0
+        self.movement_modifier: float = 1.0  # 1.0 is normal, 0.5 is half speed, etc.
         self.water_availability: float = 1.0
         self.radiation_level: float = 0.0
 
@@ -59,6 +63,55 @@ class BaseTerrain(ABC):
 
         self.register()
 
+    def dump(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = {
+            "name": str(self.name),
+            "model": str(self._model) if self._model else "",
+            "water_availability": self.water_availability,
+            "radiation_level": self.radiation_level,
+            "tile_yield_base": self.tile_yield_base.dump(),
+            "tile_modifiers": self.tile_modifiers.dump(),
+            "passable": self.passable,
+            "passable_without_tech": self.passable_without_tech,
+            "model_rotation": str(self.model_rotation),
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+            "fallback_color": self.fallback_color,
+        }
+        return data
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        self.name = state.get("name", "")
+        self._model = state.get("model", "")
+        self.water_availability = state.get("water_availability", 1.0)
+        self.radiation_level = state.get("radiation_level", 0.0)
+        self.tile_yield_base = Yields.from_dict(state.get("tile_yield_base", {}))
+        self.tile_modifiers = Yields.from_dict(state.get("tile_modifiers", {}))
+        self.passable = state.get("passable", True)
+        self.passable_without_tech = state.get("passable_without_tech", True)
+        self.model_rotation = state.get("model_rotation", 270.0)
+
+        fallback_color: Tuple[float, float, float] = cast(
+            Tuple[float, float, float], tuple(state.get("fallback_color", (0, 119, 255)))
+        )
+
+        if fallback_color:
+            self.fallback_color = fallback_color
+
+        uv_map: Tuple[int, int] = cast(Tuple[int, int], tuple(state.get("uv_map", (0, 0))))
+        if uv_map:
+            self.uv_map = uv_map
+
+        supported_improvements: List[str] = state.get("supported_improvements", [])
+
+        for imp in supported_improvements:
+            improvement_class: Type["Improvement"] = EntityManager.get_singleton_instance().dynamic_import(imp)
+            if improvement_class not in self._supports_improvements:
+                self._supports_improvements.append(improvement_class)
+
+        self._warn_user_before_build = state.get("_warn_user_before_build", False)
+        self._warn_user_before_build_text = state.get("_warn_user_before_build_text", "")
+        self._warn_user_before_build_title = state.get("_warn_user_before_build_title", "")
+
     def register(self) -> None:
         self.register_bits()
 
@@ -73,11 +126,11 @@ class BaseTerrain(ABC):
     def register_bits(self) -> None:
         pass
 
-    def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List[Bit]:
+    def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List["Bit"]:
         self.active_bits = self.bits.choose()
         return self.active_bits
 
-    def get_bits(self, choose_if_empty: bool = True) -> List[Bit]:
+    def get_bits(self, choose_if_empty: bool = True) -> List["Bit"]:
         if not self.bits:
             if choose_if_empty:
                 return self.choose_bits()
@@ -168,8 +221,8 @@ class BaseTerrain(ABC):
     def get_atlas_uv(self) -> Tuple[int, int]:
         return self.uv_map
 
-    def on_inspect(self) -> Dict[str, Union[str, int, float]]:
-        data: Dict[str, Union[str, int, float]] = {
+    def on_inspect(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = {
             "name": str(self.name),
             "model": str(self._model) if self._model else "",
             "texture": str(self.texture()),
@@ -177,10 +230,18 @@ class BaseTerrain(ABC):
             "movement_modifier": self.movement_modifier,
             "water_availability": self.water_availability,
             "radiation_level": self.radiation_level,
-            "tile_yield_base": str(self.tile_yield_base.on_inspect()),
-            "tile_modifiers": str(self.tile_modifiers.on_inspect()),
+            "tile_yield_base": self.tile_yield_base.on_inspect(),
+            "tile_modifiers": self.tile_modifiers.on_inspect(),
             "passable": self.passable,
             "passable_without_tech": self.passable_without_tech,
             "model_rotation": str(self.model_rotation),
         }
         return data
+
+    @classmethod
+    def get_name(cls) -> T_TranslationOrStr:
+        return cls._name if cls._name else ""
+
+    @classmethod
+    def get_key(cls) -> str:
+        return cls._key if cls._key else cls.__name__.lower().replace("_", "-")

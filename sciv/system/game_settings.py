@@ -1,8 +1,7 @@
-from typing import Any, List, Optional, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
-
 
 if TYPE_CHECKING:
     from system.generators.base import BaseGenerator
@@ -31,3 +30,19 @@ class GameSettings:
         self.difficulty: int = difficulty
         self.num_enemies: int = num_enemies
         self.seed: Optional[int] = seed
+
+    def __getstate__(self) -> object:
+        return self.__dict__.copy()
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+
+    def dump(self) -> dict[str, Any]:
+        data: dict[str, Any] = self.__dict__.copy()
+        data["player"] = f"{self.player.__module__}.{self.player.__name__}"
+        return data
+
+    def load_state(self) -> None:
+        from managers.entity import EntityManager
+
+        self.player = EntityManager.dynamic_import(self.player)  # type: ignore
