@@ -73,5 +73,16 @@ class ImprovementsSet:
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
-        self._improvements = state.get("improvements", [])
+        from managers.entity import EntityManager
+
+        _improvements: List[Dict[str, Any]] = state.get("improvements", [])
+        for improvement in _improvements:
+            cls_ref: str | None = improvement.get("cls_ref", None)
+            assert cls_ref is not None, "Improvement state must have 'cls_ref' key"
+            _cls: Type[Improvement] = EntityManager.dynamic_import(cls_ref)
+            cls_instance: Improvement | None = _cls.__new__(_cls)
+            assert cls_instance is not None, f"Improvement class {cls_ref} could not be instantiated"
+            cls_instance.load_state(improvement)
+            self.add(cls_instance)
+
         self._num_improvements = state.get("num_improvements", 0)

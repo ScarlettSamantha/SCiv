@@ -126,7 +126,7 @@ class TileRenderer:
         )  # Just a bit of offset from the hex radius # type: ignore
         self.selector_np.setShaderInput("dashFreq", 18.0)  # type: ignore
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
-        self.selector_np.setShaderInput("color", (1.0, 1.0, 1.0, 1.0))  # type: ignore
+        self.selector_np.setShaderInput("color", Colors.MAGENTA)  # type: ignore
         self.selector_np.setShaderInput("time", 0.0)  # type: ignore
 
         self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, str(self.tile.tag))
@@ -146,9 +146,9 @@ class TileRenderer:
             if enable:
                 self.on_select()
                 if self.tile.owner is not None:
-                    color = self.tile.get_owner().color[:3]
+                    color = self.tile.get_owner().color
                 else:
-                    color = Colors.WHITE[:3]
+                    color = Colors.WHITE
                 self.selector_np.setShaderInput("color", color)  # type: ignore
                 self.selector_np.show()
             else:

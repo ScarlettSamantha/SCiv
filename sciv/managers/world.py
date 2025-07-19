@@ -2,7 +2,7 @@ import random
 import weakref
 from logging import Logger
 from math import sqrt
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -16,6 +16,8 @@ from managers.log import LogManager
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
 from system.effects import Effects
+
+from sciv.gameplay.city import City
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -83,6 +85,12 @@ class World(Singleton, DirectObject):
         for tile in self.map.values():
             tile.load_state()
 
+        for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
+            city.load_state()
+
+        for tile in self.map.values():
+            tile.render()
+
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0
         self.middle_y = self.rows / 2.0
@@ -144,14 +152,20 @@ class World(Singleton, DirectObject):
             self.logger.info(f"Old owner of tile {tile} is {old_owner}")
             old_owner.tiles.remove(tile)
 
-            if tile.city_owner is not None:
+            if tile.city is not None:
                 if tile.is_city():
-                    old_owner.cities.remove(tile.city_owner)
+                    old_owner.cities.remove(tile.city)  # type: ignore
                 else:
                     tile.city_owner = None
 
+            if tile.city_owner is not None:
+                _city: City | None = tile.city_owner()
+                assert _city is not None, "City owner reference is None, it has been destroyed."
+                _city.owned_tiles.remove(tile) if city else None
+                tile.city_owner = None
+
         player.tiles.add(tile)
-        tile.city_owner = city
+        tile.city_owner = weakref.ref(city)
         tile.owner = player
 
         self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")

@@ -26,7 +26,6 @@ from system.save_file import BaseSaver, SaveJsonFile
 
 if TYPE_CHECKING:
     from gameplay.city import City
-    from gameplay.effect import Effect
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tile import Tile
@@ -171,8 +170,11 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
         return errors
 
     def dump(self, registry: EntityRegistry, graph_out: Optional[str] = None) -> bytes:
+        from gameplay.city import City
+        from gameplay.improvement import Improvement
         from gameplay.player import Player
         from gameplay.tile import Tile
+        from gameplay.unit import Unit
         from system.game_settings import GameSettings
         from system.mesh import HexGrid
 
@@ -184,7 +186,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             payload[section] = {}
             for tag, entity in entities.items():
                 if isinstance(entity, BaseEntity):
-                    if isinstance(entity, (Tile, Player)):
+                    if isinstance(entity, (Tile, Player, City, Unit, Improvement)):
                         state = entity.dump()
                     else:
                         state = entity.__getstate__() if hasattr(entity, "__getstate__") else entity.__dict__.copy()
@@ -367,7 +369,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             return obj_id
         _visited.add(obj_id)
 
-        if hasattr(state, "dump"):  # type: ignore
+        if hasattr(state, "dump") and not isclass(state):  # type: ignore
             return self._convert_references(
                 state.dump(),  # type: ignore
                 _visited,
@@ -593,6 +595,22 @@ class EntityManager(Singleton):
     def get_all_players(self) -> Dict[str, "Player"]:
         return self.get_all(type=EntityType.PLAYER)  # type: ignore # its fine it does not know that the base entity can only be a Player
 
+    def get_game_settings(self) -> "GameSettings":
+        settings: BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | HexGrid | GameSettings | None = (
+            self.get_ref(EntityType.GAME_SETTINGS, "game_settings", weak_ref=False)
+        )
+        if not isinstance(settings, GameSettings):
+            raise ValueError("Game settings not found or not of type GameSettings.")
+        return settings
+
+    def get_world_grid(self) -> "HexGrid":
+        grid: BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | HexGrid | GameSettings | None = (
+            self.get_ref(EntityType.WORLD, "world_grid", weak_ref=False)
+        )
+        if not isinstance(grid, HexGrid):
+            raise ValueError("World grid not found or not of type HexGrid.")
+        return grid
+
     def get_all(self, type: Optional[EntityType] = None) -> Dict[str, "BaseEntity | HexGrid | GameSettings"]:
         if type is None:
             return {key: entity for storage in self._entities.values() for key, entity in storage.items()}
@@ -704,24 +722,6 @@ class EntityManager(Singleton):
         self.clear()
         gc.collect()
         self._entities = new_entities
-
-    def _create_instance(self, entity_type: EntityType, state: Dict[str, Any]) -> "BaseEntity | HexGrid | GameSettings":
-        if entity_type == EntityType.UNIT:
-            class_path = state.get("unit")
-            if not class_path:
-                raise ValueError("Unit class is not defined in the entity data.")
-            module_name, class_name = class_path.rsplit(".", 1)
-            module = __import__(module_name, fromlist=[class_name])
-            cls = getattr(module, class_name)
-        else:
-            cls: "Type[Tile] | Type[Unit] | Type[Improvement] | Type[City] | Type[Player] | Type[Effect] | Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]" = entity_type.base_type
-
-        instance: Tile | Unit | Improvement | City | Player | Effect | BaseEntity | HexGrid | GameSettings = (
-            cls.__new__(cls)
-        )
-        instance.__setstate__(state)
-
-        return instance
 
     def get_all_session(self) -> List[str]:
         if self.session is None:

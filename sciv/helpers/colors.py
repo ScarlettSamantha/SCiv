@@ -177,6 +177,15 @@ class Colors:
         return typing.cast(Tuple4f, rgba)
 
     @staticmethod
+    def from_tuple(color: Tuple[float, float, float, float]) -> Tuple4f:
+        if len(color) == 3:
+            return (color[0], color[1], color[2], 1.0)
+        elif len(color) == 4:
+            return (color[0], color[1], color[2], color[3])
+        else:
+            raise ValueError("Color tuple must be of length 3 or 4.")
+
+    @staticmethod
     def closest_color(requested_color: tuple[int, int, int, int]) -> str:
         import webcolors
 

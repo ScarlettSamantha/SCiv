@@ -32,6 +32,8 @@ from system.subsystems.hexgen.edge import Edge
 from system.subsystems.hexgen.enums import Biome, GeoformType, HexFeature
 from system.tile_render import TileRenderer
 
+from sciv.gameplay.city import City
+
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.improvement import Improvement
@@ -87,7 +89,7 @@ class Tile(BaseEntity):
     tag: str = field(init=False)
     player: "Player | None" = field(default=None, repr=False)
     city: "City | None" = field(default=None, repr=False)
-    city_owner: "City | None" = field(default=None, repr=False)
+    city_owner: weakref.ReferenceType["City"] | None = field(default=None, repr=False)
     _entity_manager: EntityManager = field(init=False, repr=False)
     logger: Logger = field(init=False, repr=False)
     renderer: TileRenderer = field(init=False, repr=False)
@@ -244,6 +246,7 @@ class Tile(BaseEntity):
         data["units"] = self.units.dump()
         data["owner"] = self.get_owner().get_tag() if self._owner else None
         data["city"] = self.city.get_tag() if self.city else None
+        data["hidden_in_tree"] = self.hidden_in_tree
         for key in [
             "_entity_manager",
             "base",
@@ -332,7 +335,6 @@ class Tile(BaseEntity):
                 self.city = city_ref()
 
         self.renderer = TileRenderer(self)
-        self.render()
 
     def calculate(self):
         new_yield = Yields.nullYield()
@@ -544,7 +546,7 @@ class Tile(BaseEntity):
             "is_coast": str(self.is_coast),
             "is_city": self.is_city(),
             "city": self.city.tag if self.city else None,
-            "city_owner": str(self.city_owner.tag) if self.city_owner else None,
+            "city_owner": str(self.get_city_owner().get_tag()) if self.city_owner else None,  # type: ignore
             "owner": str(self.get_owner().name) if self.owner else "nature",
             "resources": self.resources.on_inspect(),
             "features": [feature.name for feature in self.features],
@@ -561,6 +563,13 @@ class Tile(BaseEntity):
         data.update(terrain)
 
         return (data, self.get_children_inspect())
+
+    def get_city_owner(self) -> "City | None":
+        if self.city_owner is not None:
+            city_owner: City | None = self.city_owner()
+            assert city_owner is not None, "City owner reference is invalid."
+            return city_owner
+        return None
 
     def set_visible_sides(self, sides: Dict[int, bool]) -> None:
         if len(sides) != 6:
@@ -791,9 +800,10 @@ class Tile(BaseEntity):
         self.owner.add_tile(self)
 
         if self.owner.capital is not None:
-            self.owner.capital.de_capitalize()
+            if (_capital := self.owner.capital()) is not None:
+                _capital.de_capitalize()
 
-        self.owner.capital = self.city
+        self.owner.capital = weakref.ref(self.city)
 
         self.set_terrain(CityTerrain())
         self.render()

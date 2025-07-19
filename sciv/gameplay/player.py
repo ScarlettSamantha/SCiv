@@ -18,7 +18,7 @@ from gameplay.leader import Leader
 from gameplay.lose import LoseConditions
 from gameplay.mood import Mood
 from gameplay.moods import Moods
-from gameplay.personality import Personality
+from gameplay.personalities.base import BasePersonality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.relationships import Relationships
 from gameplay.tech import Tech
@@ -48,7 +48,7 @@ class Player(BaseEntity):
         self,
         name: str,
         turn_order: int,
-        personality: Personality,
+        personality: BasePersonality,
         civilization: Civilization,
         leader: Leader,
         color: Optional[Tuple4f] = None,
@@ -82,7 +82,7 @@ class Player(BaseEntity):
         self.is_being_controlled: int = 0
         self.instance_controller: int = 0
 
-        self.personality: Personality = personality
+        self.personality: BasePersonality = personality
 
         self.mood: Mood = Mood()
         self.moods: Moods = Moods()
@@ -121,7 +121,9 @@ class Player(BaseEntity):
         self.government: Government = Government()
 
         self.cities: Cities = Cities()
-        self.capital: "City | None" = None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
+        self.capital: ReferenceType["City"] | None = (
+            None  # Capital city of the player, can be None if player has no cities and just a settler or an endgame condition has been met.
+        )
         self.tiles: PlayerTiles = PlayerTiles()
         self.claims: Claims = Claims(self)
         self.units: Units = Units()
@@ -147,7 +149,6 @@ class Player(BaseEntity):
             if self.civilization.introduction != ""
             else t_(f"civilizations.{self.name}.introduction")
         )
-        self._register_callbacks()
 
     def generate_tag(self) -> str:
         return f"player.{str(self.leader.name).lower().replace(' ', '_')}.{self.turn_order}"
@@ -162,34 +163,35 @@ class Player(BaseEntity):
         state.pop("base")
         state.pop("logger", None)
         state.pop("effects", None)
-        state.pop("citizens", None)
         state.pop("relationships", None)
         state.pop("moods", None)
         state.pop("trades", None)
         state.pop("votes", None)
 
         state["leader"] = self.leader.dump() if self.leader else None
-        state["personality"] = self.personality.name if self.personality else None
-        state["cities"] = [city.get_tag() for city in self.cities.all()]
-        state["units"] = [unit.get_tag() for unit in self.units.all()]
+        state["personality"] = self.personality.dump() if self.personality else None
+        state["cities"] = self.cities.dump() if self.cities else {}
+        state["units"] = self.units.dump() if self.units else {}
         state["tiles"] = [tile.get_tag() for tile in self.tiles.get_tiles().values()]
         state["introduction"] = self.introduction.get_key() if isinstance(self.introduction, Translation) else ""
-        state["civics"] = self.civics.dump() if self.civics else {}
-        state["tech"] = self.tech.dump() if self.tech else {}
+        state["civics"] = self.civics.dump()
+        state["tech"] = self.tech.dump()
         state["vision"] = self.vision.dump() if self.vision else []
+        state["citizens"] = self.citizens.dump() if self.citizens else {}
         state["ai"] = self.ai.dump() if self.ai else {}
         state["civilization"] = self.civilization.dump() if self.civilization else {}
-        state["capital"] = self.capital.get_tag() if self.capital else None
+        state["capital"] = self.get_capital().get_tag() if self.capital else None
         state["resources"] = self.resources.dump() if self.resources else {}
         state["effects"] = self.effects.dump() if self.effects else {}
-        state["capital"] = self.capital.get_tag() if self.capital else None
+        state["capital"] = self.get_capital().get_tag() if self.capital else None
 
         return state
 
-    def on_game_load(self) -> None:
+    def load_state(self) -> None:
         from managers.entity import EntityManager
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(self.turn_order)}")
+        self.base = Cache.get_showbase_instance()
 
         self.name = get_i18n().from_key(getattr(self, "name", ""))
         self.description = get_i18n().from_key(getattr(self, "description", ""))
@@ -244,22 +246,17 @@ class Player(BaseEntity):
             ai.load_state(state=getattr(self, "ai"))
             self.ai = ai
 
-        _capital = (
-            cast(
-                ReferenceType["City"],
-                EntityManager.get_singleton_instance().get_ref_weak(EntityType.CITY, getattr(self, "capital")),
-            )
-            if self.capital
-            else None
+        _personality: Type[BasePersonality] = cast(
+            Type[BasePersonality], EntityManager.dynamic_import(getattr(self, "personality")["cls_ref"])
         )
+        personality: BasePersonality = _personality.__new__(_personality)
+        personality.load_state(state=getattr(self, "personality"))
+        self.personality = personality
 
     def unregister(self) -> None:
         from managers.entity import EntityType
 
         EntityManager.get_singleton_instance().unregister(entity=self, type=EntityType.PLAYER)
-
-    def _register_callbacks(self) -> None:
-        self.citizens.register_callback(event="on_birth", callback=self.on_citizen_birth)
 
     def on_request_start_research_session(self, tech: Type[Tech], add_to_queue: bool = False) -> None:
         self.logger.debug(f"Player {str(self.name)} requested to start research session for {tech.__name__}")
@@ -449,7 +446,9 @@ class Player(BaseEntity):
     def get_capital(self) -> "City":
         if self.capital is None:
             raise ValueError("Player has no capital city.")
-        return self.capital
+        result = self.capital()
+        assert result is not None, "Capital city reference is None"
+        return result
 
     def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         data = {

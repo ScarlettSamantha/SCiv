@@ -630,7 +630,7 @@
             "defender_killed": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and killed by {damage}.",
             "defender_damaged": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and damaged for {damage}.",
             "attacker_killed": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and killed for {damage}.",
-            "attacker_damaged": "Attacker {attacking_unit}(attacker_owner_name) was counter attacked by {defending_unit}({defender_owner_name}) and damaged for {damage}.",
+            "attacker_damaged": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and damaged for {damage}.",
             "interrupted": "Attacker({attacking_unit}) was interrupted by {defending_unit} and killed for {damage}.",
             "no_range": "Attacker({attacking_unit}) has no range to attack {defending_unit}.",
             "no_movement": "Attacker({attacking_unit}) has no movement to attack {defending_unit}.",
@@ -2024,7 +2024,7 @@
               "description": "The state is ruled by divine guidance and religious laws."
             },
             "religious_unity": {
-              "nameunimplemented": "State Surveillance",
+              "name": "State Surveillance",
               "description": "Monitors citizens to maintain control and security."
             },
             "censorship": {
@@ -2090,6 +2090,14 @@
             "autonomy": {
               "name": "Autonomy",
               "description": "Empowers communities and individuals with self-rule."
+            },
+            "autocratic_rule": {
+              "name": "Autocratic Rule",
+              "description": "Concentrates power in a single leader or small group."
+            },
+            "state_surveillance": {
+              "name": "State Surveillance",
+              "description": "Government monitors citizens to maintain control and security."
             },
             "corporate_influence": {
               "name": "Corporate Influence",

@@ -5,21 +5,21 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Uni
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from kivy.uix.widget import Widget
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.screenmanager import Screen
-
 from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
+from kivy.uix.widget import Widget
 from managers.combat import T_TARGET
+from managers.combat_log import CombatLog
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from managers.unit import UnitManager
@@ -31,8 +31,8 @@ from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
+from menus.kivy.parts.inspect_entity import InspectEntity
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
-from managers.combat_log import CombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
@@ -40,11 +40,11 @@ from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
-from menus.kivy.parts.inspect_entity import InspectEntity
-from sciv.mixins.inspectable import Inspectable
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
+
+from sciv.mixins.inspectable import Inspectable
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -582,6 +582,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                     width=100,
                     height=75,
                 )
+                if action.is_disabled:
+                    button.disabled = True
+                    button.opacity = 0.5
                 button.bind(on_press=partial(self.prepare_action, action, _unit))  # type: ignore
                 self.action_bar_frame.add_button(button)
 
@@ -643,6 +646,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def prepare_action(self, action: Action, unit: Unit, _):
         """Prepares an action and waits for the next tile click before executing."""
+        if action.is_disabled:
+            self.logger.warning(f"Action {action.name} is disabled and cannot be executed.")
+            return
+
         if action.on_the_spot_action:
             action.action_kwargs["unit"] = unit
             action.run()

@@ -9,7 +9,7 @@ from gameplay.ai.goal import Goal, Goals
 from gameplay.ai.memory import Memories, Memory
 from gameplay.ai.task import Task, Tasks
 from gameplay.cities import Cities
-from gameplay.personality import Personality
+from gameplay.personalities.base import BasePersonality
 from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Optional
@@ -45,7 +45,7 @@ class AI(ABC):
 
         self.memory: Memories = Memories()
         self.tasks: Tasks = Tasks()
-        self.personality: Personality = self.player.personality
+        self.personality: BasePersonality = self.player.personality
 
     def __getstate__(self) -> Dict[str, Any]:
         data: Dict[str, Any] = self.__dict__.copy()
@@ -95,15 +95,18 @@ class AI(ABC):
         self.control_tiles = weakref.ref(self.player.tiles)
         self.vision = weakref.ref(self.player.vision)
         self.end_goal = Goals()
-        self.end_goal.load_state(state.get("end_goal", {}))
+        self.end_goal.load_state(state.get("end_goal", {}), self)
         self.goals = Goals()
-        self.goals.load_state(state.get("goals", {}))
+        self.goals.load_state(state.get("goals", {}), self)
         self.memory = Memories()
         self.memory.load_state(state.get("memory", {}))
         self.tasks = Tasks()
         self.tasks.load_state(state.get("tasks", {}))
         self.personality = self.player.personality
         self.turn_action_register = state.get("turn_action_register", {})
+
+    def get_logger(self) -> Logger:
+        return self.logger
 
     @property
     def player(self) -> "Player":
@@ -143,7 +146,7 @@ class AI(ABC):
     def get_goals(self) -> Goals:
         return self.goals
 
-    def get_personality(self) -> Personality:
+    def get_personality(self) -> BasePersonality:
         return self.personality
 
     def add_memory(self, memory: Memory) -> None:

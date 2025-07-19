@@ -9,7 +9,6 @@ from direct.showbase.MessengerGlobal import messenger
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
-from system.entity import BaseEntity
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -123,22 +122,15 @@ class Turn(Singleton, DirectObject):
             self.logger.info("Processing unit turn changes.")
             self.turn_stage = TurnStage.TURN_UNITS
 
-            def restore_all_movement_points():
-                entity_manager: EntityManager = EntityManager.get_singleton_instance()
-                for _, entity in cast(Dict[str, "Unit"], entity_manager.get_all_refs(EntityType.UNIT).items()):  # type: ignore
-                    entity: weakref.ReferenceType["BaseEntity"] = entity
-                    entity_instance: "Unit | None" = entity()  # type: ignore
+            entity_manager: EntityManager = EntityManager.get_singleton_instance()
+            for _, entity in cast(Dict[str, "Unit"], entity_manager.get_all_refs(EntityType.UNIT).items()):  # type: ignore
+                entity: weakref.ReferenceType["Unit"] = entity
+                entity_instance: "Unit | None" = entity()  # type: ignore
 
-                    if entity_instance is not None:
-                        entity_instance.restore_movement_points()
-                    else:
-                        self.logger.warning(f"Unit entity {entity} was None, skipping.")
+                assert entity_instance is not None, f"Unit with tag {entity} not found in EntityManager."
 
-                    if entity_instance is not None:
-                        entity_instance.effects.on_turn_end(self.turn)
+                entity_instance.on_turn_end(self.turn)
 
-            self.logger.info("Restoring all movement points for all units.")
-            restore_all_movement_points()
             timings["units"] = (datetime.now() - _start).total_seconds()
             self.logger.debug(f"Turn {self.turn} processing for units took: {timings['units']:.4f} seconds.")
 

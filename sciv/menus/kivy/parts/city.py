@@ -493,11 +493,6 @@ class CityUI(BoxLayout, DirectObject):
         self.frame.disabled = True
         self.hidden = True
 
-        for unit in self.buildable_units.values():
-            try:
-                unit.destroy()
-            except Exception as e:
-                self.logger.error(f"Error destroying temporary unit {unit.name}: {e}")
         self.get_screen().unregister_non_collidable(self.frame)
 
     def is_hidden(self) -> bool:

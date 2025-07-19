@@ -1,8 +1,9 @@
 import random
 from abc import ABC, abstractmethod
 from enum import Enum
+from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self, Set, Tuple, Type, cast
 from weakref import ReferenceType
 
 import numpy as np
@@ -30,10 +31,12 @@ from panda3d.core import (
     GeomNode,
     LineSegs,
     LPoint3,
+    LPoint3f,
     LVecBase3f,
     LVecBase4f,
     LVector3,
     NodePath,
+    PandaNode,
     PythonTask,
     Shader,
     Texture,
@@ -82,7 +85,14 @@ class Unit(BaseEntity, ABC):
     can_spawn_on_water: bool = False
     max_health: float = 10.0
 
-    def __init__(self, tile: "Tile", player: "Player", key: Optional[str] = None, *args: Any, **kwargs: Any):
+    def __init__(
+        self,
+        tile: "Tile | None" = None,
+        player: "Player | None" = None,
+        key: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
+    ):
         from gameplay.city import Yields  # to avoid circular import
 
         BaseEntity.__init__(self, tile=tile, owner=player, *args, **kwargs)
@@ -119,12 +129,13 @@ class Unit(BaseEntity, ABC):
         self.can_fly: bool = False
 
         self.can_move: bool = True
+        self.can_move_after_attack: bool = False
         self.can_attack: bool = True
         self.can_heal: bool = True
         self.can_pillage: bool = True
         self.can_build: bool = False
 
-        self.is_being_build: bool = False
+        self.is_being_build: bool = True
 
         self.resource_needed: Type["BasicBaseResource"] = Production
         self.amount_resource_needed: Yields = Yields(production=10)
@@ -134,7 +145,7 @@ class Unit(BaseEntity, ABC):
         self.build_charges: int = 0
         self.build_charges_left: int = 0
 
-        self._logger = None
+        self._logger: Logger | None = None
 
         self._healthbar_quad: Optional[NodePath] = None
         self.healthbar_np: Optional[NodePath] = None
@@ -148,26 +159,22 @@ class Unit(BaseEntity, ABC):
             fragment=self.base.base_path / "assets/shaders/unit_selection.frag.glsl",
         )
 
-        self.register_actions()
-        if self.is_registered is False:
-            self.register()
-
     @abstractmethod
     def register_actions(self):
         if self.can_move:
             from gameplay.actions.unit.move import WalkAction
 
-            self.add_action(WalkAction(self))
+            self.add_action(action=WalkAction(instance=self))
 
         if self.can_attack:
             if self.attack_power_mele > 0:
                 from gameplay.actions.unit.attack_mele import AttackAction
 
-                self.add_action(AttackAction(self))
+                self.add_action(action=AttackAction(instance=self))
 
     @property
-    def logger(self):
-        if self._logger is None:
+    def logger(self) -> Logger:
+        if self._logger is None:  # type: ignore
             self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
         return self._logger
 
@@ -183,7 +190,7 @@ class Unit(BaseEntity, ABC):
         if self._model is None:
             raise ValueError(f"Unit {self.key} has no model assigned.")
 
-        pos = self.get_tile().calculate_z_pos_on_altitude()
+        pos: Tuple[float, float, float] = self.get_tile().calculate_z_pos_on_altitude()
 
         model_path: str = str(self.base.base_path / self._model)
         if WindowsHelper.is_windows():
@@ -207,7 +214,7 @@ class Unit(BaseEntity, ABC):
         self.model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
 
         if self.icon is not None:
-            texture = Cache.get_icon_atlas().get_panda3d_texture_by_virtual_path(str(self.icon))
+            texture: Texture | None = Cache.get_icon_atlas().get_panda3d_texture_by_virtual_path(str(self.icon))
             if texture is None:
                 raise ValueError(f"Icon texture for unit {self.key} not found at path: {self.icon}")
 
@@ -215,7 +222,7 @@ class Unit(BaseEntity, ABC):
             cm.set_frame(-0.5, 0.5, -0.5, 0.5)
             self.unit_icons = self.model.attachNewNode(cm.generate())
 
-            bounds = self.model.getTightBounds() if self.model else None
+            bounds: Tuple[LPoint3f, LPoint3f] | None = self.model.getTightBounds() if self.model else None
             height = bounds[1].z - bounds[0].z if bounds else 0
             self.unit_icons.setPos(0, 0, height + self.unit_icons_z_offset)  # type: ignore
 
@@ -241,10 +248,10 @@ class Unit(BaseEntity, ABC):
             self.unit_icons.set_bin("transparent", 90)  # type: ignore
 
             self.unit_icons.set_shader(  # type: ignore
-                Shader.load(  # type: ignore
-                    Shader.SL_GLSL,
-                    self.base.base_path / "assets/shaders/unit_icon.vert",
-                    self.base.base_path / "assets/shaders/unit_icon.frag",
+                sha=Shader.load(  # type: ignore
+                    lang=Shader.SL_GLSL,
+                    vertex=self.base.base_path / "assets/shaders/unit_icon.vert",
+                    fragment=self.base.base_path / "assets/shaders/unit_icon.frag",
                 )
             )
             self.unit_icons.set_shader_input("billboard_position", pos)  # type: ignore
@@ -256,8 +263,8 @@ class Unit(BaseEntity, ABC):
             self.healthbar_np.setScale(1.25, 1, 1.5)
 
             cm = CardMaker("healthbar_quad")
-            cm.setFrame(-0.625, 0.625, -0.1125, 0.1125)
-            bar_np = self.healthbar_np.attachNewNode(cm.generate())
+            cm.setFrame(left=-0.625, right=0.625, bottom=-0.1125, top=0.1125)
+            bar_np: NodePath[PandaNode] = self.healthbar_np.attachNewNode(cm.generate())
 
             bar_np.setTransparency(TransparencyAttrib.MAlpha)
             bar_np.setAttrib(
@@ -265,15 +272,15 @@ class Unit(BaseEntity, ABC):
                     ColorBlendAttrib.MAdd, ColorBlendAttrib.OIncomingAlpha, ColorBlendAttrib.OOneMinusIncomingAlpha
                 )
             )
-            bar_np.setBin("fixed", 50)
-            bar_np.setDepthTest(False)
-            bar_np.setDepthWrite(False)
-            bar_np.setTransparency(TransparencyAttrib.MAlways, 1)  # type: ignore
+            bar_np.setBin(bin_name="fixed", draw_order=50)
+            bar_np.setDepthTest(depth_test=False)
+            bar_np.setDepthWrite(depth_write=False)
+            bar_np.setTransparency(mode=TransparencyAttrib.MAlways, priority=1)  # type: ignore
 
             self.healthbar_shader = Shader.load(
-                Shader.SL_GLSL,
-                self.base.base_path / "assets/shaders/unit_healthbar.vert.glsl",
-                self.base.base_path / "assets/shaders/unit_healthbar.frag.glsl",
+                lang=Shader.SL_GLSL,
+                vertex=self.base.base_path / "assets/shaders/unit_healthbar.vert.glsl",
+                fragment=self.base.base_path / "assets/shaders/unit_healthbar.frag.glsl",
             )
             bar_np.setShader(self.healthbar_shader)
             bar_np.setShaderInput("health_ratio", 1.0)  # type: ignore
@@ -300,8 +307,8 @@ class Unit(BaseEntity, ABC):
         segs.setColor(color if isinstance(color, LVecBase4f) else LVecBase4f(*color))  # type: ignore
         num_segments = num_segments if num_segments > 0 else 64
 
-        radius = self.selection_radius
-        angle_step = 360.0 / num_segments
+        radius: float = self.selection_radius
+        angle_step: float = 360.0 / num_segments
         dash_length = dash_length if dash_length > 0 else 2
 
         for i in range(num_segments):
@@ -311,8 +318,8 @@ class Unit(BaseEntity, ABC):
                 segs.moveTo(radius * np.cos(angle1), radius * np.sin(angle1), 0.0)
                 segs.drawTo(radius * np.cos(angle2), radius * np.sin(angle2), 0.0)
 
-        node = segs.create()
-        circle_np = NodePath(GeomNode(f"sel-circle-{id(self)}"))
+        node: GeomNode = segs.create()
+        circle_np: NodePath[GeomNode] = NodePath(GeomNode(f"sel-circle-{id(self)}"))
         circle_np.node().addGeomsFrom(node)
         circle_np.setHpr(90, 0, 0)
 
@@ -342,56 +349,8 @@ class Unit(BaseEntity, ABC):
             self.selection_circle.setH(task.time * 60.0)
         return Task.cont  # type: ignore
 
-    def on_load(self):
-        if not hasattr(self, "_owner") or self._owner is None:
-            from managers.entity import EntityManager, EntityType
-
-            owner_ref: ReferenceType[Player] | None = cast(
-                ReferenceType["Player"] | None,
-                EntityManager.get_singleton_instance().get_ref(
-                    key=self.owner_tag, type=EntityType.PLAYER, weak_ref=True
-                ),
-            )
-            if owner_ref is None:
-                raise ValueError(f"Owner with tag {self.owner_tag} not found")
-
-            self._owner = owner_ref
-
-        if not hasattr(self, "tile") or self.tile is None:
-            from managers.entity import EntityManager, EntityType
-
-            assert self.tile_tag is not None, "Tile tag must be set before loading the unit."
-
-            tile_ref: ReferenceType[Tile] | None = cast(
-                ReferenceType["Tile"] | None,
-                EntityManager.get_singleton_instance().get_ref(key=self.tile_tag, type=EntityType.TILE, weak_ref=True),
-            )
-            if tile_ref is None:
-                raise ValueError(f"Tile with tag {self.tile_tag} not found")
-
-            self.tile = tile_ref()
-
-        self.base = Cache.get_showbase_instance()
-        self._logger = Cache.get_showbase_instance().logger.get_singleton_instance().gameplay.getChild("unit")
-        self.effects = Effects(self)
-        self.actions = []
-        self.model = None
-        self.model_cache = None
-        self.health_left: float = self.max_health
-        self.moves_left = self.max_moves
-        self.register_actions()
-        self.register()
-        self.selection_circle = None
-
-        self.selection_shader = Shader.load(
-            Shader.SL_GLSL,
-            vertex=self.base.base_path / "assets/shaders/unit_selection.vert.glsl",
-            fragment=self.base.base_path / "assets/shaders/unit_selection.frag.glsl",
-        )
-        self.spawn(ignore_constraints=True)
-
-    def __getstate__(self) -> Dict[str, Any]:
-        state = super().__getstate__()
+    def dump(self) -> Dict[str, Any]:
+        state: Dict[str, Any] = super().__getstate__()
 
         tile: ReferenceType[Tile] | Tile | None = self.tile
         if tile is not None:
@@ -419,11 +378,11 @@ class Unit(BaseEntity, ABC):
         state.pop("healthbar_shader", None)
         state.pop("build_conditions", None)
         state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
-        state["unit"] = self.__class__.__module__ + "." + self.__class__.__name__
+        state["cls_ref"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
         return state
 
     def load_state(self) -> None:
-        entity_manager = EntityManager.get_singleton_instance()
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
         tile_ref: ReferenceType["Tile"] | None = cast(
             ReferenceType["Tile"] | None,
@@ -442,24 +401,27 @@ class Unit(BaseEntity, ABC):
         self.model_cache = None
         self.effects = Effects(self)
         self.actions = []
-        self.register_actions()
         self.resource_needed = Production
         self.amount_resource_needed = Yields.from_dict(getattr(self, "amount_resource_needed", 10))  # type: ignore
         self.selection_circle = None
-        self.selection_shader = Shader.load(
-            Shader.SL_GLSL,
+        self.selection_shader: Shader = Shader.load(
+            lang=Shader.SL_GLSL,
             vertex=self.base.base_path / "assets/shaders/unit_selection.vert.glsl",
             fragment=self.base.base_path / "assets/shaders/unit_selection.frag.glsl",
         )
         self.health_left: float = getattr(self, "health_left", self.max_health)
         self.moves_left = getattr(self, "moves_left", self.max_moves)
 
-        self.spawn()
+    def on_turn_end(self, turn: int) -> None:
+        self.moves_left = self.max_moves
+        for action in self.actions:
+            action.on_turn_end(turn)
 
     def register(self) -> None:
         from managers.entity import EntityType
 
         self.is_registered = True
+        self.is_being_build = False
 
         entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
@@ -488,6 +450,11 @@ class Unit(BaseEntity, ABC):
         UnitManager.get_singleton_instance().remove_unit(self)
 
     def spawn(self, ignore_constraints: bool = False) -> NodePath | None:
+        self.register_actions()
+
+        if self.is_registered is False:
+            self.register()
+
         self.calculate_model_position()
         self.load_model()
 
@@ -511,7 +478,7 @@ class Unit(BaseEntity, ABC):
         if tile.is_passable is False:
             raise ValueError(f"Unit {cls.__name__} cannot spawn on impassable tile {tile.tag}.")
 
-        instance = cls(tile=tile, player=player)
+        instance: Self = cls(tile=tile, player=player)
         instance.owner = player
         instance.spawn()
 
@@ -537,8 +504,8 @@ class Unit(BaseEntity, ABC):
         if len(target_tile.units) > 0:
             return CantMoveReason.OTHER_UNIT_ON_TILE
 
-        tiles_to_move = []
-        # Attempt pathfinding
+        tiles_to_move: List["Tile"] | None = []
+
         if self.tile is not None and (tiles_to_move := TileRepository.astar(self.get_tile(), target_tile, 1.0)) is None:
             return CantMoveReason.NO_PATH
 
@@ -564,12 +531,12 @@ class Unit(BaseEntity, ABC):
 
             if _tile.is_visisted_by(self) is False:
                 # Move partially onto this tile and then get trapped or do partial logic
-                self._move_to_tile(_tile, departing_tile)
+                self._move_to_tile(tile=_tile, clear_departing_tile=departing_tile)
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             current_tile = _tile
 
-        self._move_to_tile(current_tile, departing_tile)  # Move to the last tile in the path
+        self._move_to_tile(tile=current_tile, clear_departing_tile=departing_tile)  # Move to the last tile in the path
         if current_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
@@ -590,7 +557,7 @@ class Unit(BaseEntity, ABC):
             MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
 
     def calculate_model_position(self) -> None:
-        tile_pos = self.get_tile().get_cords()
+        tile_pos: Tuple[float, float, float] = self.get_tile().get_cords()
         self.pos_x, self.pos_y, self.pos_z = tile_pos
         if self.model is not None:
             self.model.setPos(
@@ -629,11 +596,10 @@ class Unit(BaseEntity, ABC):
         return tile.is_passable() and len(tile.units) == 0
 
     def restore_movement_points(self) -> None:
-        """Resets the unit's movement points to the maximum value. Called by the Turn manager."""
         self.moves_left = self.max_moves
 
     def drain_movement_points(self, cost_or_zero: float | None = None) -> None:
-        if cost_or_zero is None:
+        if cost_or_zero is None or cost_or_zero <= 0:
             self.moves_left = 0
         else:
             self.moves_left -= cost_or_zero
@@ -645,7 +611,7 @@ class Unit(BaseEntity, ABC):
             self.model.setColor(*color)  # type: ignore If check above passes, model is NodePath
 
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
-        self.health_left = 0
+        self._health_left = 0
 
         self.unload_model()
 
@@ -659,8 +625,6 @@ class Unit(BaseEntity, ABC):
         self.unregister()
 
         self.actions.clear()
-        if hasattr(self, "tag"):
-            del self.tag
 
         if as_system:
             messenger.send("system.unit.destroyed", [self])
@@ -683,11 +647,10 @@ class Unit(BaseEntity, ABC):
         self.health_left = max(0.0, self.health_left - damage)
         ratio = self.health_left / self.max_health
 
-        # update the shader
         if hasattr(self, "_healthbar_quad"):
             self._healthbar_quad.setShaderInput("health_ratio", ratio)  # type: ignore
 
-        if self.health_left <= 0:
+        if not self.is_alive():
             return True
         return False
 
@@ -701,6 +664,7 @@ class Unit(BaseEntity, ABC):
         )  # type: ignore
 
         MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
 
         if isinstance(target, Unit) and outcome.attacker_damage > 0.0:
             spawn_damage_text(target, outcome.attacker_damage)
@@ -710,13 +674,16 @@ class Unit(BaseEntity, ABC):
         elif outcome.status == CombatResults.DEFENDER_KILLED:
             target.kill()
 
+        if not self.can_move_after_attack:
+            self.drain_movement_points(cost_or_zero=0)
+
         return outcome
 
     def get_tag(self) -> str:
         return self.tag
 
     def on_inspect(self):
-        data = {
+        data: Dict[str, str | float | bool] = {
             "name": str(self.name),
             "description": str(self.description),
             "tag": self.get_tag(),
@@ -731,6 +698,7 @@ class Unit(BaseEntity, ABC):
             "attack points": f"{self.attack_points_left}/{self.attack_points}",
             "attacks cost mele": self.attack_points_cost_mele,
             "attacks cost ranged": self.attack_points_cost_ranged,
+            "can moving after attacking": self.can_move_after_attack,
             "can move": self.can_move,
             "can attack": self.can_attack,
             "can heal": self.can_heal,

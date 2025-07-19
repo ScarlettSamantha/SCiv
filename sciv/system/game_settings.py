@@ -39,11 +39,10 @@ class GameSettings:
 
     def dump(self) -> dict[str, Any]:
         data: dict[str, Any] = self.__dict__.copy()
-        data["player"] = f"{self.player.__module__}.{self.player.__class__.__name__}"
+        data["player"] = f"{self.player.__module__}.{self.player.__name__}"
         return data
 
-    def load_state(self, state: dict[str, Any]) -> None:
+    def load_state(self) -> None:
         from managers.entity import EntityManager
 
-        self.__dict__.update(state)
         self.player = EntityManager.dynamic_import(self.player)  # type: ignore

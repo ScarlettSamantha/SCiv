@@ -1,5 +1,6 @@
+from logging import Logger
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Self, Tuple, Type, Union, cast
-from weakref import ReferenceType
+from weakref import ReferenceType, ref
 
 from exceptions.ai import AIException
 from managers.entity import EntityManager, EntityType
@@ -30,31 +31,45 @@ class Goal:
         self.target: T_TARGET = target
         self.parent_ai: ReferenceType["AI"] = parent if isinstance(parent, ReferenceType) else ReferenceType(parent)
         self.achieved: bool = False
+        self.logger: Logger = self.get_parent().get_logger().getChild("goal")
 
-    def turn_tick(self) -> None: ...
+    def turn_tick(self) -> None:
+        self.logger.debug(f"Turn tick for goal: {self.name}")
+        if self.needs_turn_processing:
+            if self.calculate_if_achieved():
+                self.mark_achieved()
+                self.logger.info(f"Goal {self.name} achieved.")
 
-    def dump(self) -> Dict[str, Union[str, Any]]:
+    def dump(self) -> Dict[str, Union[str, Any]] | None:
         parent_id: "AI | None" = self.parent_ai()
+
+        if self.calculate_if_achieved():
+            self.mark_achieved()
 
         if parent_id is None:
             raise AIException("Parent AI reference is None, cannot dump goal")
 
         player: "Player | None" = parent_id.get_player()
 
-        return {
-            "name": self.name,
-            "description": self.description,
-            "for_unit": self.for_unit,
-            "needs_turn_processing": self.needs_turn_processing,
-            "achieved": self.achieved,
-            "target": self.target.get_tag(),
-            "target_type": self.target.get_entity_type(),
-            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
-            "player": player.get_tag(),
-        }
+        if self.achieved:
+            return None
+        else:
+            data = {
+                "name": self.name,
+                "description": self.description,
+                "for_unit": self.for_unit,
+                "needs_turn_processing": self.needs_turn_processing,
+                "achieved": self.achieved,
+                "target": self.target.get_tag(),
+                "target_type": self.target.get_entity_type(),
+                "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+                "player": player.get_tag(),
+            }
+
+        return data
 
     @classmethod
-    def load_state(cls, state: Dict[str, Any]) -> Self:
+    def load_state(cls, state: Dict[str, Any], parent_ai: "AI") -> Self:
         instance: Self = cls.__new__(cls)
 
         instance.name = state.get("name", "")
@@ -78,6 +93,7 @@ class Goal:
 
         _player: Player | None = player()
         assert _player is not None, f"Player with tag {player_tag} reference is None, cannot load state"
+        instance.parent_ai = ref(parent_ai)
 
         search_results: Tuple[EntityType, BaseEntity | HexGrid | GameSettings] | None = (
             EntityManager.get_singleton_instance().search_key(key=target_tag)
@@ -124,6 +140,9 @@ class Goal:
         """Mark the goal as not achieved."""
         self.achieved = False
 
+    def calculate_if_achieved(self) -> bool:
+        raise NotImplementedError("Subclasses must implement this method to calculate if the goal is achieved.")
+
 
 class Goals:
     def __init__(self):
@@ -165,12 +184,17 @@ class Goals:
         return len(self.goals)
 
     def dump(self) -> Dict[str, Any]:
+        goals: list[Dict[str, Any]] = []
+        for goal in self.goals:
+            dumped_goal: Dict[str, str | Any] | None = goal.dump()
+            if dumped_goal is not None:
+                goals.append(dumped_goal)
+
         return {
-            "goals": [goal.dump() for goal in self.goals],
-            "removed_goals": [goal.dump() for goal in self.removed_goals],
+            "goals": goals,
         }
 
-    def load_state(self, state: Dict[str, Any]) -> None:
+    def load_state(self, state: Dict[str, Any], parent_ai: "AI") -> None:
         self.goals = []
         self.removed_goals = []
 
@@ -181,15 +205,5 @@ class Goals:
                 raise AIException("Goal class reference is None, cannot load state")
 
             cls_type: Type[Goal] = cast(Type[Goal], EntityManager.dynamic_import(goal_class))
-            goal_instance: Goal = cls_type.load_state(goal_state)
+            goal_instance: Goal = cls_type.load_state(goal_state, parent_ai)
             self.goals.append(goal_instance)
-
-        for removed_goal_state in state.get("removed_goals", []):
-            goal_class = removed_goal_state.get("cls_ref")
-
-            if goal_class is None:
-                raise AIException("Removed goal class reference is None, cannot load state")
-
-            cls_type: Type[Goal] = cast(Type[Goal], EntityManager.dynamic_import(goal_class))
-            removed_goal_instance: Goal = cls_type.load_state(removed_goal_state)
-            self.removed_goals.append(removed_goal_instance)

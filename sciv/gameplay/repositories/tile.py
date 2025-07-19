@@ -1,8 +1,7 @@
 from collections import deque
 from enum import Enum
 from heapq import heappop, heappush
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Tuple
-
+from typing import TYPE_CHECKING, Callable, ClassVar, Dict, List, Optional, Set, Tuple
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -20,11 +19,13 @@ class DistanceCalculationType(Enum):
 class TileRepository:
     grid: Optional[Dict[Tuple[int, int], "Tile"]] = None
     _neigh_cache: Dict[Tuple[int, int], List["Tile"]] = {}
+    _neigh_cache_ext: ClassVar[Dict[Tuple[int, int, int, bool, bool], List["Tile"]]] = {}
 
     @classmethod
     def reset_caches(cls) -> None:
         cls.grid = None
         cls._neigh_cache = {}
+        cls._neigh_cache_ext.clear()
 
     def __init__(self) -> None:
         pass
@@ -37,16 +38,26 @@ class TileRepository:
 
     @classmethod
     def _compute_raw_neighbors(cls, x: int, y: int) -> List["Tile"]:
+        from gameplay.tile import Tile
+
         """Compute the 6 direct neighbors of (x, y) once."""
-        directions_even = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
-        directions_odd = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
-        dirs = directions_even if x % 2 == 0 else directions_odd
+        directions_even: List[Tuple[int, int]] = [(+1, 0), (+1, -1), (0, -1), (-1, -1), (-1, 0), (0, +1)]
+        directions_odd: List[Tuple[int, int]] = [(+1, 0), (0, -1), (-1, 0), (-1, +1), (0, +1), (+1, +1)]
+        dirs: List[Tuple[int, int]] = directions_even if x % 2 == 0 else directions_odd
         out: List["Tile"] = []
         for dx, dy in dirs:
-            t = cls.get_grid().get((x + dx, y + dy))
+            t: Tile | None = cls.get_grid().get((x + dx, y + dy))
+            assert t is None or isinstance(t, Tile), f"Invalid tile type: {type(t).__name__} at ({x + dx}, {y + dy})"
             if t:
                 out.append(t)
         return out
+
+    @classmethod
+    def precompute_neighbors(cls, max_radius: int) -> None:
+        """Call once at game-load to fill caches up to `max_radius`."""
+        for tile in cls.get_grid().values():
+            for r in range(1, max_radius + 1):
+                cls.get_neighbors(tile, radius=r)
 
     @classmethod
     def get_tile(cls, x: int, y: int) -> Optional["Tile"]:
@@ -244,36 +255,40 @@ class TileRepository:
     def get_neighbors(
         cls, tile: "Tile", radius: int = 1, check_passable: bool = False, climbable: bool = False
     ) -> List["Tile"]:
-        # 1) radius == 1, no filtering -> instant lookup
+        x, y = tile.x, tile.y
+
         if radius == 1 and not check_passable and not climbable:
-            key = (tile.x, tile.y)
-            if key not in cls._neigh_cache:
-                cls._neigh_cache[key] = cls._compute_raw_neighbors(tile.x, tile.y)
-            return cls._neigh_cache[key]
+            key1: Tuple[int, int] = (x, y)
+            cls._neigh_cache.setdefault(key1, cls._compute_raw_neighbors(x, y))
+            return cls._neigh_cache[key1]
 
-        # 2) radius == 1, but with filters -> filter the cached list
         if radius == 1:
-            neighs = cls.get_neighbors(tile, radius=1, check_passable=False, climbable=False)
+            base = cls.get_neighbors(tile, radius=1, check_passable=False, climbable=False)
             if check_passable:
-                neighs = [n for n in neighs if n.is_passable()]
+                base = [t for t in base if t.is_passable()]
             if climbable:
-                neighs = [n for n in neighs if n.get_climbable()]
-            return neighs
+                base = [t for t in base if t.get_climbable()]
+            return base
 
-        visited = {tile}
-        frontier = {tile}
+        key_ext: Tuple[int, int, int, bool, bool] = (x, y, radius, check_passable, climbable)
+        if key_ext in cls._neigh_cache_ext:
+            return cls._neigh_cache_ext[key_ext]
+
+        visited: Set["Tile"] = {tile}
+        frontier: Set["Tile"] = {tile}
         result: List["Tile"] = []
+
         for _ in range(radius):
             new_frontier: Set["Tile"] = set()
-            for frontier_tile in frontier:
-                for neighbor_tile in cls.get_neighbors(
-                    frontier_tile, radius=1, check_passable=check_passable, climbable=climbable
-                ):
-                    if neighbor_tile not in visited:
-                        visited.add(neighbor_tile)
-                        new_frontier.add(neighbor_tile)
-                        result.append(neighbor_tile)
+            for f in frontier:
+                for n in cls.get_neighbors(f, radius=1, check_passable=check_passable, climbable=climbable):
+                    if n not in visited:
+                        visited.add(n)
+                        new_frontier.add(n)
+                        result.append(n)
             frontier = new_frontier
+
+        cls._neigh_cache_ext[key_ext] = result
         return result
 
     @classmethod
@@ -310,18 +325,18 @@ class TileRepository:
         :param movement_points: Movement speed factor for cost adjustment.
         :return: List of Tiles representing the path from start to goal, or None if no path exists.
         """
-        open_set: List[Tuple[float, int, Tile]] = []
+        open_set: List[Tuple[float, int, "Tile"]] = []
         heappush(open_set, (0, id(start), start))
-        came_from: Dict[Tile, Tile] = {}
-        g_score: Dict[Tile, float] = {start: 0.0}
-        f_score: Dict[Tile, float] = {start: cls.heuristic_tiles(start, goal)}
+        came_from: Dict["Tile", "Tile"] = {}
+        g_score: Dict["Tile", float] = {start: 0.0}
+        f_score: Dict["Tile", float] = {start: cls.heuristic_tiles(start, goal)}
 
         while open_set:
             _, __, current = heappop(open_set)
             if current == goal:
-                path: List[Tile] = [current]
+                path: List["Tile"] = [current]
                 while current in came_from:
-                    current = came_from[current]
+                    current: "Tile" = came_from[current]
                     path.append(current)
                 return list(reversed(path))
 
@@ -374,7 +389,7 @@ class TileRepository:
                 path: List["Tile"] = []
                 while current in came_from:
                     path.append(current)
-                    current = came_from[current]
+                    current: "Tile" = came_from[current]
                 path.append(start)
                 return path[::-1]
 

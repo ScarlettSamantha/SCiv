@@ -29,7 +29,7 @@ class BaseEntity(ABC, DirectObject, Inspectable):
     can_be_attacked: bool = False
     can_attack: bool = False
     can_defend: bool = False
-    can_retaliate: bool = False
+    can_retaliate: bool = True
     can_move_after_attack: bool = False
     can_attack_indirectly: bool = False
     can_pillage: bool = False
@@ -70,7 +70,7 @@ class BaseEntity(ABC, DirectObject, Inspectable):
             self.tile_tag: str | None = tile.get_tag() if isinstance(tile, Tile) else tile().get_tag()  # type: ignore
 
         self.attack_points_left: float = self.attack_points
-        self.health_left: float = self.max_health
+        self._health_left: float = self.max_health
 
         self._owner: Optional[ReferenceType["Player"]] = (
             owner if isinstance(owner, weakref.ReferenceType) or owner is None else weakref.ref(owner)
@@ -91,6 +91,19 @@ class BaseEntity(ABC, DirectObject, Inspectable):
             raise AssertionError("Cache instance is not set.")
 
         self.base: "OpenCiv" = Cache.get_showbase_instance()
+
+    @property
+    def health_left(self) -> float:
+        return self._health_left
+
+    @health_left.setter
+    def health_left(self, value: float) -> None:
+        if value < 0:
+            value = 0
+        self._health_left = value
+        if self._health_left <= 0:
+            self._is_alive = False
+            self.kill()
 
     @property
     def owner(self) -> Optional[Union[ReferenceType["Player"], "Player"]]:
@@ -259,7 +272,7 @@ class BaseEntity(ABC, DirectObject, Inspectable):
     def destroy(self, as_system: bool = False) -> None: ...
 
     def kill(self) -> None:
-        self.health_left = 0
+        self._health_left = 0
         self.destroy()
 
     def health(self) -> float:

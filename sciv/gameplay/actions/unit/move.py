@@ -1,7 +1,6 @@
 from typing import Any
 
 from direct.showbase.MessengerGlobal import messenger
-
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.tile import Tile
 from gameplay.unit import CantMoveReason, Unit
@@ -26,6 +25,7 @@ class WalkAction(BaseUnitAction):
         self.targeting_tile_action = True
         self.get_return_as_failure_argument = True
         self.keep_targeting_after_use = True
+        self.is_disabled = self.unit.moves_left <= 0
 
     def move_wrapper(self, action: Action, executor: Unit, target: T_TARGET) -> CantMoveReason:
         if not isinstance(target, Tile):

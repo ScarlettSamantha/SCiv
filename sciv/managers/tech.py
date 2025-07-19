@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from weakref import ReferenceType, ref
 
 from direct.showbase import MessengerGlobal
@@ -33,32 +33,52 @@ class TechManager(BaseManager):
         self.process_folders(technology_folders)
 
     def get_player(self) -> "Player":
-        player = self.player()
+        player: Player | None = self.player()
         if player is None:
             raise ValueError("Player reference is no longer valid.")
         return player
 
     def dump(self) -> object:
-        # Prepare the state for serialization.
         state = self.__dict__.copy()
         state.pop("parent", None)
         state.pop("logger", None)
         state.pop("_tech_tree", None)
         state["player"] = self.get_player().get_tag()
-        state["registered_techs"] = [tech.key for tech in self.registered_techs]
-        state["researching"] = self.researching.key if self.researching else None
-        state["queue"] = [tech.key for tech in self.queue.values()]
-        state["researched_techs"] = [tech.key for tech in self.researched_techs]
+        state["registered_techs"] = [f"{tech.__module__}.{tech.__name__}" for tech in self.registered_techs]
+        state["researching"] = (
+            f"{self.researching.__module__}.{self.researching.__class__.__name__}" if self.researching else None
+        )
+        state["researched_techs"] = [f"{tech.__module__}.{tech.__class__.__name__}" for tech in self.researched_techs]
+        state["queue"] = [tech.dump() for tech in self.queue.values()]
         state["needed_science"] = self._needed_science
         state["current_science"] = self._current_science_pool
-        state["tech_tree"] = self._tech_tree.key if self._tech_tree else None
+        state["tech_tree"] = self._tech_tree.dump() if self._tech_tree else None
 
         return state
 
     def load_state(self, state: Dict[str, Any]) -> None:
-        player: Player = self.get_player()
-        self.logger = player.logger.getChild("tech_manager")
+        from managers.entity import EntityManager, EntityType
+
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
         self.__dict__.update(state)
+
+        player: ReferenceType["Player"] | None = cast(
+            ReferenceType["Player"] | None, entity_manager.get_ref_weak(EntityType.PLAYER, state["player"])
+        )
+        assert player is not None, "Player reference is invalid."
+        self.player = player
+
+        self.logger = self.get_player().logger.getChild("tech_manager")
+
+        self.registered_techs = [EntityManager.dynamic_import(_tech) for _tech in state["registered_techs"]]
+        self.researched_techs = [EntityManager.dynamic_import(_tech)() for _tech in state["researched_techs"]]
+        self.researching = EntityManager.dynamic_import(state["researching"])() if state["researching"] else None
+        _tech_tree = EntityManager.dynamic_import(state["tech_tree"]["cls_ref"])()
+        _tech_tree.load_state(state["tech_tree"])
+        self._tech_tree = _tech_tree
+        self.queue = OrderedDict(
+            (i, entity_manager.dynamic_import(tech["cls_ref"])()) for i, tech in enumerate(state["queue"])
+        )
 
     @property
     def needed_science(self) -> int:

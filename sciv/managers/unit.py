@@ -45,3 +45,12 @@ class UnitManager(Singleton):
         for unit in data.values():
             unit.load_state()
             self.add_unit(unit)
+
+        for unit in self.units.values():
+            if not hasattr(unit, "tag"):
+                continue
+            if str(unit.tag) not in self.by_player:
+                self.by_player[str(unit.tag)] = {}
+            self.by_player[str(unit.get_owner().get_tag())][str(unit.tag)] = unit
+
+            unit.spawn()

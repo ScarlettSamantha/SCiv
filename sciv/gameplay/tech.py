@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Generator, List, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Tuple, Type
 
 from gameplay.age import Age
 from helpers.colors import Colors, Tuple4f
@@ -69,6 +69,14 @@ class Tech:
 
     def on_unlock(self, player: "Player") -> None: ...
 
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        pass
+
 
 class TechTree:
     key: str
@@ -89,3 +97,24 @@ class TechTree:
 
     def add_age(self, age: Age) -> None:
         self._ages.append(age)
+
+    def dump(self) -> Dict[str, Any]:
+        data = {
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
+            "key": self.key,
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "items": [f"{item.__module__}.{item.__name__}" for item in self._items],
+        }
+        return data
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager
+
+        self.key = state.get("key", "")
+        self.name = state.get("name", "")
+        self.description = state.get("description", "")
+        self.icon = state.get("icon", None)
+
+        self._items = [EntityManager.dynamic_import(item) for item in state.get("items", [])]

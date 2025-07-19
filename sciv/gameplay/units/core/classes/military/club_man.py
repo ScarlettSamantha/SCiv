@@ -4,13 +4,13 @@ from gameplay.civic import Conditions
 from gameplay.condition import BuildCondition, ResearchCondition
 from gameplay.improvements.core.city.barracks import Barracks
 from gameplay.promotion import Promotion
+from gameplay.techs.hunting_gathering import HuntingGathering
 from gameplay.units.core.classes.military._base import CoreMilitaryBaseClass
 from managers.i18n import t_
-from gameplay.techs.hunting_gathering import HuntingGathering
 
 if TYPE_CHECKING:
-    from gameplay.tile import Tile
     from gameplay.player import Player
+    from gameplay.tile import Tile
 
 
 class MelePromotion(Promotion):
@@ -40,7 +40,7 @@ class ClubMan(CoreMilitaryBaseClass):
 
     attack_points = 1
     attack_armor_penetration = 1
-    attack_power_mele = 3.5
+    attack_power_mele = 4.0
     attack_power_ranged = 0
 
     def __init__(self, tile: "Tile", player: "Player", *args: Any, **kwargs: Any):

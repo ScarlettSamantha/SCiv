@@ -1,8 +1,7 @@
 from typing import Any, Optional
 
-from direct.showbase.MessengerGlobal import messenger
-
 from direct.showbase import MessengerGlobal
+from direct.showbase.MessengerGlobal import messenger
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.tile import Tile
 from gameplay.unit import Unit
@@ -28,11 +27,14 @@ class AttackAction(BaseUnitAction):
         self.targeting_unit_action = True
         self.get_return_as_failure_argument = True
         self.keep_targeting_after_use = True
+        self._result: Optional[CombatOutcome] = None
+        self.is_disabled = (self.unit.moves_left - self.unit.attack_points_cost_mele) <= 0
 
     def attack_wrapper(self, _: Action, executor: T_TARGET, target: T_TARGET) -> Optional[CombatOutcome]:
         if isinstance(executor, Unit) and not isinstance(target, Tile):
-            outcome = executor.attack(target)
-            self._result = outcome
+            outcome: CombatOutcome = executor.attack(target)
+            self._result: CombatOutcome | None = outcome
+            self.is_disabled = (self.unit.moves_left - self.unit.attack_points_cost_mele) <= 0
             return outcome
         elif isinstance(executor, Unit) and isinstance(target, Tile):
             self._result = None
@@ -56,6 +58,7 @@ class AttackAction(BaseUnitAction):
     def success(self, *args: Any, **kwargs: Any):
         messenger.send("unit.action.attack.success", [self.get_result()])
         result = self.get_result()
+
         if result is None or not isinstance(result, CombatOutcome):
             raise TypeError(f"Expected CombatOutcome, got {type(result).__name__}")
 

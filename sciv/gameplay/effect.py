@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, cast
 
 from direct.showbase.DirectObject import DirectObject
 from gameplay.yields import Yields
@@ -42,7 +42,7 @@ class Effect(BaseEntity, ABC, DirectObject):
         self.owner: "Player" = player
         self.city: "City | None" = None
         self.player: "Player | None" = None
-        self.world: "World | None" = None
+        self.world: bool = False
         self.improvement: "Improvement | None" = None
         self.unit: "Unit | None" = None
 
@@ -67,22 +67,85 @@ class Effect(BaseEntity, ABC, DirectObject):
         if self.is_registered:
             self.unregister()
 
-    def __getstate__(self) -> Dict[str, Any]:
-        state = self.__dict__.copy()
-        if "base" in state:
-            del state["base"]
-        if "_logger" in state:
-            del state["_logger"]
+    def dump(self) -> Dict[str, Any]:
+        data = {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "icon": str(self.icon),
+            "icon_border_color": self.icon_border_color,
+            "visible_to_user": self.visible_to_user,
+            "place_method": self.place_method.__name__ if callable(self.place_method) else str(self.place_method),
+            "activate_on_add": self.activate_on_add,
+            "effect_types": [et.name for et in self.effect_types],
+            "yield_impact": self.yield_impact.dump(),
+            "maintenance_impact": self.maintenance_impact.dump(),
+            "is_timed": self.is_timed,
+            "duration": self.duration,
+            "turns_left": self.turns_left,
+            "needs_turn_processing": self.needs_turn_processing,
+            "active": self.active,
+        }
 
-        return state
+        owner = self.get_owner().get_tag() if self.get_owner() else None
+        if owner:
+            data["owner"] = owner
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        self.__dict__.update(state)
-        from helpers.cache import Cache
-        from managers.log import LogManager
+        if self.tile:
+            data["tile"] = self.get_tile().get_tag()
+        if self.city:
+            data["city"] = self.city.get_tag()
+        if self.world:
+            data["world"] = self.world
+        if self.improvement:
+            data["improvement"] = self.improvement.get_tag()
+        if self.unit:
+            data["unit"] = self.unit.get_tag()
 
-        self._logger = LogManager.get_singleton_instance().gameplay.getChild("effect")
-        self.base = Cache.get_showbase_instance()
+        return data
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager, EntityType
+
+        entity_manager: EntityManager = EntityManager.get_singleton_instance()
+
+        self.id = state.get("id", uuid.uuid4().hex)
+        self.name = state.get("name", self.name)
+        self.description = state.get("description", self.description)
+        self.icon = Path(state.get("icon", str(self.icon)))
+        self.icon_border_color = Colors.from_tuple(state.get("icon_border_color", Colors.RED))
+        self.visible_to_user = state.get("visible_to_user", True)
+
+        place_method_name = state.get("place_method")
+        if place_method_name:
+            if hasattr(EffectPlacers, place_method_name):
+                self.place_method = getattr(EffectPlacers, place_method_name)
+            else:
+                raise ValueError(f"Invalid place method: {place_method_name}")
+
+        self.activate_on_add = state.get("activate_on_add", True)
+        self.effect_types = tuple(state.get("effect_types", []))
+
+        self.yield_impact = Yields.from_dict(state.get("yield_impact", {}))
+        self.maintenance_impact = Yields.from_dict(state.get("maintenance_impact", {}))
+
+        self.is_timed = state.get("is_timed", False)
+        self.duration = state.get("duration", 0)
+        self.turns_left = state.get("turns_left", 0)
+        self.needs_turn_processing = state.get("needs_turn_processing", False)
+        self.active = state.get("active", True)
+
+        self.owner = cast("Player", entity_manager.get(EntityType.PLAYER, state.get("owner")))  # type:ignore
+        if self.tile:
+            self.tile = cast("Tile", entity_manager.get(EntityType.TILE, state.get("tile")))  # type:ignore
+        if self.city:
+            self.city = cast("City", entity_manager.get(EntityType.CITY, state.get("city")))  # type:ignore
+        if self.world:
+            self.world = state.get("world", False)
+        if self.improvement:
+            self.improvement = cast("Improvement", entity_manager.get(EntityType.IMPROVEMENT, state.get("improvement")))  # type:ignore
+        if self.unit:
+            self.unit = cast("Unit", entity_manager.get(EntityType.UNIT, state.get("unit")))  # type:ignore
 
     def register(self):
         from managers.entity import EntityManager, EntityType

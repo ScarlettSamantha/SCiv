@@ -9,6 +9,7 @@ from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 from gameplay.lose import Lose, LoseConditions
+from gameplay.repositories.tile import TileRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from helpers.cache import Cache
 from helpers.debug import Debug, PerformanceLogger
@@ -27,8 +28,6 @@ from system.generators.basic import Basic
 from system.mesh import HexGrid
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
-
-from sciv.gameplay.repositories.tile import TileRepository
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -161,7 +160,10 @@ class Game(Singleton, DirectObject):
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
+
         self.properties = self.entities.get_all(EntityType.GAME_SETTINGS).get("game_settings")  # type: ignore
+        self.properties.load_state()  # type: ignore
+
         self.game_settings = self.properties
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
         turn = self.entities.get_meta_data("turn")
