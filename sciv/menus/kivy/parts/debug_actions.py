@@ -65,6 +65,8 @@ class DebugActions:
 
     def run_action(self, action: Action) -> None:
         MessengerGlobal.messenger.send("ui.request.action.stage", [action])
+        if action.targeting_tile_action or action.targeting_unit_action:
+            self.screen.close_debug_actions()  # We have to do this the round about way because the action will request a tile or unit target
 
     def _update_bg(self, instance: Widget, value: Any) -> None:
         self._bg_rect.pos = instance.pos  # type: ignore

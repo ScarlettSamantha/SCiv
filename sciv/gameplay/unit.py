@@ -12,7 +12,7 @@ from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
 from game import Cache
 from gameplay.condition import Conditions
-from gameplay.floating_text import spawn_damage_text
+from gameplay.floating_text import spawn_damage_text, spawn_heal_text
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from gameplay.yields import Yields
@@ -653,6 +653,13 @@ class Unit(BaseEntity, ABC):
         if not self.is_alive():
             return True
         return False
+
+    def heal(self, amount: float) -> None:
+        super().heal(amount)
+        if hasattr(self, "_healthbar_quad"):
+            self._healthbar_quad.setShaderInput("health_ratio", self.health_left / self.max_health)  # type: ignore
+
+        spawn_heal_text(self, amount)
 
     def look(self, radius: int) -> List["Tile"]:
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)

@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 class OpenCiv(ShowBase):
     def __init__(self):
         from helpers.cache import Cache
+        from helpers.debug import Debug
         from managers.assets import AssetManager
         from managers.ui import ui
         from system.camera import Camera
@@ -49,6 +50,7 @@ class OpenCiv(ShowBase):
         from system.vars import DEBUG, __version__, get_git_commit
 
         self.debug: bool = DEBUG
+        Debug.debug = self.debug
 
         self.version: str = __version__
         self.commit: str = get_git_commit()

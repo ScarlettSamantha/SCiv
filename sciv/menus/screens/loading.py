@@ -1,10 +1,9 @@
 from typing import Any, Optional
 
 from direct.showbase.DirectObject import DirectObject
+from gameplay.civilization import Civilization
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen
-
-from gameplay.civilization import Civilization
 from menus.kivy.elements.image_label import ImageLabel
 from menus.kivy.elements.loading_screen import LoadingScreen
 
@@ -21,7 +20,8 @@ class Loading(
         self.register()
         self.civilization: Optional[Civilization] = None
 
-    def register(self):
+    def register(self) -> None:
+        self.accept("ui.loading.show", self.show)
         self.accept("ui.loading.next_step", self.next_stage)
 
     def next_stage(self, message: str):
@@ -37,7 +37,7 @@ class Loading(
     def hide(self, _: Optional[Button] = None):
         self.visible = False  # type: ignore
 
-    def show(self):
+    def show(self, *args: Any, **kwargs: Any):
         self.loading_screen = LoadingScreen(total_steps=6, show_continue=True, on_complete=self.on_done)
         self.loading_screen.add_to_right_overlay(self.right_text_widget())
         self.add_widget(self.loading_screen)

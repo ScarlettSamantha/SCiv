@@ -386,6 +386,7 @@ class Game(Singleton, DirectObject):
 
         self.game_active = True
         self.logger.info(f"Game start requested with {self.properties}")
+        messenger.send("ui.request.loading_screen", [civilization])
         self._try_game_start()
 
     def _try_game_start(self):

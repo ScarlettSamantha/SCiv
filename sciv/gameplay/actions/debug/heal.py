@@ -10,7 +10,6 @@ class HealAction(DebugAction):
     debug_action = True
 
     def __init__(self):
-        self.target: T_TARGET | None = None
         super().__init__(
             name=self.key,
             action=self.heal_wrapper,
@@ -24,10 +23,13 @@ class HealAction(DebugAction):
         self.keep_targeting_after_use = True  # This is so we dont try to select a unit after healing
 
     def heal_wrapper(self, *args: Any, **kwargs: Any) -> None:
-        if isinstance(self.target, Unit):
-            self.target.heal(self.target.max_health)  # Heal to full health
+        target: T_TARGET | None = self.action_kwargs.get("target")
+        if isinstance(target, Unit):
+            target.heal(target.max_health)  # Heal to full health
+            return
         raise ValueError("Executor must be a Unit instance.")
 
     def is_successful(self, *args: Any, **kwargs: Any) -> bool:
-        assert self.target is not None, "Target must be set before checking success."
-        return self.target.health() == self.target.max_health
+        target: T_TARGET | None = self.action_kwargs.get("target")
+        assert target is not None, "Target must be set before checking success."
+        return target.health() == target.max_health
