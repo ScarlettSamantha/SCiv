@@ -1,11 +1,16 @@
-from enum import Enum
 import time
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
+from gameplay.repositories.tile import TileRepository
+from helpers.optimizations import throttle
+from managers.unit import UnitManager
+from mixins.singleton import Singleton
 from panda3d.core import (
     BitMask32,
     CollisionHandlerQueue,
@@ -13,15 +18,8 @@ from panda3d.core import (
     CollisionRay,
     CollisionTraverser,
     NodePath,
+    WindowProperties,
 )
-
-from direct.showbase import MessengerGlobal
-from gameplay.repositories.tile import TileRepository
-from managers.unit import UnitManager
-from mixins.singleton import Singleton
-from helpers.optimizations import throttle
-from panda3d.core import WindowProperties
-
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -89,6 +87,7 @@ class Input(Singleton, DirectObject):
         self.accept("f2", self.activate)
         self.accept("f3", self.de_activate)
 
+        self.accept("f8", self.on_debug_actions_toggle)
         self.accept("f9", self.force_render_selected_entity)
         self.accept("f10", self.on_inspect_entity)
         self.accept("f11", self.on_inspect_players)
@@ -102,6 +101,15 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def on_debug_actions_toggle(self):
+        from menus.screens.game_ui import GameUIScreen
+
+        screen: GameUIScreen = self.base.ui_manager.get_main_game_ui()
+        if screen.debug_actions is not None and screen.debug_actions.is_open:
+            screen.close_debug_actions()
+        else:
+            screen.open_debug_actions()
 
     def force_render_selected_entity(self) -> None:
         if self.selected_tile is None and self.selected_unit is None:

@@ -647,6 +647,14 @@
         "found_city": "Found City",
         "self_destroy": "Suicide",
         "attack": "Attack"
+      },
+      "debug": {
+        "kill": {
+          "button": "Kill entity"
+        },
+        "heal": {
+          "button": "Heal entity"
+        }
       }
     },
     "world": {

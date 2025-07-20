@@ -5,7 +5,7 @@ from system.actions import Action
 
 
 class DebugAction(Action):
-    key = "action.debug.base"
+    key = "actions.debug.base"
     debug_action = True
 
     def __init__(

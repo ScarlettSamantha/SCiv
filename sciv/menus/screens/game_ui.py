@@ -18,6 +18,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
+from managers.combat import T_TARGET
 from managers.combat_log import CombatLog
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
@@ -39,12 +40,10 @@ from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
+from mixins.inspectable import Inspectable
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
-
-from managers.combat import T_TARGET
-from mixins.inspectable import Inspectable
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -145,6 +144,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def register(self):
         self.logger.info("Registering event listeners.")
 
+        self.accept("ui.request.action.stage", self.request_action_stage)
+
         self.accept("ui.update.user.city_clicked", self.process_city_click)
         self.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
 
@@ -167,6 +168,18 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.accept("t", self.toggle_research)
         self.accept("c", self.toggle_civics)
+
+    def request_action_stage(self, action: Action, executor: "Player | None" = None):
+        self.logger.info(f"Requesting action stage for action: {action.name}")
+
+        if self.wait_for_next_input_of_user or self.wait_for_action_of_user is not None:
+            self.logger.info("Already waiting for user input, ignoring request.")
+            return
+
+        if executor is None:
+            executor = PlayerManager.session_player()
+
+        self.prepare_action(action=action, executor=executor)
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
@@ -517,9 +530,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if self.wait_for_action_of_user is not None and self.wait_for_action_of_user:
             self.run_prepared_action(unit=_unit)  # type: ignore
-            if (self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True) or (
-                self.action_waiting_for is not None and self.action_waiting_for.keep_targeting_after_use is True
-            ):
+            if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True:
                 # If the action keeps targeting, we don't change the selected unit
                 should_select_unit = False
             self.wait_for_next_input_of_user = False
@@ -527,7 +538,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             # self.wait_for_action = None
             self.action_waiting_for = None
 
-        if should_select_unit is True:
+        if should_select_unit is True and _unit.is_alive():
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
 
         # if _unit != self.ui_manager.current_unit:
@@ -716,7 +727,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.debug_actions.frame)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.debug_actions.frame)  # type: ignore
-            self.lock_input()
+        self.lock_input()
 
     def close_debug_actions(self):
         if self.debug_actions is not None:
@@ -726,7 +737,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.debug_actions.frame)  # type: ignore
             self.popup_disabled = True
             self.debug_actions = None
-            self.unlock_input()
+        self.unlock_input()
 
     def open_inspect(self):
         if self.inspect is None:
@@ -735,7 +746,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.inspect.frame)  # type: ignore
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.inspect.frame)  # type: ignore
-            self.lock_input()
+        self.lock_input()
 
     def close_inspect(self):
         if self.inspect is not None:
@@ -745,7 +756,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.inspect.frame)  # type: ignore
             self.popup_disabled = True
             self.inspect = None
-            self.unlock_input()
+        self.unlock_input()
 
     def open_research(self):
         if self.research is None:
@@ -753,7 +764,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.research)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.research)
-            self.lock_input()
+        self.lock_input()
 
     def open_civics(self):
         if self.civics is None:
@@ -761,7 +772,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.civics)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.civics)
-            self.lock_input()
+        self.lock_input()
 
     def open_player_info(self, player: Player):
         if self.player_info is None:
@@ -769,7 +780,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.player_info)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.player_info)
-            self.lock_input()
+        self.lock_input()
 
     def close_research(self):
         if self.research is not None:
@@ -779,7 +790,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.research)
             self.popup_disabled = True
             self.research = None
-            self.unlock_input()
+        self.unlock_input()
 
     def close_civics(self):
         if self.civics is not None:
@@ -789,7 +800,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.civics)
             self.popup_disabled = True
             self.civics = None
-            self.unlock_input()
+        self.unlock_input()
 
     def close_player_info(self):
         if self.player_info is not None:
@@ -798,7 +809,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.player_info)
             self.popup_disabled = True
             self.player_info = None
-            self.unlock_input()
+        self.unlock_input()
 
     def toggle_research(self):
         if self.research is None:
