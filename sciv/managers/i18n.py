@@ -142,7 +142,9 @@ def set_i18n(i18n_instance: I18nManager) -> None:
 def get_i18n() -> I18nManager:
     global i18n
     if i18n is None:
-        raise I18NNotLoadedException("I18n not loaded")
+        from helpers.cache import Cache
+
+        i18n = Cache.get_i18n_instance()
     return i18n
 
 

@@ -16,14 +16,17 @@ from gameplay.resource import BaseResource
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.debug import Debug
+from helpers.icons import Icons
 from helpers.images import (
     generate_city_nameplate,
     normalize_color_to_bytes,
     pil_image_to_panda3d_texture,
 )
 from helpers.os import WindowsHelper
+from helpers.placeholder import Placeholder
 from managers.assets import AssetManager
-from managers.game import Game
+from managers.game import Game, HexGrid
+from managers.i18n import I18nManager, T_TranslationOrStr, get_i18n
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from panda3d.core import (
     AntialiasAttrib,
@@ -35,6 +38,7 @@ from panda3d.core import (
     PTAFloat,
     SamplerState,
     Shader,
+    TextNode,
     Texture,
     TransparencyAttrib,
 )
@@ -43,7 +47,10 @@ from PIL.ImageFont import FreeTypeFont
 from system.atlas import AtlasGenerator
 
 if TYPE_CHECKING:
+    from gameplay.city import City
+    from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
     from gameplay.tile import Tile
+    from gameplay.unit import Unit
 
 
 class TileRenderer:
@@ -69,6 +76,7 @@ class TileRenderer:
         self.anchor_node: NodePath = NodePath(f"tile_{tile.x}_{tile.y}_anchor")
         self.anchor_node.reparentTo(self.base.render)
         self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
+
         # Geometry group: terrain, walls, improvements, models
         self.geometry_node: NodePath = self.anchor_node.attachNewNode("geometry_group")
         self.anchor_node.reparentTo(self.base.render)
@@ -77,8 +85,14 @@ class TileRenderer:
         self.geometry_node.set_tag(NET_NODE_TAG_ID_FIELD, tile.tag)
         self.resource_model: Optional[NodePath] = None
 
-        # UI group: overlays, icons, unit markers, city nameplate
+        self.available_actions: List[str] = []
         self.ui_node: NodePath = self.anchor_node.attachNewNode("ui_group")
+
+        self.city_ui_node: NodePath = self.ui_node.attachNewNode("city_ui_group")
+        self.healthbar_node: Optional[NodePath] = None
+        self.build_queue_node: Optional[NodePath] = None
+        self.population_node: Optional[NodePath] = None
+        self.action_icons_nodes: List[NodePath] = []
 
         # Dynamic nodes
         self.terrain_overlay_node: Optional[NodePath] = None
@@ -164,10 +178,17 @@ class TileRenderer:
     def clear_ui(self) -> None:
         for child in self.ui_node.getChildren():
             child.removeNode()
+
         self.terrain_overlay_node = None
         self.icon_overlay_node = None
         self.unit_markers_node = None
         self.city_nameplate_node = None
+
+        self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+        self.healthbar_node = None
+        self.build_queue_node = None
+        self.population_node = None
+        self.action_icons_nodes = []
 
     def destroy(self) -> None:
         self.clear_ui()
@@ -190,6 +211,7 @@ class TileRenderer:
         self._draw_yield_and_population_icons()
 
         self._draw_city_nameplate()
+        self._draw_city_ui()
 
         self.bits_renderer.render()
 
@@ -202,10 +224,215 @@ class TileRenderer:
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
 
+    def update(self):
+        self.city_ui_node.removeNode()
+        self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+        self._draw_city_ui()
+
+    def _draw_city_ui(self) -> None:
+        if not self.tile.city:
+            return
+
+        parent: NodePath[PandaNode] = self.city_ui_node
+
+        i18n: I18nManager = get_i18n()
+        city: "City" = self.tile.city
+        self._draw_generic_bar(
+            parent=parent,
+            name=f"health_{city.name}",
+            center_z=1.625,
+            width=1.0,
+            height=0.1,
+            bg_color=(0.2, 0.2, 0.2, 0.8),
+            fill_color=(0.0, 1.0, 0.0, 0.8),
+            percentage=(city.health() / city.max_health if city.max_health else 0.0),
+            text=f"HP: {round(city.health(), 0)}/{round(city.max_health, 0)}",
+            text_scale=0.07,
+            text_offset_z=-0.015,
+            billboard=True,
+        )
+
+        if city.is_building and city.building is not None:
+            item: BaseCityImprovement | Unit | None = city.building
+            icon_tex: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(
+                str(item.icon) if item.icon is not None else Placeholder.getPlaceholderImagePathSmallIcon()
+            )
+
+            assert icon_tex is not None, f"Icon texture for {item.icon} not found."
+
+            icon_tex.setWrapU(Texture.WM_clamp)
+            icon_tex.setWrapV(Texture.WM_clamp)
+            icon_tex.setFormat(Texture.F_srgb_alpha)
+            icon_tex.setMinfilter(SamplerState.FT_linear)
+            icon_tex.setMagfilter(SamplerState.FT_linear)
+
+            building_text: T_TranslationOrStr = i18n.lookup(
+                key="ui.player_ui.city.building_bar_label",
+                formatting_parameters={
+                    "building": city.building.name if city.building else "None",
+                    "resources_got": round(city.resource_collected.production.value, 0),
+                    "resources_required": round(city.resource_required_amount.production.value, 0),
+                },
+            )
+
+            self._draw_generic_bar(
+                parent=parent,
+                name=f"build_{city.name}",
+                center_z=1.515,
+                width=1,
+                height=0.1,
+                bg_color=(0.2, 0.2, 0.2, 1.0),
+                fill_color=(0.0, 0.5, 1.0, 1.0),
+                percentage=(city.resource_collected.production.value / city.resource_required_amount.production.value),
+                text=building_text,
+                icon_size=(0.6, 0.6, 0.6),
+                icon_texture=icon_tex,
+                icon_offset_x=-0.6,
+                text_offset_z=-0.015,
+                billboard=True,
+            )
+
+        icon_path = (
+            Icons.population_icon_gaining() if city.calculate_food_surplus() >= 0 else Icons.population_icon_losing()
+        )
+        population_icon: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(icon_path)
+
+        if population_icon is not None:
+            population_icon.setWrapU(Texture.WM_clamp)
+            population_icon.set_format(Texture.F_srgb_alpha)
+            population_icon.set_minfilter(SamplerState.FT_linear)
+
+        population_gain_loss_text: T_TranslationOrStr = i18n.lookup(
+            key="ui.player_ui.city.population_bar_label",
+            formatting_parameters={
+                "population": city.population,
+                "food_collected": round(city.food_collected.food.value, 0),
+                "food_required": round(city.new_population_food_required.food.value, 0),
+            },
+        )
+
+        self._draw_generic_bar(
+            parent=parent,
+            name=f"pop_{city.name}",
+            center_z=1.4,
+            width=1,
+            height=0.1,
+            bg_color=(0.2, 0.2, 0.2, 0.8),
+            fill_color=(1.0, 0.4, 0.7, 1.0),
+            percentage=(city.food_collected.food.value / city.new_population_food_required.food.value),
+            icon_texture=population_icon,
+            icon_offset_x=-0.6,
+            icon_size=(0.6, 0.6, 0.6),
+            text=str(population_gain_loss_text),
+            text_scale=0.07,
+            text_offset_z=-0.015,
+            billboard=True,
+        )
+
+        icons = city.icons
+        z = 1.2
+        start_x = -0.7
+        spacing = 0.2
+        for idx, _icon in enumerate(icons):
+            tex: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(str(_icon))
+
+            assert tex is not None, f"Icon texture for {self.tile.get_tag()} not found."
+
+            cm = CardMaker(f"action_icon_{city.name}_{idx}")
+            size = 0.12
+
+            cm.setFrame(-size, size, -size, size)
+            icon: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
+            icon.setTexture(tex)
+            icon.setPos(start_x + idx * spacing, 0, z)
+            self.action_icons_nodes.append(icon)
+
+    def toggle_healthbar(self, enable: bool) -> None:
+        if self.healthbar_node:
+            if enable:
+                self.healthbar_node.show()
+            else:
+                self.healthbar_node.hide()
+
+    def _draw_generic_bar(
+        self,
+        parent: NodePath,
+        name: str,
+        center_z: float,
+        width: float,
+        height: float,
+        bg_color: Tuple[float, float, float, float],
+        fill_color: Tuple[float, float, float, float],
+        percentage: float,
+        icon_size: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+        icon_texture: Optional[Texture] = None,
+        icon_offset_x: float = 0.0,
+        text: Optional[str] = None,
+        text_scale: float = 0.06,
+        text_offset_z: float = -0.015,
+        billboard: bool = False,
+    ) -> None:
+        bar_group = parent.attachNewNode(f"{name}_group")
+        bar_group.setPos(0, 0, center_z)
+
+        if billboard:
+            bar_group.setBillboardAxis()
+
+        cm_bg = CardMaker(f"{name}_bg")
+        cm_bg.setFrame(-width / 2, width / 2, -height / 2, height / 2)
+        bg: NodePath[PandaNode] = bar_group.attachNewNode(cm_bg.generate())
+        bg.setColor(*bg_color)
+        bg.setTransparency(TransparencyAttrib.M_alpha)
+        bg.setBin("fixed", 50)
+
+        fill_w = width * max(0.0, min(1.0, percentage))
+        cm_fg = CardMaker(f"{name}_fill")
+        cm_fg.setFrame(-width / 2, -width / 2 + fill_w, -height / 2, height / 2)
+        fg: NodePath[PandaNode] = bar_group.attachNewNode(cm_fg.generate())
+        fg.setColor(*fill_color)
+        fg.setTransparency(TransparencyAttrib.M_alpha)
+        fg.setBin("fixed", 60)
+        fg.setDepthTest(False)
+
+        if icon_texture:
+            cm_icon = CardMaker(f"{name}_icon")
+            s = height
+            cm_icon.setFrame(-s, s, -s, s)
+            icon_np: NodePath[PandaNode] = bar_group.attachNewNode(cm_icon.generate())
+
+            icon_texture.setFormat(Texture.F_srgb_alpha)
+            icon_texture.setMinfilter(SamplerState.FT_linear)
+            icon_texture.setMagfilter(SamplerState.FT_linear)
+            icon_np.setTexture(icon_texture)
+            icon_np.setColor(1, 1, 1, 1)
+            icon_np.setTransparency(TransparencyAttrib.M_alpha)
+            icon_np.setBin("fixed", 65)
+            icon_np.setDepthTest(False)
+
+            icon_np.setPos(icon_offset_x, 0, 0)
+            icon_np.setScale(*icon_size)
+
+        if text:
+            tn = TextNode(f"{name}_text")
+            tn.setText(text)
+            tn.setAlign(TextNode.ACenter)
+            tn_np: NodePath[TextNode] = bar_group.attachNewNode(tn)
+            tn_np.setScale(text_scale)
+            tn_np.setPos(0, 0, text_offset_z)
+            tn_np.setBin("fixed", 70)
+            tn_np.setDepthTest(False)
+
+        if name.startswith("health_"):
+            self.healthbar_node = bar_group
+        elif name.startswith("build_"):
+            self.build_queue_node = bar_group
+        elif name.startswith("pop_"):
+            self.population_node = bar_group
+
     def _draw_terrain_overlay(self) -> None:
         cm = CardMaker(f"terrain_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
-        overlay = self.ui_node.attachNewNode(cm.generate())
+        overlay: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
         overlay.setTransparency(TransparencyAttrib.M_alpha)
         overlay.setAttrib(ColorBlendAttrib.makeOff())
         overlay.setBin("fixed", 40)
@@ -216,7 +443,9 @@ class TileRenderer:
         overlay.setZ(0.001)
         overlay.setShaderOff()
 
-        texture = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(str(self.tile.tile_terrain.texture()))
+        texture: Texture | None = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(
+            str(self.tile.tile_terrain.texture())
+        )
 
         if texture is None:
             self.tile.logger.error(f"Terrain texture not found for tile {self.tile.get_tag()}.")
@@ -226,7 +455,7 @@ class TileRenderer:
         overlay.setTexture(texture, 1)
 
         color = Colors.to_normalized_float(self.tile.tile_terrain.wall_color(), 1.0)
-        mesh = Game.get_singleton_instance().get_mesh()
+        mesh: "HexGrid" = Game.get_singleton_instance().get_mesh()
         mesh.set_wall_color_for_tile(
             mesh.get_tile_index_from_coords(self.tile.x, self.tile.y),
             cast(Tuple4f, color),
@@ -388,7 +617,6 @@ class TileRenderer:
         return None
 
     def _draw_city_nameplate(self) -> None:
-        """Generate a billboarding nameplate for the city on this tile."""
         if not self.tile.city:
             return
         atlas: AtlasGenerator = self.icon_atlas

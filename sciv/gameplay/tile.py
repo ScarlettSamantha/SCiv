@@ -336,6 +336,8 @@ class Tile(BaseEntity):
 
         self.renderer = TileRenderer(self)
 
+        self.tile_yield = Yields.from_dict(getattr(self, "tile_yield", {}))  # type: ignore
+
     def calculate(self):
         new_yield = Yields.nullYield()
 
@@ -890,3 +892,6 @@ class Tile(BaseEntity):
         self.unregister()
         self.destroyed = True
         del self
+
+    def get_renderer(self) -> TileRenderer:
+        return self.renderer

@@ -222,6 +222,8 @@ class CityUI(BoxLayout, DirectObject):
             self.improvement_list_scroll._apply_clipping()  # type: ignore
             self.improvement_list_scroll.scroll_to_top()
 
+        self.city.get_tile().get_renderer().update()
+
     def generate_buttons(self) -> Dict[str, Button]:
         from gameplay.repositories.improvements import ImprovementsRepository
 

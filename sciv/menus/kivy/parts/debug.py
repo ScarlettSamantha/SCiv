@@ -122,7 +122,7 @@ class DebugPanel(FloatLayout):
             "owner": str(tile.get_owner().get_name())
             if tile.owner is not None
             else str(t_("civilization.nature.name")),
-            "owner_city": str(tile.city_owner.name) if tile.city_owner else str(t_("civilization.nature.name")),
+            "owner_city": str(tile.get_city_owner().name) if tile.city_owner else str(t_("civilization.nature.name")),  # type:ignore
             "city": tile.city,
             "improvements": " | ".join(_improvements),
             "tile_yield": str(yields),

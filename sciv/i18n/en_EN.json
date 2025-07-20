@@ -609,7 +609,9 @@
           "culture_label": "Culture: {culture}",
           "faith_label": "Faith: {faith}",
           "border_label": "Growth: {current_points}/{required_points}",
-          "current_button_building": "Building: {building} {resources_got}/{resources_required}"
+          "current_button_building": "Building: {building} {resources_got}/{resources_required}",
+          "building_bar_label": "Building: {building} {resources_got}/{resources_required}",
+          "population_bar_label": "Population: {population} {food_collected}/{food_required}"
         },
         "pause": {
           "popup": {

@@ -73,6 +73,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self._improvements: ImprovementsSet = ImprovementsSet()
         self.effects: Effects = Effects(self)
+        self.icons: Dict[str, str] = {}
 
         self.register()
 
@@ -116,7 +117,19 @@ class City(BaseEntity, DirectObject.DirectObject):
             "building": building,
             "effects": self.effects.dump(),
             "owned_tiles": [tile.get_tag() for tile in self.owned_tiles],
+            "icons": self.icons,
+            "_health_left": self._health_left,
         }
+
+    def add_icon(self, name: str, icon: str):
+        self.icons[name] = icon
+
+    def get_icon(self, name: str) -> Optional[str]:
+        return self.icons.get(name)
+
+    def delete_icon(self, name: str):
+        if name in self.icons:
+            del self.icons[name]
 
     def load_state(self) -> None:
         entity_manager: EntityManager = EntityManager.get_singleton_instance()
@@ -155,10 +168,13 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.get_owner().capital = ref(self) if self.is_capital else None
 
-        self.border_growth_next_tile = cast(
-            ReferenceType["Tile"],
-            entity_manager.get_ref_weak(EntityType.TILE, self.border_growth_next_tile),  # type:ignore
-        )  # type:ignore
+        if self.border_growth_next_tile is not None:
+            self.border_growth_next_tile = cast(
+                ReferenceType["Tile"],
+                entity_manager.get_ref_weak(EntityType.TILE, self.border_growth_next_tile),  # type:ignore
+            )  # type:ignore
+        else:
+            self.recalculate_border_growth_next_tile()
 
         self.owned_tiles = [  #  type:ignore
             cast("Tile", entity_manager.get_ref(EntityType.TILE, _tile_tag))  #  type:ignore
@@ -179,6 +195,8 @@ class City(BaseEntity, DirectObject.DirectObject):
             self.is_building = False
 
         self.population_food_usage = self.population_food_usage if self.population_food_usage else 1.0
+
+        self.icons = self.icons if self.icons else {}
 
         self.is_registered = True
         self.register_handlers()
@@ -269,6 +287,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             "resource_required": self.resource_required if self.resource_required is not None else None,
             "resource_required_amount": self.resource_required_amount.on_inspect(basic=True),
             "resource_collected": self.resource_collected.on_inspect(basic=True),
+            "icons": self.icons,
         }
         return data, self.get_children_inspect()
 
@@ -297,6 +316,8 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self._process_owner_contributions(yields)
         self._process_border_growth()
+
+        self.get_tile().get_renderer().update()
 
     def _process_border_growth(self) -> None:
         self.border_growth_points += int(self.calculate_yield_from_tiles().only(["culture"]).culture.value)
