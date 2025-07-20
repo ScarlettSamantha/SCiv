@@ -13,6 +13,7 @@ from direct.task import Task
 from game import Cache
 from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text, spawn_heal_text
+from gameplay.hover import HoverIndicator
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from gameplay.yields import Yields
@@ -150,6 +151,8 @@ class Unit(BaseEntity, ABC):
         self._healthbar_quad: Optional[NodePath] = None
         self.healthbar_np: Optional[NodePath] = None
         self.healthbar_shader: Optional[Shader] = None
+
+        self.hover_indicator: Optional[HoverIndicator] = None
 
         self.model_cache: Optional[NodePath] = None
 
@@ -376,6 +379,8 @@ class Unit(BaseEntity, ABC):
         state.pop("_healthbar_quad", None)
         state.pop("selection_shader", None)
         state.pop("healthbar_shader", None)
+        state.pop("hover_indicator", None)
+        state.pop("hover_np", None)
         state.pop("build_conditions", None)
         state["resource_needed"] = self.resource_needed.__name__ if self.resource_needed else None
         state["cls_ref"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
@@ -404,6 +409,10 @@ class Unit(BaseEntity, ABC):
         self.resource_needed = Production
         self.amount_resource_needed = Yields.from_dict(getattr(self, "amount_resource_needed", 10))  # type: ignore
         self.selection_circle = None
+        self.rotation_task = None
+        self.unit_icons = None
+        self.healthbar_np = None
+        self._healthbar_quad = None
         self.selection_shader: Shader = Shader.load(
             lang=Shader.SL_GLSL,
             vertex=self.base.base_path / "assets/shaders/unit_selection.vert.glsl",
@@ -486,6 +495,18 @@ class Unit(BaseEntity, ABC):
         UnitManager.get_singleton_instance().add_unit(instance)
         tile.render()
         return instance
+
+    def hover(self):
+        assert self.model, "load the model first"
+        self.hover_indicator = HoverIndicator.add_to_entity(self.model, color=self.get_owner().get_color())
+
+    def unhover(self):
+        if self.hover_indicator:
+            self.hover_indicator.cleanup()
+            self.hover_indicator = None
+        else:
+            assert self.model is not None, "Model must be loaded before unhovering."
+            HoverIndicator.remove_from_entity(self.model)
 
     def move(self, tile: "Tile") -> CantMoveReason:
         from gameplay.repositories.tile import TileRepository
