@@ -220,7 +220,7 @@ class Player(BaseEntity):
         self.vision = vision
 
         effects: Effects = Effects(self)
-        effects.load_state(getattr(self, "effects", {}))
+        effects.load_state(getattr(self, "effects", []))
         self.effects = effects
 
         self.gold = Yields.from_dict(getattr(self, "gold"))
