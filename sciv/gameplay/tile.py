@@ -30,9 +30,6 @@ from system.entity import BaseEntity
 from system.mesh import HexGrid
 from system.subsystems.hexgen.edge import Edge
 from system.subsystems.hexgen.enums import Biome, GeoformType, HexFeature
-from system.tile_render import TileRenderer
-
-from sciv.gameplay.city import City
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -71,6 +68,8 @@ default_slots = {
 
 @dataclass(init=False, eq=False, unsafe_hash=False)
 class Tile(BaseEntity):
+    from system.tile_render import TileRenderer
+
     HEMISPHERE_UNKNOWN: int = 0b00000000
     HEMISPHERE_NORTH: int = 0b00000001
     HEMISPHERE_SOUTH: int = 0b00000010
@@ -166,6 +165,8 @@ class Tile(BaseEntity):
         self.__post_init__()
 
     def __post_init__(self) -> None:
+        from system.tile_render import TileRenderer
+
         self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
@@ -268,6 +269,8 @@ class Tile(BaseEntity):
         return data
 
     def load_state(self) -> None:
+        from system.tile_render import TileRenderer
+
         self.base = Cache.get_showbase_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
         self._entity_manager = EntityManager.get_singleton_instance()

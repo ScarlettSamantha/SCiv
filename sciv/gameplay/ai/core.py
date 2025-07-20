@@ -15,7 +15,6 @@ from gameplay.player_tiles import PlayerTiles
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Optional
 from managers.entity import EntityType
-from managers.game import EntityManager, World
 from managers.player import PlayerManager
 from managers.turn import Turn
 
@@ -85,6 +84,8 @@ class AI(ABC):
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
+        from managers.game import EntityManager
+
         self._player = cast(
             weakref.ReferenceType["Player"],
             EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, state.get("player", "")),
@@ -207,6 +208,8 @@ class AI(ABC):
         return self.world()
 
     def world(self) -> Dict[Tuple[int, int], "Tile"]:
+        from managers.game import World
+
         return World.get_singleton_instance().get_grid()
 
     def get_tile_count(self) -> int:
