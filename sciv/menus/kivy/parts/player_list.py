@@ -2,19 +2,18 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from kivy.uix.image import Image
-from kivy.uix.widget import Widget
+from game import Cache
+from gameplay.player import Player
+from helpers.colors import Colors
 from kivy.graphics import Color, Rectangle
 from kivy.input import MotionEvent  #  type:ignore
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.image import Image
 from kivy.uix.label import Label
-from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
-
-from gameplay.player import Player
-from helpers.colors import Colors
-from game import Cache
+from kivy.uix.widget import Widget
 from managers.player import PlayerManager
+from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -29,18 +28,19 @@ class PlayerList(FloatLayout, DirectObject):
         self.window: "GraphicsWindow" = self.base.win  # type: ignore
         self.window_properties: WindowProperties = self.window.properties  # type: ignore
         self.background_image = Cache.get_icon_atlas().get_coreimage_by_virtual_path("player_portrait.png")
+        self.size_hint_x = 0.1
+        self.size_hint_y = 0.1
 
         self.grid = GridLayout(
             rows=1,
             spacing=-10,
             padding=10,
             size_hint=(0.1, 0.1),
-            width=600,
+            width=200,
             height=200,
             pos_hint={"top": 0.985, "right": 0.85},
         )
-        self.size_hint = (0.5, 0.1)  # type: ignore
-        self.pos_hint = {"right": 0.75, "top": 0.985}
+        self.pos_hint = {"right": 0.95, "top": 0.985}
 
         self.add_widget(self.grid)
 
