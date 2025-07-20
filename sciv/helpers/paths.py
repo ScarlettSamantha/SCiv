@@ -1,8 +1,11 @@
-from helpers.os import LinuxHelper
-from helpers.os import WindowsHelper
+from pathlib import Path
+
+from helpers.os import LinuxHelper, WindowsHelper
 
 
 class PathsHelper:
+    base_path: str = ""
+
     @classmethod
     def get_cache_dir(cls) -> str:
         if WindowsHelper.is_windows():
@@ -37,3 +40,15 @@ class PathsHelper:
             return WindowsHelper.get_debug_dir()
         else:
             return LinuxHelper.get_debug_dir()
+
+    @classmethod
+    def get_base_path(cls) -> Path:
+        return Path(cls.base_path)
+
+    @classmethod
+    def get_gameplay_dir(cls) -> Path:
+        return cls.get_base_path() / "gameplay"
+
+    @classmethod
+    def get_actions_dir(cls) -> Path:
+        return cls.get_gameplay_dir() / "actions"
