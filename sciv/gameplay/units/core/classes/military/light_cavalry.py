@@ -104,12 +104,13 @@ class LightCavalryPromotionTree(PromotionTree):
 
 
 class LightCavalry(CoreMilitaryBaseClass):
+    key = "core.unit.class.light_cavalry"
+    name = t_("content.units.core.classes.core.light_cavalry.name")
+    description = t_("content.units.core.classes.core.light_cavalry.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.light_cavalry",
-            name=t_("content.units.classes.core.light_cavalry.name"),
-            description=t_("content.units.classes.core.light_cavalry.description"),
-            icon=None,
             *args,
             **kwargs,
         )

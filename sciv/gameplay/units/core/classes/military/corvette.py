@@ -90,12 +90,13 @@ class CommandoPromotionTree(PromotionTree):
 
 
 class Corvete(CoreMilitaryBaseClass):
+    key = "core.unit.class.corvette"
+    name = t_("content.units.core.classes.core.corvette.name")
+    description = t_("content.units.core.classes.core.corvette.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.corvette",
-            name=t_("content.units.classes.core.corvette.name"),
-            description=t_("content.units.classes.core.corvette.description"),
-            icon=None,
             *args,
             **kwargs,
         )

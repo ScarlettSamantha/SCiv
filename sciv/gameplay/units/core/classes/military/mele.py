@@ -104,12 +104,13 @@ class MelePromotionTree(PromotionTree):
 
 
 class Mele(CoreMilitaryBaseClass):
+    key = "core.unit.class.mele"
+    name = t_("content.units.core.classes.core.mele.name")
+    description = t_("content.units.core.classes.core.mele.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.mele",
-            name=t_("content.units.classes.core.mele.name"),
-            description=t_("content.units.classes.core.mele.description"),
-            icon=None,
             *args,
             **kwargs,
         )

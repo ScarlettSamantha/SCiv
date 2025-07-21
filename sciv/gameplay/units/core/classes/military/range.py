@@ -104,12 +104,13 @@ class RangePromotionTree(PromotionTree):
 
 
 class Range(CoreMilitaryBaseClass):
+    key = "core.unit.class.range"
+    name = t_("content.units.core.classes.core.range.name")
+    description = t_("content.units.core.classes.core.range.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.range",
-            name=t_("content.units.classes.core.range.name"),
-            description=t_("content.units.classes.core.range.description"),
-            icon=None,
             *args,
             **kwargs,
         )

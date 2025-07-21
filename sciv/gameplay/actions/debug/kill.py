@@ -4,9 +4,9 @@ from gameplay.actions.debug.debug_action import DebugAction
 from gameplay.unit import Unit
 from managers.combat import T_TARGET
 
-from sciv.gameplay.city import City
-from sciv.gameplay.improvement import Improvement
-from sciv.gameplay.player import Player
+from gameplay.city import City
+from gameplay.improvement import Improvement
+from gameplay.player import Player
 
 
 class KillAction(DebugAction):

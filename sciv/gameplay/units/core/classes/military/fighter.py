@@ -90,12 +90,13 @@ class FighterPromotionTree(PromotionTree):
 
 
 class Fighter(CoreMilitaryBaseClass):
+    key = "core.unit.class.fighter"
+    name = t_("content.units.core.classes.core.fighter.name")
+    description = t_("content.units.core.classes.core.fighter.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
-            key="core.unit.class.fighter",
-            name=t_("content.units.classes.core.fighter.name"),
-            description=t_("content.units.classes.core.fighter.description"),
-            icon=None,
             *args,
             **kwargs,
         )

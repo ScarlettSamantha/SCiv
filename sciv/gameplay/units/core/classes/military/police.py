@@ -104,12 +104,13 @@ class PolicePromotionTree(PromotionTree):
 
 
 class Police(CoreMilitaryBaseClass):
+    key = "core.unit.class.police"
+    name = t_("content.units.core.classes.core.police.name")
+    description = t_("content.units.core.classes.core.police.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.police",
-            name=t_("content.units.classes.core.police.name"),
-            description=t_("content.units.classes.core.police.description"),
-            icon=None,
             *args,
             **kwargs,
         )

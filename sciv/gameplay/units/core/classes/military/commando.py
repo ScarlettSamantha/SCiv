@@ -90,12 +90,13 @@ class CommandoPromotionTree(PromotionTree):
 
 
 class Commando(CoreMilitaryBaseClass):
+    key = "core.unit.class.commando"
+    name = t_("content.units.core.classes.core.commando.name")
+    description = t_("content.units.core.classes.core.commando.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.commando",
-            name=t_("content.units.classes.core.commando.name"),
-            description=t_("content.units.classes.core.commando.description"),
-            icon=None,
             *args,
             **kwargs,
         )

@@ -654,6 +654,11 @@
         },
         "heal": {
           "button": "Heal entity"
+        },
+        "spawn_unit": {
+          "button": "Spawn unit",
+          "label": "Unit type",
+          "spawn_unit": "Spawn unit"
         }
       }
     },
@@ -2602,6 +2607,14 @@
                 "name": "Heavy Calvary",
                 "description": "Armored mounted unit"
               },
+              "range": {
+                "name": "Range",
+                "description": "Unit that attacks from a distance"
+              },
+              "seige": {
+                "name": "Siege",
+                "description": "Unit that specializes in attacking fortified positions"
+              },
               "mele": {
                 "name": "Mele",
                 "description": "Close combat unit"
@@ -2661,6 +2674,34 @@
               "air": {
                 "name": "Air",
                 "description": "Unit that operates in the air"
+              },
+              "scout": {
+                "name": "Scout",
+                "description": "Unit that explores the map"
+              },
+              "logistics": {
+                "name": "Logistics",
+                "description": "Unit that manages supply lines"
+              },
+              "medic": {
+                "name": "Medic",
+                "description": "Unit that provides medical support"
+              },
+              "heavy_cavalry": {
+                "name": "Heavy Cavalry",
+                "description": "Armored mounted unit"
+              },
+              "light_cavalry": {
+                "name": "Light Cavalry",
+                "description": "Fast-moving mounted unit"
+              },
+              "artillery": {
+                "name": "Artillery",
+                "description": "Unit that specializes in long-range bombardment"
+              },
+              "anti_air": {
+                "name": "Anti-Air",
+                "description": "Unit that defends against aerial attacks"
               }
             }
           },
