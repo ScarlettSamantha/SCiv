@@ -2,7 +2,7 @@ import re
 from abc import abstractmethod
 from os import PathLike, name
 from pathlib import Path
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess  # nosec B404
 from typing import Optional
 
 from system.vars import APPLICATION_NAME
