@@ -152,6 +152,8 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.request.loading_screen` (E: game-config | L: manager-ui )
 - `ui.loading.next_step` (E: * | L: screen-loading )
 
+- `ui.request.action.stage` (E: debug | L: game-ui)
+
 ## System
 
 - `system.input.user.tile_clicked` (E: manager-input | L: manager-game)

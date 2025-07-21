@@ -104,12 +104,13 @@ class ScoutPromotionTree(PromotionTree):
 
 
 class Scout(CoreMilitaryBaseClass):
+    key = "core.unit.class.scout"
+    name = t_("content.units.core.classes.core.scout.name")
+    description = t_("content.units.core.classes.core.scout.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.scout",
-            name=t_("content.units.classes.core.scout.name"),
-            description=t_("content.units.classes.core.scout.description"),
-            icon=None,
             *args,
             **kwargs,
         )

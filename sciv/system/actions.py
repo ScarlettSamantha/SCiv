@@ -4,6 +4,8 @@ from direct.showbase import MessengerGlobal
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.log import LogManager
 
+from managers.combat import T_TARGET
+
 """Action system will provide a generic way to handle actions in the game. This will be used for units, buildings, and other game objects that can perform actions.
 
 Actions cannot be stateful, they are meant to be stateless and only perform an action when called. They can have conditions to check if they can be run or not.
@@ -16,6 +18,8 @@ Raises:
 
 
 class Action:
+    debug_action: bool = False
+
     def __init__(
         self,
         name: T_TranslationOrStr,
@@ -24,6 +28,7 @@ class Action:
         on_success: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = None,
         on_failure: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], None]] = None,
         success_condition: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], bool]] = None,
+        executor: Optional[T_TARGET] = None,
         icon: str | None = None,
         usable: bool = True,
         description: T_TranslationOrStrOrNone = None,
@@ -36,6 +41,7 @@ class Action:
         self.icon: str | None = icon
         self.useable: bool = usable
         self.logger = LogManager.get_singleton_instance().engine.getChild("actions")
+        self.executor: Optional[T_TARGET] = executor
 
         self.condition: Optional[Callable[[Self], bool] | bool] = condition
         self.action: Callable[..., Optional[Any]] = action
@@ -46,6 +52,9 @@ class Action:
 
         self.action_args: Tuple[Any, ...] = args
         self.action_kwargs: Dict[str, Any] = kwargs
+
+        if executor is not None:
+            self.action_kwargs["executor"] = executor
 
         self.get_return_as_failure_argument: bool = False
 
@@ -123,3 +132,6 @@ class Action:
         if self.auto_refresh_action_bar:
             self.logger.info(f"Action: {self.name} will refresh the action bar.")
             MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+
+    def is_debug_action(self) -> bool:
+        return self.debug_action

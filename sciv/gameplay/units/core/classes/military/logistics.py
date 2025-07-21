@@ -104,12 +104,13 @@ class LogisticsPromotionTree(PromotionTree):
 
 
 class Logistics(CoreMilitaryBaseClass):
+    key = "core.unit.class.logistics"
+    name = t_("content.units.core.classes.core.logistics.name")
+    description = t_("content.units.core.classes.core.logistics.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.logistics",
-            name=t_("content.units.classes.core.logistics.name"),
-            description=t_("content.units.classes.core.logistics.description"),
-            icon=None,
             *args,
             **kwargs,
         )

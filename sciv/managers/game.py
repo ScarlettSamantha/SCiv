@@ -15,6 +15,7 @@ from helpers.cache import Cache
 from helpers.debug import Debug, PerformanceLogger
 from helpers.optimizations import debounce
 from managers.config import ConfigManager
+from managers.debug import DebugManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input
 from managers.player import PlayerManager
@@ -56,6 +57,7 @@ class Game(Singleton, DirectObject):
         self.turn: Turn = Turn.get_singleton_instance(base=self.base)
         self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
+        self.debug: DebugManager = DebugManager.get_singleton_instance()
         self.shader: Shaders = Shaders()
         self.border: Borders | None = None
         self.config: ConfigManager = ConfigManager.get_singleton_instance()
@@ -91,7 +93,7 @@ class Game(Singleton, DirectObject):
         )
 
         self._is_paused: bool = False
-        self.debug: bool = False
+        self.debug_enabled: bool = False
 
         self.configure_environment()
         self.register()
@@ -266,7 +268,7 @@ class Game(Singleton, DirectObject):
         self.register_callback_inputs()
 
     def toggle_wireframe(self):
-        if not self.debug:
+        if not self.debug_enabled:
             return
 
     def toggle_pause_game(self) -> None:
@@ -384,6 +386,7 @@ class Game(Singleton, DirectObject):
 
         self.game_active = True
         self.logger.info(f"Game start requested with {self.properties}")
+        messenger.send("ui.request.loading_screen", [civilization])
         self._try_game_start()
 
     def _try_game_start(self):

@@ -21,7 +21,6 @@ class PlayerInfo(FloatLayout, DirectObject):
         self.player: Optional[Player] = None
         self._is_build = False
 
-        # dark overlay
         self.size_hint = (0.9, 0.9)  # type: ignore
         self.pos_hint = {"center_x": 0.5, "center_y": 0.5}
         with self.canvas.before:  # type: ignore
@@ -51,7 +50,6 @@ class PlayerInfo(FloatLayout, DirectObject):
             return
         self.clear_widgets()
 
-        # --- top bar ---
         self.top_bar = BoxLayout(
             orientation="horizontal",
             size_hint=(1, None),
@@ -76,7 +74,6 @@ class PlayerInfo(FloatLayout, DirectObject):
         self.top_bar.add_widget(close_btn)
         self.add_widget(self.top_bar)
 
-        # --- panels container ---
         self.left_panel = BoxLayout(
             orientation="vertical",
             size_hint=(0.45, 0.85),
@@ -131,7 +128,6 @@ class PlayerInfo(FloatLayout, DirectObject):
         if not self._is_build or not self.player:
             return
 
-        # LEFT PANEL
         left_items = [
             ("Name:", self.player.civilization.name),
             ("Player ID:", self.player.id),
@@ -153,8 +149,6 @@ class PlayerInfo(FloatLayout, DirectObject):
         ]
         self._populate_list_panel(self.left_panel, left_items)
 
-        # TOP RIGHT PANEL
-        # replace with whatever top-panel data you need
         memories = self.player.get_ai().get_memories()
         memories_list = [f"Memory: {str(memory)}" for memory in memories]
 
@@ -171,8 +165,6 @@ class PlayerInfo(FloatLayout, DirectObject):
         )
         self._populate_list_panel(self.top_right, top_items)  # type: ignore
 
-        # BOTTOM RIGHT PANEL
-        # replace with whatever bottom-panel data you need
         bottom_items = [
             ("Score:", getattr(self.player, "score", "N/A")),
             ("Rank:", getattr(self.player, "rank", "N/A")),

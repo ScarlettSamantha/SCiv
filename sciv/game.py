@@ -14,18 +14,18 @@ from logging import Logger
 import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
-from kivy.config import Config
-
-from panda3d_kivy import monkey  # type: ignore
 from helpers.cache import Cache
 from helpers.direct_loading_screen import LoadingScreen
 from helpers.os import WindowsHelper
+from helpers.paths import PathsHelper
+from kivy.config import Config
 from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
 from managers.log import LogManager
 from managers.unit import UnitManager
 from panda3d.core import loadPrcFile
+from panda3d_kivy import monkey  # type: ignore
 
 Config.set("modules", "inspector", "")  # type: ignore
 Config.set("graphics", "gl_backend", "angle_sdl2")  # type: ignore
@@ -42,13 +42,15 @@ if TYPE_CHECKING:
 class OpenCiv(ShowBase):
     def __init__(self):
         from helpers.cache import Cache
+        from helpers.debug import Debug
         from managers.assets import AssetManager
         from managers.ui import ui
         from system.camera import Camera
         from system.lights import setup_lights
-        from system.vars import __version__, get_git_commit, DEBUG
+        from system.vars import DEBUG, __version__, get_git_commit
 
         self.debug: bool = DEBUG
+        Debug.debug = self.debug
 
         self.version: str = __version__
         self.commit: str = get_git_commit()
@@ -104,7 +106,8 @@ class OpenCiv(ShowBase):
         # Internationalization
         loading_screen.next_stage(f"Loading translations for {self.config_manager.get_language()}")
         self.engine_logger.info("Setting up i18n")
-        base_file_path = pathlib.Path(__file__).parent.absolute()
+        base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
+        PathsHelper.base_path = str(base_file_path)
         self.i18n = I18nManager(str(base_file_path / "i18n"), self.config_manager.get_language(), True)
         Cache.set_i18n_instance(self.i18n)
         set_i18n(self.i18n)
@@ -195,9 +198,9 @@ class OpenCiv(ShowBase):
         self.messenger.send("system.main.ready")
 
     def generate_non_static_assets(self, force: bool = False) -> None:
-        from system.atlas import AtlasGenerator
-        from helpers.paths import PathsHelper
         from helpers.debug import Debug
+        from helpers.paths import PathsHelper
+        from system.atlas import AtlasGenerator
 
         icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
         terrain_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "tile-set-tiles"), "default")

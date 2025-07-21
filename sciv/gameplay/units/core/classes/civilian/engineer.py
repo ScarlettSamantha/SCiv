@@ -107,8 +107,8 @@ class Engineer(CoreCivilianBaseClass):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.unit.class.engineer",
-            name=t_("content.units.classes.core.engineer.name"),
-            description=t_("content.units.classes.core.engineer.description"),
+            name=t_("content.units.core.classes.core.engineer.name"),
+            description=t_("content.units.core.classes.core.engineer.description"),
             icon=None,
             *args,
             **kwargs,

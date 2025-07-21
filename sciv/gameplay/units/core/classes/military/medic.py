@@ -104,12 +104,13 @@ class MedicPromotionTree(PromotionTree):
 
 
 class Medic(CoreMilitaryBaseClass):
+    key = "core.unit.class.medic"
+    name = t_("content.units.core.classes.core.medic.name")
+    description = t_("content.units.core.classes.core.medic.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.medic",
-            name=t_("content.units.classes.core.medic.name"),
-            description=t_("content.units.classes.core.medic.description"),
-            icon=None,
             *args,
             **kwargs,
         )

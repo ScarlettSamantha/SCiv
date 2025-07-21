@@ -1,34 +1,34 @@
-from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.Loader import Loader
 from direct.showbase.MessengerGlobal import messenger
-from kivy.uix.popup import Popup
-from kivy.uix.screenmanager import Screen
-from panda3d.core import PStatClient  # type: ignore
-from kivy.clock import Clock
 from gameplay.lose import LoseConditions
 from gameplay.player import Player
 from gameplay.tech import Tech
 from gameplay.tile import Tile
 from gameplay.unit import Unit
+from kivy.clock import Clock
+from kivy.uix.popup import Popup
+from kivy.uix.screenmanager import Screen
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr, Translation, t_
 from managers.player import PlayerManager
 from managers.world import World
 from menus.kivy.elements.popup import ModalPopup as PopupOverride
 from menus.screens.save_load import SaveLoadScreen
-from mixins.singleton import Singleton
 from mixins.inspectable import Inspectable
+from mixins.singleton import Singleton
+from panda3d.core import PStatClient  # type: ignore
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
-    from sciv.game import OpenCiv
     from managers.game import Game
     from menus.kivy.core import SCivGUI
     from menus.screens.game_ui import GameUIScreen
+
+    from sciv.game import OpenCiv
 
 
 class ui(Singleton, DirectObject):
@@ -131,7 +131,6 @@ class ui(Singleton, DirectObject):
         self.accept("ui.update.user.tile_hover", self.on_tile_hover)
         self.accept("ui.update.user.tile_unhover", self.on_tile_unhover)
 
-        self.accept("ui.update.ui.debug_ui_toggle", self.debug_ui_change)
         self.accept("ui.update.ui.show_save", self.on_show_save)
         self.accept("ui.update.ui.show_load", self.on_show_load)
         self.accept("ui.update.ui.hide_save", self.on_hide_save)
@@ -324,43 +323,10 @@ class ui(Singleton, DirectObject):
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
 
-    def debug_ui_change(self, value: Enum):
-        from menus.kivy.parts.debug_actions import DebugUIOptionsValues
-
-        actions, stats, debug = False, False, False
-
-        if DebugUIOptionsValues.ALL_DEBUG_UI == value:
-            actions, stats, debug = True, True, True
-        elif DebugUIOptionsValues.NONE == value:
-            ...  # Do nothing as we are already set to False
-        elif DebugUIOptionsValues.DEBUG == value:
-            debug = True
-        elif DebugUIOptionsValues.STATS == value:
-            stats = True
-        elif DebugUIOptionsValues.ACTIONS == value:
-            actions = True
-        elif DebugUIOptionsValues.DEBUG_AND_STATS == value:
-            debug, stats = True, True
-        elif DebugUIOptionsValues.DEBUG_AND_ACTIONS == value:
-            debug, actions = True, True
-        else:
-            raise ValueError("Invalid value for debug ui change")
-
-        self.draw_debug_ui(debug, stats, actions)
-
-    def draw_debug_ui(self, debug: bool, stats: bool, actions: bool):
-        if self.game_gui is None:
-            raise AssertionError("GUI not initialized")
-
-        self.debug_show = {"actions": actions, "stats": stats, "debug": debug}
-        self.game_gui.debug_ui_state(stats, actions, debug)
-
     def get_game_ui(self):
-        # If we don't have an active Game, create one
         if self.game is None:
             messenger.send("system.game.start")
         else:
-            # If we do, we're just resuming it
             messenger.send("system.game.resume")
 
     def set_screen(self, screen_name: str):
@@ -410,8 +376,7 @@ class ui(Singleton, DirectObject):
         self.previous_unit = None
 
     def clear_previous_selected_tiles(self):
-        # Restore colors of previously selected tile and neighbors
-        tiles = self.previous_tiles
+        tiles: List[Tile] = self.previous_tiles
         if self.previous_tile is not None:
             tiles.append(self.previous_tile)
 
@@ -474,7 +439,7 @@ class ui(Singleton, DirectObject):
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
-            result = self.get_entities().get(EntityType.UNIT, unit[0])
+            result: BaseEntity | None = self.get_entities().get(EntityType.UNIT, unit[0])
             if result is None:
                 return
 
@@ -504,3 +469,9 @@ class ui(Singleton, DirectObject):
 
     def inspect_element(self, element: Inspectable):
         self.get_main_game_ui().inspect_element(element)
+
+    def get_selected_tile(self) -> Optional[Tile]:
+        return self.current_tile
+
+    def get_selected_unit(self) -> Optional[Unit]:
+        return self.current_unit

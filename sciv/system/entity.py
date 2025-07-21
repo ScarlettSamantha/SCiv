@@ -284,6 +284,13 @@ class BaseEntity(ABC, DirectObject, Inspectable):
             return True
         return False
 
+    def heal(self, amount: float) -> None:
+        if amount < 0:
+            raise ValueError("Heal amount cannot be negative")
+        self.health_left += amount
+        if self.health_left > self.max_health:
+            self.health_left = self.max_health
+
     def get_owner(self) -> "Player":
         if self.owner is None:
             assert self.owner_tag is not None, "Owner tag is not set"

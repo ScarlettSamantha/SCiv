@@ -217,7 +217,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
                     messages.append(f"Invalid value at {'->'.join(map(str, path))!r}: {val!r} (type {type(val)})")
                 raise TypeError("Save aborted: non-serializable dict values detected:\n" + "\n".join(messages))
 
-        return orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS)
+        return orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS)  # type: ignore
 
     def load(self, data: Union[bytes, str], graph_out: Optional[str] = None) -> EntityRegistry:
         text = data.decode("utf-8") if isinstance(data, bytes) else data

@@ -135,8 +135,8 @@ class Trader(CoreCivilianBaseClass):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
             key="core.unit.class.trader",
-            name=t_("content.units.classes.core.trader.name"),
-            description=t_("content.units.classes.core.trader.description"),
+            name=t_("content.units.core.classes.core.trader.name"),
+            description=t_("content.units.core.classes.core.trader.description"),
             icon=None,
             *args,
             **kwargs,

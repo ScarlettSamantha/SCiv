@@ -1,11 +1,17 @@
-from enum import Enum
 import time
+from enum import Enum
+from logging import Logger
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
+from gameplay.repositories.tile import TileRepository
+from helpers.optimizations import throttle
+from managers.unit import UnitManager
+from mixins.singleton import Singleton
 from panda3d.core import (
     BitMask32,
     CollisionHandlerQueue,
@@ -13,20 +19,14 @@ from panda3d.core import (
     CollisionRay,
     CollisionTraverser,
     NodePath,
+    WindowProperties,
 )
-
-from direct.showbase import MessengerGlobal
-from gameplay.repositories.tile import TileRepository
-from managers.unit import UnitManager
-from mixins.singleton import Singleton
-from helpers.optimizations import throttle
-from panda3d.core import WindowProperties
-
 
 if TYPE_CHECKING:
     from game import OpenCiv
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from menus.screens.game_ui import GameUIScreen
 
 NET_NODE_TAG_ID_FIELD: str = "net_node_tag_id"  # tag for the node path to identify it as a net node
 NET_TYPE_FIELD: str = "net_type"  # tag for the node path to identify it as a net node
@@ -50,9 +50,10 @@ class Input(Singleton, DirectObject):
         self.active: bool = False
         self.sequence: Optional[Sequence] = None
 
-        self.logger = self.base.logger.engine.getChild("manager.input")
+        self.logger: Logger = self.base.logger.engine.getChild("manager.input")
 
         self.hovered_tile_id: Optional[str] = None
+        self.hovered_unit_id: Optional[str] = None
         self.selected_tile: Optional["Tile"] = None
         self.selected_unit: Optional["Unit"] = None
         self._last_pick_time: float = 0.0
@@ -89,6 +90,7 @@ class Input(Singleton, DirectObject):
         self.accept("f2", self.activate)
         self.accept("f3", self.de_activate)
 
+        self.accept("f8", self.on_debug_actions_toggle)
         self.accept("f9", self.force_render_selected_entity)
         self.accept("f10", self.on_inspect_entity)
         self.accept("f11", self.on_inspect_players)
@@ -102,6 +104,15 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def on_debug_actions_toggle(self):
+        from menus.screens.game_ui import GameUIScreen
+
+        screen: GameUIScreen = self.base.ui_manager.get_main_game_ui()
+        if screen.debug_actions is not None and screen.debug_actions.is_open:
+            screen.close_debug_actions()
+        else:
+            screen.open_debug_actions()
 
     def force_render_selected_entity(self) -> None:
         if self.selected_tile is None and self.selected_unit is None:
@@ -185,6 +196,7 @@ class Input(Singleton, DirectObject):
         if not self.active or not self.base.mouseWatcherNode.hasMouse():  # type: ignore
             return task.cont
 
+        game_ui: "GameUIScreen" = self.base.ui_manager.get_main_game_ui()
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
         current_pos = (mpos.getX(), mpos.getY())  # type: ignore
 
@@ -203,20 +215,32 @@ class Input(Singleton, DirectObject):
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
-                selected_object = False
                 if NET_TYPE.TILE.value == net_type:
-                    # This is a tile
+                    self.unhover_all()
                     messenger.send("system.input.user.tile_hovered", [net_id])
-                    selected_object = True
-
-                if selected_object:
-                    self.hovered_tile_id = net_id  # type: ignore
+                    self.hovered_tile_id = net_id
+                if NET_TYPE.UNIT.value == net_type:
+                    self.unhover_all()
+                    if (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is None:
+                        self.logger.warning(f"Unit with ID {net_id} not found.")
+                        return task.cont
+                    if game_ui.wait_for_action_of_user and game_ui.wait_for_action_of_user.targeting_unit_action:
+                        unit.hover()
+                        self.hovered_unit_id = net_id
+                        break
         else:
-            if self.hovered_tile_id is not None:
-                messenger.send("system.input.user.tile_unhovered", [self.hovered_tile_id])
-                self.hovered_tile_id = None
+            self.unhover_all()
 
         return task.cont
+
+    def unhover_all(self) -> None:
+        if self.hovered_tile_id is not None:
+            messenger.send("system.input.user.tile_unhovered", [self.hovered_tile_id])
+            self.hovered_tile_id = None
+        if self.hovered_unit_id is not None:
+            if (unit := UnitManager.get_singleton_instance().find_unit(self.hovered_unit_id)) is not None:
+                unit.unhover()
+                self.hovered_unit_id = None
 
     def run_analyze(self):
         self.base.render.analyze()  # type: ignore

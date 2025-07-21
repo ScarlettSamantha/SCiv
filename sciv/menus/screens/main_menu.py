@@ -1,17 +1,17 @@
 from typing import Any, Optional
 
-
 from direct.showbase.MessengerGlobal import messenger
-from kivy.uix.widget import Widget
+from helpers.colors import Colors
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
-
-from helpers.colors import Colors
+from kivy.uix.widget import Widget
 from menus.kivy.elements.clickable_label import ClickableLabel
+
+from sciv.gameplay.repositories.civilization import Civilization
 
 
 class MainMenuScreen(Screen):
@@ -20,6 +20,7 @@ class MainMenuScreen(Screen):
         self.layout: Optional[FloatLayout] = None
         self.container: Optional[BoxLayout] = None
         self.manager: ScreenManager
+        self.quick_start_button: Optional[Button] = None
         self.continue_button: Optional[Button] = None
         self.new_button: Optional[Button] = None
         self.load_button: Optional[Button] = None
@@ -69,6 +70,17 @@ class MainMenuScreen(Screen):
         self.container = container
 
         button_width: int = 400
+
+        if Debug.is_debug():
+            self.quick_start_button = Button(
+                text="Quick Start",
+                size_hint=(None, None),
+                height=50,
+                width=button_width,
+            )
+            self.quick_start_button.pos_hint = {"center_x": 0.5}
+            self.quick_start_button.bind(on_release=self.quick_start)
+            container.add_widget(self.quick_start_button)
 
         self.continue_button = Button(text="Continue", size_hint=(None, None), height=50, width=button_width)
         self.continue_button.pos_hint = {"center_x": 0.5}
@@ -135,6 +147,9 @@ class MainMenuScreen(Screen):
         float_layout.add_widget(footer)
         return float_layout
 
+    def quick_start(self, _: Optional[Button] = None):
+        messenger.send("system.game.start_load", [(25, 25), Civilization.random(num=1), 3])
+
     def _on_label_click(self, *args: Any, **kwargs: Any) -> None:
         from helpers.debug import Debug
 
@@ -155,8 +170,9 @@ class MainMenuScreen(Screen):
         messenger.send("ui.update.ui.show_save")
 
     def open_browser_to_code(self, _: Optional[Button] = None):
-        from system.vars import REPOSITORY
         import webbrowser
+
+        from system.vars import REPOSITORY
 
         webbrowser.open_new_tab(REPOSITORY)
 

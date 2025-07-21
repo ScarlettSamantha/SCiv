@@ -104,12 +104,13 @@ class BomberPromotionTree(PromotionTree):
 
 
 class Bomber(CoreMilitaryBaseClass):
+    key = "core.unit.class.bomber"
+    name = t_("content.units.core.classes.core.bomber.name")
+    description = t_("content.units.core.classes.core.bomber.description")
+    icon = None
+
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
-            key="core.unit.class.bomber",
-            name=t_("content.units.classes.core.bomber.name"),
-            description=t_("content.units.classes.core.bomber.description"),
-            icon=None,
             *args,
             **kwargs,
         )

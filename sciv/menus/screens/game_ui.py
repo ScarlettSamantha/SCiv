@@ -40,11 +40,10 @@ from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
+from mixins.inspectable import Inspectable
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
-
-from sciv.mixins.inspectable import Inspectable
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -73,8 +72,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.waiting_for_world_input: bool = False
 
         self.wait_for_next_input_of_user: bool = False
-        self.wait_for_action_of_user: Optional[partial[Callable[[Optional[Tile] | Optional[Unit]], None]]] = None
-        self.unit_waiting_for_action: Optional[Unit] = None
+        self.wait_for_action_of_user: Optional[Action] = None
         self.wait_for_action: Optional[Action] = None
 
         self.debug_panel: Optional[Label] = None
@@ -146,6 +144,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def register(self):
         self.logger.info("Registering event listeners.")
 
+        self.accept("ui.request.action.stage", self.request_action_stage)
+
         self.accept("ui.update.user.city_clicked", self.process_city_click)
         self.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
 
@@ -168,6 +168,18 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.accept("t", self.toggle_research)
         self.accept("c", self.toggle_civics)
+
+    def request_action_stage(self, action: Action, executor: "Player | None" = None):
+        self.logger.info(f"Requesting action stage for action: {action.name}")
+
+        if self.wait_for_next_input_of_user or self.wait_for_action_of_user is not None:
+            self.logger.info("Already waiting for user input, ignoring request.")
+            return
+
+        if executor is None:
+            executor = PlayerManager.session_player()
+
+        self.prepare_action(action=action, executor=executor)
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
@@ -193,6 +205,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 show_pause = False
             if self.inspect is not None and self.inspect.is_open:
                 self.close_inspect()
+                show_pause = False
+            if self.debug_actions is not None and self.debug_actions.is_open:
+                self.close_debug_actions()
                 show_pause = False
 
             self.clear_selected_unit()
@@ -345,10 +360,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.debug_panels_showing_state["debug"] = True
         return self.debug_frame.build_debug_frame()
 
-    def build_debug_actions(self) -> BoxLayout:
-        self.debug_actions = DebugActions(base=self._base, logger=self.logger)
-        self.debug_panels_showing_state["actions"] = True
-        return self.debug_actions.build()
+    def build_debug_actions(self) -> DebugActions:
+        self.debug_actions = DebugActions(screen=self)
+        return self.debug_actions
 
     def build_debug_map_stats(self) -> GridLayout:
         self.debug_map_stats = DebugMapStats(base=self._base, logger=self.logger)
@@ -429,24 +443,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.city_ui.hide()
 
     def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
-        if self.debug_actions is None or self.debug_frame is None or self.stats_frame is None:
-            raise AssertionError("Debug actions, debug panel, or stats panel is not initialized.")
+        if self.debug_frame is None or self.stats_frame is None:
+            raise AssertionError("debug panel, or stats panel is not initialized.")
 
         self.get_debug_frame().get_frame().disabled = not debug
         self.get_debug_frame().get_frame().opacity = 0 if not debug else 1
         self.get_stats_frame().get_frame().disabled = not stats
         self.get_stats_frame().get_frame().opacity = 0 if not stats else 1
-
-        if actions and not self.debug_panels_showing_state["actions"]:
-            self.add_widget(self.debug_actions)
-            self.register_non_collidable(self.debug_actions.frame)  # type: ignore
-        else:
-            frame = self.get_action_bar_frame().get_frame()
-            for child in frame.children:  # type: ignore
-                frame.remove_widget(child)  # type: ignore
-            self.remove_widget(frame)  # type: ignore
-            self.remove_widget(self.debug_actions)  # type: ignore
-            self.unregister_non_collidable(self.debug_actions.frame)  # type: ignore
 
         if debug and not self.debug_panels_showing_state["debug"]:
             self.add_widget(self.debug_frame)
@@ -490,7 +493,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         generate_buttons: bool = True
         # If we are waiting for an action, execute it now
         if self.wait_for_next_input_of_user and self.wait_for_action_of_user is not None:
-            self.wait_for_action_of_user(_tile)  # Call the stored action with the tile
+            self.run_prepared_action(tile=tile)  # type: ignore
+            self.wait_for_action_of_user = None  # Call the stored action with the tile
             self.wait_for_next_input_of_user = False
 
             if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is False:
@@ -524,11 +528,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.logger.warning(f"Unit {_unit} not found or is not a Unit instance.")
             return False
 
-        if self.wait_for_next_input_of_user and self.wait_for_action_of_user:
-            self.wait_for_action_of_user(_unit)  # Call the stored action with the tile
-            if (self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True) or (
-                self.action_waiting_for is not None and self.action_waiting_for.keep_targeting_after_use is True
-            ):
+        if self.wait_for_action_of_user is not None and self.wait_for_action_of_user:
+            self.run_prepared_action(unit=_unit)  # type: ignore
+            if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is True:
                 # If the action keeps targeting, we don't change the selected unit
                 should_select_unit = False
             self.wait_for_next_input_of_user = False
@@ -536,7 +538,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             # self.wait_for_action = None
             self.action_waiting_for = None
 
-        if should_select_unit is True:
+        if should_select_unit is True and _unit.is_alive():
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
 
         # if _unit != self.ui_manager.current_unit:
@@ -585,7 +587,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 if action.is_disabled:
                     button.disabled = True
                     button.opacity = 0.5
-                button.bind(on_press=partial(self.prepare_action, action, _unit))  # type: ignore
+                button.bind(on_press=partial(self.prepare_action, action=action, executor=_unit))  # type: ignore
                 self.action_bar_frame.add_button(button)
 
             if _unit.can_build is True:
@@ -632,6 +634,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             return
         self.action_bar_frame.clear_buttons()
 
+    def get_selected_tile(self) -> Optional[Tile]:
+        return self.ui_manager.get_selected_tile()
+
+    def get_selected_unit(self) -> Optional[Unit]:
+        return self.ui_manager.get_selected_unit()
+
     def prepare_build_action(self, improvement: Type[Improvement], unit: Unit):
         from gameplay.actions.unit.build import BuildAction
 
@@ -640,127 +648,168 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         action.action_kwargs["improvement"] = improvement
         action.run()
 
-        # this is to prevent the action bar having actions that are not valid anymore.
         self.clear_action_bar()
         self.generate_buttons_for_unit_actions(unit)
 
-    def prepare_action(self, action: Action, unit: Unit, _):
-        """Prepares an action and waits for the next tile click before executing."""
+    def prepare_action(self, *args: Any, **kwargs: Any):
+        action: Action | None = kwargs.get("action")
+        executor: T_TARGET | None = kwargs.get("executor")
+
+        assert isinstance(action, Action), "Action must be an instance of Action class."
+
         if action.is_disabled:
             self.logger.warning(f"Action {action.name} is disabled and cannot be executed.")
             return
 
+        kwargs.pop("executor")
+        kwargs.pop("action", None)
+
+        action.action_kwargs = kwargs
+        action.action_kwargs["executor"] = executor
+
         if action.on_the_spot_action:
-            action.action_kwargs["unit"] = unit
             action.run()
             if action.remove_actions_after_use:
                 self.get_action_bar_frame().clear_widgets()  # type: ignore
             return
 
         self.wait_for_next_input_of_user = True
-        self.action_waiting_for = action
-        self.wait_for_action_of_user = partial(self.execute_action, action, unit)  # type: ignore
-        self.wait_for_action = action
-        self.unit_waiting_for_action = unit
+        self.wait_for_action_of_user = action  # type: ignore
         self.waiting_for_world_input = True  # type: ignore # We know it exists because it's initialized in build_screen
 
-    def execute_action(self, action: Action, executor: T_TARGET, target: Optional[T_TARGET] = None):
-        """Executes the action after tile selection (if required)."""
-        action.action_kwargs["executor"] = executor
+    def run_prepared_action(self, *args: Any, **kwargs: Any):
+        if self.wait_for_action_of_user is None:
+            self.logger.warning("No action prepared to run.")
+            return
 
-        if target is not None and (action.targeting_tile_action or action.targeting_unit_action):
-            action.action_kwargs["target"] = target  # Assign the selected tile
+        if self.wait_for_next_input_of_user is False:
+            self.logger.warning("Not waiting for user input, cannot run prepared action.")
+            return
 
+        self.execute_action(self.wait_for_action_of_user, *args, **kwargs)  # type: ignore
+
+    def execute_action(self, action: Action, *args: Any, **kwargs: Any):
+        unit: Unit | None = kwargs.pop("unit", None)
+        tile: Tile | None = kwargs.pop("tile", None)
+
+        if not action.debug_action and unit is None and tile is None:
+            self.logger.warning("No unit or tile selected for action execution.")
+            return
+
+        if action.targeting_tile_action and tile is None:
+            self.logger.warning("Action requires a tile target, but none is selected.")
+            return
+
+        if action.targeting_unit_action and unit is None:
+            self.logger.warning("Action requires a unit target, but none is selected.")
+            return
+
+        if action.targeting_tile_action:
+            action.action_kwargs["target"] = tile
+        if action.targeting_unit_action:
+            action.action_kwargs["target"] = unit
+
+        action.action_kwargs.update(kwargs)
         action.run()
 
         # Reset waiting state
         self.wait_for_next_input_of_user = False
         self.wait_for_action_of_user = None
         self.unit_waiting_for_action = None
-        self.action_waiting_for = None
 
         if action.remove_actions_after_use:
             self.clear_action_bar()
+
+    def open_debug_actions(self):
+        if self.debug_actions is None:
+            self.debug_actions = self.build_debug_actions()
+            self.debug_actions.show()
+            self.register_non_collidable(self.debug_actions.frame)
+            assert self.root_layout is not None, "Root layout is not initialized."
+            self.root_layout.add_widget(self.debug_actions.frame)  # type: ignore
+        self.lock_input()
+
+    def close_debug_actions(self):
+        if self.debug_actions is not None:
+            self.unregister_non_collidable(self.debug_actions.frame)  # type: ignore
+            assert self.root_layout is not None, "Root layout is not initialized."
+            self.debug_actions.hide()
+            self.root_layout.remove_widget(self.debug_actions.frame)  # type: ignore
+            self.popup_disabled = True
+            self.debug_actions = None
+        self.unlock_input()
 
     def open_inspect(self):
         if self.inspect is None:
             self.inspect = self.build_inspect_entity()
             self.inspect.show()
             self.register_non_collidable(self.inspect.frame)  # type: ignore
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.inspect.frame)  # type: ignore
-            self.lock_input()
+        self.lock_input()
 
     def close_inspect(self):
         if self.inspect is not None:
             self.unregister_non_collidable(self.inspect.frame)  # type: ignore
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.inspect.hide()
             self.root_layout.remove_widget(self.inspect.frame)  # type: ignore
             self.popup_disabled = True
             self.inspect = None
-            self.unlock_input()
+        self.unlock_input()
 
     def open_research(self):
         if self.research is None:
             self.research = self.build_research()
             self.register_non_collidable(self.research)
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.research)
-            self.lock_input()
+        self.lock_input()
 
     def open_civics(self):
         if self.civics is None:
             self.civics = self.build_civics()
             self.register_non_collidable(self.civics)
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.civics)
-            self.lock_input()
+        self.lock_input()
 
     def open_player_info(self, player: Player):
         if self.player_info is None:
             self.player_info = self.build_player_info()
             self.register_non_collidable(self.player_info)
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.player_info)
-            self.lock_input()
+        self.lock_input()
 
     def close_research(self):
         if self.research is not None:
             self.unregister_non_collidable(self.research)
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.research.popup_disabled = True
             self.root_layout.remove_widget(self.research)
             self.popup_disabled = True
             self.research = None
-            self.unlock_input()
+        self.unlock_input()
 
     def close_civics(self):
         if self.civics is not None:
             self.unregister_non_collidable(self.civics)
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.civics.destroy()
             self.root_layout.remove_widget(self.civics)
             self.popup_disabled = True
             self.civics = None
-            self.unlock_input()
+        self.unlock_input()
 
     def close_player_info(self):
         if self.player_info is not None:
             self.unregister_non_collidable(self.player_info)
-            if self.root_layout is None:
-                raise AssertionError("Root layout is not initialized.")
+            assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.remove_widget(self.player_info)
             self.popup_disabled = True
             self.player_info = None
-            self.unlock_input()
+        self.unlock_input()
 
     def toggle_research(self):
         if self.research is None:
