@@ -93,7 +93,7 @@ check-isdev-flag:
   <<: *default-python-job-base
   stage: verify
   rules:
-    - if: '$CI_COMMIT_REF_NAME =~ /^dev-.*$/'
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
@@ -104,7 +104,7 @@ check-isdev-flag:
 package-linux:
   image: ubuntu:24.04          
   rules:
-    - if: '$CI_COMMIT_REF_NAME =~ /^dev-.*$/'
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/'
       when: never
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
