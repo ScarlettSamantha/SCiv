@@ -1,4 +1,4 @@
-#version 130
+#version 330 core
 
 in vec4 p3d_Vertex;
 in vec2 p3d_MultiTexCoord0;         // card’s UVs from 0→1

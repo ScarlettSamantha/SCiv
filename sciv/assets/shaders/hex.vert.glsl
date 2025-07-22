@@ -1,4 +1,4 @@
-#version 130
+#version 330 core
 
 in vec4 p3d_Vertex;
 in vec3 p3d_Normal;

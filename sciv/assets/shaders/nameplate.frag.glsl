@@ -1,4 +1,4 @@
-#version 130
+#version 330 core
 
 uniform vec2 size; // width, height
 

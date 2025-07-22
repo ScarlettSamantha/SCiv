@@ -3,8 +3,8 @@
 in vec2 v_uv;
 out vec4 fragColor;
 
-uniform float time;         // Panda3D will drive this
-uniform float dashFreq;     // e.g. 12 segments around
+uniform float time;         
+uniform float dashFreq;     
 uniform float pulseSpeed;   // how fast the “dash” moves
 uniform float borderWidth;  // in normalized UV units (0.0–1.0)
 uniform float hexRadius;    // = √3/2 ≈ 0.866
@@ -32,10 +32,10 @@ void main() {
     //  scale UVs by the flat-top radius so that at d==1 it fits the hexagon
     uv /= hexRadius;
 
-    // now get distance to edge
+    // distance to edge
     float d = hexDist(uv);
 
-    // adjust borderWidth so it’s the same thickness
+    // adjust borderWidth so it’s equal
     float bw = borderWidth / hexRadius;
     float edge = smoothstep(1.0 - bw, 1.0, d)
                - smoothstep(1.0,       1.0 + bw, d);

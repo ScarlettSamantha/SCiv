@@ -1,4 +1,4 @@
-#version 130
+#version 330 core
 
 uniform sampler2D icon_atlas;
 uniform vec4 uv_rects[7];

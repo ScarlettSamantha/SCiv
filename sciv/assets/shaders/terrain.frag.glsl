@@ -1,10 +1,9 @@
-#version 140
+#version 330 core
 
 in vec2 uv0;
 in vec2 uv1;
 in vec2 uv2;
 
-// bound by Panda via setShaderInput
 uniform sampler2D terrain_atlas;
 uniform int       uv_index;
 
