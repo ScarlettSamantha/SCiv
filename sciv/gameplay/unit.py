@@ -10,7 +10,7 @@ import numpy as np
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
-from game import Cache
+from helpers.cache import Cache
 from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text, spawn_heal_text
 from gameplay.hover import HoverIndicator

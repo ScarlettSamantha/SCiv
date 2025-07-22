@@ -1,19 +1,18 @@
-from typing import Any, Optional, Tuple, Dict
+from typing import Any, Dict, Optional, Tuple
 
+from helpers.cache import Cache
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.slider import Slider
 from kivy.uix.spinner import Spinner
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
-
-from game import Cache
-from managers.config import ConfigManager, WINDOW_MODE_FULLSCREEN, WINDOW_MODE_BORDERLESS, WINDOW_MODE_WINDOW
+from managers.config import WINDOW_MODE_BORDERLESS, WINDOW_MODE_FULLSCREEN, WINDOW_MODE_WINDOW, ConfigManager
 
 
 class OptionsScreen(Screen):
@@ -302,7 +301,7 @@ class OptionsScreen(Screen):
         self.sentry_dsn_input.disabled = not active or not self.sentry_enable_checkbox.active
 
     def _on_vsync_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        cfg = self.config_ref
+        cfg: ConfigManager = self.config_ref
         if active:
             cfg.enable_vsync()
             self.refresh_rate_slider.disabled = True
@@ -319,7 +318,7 @@ class OptionsScreen(Screen):
             self.config_ref.set_resolution(*self.selected_resolution, auto_save=True)
 
     def _on_screenmode_select(self, spinner: Spinner, text: str) -> None:
-        cfg = self.config_ref
+        cfg: ConfigManager = self.config_ref
         if text == WINDOW_MODE_FULLSCREEN:
             cfg.set_screen_mode(WINDOW_MODE_FULLSCREEN)
         elif text == WINDOW_MODE_WINDOW:
