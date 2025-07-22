@@ -1,9 +1,9 @@
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from helpers.cache import Cache
 from gameplay.player import Player
+from helpers.cache import Cache
 from helpers.colors import Colors
 from kivy.graphics import Color, Rectangle
 from kivy.input import MotionEvent  #  type:ignore
@@ -28,31 +28,55 @@ class PlayerList(FloatLayout, DirectObject):
         self.window: "GraphicsWindow" = self.base.win  # type: ignore
         self.window_properties: WindowProperties = self.window.properties  # type: ignore
         self.background_image = Cache.get_icon_atlas().get_coreimage_by_virtual_path("player_portrait.png")
-        self.size_hint_x = 0.1
+        self.size_hint_x = None
         self.size_hint_y = 0.1
 
         self.grid = GridLayout(
             rows=1,
             spacing=-10,
             padding=10,
-            size_hint=(0.1, 0.1),
-            width=200,
+            size_hint=(None, None),
+            width=300,
             height=200,
-            pos_hint={"top": 0.985, "right": 0.85},
+            pos_hint={"top": 0.985, "right": 1},
         )
-        self.pos_hint = {"right": 0.95, "top": 0.985}
+        self.pos_hint = {"right": 0.80, "top": 0.985}
 
         self.add_widget(self.grid)
 
-        # Reposition when window size changes
         self.grid.bind(size=self.update_position)
         self.disabled = True
 
     def update_position(self, *args: Any):
-        text_length = sum(len(str(player.civilization.name)) * 16 for player in self.players)  # type: ignore
-        if self.window:
-            self.grid.x = self.window_properties.get_x_size() - self.grid.width - (text_length)  # type: ignore
-            self.grid.y = self.window_properties.get_y_size() - self.grid.height  # type: ignore
+        if not self.players or not self.grid.children:
+            return
+
+        children: List[Widget] = list(self.grid.children)
+        total_w = sum(w.width for w in children)
+        h_spacing = self.grid.spacing[0] if isinstance(self.grid.spacing, (tuple, list)) else self.grid.spacing
+        total_w += h_spacing * (len(children) - 1)
+
+        pad: Tuple[int, ...] | List[int] | int = self.grid.padding
+        if isinstance(pad, (tuple, list)) and len(pad) == 4:
+            left, top, right, _ = pad
+        elif isinstance(pad, int):
+            left = top = right = _ = pad
+        else:
+            raise ValueError("Padding must be a tuple of 4 integers or a single integer.")
+
+        total_w: int = total_w + left + right
+
+        total_h: int = self.grid.height
+
+        self.grid.width = total_w
+        self.grid.height = total_h
+
+        win_h: int = self.window_properties.get_y_size()
+        self.grid.x = right - self.grid.width
+        self.grid.y = win_h - top - self.grid.height
+
+        self.width = self.grid.width
+        self.height = self.grid.height
 
     def build(self) -> None:
         self.players = list(PlayerManager.all().values())
@@ -72,20 +96,17 @@ class PlayerList(FloatLayout, DirectObject):
             size=(self.background_image.size[0], self.background_image.size[1]),  # type: ignore
         )
 
-        # Load background texture
         bg_texture = self.background_image.texture  # type: ignore
         with container.canvas.before:  # type: ignore
             Color(1, 1, 1, 1)  # Full white, no tint
-            bg_rect = Rectangle(texture=bg_texture, pos=container.pos, size=container.size)  # type: ignore
+            bg_rect = Rectangle(texture=bg_texture, pos=(0, 0), size=container.size)  # type: ignore
 
-        # Local function to update background position
         def update_bg(instance: Widget, value: Any):
             bg_rect.pos = instance.pos  # type: ignore
             bg_rect.size = instance.size
 
         container.bind(pos=update_bg, size=update_bg)
 
-        # Player icon
         icon = Image(
             source=player.icon,
             size_hint=(None, None),
@@ -93,7 +114,6 @@ class PlayerList(FloatLayout, DirectObject):
             pos_hint={"center_x": 0.5, "top": 0.975},
         )
 
-        # Civilization name label
         name = Label(
             text=f"[color={Colors.to_hex(player.color)}]{player.civilization.name}[/color]",
             size_hint=(None, None),
@@ -105,14 +125,14 @@ class PlayerList(FloatLayout, DirectObject):
         )
         name.bind(size=lambda instance, value: setattr(instance, "text_size", value))  # type: ignore
 
-        # Update grid size
-        self.grid.width = ((len(self.players) - 2) * (200 + 20)) + 42  # type: ignore
+        self.grid.width = (len(self.players) - 2) * (100 + 20)  # type: ignore
         self.grid.height = 200 + 20
+        self.width = self.grid.width
+        self.height = self.grid.height
 
         container.add_widget(icon)
         container.add_widget(name)
 
-        # Add click behavior
         def on_touch_down(instance: Widget, touch: MotionEvent):  # type: ignore
             if self.disabled:
                 return False
