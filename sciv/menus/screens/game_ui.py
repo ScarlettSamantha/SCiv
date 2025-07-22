@@ -21,9 +21,11 @@ from kivy.uix.widget import Widget
 from managers.combat import T_TARGET
 from managers.combat_log import CombatLog
 from managers.entity import EntityManager, EntityType
+from managers.log import LogManager
 from managers.player import PlayerManager
 from managers.unit import UnitManager
 from managers.world import World
+from menus.kivy.elements.log_popup import LogPopup
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.action_bar import ActionBar
 from menus.kivy.parts.city import CityUI
@@ -94,8 +96,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_info: Optional[PlayerInfo] = None
         self.player_combat_log: Optional[PlayerCombatLog] = None
         self.inspect: Optional[InspectEntity] = None
-
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
+        self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
         self.showing_city: Optional[City] = None
 
@@ -164,6 +166,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.hide_civics_ui", self.close_civics)
         self.accept("ui.update.ui.show_inspect_ui", self.open_inspect)
         self.accept("ui.update.ui.hide_inspect_ui", self.close_inspect)
+        self.accept("ui.update.ui.toggle_log", self.toggle_log)
         self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
 
         self.accept("t", self.toggle_research)
@@ -185,9 +188,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         messenger.send("ui.request.open.popup", [name, header, text])
 
     def on_escape(self):
-        if (
-            self.research is not None and self.research.is_open
-        ):  # if the research screen is open exit as it is handled in the research screen
+        if self.research is not None and self.research.is_open:
             self.close_research()
             return
 
@@ -209,6 +210,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             if self.debug_actions is not None and self.debug_actions.is_open:
                 self.close_debug_actions()
                 show_pause = False
+            if self.log.is_open:
+                self.close_log()
 
             self.clear_selected_unit()
             self.clear_selected_tile()
@@ -323,13 +326,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def bring_to_front(self, widget: Widget):
         parent: Widget = widget.parent
-        # remove then add without index → goes to the end of children → drawn last → on top
         if widget in parent.children:
-            # if the widget is already in the parent, remove it first
             parent.remove_widget(widget)
             parent.add_widget(widget)
         elif widget in self.children:
-            # if the widget is in the root layout, remove it first
             self.remove_widget(widget)
             self.add_widget(widget)
 
@@ -441,6 +441,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.ui_manager.clear_selected_tile()
         if self.city_ui is not None:
             self.city_ui.hide()
+
+    def toggle_log(self):
+        if not self.log.is_open:
+            self.open_log()
+        else:
+            self.close_log()
 
     def toggle_debug_panels(self, debug: bool, stats: bool, actions: bool):
         if self.debug_frame is None or self.stats_frame is None:
@@ -712,13 +718,21 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         action.action_kwargs.update(kwargs)
         action.run()
 
-        # Reset waiting state
         self.wait_for_next_input_of_user = False
         self.wait_for_action_of_user = None
         self.unit_waiting_for_action = None
 
         if action.remove_actions_after_use:
             self.clear_action_bar()
+
+    def open_log(self):
+        self.log.open()
+        self.lock_input()
+
+    def close_log(self):
+        self.unregister_non_collidable(self.log)
+        self.log.done()
+        self.unlock_input()
 
     def open_debug_actions(self):
         if self.debug_actions is None:

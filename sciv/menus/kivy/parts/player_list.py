@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from game import Cache
+from helpers.cache import Cache
 from gameplay.player import Player
 from helpers.colors import Colors
 from kivy.graphics import Color, Rectangle

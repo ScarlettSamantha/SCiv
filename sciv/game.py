@@ -14,15 +14,12 @@ from logging import Logger
 import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
-from helpers.cache import Cache
 from helpers.direct_loading_screen import LoadingScreen
 from helpers.os import WindowsHelper
 from helpers.paths import PathsHelper
 from kivy.config import Config
-from managers.config import ConfigManager
 from managers.i18n import I18nManager, set_i18n
 from managers.input import Input
-from managers.log import LogManager
 from managers.unit import UnitManager
 from panda3d.core import loadPrcFile
 from panda3d_kivy import monkey  # type: ignore
@@ -44,6 +41,8 @@ class OpenCiv(ShowBase):
         from helpers.cache import Cache
         from helpers.debug import Debug
         from managers.assets import AssetManager
+        from managers.config import ConfigManager
+        from managers.log import LogManager
         from managers.ui import ui
         from system.camera import Camera
         from system.lights import setup_lights
@@ -91,7 +90,7 @@ class OpenCiv(ShowBase):
 
         # Logging
         loading_screen.next_stage("Setting up logging")
-        self.logger: LogManager = LogManager.get_singleton_instance()
+        self.logger = LogManager.get_singleton_instance()
         self.logger.setup_loggers()
 
         # Cache
@@ -198,8 +197,10 @@ class OpenCiv(ShowBase):
         self.messenger.send("system.main.ready")
 
     def generate_non_static_assets(self, force: bool = False) -> None:
+        from helpers.cache import Cache
         from helpers.debug import Debug
         from helpers.paths import PathsHelper
+        from managers.config import ConfigManager
         from system.atlas import AtlasGenerator
 
         icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")

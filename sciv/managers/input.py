@@ -90,6 +90,7 @@ class Input(Singleton, DirectObject):
         self.accept("f2", self.activate)
         self.accept("f3", self.de_activate)
 
+        self.accept("f7", self.on_toggle_log)
         self.accept("f8", self.on_debug_actions_toggle)
         self.accept("f9", self.force_render_selected_entity)
         self.accept("f10", self.on_inspect_entity)
@@ -104,6 +105,9 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def on_toggle_log(self):
+        self.base.ui_manager.get_main_game_ui().toggle_log()
 
     def on_debug_actions_toggle(self):
         from menus.screens.game_ui import GameUIScreen

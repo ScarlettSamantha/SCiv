@@ -28,10 +28,16 @@ class BasePopup(Popup):
         self.on_close: Callable[..., Any] | None = on_close
         self.bind(on_dismiss=self._handle_close)  # type:ignore
         self.size_hint = size_hint
+        self.is_open: bool = False
+
+    def open(self, *args: Any, **kwargs: Any):
+        self.is_open = True
+        return super().open(*args, **kwargs)
 
     def done(self, value: Any = None):
         if self.callback:
             self.callback(value)
+        self.is_open = False
         self.dismiss()  # type:ignore
 
     def _handle_close(self, instance: Button):
