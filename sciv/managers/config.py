@@ -1,11 +1,11 @@
 import json
 import os
+from io import TextIOWrapper
 from typing import Any, Dict, Optional, Tuple
 
-from panda3d.core import WindowProperties, loadPrcFileData  # type: ignore
-from io import TextIOWrapper
-from mixins.singleton import Singleton
 from helpers.cache import Cache
+from mixins.singleton import Singleton
+from panda3d.core import WindowProperties, loadPrcFileData  # type: ignore
 
 WINDOW_MODE_FULLSCREEN = "fullscreen"
 WINDOW_MODE_BORDERLESS = "fullscreen-borderless"
@@ -152,6 +152,8 @@ class ConfigManager(Singleton):
 
         if "show-frame-rate-meter" in window_settings:
             loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")
+
+        loadPrcFileData("", "window-icon-filename assets/logo_compact.png")
 
     def enable_vsync(self):
         self.config_data["window"]["sync-video"] = True

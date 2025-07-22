@@ -10,6 +10,8 @@ flatten-collision-nodes 1
 sampler-object-limit 4086
 default-bin opaque,10
 sort-geom true 
+x-wm-class openciv
+x-wm-class-name OpenCiv
 sync-video #f
 #want-directtools true
 #want-tk true

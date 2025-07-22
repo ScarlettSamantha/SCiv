@@ -48,13 +48,13 @@ class OpenCiv(ShowBase):
         from system.lights import setup_lights
         from system.vars import DEBUG, __version__, get_git_commit
 
+        self.generate_os_integrations()
         self.debug: bool = DEBUG
         Debug.debug = self.debug
 
         self.version: str = __version__
         self.commit: str = get_git_commit()
 
-        # Configuration manager setup
         config_mgr = ConfigManager()
         ConfigManager.set_singleton_instance(config_mgr)
 
@@ -69,10 +69,12 @@ class OpenCiv(ShowBase):
 
             self.sentry = Debug.init_sentry(sentry_dsn)
 
-        # Initialize base ShowBase
+        base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
+        PathsHelper.base_path = str(base_file_path)
         ShowBase.__init__(self)
         config_mgr.apply_config_to_prc()
         config_mgr.disable_vsync()
+
         self.config_manager: ConfigManager = config_mgr
         self.base_path: pathlib.Path = pathlib.Path.cwd().absolute()
 
@@ -105,8 +107,7 @@ class OpenCiv(ShowBase):
         # Internationalization
         loading_screen.next_stage(f"Loading translations for {self.config_manager.get_language()}")
         self.engine_logger.info("Setting up i18n")
-        base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
-        PathsHelper.base_path = str(base_file_path)
+
         self.i18n = I18nManager(str(base_file_path / "i18n"), self.config_manager.get_language(), True)
         Cache.set_i18n_instance(self.i18n)
         set_i18n(self.i18n)
@@ -195,6 +196,12 @@ class OpenCiv(ShowBase):
         ui.set_singleton_instance(self.ui_manager)
 
         self.messenger.send("system.main.ready")
+
+    def generate_os_integrations(self) -> None:
+        from helpers.os import LinuxHelper
+
+        if LinuxHelper.is_linux():
+            LinuxHelper.generate_application_registration()
 
     def generate_non_static_assets(self, force: bool = False) -> None:
         from helpers.cache import Cache

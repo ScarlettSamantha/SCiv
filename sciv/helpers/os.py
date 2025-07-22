@@ -13,6 +13,7 @@ class AbstractOsHelper:
     CONFIG_DIR: str = "config"
     CACHE_DIR: str = "cache"
     DEBUG_DIR: str = "debug"
+    _is_windows: Optional[bool] = None
 
     @classmethod
     @abstractmethod
@@ -30,11 +31,44 @@ class AbstractOsHelper:
     @abstractmethod
     def get_debug_dir(cls) -> str: ...
 
+    @classmethod
+    def is_windows(cls) -> bool:
+        if cls._is_windows is None:
+            cls._is_windows = name != "posix"
+        return cls._is_windows
+
+    @classmethod
+    def is_linux(cls) -> bool:
+        return not cls.is_windows()
+
 
 class LinuxHelper(AbstractOsHelper):
     cache_dir: Optional[str] = None
     config_dir: Optional[str] = None
     data_dir: Optional[str] = None
+
+    @classmethod
+    def generate_application_registration(cls) -> None:
+        from pathlib import Path
+
+        if (path := (Path.home() / ".local/share/applications/openciv.desktop")).exists():
+            return
+
+        import io
+
+        from helpers.paths import PathsHelper
+
+        text = f"""[Desktop Entry]
+Name=OpenCiv
+Exec=/usr/bin/python3 {(PathsHelper.get_base_path() / "../run.py").resolve()}
+Icon={(PathsHelper.get_base_path() / "assets/logo_compact.png").resolve()}
+Type=Application
+StartupWMClass=openciv
+Categories=Game;
+Terminal=false
+"""
+        with io.open(path.resolve(), "w", encoding="utf-8") as file:
+            file.write(text)
 
     @classmethod
     def get_cache_dir(cls) -> str:
@@ -103,7 +137,6 @@ class LinuxHelper(AbstractOsHelper):
 
 
 class WindowsHelper(AbstractOsHelper):
-    _is_windows: Optional[bool] = None
     cache_dir: Optional[str] = None
     config_dir: Optional[str] = None
     data_dir: Optional[str] = None
@@ -117,12 +150,6 @@ class WindowsHelper(AbstractOsHelper):
                 ctypes.CDLL(dll_name)
             except OSError as e:
                 raise RuntimeError(f"Failed to load DLL '{dll_name}': {e}")
-
-    @classmethod
-    def is_windows(cls) -> bool:
-        if cls._is_windows is None:
-            cls._is_windows = name != "posix"
-        return cls._is_windows
 
     @staticmethod
     def win32_to_unix_path(path: str | PathLike[str]) -> str:
