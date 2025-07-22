@@ -193,8 +193,7 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
-        # Window resize
-        self.accept("window-event", self.on_window_resize)  # type: ignore
+        self.base.taskMgr.doMethodLater(5.0, self.on_window_resize, "checkWindowResizeTask")  # type: ignore
 
     def set_key(self, key: str, value: Any):
         self.keys[key] = value
@@ -235,9 +234,9 @@ class Camera(Singleton, DirectObject):
             return
         self._desired_zoom = min(self.max_zoom, self._desired_zoom + self.zoom_speed)
 
-    def on_window_resize(self, window: WindowBase) -> None:  # type: ignore
+    def on_window_resize(self, window: WindowBase) -> Literal[1]:  # type: ignore
         if window != self.base.win:  # type: ignore
-            return
+            return 1
 
         self.win_x = window.getXSize()  # type: ignore
         self.win_y = window.getYSize()  # type: ignore
@@ -247,6 +246,8 @@ class Camera(Singleton, DirectObject):
         lens = self.get_lens()
         lens.setAspectRatio(self._aspect_ratio)  # type: ignore
         self.base.cam.node().setLens(lens)
+
+        return 1
 
     def update_camera_position(self):
         rad = self.pitch * (pi / 180.0)
