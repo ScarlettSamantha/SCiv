@@ -15,7 +15,7 @@ def bootstrap():
 
     try:
         app.run()
-    except (SystemExit, AssertionError):
+    except (Exception, KeyboardInterrupt) as _:
         print("Goodbye :-)")
 
 
