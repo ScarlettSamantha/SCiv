@@ -6,7 +6,7 @@ model-path assets/models
 framebuffer-srgb 0
 hardware-animated-vertices true
 basic-shaders-only false
-flatten-collision-nodes 0
+flatten-collision-nodes 1
 sampler-object-limit 4086
 default-bin opaque,10
 sort-geom true 
