@@ -1,12 +1,15 @@
-from subprocess import run
+import os
 import pathlib
 import sys
-import os
+from subprocess import run
+
 from pyuac import main_requires_admin
 
-requirements_command: str = "python -m briefcase update -r"
-build_command: str = "python -m briefcase build"
-compile_command: str = "python -m briefcase package"
+requirements_command: str = (
+    "python -m briefcase update --update-support --update-stub --update-resources --update-requirements"
+)
+build_command: str = "python -m briefcase build windows"
+compile_command: str = "python -m briefcase package windows --adhoc-sign"
 
 
 def cleanup_build():
