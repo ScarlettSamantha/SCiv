@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tupl
 from uuid import uuid4
 from weakref import ReferenceType, ref
 
-import orjson
 from helpers.debug import Debug
 from mixins.singleton import Singleton
 from mypy.types import JsonDict
@@ -217,7 +216,15 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
                     messages.append(f"Invalid value at {'->'.join(map(str, path))!r}: {val!r} (type {type(val)})")
                 raise TypeError("Save aborted: non-serializable dict values detected:\n" + "\n".join(messages))
 
-        return orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS)  # type: ignore
+        try:
+            import orjson
+
+            return orjson.dumps(payload, option=orjson.OPT_NON_STR_KEYS)  # type: ignore
+        except ImportError as _:
+            import json
+
+            print("orjson is not installed, falling back to json.dumps")
+            return json.dumps(payload, indent=4, ensure_ascii=False).encode("utf-8")
 
     def load(self, data: Union[bytes, str], graph_out: Optional[str] = None) -> EntityRegistry:
         text = data.decode("utf-8") if isinstance(data, bytes) else data

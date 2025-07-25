@@ -37,6 +37,8 @@ requires = [
   "matplotlib",
   "gprof2dot",
   "xdg",
+  "orjson",
+  "mypy",
 ]
 assets = [
   "assets",

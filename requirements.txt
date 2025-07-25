@@ -18,7 +18,7 @@ setuptools
 pre-commit  # for building and QA - dev
 py_trees # for behavior trees
 matplotlib # for graph visualization - dev-ish
-mypy 
+mypy  # for static type checking - dev
 gprof2dot # for profiling - dev
 pmw # this is needed for the inspector for some reason panda3d does not include it by default nor does tk
 rich # for better console output - dev
@@ -27,3 +27,4 @@ briefcase # for building the app - dev
 pyuac # for windows admin privileges - dev
 xdg # for path handling on linux - not dev not needed on windows
 orjson # for fast JSON serialization - game saving
+mypy-extensions # for mypy extensions - dev
