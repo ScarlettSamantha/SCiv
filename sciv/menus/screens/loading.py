@@ -38,7 +38,7 @@ class Loading(
         self.visible = False  # type: ignore
 
     def show(self, *args: Any, **kwargs: Any):
-        self.loading_screen = LoadingScreen(total_steps=6, show_continue=True, on_complete=self.on_done)
+        self.loading_screen = LoadingScreen(total_steps=7, show_continue=True, on_complete=self.on_done)
         self.loading_screen.add_to_right_overlay(self.right_text_widget())
         self.add_widget(self.loading_screen)
         self.visible = True  # type: ignore

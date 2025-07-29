@@ -387,7 +387,13 @@ class Game(Singleton, DirectObject):
         self.game_active = True
         self.logger.info(f"Game start requested with {self.properties}")
         messenger.send("ui.request.loading_screen", [civilization])
-        self._try_game_start()
+
+        def delay_start(*args: Any):
+            self.logger.info("Delaying game start to allow loading screen to show")
+            self._try_game_start()
+
+        # Start the game after a short delay to allow the loading screen to show
+        self.base.taskMgr.doMethodLater(0.5, delay_start, "delayedGameStart")
 
     def _try_game_start(self):
         self.logger.info("Starting world generation sequence")

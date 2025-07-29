@@ -1,5 +1,8 @@
 from typing import Any, Dict, Optional, Tuple, Type
 
+from gameplay import civilization
+from gameplay.civilization import Civilization as BaseCivilization
+from gameplay.repositories.civilization import Civilization
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -10,10 +13,6 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from kivy.uix.slider import Slider
 from kivy.uix.widget import Widget
-
-from gameplay import civilization
-from gameplay.civilization import Civilization as BaseCivilization
-from gameplay.repositories.civilization import Civilization
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.scrollable_popup import ScrollablePopup
 
@@ -189,12 +188,10 @@ class GameConfigMenu(Screen):
 
         players: int = int(self.player_count)
 
-        messenger.send("ui.request.loading_screen", [civ])
-
         def send_start_signal(*args: Any):
             messenger.send("system.game.start_load", [size, civ, players])
 
-        Clock.schedule_once(send_start_signal, 0.5)  # type: ignore
+        Clock.schedule_once(send_start_signal, 0.01)  # type: ignore # Next frame
 
     def back_to_main_menu(self):
         self.manager.current = "main_menu"

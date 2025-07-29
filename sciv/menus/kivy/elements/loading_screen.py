@@ -1,5 +1,5 @@
-from typing import Any, Callable, Optional, Tuple
 import random
+from typing import Any, Callable, Optional, Tuple
 
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, RoundedRectangle  # type: ignore
@@ -32,13 +32,11 @@ class LoadingScreen(FloatLayout):
         self.on_complete = on_complete
 
         with self.canvas.before:  # type: ignore
-            # Full black background base
             Color(0, 0, 0, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
 
         self.bind(pos=self._update_bg, size=self._update_bg)  # type: ignore
 
-        # Top image area (70% of screen)
         self.bg_image = Image(
             source=random.choice(self.loading_screen_images),
             allow_stretch=True,
@@ -48,7 +46,6 @@ class LoadingScreen(FloatLayout):
         )
         self.add_widget(self.bg_image)
 
-        # Central overlay box
         overlay_box = BoxLayout(
             orientation="horizontal",
             size_hint=(1, 0.9),
@@ -57,11 +54,9 @@ class LoadingScreen(FloatLayout):
             spacing=dp(20),  # type: ignore
         )
 
-        # Left transparent slot
         self.left_overlay = Image(source="", size_hint=(0.2, 1), opacity=0.3)
         overlay_box.add_widget(self.left_overlay)
 
-        # Center logo area
         center_stack = BoxLayout(orientation="vertical", size_hint=(0.6, 1), padding=dp(10))
         self.logo_image = Image(
             source="assets/logo_512.png",
@@ -74,7 +69,6 @@ class LoadingScreen(FloatLayout):
         center_stack.add_widget(Widget())  # Spacer
         overlay_box.add_widget(center_stack)
 
-        # Right framed box
         self.right_overlay = BoxLayout(orientation="vertical", size_hint=(0.2, 1), padding=dp(10), spacing=dp(10))  # type: ignore
         with self.right_overlay.canvas.before:
             Color(1, 1, 1, 0.25)
@@ -101,7 +95,6 @@ class LoadingScreen(FloatLayout):
 
         self.add_widget(overlay_box)
 
-        # Bottom progress panel
         bottom_panel = BoxLayout(
             orientation="vertical",
             size_hint=(1, 0.1),
@@ -110,12 +103,10 @@ class LoadingScreen(FloatLayout):
             pos_hint={"y": 0},  # type: ignore
         )
 
-        # Message
         self.step_label = Label(text=self.step_message, font_size="18sp", color=(1, 1, 1, 1), size_hint_y=None)
         self.step_label.bind(texture_size=self._resize_label)  # type: ignore
         bottom_panel.add_widget(self.step_label)
 
-        # Progress bar
         progress_box = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(24), spacing=dp(10))  # type: ignore
         self.progress_bar = ProgressBar(max=1, value=0)
         self.percentage_label = Label(text="0%", color=(1, 1, 1, 1), size_hint_x=None, width=dp(50))  # type: ignore
@@ -123,14 +114,12 @@ class LoadingScreen(FloatLayout):
         progress_box.add_widget(self.percentage_label)
         bottom_panel.add_widget(progress_box)
 
-        # Continue button
         self.continue_button = Button(text="Continue", size_hint_y=None, height=dp(40), opacity=0, disabled=True)  # type: ignore
         self.continue_button.bind(on_press=self._handle_complete)  # type: ignore
         bottom_panel.add_widget(self.continue_button)
 
         self.add_widget(bottom_panel)
 
-        # Start update loop
         Clock.schedule_once(self._update_ui)  # type: ignore
 
     def _resize_label(self, instance: Widget, size: Tuple[float, float]):
@@ -148,7 +137,11 @@ class LoadingScreen(FloatLayout):
         self.right_frame.size = instance.size  # type: ignore
 
     def _handle_complete(self, *args: Any):
-        self.on_complete()
+        def delay_start(*args: Any, **kwargs: Any):
+            self.on_complete()  # type: ignore
+
+        if self.on_complete is not None:
+            Clock.schedule_once(delay_start, 0.1)  # type: ignore
 
     @property
     def progress(self):
@@ -166,13 +159,13 @@ class LoadingScreen(FloatLayout):
             self.continue_button.opacity = 0
             self.continue_button.disabled = True
 
-        return 0
+        return 1
 
     def next_step(self, message: Optional[str] = None):
         self.current_step += 1
         if message:
             self.step_message = message
-        Clock.schedule_once(self._update_ui, 1)  # type: ignore
+        self._update_ui()
 
     def add_to_right_overlay(self, widget: Widget):
         self.right_content.add_widget(widget)
