@@ -15,6 +15,8 @@ compile_command: str = "python -m briefcase package windows --adhoc-sign"
 def cleanup_build():
     base = pathlib.Path(__file__).parent.parent / "build" / "sciv" / "windows" / "app" / "src" / "app" / "sciv"
     remove = [
+        "dist/",
+        "build/",
         "assets/generated",
         "logs/",
         "saves/",
