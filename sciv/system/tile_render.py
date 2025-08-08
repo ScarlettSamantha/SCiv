@@ -252,6 +252,43 @@ class TileRenderer:
             billboard=True,
         )
 
+        icon_path = (
+            Icons.population_icon_gaining() if city.calculate_food_surplus() >= 0 else Icons.population_icon_losing()
+        )
+        population_icon: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(icon_path)
+
+        if population_icon is not None:
+            population_icon.setWrapU(Texture.WM_clamp)
+            population_icon.set_format(Texture.F_srgb_alpha)
+            population_icon.set_minfilter(SamplerState.FT_linear)
+
+        population_gain_loss_text: T_TranslationOrStr = i18n.lookup(
+            key="ui.player_ui.city.population_bar_label",
+            formatting_parameters={
+                "population": city.population,
+                "food_collected": round(city.food_collected.food.value, 0),
+                "food_required": round(city.new_population_food_required.food.value, 0),
+            },
+        )
+
+        self._draw_generic_bar(
+            parent=parent,
+            name=f"pop_{city.name}",
+            center_z=1.5,
+            width=1,
+            height=0.1,
+            bg_color=(0.2, 0.2, 0.2, 0.8),
+            fill_color=(1.0, 0.4, 0.7, 1.0),
+            percentage=(city.food_collected.food.value / city.new_population_food_required.food.value),
+            icon_texture=population_icon,
+            icon_offset_x=-0.6,
+            icon_size=(0.6, 0.6, 0.6),
+            text=str(population_gain_loss_text),
+            text_scale=0.07,
+            text_offset_z=-0.015,
+            billboard=True,
+        )
+
         if city.is_building and city.building is not None:
             item: BaseCityImprovement | Unit | None = city.building
             icon_tex: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(
@@ -278,7 +315,7 @@ class TileRenderer:
             self._draw_generic_bar(
                 parent=parent,
                 name=f"build_{city.name}",
-                center_z=1.515,
+                center_z=1.375,
                 width=1,
                 height=0.1,
                 bg_color=(0.2, 0.2, 0.2, 1.0),
@@ -291,43 +328,6 @@ class TileRenderer:
                 text_offset_z=-0.015,
                 billboard=True,
             )
-
-        icon_path = (
-            Icons.population_icon_gaining() if city.calculate_food_surplus() >= 0 else Icons.population_icon_losing()
-        )
-        population_icon: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(icon_path)
-
-        if population_icon is not None:
-            population_icon.setWrapU(Texture.WM_clamp)
-            population_icon.set_format(Texture.F_srgb_alpha)
-            population_icon.set_minfilter(SamplerState.FT_linear)
-
-        population_gain_loss_text: T_TranslationOrStr = i18n.lookup(
-            key="ui.player_ui.city.population_bar_label",
-            formatting_parameters={
-                "population": city.population,
-                "food_collected": round(city.food_collected.food.value, 0),
-                "food_required": round(city.new_population_food_required.food.value, 0),
-            },
-        )
-
-        self._draw_generic_bar(
-            parent=parent,
-            name=f"pop_{city.name}",
-            center_z=1.4,
-            width=1,
-            height=0.1,
-            bg_color=(0.2, 0.2, 0.2, 0.8),
-            fill_color=(1.0, 0.4, 0.7, 1.0),
-            percentage=(city.food_collected.food.value / city.new_population_food_required.food.value),
-            icon_texture=population_icon,
-            icon_offset_x=-0.6,
-            icon_size=(0.6, 0.6, 0.6),
-            text=str(population_gain_loss_text),
-            text_scale=0.07,
-            text_offset_z=-0.015,
-            billboard=True,
-        )
 
         icons = city.icons
         z = 1.2
