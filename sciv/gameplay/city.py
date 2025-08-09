@@ -539,7 +539,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.new_population_food_required = Yields(food=population_curve(self.population))
         self.food_collected = Yields.nullYield()
         MessengerGlobal.messenger.send("game.gameplay.city.grows_population", [self])
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui", [self])
         MessengerGlobal.messenger.send("game.border.refresh")
 
     def starve_population(self):
@@ -549,7 +549,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             self.new_population_food_required - Yields(food=1)
         )  # We take the requirement for the lower population and subtract 1 this is to prevent the city from starving again next turn.
         MessengerGlobal.messenger.send("game.gameplay.city.population_starve", [self])
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui", [self])
 
     def get_improvements(self) -> ImprovementsSet:
         return self._improvements

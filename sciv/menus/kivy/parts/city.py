@@ -51,6 +51,7 @@ class CityUI(BoxLayout, DirectObject):
         self.logger = base.logger.gameplay.getChild("ui.city_ui")
         self.frame: Optional[BoxLayout] = None
         self.hidden: bool = False
+        self.is_open: bool = False
 
         self.city_name = name
         self.city: Optional[City] = None
@@ -88,9 +89,6 @@ class CityUI(BoxLayout, DirectObject):
         self.register()
 
     def register(self):
-        self.accept("ui.update.ui.refresh_city_ui", self.update)
-        self.accept("ui.update.ui.show_city_ui", self.show)
-        self.accept("ui.update.ui.hide_city_ui", self.hide)
         self.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
         self.accept("game.gameplay.city.starts_building_unit", self.on_city_start_building_improvement)
         self.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
@@ -120,7 +118,6 @@ class CityUI(BoxLayout, DirectObject):
         if self.population_label is not None:
             food_collected = str(floor(self.city.food_collected.food.value))
             food_required = str(floor(self.city.new_population_food_required.food.value))
-
             self.population_label.text = str(
                 t_(
                     "ui.player_ui.city.population_label",
@@ -154,7 +151,6 @@ class CityUI(BoxLayout, DirectObject):
             and self.border_label is not None
         ):
             tile_yield: Yields = self.city.calculate_yield_from_tiles()
-
             self.gold_label.set_text(str(t_("ui.player_ui.city.gold_label", {"gold": tile_yield.gold.value})))
             self.production_label.set_text(
                 str(t_("ui.player_ui.city.production_label", {"production": tile_yield.production.value}))
@@ -181,11 +177,9 @@ class CityUI(BoxLayout, DirectObject):
         if self.current_button is not None and self.city.is_building and self.city.building is not None:
             resource_required = list(self.city.resource_required_amount.props(True).values())
             resource_got = list(self.city.resource_collected.props(True).values())
-
             if len(resource_required) == 0:
                 self.logger.error("Resource required is None or empty.")
                 raise AssertionError("Resource required is None or empty.")
-
             resource_got = 0.0 if len(resource_got) == 0 else resource_got[0].value
             resource_required = resource_required[0].value
             building = self.city.get_building()
@@ -208,19 +202,15 @@ class CityUI(BoxLayout, DirectObject):
         for button in self.buildable_buttons.values():
             self.button_container.add_widget(button)
 
-        if self.improvement_list_scroll is not None:
-            self.improvement_list_scroll.clear_widgets()
-            for improvement in self.city._improvements:  # type: ignore
-                label = Label(
-                    text=str(improvement.name),
-                    size_hint_y=None,
-                    height=30,
-                    font_size=12,
-                )
-                self.improvement_list_scroll.add_widget(label)
+        self.button_container._apply_clipping()  # type: ignore
+        self.button_container.scroll_to_top()
 
-            self.improvement_list_scroll._apply_clipping()  # type: ignore
-            self.improvement_list_scroll.scroll_to_top()
+        self.improvement_list_scroll.clear_widgets()  # type: ignore
+        for improvement in self.city._improvements:  # type: ignore
+            label = Label(text=str(improvement.name), size_hint_y=None, height=30, font_size=12)
+            self.improvement_list_scroll.add_widget(label)  # type: ignore
+        self.improvement_list_scroll._apply_clipping()  # type: ignore
+        self.improvement_list_scroll.scroll_to_top()  # type: ignore
 
         self.city.get_tile().get_renderer().update()
 
@@ -234,51 +224,41 @@ class CityUI(BoxLayout, DirectObject):
         def format_button_text(instance: BaseCityImprovement | CivilianBaseClass | MilitaryBaseClass) -> str:
             return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
 
-        def buildings():
-            for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
-                class_instance: BaseCityImprovement = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+        # Improvements
+        for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
+            class_instance: BaseCityImprovement = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+            if not class_instance.conditions.are_met():  # type: ignore
+                continue
+            if self.city is None:
+                continue
+            if type(class_instance) in self.city.get_improvements():  # type: ignore
+                continue
+            if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city.get_improvements()):
+                continue
 
-                if not class_instance.conditions.are_met():
-                    continue
+            button = ButtonValue(
+                text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
+            )
+            # bind directly to the button instance (no late-binding)
+            button.bind(on_press=lambda btn: self.on_build_button_click(btn))  # btn is ButtonValue # type: ignore
+            buttons[class_name] = button
+            self.buildable_improvements[class_name] = class_instance  # type: ignore
+            self.buildable_buttons[class_name] = button
 
-                if self.city is None:
-                    continue
+        # Units
+        for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
+            class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
+            if not class_instance.build_conditions.are_met():
+                continue
+            class_instance.is_being_build = True
 
-                if type(class_instance) in self.city.get_improvements():  # We already have this improvement
-                    continue
-
-                if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city.get_improvements()):
-                    continue  # This is not the best way to check if we are already building this, but there was an issue with the __contains__ method it would not do a type check
-
-                button = ButtonValue(
-                    text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
-                )
-                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))  # type: ignore
-                buttons[class_name] = button
-
-                self.buildable_improvements[class_name] = class_instance
-                self.buildable_buttons[class_name] = button
-
-        def units():
-            for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
-                class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
-
-                if not class_instance.build_conditions.are_met():
-                    continue
-
-                class_instance.is_being_build = True
-
-                button = ButtonValue(
-                    text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
-                )
-                button.bind(on_press=lambda class_instance: self.on_build_button_click(class_instance))  # type: ignore
-                buttons[class_name] = button
-
-                self.buildable_units[class_name] = class_instance
-                self.buildable_buttons[class_name] = button
-
-        buildings()
-        units()
+            button = ButtonValue(
+                text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
+            )
+            button.bind(on_press=lambda btn: self.on_unit_build_button_click(btn))  # separate handler # type: ignore
+            buttons[class_name] = button
+            self.buildable_units[class_name] = class_instance
+            self.buildable_buttons[class_name] = button
 
         return buttons
 
@@ -395,10 +375,6 @@ class CityUI(BoxLayout, DirectObject):
 
         self.button_container = ClippingScrollList(size_hint=(1, None), height=400)
 
-        for i in range(5):
-            btn = Button(text=f"Action {i + 1}", size_hint=(1, None), height=50)
-            self.button_container.add_widget(btn)
-
         self.frame.add_widget(self.button_container)
 
         self.improvement_list_label = Label(text="Improvements", size_hint=(1, None), height=30, font_size=16)
@@ -471,13 +447,13 @@ class CityUI(BoxLayout, DirectObject):
 
         if city is not None:
             self.set_city(city)
-
-        if auto_update:
             self.update()
 
+        # ensure visible/enabled
         self.frame.opacity = 1
         self.frame.disabled = False
         self.hidden = False
+
         self.get_screen().register_non_collidable(self.frame)
 
     def hide(self, auto_forget: bool = True):
@@ -491,8 +467,9 @@ class CityUI(BoxLayout, DirectObject):
         if auto_forget:
             self.city = None
 
-        self.frame.opacity = 0
         self.frame.disabled = True
+        self.frame.opacity = 0
+        self.frame.clear_widgets()
         self.hidden = True
 
         self.get_screen().unregister_non_collidable(self.frame)

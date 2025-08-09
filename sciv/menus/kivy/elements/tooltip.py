@@ -1,7 +1,10 @@
-from typing import TYPE_CHECKING, Any, List, Self, Tuple
 import typing
+from typing import TYPE_CHECKING, Any, List, Self, Tuple
 
 from direct.task.Task import Task
+from gameplay.civilization import T_TranslationOrStr
+from helpers.cache import Cache
+from helpers.colors import Tuple4f
 from kivy.clock import Clock
 from kivy.graphics import BorderImage, Color, Line  # type: ignore
 from kivy.metrics import dp  # type: ignore
@@ -10,19 +13,16 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
-
-from gameplay.civilization import T_TranslationOrStr
-from helpers.cache import Cache
-from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.ui import ui
 
 if TYPE_CHECKING:
     from game import OpenCiv
+    from menus.screens.game_ui import GameUIScreen
 
 
 class TooltipLabel(BoxLayout):
-    def __init__(self, text: str, markup: bool = False, image_source: str | None = None, **kwargs: Any):
+    def __init__(self, text: str, markup: bool = False, image_source: str | None | Image = None, **kwargs: Any):
         super().__init__(orientation="horizontal", spacing=dp(6), padding=(dp(10), dp(6)), **kwargs)  # type: ignore
         self.size_hint = (None, None)  # type: ignore
         self.opacity = 0
@@ -33,9 +33,11 @@ class TooltipLabel(BoxLayout):
             self.bg_rect = BorderImage(source="", border=[0, 0, 0, 0])  # type: ignore
 
         if image_source:
-            self.icon = Image(source=image_source, size_hint=(None, None), size=(dp(20), dp(20)))
+            if isinstance(image_source, str):
+                self.icon = Image(source=image_source, size_hint=(None, None), size=(dp(20), dp(20)))
+            else:
+                self.icon = image_source
             self.icon.pos_hint = {"x": 0, "top": 1}
-            self.add_widget(self.icon)
 
         self.label = Label(
             text=text,
@@ -71,17 +73,21 @@ class TooltipBehavior:
     tooltip_markup: BooleanProperty = BooleanProperty(True)
     tooltip_multiline: BooleanProperty = BooleanProperty(False)
     tooltip_image_source: StringProperty = StringProperty("")
+    tooltip_anchor_x: StringProperty = StringProperty("auto")  # 'auto' | 'left' | 'right'
+    tooltip_anchor_y: StringProperty = StringProperty("auto")  # 'auto' | 'top' | 'bottom'
+    tooltip_margin: NumericProperty = NumericProperty(10)  # type:ignore
     tooltip_delay = 0.2
 
     def __init__(self, **kwargs: Any):
         self.base: "OpenCiv" = Cache.get_showbase_instance()
-        self.base.taskMgr.add(self._poll_mouse_pos, "_poll_mouse_pos")  # type: ignore
         self.tooltip_label: TooltipLabel | None = None
         self._tooltip_trigger = None
         self._suppress_tooltip = False
-
-        self.register_event_type("on_enter")  # type: ignore
-        self.register_event_type("on_leave")  # type: ignore
+        self._task_name = f"_poll_mouse_pos_{id(self)}"
+        self.base.taskMgr.add(self._poll_mouse_pos, self._task_name, delay=1 / 15)  # type: ignore
+        if hasattr(self, "register_event_type"):
+            self.register_event_type("on_enter")  # type: ignore
+            self.register_event_type("on_leave")  # type: ignore
 
     def _poll_mouse_pos(self, task: Task) -> int:
         if self.base.mouseWatcherNode.hasMouse():  # type: ignore
@@ -98,12 +104,34 @@ class TooltipBehavior:
         return Task.cont
 
     def update_tooltip_position(self, x: float, y: float):
-        if self.tooltip_label:
-            parent = ui.get_singleton_instance().get_main_game_ui()
-            local_x, local_y = parent.to_widget(x, y)
-            offset = 10
-            self.tooltip_label.x = local_x + offset
-            self.tooltip_label.y = local_y + offset
+        if not self.tooltip_label:
+            return
+        parent: "GameUIScreen" = ui.get_singleton_instance().get_main_game_ui()
+        local_x, local_y = parent.to_widget(x, y)
+
+        try:
+            self.tooltip_label.label.texture_update()  # type: ignore
+        except Exception:
+            pass
+        self.tooltip_label._update_size()  # type: ignore
+
+        tw, th = self.tooltip_label.size  # type: ignore
+        pw, ph = parent.width, parent.height
+        margin = dp(self.tooltip_margin)  # type: ignore
+
+        tx: int = int(local_x + margin if self.tooltip_anchor_x in ("left", "auto") else local_x - tw - margin)  # type: ignore
+        ty: int = int(local_y + margin if self.tooltip_anchor_y in ("bottom", "auto") else local_y - th - margin)  # type: ignore
+
+        if tx + tw > pw:
+            tx = int(local_x - tw - margin)  # type: ignore
+        if tx < margin:
+            tx = margin
+        if ty + th > ph:
+            ty = int(local_y - th - margin)  # type: ignore
+        if ty < margin:
+            ty = margin
+
+        self.tooltip_label.pos = (tx, ty)  # type: ignore
 
     def on_enter(self, *args: Any):
         if self._has_disabled_ancestor():
@@ -129,8 +157,7 @@ class TooltipBehavior:
             markup=True,
             image_source=image_src if image_src else None,
         )
-        parent = ui.get_singleton_instance().get_main_game_ui()
-
+        parent: "GameUIScreen" = ui.get_singleton_instance().get_main_game_ui()
         if self.tooltip_label in parent.children:
             parent.remove_widget(self.tooltip_label)
         parent.add_widget(self.tooltip_label)
@@ -157,7 +184,7 @@ class TooltipBehavior:
             if hasattr(widget, "popup_disabled"):  # type: ignore
                 return bool(widget.popup_disabled)  # type: ignore
             widget = widget.parent  # type: ignore
-        return True
+        return False
 
 
 class TooltippedImage(Image, TooltipBehavior):
@@ -169,17 +196,10 @@ class TooltippedImage(Image, TooltipBehavior):
         border_size = kwargs.pop("border_size", None)
         border_color = kwargs.pop("border_color", None)
 
-        TooltipBehavior.__init__(self, **kwargs)
-
-        if "tooltip_multiline" not in kwargs:
-            self.tooltip_multiline = True
-            del kwargs["tooltip_multiline"]
-        if "tooltip_markup" not in kwargs:
-            self.tooltip_markup = False
-            del kwargs["tooltip_markup"]
+        self.tooltip_multiline = bool(kwargs.pop("tooltip_multiline", True))
+        self.tooltip_markup = bool(kwargs.pop("tooltip_markup", False))
         if "tooltip_image_source" not in kwargs and "source" in kwargs:
             self.tooltip_image_source = kwargs["source"]
-            del kwargs["source"]
 
         if "tooltip_text" in kwargs and isinstance(
             kwargs["tooltip_text"],
@@ -188,6 +208,7 @@ class TooltippedImage(Image, TooltipBehavior):
             kwargs["tooltip_text"] = str(kwargs["tooltip_text"])
 
         super().__init__(**kwargs)  # type: ignore
+        TooltipBehavior.__init__(self)
 
         if border_size is not None:
             self.border_size = border_size
@@ -200,7 +221,6 @@ class TooltippedImage(Image, TooltipBehavior):
             border_color=self._update_border,
             border_size=self._update_border,
         )
-
         self._update_border()
 
     def _update_border(self, *args: Any):
@@ -210,28 +230,6 @@ class TooltippedImage(Image, TooltipBehavior):
             Color(r=color[0], g=color[1], b=color[2], a=color[3])  # type: ignore
             Line(rectangle=(self.x, self.y, self.width, self.height), width=self.border_size)  # type: ignore
         self.canvas.ask_update()  # type: ignore
-
-    def on_enter(self, *args: Any):
-        ancestor = self._find_tooltip_ancestor()
-        if ancestor:
-            ancestor._suppress_tooltip = True
-            if ancestor.tooltip_visible:
-                ancestor.hide_tooltip()
-        super().on_enter(*args)
-
-    def on_leave(self, *args: Any):
-        ancestor = self._find_tooltip_ancestor()
-        if ancestor:
-            ancestor._suppress_tooltip = False
-        super().on_leave(*args)
-
-    def _find_tooltip_ancestor(self) -> TooltipBehavior | None:
-        parent = self.parent
-        while parent:
-            if isinstance(parent, TooltipBehavior):
-                return parent
-            parent = parent.parent
-        return None
 
 
 class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):

@@ -639,6 +639,29 @@
             "no_points": "Attacker({attacking_unit}) has no points to attack {defending_unit}."
           }
         }
+      },
+      "messages": {
+        "research": {
+          "completed": {
+            "title": "Research completed",
+            "message": "You have completed the research of {civic}."
+          },
+          "started": {
+            "title": "Research started",
+            "message": "You have started the research of {civic}."
+          },
+          "no_active": {
+            "title": "No active research",
+            "message": "You don't have any active research."
+          }
+        },
+        "debug": {
+          "add_message": {
+            "title": "Debug message",
+            "message": "You have added a debug message: {message}",
+            "tooltip": "This message will be shown in the debug console."
+          }
+        }
       }
     },
     "actions": {
@@ -659,6 +682,11 @@
           "button": "Spawn unit",
           "label": "Unit type",
           "spawn_unit": "Spawn unit"
+        },
+        "add_message": {
+          "button": "Add message",
+          "label": "Message",
+          "add_message": "Add message"
         }
       }
     },

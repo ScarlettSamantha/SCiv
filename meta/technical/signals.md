@@ -114,9 +114,6 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `ui.update.ui.unit_unselected` (E: manager-ui | L: screen-game-ui)
 
-- `ui.update.ui.hide_city_ui` (L: ui-part-city)
-- `ui.update.ui.show_city_ui` (L: ui-part-city)
-
 - `ui.request.update.borders` (L: manager-game | E: * )
 - `ui.borders.updated` (E: system-border | L: manager-game)
 
@@ -134,12 +131,13 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.show_player_info` (E: ui-player-list | L: manager-game )
 - `ui.update.ui.hide_player_info` (E: ui-player-list | L: manager-game )
 
-- `ui.update.ui.refresh_city_ui` (E: manager-ui | L: ui-part-city)
 - `ui.update.ui.refresh_top_bar` (E: manager-ui | L: ui-part-top-bar)
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
 - `ui.update.ui.refresh_action_bar` (E: unit | L : manager-game-ui )
 
 - `ui.update.ui.combat_log.add` (E: * | L: ui-player-combat-log )
+
+- `ui.update.ui.messenger.refresh` (E: * | L: ui-messenger-renderer)
 
 - `ui.update.ui.debug_ui_toggle` (E: ui-debug-actions | L: manager-ui)
 - `ui.update.ui.resource_ui_change` (E: ui-debug-actions | L: manager-ui)

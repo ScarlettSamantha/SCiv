@@ -11,7 +11,6 @@ from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
@@ -19,13 +18,14 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 from managers.combat import T_TARGET
-from managers.combat_log import CombatLog
+from managers.combat_log import CombatLog, CombatLogEntry
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
 from managers.unit import UnitManager
 from managers.world import World
 from menus.kivy.elements.log_popup import LogPopup
+from menus.kivy.elements.message import MessageRenderer
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.action_bar import ActionBar
 from menus.kivy.parts.city import CityUI
@@ -46,6 +46,7 @@ from mixins.inspectable import Inspectable
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
+from system.messenger import Messenger
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -95,6 +96,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_list: Optional[PlayerList] = None
         self.player_info: Optional[PlayerInfo] = None
         self.player_combat_log: Optional[PlayerCombatLog] = None
+        self.messenger: Optional[MessageRenderer] = None
         self.inspect: Optional[InspectEntity] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
@@ -115,6 +117,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player = PlayerManager.session_player()
         self.build_player_list()
         self.build_combat_log()
+        self.build_messenger()
 
         if self.debug_map_stats is not None:
             self.debug_map_stats.update()
@@ -138,8 +141,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger.info("Resetting game UI screen.")
         self.clear_action_bar()
         self.update_ui_geometry_cache()
-        if self.city_ui is not None:
-            self.city_ui.hide()
         if self.top_bar is not None:
             self.top_bar.update()
 
@@ -168,6 +169,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.hide_inspect_ui", self.close_inspect)
         self.accept("ui.update.ui.toggle_log", self.toggle_log)
         self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
+        self.accept("ui.update.ui.refresh_city_ui", self.refresh_city)
 
         self.accept("t", self.toggle_research)
         self.accept("c", self.toggle_civics)
@@ -186,6 +188,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def popup(self, name: str, header: str, text: str):
         messenger.send("ui.request.open.popup", [name, header, text])
+
+    def refresh_city(self, city: City | None = None, *args: Any, **kwargs: Any):
+        if self.city_ui is not None:
+            if city is not None:
+                self.city_ui.set_city(city)
+            self.city_ui.update()
 
     def on_escape(self):
         if self.research is not None and self.research.is_open:
@@ -227,19 +235,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.popup("enemy_city_selected", "Enemy City", f"City: {city.name}\nOwner: {city.player.name}")
         if self.city_ui is not None and not self.city_ui.is_hidden():
             self.showing_city = None
-            self.get_city_ui().hide()
+            self.close_city_ui()
 
     def process_city_click(self, city: Any):
-        if self.showing_city is None or city != self.showing_city:
-            if self.city_ui is None or self.city_ui.city_label is None:
-                raise AssertionError("City UI is not initialized.")
-
-            self.showing_city = city
-            self.get_city_ui().show(city=city)
-        else:
-            if not self.get_city_ui().is_hidden():
-                self.showing_city = None
-                self.get_city_ui().hide()
+        self.open_city_ui(city=city)
 
     def unregister(self):
         self.logger.info("Unregistering event listeners.")
@@ -310,9 +309,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
         self.root_layout.add_widget(self.build_player_turn_control())  # type: ignore
-        self.root_layout.add_widget(self.build_city_ui())  # type: ignore
 
-        if self.action_bar_frame is None or self.player_turn_control is None or self.city_ui is None:
+        if self.action_bar_frame is None or self.player_turn_control is None:
             raise AssertionError("Action bar, debug panel, or stats panel, player_turn_control is not initialized.")
 
         self.logger.info("Game UI screen built.")
@@ -372,12 +370,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_turn_control = PlayerTurnControl(base=self._base)
         return self.player_turn_control.build_debug_frame()
 
-    def build_city_ui(self) -> BoxLayout:
-        self.city_ui = CityUI(screen=self, base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
-        result = self.city_ui.build()
-        self.city_ui.hide()
-        return result
-
     def build_top_bar(self) -> TopBar:
         self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
         return self.top_bar.build()
@@ -417,12 +409,19 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def build_combat_log(self) -> PlayerCombatLog:
         combat_log = CombatLog()
-        logs = combat_log.get_entries(PlayerManager.session_player())
+        logs: List[CombatLogEntry] = combat_log.get_entries(PlayerManager.session_player())
         self.player_combat_log = PlayerCombatLog(log=logs)
         self.player_combat_log.build()
         self.player_combat_log.update()
         self.add_widget(self.player_combat_log)
         return self.player_combat_log
+
+    def build_messenger(self) -> MessageRenderer:
+        messenger: Messenger = PlayerManager.session_player().messenger
+        assert isinstance(messenger, Messenger), "Messenger is not an instance of Messenger class."
+        self.messenger = MessageRenderer(messenger=messenger)
+        self.add_widget(self.messenger)
+        return self.messenger
 
     def refresh_top_bar(self, dt: Optional[float] = None):
         if self.top_bar is None:
@@ -439,8 +438,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def clear_selected_tile(self):
         self.ui_manager.clear_selected_tile()
-        if self.city_ui is not None:
-            self.city_ui.hide()
+        self.close_city_ui()
 
     def toggle_log(self):
         if not self.log.is_open:
@@ -487,8 +485,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if _tile is None:
             return False
 
-        if not _tile.is_city():
-            self.get_city_ui().hide()
+        if self.city_ui is not None:
+            self.close_city_ui()
             self.showing_city = None
 
         # self.debug_frame.update_debug_info_for_tile(_tile)  # type: ignore # We know it exists because it's initialized in build_screen
@@ -557,8 +555,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.ui_manager.current_unit is not None:
             self.generate_buttons_for_unit_actions(self.ui_manager.current_unit)
 
-        if self.showing_city is not None:
-            self.get_city_ui().hide()
+        if self.city_ui is not None:
+            self.close_city_ui()
             self.showing_city = None
 
         return should_select_unit
@@ -733,6 +731,27 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.unregister_non_collidable(self.log)
         self.log.done()
         self.unlock_input()
+
+    def open_city_ui(self, city: City):
+        self.close_city_ui()
+        self.city_ui = CityUI(screen=self, base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
+
+        assert self.city_ui is not None, "City UI is not initialized."
+        assert self.city_ui.frame is not None, "City UI frame is not initialized."
+
+        assert self.root_layout is not None, "Root layout is not initialized."
+        self.root_layout.add_widget(self.city_ui.build())
+        self.city_ui.show(city=city)
+
+    def close_city_ui(self):
+        if self.city_ui is None:
+            return
+
+        assert self.city_ui is not None, "City UI is not initialized."
+        assert self.root_layout is not None, "Root layout is not initialized."
+        self.city_ui.hide()
+        self.root_layout.remove_widget(self.city_ui)  # type: ignore
+        self.popup_disabled = True
 
     def open_debug_actions(self):
         if self.debug_actions is None:
