@@ -1,16 +1,15 @@
 import json
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
+from helpers.os import WindowsHelper
 from kivy.core.image import Image as CoreImage
 from kivy.core.image import Texture as KivyTexture  # type: ignore
 from kivy.uix.image import Image as KivyImage
+from managers.assets import AssetManager
 from panda3d.core import PNMImage, StringStream, Texture  # type: ignore
 from PIL import Image
-
-from managers.assets import AssetManager
-from helpers.os import WindowsHelper
 
 
 class AtlasGenerator:
@@ -48,10 +47,6 @@ class AtlasGenerator:
         return self.output_image.exists() and self.output_mapping.exists()
 
     def clear(self) -> None:
-        if self.exists():
-            self.output_image.unlink(missing_ok=True)
-            self.output_mapping.unlink(missing_ok=True)
-
         self._manifest_cache = None
         self._atlas_image_cache = None
         self._p3d_texture_cache = None
@@ -149,16 +144,16 @@ class AtlasGenerator:
             raise FileNotFoundError(f"Cache directory does not exist: {self._cache_file.parent}")
 
         for cache_file in self._cache_file.parent.glob("*.txo"):
-            with open(cache_file, "rb") as f:
-                data = f.read()
-                if not data:
-                    raise ValueError(f"Cache file {cache_file} is empty or invalid.")
+            if cache_file == self._cache_file:
+                continue  # skip the main atlas cache
 
-            # Deserialize the cache file into a Texture object
+            data: bytes = cache_file.read_bytes()
+            if not data:
+                raise ValueError(f"Cache file {cache_file} is empty or invalid.")
+
             tex: Texture = Texture.decode_from_bam_stream(data)  # type: ignore
             tex.set_loaded_from_txo(True)  # type: ignore
-            key = cache_file.stem
-            self._individual_texture_cache[key] = tex  # type: ignore
+            self._individual_texture_cache[cache_file.stem] = tex  # type: ignore
 
     def get_pil_image_by_virtual_path(self, virtual_path: str) -> Optional[Image.Image]:
         if WindowsHelper.is_windows():
@@ -195,7 +190,6 @@ class AtlasGenerator:
         self._cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._cache_file.write_bytes(bam_bytes)
 
-        # reapply your filters / wrap modes
         tex.setFormat(Texture.F_srgb_alpha)
         tex.setMinfilter(Texture.FT_linear_mipmap_linear)
         tex.setMagfilter(Texture.FT_linear)
@@ -251,36 +245,50 @@ class AtlasGenerator:
         self.pre_run()
 
         if not force and self.output_image.exists() and self.output_mapping.exists():
-            input_mtime = max(p.stat().st_mtime for d in self.input_dir for p in d.glob("**/*.png"))
-            atlas_mtime = self.output_image.stat().st_mtime
-            manifest_mtime = self.output_mapping.stat().st_mtime
-            if atlas_mtime > input_mtime and manifest_mtime > input_mtime and not force:
+            pngs: Set[Path] = {p for d in self.input_dir for p in d.glob("**/*.png")}
+            if not pngs:
+                self.load()
                 return
 
-        icon_files = sorted(
-            icon_file for dir_path in self.input_dir for icon_file in dir_path.glob("**/*.png")
-        ) + sorted(icon_file for dir_path in self.input_dir for icon_file in dir_path.glob("*.png"))
-        atlas_rows = (min(len(icon_files), self.max_icons) + self.atlas_columns - 1) // self.atlas_columns
-        atlas_width = self.atlas_columns * self.icon_size[0]
-        atlas_height = atlas_rows * self.icon_size[1]
+            input_mtime: float = max(p.stat().st_mtime for p in pngs)
+            atlas_mtime: float = self.output_image.stat().st_mtime
+            manifest_mtime: float = self.output_mapping.stat().st_mtime
+            if atlas_mtime > input_mtime and manifest_mtime > input_mtime:
+                self.load()
+                return
 
-        atlas = Image.new("RGBA", (atlas_width, atlas_height), (0, 0, 0, 0))
-        manifest: Dict[str, Dict[str, Any] | Any] = {}
+        icon_files: List[Path] = sorted({p for d in self.input_dir for p in d.glob("**/*.png")})
+        if not icon_files:
+            self.output_image.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGBA", (1, 1), (0, 0, 0, 0)).save(self.output_image)
+            with open(self.output_mapping, "w") as f:
+                json.dump({}, f, indent=4)
+            self.load()
+            return
+
+        atlas_rows: int = (min(len(icon_files), self.max_icons) + self.atlas_columns - 1) // self.atlas_columns
+        atlas_width: int = self.atlas_columns * self.icon_size[0]
+        atlas_height: int = atlas_rows * self.icon_size[1]
+
+        atlas: Image.Image = Image.new("RGBA", (atlas_width, atlas_height), (0, 0, 0, 0))
+        manifest: Dict[str, Dict[str, Any]] = {}
 
         for idx, icon_file in enumerate(icon_files[: self.max_icons]):
-            icon = Image.open(icon_file).convert("RGBA")
-            icon.thumbnail(self.icon_size, Image.Resampling.LANCZOS)
-            padded = Image.new("RGBA", self.icon_size, (0, 0, 0, 0))
-            offset = ((self.icon_size[0] - icon.width) // 2, (self.icon_size[1] - icon.height) // 2)
-            padded.paste(icon, offset)
+            with Image.open(icon_file).convert("RGBA") as icon:
+                icon.thumbnail(self.icon_size, Image.Resampling.LANCZOS)
+                padded: Image.Image = Image.new("RGBA", self.icon_size, (0, 0, 0, 0))
+                offset: Tuple[int, int] = (
+                    (self.icon_size[0] - icon.width) // 2,
+                    (self.icon_size[1] - icon.height) // 2,
+                )
+                padded.paste(icon, offset)
 
-            x = (idx % self.atlas_columns) * self.icon_size[0]
-            y = (idx // self.atlas_columns) * self.icon_size[1]
+            x: int = (idx % self.atlas_columns) * self.icon_size[0]
+            y: int = (idx // self.atlas_columns) * self.icon_size[1]
             atlas.paste(padded, (x, y))
 
-            # resource_key = self._resource_key_from_path(icon_file)
+            base_dir: Path | None = next((d for d in self.input_dir if d in icon_file.parents), None)
 
-            base_dir = next((d for d in self.input_dir if d in icon_file.parents), None)
             if base_dir is None:
                 raise ValueError(f"Could not determine base directory for {icon_file}")
 
@@ -299,6 +307,13 @@ class AtlasGenerator:
                 "atlas_y": y,
                 "width": self.icon_size[0],
                 "height": self.icon_size[1],
+                "uv": [
+                    x / atlas_width,
+                    y / atlas_height,
+                    (x + self.icon_size[0]) / atlas_width,
+                    (y + self.icon_size[1]) / atlas_height,
+                ],
+                "atlas_size": [atlas_width, atlas_height],
             }
 
         self.output_image.parent.mkdir(parents=True, exist_ok=True)
@@ -309,12 +324,11 @@ class AtlasGenerator:
         self._manifest_cache = manifest
         self._atlas_image_cache = atlas
         self._p3d_texture_cache = None
-        self._individual_texture_cache.clear()  # type: ignore
+        self._individual_texture_cache.clear()
         self.is_loaded = True
 
         self._generate_individual_textures()
         self._generate_panda3d_texture()
-
         self.save_caches()
 
     def _resource_key_from_path(self, path: Path) -> str:
