@@ -8,6 +8,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.popup import Popup
 from kivy.uix.spinner import Spinner
 from kivy.uix.widget import Widget
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class BasePopup(Popup):
@@ -18,12 +19,12 @@ class BasePopup(Popup):
         self,
         callback: Callable[..., Any] | None = None,
         on_close: Callable[..., Any] | None = None,
-        title: str = "Popup",
+        title: T_TranslationOrStr = t_("ui.player_ui.generics.popup"),
         size_hint: Tuple[float, float] = (0.8, 0.6),
         *args: Any,
         **kwargs: Dict[str, Any],
     ):
-        super().__init__(title=title, **kwargs)  # type:ignore
+        super().__init__(title=str(title), **kwargs)  # type:ignore
         self.callback: Callable[..., Any] | None = callback
         self.on_close: Callable[..., Any] | None = on_close  # type:ignore
         self.bind(on_dismiss=self._handle_close)  # type:ignore
@@ -59,9 +60,9 @@ class DoubleSpinnerPopup(BasePopup):
         on_change1: Callable[..., Any] | None = None,
         on_change2: Callable[..., Any] | None = None,
         on_close: Callable[..., Any] | None = None,
-        title: str = "Select Items",
-        ok_text: str = "OK",
-        cancel_text: str = "Cancel",
+        title: T_TranslationOrStr = "Select Items",
+        ok_text: T_TranslationOrStr = t_("ui.player_ui.generics.ok"),
+        cancel_text: T_TranslationOrStr = t_("ui.player_ui.generics.cancel"),
         size_hint: Tuple[float, float] = (0.8, 0.5),
         **kwargs: Dict[str, Any],
     ):
@@ -98,9 +99,9 @@ class DoubleSpinnerPopup(BasePopup):
         content.add_widget(spinner_layout)
 
         btn_layout = BoxLayout(size_hint=(1, None), height=44, spacing=10)
-        self.ok_button = Button(text=ok_text)
+        self.ok_button = Button(text=str(ok_text))
         self.ok_button.bind(on_release=self.on_ok)
-        self.cancel_button = Button(text=cancel_text)
+        self.cancel_button = Button(text=str(cancel_text))
         self.cancel_button.bind(on_release=self.dismiss)  # type:ignore
         btn_layout.add_widget(self.ok_button)
         btn_layout.add_widget(self.cancel_button)
@@ -162,9 +163,9 @@ class MenuPopup(BasePopup):
         callback: Callable[..., Any] | None = None,
         on_change: Callable[..., Any] | None = None,
         on_close: Callable[..., Any] | None = None,
-        title: str = "Select Item",
-        ok_text: str = "OK",
-        cancel_text: str = "Cancel",
+        title: T_TranslationOrStr = t_("ui.player_ui.generics.select_item"),
+        ok_text: T_TranslationOrStr = t_("ui.player_ui.generics.ok"),
+        cancel_text: T_TranslationOrStr = t_("ui.player_ui.generics.cancel"),
         size_hint: Tuple[float, float] = (0.8, 0.4),
         **kwargs: Dict[str, Any],
     ):
@@ -184,9 +185,9 @@ class MenuPopup(BasePopup):
         content.add_widget(self.spinner)
 
         btn_layout = BoxLayout(size_hint=(1, None), height=44, spacing=10)
-        self.ok_button = Button(text=ok_text)
+        self.ok_button = Button(text=str(ok_text))
         self.ok_button.bind(on_release=self.on_ok)
-        self.cancel_button = Button(text=cancel_text)
+        self.cancel_button = Button(text=str(cancel_text))
         self.cancel_button.bind(on_release=self.dismiss)  # type: ignore
         btn_layout.add_widget(self.ok_button)
         btn_layout.add_widget(self.cancel_button)
@@ -263,9 +264,9 @@ class GridPopup(BasePopup):
         container.add_widget(self.grid)
 
         btn_layout = BoxLayout(size_hint=(1, None), height=44, spacing=10)
-        confirm_btn = Button(text="Confirm")
+        confirm_btn = Button(text=str(t_("ui.player_ui.generics.confirm")))
         confirm_btn.bind(on_release=lambda *args: self.done(self._collect_values()))
-        cancel_btn = Button(text="Cancel")
+        cancel_btn = Button(text=str(t_("ui.player_ui.generics.cancel")))
         cancel_btn.bind(on_release=self.dismiss)  # type: ignore
         btn_layout.add_widget(confirm_btn)
         btn_layout.add_widget(cancel_btn)
@@ -319,7 +320,7 @@ class ButtonGridPopup(BasePopup):
         container.add_widget(self.grid)
 
         btn_layout = BoxLayout(size_hint=(1, None), height=44, spacing=10)
-        cancel_btn = Button(text="Cancel")
+        cancel_btn = Button(text=str(t_("ui.player_ui.generics.cancel")))
         cancel_btn.bind(on_release=self.dismiss)  # type: ignore
         btn_layout.add_widget(cancel_btn)
         container.add_widget(btn_layout)

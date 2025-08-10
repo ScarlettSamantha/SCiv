@@ -600,8 +600,16 @@
           "turn": "Turn",
           "turns": "Turns",
           "points": "Points",
+          "popup": "Popup",
           "points_plural": "Points",
-          "points_plural_short": "Pts"
+          "points_plural_short": "Pts",
+          "select_items": "Select items",
+          "select_item": "Select item",
+          "select": "Select",
+          "deselect": "Deselect",
+          "deselect_all": "Deselect all",
+          "select_all": "Select all",
+          "confirm": "Confirm"
         },
         "turn_button": {
           "end_turn": "End Turn {turn}",
