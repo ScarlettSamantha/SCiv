@@ -189,7 +189,7 @@ def _copy_texture(src: KivyTexture) -> KivyTexture:
             new_tex.mag_filter = src.mag_filter
             new_tex.wrap = src.wrap
         except Exception:
-            pass
+            pass  # nosec: B110
         return new_tex
     except Exception:
         # Some backends (e.g., certain GLES paths) can’t read pixels; return shared texture.
@@ -219,7 +219,7 @@ def clone_image_widget(
             try:
                 setattr(clone, name, getattr(img, name))
             except Exception:
-                pass
+                pass  # nosec: B110
 
     if img.source:
         if deep_texture:

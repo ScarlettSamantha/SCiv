@@ -112,7 +112,7 @@ class TooltipBehavior:
         try:
             self.tooltip_label.label.texture_update()  # type: ignore
         except Exception:
-            pass
+            pass  # nosec: B110
         self.tooltip_label._update_size()  # type: ignore
 
         tw, th = self.tooltip_label.size  # type: ignore

@@ -25,7 +25,7 @@ class BasePopup(Popup):
     ):
         super().__init__(title=title, **kwargs)  # type:ignore
         self.callback: Callable[..., Any] | None = callback
-        self.on_close: Callable[..., Any] | None = on_close
+        self.on_close: Callable[..., Any] | None = on_close  # type:ignore
         self.bind(on_dismiss=self._handle_close)  # type:ignore
         self.size_hint = size_hint
         self.is_open: bool = False
