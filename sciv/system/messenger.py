@@ -1,6 +1,7 @@
 import heapq
+from copy import copy
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterator, List, OrderedDict, Tuple
+from typing import Any, Callable, Dict, Iterator, List, OrderedDict, Tuple, cast
 
 from kivy.uix.image import Image
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
@@ -11,6 +12,7 @@ class Message:
     DURATION_PERMANENT: float = -1.0  # Permanent messages do not disappear
 
     on_click: Callable[..., Any] | None = None
+    icon: Image | None = None
 
     def __init__(
         self,
@@ -18,28 +20,20 @@ class Message:
         tooltip: T_TranslationOrStrOrNone = None,
         duration: float = DURATION_DEFAULT,
         color: tuple[float, ...] = (1.0, 1.0, 1.0, 1.0),
-        icon: str | Image = "",
         visible: bool = True,
         is_closable: bool = True,
         is_clickable: bool = False,
         is_blocking: bool = False,
         is_disabled: bool = False,
         on_click_arguments: Dict[Any, Any] = {},
+        created_at: float | None = None,
     ):
         self.text: T_TranslationOrStr = text
         self.tooltip: T_TranslationOrStrOrNone = tooltip
         self.duration: float = duration
         self.color: Tuple[float, ...] = color
-
-        if icon == "":
-            self.icon: Image | None = None
-        elif isinstance(icon, str):
-            self.icon: Image | None = Image(source=icon)
-        else:
-            self.icon: Image | None = icon
-
         self.visible: bool = visible
-        self.created_at: float = datetime.now().timestamp()
+        self.created_at: float = datetime.now().timestamp() if created_at is None else created_at
         self.is_closable: bool = is_closable
         self.is_blocking: bool = is_blocking
         self.is_clickable: bool = is_clickable
@@ -65,11 +59,10 @@ class Message:
 
     def dump(self) -> Dict[str, Any]:
         return {
-            "text": self.text,
-            "tooltip": self.tooltip,
+            "text": str(self.text),
+            "tooltip": str(self.tooltip),
             "duration": self.duration,
             "color": self.color,
-            "icon": self.icon,
             "visible": self.visible,
             "created_at": self.created_at,
             "is_closable": self.is_closable,
@@ -77,6 +70,7 @@ class Message:
             "is_clickable": self.is_clickable,
             "is_disabled": self.is_disabled,
             "on_click_arguments": self.on_click_arguments,
+            "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
         }
 
     def load(self, state: Dict[str, Any]) -> None:
@@ -84,7 +78,6 @@ class Message:
         self.tooltip = state.get("tooltip", None)
         self.duration = state.get("duration", self.DURATION_DEFAULT)
         self.color = tuple(state.get("color", (1.0, 1.0, 1.0, 1.0)))
-        self.icon = state.get("icon", "") if isinstance(state.get("icon"), str) else Image(source=state.get("icon", ""))
         self.visible = state.get("visible", True)
         self.created_at = state.get("created_at", datetime.now().timestamp())
         self.is_closable = state.get("is_closable", True)
@@ -100,7 +93,6 @@ class Message:
             tooltip=data.get("tooltip"),
             duration=data.get("duration", cls.DURATION_DEFAULT),
             color=tuple(data.get("color", (1.0, 1.0, 1.0, 1.0))),  # type: ignore
-            icon=data.get("icon", ""),
             visible=data.get("visible", True),
             is_closable=data.get("is_closable", True),
             is_blocking=data.get("is_blocking", False),
@@ -131,7 +123,6 @@ class Message:
             tooltip=tooltip,
             duration=cls.DURATION_PERMANENT,
             color=color,
-            icon=icon,
             visible=True,
             is_closable=is_closable,
             is_blocking=is_blocking,
@@ -153,7 +144,6 @@ class Message:
             tooltip=tooltip,
             duration=duration,
             color=color,
-            icon=icon,
             visible=True,
             is_closable=is_closable,
             is_blocking=is_blocking,
@@ -220,14 +210,29 @@ class Messenger:
         self.messages[message_id] = message
 
     def dump(self) -> Dict[str, Any]:
-        state: Dict[str, Any] = self.__dict__
-        state["messages"] = {msg_id: msg.__dict__ for msg_id, msg in self.messages.items()}
-        return state
+        return {
+            "messages": {msg_id: msg.dump() for msg_id, msg in self.messages.items()},
+            "next_id": self._next_id,
+            "expiry_heap": self._expiry_heap,
+        }
 
     def load(self, state: Dict[str, Any]) -> None:
+        from managers.entity import EntityManager
+
         self.__dict__.update(state)
-        self.messages = OrderedDict(
-            (msg_id, Message(**msg_data)) for msg_id, msg_data in state.get("messages", {}).items()
-        )
-        self._next_id = max(self.messages.keys(), default=0) + 1 if self.messages else 0
+        self.messages = OrderedDict()
+        for msg_id, msg_data in copy(state.get("messages", {})).items():
+            msg_data = copy(msg_data)
+            _cls: Message = cast(Message, EntityManager.dynamic_import(msg_data.get("cls_ref", "")))
+            msg_data.pop("cls_ref", None)
+            self.messages[int(msg_id)] = _cls.from_dict(msg_data)
+
+        self._next_id = int(max(self.messages.keys(), default=0)) + 1 if self.messages else 0
         self.messages = OrderedDict(sorted(self.messages.items()))
+        self._expiry_heap = [
+            (msg.created_at + msg.duration, msg_id)
+            for msg_id, msg in self.messages.items()
+            if msg.duration not in (Message.DURATION_PERMANENT,)
+        ]
+        heapq.heapify(self._expiry_heap)
+        self.update(0)

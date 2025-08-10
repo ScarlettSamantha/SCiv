@@ -2,13 +2,14 @@ from typing import Any, Dict, Tuple
 
 from helpers.cache import Cache
 from helpers.colors import Colors
-from helpers.placeholder import Placeholder
 from kivy.uix.image import Image
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from system.messenger import Message
 
 
 class InfoMessage(Message):
+    icon: Image | None = Cache.get_icon_atlas().get_kivy_image("ui_alert.png")
+
     def __init__(
         self,
         text: T_TranslationOrStr,
@@ -28,8 +29,6 @@ class InfoMessage(Message):
             tooltip=tooltip,
             duration=duration,
             color=color,
-            icon=(Cache.get_icon_atlas().get_kivy_image("ui_alert.png") if icon == "" else icon)
-            or Placeholder.getPlaceholderImagePathSmallIcon(),
             visible=visible,
             is_closable=is_closable,
             is_clickable=is_clickable,

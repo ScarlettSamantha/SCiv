@@ -493,6 +493,7 @@ class Player(BaseEntity):
             "tiles": set(self.tiles.get_tiles().values()),
             "units": self.units.all(),
             "cities": self.cities.all(),
+            "messages": list(self.messenger.get_visible_messages()),
         }
 
     def __eq__(self, other: Any) -> bool:
