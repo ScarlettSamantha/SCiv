@@ -26,16 +26,17 @@ class MessageWidget(ButtonBehavior, BoxLayout, TooltipBehavior, DirectObject.Dir
         self.tooltip_anchor_y = "top"
 
         self.message: Message = message
+        icon: str | Image | None = self.message.get_icon()
 
-        if isinstance(message.icon, str):
-            self.icon = Image(source=message.icon, size_hint=(None, None), size=(icon_size, icon_size), opacity=1.0)
-            self.tooltip_image_source = message.icon
-        elif isinstance(message.icon, Image):
+        if isinstance(icon, str):
+            self.icon = Image(source=icon, size_hint=(None, None), size=(icon_size, icon_size), opacity=1.0)
+            self.tooltip_image_source = icon
+        elif isinstance(icon, Image):
             self.icon = Image(size_hint=(None, None), size=(icon_size, icon_size), opacity=1.0)
-            if message.icon.texture is not None:
-                self.icon.texture = message.icon.texture
+            if icon.texture is not None:
+                self.icon.texture = icon.texture
             else:
-                self.icon.source = message.icon.source
+                self.icon.source = icon.source
                 if self.icon.source:
                     self.tooltip_image_source = self.icon.source
         else:
@@ -109,10 +110,11 @@ class MessageRenderer(AnchorLayout, DirectObject.DirectObject):
         self.box.bind(minimum_height=self.box.setter("height"))
         self.add_widget(self.box)
 
-        Clock.schedule_interval(self._refresh, 15)
-        self.accept("ui.update.ui.messenger.refresh", lambda *_: self._refresh(0))
+        Clock.schedule_interval(self.refresh, 15)
+        self.accept("ui.update.ui.messenger.refresh", lambda *_: self.refresh(0))
+        self.refresh(0)
 
-    def _refresh(self, dt: float) -> None:
+    def refresh(self, dt: float) -> None:
         self.messenger.update(0)
         messages: List[Message] = self.messenger.get_visible_messages(auto_update_before=False)
 

@@ -28,6 +28,7 @@ class AddMessage(DebugAction):
         MessageHelper.session_alert(
             message=Translation(key="ui.messages.debug.add_message.message"),
             tooltip=Translation("ui.messages.debug.add_message.tooltip"),
+            on_click_arguments={"message": "This is a debug message."},
         )
 
     def is_successful(self, *args: Any, **kwargs: Any) -> bool:

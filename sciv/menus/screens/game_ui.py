@@ -113,6 +113,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.register()
         self.logger.info("Game UI Screen built.")
 
+    def refresh_messenger(self):
+        if self.messenger is None:
+            return
+        self.messenger.refresh(0)
+
     def on_game_start(self, *args: Any):
         self.player = PlayerManager.session_player()
         self.build_player_list()

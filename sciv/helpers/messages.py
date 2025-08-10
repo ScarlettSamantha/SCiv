@@ -34,8 +34,9 @@ class MessageHelper:
         tooltip: T_TranslationOrStrOrNone = None,
         duration: float = Message.DURATION_PERMANENT,
         *args: Any,
+        **kwargs: Any,
     ) -> None:
         from gameplay.messages.info import InfoMessage
 
-        info_message = InfoMessage(text=message, duration=duration, tooltip=tooltip, *args)
+        info_message = InfoMessage(text=message, duration=duration, tooltip=tooltip, *args, **kwargs)
         cls.send_to_session_player(info_message)

@@ -1,7 +1,7 @@
 import heapq
 from copy import copy
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterator, List, OrderedDict, Tuple, cast
+from typing import Any, Dict, Iterator, List, OrderedDict, Tuple, Type, cast
 
 from kivy.uix.image import Image
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
@@ -11,11 +11,9 @@ class Message:
     DURATION_DEFAULT: float = 5.0  # Default duration for messages
     DURATION_PERMANENT: float = -1.0  # Permanent messages do not disappear
 
-    on_click: Callable[..., Any] | None = None
-    icon: Image | None = None
-
     def __init__(
         self,
+        title: T_TranslationOrStr,
         text: T_TranslationOrStr,
         tooltip: T_TranslationOrStrOrNone = None,
         duration: float = DURATION_DEFAULT,
@@ -28,6 +26,7 @@ class Message:
         on_click_arguments: Dict[Any, Any] = {},
         created_at: float | None = None,
     ):
+        self.title: T_TranslationOrStr = title
         self.text: T_TranslationOrStr = text
         self.tooltip: T_TranslationOrStrOrNone = tooltip
         self.duration: float = duration
@@ -40,6 +39,10 @@ class Message:
         self.is_disabled: bool = is_disabled
         self.on_click_arguments: Dict[Any, Any] = on_click_arguments
 
+    def register_on_click(self) -> None:
+        if self.is_clickable:
+            raise NotImplementedError("Subclasses should implement the on_click method.")
+
     def hide(self) -> None:
         self.visible = False
 
@@ -49,16 +52,26 @@ class Message:
     def toggle_visibility(self) -> None:
         self.visible = not self.visible
 
+    def on_click(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError("Subclasses should implement the on_click method.")
+
     def execute_click(self, *args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-        if self.on_click and not self.is_disabled:
+        if not self.is_disabled:
             return self.on_click(*args, **kwargs, **self.on_click_arguments)
         return None
 
     def __repr__(self) -> str:
-        return f"Message(text={self.text}, duration={self.duration}, color={self.color}, icon={self.icon})"
+        return f"Message(text={self.text}, duration={self.duration}, color={self.color})"
+
+    def get_formatted_text(self) -> str:
+        return str(str(self.text).format(**self.on_click_arguments))
+
+    def get_icon(self) -> str | Image | None:
+        raise NotImplementedError("Subclasses should implement the get_icon method.")
 
     def dump(self) -> Dict[str, Any]:
         return {
+            "title": str(self.title),
             "text": str(self.text),
             "tooltip": str(self.tooltip),
             "duration": self.duration,
@@ -74,6 +87,7 @@ class Message:
         }
 
     def load(self, state: Dict[str, Any]) -> None:
+        self.title = state.get("title", "")
         self.text = state.get("text", "")
         self.tooltip = state.get("tooltip", None)
         self.duration = state.get("duration", self.DURATION_DEFAULT)
@@ -89,6 +103,7 @@ class Message:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Message":
         message = cls(
+            title=data.get("title", ""),
             text=data.get("text", ""),
             tooltip=data.get("tooltip"),
             duration=data.get("duration", cls.DURATION_DEFAULT),
@@ -99,18 +114,14 @@ class Message:
             is_clickable=data.get("is_clickable", False),
             is_disabled=data.get("is_disabled", False),
         )
-        message.on_click = data.get("on_click", None)
-        if isinstance(message.on_click, str):
-            from managers.entity import EntityManager
-
-            message.on_click = EntityManager.dynamic_import(message.on_click)  # type: ignore
-
+        message.register_on_click()
         message.created_at = data.get("created_at", datetime.now().timestamp())
         return message
 
     @classmethod
     def permanent(
         cls,
+        title: T_TranslationOrStr,
         text: T_TranslationOrStr,
         tooltip: T_TranslationOrStr | None = None,
         color: tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0),
@@ -119,6 +130,7 @@ class Message:
         is_blocking: bool = False,
     ) -> "Message":
         return cls(
+            title=title,
             text=text,
             tooltip=tooltip,
             duration=cls.DURATION_PERMANENT,
@@ -131,6 +143,7 @@ class Message:
     @classmethod
     def temporary(
         cls,
+        title: T_TranslationOrStr,
         text: T_TranslationOrStr,
         tooltip: T_TranslationOrStr | None = None,
         duration: float = DURATION_DEFAULT,
@@ -140,6 +153,7 @@ class Message:
         is_blocking: bool = False,
     ) -> "Message":
         return cls(
+            title=title,
             text=text,
             tooltip=tooltip,
             duration=duration,
@@ -162,7 +176,7 @@ class Messenger:
         self._next_id += 1
 
         if message.duration not in (Message.DURATION_PERMANENT,):
-            expiry = message.created_at + message.duration
+            expiry: float = message.created_at + message.duration
             heapq.heappush(self._expiry_heap, (expiry, message_id))
         return message_id
 
@@ -223,9 +237,10 @@ class Messenger:
         self.messages = OrderedDict()
         for msg_id, msg_data in copy(state.get("messages", {})).items():
             msg_data = copy(msg_data)
-            _cls: Message = cast(Message, EntityManager.dynamic_import(msg_data.get("cls_ref", "")))
+            _cls: Type[Message] = cast(Type[Message], EntityManager.dynamic_import(msg_data.get("cls_ref", "")))
             msg_data.pop("cls_ref", None)
-            self.messages[int(msg_id)] = _cls.from_dict(msg_data)
+            msg_data.pop("created_at", None)
+            self.messages[int(msg_id)] = _cls(**msg_data)
 
         self._next_id = int(max(self.messages.keys(), default=0)) + 1 if self.messages else 0
         self.messages = OrderedDict(sorted(self.messages.items()))

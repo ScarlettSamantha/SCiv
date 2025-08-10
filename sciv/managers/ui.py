@@ -312,6 +312,7 @@ class ui(Singleton, DirectObject):
         screen: "GameUIScreen" = self.get_gui().get_screen("game_ui")
         screen.player = PlayerManager.session_player()
         screen.build_screen()  # type: ignore
+        screen.refresh_messenger()
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)  # type: ignore
