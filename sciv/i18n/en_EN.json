@@ -588,7 +588,20 @@
           "gold": "Gold",
           "science": "Science",
           "culture": "Culture",
-          "faith": "Faith"
+          "faith": "Faith",
+          "ok": "OK",
+          "yes": "Yes",
+          "no": "No",
+          "close": "Close",
+          "info": "Info",
+          "alert": "Alert",
+          "error": "Error",
+          "warning": "Warning",
+          "turn": "Turn",
+          "turns": "Turns",
+          "points": "Points",
+          "points_plural": "Points",
+          "points_plural_short": "Pts"
         },
         "turn_button": {
           "end_turn": "End Turn {turn}",
