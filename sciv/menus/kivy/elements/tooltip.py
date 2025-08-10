@@ -84,7 +84,7 @@ class TooltipBehavior:
         self._tooltip_trigger = None
         self._suppress_tooltip = False
         self._task_name = f"_poll_mouse_pos_{id(self)}"
-        self.base.taskMgr.add(self._poll_mouse_pos, self._task_name, delay=1 / 15)  # type: ignore
+        self.base.taskMgr.add(self._poll_mouse_pos, self._task_name, delay=1 / 5)  # type: ignore
         if hasattr(self, "register_event_type"):
             self.register_event_type("on_enter")  # type: ignore
             self.register_event_type("on_leave")  # type: ignore
@@ -134,8 +134,6 @@ class TooltipBehavior:
         self.tooltip_label.pos = (tx, ty)  # type: ignore
 
     def on_enter(self, *args: Any):
-        if self._has_disabled_ancestor():
-            return
         if not self.tooltip_visible and self.tooltip_text and not self._suppress_tooltip:
             if "<br>" in self.tooltip_text or "\n" in self.tooltip_text:
                 self.tooltip_multiline = True
@@ -149,8 +147,6 @@ class TooltipBehavior:
         self.hide_tooltip()
 
     def show_tooltip(self, dt: float) -> int:
-        if self._has_disabled_ancestor():
-            return 0
         image_src = self.tooltip_image_source or getattr(self, "source", "")
         self.tooltip_label = TooltipLabel(
             text=self.tooltip_text,
