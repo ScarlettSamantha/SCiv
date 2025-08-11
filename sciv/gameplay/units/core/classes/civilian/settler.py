@@ -6,7 +6,7 @@ from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
-from sciv.gameplay.city import EntityType
+from gameplay.city import EntityType
 
 if TYPE_CHECKING:
     from gameplay.player import Player

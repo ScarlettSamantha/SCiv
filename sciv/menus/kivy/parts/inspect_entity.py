@@ -11,7 +11,7 @@ from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.uix.treeview import TreeView, TreeViewLabel
 from direct.showbase import MessengerGlobal
-from sciv.mixins.inspectable import Inspectable
+from mixins.inspectable import Inspectable
 from system.entity import BaseEntity
 
 from gameplay.tile import Tile

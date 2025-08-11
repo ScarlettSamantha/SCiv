@@ -5,12 +5,12 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
-from sciv.gameplay.terrain.flat_forest import FlatForest
-from sciv.gameplay.terrain.flat_grass import FlatGrass
-from sciv.gameplay.terrain.flat_heavy_forest import FlatHeavyForest
-from sciv.gameplay.terrain.flat_scrubland import FlatScrubland
-from sciv.gameplay.terrain.hills_forest import HillsForest
-from sciv.gameplay.terrain.hills_grass import HillsGrass
+from gameplay.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_grass import FlatGrass
+from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
+from gameplay.terrain.flat_scrubland import FlatScrubland
+from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.hills_grass import HillsGrass
 
 
 class Silk(BaseLuxuryResource):

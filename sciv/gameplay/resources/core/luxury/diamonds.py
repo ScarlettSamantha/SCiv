@@ -5,10 +5,10 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
-from sciv.gameplay.terrain.hills_desert import HillsDesert
-from sciv.gameplay.terrain.hills_grass import HillsGrass
-from sciv.gameplay.terrain.hills_snow import HillsSnow
-from sciv.gameplay.terrain.hills_tundra import HillsTundra
+from gameplay.terrain.hills_desert import HillsDesert
+from gameplay.terrain.hills_grass import HillsGrass
+from gameplay.terrain.hills_snow import HillsSnow
+from gameplay.terrain.hills_tundra import HillsTundra
 
 
 class Diamonds(BaseLuxuryResource):

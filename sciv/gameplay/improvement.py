@@ -12,7 +12,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import Effects
 from system.entity import BaseEntity
 
-from sciv.managers.entity import EntityType
+from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.player import Player
