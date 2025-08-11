@@ -110,7 +110,7 @@ class MessageRenderer(AnchorLayout, DirectObject.DirectObject):
         self.box.bind(minimum_height=self.box.setter("height"))
         self.add_widget(self.box)
 
-        Clock.schedule_interval(self.refresh, 15)
+        Clock.schedule_interval(self.refresh, 5)
         self.accept("ui.update.ui.messenger.refresh", lambda *_: self.refresh(0))
         self.refresh(0)
 

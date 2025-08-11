@@ -5,10 +5,10 @@ from managers.player import PlayerManager
 
 if TYPE_CHECKING:
     from gameplay.civic import Civic, CivicSubtree, CivicTree
+    from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tech import Tech
     from gameplay.tile import Tile
-    from gameplay.improvement import Improvement
 
 
 class ConditionalTypes(Enum):
@@ -205,3 +205,16 @@ class CivicCondition(Condition):
     def get_civic(self) -> Type["Civic"]:
         """Get the civic associated with this condition."""
         return self.params.get("civic")  # type: ignore
+
+
+class IsPlayerNotResearchingCondition(Condition):
+    def __init__(self, player: Optional["Player"] = None, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.params["player"] = player
+        self.required_params = ["player"]
+        self._condition = self._is_player_not_researching_condition
+
+    def _is_player_not_researching_condition(self, player: Optional["Player"] = None) -> bool:
+        if player is None:
+            player = PlayerManager.session_player()
+        return not player.tech.is_researching()

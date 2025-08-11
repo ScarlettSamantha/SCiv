@@ -671,9 +671,10 @@
             "title": "Research started",
             "message": "You have started the research of {civic}."
           },
-          "no_active": {
+          "not_active": {
             "title": "No active research",
-            "message": "You don't have any active research."
+            "message": "You don't have any active research.",
+            "tooltip": "You can start a new research in the research menu."
           }
         },
         "debug": {
@@ -708,6 +709,10 @@
           "button": "Add message",
           "label": "Message",
           "add_message": "Add message"
+        },
+        "clear_messages": {
+          "button": "Clear messages",
+          "clear_messages": "Clear messages"
         }
       }
     },

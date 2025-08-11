@@ -13,6 +13,36 @@ class MessageHelper:
     session_player: "Player" = PlayerManager.session_player()
 
     @classmethod
+    def remove_message_by_key_from_player(cls, player: "Player", message_key: str) -> None:
+        player.messenger.remove_message_by_key(message_key)
+
+    @classmethod
+    def remove_message_by_key_from_session_player(cls, message_key: str) -> None:
+        cls.remove_message_by_key_from_player(cls.session_player, message_key)
+
+    @classmethod
+    def remove_message_from_player(cls, player: "Player", message: Message) -> None:
+        player.messenger.remove_message_by_key(message.get_key())
+
+    @classmethod
+    def remove_message_from_session_player(cls, message: Message) -> None:
+        cls.remove_message_from_player(cls.session_player, message)
+
+    @classmethod
+    def remove_all_messages_from_player(cls, player: "Player") -> None:
+        player.messenger.clear_messages()
+
+    @classmethod
+    def remove_all_messages_from_session_player(cls) -> None:
+        cls.remove_all_messages_from_player(cls.session_player)
+
+    @classmethod
+    def remove_all_messages(cls) -> None:
+        cls.remove_all_messages_from_session_player()
+        for player in PlayerManager.players().values():
+            cls.remove_all_messages_from_player(player)
+
+    @classmethod
     def send_to_player(cls, player: "Player", message: Message, send_refresh_request: bool = True, *args: Any) -> None:
         player.messenger.add_message(message)
         if send_refresh_request:

@@ -152,6 +152,8 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `ui.request.action.stage` (E: debug | L: game-ui)
 
+- `ui.notification.check` (E: * | L: manager-game)
+
 ## System
 
 - `system.input.user.tile_clicked` (E: manager-input | L: manager-game)

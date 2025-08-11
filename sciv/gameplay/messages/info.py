@@ -8,11 +8,13 @@ from system.messenger import Message
 
 
 class InfoMessage(Message):
+    key: str = "info_message"
     icon: Image | None = Cache.get_icon_atlas().get_kivy_image("ui_alert.png")
 
     def __init__(
         self,
         text: T_TranslationOrStr,
+        title: T_TranslationOrStr = t_("ui.player_ui.generics.info"),
         tooltip: T_TranslationOrStrOrNone = None,
         duration: float = Message.DURATION_PERMANENT,
         color: Tuple[float, ...] = Colors.TIEL,
@@ -25,7 +27,7 @@ class InfoMessage(Message):
         on_click_arguments: Dict[Any, Any] = {},
     ):
         super().__init__(
-            title=t_("ui.player_ui.generics.info"),
+            title=title,
             text=text,
             tooltip=tooltip,
             duration=duration,

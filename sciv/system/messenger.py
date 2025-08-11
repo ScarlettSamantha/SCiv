@@ -8,6 +8,7 @@ from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 
 class Message:
+    KEY: str = "message"
     DURATION_DEFAULT: float = 5.0  # Default duration for messages
     DURATION_PERMANENT: float = -1.0  # Permanent messages do not disappear
 
@@ -38,6 +39,10 @@ class Message:
         self.is_clickable: bool = is_clickable
         self.is_disabled: bool = is_disabled
         self.on_click_arguments: Dict[Any, Any] = on_click_arguments
+
+    @classmethod
+    def get_key(cls) -> str:
+        return cls.KEY
 
     def register_on_click(self) -> None:
         if self.is_clickable:
@@ -163,6 +168,15 @@ class Message:
             is_blocking=is_blocking,
         )
 
+    def __eq__(self, other: "object | str | int | Message") -> bool:
+        if isinstance(other, str):
+            return self.get_key() == other
+        elif isinstance(other, int):
+            return self.get_key() == str(other)
+        elif isinstance(other, Message):
+            return self.get_key() == other.get_key()
+        return False
+
 
 class Messenger:
     def __init__(self):
@@ -182,6 +196,18 @@ class Messenger:
 
     def remove_message(self, message_id: int) -> None:
         self.messages.pop(message_id, None)
+
+    def remove_message_by_key(self, key: str) -> None:
+        for message_id, message in copy(self.messages).items():
+            if message == key:
+                self.remove_message(message_id)
+                break
+
+    def clear_expired_messages(self) -> None:
+        now = datetime.now().timestamp()
+        while self._expiry_heap and self._expiry_heap[0][0] <= now:
+            _, msg_id = heapq.heappop(self._expiry_heap)
+            self.remove_message(msg_id)
 
     def clear_messages(self) -> None:
         self.messages.clear()
