@@ -240,15 +240,19 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
     background_color: Tuple[float, float, float, float] = ListProperty([1, 1, 1, 1])  # type: ignore
 
     def __init__(self, **kwargs: Any):
-        if "primary_text" in kwargs and isinstance(
-            kwargs["primary_text"], (T_TranslationOrStr, T_TranslationOrStrOrNone)
-        ):
-            kwargs["primary_text"] = str(kwargs["primary_text"])
+        if "primary_text" in kwargs:
+            primary_types = tuple(
+                t for union in (T_TranslationOrStr, T_TranslationOrStrOrNone) for t in typing.get_args(union)
+            )
+            if isinstance(kwargs["primary_text"], primary_types):
+                kwargs["primary_text"] = str(kwargs["primary_text"])
 
-        if "tooltip_text" in kwargs and isinstance(
-            kwargs["tooltip_text"], (T_TranslationOrStr, T_TranslationOrStrOrNone)
-        ):
-            kwargs["tooltip_text"] = str(kwargs["tooltip_text"])
+        if "tooltip_text" in kwargs:
+            tooltip_types = tuple(
+                t for union in (T_TranslationOrStr, T_TranslationOrStrOrNone) for t in typing.get_args(union)
+            )
+            if isinstance(kwargs["tooltip_text"], tooltip_types):
+                kwargs["tooltip_text"] = str(kwargs["tooltip_text"])
         ButtonBehavior.__init__(self, **kwargs)  # type: ignore
         BoxLayout.__init__(self, **kwargs)  # type: ignore
         TooltipBehavior.__init__(self, tooltip_markup=True, **kwargs)
