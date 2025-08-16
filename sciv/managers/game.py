@@ -452,6 +452,7 @@ class Game(Singleton, DirectObject):
         self.entities.register(type=EntityType.WORLD, entity=self.mesh_grid, key="world_grid")  # type: ignore
         self.players.on_game_start()
         self.border.setup_borders()
+        self.base.get_camera().on_window_resize(None)  # type: ignore
         self.base.get_camera().recenter()
 
         self.accept("ui.request.update.borders", self.border.update_borders)

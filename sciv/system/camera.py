@@ -4,14 +4,13 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
+from gameplay.city import City  # type: ignore
 from managers.game import debounce
 from managers.input import Input
 from mixins.singleton import Singleton
 from panda3d.core import Camera as PandaCamera
 from panda3d.core import Lens, LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase  # type: ignore
-
-from gameplay.city import City  # type: ignore
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -74,18 +73,15 @@ class Camera(Singleton, DirectObject):
         self.base.camera.reparentTo(self.pivot)  # type: ignore
         self.update_camera_position()
 
-        # Apply default FOV and aspect ratio
         lens = self.get_lens()
         lens.setFov(self.fov)
         lens.setAspectRatio(self._aspect_ratio)
         self.base.cam.node().setLens(lens)
 
-        # --- Throttling state ---
-        # Desired state variables
         self._desired_pivot_pos: LPoint3f = self.pivot.getPos()  # type: ignore
         self._desired_yaw = self.yaw
         self._desired_zoom = self.zoom
-        # Flush interval (seconds)
+
         self.update_interval: float = 0.05
         self._time_since_last_flush: float = 0.0
 
@@ -103,7 +99,6 @@ class Camera(Singleton, DirectObject):
         self.last_mouse_pos: Tuple[float, float] = (0.0, 0.0)
         self.drag_threshold = 40  # pixels to trigger rotation
 
-        # Set up controls & add update task
         self.setup_controls()
 
         self.input: Input = self.base.input_manager
@@ -114,7 +109,6 @@ class Camera(Singleton, DirectObject):
         self._sin_yaw = sin(rad)
 
     def register(self) -> Literal[True]:
-        # Single throttled update task
         self.base.taskMgr.add(self.update, "updateCivCameraTask")  # type: ignore
         return True
 
@@ -132,7 +126,7 @@ class Camera(Singleton, DirectObject):
         self.yaw = 0.0
         self._update_yaw_trig()
         self.zoom = 20.0
-        # reset desired states too
+
         self._desired_pivot_pos = self.pivot.getPos()  # type: ignore
         self._desired_yaw = self.yaw
         self._desired_zoom = self.zoom
@@ -172,20 +166,16 @@ class Camera(Singleton, DirectObject):
         self.accept("e", self.set_key, ["rotate_right", True])
         self.accept("e-up", self.set_key, ["rotate_right", False])
 
-        # Mouse wheel => zoom
         self.accept("wheel_up", self.zoom_in)
         self.accept("wheel_down", self.zoom_out)
 
-        # Recenter
         self.accept("r", self.recenter)
 
-        # Mouse drags
         self.accept("mouse1", self.start_left_drag)
         self.accept("mouse1-up", self.stop_left_drag)
         self.accept("mouse3", self.start_right_drag)
         self.accept("mouse3-up", self.stop_right_drag)
 
-        # Zoom/control locks
         self.accept("system.input.disable_zoom", self.disable_zoom)
         self.accept("system.input.enable_zoom", self.enable_zoom)
         self.accept("system.input.disable_control", self.disable_control)
@@ -193,7 +183,7 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
-        self.base.taskMgr.doMethodLater(5.0, self.on_window_resize, "checkWindowResizeTask")  # type: ignore
+        self.base.taskMgr.add(self.on_window_resize, "checkWindowResizeTask", delay=5.0)  # type: ignore
 
     def set_key(self, key: str, value: Any):
         self.keys[key] = value
@@ -234,15 +224,11 @@ class Camera(Singleton, DirectObject):
             return
         self._desired_zoom = min(self.max_zoom, self._desired_zoom + self.zoom_speed)
 
-    def on_window_resize(self, window: WindowBase) -> Literal[1]:  # type: ignore
-        if window != self.base.win:  # type: ignore
-            return 1
-
-        self.win_x = window.getXSize()  # type: ignore
-        self.win_y = window.getYSize()  # type: ignore
+    def on_window_resize(self, _: WindowBase | None) -> Literal[1]:  # type: ignore
+        self.win_x = self.base.win.getXSize()  # type: ignore
+        self.win_y = self.base.win.getYSize()  # type: ignore
         self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0  #   type: ignore
 
-        # update lens aspect ratio
         lens = self.get_lens()
         lens.setAspectRatio(self._aspect_ratio)  # type: ignore
         self.base.cam.node().setLens(lens)
