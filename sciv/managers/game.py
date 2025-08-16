@@ -65,6 +65,7 @@ class Game(Singleton, DirectObject):
         self.unit: UnitManager = UnitManager.get_singleton_instance(base=self.base)
         self.mesh_grid: Optional[HexGrid] = None
         self.game_settings: GameSettings | None = None
+
         self.performance_logger: Optional[PerformanceLogger] = (
             PerformanceLogger(
                 active_on_init=False,

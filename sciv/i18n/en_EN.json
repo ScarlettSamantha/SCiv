@@ -588,7 +588,28 @@
           "gold": "Gold",
           "science": "Science",
           "culture": "Culture",
-          "faith": "Faith"
+          "faith": "Faith",
+          "ok": "OK",
+          "yes": "Yes",
+          "no": "No",
+          "close": "Close",
+          "info": "Info",
+          "alert": "Alert",
+          "error": "Error",
+          "warning": "Warning",
+          "turn": "Turn",
+          "turns": "Turns",
+          "points": "Points",
+          "popup": "Popup",
+          "points_plural": "Points",
+          "points_plural_short": "Pts",
+          "select_items": "Select items",
+          "select_item": "Select item",
+          "select": "Select",
+          "deselect": "Deselect",
+          "deselect_all": "Deselect all",
+          "select_all": "Select all",
+          "confirm": "Confirm"
         },
         "turn_button": {
           "end_turn": "End Turn {turn}",
@@ -639,6 +660,30 @@
             "no_points": "Attacker({attacking_unit}) has no points to attack {defending_unit}."
           }
         }
+      },
+      "messages": {
+        "research": {
+          "completed": {
+            "title": "Research completed",
+            "message": "You have completed the research of {civic}."
+          },
+          "started": {
+            "title": "Research started",
+            "message": "You have started the research of {civic}."
+          },
+          "not_active": {
+            "title": "No active research",
+            "message": "You don't have any active research.",
+            "tooltip": "You can start a new research in the research menu."
+          }
+        },
+        "debug": {
+          "add_message": {
+            "title": "Debug message",
+            "message": "You have added a debug message: {message}",
+            "tooltip": "This message will be shown in the debug console."
+          }
+        }
       }
     },
     "actions": {
@@ -659,6 +704,15 @@
           "button": "Spawn unit",
           "label": "Unit type",
           "spawn_unit": "Spawn unit"
+        },
+        "add_message": {
+          "button": "Add message",
+          "label": "Message",
+          "add_message": "Add message"
+        },
+        "clear_messages": {
+          "button": "Clear messages",
+          "clear_messages": "Clear messages"
         }
       }
     },

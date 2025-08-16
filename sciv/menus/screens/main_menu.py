@@ -11,7 +11,7 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.widget import Widget
 from menus.kivy.elements.clickable_label import ClickableLabel
 
-from sciv.gameplay.repositories.civilization import Civilization
+from gameplay.repositories.civilization import Civilization
 
 
 class MainMenuScreen(Screen):

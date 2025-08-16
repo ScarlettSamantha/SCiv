@@ -191,7 +191,9 @@ class TechManager(BaseManager):
         self.logger.debug(f"Completing research {str(self.researching.name)}")
         self._current_science_pool -= self._needed_science
         self.process_queue()
-        MessengerGlobal.messenger.send("game.gameplay.research.player_completed_research", [self.researching])
+        MessengerGlobal.messenger.send(
+            "game.gameplay.research.player_completed_research", [self.player, self.researching]
+        )
         # We check if we can still complete more for example if the player gets a large amount of science it could complete 1 or more techs.
         if auto_complete_tech and self._current_science_pool >= self._needed_science:
             self.complete_research()

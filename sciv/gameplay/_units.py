@@ -22,6 +22,7 @@ class Units:
                 assert _existing_unit is not None, "Existing unit reference is None"
                 if _existing_unit.get_tag() == unit.get_tag:
                     raise ValueError(f"Unit with tag {unit.tag} already exists in this Units instance.")
+
         self._units.add(ref(unit))
         self._num_units += 1
 

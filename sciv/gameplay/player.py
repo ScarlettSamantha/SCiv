@@ -35,6 +35,7 @@ from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, Translat
 from managers.tech import TechManager
 from system.effects import Effects
 from system.entity import BaseEntity
+from system.messenger import Messenger
 
 if TYPE_CHECKING:
     from gameplay.ai.core import AI
@@ -63,6 +64,7 @@ class Player(BaseEntity):
         self.tag = self.generate_tag()
         self.entity_key = self.tag
         self.entity_type_ref = EntityType.PLAYER.value
+        self.messenger: Messenger = Messenger()
 
         self.logger = Cache.get_showbase_instance().logger.gameplay.getChild(f"player.{str(turn_order)}")
         self.name: T_TranslationOrStrOrNone = name
@@ -184,6 +186,7 @@ class Player(BaseEntity):
         state["resources"] = self.resources.dump() if self.resources else {}
         state["effects"] = self.effects.dump() if self.effects else {}
         state["capital"] = self.get_capital().get_tag() if self.capital else None
+        state["messages"] = self.messenger.dump() if self.messenger else {}
 
         return state
 
@@ -252,6 +255,10 @@ class Player(BaseEntity):
         personality: BasePersonality = _personality.__new__(_personality)
         personality.load_state(state=getattr(self, "personality"))
         self.personality = personality
+
+        messenger: Messenger = Messenger()
+        messenger.load(getattr(self, "messages", {}))
+        self.messenger = messenger
 
     def unregister(self) -> None:
         from managers.entity import EntityType
@@ -486,6 +493,7 @@ class Player(BaseEntity):
             "tiles": set(self.tiles.get_tiles().values()),
             "units": self.units.all(),
             "cities": self.cities.all(),
+            "messages": list(self.messenger.get_visible_messages()),
         }
 
     def __eq__(self, other: Any) -> bool:

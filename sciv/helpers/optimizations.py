@@ -1,5 +1,6 @@
 import functools
 from typing import Any, Callable, Dict, Tuple
+
 from direct.stdpy import threading
 
 
@@ -28,7 +29,7 @@ def debounce(delay: float = 1.0) -> Callable[[Callable[..., Any]], Callable[...,
 
 
 def throttle(
-    delay: float = 1.0, *, execute_last_event_on_end: bool = False
+    delay: float = 1.0, execute_last_event_on_end: bool = False, *args: Any, **kwargs: Any
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
         lock = threading.Lock()

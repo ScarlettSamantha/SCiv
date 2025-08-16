@@ -22,6 +22,7 @@ from mixins.inspectable import Inspectable
 from mixins.singleton import Singleton
 from panda3d.core import PStatClient  # type: ignore
 from system.entity import BaseEntity
+from system.notification import Notification
 
 if TYPE_CHECKING:
     from managers.game import Game
@@ -73,6 +74,7 @@ class ui(Singleton, DirectObject):
 
         self.highlighted_tiles: List[Tile] = []
         self.highlight_tile_radius: int = 2
+        self.notifications: Notification = Notification()
 
     def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
         super().__setup__(*args, **kwargs)
@@ -141,11 +143,14 @@ class ui(Singleton, DirectObject):
         self.accept("ui.request.reroll", self.on_reroll)
         self.accept("ui.request.open.popup", self.show_draggable_popup)
 
+        self.accept("ui.notification.check", lambda *args, **kwargs: Notification.check())
+
         self.accept("game.state.true_game_start", self.post_game_start)
         self.accept("game.turn.end_process", self.on_turn_change)
 
         self.accept("game.gameplay.research.player_starts_research", self.on_start_research_session)
         self.accept("game.gameplay.research.player_cancels_research", self.on_cancels_research_session)
+        self.accept("game.gameplay.research.player_completed_research", self.on_complete_research_session)
 
         self.accept("system.main.ready", self.on_main_ready)
         self.accept("system.game.player_game_over", self.on_game_over_player)
@@ -207,6 +212,7 @@ class ui(Singleton, DirectObject):
 
         ui: GameUIScreen = self.get_main_game_ui()
         ui.refresh_top_bar()
+        self.notifications.check()
 
     def on_cancels_research_session(self, player: Player):
         if player != PlayerManager.session_player():
@@ -215,6 +221,15 @@ class ui(Singleton, DirectObject):
         ui: GameUIScreen = self.get_main_game_ui()
 
         ui.refresh_top_bar()
+        self.notifications.check()
+
+    def on_complete_research_session(self, player: Player, tech: Tech):
+        if player != PlayerManager.session_player():
+            return
+
+        ui: GameUIScreen = self.get_main_game_ui()
+        ui.refresh_top_bar()
+        self.notifications.check()
 
     def on_unit_destroyed(self, unit: Unit):
         messenger.send("ui.update.ui.unit_unselected", [unit])
@@ -224,10 +239,11 @@ class ui(Singleton, DirectObject):
             self.previous_unit = None
 
     def on_turn_change(self, turn: int):
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_player_turn_control", [turn])
         MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+        self.notifications.check()
         return True
 
     def on_request_main_menu(self):
@@ -312,6 +328,8 @@ class ui(Singleton, DirectObject):
         screen: "GameUIScreen" = self.get_gui().get_screen("game_ui")
         screen.player = PlayerManager.session_player()
         screen.build_screen()  # type: ignore
+        screen.refresh_messenger()
+        self.notifications.initialize()
 
     def activate_pstat(self):
         PStatClient.connect("127.0.0.1", 5185)  # type: ignore

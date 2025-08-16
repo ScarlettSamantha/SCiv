@@ -6,7 +6,7 @@ from gameplay.yields import Yields
 from helpers.colors import Tuple4f
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
-from sciv.managers.entity import EntityManager
+from managers.entity import EntityManager
 
 if TYPE_CHECKING:
     from gameplay.bits import Bit

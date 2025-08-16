@@ -11,8 +11,8 @@ from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
 from managers.i18n import T_TranslationOrStr, t_
-from sciv.gameplay.terrain.hills_forest import HillsForest
-from sciv.gameplay.terrain.hills_grass import HillsGrass
+from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.hills_grass import HillsGrass
 
 
 class RareEarthMetals(BaseStrategicResource):

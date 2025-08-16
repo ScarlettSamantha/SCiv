@@ -1,9 +1,11 @@
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
+import PIL.Image
+from helpers.colors import Tuple4f
+from kivy.graphics.texture import Texture as KivyTexture
+from kivy.uix.image import Image as KivyImage
 from panda3d.core import SamplerState, Texture
 from PIL import Image, ImageDraw, ImageFont
-
-from helpers.colors import Tuple4f
 
 
 def generate_city_nameplate(
@@ -133,10 +135,9 @@ def create_stacked_horizontal_images(images: List[Image.Image], offset: Tuple[in
     x_off, y_off = offset
     total_width = img_width + x_off * (len(images) - 1)
     total_height = img_height + y_off * (len(images) - 1)
-
+    composite = PIL.Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
     composite = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
 
-    # Reverse images: first ones behind
     for i, img in enumerate(images):
         # Compute position relative to reverse stacking
         pos = (i * x_off, i * y_off)
@@ -176,3 +177,55 @@ def normalize_to_byte(value: float) -> int:
 def normalize_color_to_bytes(color: tuple[float, ...]) -> tuple[int, ...]:
     """Convert a tuple of normalized floats to a tuple of byte values."""
     return tuple(normalize_to_byte(c) for c in color)
+
+
+def _copy_texture(src: KivyTexture) -> KivyTexture:
+    try:
+        pixels = src.pixels  # type: ignore
+        new_tex: KivyTexture = KivyTexture.create(size=src.size, colorfmt=src.colorfmt)
+        new_tex.blit_buffer(pixels, colorfmt=src.colorfmt, bufferfmt="ubyte")
+        try:
+            new_tex.min_filter = src.min_filter
+            new_tex.mag_filter = src.mag_filter
+            new_tex.wrap = src.wrap
+        except Exception:
+            pass  # nosec: B110
+        return new_tex
+    except Exception:
+        # Some backends (e.g., certain GLES paths) can’t read pixels; return shared texture.
+        return src
+
+
+def clone_image_widget(
+    img: KivyImage,
+    *,
+    deep_texture: bool = False,
+    copy_layout_props: Iterable[str] = (
+        "size_hint",
+        "size",
+        "pos_hint",
+        "opacity",
+        "color",
+        "allow_stretch",
+        "keep_ratio",
+        "mipmap",
+        "anim_delay",
+    ),
+) -> KivyImage:
+    clone = KivyImage()
+
+    for name in copy_layout_props:
+        if hasattr(img, name):
+            try:
+                setattr(clone, name, getattr(img, name))
+            except Exception:
+                pass  # nosec: B110
+
+    if img.source:
+        if deep_texture:
+            clone.nocache = True
+        clone.source = img.source
+    elif img.texture is not None:
+        clone.texture = _copy_texture(img.texture) if deep_texture else img.texture
+
+    return clone

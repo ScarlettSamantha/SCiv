@@ -11,7 +11,7 @@ from panda3d.core import Camera as PandaCamera
 from panda3d.core import Lens, LPoint3f, LVecBase3f, MouseWatcher, NodePath
 from panda3d_kivy.core.window import WindowBase  # type: ignore
 
-from sciv.gameplay.city import City  # type: ignore
+from gameplay.city import City  # type: ignore
 
 if TYPE_CHECKING:
     from game import OpenCiv

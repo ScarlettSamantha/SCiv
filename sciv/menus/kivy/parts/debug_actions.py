@@ -10,7 +10,7 @@ from kivy.uix.widget import Widget
 from managers.debug import DebugManager
 from managers.i18n import t_
 
-from sciv.system.actions import Action
+from system.actions import Action
 
 if TYPE_CHECKING:
     from menus.screens.game_ui import GameUIScreen
