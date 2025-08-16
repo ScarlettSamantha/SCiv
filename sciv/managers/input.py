@@ -9,6 +9,7 @@ from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
 from gameplay.repositories.tile import TileRepository
+from helpers.debug import Debug
 from helpers.optimizations import throttle
 from managers.unit import UnitManager
 from mixins.singleton import Singleton
@@ -83,21 +84,20 @@ class Input(Singleton, DirectObject):
         self.active = False
 
     def register(self):
-        # Left-click
         self.accept("mouse1", self.pick_object)
 
-        self.accept("f2", self.activate)
-        self.accept("f3", self.de_activate)
+        if Debug.is_debug():
+            self.accept("f2", self.activate)
+            self.accept("f3", self.de_activate)
 
-        self.accept("f6", self.on_trigger_sentry_message)
-        self.accept("f7", self.on_toggle_log)
-        self.accept("f8", self.on_debug_actions_toggle)
-        self.accept("f9", self.force_render_selected_entity)
-        self.accept("f10", self.on_inspect_entity)
-        self.accept("f11", self.on_inspect_players)
-        self.accept("f12", self.inspect_element)
+            self.accept("f6", self.on_trigger_sentry_message)
+            self.accept("f7", self.on_toggle_log)
+            self.accept("f8", self.on_debug_actions_toggle)
+            self.accept("f9", self.force_render_selected_entity)
+            self.accept("f10", self.on_inspect_entity)
+            self.accept("f11", self.on_inspect_players)
+            self.accept("f12", self.inspect_element)
 
-        # Escape key
         self.accept("escape", self.on_escape)
         self.accept("space", self.on_space)
 
@@ -181,7 +181,7 @@ class Input(Singleton, DirectObject):
 
         picker_node.setFromCollideMask(BitMask32.bit(1))  # type: ignore
 
-        self.pickerNP = self.base.camera.attachNewNode(picker_node)  # type: ignore
+        self.pickerNP: NodePath[CollisionNode] = self.base.camera.attachNewNode(picker_node)  # type: ignore
         self.picker.addCollider(self.pickerNP, self.pq)  # type: ignore
         self.register()  # Ensures key bindings are set
 
@@ -190,7 +190,7 @@ class Input(Singleton, DirectObject):
             self.logger.warning("No selected tile/unit to inspect.")
             return
 
-        selected_entity = self.selected_tile if self.selected_tile else self.selected_unit
+        selected_entity: "Tile | Unit | None" = self.selected_tile if self.selected_tile else self.selected_unit
 
         if selected_entity is not None and hasattr(selected_entity, "tag"):
             self.logger.info(f"Inspecting selected entity: {selected_entity.tag}")
@@ -297,10 +297,12 @@ class Input(Singleton, DirectObject):
                         self.selected_unit = unit
                     else:
                         return None
+
                 elif NET_TYPE.TILE.value == net_type:
-                    if (tile := TileRepository.get_tile(*map(int, net_id.split("_")[-2:]))) is None:
+                    if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
+
                     Game.get_singleton_instance().handle_tile_click(tile)
                     self.selected_tile = tile
                     self.selected_unit = None
