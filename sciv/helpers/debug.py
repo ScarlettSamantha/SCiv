@@ -7,7 +7,7 @@ import subprocess  # nosec: B404
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, NoReturn, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, NoReturn, Optional, Tuple
 
 from direct.task.Task import Task
 from helpers.cache import Cache
@@ -423,6 +423,92 @@ class Debug:
             return "Kivy not installed"
         except Exception as e:
             return f"Error getting Kivy version: {e}"
+
+    @classmethod
+    def trigger_sentry_dump(
+        cls,
+        message: str = "User-triggered debug dump",
+        *,
+        level: Literal["debug", "info", "warning", "error", "fatal"] = "info",
+        jpeg_quality: int = 85,
+        tags: Optional[Mapping[str, str]] = None,
+        extra: Optional[Mapping[str, Any]] = None,
+    ) -> Optional[str]:
+        try:
+            import sentry_sdk  # type: ignore[import]
+        except Exception:
+            logging.warning("Sentry SDK not installed; cannot send dump.")
+            return None
+
+        hub = sentry_sdk.Hub.current
+        if not hub or not hub.client:
+            logging.warning("Sentry is not initialized; cannot send dump.")
+            return None
+
+        try:
+            base = Cache.get_showbase_instance()
+            win = getattr(base, "win", None)
+            if win is None:
+                logging.warning("No active Panda3D window; cannot capture screenshot.")
+                return None
+
+            from panda3d.core import PNMImage, StringStream  # type: ignore[import]
+
+            img = PNMImage()
+            if not win.getScreenshot(img):
+                logging.error("getScreenshot() failed.")
+                return None
+
+            jpeg_bytes: bytes
+            try:
+                import io as _io
+
+                from PIL import Image  # type: ignore[import]
+
+                buf = StringStream()
+                img.write(buf, "png")
+                png_bytes: bytes = buf.getData()
+
+                pil: Image.Image = Image.open(_io.BytesIO(png_bytes)).convert("RGB")
+                out = _io.BytesIO()
+                pil.save(out, format="JPEG", quality=jpeg_quality, optimize=True)
+
+                jpeg_bytes = out.getvalue()
+            except Exception:
+                buf = StringStream()
+                img.write(buf, "jpg")
+                jpeg_bytes = buf.getData()
+
+            ctx_mgr = getattr(sentry_sdk, "new_scope", None) or sentry_sdk.push_scope
+            with ctx_mgr() as scope:  # type: ignore[misc]
+                if tags:
+                    for k, v in tags.items():
+                        scope.set_tag(k, v)
+                if extra:
+                    for k, v in extra.items():
+                        scope.set_extra(k, v)
+
+                scope.set_context(
+                    "runtime",
+                    {
+                        "python": cls.get_python_version(),
+                        "panda3d": cls.get_panda_version(),
+                        "kivy": cls.get_kivy_version(),
+                        "git_commit": cls.get_git_commit(),
+                        "git_branch": cls.get_git_branch(),
+                    },
+                )
+
+                scope.add_attachment(
+                    bytes=jpeg_bytes,
+                    filename="screenshot.jpg",
+                    content_type="image/jpeg",
+                )
+
+                return sentry_sdk.capture_message(message, level=level)
+        except Exception as e:
+            logging.exception("trigger_sentry_dump failed: %s", e)
+            return None
 
 
 class PerformanceLogData:

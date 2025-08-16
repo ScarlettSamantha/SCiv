@@ -85,11 +85,11 @@ class Input(Singleton, DirectObject):
     def register(self):
         # Left-click
         self.accept("mouse1", self.pick_object)
-        self.accept("f7", self.run_analyze)
 
         self.accept("f2", self.activate)
         self.accept("f3", self.de_activate)
 
+        self.accept("f6", self.on_trigger_sentry_message)
         self.accept("f7", self.on_toggle_log)
         self.accept("f8", self.on_debug_actions_toggle)
         self.accept("f9", self.force_render_selected_entity)
@@ -105,6 +105,15 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def on_trigger_sentry_message(self):
+        from helpers.debug import Debug
+
+        if not Debug.is_debug():
+            self.logger.warning("Debug mode is not enabled. Cannot trigger sentry message.")
+            return
+
+        Debug.trigger_sentry_dump()
 
     def on_toggle_log(self):
         self.base.ui_manager.get_main_game_ui().toggle_log()
