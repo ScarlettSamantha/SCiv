@@ -37,4 +37,4 @@ CMD ["python3 --version \
     && python3 -m briefcase build linux \
     && python3 -m briefcase package linux \
     && mkdir -p builds \
-    && cp dist/*.deb builds/"]
+    && cp dist/*.deb /dist/"]

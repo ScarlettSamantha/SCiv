@@ -4,3 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - ./dist/:/dist
+    
