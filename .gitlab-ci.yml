@@ -220,6 +220,5 @@ package-windows:
     when: always
     expire_in: 1 week
     paths:
-      - 'build/**/windows/**/dist/**'
       - 'dist/**'
       
