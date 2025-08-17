@@ -154,7 +154,6 @@ package-linux:
     expire_in: 1 week
 
 package-windows:
-  image: mcr.microsoft.com/windows/server:ltsc2022
   rules:
     - if: '$CI_COMMIT_TAG'
       when: on_success
