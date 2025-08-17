@@ -166,15 +166,60 @@ package-windows:
     - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
       when: manual
     - when: manual
-  when: manual
-  tags:
-    - windows
-  variables:
-    PYTHONUNBUFFERED: 1
-  before_script:
-    - powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force"
-    - pip install --upgrade pip --root-user-action=ignore
-    - pip install briefcase --root-user-action=ignore
   stage: package
+  tags: [windows]
+  variables:
+    PYTHONUNBUFFERED: "1"
+    PY_PYTHON: "3.13"
+  before_script:
+    - |
+      if ($PROFILE -and ($PROFILE | Get-Member -Name AllUsersAllHosts -ErrorAction SilentlyContinue)) {
+        foreach ($p in @(
+          $PROFILE.AllUsersAllHosts,
+          $PROFILE.CurrentUserAllHosts,
+          $PROFILE.AllUsersCurrentHost,
+          $PROFILE.CurrentUserCurrentHost
+        )) { if ($p -and (Test-Path $p)) { . $p } }
+      }
+    - |
+      $mach=[Environment]::GetEnvironmentVariable('Path','Machine')
+      $user=[Environment]::GetEnvironmentVariable('Path','User')
+      $cur=$env:Path
+      $paths = ((($mach,$user,$cur) -join ';') -split ';') |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -and (Test-Path $_) }
+      $env:Path = [string]::Join(';', ($paths | Select-Object -Unique))
+    - '$PSVersionTable'
+    - 'Get-Command git -ErrorAction SilentlyContinue'
+    - |
+      if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+          winget install -e --id Python.Python.3.13 --silent
+        } elseif (Get-Command choco -ErrorAction SilentlyContinue) {
+          choco install -y python --version=3.13.0
+        } else {
+          Write-Error "No Python launcher found and neither winget nor choco available."
+        }
+      }
+    - 'Get-Command py -ErrorAction SilentlyContinue'
+    - 'py -m pip install --upgrade pip'
+    - 'py -m pip install -r requirements.txt'
+    - 'py -m pip install -U pip briefcase'
   script:
-    - python scripts/build_windows.py
+    - |
+      if ($PROFILE -and ($PROFILE | Get-Member -Name AllUsersAllHosts -ErrorAction SilentlyContinue)) {
+        foreach ($p in @(
+          $PROFILE.AllUsersAllHosts,
+          $PROFILE.CurrentUserAllHosts,
+          $PROFILE.AllUsersCurrentHost,
+          $PROFILE.CurrentUserCurrentHost
+        )) { if ($p -and (Test-Path $p)) { . $p } }
+      }
+    - 'py scripts/build_windows.py'
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - 'build/**/windows/**/dist/**'
+      - 'dist/**'
+      
