@@ -140,9 +140,9 @@ The goal is to have a semi-playable and resumable game, with improved building/d
 - [x] Barbarians + Nature player + basic AI  
 - [x] Basic combat (melee only, no range, river detection, etc.) + UI  
 - [ ] Map generator parameters in GUI  
-- [ ] Better development tools  
-- [ ] Hide development tools behind a toggle  
-- [ ] Settings menu  
+- [X] Better development tools  
+- [X] Hide development tools behind a toggle  
+- [X] Settings menu  
 - [ ] Basic documentation  
 - [ ] Dynamic spawning of models when buildings/improvements are constructed  
 
