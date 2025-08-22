@@ -1,10 +1,10 @@
 [tool.briefcase]
 project_name = "SCiv"
-version = "0.1.6"
+version = "0.1.7"
 package = "nl.scarlettbytes.sciv"
 bundle = "nl.scarlettbytes.sciv"
 author = "Scarlett Samantha Verheul"
-author_email = "scarlett.verheul@gmail.com."
+author_email = "scarlett.verheul@gmail.com"
 
 [tool.briefcase.app.sciv.windows]
 use_full_install_path = false
