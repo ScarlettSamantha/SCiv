@@ -8,6 +8,7 @@ from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
+from gameplay.ranged_targeting import RangedTargeting
 from gameplay.repositories.tile import TileRepository
 from helpers.debug import Debug
 from helpers.optimizations import throttle
@@ -59,6 +60,7 @@ class Input(Singleton, DirectObject):
         self.selected_unit: Optional["Unit"] = None
         self._last_pick_time: float = 0.0
         self.pick_timeout: float = 1 / 15
+        self.ranged_targeting: RangedTargeting | None = None
 
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
@@ -229,15 +231,28 @@ class Input(Singleton, DirectObject):
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
                 if NET_TYPE.TILE.value == net_type:
+                    if self.ranged_targeting is not None:
+                        self.ranged_targeting.hide()
                     self.unhover_all()
                     messenger.send("system.input.user.tile_hovered", [net_id])
                     self.hovered_tile_id = net_id
                 if NET_TYPE.UNIT.value == net_type:
+                    if self.ranged_targeting is not None:
+                        self.ranged_targeting.hide()
                     self.unhover_all()
                     if (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is None:
                         self.logger.warning(f"Unit with ID {net_id} not found.")
                         return task.cont
                     if game_ui.wait_for_action_of_user and game_ui.wait_for_action_of_user.targeting_unit_action:
+                        if game_ui.wait_for_action_of_user.use_target_arrow:
+                            self.ranged_targeting = RangedTargeting(parent=self.base.render)
+                            executor: "Unit" = game_ui.wait_for_action_of_user.executor  # type: ignore
+
+                            assert executor is not None, "Executor should not be None when using ranged targeting."
+
+                            if executor.attack_range >= unit.get_distance_to(executor):
+                                self.ranged_targeting.show(source=game_ui.wait_for_action_of_user.executor, target=unit)
+
                         unit.hover()
                         self.hovered_unit_id = net_id
                         break

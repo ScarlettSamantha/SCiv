@@ -10,11 +10,11 @@ from managers.i18n import t_
 from system.actions import Action
 
 
-class AttackAction(BaseUnitAction):
+class RangedAttackAction(BaseUnitAction):
     def __init__(self, instance: Unit):
-        self.unit = instance
+        self.unit: Unit = instance
         super().__init__(
-            name=t_("actions.unit.attack"),
+            name=t_("actions.unit.ranged_attack"),
             action=self.attack_wrapper,
             condition=instance.can_attack,
             on_success=self.success,
@@ -26,26 +26,25 @@ class AttackAction(BaseUnitAction):
         self.targeting_tile_action = False
         self.targeting_unit_action = True
         self.get_return_as_failure_argument = True
+        self.use_target_arrow = True
         self.keep_targeting_after_use = True
         self._result: Optional[CombatOutcome] = None
-        self._is_disabled = lambda: self.is_enabled()
-        self.use_target_arrow = True
+        self.is_disabled = lambda: self.is_enabled()
         self.executor = self.unit
 
         self.use_range = True
         self.min_range = 1
         self.max_range = self.unit.get_attack_range() if self.unit else 0
 
-    def is_enabled(self) -> bool:
-        return (self.unit.attack_range > 1 and self.unit.attack_points_cost_mele > 0) and (
-            self.unit.attack_points_left - self.unit.attack_points_cost_mele
+    def is_enabled(self):
+        return (self.unit.attack_range > 1 and self.unit.attack_points_cost_ranged > 0) and (
+            self.unit.attack_points_left - self.unit.attack_points_cost_ranged
         ) > 0
 
     def attack_wrapper(self, _: Action, executor: T_TARGET, target: T_TARGET) -> Optional[CombatOutcome]:
         if isinstance(executor, Unit) and not isinstance(target, Tile):
             outcome: CombatOutcome = executor.attack(target)
             self._result: CombatOutcome | None = outcome
-            self.is_disabled = (self.unit.moves_left - self.unit.attack_points_cost_mele) <= 0
             return outcome
         elif isinstance(executor, Unit) and isinstance(target, Tile):
             self._result = None
@@ -98,7 +97,6 @@ class AttackAction(BaseUnitAction):
         result = action.get_result()
 
         if result is None:
-            # We dont have to do anything with it as None indicates that action was not applicable.
             return
 
         if not isinstance(result, CombatOutcome):

@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Set, TypeVar, cast
 from weakref import ReferenceType, ref
 
-from gameplay.unit import Unit
 from helpers.debug import Debug
 
 if TYPE_CHECKING:
@@ -18,7 +17,7 @@ class Units:
     def add_unit(self, unit: "Unit") -> None:
         for _unit in self._units:
             for existing_unit in self._units:
-                _existing_unit: "Unit" = cast(Unit, existing_unit())
+                _existing_unit: "Unit" = cast("Unit", existing_unit())
                 assert _existing_unit is not None, "Existing unit reference is None"
                 if _existing_unit.get_tag() == unit.get_tag:
                     raise ValueError(f"Unit with tag {unit.tag} already exists in this Units instance.")
@@ -28,7 +27,7 @@ class Units:
 
     def remove_unit(self, unit: "Unit") -> None:
         for existing_unit in self._units:
-            _existing_unit: "Unit" = cast(Unit, existing_unit())
+            _existing_unit: "Unit" = cast("Unit", existing_unit())
             assert _existing_unit is not None, "Existing unit reference is None"
             if _existing_unit.get_tag() == unit.get_tag():
                 self._units.remove(existing_unit)

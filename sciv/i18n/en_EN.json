@@ -691,7 +691,8 @@
         "move": "Move",
         "found_city": "Found City",
         "self_destroy": "Suicide",
-        "attack": "Attack"
+        "attack": "Mele Attack",
+        "ranged_attack": "Ranged Attack"
       },
       "debug": {
         "kill": {
@@ -2802,6 +2803,11 @@
                   "name": "Lion",
                   "description": "Some rough looking lions."
                 }
+              },
+              "slinger": {
+                "name": "Slinger",
+                "description": "Basic ranged unit",
+                "tooltip": "Slingers\n\nThey are the most basic ranged unit, armed with slings or similar weapons.\nThey can attack from a distance, making them effective against melee units."
               },
               "warrior": {
                 "name": "Warrior",

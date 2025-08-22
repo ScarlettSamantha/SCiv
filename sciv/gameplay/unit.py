@@ -10,13 +10,13 @@ import numpy as np
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
-from helpers.cache import Cache
 from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text, spawn_heal_text
 from gameplay.hover import HoverIndicator
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
 from gameplay.yields import Yields
+from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
 from helpers.os import WindowsHelper
 from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
@@ -174,6 +174,10 @@ class Unit(BaseEntity, ABC):
                 from gameplay.actions.unit.attack_mele import AttackAction
 
                 self.add_action(action=AttackAction(instance=self))
+            if self.attack_power_ranged > 0:
+                from gameplay.actions.unit.attack_ranged import RangedAttackAction
+
+                self.add_action(action=RangedAttackAction(instance=self))
 
     @property
     def logger(self) -> Logger:

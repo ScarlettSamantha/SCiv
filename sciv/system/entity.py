@@ -343,3 +343,28 @@ class BaseEntity(ABC, DirectObject, Inspectable):
     def get_entity_type(self) -> str:
         assert self.entity_type_ref is not None, "Entity type reference is not set"
         return self.entity_type_ref
+
+    def get_distance_to(self, other: "BaseEntity") -> float:
+        from gameplay.repositories.tile import TileRepository
+
+        if self.tile is None:
+            raise ValueError("Tile is None")
+
+        if isinstance(self.tile, weakref.ReferenceType):
+            tile: Tile | None = self.tile()
+            if tile is None:
+                raise ValueError("Tile reference is dead (None)")
+        else:
+            tile = self.tile
+
+        if other.tile is None:
+            raise ValueError("Other entity's tile is None")
+
+        if isinstance(other.tile, weakref.ReferenceType):
+            other_tile: Tile | None = other.tile()
+            if other_tile is None:
+                raise ValueError("Other entity's tile reference is dead (None)")
+        else:
+            other_tile = other.tile
+
+        return TileRepository.distance(tile, other_tile)

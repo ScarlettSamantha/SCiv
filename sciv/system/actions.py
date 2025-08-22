@@ -1,10 +1,9 @@
 from typing import Any, Callable, Dict, Optional, Self, Tuple
 
 from direct.showbase import MessengerGlobal
+from managers.combat import T_TARGET
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.log import LogManager
-
-from managers.combat import T_TARGET
 
 """Action system will provide a generic way to handle actions in the game. This will be used for units, buildings, and other game objects that can perform actions.
 
@@ -50,6 +49,10 @@ class Action:
         self.on_failure: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = on_failure
         self.success_condition: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], bool]] = success_condition
 
+        self.use_range: bool = False
+        self.min_range: int = 0
+        self.max_range: int = 0
+
         self.action_args: Tuple[Any, ...] = args
         self.action_kwargs: Dict[str, Any] = kwargs
 
@@ -65,11 +68,22 @@ class Action:
 
         self.remove_actions_after_use: bool = False
         self.failure_reason: Any = None
-        self.is_disabled: bool = False
+        self._is_disabled: bool | Callable[[], bool] = False
         self.auto_refresh_action_bar: bool = True
         self.reset_every_turn: bool = True
+        self.use_target_arrow: bool = False
 
         self.action_result: Optional[Any] = None
+
+    @property
+    def is_disabled(self) -> bool:
+        if callable(self._is_disabled):
+            return self._is_disabled()
+        return self._is_disabled
+
+    @is_disabled.setter
+    def is_disabled(self, value: bool | Callable[[], bool]) -> None:
+        self._is_disabled = value
 
     def on_turn_end(self, turn: int) -> None:
         if self.reset_every_turn:

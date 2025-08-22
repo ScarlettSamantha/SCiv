@@ -1,4 +1,4 @@
-from typing import Any, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Type
 
 from gameplay.condition import Condition
 from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement, ImprovementBuildTurnMode
@@ -8,8 +8,8 @@ from gameplay.yields import Yields
 from managers.i18n import t_
 
 if TYPE_CHECKING:
-    from gameplay.tile import Tile
     from gameplay.player import Player
+    from gameplay.tile import Tile
 
 
 class Barracks(BaseCityImprovement):
