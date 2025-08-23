@@ -2,6 +2,7 @@ from typing import Any
 
 from gameplay.civilization import Civilization
 from managers.i18n import t_
+from helpers.colors import Colors
 
 
 class Japan(Civilization):
@@ -30,6 +31,7 @@ class Japan(Civilization):
         t_("cities.japan.shizuoka"),
     ]
     introduction = t_("civilization.japan.introduction")
+    color = Colors.MAROON
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

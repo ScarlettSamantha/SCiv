@@ -2,6 +2,7 @@ from typing import Any
 
 from gameplay.civilization import Civilization
 from managers.i18n import t_
+from helpers.colors import Colors
 
 
 class Vikings(Civilization):
@@ -30,6 +31,7 @@ class Vikings(Civilization):
         t_("cities.vikings.reykjavik"),
     ]
     introduction = t_("civilization.vikings.introduction")
+    color = Colors.LIGHT_BLUE
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

@@ -14,6 +14,8 @@ class Colors:
     RESTORE: Tuple4f = (1, 1, 1, 1)
 
     # Basic colors
+
+    AQUA: Tuple4f = (0, 1, 1, 1)
     RED: Tuple4f = (1, 0, 0, 1)
     GREEN: Tuple4f = (0, 1, 0, 1)
     BLUE: Tuple4f = (0, 0, 1, 1)
@@ -23,6 +25,7 @@ class Colors:
     ORANGE: Tuple4f = (1, 0.5, 0, 1)
     PURPLE: Tuple4f = (0.5, 0, 1, 1)
     LIGHT_GRAY: Tuple4f = (0.65, 0.65, 0.65, 1)
+    LIGHT_BLUE: Tuple4f = (0.68, 0.85, 0.9, 1)
     GREY: Tuple4f = (0.5, 0.5, 0.5, 1)
     DARK_GRAY: Tuple4f = (0.3, 0.3, 0.3, 1)
     WHITE: Tuple4f = (1, 1, 1, 1)
@@ -39,6 +42,8 @@ class Colors:
     PINK: Tuple4f = (1, 0.4, 0.7, 1)
     DARK_GREEN: Tuple4f = (0, 0.5, 0, 1)
     LIGHT_GREEN: Tuple4f = (0.5, 1, 0.5, 1)
+    TEA_LEAF: Tuple4f = (0.54, 0.65, 0.34, 1)
+    DARK_BLUE: Tuple4f = (0, 0, 0.55, 1)
 
     COLORS: List[Tuple4f] = [
         RED,
