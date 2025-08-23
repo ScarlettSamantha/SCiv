@@ -1,6 +1,5 @@
-from functools import partial
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -11,7 +10,6 @@ from gameplay.improvement import Improvement
 from gameplay.player import Player
 from gameplay.tile import Tile
 from gameplay.unit import Unit
-from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -176,6 +174,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.hide_inspect_ui", self.close_inspect)
         self.accept("ui.update.ui.toggle_log", self.toggle_log)
         self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
+        self.accept("ui.update.ui.refresh_basic_elements", self.update_ui_elements)
         self.accept("ui.update.ui.refresh_city_ui", self.refresh_city)
         self.accept("ui.update.ui.open_player_attack_info", self.open_player_attack_info)
         self.accept("ui.update.ui.close_player_attack_info", self.close_player_attack_info)
@@ -588,59 +587,19 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if _unit is not None:
             if self.action_bar_frame is None:
                 raise AssertionError("Action bar frame is not initialized.")
+            self.action_bar_frame.generate(
+                unit=_unit,
+                action_preparer=self.prepare_action,
+                build_action_preparer=self.prepare_build_action,
+            )
 
-            actions = _unit.get_actions()
-            for action in actions:
-                button = Button(
-                    text=str(action.name),
-                    size_hint=(None, None),
-                    width=100,
-                    height=75,
-                )
-                if action.is_disabled:
-                    button.disabled = True
-                    button.opacity = 0.5
-                button.bind(on_press=partial(self.prepare_action, action=action, executor=_unit))  # type: ignore
-                self.action_bar_frame.add_button(button)
+    def update_ui_elements(self):
+        self.refresh_action_bar()
+        self.refresh_targeting_ui()
 
-            if _unit.can_build is True:
-                improvements: List[Type[Improvement]] = _unit.get_tile().get_buildable_improvements()
-                for _improvement in improvements:
-                    # Check if the improvement is placeable on the tile
-                    condition_check = (
-                        isinstance(_improvement.placeable_on_condition, bool)
-                        and _improvement.placeable_on_condition is True
-                    ) or (
-                        isinstance(_improvement.placeable_on_condition, Callable)
-                        and _improvement.placeable_on_condition() is True
-                    )
-
-                    # Check if the improvement is visible or if we don't show the button
-                    visible_condition_check = (
-                        isinstance(_improvement.visible_on_condition, bool)
-                        and _improvement.visible_on_condition is True
-                    ) or (
-                        isinstance(_improvement.visible_on_condition, Callable)
-                        and _improvement.visible_on_condition() is True
-                    )
-                    if (
-                        _improvement.placeable_on_tiles is True
-                        and not _unit.get_tile().improvements().has(_improvement)
-                        and visible_condition_check
-                    ):
-                        button: Button = Button(
-                            text=str(_improvement.name),
-                            size_hint=(None, None),
-                            width=100,
-                            height=75,
-                        )
-                        button.disabled = (
-                            not _unit.can_build or _unit.get_tile().owner != _unit.owner or condition_check is False
-                        )
-                        button.bind(  # type: ignore
-                            on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, _unit)  # type: ignore
-                        )
-                        self.action_bar_frame.add_button(button)
+    def refresh_targeting_ui(self):
+        if self.player_attack_info is not None:
+            self.player_attack_info.update()
 
     def clear_action_bar(self):
         if self.action_bar_frame is None:

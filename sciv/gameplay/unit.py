@@ -579,7 +579,7 @@ class Unit(BaseEntity, ABC):
         self.get_tile().add_unit(self)
 
         if self.owner == PlayerManager.session_player():
-            MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+            MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
 
     def calculate_model_position(self) -> None:
         tile_pos: Tuple[float, float, float] = self.get_tile().get_cords()
@@ -696,7 +696,7 @@ class Unit(BaseEntity, ABC):
         )  # type: ignore
 
         MessengerGlobal.messenger.send("ui.update.ui.combat_log.add", [entry])
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
 
         if isinstance(target, Unit) and outcome.attacker_damage > 0.0:
             spawn_damage_text(target, outcome.attacker_damage)

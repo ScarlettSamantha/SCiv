@@ -242,7 +242,7 @@ class ui(Singleton, DirectObject):
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_top_bar")
         MessengerGlobal.messenger.send("ui.update.ui.refresh_player_turn_control", [turn])
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
         self.notifications.check()
         return True
 

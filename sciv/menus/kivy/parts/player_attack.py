@@ -386,6 +386,9 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
         self._attacker: Optional["UnitType"] = None
         self._defender: Optional["UnitType"] = None
 
+    def update(self) -> None:
+        self.refresh_from_units()
+
     def set_units(self, attacker: "UnitType", defender: "UnitType", simulate_combat: bool = True) -> None:
         self._attacker = attacker
         self._defender = defender

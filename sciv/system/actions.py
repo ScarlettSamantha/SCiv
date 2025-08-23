@@ -69,7 +69,7 @@ class Action:
         self.remove_actions_after_use: bool = False
         self.failure_reason: Any = None
         self._is_disabled: bool | Callable[[], bool] = False
-        self.auto_refresh_action_bar: bool = True
+        self.auto_refresh_basic_elements: bool = True
         self.reset_every_turn: bool = True
         self.use_target_arrow: bool = False
 
@@ -143,9 +143,9 @@ class Action:
                 self.logger.info(f"Action: {self.name} has on_failure callback, running it.")
                 self.on_failure(self, self.action_args, self.action_kwargs)
 
-        if self.auto_refresh_action_bar:
+        if self.auto_refresh_basic_elements:
             self.logger.info(f"Action: {self.name} will refresh the action bar.")
-            MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+            MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
 
     def is_debug_action(self) -> bool:
         return self.debug_action
