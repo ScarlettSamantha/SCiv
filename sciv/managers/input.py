@@ -61,6 +61,7 @@ class Input(Singleton, DirectObject):
         self._last_pick_time: float = 0.0
         self.pick_timeout: float = 1 / 15
         self.ranged_targeting: RangedTargeting | None = None
+        self.game_ui: "GameUIScreen | None" = None
 
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
@@ -207,16 +208,33 @@ class Input(Singleton, DirectObject):
 
         self.base.ui_manager.inspect_element(players_wrapper)
 
+    def hide_targeting(self):
+        if self.ranged_targeting is None:
+            return
+        self.ranged_targeting.hide()
+        self.ranged_targeting.destroy()
+        self.ranged_targeting = None
+        MessengerGlobal.messenger.send("ui.update.ui.close_player_attack_info")
+
     def hover_task(self, task: Task.Task) -> Literal[1]:
         if not self.active or not self.base.mouseWatcherNode.hasMouse():  # type: ignore
             return task.cont
 
-        game_ui: "GameUIScreen" = self.base.ui_manager.get_main_game_ui()
+        if self._hover_frame_skip > 0:
+            self._hover_frame_skip -= 1
+            return task.cont
+
+        if self.game_ui is None:
+            self.game_ui = self.base.ui_manager.get_main_game_ui()
+
+        assert self.game_ui is not None, "Game UI should be initialized."
+
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
         current_pos = (mpos.getX(), mpos.getY())  # type: ignore
-
-        if self._last_mouse_pos == current_pos:
-            return task.cont  # mouse didn't move
+        if self._last_mouse_pos is not None and all(
+            abs(self._last_mouse_pos[i] - current_pos[i]) < 0.001 for i in range(2)
+        ):
+            return task.cont  # mouse didn't move significantly
 
         self._last_mouse_pos = current_pos
 
@@ -231,27 +249,31 @@ class Input(Singleton, DirectObject):
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
                 if NET_TYPE.TILE.value == net_type:
-                    if self.ranged_targeting is not None:
-                        self.ranged_targeting.hide()
                     self.unhover_all()
                     messenger.send("system.input.user.tile_hovered", [net_id])
                     self.hovered_tile_id = net_id
                 if NET_TYPE.UNIT.value == net_type:
-                    if self.ranged_targeting is not None:
-                        self.ranged_targeting.hide()
+                    if self.hovered_unit_id == net_id:
+                        break
                     self.unhover_all()
                     if (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is None:
                         self.logger.warning(f"Unit with ID {net_id} not found.")
                         return task.cont
-                    if game_ui.wait_for_action_of_user and game_ui.wait_for_action_of_user.targeting_unit_action:
-                        if game_ui.wait_for_action_of_user.use_target_arrow:
+                    if (
+                        self.game_ui.wait_for_action_of_user
+                        and self.game_ui.wait_for_action_of_user.targeting_unit_action
+                    ):
+                        if self.game_ui.wait_for_action_of_user.use_target_arrow and self.ranged_targeting is None:
                             self.ranged_targeting = RangedTargeting(parent=self.base.render)
-                            executor: "Unit" = game_ui.wait_for_action_of_user.executor  # type: ignore
+                            executor: "Unit" = self.game_ui.wait_for_action_of_user.executor  # type: ignore
 
                             assert executor is not None, "Executor should not be None when using ranged targeting."
 
                             if executor.attack_range >= unit.get_distance_to(executor):
-                                self.ranged_targeting.show(source=game_ui.wait_for_action_of_user.executor, target=unit)
+                                self.ranged_targeting.show(
+                                    source=self.game_ui.wait_for_action_of_user.executor, target=unit
+                                )
+                                MessengerGlobal.messenger.send("ui.update.ui.open_player_attack_info", [executor, unit])
 
                         unit.hover()
                         self.hovered_unit_id = net_id
@@ -269,6 +291,7 @@ class Input(Singleton, DirectObject):
             if (unit := UnitManager.get_singleton_instance().find_unit(self.hovered_unit_id)) is not None:
                 unit.unhover()
                 self.hovered_unit_id = None
+        self.hide_targeting()
 
     def run_analyze(self):
         self.base.render.analyze()  # type: ignore

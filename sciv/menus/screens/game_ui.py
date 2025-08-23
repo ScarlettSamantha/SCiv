@@ -34,6 +34,7 @@ from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
 from menus.kivy.parts.inspect_entity import InspectEntity
+from menus.kivy.parts.player_attack import TargetingDuelPanel
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
@@ -98,6 +99,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_combat_log: Optional[PlayerCombatLog] = None
         self.messenger: Optional[MessageRenderer] = None
         self.inspect: Optional[InspectEntity] = None
+        self.player_attack_info: Optional[TargetingDuelPanel] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
@@ -175,6 +177,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.toggle_log", self.toggle_log)
         self.accept("ui.update.ui.refresh_action_bar", self.refresh_action_bar)
         self.accept("ui.update.ui.refresh_city_ui", self.refresh_city)
+        self.accept("ui.update.ui.open_player_attack_info", self.open_player_attack_info)
+        self.accept("ui.update.ui.close_player_attack_info", self.close_player_attack_info)
 
         self.accept("t", self.toggle_research)
         self.accept("c", self.toggle_civics)
@@ -727,6 +731,16 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if action.remove_actions_after_use:
             self.clear_action_bar()
+
+    def open_player_attack_info(self, source: Unit, target: Unit):
+        self.player_attack_info = TargetingDuelPanel()
+        self.player_attack_info.set_units(source, target)
+        self.add_widget(self.player_attack_info)
+
+    def close_player_attack_info(self):
+        if self.player_attack_info is not None:
+            self.remove_widget(self.player_attack_info)
+            self.player_attack_info = None
 
     def open_log(self):
         self.log.open()

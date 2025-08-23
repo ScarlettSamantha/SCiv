@@ -611,6 +611,11 @@
           "select_all": "Select all",
           "confirm": "Confirm"
         },
+        "targeting": {
+          "targeting": "Targeting",
+          "select_target": "Select a target",
+          "cancel_targeting": "Cancel targeting"
+        },
         "turn_button": {
           "end_turn": "End Turn {turn}",
           "on_turn": "Processing Turn {turn}"
