@@ -1,9 +1,10 @@
 from abc import abstractmethod
 from random import choice
-from typing import Any, Dict, List, Self, Type
+from typing import Any, Dict, List, Self, Tuple, Type
 
 from gameplay.effect import Effect
 from gameplay.leader import Leader
+from helpers.colors import Colors
 from helpers.placeholder import Placeholder
 from managers.i18n import T_TranslationOrStr, get_i18n
 
@@ -15,6 +16,7 @@ class Civilization:
     icon: str = Placeholder.getPlaceholderImagePathSmallIcon()
     city_names: List[T_TranslationOrStr] = []
     city_name_index: int = 0
+    color: Tuple[float, float, float, float] = Colors.MAGENTA  # Default color
 
     def __init__(
         self,

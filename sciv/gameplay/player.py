@@ -70,7 +70,7 @@ class Player(BaseEntity):
         self.name: T_TranslationOrStrOrNone = name
         self.id: str | None = None
         self.identifier: str | None = None
-        self.color: Tuple4f = color if color else Colors.sequence()
+        self.color: Tuple4f = civilization.color if color is None else color
 
         self.ai: Optional["AI"] = None
 
