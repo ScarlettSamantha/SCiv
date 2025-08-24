@@ -512,29 +512,26 @@ class Unit(BaseEntity, ABC):
             assert self.model is not None, "Model must be loaded before unhovering."
             HoverIndicator.remove_from_entity(self.model)
 
-    def move(self, tile: "Tile") -> CantMoveReason:
-        from gameplay.repositories.tile import TileRepository
-
-        target_tile: "Tile" = tile
-
+    def can_move_to_tile(
+        self, tile: "Tile", use_movement_points: bool = True, get_tiles: bool = True
+    ) -> Tuple[CantMoveReason, List["Tile"] | None] | CantMoveReason:
         if not self.can_move:
             return CantMoveReason.IMMOBILE
 
-        if self.moves_left <= 0:
+        if self.moves_left <= 0 and use_movement_points:
             return CantMoveReason.NO_MOVES
 
-        if target_tile.passable is False:
+        if tile.passable is False:
             return CantMoveReason.IMPASSABLE
 
-        if len(target_tile.units) > 0:
+        if len(tile.units) > 0:
             return CantMoveReason.OTHER_UNIT_ON_TILE
 
         tiles_to_move: List["Tile"] | None = []
 
-        if self.tile is not None and (tiles_to_move := TileRepository.astar(self.get_tile(), target_tile, 1.0)) is None:
+        if self.tile is not None and (tiles_to_move := TileRepository.astar(self.get_tile(), tile, 1.0)) is None:
             return CantMoveReason.NO_PATH
 
-        # This was a bug for a while, but it was fixed
         if (len(tiles_to_move) - 1) == 0:
             return CantMoveReason.SAME_TILE
 
@@ -542,12 +539,34 @@ class Unit(BaseEntity, ABC):
             raise AssertionError(f"Unit {self.key} has no tile assigned.")
 
         if tiles_to_move[0] == self.get_tile():
-            del tiles_to_move[0]  # Remove the first tile as it is the current tile
+            del tiles_to_move[0]
+
+        if get_tiles:
+            return CantMoveReason.COULD_MOVE, tiles_to_move
+        return CantMoveReason.COULD_MOVE
+
+    def move(self, tile: "Tile") -> CantMoveReason:
+        target_tile: "Tile" = tile
+
+        reason_tiles: Tuple[CantMoveReason, List["Tile"] | None] | CantMoveReason = self.can_move_to_tile(target_tile)
+
+        reason: CantMoveReason
+        tiles: List["Tile"] | None
+        if isinstance(reason_tiles, tuple):
+            reason, tiles = reason_tiles
+        else:
+            reason = reason_tiles
+            tiles = None
+
+        if reason != CantMoveReason.COULD_MOVE:
+            return reason
 
         departing_tile: "Tile" = self.get_tile()  # Start off at our current tile
         current_tile: "Tile" = self.get_tile()
 
-        for _tile in tiles_to_move:
+        assert tiles is not None, "Tiles should not be None if reason is COULD_MOVE"
+
+        for _tile in tiles:
             if (self.moves_left - _tile.movement_cost) < 0:
                 self._move_to_tile(current_tile, departing_tile)
                 return CantMoveReason.NO_MOVES
@@ -555,13 +574,12 @@ class Unit(BaseEntity, ABC):
             self.moves_left -= _tile.movement_cost
 
             if _tile.is_visisted_by(self) is False:
-                # Move partially onto this tile and then get trapped or do partial logic
                 self._move_to_tile(tile=_tile, clear_departing_tile=departing_tile)
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             current_tile = _tile
 
-        self._move_to_tile(tile=current_tile, clear_departing_tile=departing_tile)  # Move to the last tile in the path
+        self._move_to_tile(tile=current_tile, clear_departing_tile=departing_tile)
         if current_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES

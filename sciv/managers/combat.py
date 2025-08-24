@@ -11,11 +11,12 @@ if TYPE_CHECKING:
     from gameplay.cities import City
     from gameplay.improvement import Improvement
     from gameplay.player import Player
+    from gameplay.tile import Tile
     from gameplay.unit import Unit
 
 
-T_TARGET = Union["City", "Player", "Improvement", "Unit"]
-T_TARGET_OPTIONAL = Union["City", "Player", "Improvement", "Unit", None]
+T_TARGET = Union["City", "Player", "Improvement", "Unit", "Tile"]
+T_TARGET_OPTIONAL = Union["City", "Player", "Improvement", "Unit", "Tile", None]
 
 
 class CombatResults(Enum):

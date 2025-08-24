@@ -3,6 +3,8 @@ from enum import Enum
 from heapq import heappop, heappush
 from typing import TYPE_CHECKING, Callable, ClassVar, Dict, List, Optional, Set, Tuple
 
+from panda3d.core import Vec3
+
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.tile import Tile
@@ -31,9 +33,16 @@ class TileRepository:
         pass
 
     @classmethod
+    def init_grid(cls) -> None:
+        from managers.world import World
+
+        cls.grid = World.get_singleton_instance().grid
+
+    @classmethod
     def get_grid(cls) -> Dict[Tuple[int, int], "Tile"]:
         if cls.grid is None:
-            raise ValueError("TileRepository grid is not initialized.")
+            cls.init_grid()
+        assert cls.grid is not None
         return cls.grid
 
     @classmethod
@@ -705,11 +714,11 @@ class TileRepository:
         movement_points: float,
         attack_range: int = 1,
     ) -> Optional[Tuple["Tile", List["Tile"]]]:
-        path = cls.astar(attacker_tile, target_tile, movement_points)
+        path: List["Tile"] | None = cls.astar(attacker_tile, target_tile, movement_points)
         if path:
             return target_tile, path
 
-        candidates = cls.get_tiles_in_radius(target_tile, attack_range)
+        candidates: List["Tile"] = cls.get_tiles_in_radius(target_tile, attack_range)
         candidates = [
             t
             for t in candidates
@@ -718,7 +727,7 @@ class TileRepository:
         if not candidates:
             return None
 
-        fallback_positions = [t for t in candidates if not t.units.has_any() and t.is_passable()]
+        fallback_positions: List["Tile"] = [t for t in candidates if not t.units.has_any() and t.is_passable()]
 
         dx, dy = target_tile.x - attacker_tile.x, target_tile.y - attacker_tile.y
         scored: List[Tuple[float, "Tile"]] = []
@@ -727,7 +736,7 @@ class TileRepository:
             scored.append((sx * dx + sy * dy, cand))
 
         for _, cand in sorted(scored, key=lambda x: -x[0]):
-            p = cls.astar(attacker_tile, cand, movement_points, avoid_occupied=True)
+            p: List["Tile"] | None = cls.astar(attacker_tile, cand, movement_points, avoid_occupied=True)
             if not p:
                 continue
 
@@ -735,7 +744,15 @@ class TileRepository:
                 return cand, p
 
             for fb in fallback_positions:
-                fb_path = cls.astar(attacker_tile, fb, movement_points, avoid_occupied=True)
+                fb_path: List["Tile"] | None = cls.astar(attacker_tile, fb, movement_points, avoid_occupied=True)
                 if fb_path:
                     return fb, fb_path
         return None
+
+    @classmethod
+    def tile_list_to_vec3(cls, tiles: List["Tile"]) -> List[Vec3]:
+        return [Vec3(tile.get_pos()) for tile in tiles]
+
+    @classmethod
+    def tile_list_to_cords(cls, tiles: List["Tile"]) -> List[Tuple[int, int]]:
+        return [tile.get_map_cords() for tile in tiles]

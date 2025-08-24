@@ -1,7 +1,7 @@
 import time
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, List, Literal, Optional
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
 from direct.showbase import MessengerGlobal
@@ -21,6 +21,7 @@ from panda3d.core import (
     CollisionRay,
     CollisionTraverser,
     NodePath,
+    Vec3,
     WindowProperties,
 )
 
@@ -60,9 +61,12 @@ class Input(Singleton, DirectObject):
         self.selected_unit: Optional["Unit"] = None
         self._last_pick_time: float = 0.0
         self.pick_timeout: float = 1 / 15
+        self.long_press_time: float = 0.5
         self.ranged_targeting: RangedTargeting | None = None
         self.game_ui: "GameUIScreen | None" = None
         self.unit_manager: "UnitManager | None" = None
+
+        self.long_right_click: bool | None = None
 
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
@@ -89,7 +93,8 @@ class Input(Singleton, DirectObject):
 
     def register(self):
         self.accept("mouse1", self.pick_object)
-        self.accept("mouse3", self.on_right_click)
+        self.accept("mouse3-up", self.on_right_click)
+        self.accept("mouse3", self.on_right_down)
 
         if Debug.is_debug():
             self.accept("f2", self.activate)
@@ -111,8 +116,88 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
 
+    def on_right_down(self):
+        clicked_object: NodePath | None = self.pick_object(dont_select=True)
+        self.long_right_click = False
+        if clicked_object is None:
+            return
+
+        if clicked_object.getNetTag(NET_TYPE_FIELD) == NET_TYPE.TILE.value:
+            assert self.game_ui is not None, "Game UI should be initialized."
+
+            if self.selected_unit is None:
+                return
+
+            target: str = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
+            if (tile := TileRepository.get_tile(*map(lambda s: int(s), target.split("_")[-2:]))) is None:
+                self.logger.warning(f"Tile with ID {target} not found.")
+                return
+
+            self.game_ui.open_unit_path_renderer(self.selected_unit, tile)
+
+        self.base.taskMgr.doMethodLater(
+            self.long_press_time,
+            lambda task: self._is_still_right_click(),  # type: ignore
+            "right-click-delay-pick",  # type: ignore
+        )
+
+    def _is_still_right_click(self) -> bool:
+        if self.game_ui is None:
+            return False
+        # @TODO: Refactor this to use a better method of checking for long right click
+        if self.game_ui.unit_path_renderer is not None and self.game_ui.unit_path_renderer.is_visible():
+            self.long_right_click = True
+            return True
+        self.long_right_click = False
+        MessengerGlobal.messenger.send("mouse3-down-long")
+        return False
+
+    def is_long_right_click(self) -> bool:
+        return self.long_right_click is True
+
     def on_right_click(self):
+        from gameplay.unit import CantMoveReason
+
+        if self.game_ui is None:
+            return
+
         self.cancel_user_action()
+
+        clicked_object: NodePath | None = self.pick_object(dont_select=True)
+        if clicked_object is None:
+            self.game_ui.close_unit_path_renderer()
+            return
+
+        net_type: str = clicked_object.getNetTag(NET_TYPE_FIELD)  # type: ignore
+        net_id = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
+
+        if self.selected_unit is None:
+            self.game_ui.close_unit_path_renderer()
+            return
+
+        if NET_TYPE.TILE.value == net_type:
+            # If the user is doing a short right click, move the unit
+            if not self.is_long_right_click():
+                if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))) is None:
+                    self.logger.warning(f"Tile with ID {net_id} not found.")
+                    return
+                if self.selected_unit.can_move_to_tile(tile, get_tiles=False) == CantMoveReason.COULD_MOVE:
+                    self.move_selected_unit_to_tile(tile)
+
+        self.game_ui.close_unit_path_renderer()
+
+    def move_selected_unit_to_tile(self, tile: "Tile") -> None:
+        from gameplay.unit import CantMoveReason
+
+        if self.selected_unit is None:
+            self.logger.warning("No unit selected to move.")
+            return
+
+        if self.selected_unit.can_move_to_tile(tile=tile, get_tiles=False) != CantMoveReason.COULD_MOVE:
+            self.logger.warning(f"Selected unit cannot move to tile {tile.tag}.")
+            return
+
+        self.selected_unit.move(tile)
 
     def cancel_user_action(self):
         if self.game_ui is None:
@@ -272,6 +357,31 @@ class Input(Singleton, DirectObject):
                     self.unhover_all()
                     messenger.send("system.input.user.tile_hovered", [net_id])
                     self.hovered_tile_id = net_id
+
+                    tile: "Tile | None" = TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))
+
+                    if tile is None:
+                        self.logger.warning(f"Tile with ID {net_id} not found.")
+                        return task.cont
+
+                    if (
+                        self.game_ui.unit_path_renderer is not None
+                        and self.game_ui.unit_path_renderer.is_visible()
+                        and self.game_ui.unit_path_renderer.target_tile is not None
+                        and self.game_ui.unit_path_renderer.target_tile is not tile
+                        and self.game_ui.unit_path_renderer.source_tile is not None
+                    ):
+                        tiles: List["Tile"] | None = TileRepository.astar(
+                            self.game_ui.unit_path_renderer.source_tile, tile, 1.0
+                        )
+
+                        if tiles is None:
+                            self.game_ui.unit_path_renderer.hide()
+                            return task.cont
+
+                        path: List[Vec3] = TileRepository.tile_list_to_vec3(tiles)
+                        self.game_ui.unit_path_renderer.set_path(path)
+
                 if NET_TYPE.UNIT.value == net_type:
                     if self.hovered_unit_id == net_id:
                         break
@@ -316,7 +426,7 @@ class Input(Singleton, DirectObject):
     def run_analyze(self):
         self.base.render.analyze()  # type: ignore
 
-    def pick_object(self) -> NodePath | None:
+    def pick_object(self, dont_select: bool = False) -> NodePath | None:
         from managers.game import Game
 
         now = time.time()
@@ -342,6 +452,9 @@ class Input(Singleton, DirectObject):
                 picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
+
+                if dont_select:
+                    return picked_obj
 
                 selected_object = False
                 if net_type in (NET_TYPE.MODEL.value, NET_TYPE.UNIT.value):

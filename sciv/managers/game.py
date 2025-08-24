@@ -439,6 +439,7 @@ class Game(Singleton, DirectObject):
 
         self.ui.post_game_start()
 
+        TileRepository.grid = self.world.grid
         self.logger.info("Setting up borders")
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
         self.logger.info("Borders setup complete")

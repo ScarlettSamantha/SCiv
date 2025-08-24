@@ -10,7 +10,6 @@ from direct.showbase.MessengerGlobal import messenger
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
 from helpers.model import ModelHelper
-from managers.assets import AssetManager
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
@@ -63,8 +62,6 @@ class World(Singleton, DirectObject):
         for tile in list(EntityManager.get_singleton_instance().get_all(EntityType.TILE).values()):  # type: ignore
             tile.destroy()
 
-        TileRepository.reset_caches()  # Reset the tile repository caches as these are used in the generation of the map.
-        AssetManager.reset()
         ModelHelper.reset()
 
     def load(self, data: Dict[str, "Tile"]):
@@ -122,6 +119,9 @@ class World(Singleton, DirectObject):
         # Compute the middle of the grid.
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
+
+        TileRepository.reset_caches()
+        TileRepository.grid = self.grid
 
     def lookup_on_tag(self, tag: str) -> Optional["Tile"]:
         return self.map.get(tag, None)

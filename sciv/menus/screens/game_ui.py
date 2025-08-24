@@ -8,8 +8,10 @@ from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
 from gameplay.player import Player
+from gameplay.repositories.tile import TileRepository
 from gameplay.tile import Tile
 from gameplay.unit import Unit
+from gameplay.unit_path import MovementPathBlocksRenderer
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -42,6 +44,7 @@ from menus.kivy.parts.stats import StatsPanel
 from menus.kivy.parts.top_bar import TopBar
 from menus.screens.pause_menu import PauseMenu
 from mixins.inspectable import Inspectable
+from panda3d.core import Vec3
 from system.actions import Action
 from system.camera import Camera
 from system.entity import BaseEntity
@@ -98,6 +101,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.messenger: Optional[MessageRenderer] = None
         self.inspect: Optional[InspectEntity] = None
         self.player_attack_info: Optional[TargetingDuelPanel] = None
+        self.unit_path_renderer: Optional[MovementPathBlocksRenderer] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
@@ -701,6 +705,27 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.remove_widget(self.player_attack_info)
             self.player_attack_info.destroy()
             self.player_attack_info = None
+
+    def build_unit_path_renderer(self):
+        self.unit_path_renderer = MovementPathBlocksRenderer(self._base.render)
+
+    def open_unit_path_renderer(self, source: T_TARGET, target: T_TARGET):
+        if self.unit_path_renderer is None:
+            self.build_unit_path_renderer()
+        assert self.unit_path_renderer is not None, "Unit path renderer is not initialized."
+
+        source_tile: Tile = source.get_tile()
+        target_tile: Tile = target.get_tile()
+
+        tile_path: List[Tile] | None = TileRepository.astar(
+            source_tile, target_tile, avoid_occupied=False, movement_points=1.0
+        )
+        self.unit_path_renderer.set_path([Vec3(*tile.get_pos()) for tile in tile_path] if tile_path is not None else [])
+        self.unit_path_renderer.show()
+
+    def close_unit_path_renderer(self):
+        if self.unit_path_renderer is not None:
+            self.unit_path_renderer.hide()
 
     def open_log(self):
         self.log.open()
