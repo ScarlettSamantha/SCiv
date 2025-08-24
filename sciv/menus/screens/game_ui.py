@@ -691,7 +691,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if action.remove_actions_after_use:
             self.clear_action_bar()
 
-    def open_player_attack_info(self, source: Unit, target: Unit):
+    def open_player_attack_info(self, source: Unit, target: Unit | None = None):
         self.player_attack_info = TargetingDuelPanel()
         self.player_attack_info.set_units(source, target)
         self.add_widget(self.player_attack_info)
@@ -699,6 +699,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def close_player_attack_info(self):
         if self.player_attack_info is not None:
             self.remove_widget(self.player_attack_info)
+            self.player_attack_info.destroy()
             self.player_attack_info = None
 
     def open_log(self):

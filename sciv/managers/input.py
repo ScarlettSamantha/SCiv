@@ -62,6 +62,7 @@ class Input(Singleton, DirectObject):
         self.pick_timeout: float = 1 / 15
         self.ranged_targeting: RangedTargeting | None = None
         self.game_ui: "GameUIScreen | None" = None
+        self.unit_manager: "UnitManager | None" = None
 
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
@@ -227,6 +228,9 @@ class Input(Singleton, DirectObject):
         if self.game_ui is None:
             self.game_ui = self.base.ui_manager.get_main_game_ui()
 
+        if self.unit_manager is None:
+            self.unit_manager = UnitManager.get_singleton_instance()
+
         assert self.game_ui is not None, "Game UI should be initialized."
 
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
@@ -256,7 +260,7 @@ class Input(Singleton, DirectObject):
                     if self.hovered_unit_id == net_id:
                         break
                     self.unhover_all()
-                    if (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is None:
+                    if (unit := self.unit_manager.find_unit(net_id)) is None:
                         self.logger.warning(f"Unit with ID {net_id} not found.")
                         return task.cont
                     if (

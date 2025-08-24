@@ -614,7 +614,9 @@
         "targeting": {
           "targeting": "Targeting",
           "select_target": "Select a target",
-          "cancel_targeting": "Cancel targeting"
+          "cancel_targeting": "Cancel targeting",
+          "unit_info": "Unit info",
+          "versus": "vs"
         },
         "turn_button": {
           "end_turn": "End Turn {turn}",

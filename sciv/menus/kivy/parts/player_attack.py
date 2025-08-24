@@ -1,5 +1,5 @@
 from math import sin
-from typing import TYPE_CHECKING, Any, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from direct.showbase.DirectObject import DirectObject
 from helpers.colors import Colors
@@ -62,7 +62,7 @@ class _PredictedLossHealthBar(Widget):
             self._c_fill = Color(*self.fill_color)  # type: ignore
             self._rect_fill = Rectangle(pos=self.pos, size=(0, 0))  # type: ignore
 
-            lc = self.loss_color[:3] + [self._glow_alpha]
+            lc: List[float] = self.loss_color[:3] + [self._glow_alpha]
             self._c_loss = Color(*lc)  # type: ignore
             self._rect_loss = Rectangle(pos=self.pos, size=(0, 0))  # type: ignore
 
@@ -216,12 +216,25 @@ class _UnitSide(BoxLayout):
         self.stats.bind(minimum_height=lambda inst, val: setattr(inst, "height", val))  # type: ignore
         self.add_widget(self.stats)
 
+    def clear(self) -> None:
+        self.name_text = ""
+        self.lbl.text = ""
+        self.icon.opacity = 0.0
+        self.bar.max_value = 0.0
+        self.bar.current_value = 0.0
+        self.bar.predicted_loss = 0.0
+        self.stats.clear_widgets()
+
     def set_unit(
         self,
-        unit: "UnitType",
+        unit: "UnitType | None",
         use_name: bool = True,
         icon_fallback_char: Optional[str] = None,
     ) -> None:
+        if unit is None:
+            self.clear()
+            return
+
         color = Colors.to_hex(unit.get_owner().civilization.color, strip_alpha=True)
         self.name_text = (
             str(f"{str(unit.name)} - [color={color}]{str(unit.get_owner().civilization.name)}[/color]")
@@ -351,7 +364,7 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
         )
 
         self.header = Label(
-            text="[b]Targeting[/b]",
+            text=f"[b]{str(t_('ui.player_ui.targeting.targeting'))}[/b]",
             markup=True,
             size_hint=(1, None),
             height=dp(32),
@@ -368,7 +381,7 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
         self._right = _UnitSide(direction="rtl")
 
         self.vs = Label(
-            text="[b]vs[/b]",
+            text=f"[b]{str(t_('ui.player_ui.targeting.versus'))}[/b]",
             markup=True,
             size_hint=(None, 1),
             width=dp(30),
@@ -389,14 +402,40 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
     def update(self) -> None:
         self.refresh_from_units()
 
-    def set_units(self, attacker: "UnitType", defender: "UnitType", simulate_combat: bool = True) -> None:
+    def _toggle_defender_ui(self, enabled: bool) -> None:
+        if enabled:
+            self.vs.text = "[b]vs[/b]"
+            self.vs.opacity = 1.0
+            self.vs.size_hint_x = None
+            self.vs.width = dp(30)
+
+            self._right.opacity = 1.0
+            self._right.size_hint_x = 1
+            self._right.width = 0
+        else:
+            self.vs.text = ""
+            self.vs.opacity = 0.0
+            self.vs.size_hint_x = None
+            self.vs.width = 0
+
+            self._right.clear()
+            self._right.opacity = 0.0
+            self._right.size_hint_x = None
+            self._right.width = 0
+
+    def set_units(self, attacker: "UnitType", defender: "UnitType | None" = None, simulate_combat: bool = True) -> None:
         self._attacker = attacker
         self._defender = defender
 
-        self.header.text = f"[b]{t_('ui.player_ui.targeting.targeting')}[/b]"
+        try:
+            title = t_("ui.player_ui.targeting.targeting" if defender else "ui.player_ui.targeting.unit_info")
+        except Exception:
+            title = "Targeting" if defender else "Unit Info"
+        self.header.text = f"[b]{title}[/b]"
 
         self.left.set_unit(attacker, use_name=True)
         self._right.set_unit(defender, use_name=True)
+        self._toggle_defender_ui(defender is not None)
 
         for side in (self.left, self._right):
             side.lbl.opacity = 1
@@ -413,7 +452,7 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
         except Exception:
             pass
         try:
-            if hasattr(defender, "get_owner"):
+            if defender is not None and hasattr(defender, "get_owner"):
                 col = Colors.GREEN
                 self._right.bar.fill_color = [col[0] * 0.6 + 0.2, col[1] * 0.6 + 0.2, col[2] * 0.6 + 0.2, 1.0]
         except Exception:
@@ -442,14 +481,19 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
         self.left.set_predicted_loss(0.0)
         self._right.set_predicted_loss(0.0)
 
-    def on_parent(self, instance: Widget, parent: Optional[Widget]) -> None:  # type: ignore[override]
+    def on_parent(self, instance: Widget, parent: Optional[Widget]) -> None:  # type: ignore
         if parent is None and self._pulse_ev is not None:
             self._pulse_ev.cancel()  # type: ignore
             self._pulse_ev = None
 
     def _tick_pulse(self, dt: float) -> None:
-        self._pulse_t += dt * 4.0  # Increase the multiplier to make it pulse more often
+        self._pulse_t += dt * 4.0
         phase = 0.5 + 0.5 * sin(self._pulse_t)  # 0..1
         a = self.left.bar.loss_alpha_base + self.left.bar.loss_alpha_var * phase
         self.left.set_glow_alpha(a)
         self._right.set_glow_alpha(a)
+
+    def destroy(self) -> None:
+        if self._pulse_ev is not None:
+            self._pulse_ev.cancel()  #   type: ignore
+            self._pulse_ev = None
