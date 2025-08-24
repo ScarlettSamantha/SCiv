@@ -1,12 +1,13 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gameplay.actions.debug.debug_action import DebugAction
-from gameplay.unit import Unit
 from managers.combat import T_TARGET
 
-from gameplay.city import City
-from gameplay.improvement import Improvement
-from gameplay.player import Player
+if TYPE_CHECKING:
+    from gameplay.city import City, Tile
+    from gameplay.improvement import Improvement
+    from gameplay.player import Player
+    from gameplay.unit import Unit
 
 
 class KillAction(DebugAction):
@@ -29,14 +30,22 @@ class KillAction(DebugAction):
         )
 
     def kill_wrapper(self, *args: Any, **kwargs: Any) -> None:
+        from gameplay.unit import Unit
+
         target: T_TARGET | None = self.action_kwargs.get("target")
         if isinstance(target, Unit):
             target.kill()
             return
+
         raise ValueError("Target must be a Unit instance.")
 
     def is_successful(self, *args: Any, **kwargs: Any) -> bool:
-        target: City | Player | Improvement | Unit | None = self.get_target()
+        from gameplay.tile import Tile
+
+        target: "City | Player | Improvement | Unit | Tile | None" = self.get_target()
+        if isinstance(target, Tile):
+            return True  # Tiles are always "dead"
+
         assert target is not None, "Target must be set before checking success."
         return not target.is_alive()
 

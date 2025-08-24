@@ -268,6 +268,9 @@ class Tile(BaseEntity):
             data.pop(key, None)
         return data
 
+    def is_alive(self) -> bool:
+        return True  # Tiles are always "alive"
+
     def load_state(self) -> None:
         from system.tile_render import TileRenderer
 
