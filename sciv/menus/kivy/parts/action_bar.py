@@ -1,7 +1,6 @@
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Type, TypeIs, cast
 
-from direct.showbase.DirectObject import DirectObject
 from gameplay.improvement import Improvement
 from kivy.graphics import Color, Line, Rectangle
 from kivy.metrics import dp
@@ -14,11 +13,13 @@ from system.actions import Action
 if TYPE_CHECKING:
     from gameplay.unit import Unit
 
+    from sciv.game import OpenCiv
+
 
 class PanelButton(Button):
     corner_pad = NumericProperty(2)
 
-    bg_color = ListProperty([0.0, 0.0, 0.0, 0.75])
+    bg_color = ListProperty([0.2, 0.2, 0.2, 0.75])
     bg_color_down = ListProperty([0.0, 0.0, 0.0, 0.95])
     text_color = ListProperty([0.92, 0.92, 0.92, 1.0])
     disabled_alpha = NumericProperty(0.45)
@@ -41,9 +42,10 @@ class PanelButton(Button):
         self.background_down = ""
         self.background_disabled_normal = ""
         self.background_disabled_down = ""
-        self.border = (0, 0, 0, 0)
+        self.border = (0.2, 0.2, 0.2, 1)
+
         self.background_color = (0, 0, 0, 0)
-        self.highlight: bool = False
+        self.highlight: bool = True
 
         self.color = self.text_color[:]
 
@@ -54,6 +56,8 @@ class PanelButton(Button):
         with self.canvas.after:  # type: ignore
             self._c_hl = Color(*self.highlight_color)  # type: ignore
             self._line_hl = Line(rectangle=(0, 0, 0, 0), width=float(self.highlight_width))  # type: ignore
+
+        self.set_border_color(list(self.border))
 
         self.bind(
             pos=self._recompute_geometry,
@@ -122,13 +126,17 @@ class PanelButton(Button):
         self._rect_bg.pos = (x + pad, y + pad)  # type: ignore
         self._rect_bg.size = (w - 2 * pad, h - 2 * pad)  # type: ignore
 
+    def set_border_color(self, color: List[float]) -> None:
+        self.highlight_color = color
+        self._apply_highlight()
 
-class ActionBar(BoxLayout, DirectObject):
-    def __init__(self, *args: Any, **kwargs: Any):
-        self.background_color = (0, 0, 0, 0)
+
+class PlayerActionBar(BoxLayout):
+    def __init__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
+        super().__init__(**kwargs)
+        self.base = base
         self.border = (0, 0, 0, 0)
         self.background_image = ""
-        super().__init__(*args, **kwargs)  # type: ignore
         self.frame: Optional[GridLayout] = None
         self.prepare_action: Optional[Callable[..., Any]] = None
         self.prepare_build_action: Optional[Callable[..., Any]] = None
@@ -139,15 +147,25 @@ class ActionBar(BoxLayout, DirectObject):
         self.current_action: Optional[Action] = None
 
     def build(self) -> GridLayout:
+        window_size_x, window_size_y = self.base.win.getXSize(), self.base.win.getYSize()  # type: ignore
         self.frame = GridLayout(
             orientation="lr-tb",
             size_hint=(None, None),
-            width=1000,
-            height=dp(85),
+            width=1150,
+            height=dp(100),
+            padding=(dp(15), dp(12), dp(10), dp(15)),
             spacing=dp(10),
-            pos=(dp(800), dp(0)),
+            pos=(dp((window_size_x // 2) - (1150 / 2)), dp(10)),
             cols=12,
             rows=1,
+        )
+        with self.frame.canvas.before:
+            self._bg_color = Color(0.1, 0.1, 0.1, 0.7)  # Transparent black background
+            self._bg_rect = Rectangle(pos=self.frame.pos, size=self.frame.size)  # type: ignore
+
+        self.frame.bind(
+            pos=lambda instance, value: setattr(self._bg_rect, "pos", value),
+            size=lambda instance, value: setattr(self._bg_rect, "size", value),
         )
         return self.frame
 
@@ -168,6 +186,7 @@ class ActionBar(BoxLayout, DirectObject):
             if action.is_disabled:
                 btn.disabled = True
             if self.current_action is not None and action == self.current_action and not self.current_action.has_run():
+                btn.set_border_color([1.0, 1.0, 1.0, 1.0])
                 btn.highlight = True
             btn.bind(on_press=partial(self.fire_event, action=action, executor=self.current_unit))  # type: ignore
             self.add_button(btn)

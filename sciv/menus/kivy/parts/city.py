@@ -11,12 +11,14 @@ from gameplay.units.core.classes.civilian._base import CivilianBaseClass
 from gameplay.units.core.classes.military._base import MilitaryBaseClass
 from gameplay.yields import Yields
 from helpers.debug import Debug
+from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
+from kivy.properties import ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
-from kivy.uix.widget import Widget
 from managers.i18n import t_
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
@@ -28,6 +30,8 @@ if TYPE_CHECKING:
 
 
 class CityUI(BoxLayout, DirectObject):
+    bg_rgba = ListProperty([0.0, 0.0, 0.0, 0.7])
+
     def __init__(
         self,
         base: "OpenCiv",
@@ -37,41 +41,37 @@ class CityUI(BoxLayout, DirectObject):
         border: Tuple[int, int, int, int] = (0, 0, 0, 0),
         **kwargs: Any,
     ):
-        super().__init__(orientation="vertical", **kwargs)  # type: ignore # The Layout class does not have a disable_zoom attribute but the CollisionPreventionMixin class does.
+        kwargs.setdefault("size_hint", (None, None))
+        kwargs.setdefault("pos_hint", {"x": 0, "top": 0.982})
+        kwargs.setdefault("pos", (dp(0), dp(100)))
+        kwargs.setdefault("width", dp(400))
+        kwargs.setdefault("height", dp(835))
+        kwargs.setdefault("orientation", "vertical")
+
+        super().__init__(**kwargs)  # type: ignore
+
         self.ref_screen: weakref.ReferenceType[GameUIScreen] = weakref.ref(screen)
-        self.pos_hint = {"x": 0, "center_y": 0.65}  # Align left & center vertically
-        self.size_hint = (0.50, 0.2)  # type: ignore # Ensure fixed width and height
-        self.background_color = (0, 0, 0, 1)  # Black background
-        self.width = 400  # Explicitly set width
-        self.height = 900  # Explicitly set height
+        self.base: "OpenCiv" = base
+        self.logger = base.logger.gameplay.getChild("ui.city_ui")
+
         self.background_color = background_color
         self.border = border
         self.background_image = None
-        self.base: "OpenCiv" = base
-        self.logger = base.logger.gameplay.getChild("ui.city_ui")
-        self.frame: Optional[BoxLayout] = None
+
         self.hidden: bool = False
         self.is_open: bool = False
 
         self.city_name = name
         self.city: Optional[City] = None
-        self.city_label: Optional[Label] = None
 
+        self.city_label: Optional[Label] = None
         self.population_label: Optional[Label] = None
         self.is_capital_label: Optional[Label] = None
         self.tiles_label: Optional[Label] = None
         self.player_label: Optional[Label] = None
-
-        self.current_layout: Optional[BoxLayout] = None
-        self.current_label: Optional[Label] = None
         self.current_button: Optional[Button] = None
-
-        self.actions_scroll: Optional[ClippingScrollList] = None
-        self.actions_label: Optional[Label] = None
-
+        self.button_container: Optional[ClippingScrollList] = None
         self.improvement_list_scroll: Optional[ClippingScrollList] = None
-        self.improvement_list_label: Optional[Label] = None
-
         self.gold_label: Optional[ImageLabel] = None
         self.production_label: Optional[ImageLabel] = None
         self.food_label: Optional[ImageLabel] = None
@@ -85,8 +85,19 @@ class CityUI(BoxLayout, DirectObject):
 
         self.should_log: bool = Debug.system_input()
 
-        self.add_widget(self.build())
+        with self.canvas.before:
+            self._bg_color_instr = Color(*self.bg_rgba)  # type: ignore
+            self._bg_rect = Rectangle(size=self.size, pos=self.pos)
+        self.bind(size=self._update_bg_rect, pos=self._update_bg_rect, bg_rgba=self._on_bg_rgba)  # type: ignore
+
         self.register()
+
+    def _update_bg_rect(self, *_):
+        self._bg_rect.size = self.size
+        self._bg_rect.pos = self.pos
+
+    def _on_bg_rgba(self, *_):
+        self._bg_color_instr.rgba = self.bg_rgba  # type: ignore
 
     def register(self):
         self.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
@@ -94,297 +105,59 @@ class CityUI(BoxLayout, DirectObject):
         self.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
         self.accept("game.gameplay.city.canceled_production", self.on_cancel_current_build)
 
-    def set_city(self, city: City):
-        self.city = city
-
     def get_screen(self) -> "GameUIScreen":
         screen = self.ref_screen()
         if screen is None:
             raise RuntimeError("CityUI screen reference is None.")
         return screen
 
-    def update(self):
-        if self.city is None:
-            return
+    def set_city(self, city: City):
+        self.city = city
+        Clock.schedule_once(lambda *_: self.rebuild(city), 0)  # schedule on next frame # type: ignore
 
-        self.update_debug_rect(self.frame, None)  # type: ignore
-        self.logger.debug(f"Updating City UI for city: {self.city.name}")
+    def rebuild(self, city: City):
+        self.clear_widgets()
 
-        self.city_name = self.city.name
+        self.city_label = Label(text=str(city.name), size_hint=(1, None), height=50, bold=True, font_size=24)
+        self.add_widget(self.city_label)
 
-        if self.city_label is not None:
-            self.city_label.text = self.city_name if isinstance(self.city_name, str) else str(self.city_name)
-
-        if self.population_label is not None:
-            food_collected = str(floor(self.city.food_collected.food.value))
-            food_required = str(floor(self.city.new_population_food_required.food.value))
-            self.population_label.text = str(
-                t_(
-                    "ui.player_ui.city.population_label",
-                    {
-                        "population": self.city.population,
-                        "food_collected": food_collected,
-                        "food_required": food_required,
-                    },
-                )
-            )
-
-        if self.is_capital_label is not None:
-            self.is_capital_label.text = str(
-                t_("ui.player_ui.city.is_capital_label", {"yes_no": "Yes" if self.city.is_capital else "No"})
-            )
-
-        if self.tiles_label is not None:
-            self.tiles_label.text = str(t_("ui.player_ui.city.tiles_label", {"tiles": len(self.city.owned_tiles)}))
-
-        if self.player_label is not None and self.city.player is not None:
-            self.player_label.text = str(
-                t_("ui.player_ui.city.player_label", {"player": self.city.get_tile().get_owner().name})
-            )
-
-        if (
-            self.gold_label is not None
-            and self.production_label is not None
-            and self.food_label is not None
-            and self.science_label is not None
-            and self.culture_label is not None
-            and self.border_label is not None
-        ):
-            tile_yield: Yields = self.city.calculate_yield_from_tiles()
-            self.gold_label.set_text(str(t_("ui.player_ui.city.gold_label", {"gold": tile_yield.gold.value})))
-            self.production_label.set_text(
-                str(t_("ui.player_ui.city.production_label", {"production": tile_yield.production.value}))
-            )
-            self.food_label.set_text(str(t_("ui.player_ui.city.food_label", {"food": tile_yield.food.value})))
-            self.science_label.set_text(
-                str(t_("ui.player_ui.city.science_label", {"science": tile_yield.science.value}))
-            )
-            self.culture_label.set_text(
-                str(t_("ui.player_ui.city.culture_label", {"culture": tile_yield.culture.value}))
-            )
-            self.border_label.set_text(
-                str(
-                    t_(
-                        "ui.player_ui.city.border_label",
-                        {
-                            "current_points": self.city.border_growth_points,
-                            "required_points": self.city.border_growth_cost,
-                        },
-                    )
-                )
-            )
-
-        if self.current_button is not None and self.city.is_building and self.city.building is not None:
-            resource_required = list(self.city.resource_required_amount.props(True).values())
-            resource_got = list(self.city.resource_collected.props(True).values())
-            if len(resource_required) == 0:
-                self.logger.error("Resource required is None or empty.")
-                raise AssertionError("Resource required is None or empty.")
-            resource_got = 0.0 if len(resource_got) == 0 else resource_got[0].value
-            resource_required = resource_required[0].value
-            building = self.city.get_building()
-            text = str(
-                t_(
-                    "ui.player_ui.city.current_button_building",
-                    {
-                        "building": building.name if building is not None else "Unknown",
-                        "resources_got": str(floor(resource_got)),
-                        "resources_required": str(floor(resource_required)),
-                    },
-                )
-            )
-            self.current_button.text = text
-        elif self.current_button is not None and not self.city.is_building:
-            self.current_button.text = str(t_("ui.player_ui.city.current_button_idle"))
-
-        self.generate_buttons()
-        self.button_container.clear_widgets()
-        for button in self.buildable_buttons.values():
-            self.button_container.add_widget(button)
-
-        self.button_container._apply_clipping()  # type: ignore
-        self.button_container.scroll_to_top()
-
-        self.improvement_list_scroll.clear_widgets()  # type: ignore
-        for improvement in self.city._improvements:  # type: ignore
-            label = Label(text=str(improvement.name), size_hint_y=None, height=30, font_size=12)
-            self.improvement_list_scroll.add_widget(label)  # type: ignore
-        self.improvement_list_scroll._apply_clipping()  # type: ignore
-        self.improvement_list_scroll.scroll_to_top()  # type: ignore
-
-        self.city.get_tile().get_renderer().update()
-
-    def generate_buttons(self) -> Dict[str, Button]:
-        from gameplay.repositories.improvements import ImprovementsRepository
-
-        self.buildable_improvements = {}
-        self.buildable_buttons = {}
-        buttons: Dict[str, Button] = {}
-
-        def format_button_text(instance: BaseCityImprovement | CivilianBaseClass | MilitaryBaseClass) -> str:
-            return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
-
-        # Improvements
-        for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
-            class_instance: BaseCityImprovement = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
-            if not class_instance.conditions.are_met():  # type: ignore
-                continue
-            if self.city is None:
-                continue
-            if type(class_instance) in self.city.get_improvements():  # type: ignore
-                continue
-            if any(i.__class__.__name__ == class_instance.__class__.__name__ for i in self.city.get_improvements()):
-                continue
-
-            button = ButtonValue(
-                text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
-            )
-            # bind directly to the button instance (no late-binding)
-            button.bind(on_press=lambda btn: self.on_build_button_click(btn))  # btn is ButtonValue # type: ignore
-            buttons[class_name] = button
-            self.buildable_improvements[class_name] = class_instance  # type: ignore
-            self.buildable_buttons[class_name] = button
-
-        # Units
-        for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
-            class_instance: CivilianBaseClass | MilitaryBaseClass = class_ref(self.city.get_tile(), self.city.owner)  # type: ignore
-            if not class_instance.build_conditions.are_met():
-                continue
-            class_instance.is_being_build = True
-
-            button = ButtonValue(
-                text=format_button_text(class_instance), value=class_instance, size_hint=(1, None), height=50
-            )
-            button.bind(on_press=lambda btn: self.on_unit_build_button_click(btn))  # separate handler # type: ignore
-            buttons[class_name] = button
-            self.buildable_units[class_name] = class_instance
-            self.buildable_buttons[class_name] = button
-
-        return buttons
-
-    def purge_temporary_units_and_improvements(self):
-        if self.city is None:
-            return
-
-    def on_build_button_click(self, instance: ButtonValue):
-        if self.city is None:
-            return
-
-        self.logger.debug(f"Requesting to build improvement: {instance.value} in city: {self.city.name}")
-
-        MessengerGlobal.messenger.send(
-            f"game.gameplay.city.request_start_building_improvement_{self.city.tag}", [self.city, instance.value]
-        )
-
-    def on_unit_build_button_click(self, instance: ButtonValue):
-        if self.city is None:
-            return
-
-        self.logger.debug(f"Requesting to build unit: {instance.value} in city: {self.city.name}")
-        MessengerGlobal.messenger.send(
-            f"game.gameplay.city.request_start_building_unit_{self.city.tag}", [self.city, instance.value]
-        )
-
-    def on_city_start_building_improvement(self, city: City, improvement: BaseCityImprovement):
-        if city != self.city:  # We dont have it selected so we dont have to update
-            return
-        self.update()
-
-    def on_city_finish_building_improvement(self, city: City, improvement: BaseCityImprovement):
-        if city != self.city:
-            return
-        self.update()
-
-    def on_end_turn_process(self, turn: int):
-        if self.city is None:
-            return
-        self.update()
-
-    def on_cancel_current_build(self, city: City):
-        if city != self.city:
-            return
-        self.update()
-
-    def on_cancel_current_build_btn_click(self, instance: Button):
-        if self.city is None:
-            raise AssertionError("City is None")
-
-        self.logger.debug(f"Requesting to cancel current build in city: {self.city.name}")
-        MessengerGlobal.messenger.send(
-            f"game.gameplay.city.request_cancel_building_improvement_{self.city.tag}", [self.city]
-        )
-
-    def update_debug_rect(self, instance: Widget, value: Any):
-        self.rect.size = instance.size  # type: ignore
-        self.rect.pos = instance.pos  # type: ignore
-
-    def build(self) -> BoxLayout:
-        self.logger.debug("Building City UI")
-        self.background_color = (0, 0, 0, 1)  # Black background
-
-        self.frame = BoxLayout(
-            orientation="vertical",
-            size_hint=(0.15, 0.680),
-            width=400,
-            height=950,
-            padding=10,
-            spacing=10,
-            pos_hint={"right": 1, "center_y": 0.415},
-        )
-
-        with self.frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.7)
-            self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
-
-        self.frame.bind(size=self.update_debug_rect, pos=self.update_debug_rect)
-
-        self.city_label = Label(text=str(self.city_name), size_hint=(1, None), height=50, bold=True, font_size=24)
-        self.frame.add_widget(self.city_label)
-
-        self.stats_grid = GridLayout(orientation="lr-tb", size_hint=(1, None), height=100, spacing=0, rows=2, cols=2)
-
+        stats = GridLayout(orientation="lr-tb", size_hint=(1, None), height=100, spacing=0, rows=2, cols=2)
         self.population_label = Label(text="Pop: ?", size_hint=(1, None), height=30, font_size=12)
         self.tiles_label = Label(text="Tiles: ?", size_hint=(1, None), height=30, font_size=12)
-
         self.player_label = Label(text="Owner: ?", size_hint=(1, None), height=30, font_size=12)
         self.is_capital_label = Label(text="Capital: ?", size_hint=(1, None), height=30, font_size=12)
 
-        self.stats_grid.add_widget(self.population_label)
-        self.stats_grid.add_widget(self.tiles_label)
-        self.stats_grid.add_widget(self.player_label)
-        self.stats_grid.add_widget(self.is_capital_label)
+        stats.add_widget(self.population_label)
+        stats.add_widget(self.tiles_label)
+        stats.add_widget(self.player_label)
+        stats.add_widget(self.is_capital_label)
+        self.add_widget(stats)
 
-        self.frame.add_widget(self.stats_grid)
-
-        self.current_layout = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40, spacing=5)
-        self.current_label = Label(
+        current_layout = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40, spacing=5)
+        current_label = Label(
             text=str(t_("ui.player_ui.city.current_button_label")), size_hint=(0.3, None), height=30, font_size=16
         )
-        self.current_button = Button(text=str("?"), size_hint=(0.65, None), height=30)
+        self.current_button = Button(text="?", size_hint=(0.65, None), height=30)
         self.current_button.bind(on_press=self.on_cancel_current_build_btn_click)
+        current_layout.add_widget(current_label)
+        current_layout.add_widget(self.current_button)
+        self.add_widget(current_layout)
 
-        self.current_layout.add_widget(self.current_label)
-        self.current_layout.add_widget(self.current_button)
-
-        self.frame.add_widget(self.current_layout)
-
-        self.actions_label = Label(
+        actions_label = Label(
             text=str(t_("ui.player_ui.city.actions_label")), size_hint=(1, None), height=30, font_size=16
         )
-        self.frame.add_widget(self.actions_label)
+        self.add_widget(actions_label)
 
         self.button_container = ClippingScrollList(size_hint=(1, None), height=400)
+        self.add_widget(self.button_container)
 
-        self.frame.add_widget(self.button_container)
+        improvements_lbl = Label(text="Improvements", size_hint=(1, None), height=30, font_size=16)
+        self.add_widget(improvements_lbl)
 
-        self.improvement_list_label = Label(text="Improvements", size_hint=(1, None), height=30, font_size=16)
-        self.frame.add_widget(self.improvement_list_label)
+        self.improvement_list_scroll = ClippingScrollList(size_hint=(1, None), height=dp(100), cols=3)
+        self.add_widget(self.improvement_list_scroll)
 
-        self.improvement_list_scroll = ClippingScrollList(size_hint=(1, None), height=100, cols=3)
-        self.frame.add_widget(self.improvement_list_scroll)
-
-        self.footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
-
+        footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
         self.gold_label = ImageLabel(
             text="Gold: ?",
             img_source="assets/icons/resources/core/basic/gold.png",
@@ -421,58 +194,191 @@ class CityUI(BoxLayout, DirectObject):
             font_size=12,
         )
         self.border_label = ImageLabel(
-            text="Border: ?",
-            img_source="assets/icons/border_growth.png",
-            size_hint=(1, None),
-            height=30,
-            font_size=12,
+            text="Border: ?", img_source="assets/icons/border_growth.png", size_hint=(1, None), height=30, font_size=12
+        )
+        footer.add_widget(self.gold_label)
+        footer.add_widget(self.production_label)
+        footer.add_widget(self.food_label)
+        footer.add_widget(self.science_label)
+        footer.add_widget(self.culture_label)
+        footer.add_widget(self.border_label)
+        self.add_widget(footer)
+
+        food_collected = str(floor(city.food_collected.food.value))
+        food_required = str(floor(city.new_population_food_required.food.value))
+        self.population_label.text = str(
+            t_(
+                "ui.player_ui.city.population_label",
+                {"population": city.population, "food_collected": food_collected, "food_required": food_required},
+            )
+        )
+        self.is_capital_label.text = str(
+            t_("ui.player_ui.city.is_capital_label", {"yes_no": "Yes" if city.is_capital else "No"})
+        )
+        self.tiles_label.text = str(t_("ui.player_ui.city.tiles_label", {"tiles": len(city.owned_tiles)}))
+        if city.player is not None:
+            self.player_label.text = str(
+                t_("ui.player_ui.city.player_label", {"player": city.get_tile().get_owner().name})
+            )
+
+        ty: Yields = city.calculate_yield_from_tiles()
+        self.gold_label.set_text(str(t_("ui.player_ui.city.gold_label", {"gold": ty.gold.value})))
+        self.production_label.set_text(
+            str(t_("ui.player_ui.city.production_label", {"production": ty.production.value}))
+        )
+        self.food_label.set_text(str(t_("ui.player_ui.city.food_label", {"food": ty.food.value})))
+        self.science_label.set_text(str(t_("ui.player_ui.city.science_label", {"science": ty.science.value})))
+        self.culture_label.set_text(str(t_("ui.player_ui.city.culture_label", {"culture": ty.culture.value})))
+        self.border_label.set_text(
+            str(
+                t_(
+                    "ui.player_ui.city.border_label",
+                    {"current_points": city.border_growth_points, "required_points": city.border_growth_cost},
+                )
+            )
         )
 
-        self.footer.add_widget(self.gold_label)
-        self.footer.add_widget(self.production_label)
-        self.footer.add_widget(self.food_label)
-        self.footer.add_widget(self.science_label)
-        self.footer.add_widget(self.culture_label)
-        self.footer.add_widget(self.border_label)
+        if city.is_building and city.building is not None:
+            req_list = list(city.resource_required_amount.props(True).values())
+            got_list = list(city.resource_collected.props(True).values())
+            if len(req_list) == 0:
+                self.logger.error("Resource required is None or empty.")
+                raise AssertionError("Resource required is None or empty.")
+            got = 0.0 if len(got_list) == 0 else got_list[0].value
+            req = req_list[0].value
+            building = city.get_building()
+            self.current_button.text = str(
+                t_(
+                    "ui.player_ui.city.current_button_building",
+                    {
+                        "building": building.name if building is not None else "Unknown",
+                        "resources_got": str(floor(got)),
+                        "resources_required": str(floor(req)),
+                    },
+                )
+            )
+        elif not city.is_building:
+            self.current_button.text = str(t_("ui.player_ui.city.current_button_idle"))
 
-        self.frame.add_widget(self.footer)
+        self._fill_buildables(city)
 
-        return self.frame
+        for imp in city._improvements:  # type: ignore
+            self.improvement_list_scroll.add_widget(
+                Label(text=str(imp.name), size_hint_y=None, height=30, font_size=12)
+            )
+        self.improvement_list_scroll._apply_clipping()  # type: ignore
+        self.improvement_list_scroll.scroll_to_top()  # type: ignore
 
-    def show(self, city: Optional[City] = None, auto_update: bool = True):
-        if self.frame is None:
-            raise AssertionError("City view has not been built yet.")
+        # world visuals
+        city.get_tile().get_renderer().update()
 
+    def _fill_buildables(self, city: City) -> None:
+        self.buildable_improvements.clear()
+        self.buildable_units.clear()
+        self.buildable_buttons.clear()
+        assert self.button_container is not None
+        self.button_container.clear_widgets()
+
+        from gameplay.repositories.improvements import ImprovementsRepository
+
+        def fmt(instance: BaseCityImprovement | CivilianBaseClass | MilitaryBaseClass) -> str:
+            return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
+
+        # Improvements
+        for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
+            instance: BaseCityImprovement = class_ref(city.get_tile(), city.owner)  # type: ignore
+            if not instance.conditions.are_met():  # type: ignore
+                continue
+            if type(instance) in city.get_improvements():  # type: ignore
+                continue
+            if any(i.__class__.__name__ == instance.__class__.__name__ for i in city.get_improvements()):
+                continue
+
+            btn = ButtonValue(text=fmt(instance), value=instance, size_hint=(1, None), height=50)
+            btn.bind(on_press=lambda b: self.on_build_button_click(b))  # type: ignore
+            self.buildable_improvements[class_name] = instance  # type: ignore
+            self.buildable_buttons[class_name] = btn
+            self.button_container.add_widget(btn)
+
+        # Units
+        for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
+            instance: CivilianBaseClass | MilitaryBaseClass = class_ref(city.get_tile(), city.owner)  # type: ignore
+            if not instance.build_conditions.are_met():
+                continue
+            instance.is_being_build = True
+            btn = ButtonValue(text=fmt(instance), value=instance, size_hint=(1, None), height=50)
+            btn.bind(on_press=lambda b: self.on_unit_build_button_click(b))  # type: ignore
+            self.buildable_units[class_name] = instance
+            self.buildable_buttons[class_name] = btn
+            self.button_container.add_widget(btn)
+
+        self.button_container._apply_clipping()  # type: ignore
+        self.button_container.scroll_to_top()
+
+    def on_build_button_click(self, instance: ButtonValue):
+        if self.city is None:
+            return
+        self.logger.debug(f"Requesting to build improvement: {instance.value} in city: {self.city.name}")
+        MessengerGlobal.messenger.send(
+            f"game.gameplay.city.request_start_building_improvement_{self.city.tag}", [self.city, instance.value]
+        )
+
+    def on_unit_build_button_click(self, instance: ButtonValue):
+        if self.city is None:
+            return
+        self.logger.debug(f"Requesting to build unit: {instance.value} in city: {self.city.name}")
+        MessengerGlobal.messenger.send(
+            f"game.gameplay.city.request_start_building_unit_{self.city.tag}", [self.city, instance.value]
+        )
+
+    def on_city_start_building_improvement(self, city: City, improvement: BaseCityImprovement):
+        if city == self.city:
+            self.rebuild(city)
+
+    def on_city_finish_building_improvement(self, city: City, improvement: BaseCityImprovement):
+        if city == self.city:
+            self.rebuild(city)
+
+    def on_end_turn_process(self, turn: int):
+        if self.city is not None:
+            self.rebuild(self.city)
+
+    def on_cancel_current_build(self, city: City):
+        if city == self.city:
+            self.rebuild(city)
+
+    def on_cancel_current_build_btn_click(self, instance: Button):
+        if self.city is None:
+            raise AssertionError("City is None")
+        self.logger.debug(f"Requesting to cancel current build in city: {self.city.name}")
+        MessengerGlobal.messenger.send(
+            f"game.gameplay.city.request_cancel_building_improvement_{self.city.tag}", [self.city]
+        )
+
+    def show(self, city: Optional[City] = None):
         self.logger.debug("Showing City UI")
-
         if city is not None:
-            self.set_city(city)
-            self.update()
+            self.city = city
+        if self.city is not None:
+            self.rebuild(self.city)
 
-        # ensure visible/enabled
-        self.frame.opacity = 1
-        self.frame.disabled = False
+        self.opacity = 1
+        self.disabled = False
         self.hidden = False
-
-        self.get_screen().register_non_collidable(self.frame)
+        self.get_screen().register_non_collidable(self)
 
     def hide(self, auto_forget: bool = True):
-        if self.frame is None or self.frame.disabled is True:
+        if self.hidden:
             if self.should_log:
                 self.logger.debug("City UI is already hidden, skipping hide operation.")
             return
-
         self.logger.debug("Hiding City UI")
-
         if auto_forget:
             self.city = None
-
-        self.frame.disabled = True
-        self.frame.opacity = 0
-        self.frame.clear_widgets()
+        self.opacity = 0
+        self.disabled = True
         self.hidden = True
-
-        self.get_screen().unregister_non_collidable(self.frame)
+        self.get_screen().unregister_non_collidable(self)
 
     def is_hidden(self) -> bool:
         return self.hidden

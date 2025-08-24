@@ -1,6 +1,6 @@
 from typing import Any
 
-from _base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.colors import Colors
 from managers.i18n import t_
 

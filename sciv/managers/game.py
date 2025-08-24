@@ -398,6 +398,7 @@ class Game(Singleton, DirectObject):
 
     def _try_game_start(self):
         self.logger.info("Starting world generation sequence")
+        Cache.set_showbase_instance(self.base)
 
         self.active_generator = self.world.get_generator()  # type: ignore
         self.generate_world()

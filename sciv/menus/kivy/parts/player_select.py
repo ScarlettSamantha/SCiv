@@ -27,18 +27,14 @@ if TYPE_CHECKING:
 
 
 class TargetPanel(BoxLayout, DirectObject):
-    """
-    Now supports both Unit and Tile. Call set_unit()/set_tile() or show_for(obj).
-    """
-
     def __init__(self, **kwargs: Any):
         kwargs.setdefault("orientation", "vertical")
         kwargs.setdefault("spacing", dp(6))
         kwargs.setdefault("padding", (dp(8), dp(8), dp(8), dp(8)))
         kwargs.setdefault("size_hint", (None, None))
-        kwargs.setdefault("width", dp(350))
-        kwargs.setdefault("height", dp(350))
-        kwargs.setdefault("pos", (dp(425), dp(0)))
+        kwargs.setdefault("width", dp(400))
+        kwargs.setdefault("height", dp(500))
+        kwargs.setdefault("pos", (dp(0), dp(0)))
         super().__init__(**kwargs)
 
         self._bg_rect: Optional[Rectangle] = None

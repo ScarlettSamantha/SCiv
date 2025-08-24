@@ -656,6 +656,9 @@
         },
         "combat_log": {
           "combat_log": "Combat Log",
+          "expand": "Expand",
+          "collapse": "Collapse",
+          "compact": "Compact ({max_entries})",
           "results": {
             "defender_killed": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and killed by [color=#ff0000]{damage}[/color].",
             "defender_damaged": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and damaged for [color=#ff0000]{damage} and retaliated for [color=#ff0000]{retaliation_damage}[/color].",
@@ -747,6 +750,7 @@
         "sea_water": "Sea water",
         "sea_ice": "Sea ice",
         "lake": "Lake",
+        "city": "City",
 
         "flatland_grass": "Flat grassland",
         "flatland_plains": "Flat plains",
@@ -1618,6 +1622,10 @@
             "name": "Corn",
             "description": "A cereal grain used for food and animal feed."
           },
+          "cocoa": {
+            "name": "Cocoa",
+            "description": "A tropical crop used to produce chocolate."
+          },
           "chicken": {
             "name": "Chicken",
             "description": "A domesticated bird raised for meat and eggs."
@@ -2397,6 +2405,7 @@
         }
       },
       "improvements": {
+        "improvements": "improvements",
         "core": {
           "basic": {
             "mine": {

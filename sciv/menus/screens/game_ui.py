@@ -27,7 +27,7 @@ from managers.world import World
 from menus.kivy.elements.log_popup import LogPopup
 from menus.kivy.elements.message import MessageRenderer
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
-from menus.kivy.parts.action_bar import ActionBar
+from menus.kivy.parts.action_bar import PlayerActionBar
 from menus.kivy.parts.city import CityUI
 from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
@@ -86,7 +86,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.root_layout: Optional[FloatLayout] = None
 
-        self.action_bar_frame: Optional[ActionBar] = None
+        self.action_bar_frame: Optional[PlayerActionBar] = None
         self.debug_frame: Optional[DebugPanel] = None
         self.stats_frame: Optional[StatsPanel] = None
         self.debug_actions: Optional[DebugActions] = None
@@ -130,13 +130,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_combat_log()
         self.build_messenger()
 
-        if self.debug_map_stats is not None:
-            self.debug_map_stats.update()
-
-        self.add_widget(self.build_debug_map_stats())  # type: ignore
-        # self.add_widget(self.build_debug_frame())  # type: ignore
         self.add_widget(self.build_top_bar())  # type: ignore
-        self.add_widget(self.build_stats_frame())  # type: ignore
 
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
@@ -205,9 +199,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def refresh_city(self, city: City | None = None, *args: Any, **kwargs: Any):
         if self.city_ui is not None:
-            if city is not None:
-                self.city_ui.set_city(city)
-            self.city_ui.update()
+            self.city_ui.show(city)
 
     def on_escape(self):
         if self.research is not None and self.research.is_open:
@@ -251,6 +243,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.showing_city = None
             self.close_city_ui()
 
+    def process_turn(self):
+        self.refresh_city()
+        self.refresh_action_bar()
+
     def process_city_click(self, city: Any):
         self.open_city_ui(city=city)
 
@@ -267,7 +263,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             raise AssertionError("Camera panel is not initialized.")
         return self.stats_frame
 
-    def get_action_bar_frame(self) -> ActionBar:
+    def get_action_bar_frame(self) -> PlayerActionBar:
         if self.action_bar_frame is None:
             raise AssertionError("Action bar is not initialized.")
         return self.action_bar_frame
@@ -359,7 +355,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         return self.inspect
 
     def build_action_bar(self) -> GridLayout:
-        self.action_bar_frame = ActionBar()
+        self.action_bar_frame = PlayerActionBar(self._base)
         return self.action_bar_frame.build()
 
     def build_stats_frame(self) -> FloatLayout:
@@ -424,7 +420,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def build_combat_log(self) -> PlayerCombatLog:
         combat_log = CombatLog()
         logs: List[CombatLogEntry] = combat_log.get_entries(PlayerManager.session_player())
-        self.player_combat_log = PlayerCombatLog(log=logs)
+        self.player_combat_log = PlayerCombatLog(log=logs, base=self._base)
         self.player_combat_log.build()
         self.player_combat_log.update()
         self.add_widget(self.player_combat_log)
@@ -752,14 +748,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def open_city_ui(self, city: City):
         self.close_city_ui()
-        self.city_ui = CityUI(screen=self, base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
+        self.city_ui = CityUI(
+            screen=self,
+            base=self._base,
+            name="",
+        )
 
         assert self.city_ui is not None, "City UI is not initialized."
-        assert self.city_ui.frame is not None, "City UI frame is not initialized."
-
         assert self.root_layout is not None, "Root layout is not initialized."
-        self.root_layout.add_widget(self.city_ui.build())
-        self.city_ui.show(city=city)
+
+        self.city_ui.show(city)
+        self.root_layout.add_widget(self.city_ui)
 
     def close_city_ui(self):
         if self.city_ui is None:
