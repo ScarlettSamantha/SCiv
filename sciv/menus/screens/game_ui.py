@@ -38,6 +38,7 @@ from menus.kivy.parts.player_attack import TargetingDuelPanel
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
+from menus.kivy.parts.player_select import UnitSummaryPanel
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
@@ -102,6 +103,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.inspect: Optional[InspectEntity] = None
         self.player_attack_info: Optional[TargetingDuelPanel] = None
         self.unit_path_renderer: Optional[MovementPathBlocksRenderer] = None
+        self.player_target_info: Optional[UnitSummaryPanel] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
@@ -556,12 +558,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if should_select_unit is True and _unit.is_alive():
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
-
-        # if _unit != self.ui_manager.current_unit:
-        #     if should_select_unit is True:
-        #         if self.debug_frame is not None:
-        #             if _unit.is_alive():
-        #                 self.debug_frame.update_debug_info_for_unit(_unit)
+            self.open_unit_summary_panel(_unit)
+        else:
+            self.close_unit_summary_panel()
 
         self.clear_action_bar()
         if self.ui_manager.current_unit is not None:
@@ -726,6 +725,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def close_unit_path_renderer(self):
         if self.unit_path_renderer is not None:
             self.unit_path_renderer.hide()
+
+    def open_unit_summary_panel(self, unit: Unit):
+        if self.player_target_info is None:
+            self.player_target_info = UnitSummaryPanel()
+            self.add_widget(self.player_target_info)
+        self.player_target_info.set_unit(unit)
+
+    def close_unit_summary_panel(self):
+        if self.player_target_info is not None:
+            self.remove_widget(self.player_target_info)
+            self.player_target_info = None
 
     def open_log(self):
         self.log.open()

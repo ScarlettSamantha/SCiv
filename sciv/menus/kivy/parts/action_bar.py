@@ -33,7 +33,7 @@ class PanelButton(Button):
         kwargs.setdefault("shorten", True)
         kwargs.setdefault("shorten_from", "right")
         kwargs.setdefault("halign", "center")
-        kwargs.setdefault("valign", "middle")
+        kwargs.setdefault("valign", "bottom")
         super().__init__(**kwargs)
 
         self.background_normal = ""
@@ -117,9 +117,9 @@ class ActionBar(BoxLayout, DirectObject):
             orientation="lr-tb",
             size_hint=(None, None),
             width=1000,
-            height=dp(80),
+            height=dp(85),
             spacing=dp(10),
-            pos_hint={"center_x": 0.5, "y": 0},
+            pos=(dp(800), dp(0)),
             cols=12,
             rows=1,
         )

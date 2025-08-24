@@ -68,6 +68,7 @@ class Input(Singleton, DirectObject):
         self.ranged_targeting: RangedTargeting | None = None
         self.game_ui: "GameUIScreen | None" = None
         self.unit_manager: "UnitManager | None" = None
+        self._long_press_task_name: Optional[str] = None
 
         self.long_right_click: bool | None = None
 

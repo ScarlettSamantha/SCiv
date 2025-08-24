@@ -664,8 +664,12 @@
             "interrupted": "Attacker({attacking_unit}) was interrupted by {defending_unit} and killed for [color=#ff0000]{damage}[/color].",
             "no_range": "Attacker({attacking_unit}) has no range to attack {defending_unit}.",
             "no_movement": "Attacker({attacking_unit}) has no movement to attack {defending_unit}.",
-            "no_points": "Attacker({attacking_unit}) has no points to attack {defending_unit}."
+          "no_points": "Attacker({attacking_unit}) has no points to attack {defending_unit}."
           }
+        },
+        "unit_info": {
+          "title": "Unit Info",
+          "unit_info": "Unit Info"
         }
       },
       "messages": {
