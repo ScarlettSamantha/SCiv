@@ -89,6 +89,7 @@ class Input(Singleton, DirectObject):
 
     def register(self):
         self.accept("mouse1", self.pick_object)
+        self.accept("mouse3", self.on_right_click)
 
         if Debug.is_debug():
             self.accept("f2", self.activate)
@@ -109,6 +110,21 @@ class Input(Singleton, DirectObject):
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def on_right_click(self):
+        self.cancel_user_action()
+
+    def cancel_user_action(self):
+        if self.game_ui is None:
+            self.game_ui = self.base.ui_manager.get_main_game_ui()
+
+        assert self.game_ui is not None, "Game UI should be initialized."
+
+        if self.game_ui.wait_for_action_of_user is not None:
+            self.game_ui.wait_for_action_of_user.cancel()
+            self.game_ui.wait_for_action_of_user = None
+            self.unhover_all()
+            messenger.send("ui.update.ui.close_player_attack_info")
 
     def on_trigger_sentry_message(self):
         from helpers.debug import Debug

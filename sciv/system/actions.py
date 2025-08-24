@@ -27,6 +27,7 @@ class Action:
         on_success: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = None,
         on_failure: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], None]] = None,
         success_condition: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], bool]] = None,
+        on_cancel: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], None]] = None,
         executor: Optional[T_TARGET] = None,
         icon: str | None = None,
         usable: bool = True,
@@ -47,6 +48,7 @@ class Action:
 
         self.on_success: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = on_success
         self.on_failure: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], Optional[bool]]] = on_failure
+        self.on_cancel: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], None]] = on_cancel
         self.success_condition: Optional[Callable[[Self, Tuple[Any], Dict[Any, Any]], bool]] = success_condition
 
         self.use_range: bool = False
@@ -84,6 +86,11 @@ class Action:
     @is_disabled.setter
     def is_disabled(self, value: bool | Callable[[], bool]) -> None:
         self._is_disabled = value
+
+    def cancel(self) -> None:
+        if self.on_cancel is not None:
+            self.on_cancel(self, self.action_args, self.action_kwargs)
+        self.is_disabled = self.should_be_disabled()
 
     def on_turn_end(self, turn: int) -> None:
         if self.reset_every_turn:
