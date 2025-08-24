@@ -449,6 +449,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def clear_selected_unit(self):
         self.clear_action_bar()
         self.ui_manager.clear_selected_unit()
+        self.close_unit_summary_panel()
 
     def clear_selected_tile(self):
         self.ui_manager.clear_selected_tile()
