@@ -2,7 +2,6 @@ import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from helpers.colors import Colors, Tuple4f
-from helpers.tiles import Tiles
 from panda3d.core import (
     Geom,
     GeomNode,
@@ -188,24 +187,11 @@ class HexGrid:
     def get_hex_spacing(radius: float) -> tuple[float, float]:
         return 1.5 * radius, math.sqrt(3) * radius
 
-    def _build_height_map(self) -> dict[Tuple[int, int], float]:
-        height_map: dict[Tuple[int, int], float] = {}
-        if self.tiles:
-            for t in self.tiles:
-                height_map[(t.x, t.y)] = t.calculate_z_pos_on_altitude()[2]
-        else:
-            for c in range(self.cols):
-                for r in range(self.rows):
-                    height_map[(c, r)] = 0.0
-        return height_map
-
     def build_merged_hex_walls(
         self,
         bottom_z: float = 0.0,
         color: Tuple4f = Colors.MAGENTA,
     ) -> NodePath:
-        height_map = self._build_height_map()
-
         fmt: Any = GeomVertexFormat.getV3n3c4()
         vdata = GeomVertexData("merged_walls", fmt, Geom.UHStatic)
         vw = GeomVertexWriter(vdata, "vertex")
@@ -221,75 +207,61 @@ class HexGrid:
         self.wall_vertex_counts.clear()
 
         idx = 0
+        ANG0 = math.radians(0)
 
         for tile in self.tiles:
-            col, row, cz = tile.x, tile.y, tile.calculate_z_pos_on_altitude()[2]
-            # If tileZ ≤ bottom_z, no walls at all:
+            col, row = tile.x, tile.y
+            cz = tile.calculate_z_pos_on_altitude()[2]
+
             if cz <= bottom_z:
                 self.wall_starts.append(None)
                 self.wall_vertex_counts.append(0)
+                tile.visible_sides = {i: False for i in range(6)}
                 continue
 
             start_row = idx
 
-            dirs = Tiles.get_directions_per_col(col)
+            centerX: float = col * horizontal_spacing
+            centerY: float = row * vert + (vert * 0.5 if (col % 2) else 0.0)
 
-            wall_pieces: Dict[int, bool] = {0: False, 1: False, 2: False, 3: False, 4: False, 5: False}
+            visible_map: Dict[int, bool] = {i: False for i in range(6)}
+
             for face_i in range(6):
-                dx, dy = dirs[face_i]
-                nbr_x, nbr_y = col + dx, row + dy
-                z_nbr = height_map.get((nbr_x, nbr_y), bottom_z)
+                angA: float = ANG0 + math.radians(60 * face_i)
+                angB: float = ANG0 + math.radians(60 * ((face_i + 1) % 6))
 
-                # Cull if neighbor is at or above this tile’s top
-                if cz <= z_nbr:
-                    continue
+                ax: float = centerX + self.radius * math.cos(angA)
+                ay: float = centerY + self.radius * math.sin(angA)
+                bx: float = centerX + self.radius * math.cos(angB)
+                by: float = centerY + self.radius * math.sin(angB)
 
-                # Compute the two top‐coordinates of this face (world‐space):
-                #   angA = 60·face_i,    angB = 60·(face_i+1)
-                angA = math.radians(60 * face_i)
-                angB = math.radians(60 * ((face_i + 1) % 6))
+                topA: Tuple[float, float, float] = (ax, ay, cz + 0.02)
+                topB: Tuple[float, float, float] = (bx, by, cz + 0.02)
 
-                # Our tile’s center in world‐space:
-                centerX = col * horizontal_spacing
-                centerY = row * vert + (vert * 0.5 if (col % 2) else 0.0)
+                bottom_clamped = bottom_z - 0.05
+                botA: Tuple[float, float, float] = (ax, ay, bottom_clamped)
+                botB: Tuple[float, float, float] = (bx, by, bottom_clamped)
 
-                ax = centerX + self.radius * math.cos(angA)
-                ay = centerY + self.radius * math.sin(angA)
-                bx = centerX + self.radius * math.cos(angB)
-                by = centerY + self.radius * math.sin(angB)
-
-                # Top vertices (just above cz to avoid z-fighting)
-                topA = (ax, ay, cz + 0.02)
-                topB = (bx, by, cz + 0.02)
-
-                # Bottom vertices: clamp to max(z_nbr, bottom_z)
-                bottom_clamped = max(z_nbr, bottom_z)
-                botA = (ax, ay, bottom_clamped)
-                botB = (bx, by, bottom_clamped)
-
-                # Write exactly four vertices: [topA, topB, botB, botA]
                 for vx, vy, vz in (topA, topB, botB, botA):
                     vw.addData3f(vx, vy, vz)
-                    # A dummy normal is fine if you’re using a flat-color shader:
-                    nw.addData3f(0, 0, 1)
+                    nw.addData3f(0.0, 0.0, 1.0)
                     cw.addData4f(*color)
 
-                # Emit two triangles from these four new rows (idx..idx+3)
                 prim.addVertices(idx + 0, idx + 1, idx + 2)
                 prim.addVertices(idx + 2, idx + 3, idx + 0)
 
                 idx += 4
-                wall_pieces[face_i] = True  # This face has a wall
-            tile.visible_sides = wall_pieces
+                visible_map[face_i] = True
 
             used = idx - start_row
             if used > 0:
                 self.wall_starts.append(start_row)
                 self.wall_vertex_counts.append(used)
             else:
-                # Fully buried by neighbors with ≥ height
                 self.wall_starts.append(None)
                 self.wall_vertex_counts.append(0)
+
+            tile.visible_sides = visible_map
 
         prim.closePrimitive()
         geom = Geom(vdata)
@@ -476,21 +448,32 @@ class HexGrid:
         reader.setRow(start)
         print(f"Vertex {start} new color:", reader.getData4f())
 
-    def set_tile_wall_color(self, tile_index: int, color: Tuple[float, float, float, float]):
-        pandaNode: PandaNode = self.walls_np.node()  # type: ignore
-        geom_node: GeomNode = pandaNode.find("**/all_hex_walls").node()  # type: ignore
+    def set_tile_wall_color(self, tile_index: int, color: Tuple4f) -> None:
+        if not self.walls_np:
+            return
 
-        if not geom_node:
-            raise ValueError("No walls node found in HexGrid.")
+        record = self.get_wall_record(tile_index)
+        if record is None:
+            return
+        start_row, vertex_count = record
 
+        geom_node: GeomNode = self.walls_np.node()  # type: ignore
+        if geom_node.getNumGeoms() == 0:  # safety
+            return
         geom: Geom = geom_node.modifyGeom(0)  # type: ignore
         vdata = geom.modifyVertexData()  # type: ignore
-        cw = GeomVertexWriter(vdata, "color")  # type: ignore
-        start = tile_index * 12
-        count = 12
-        for vi in range(start, start + count):
-            cw.setRow(vi)
-            cw.setData4f(*color + (1.0,))  # type: ignore
+
+        if len(color) == 3:  # type: ignore[attr-defined]
+            r, g, b = color  # type: ignore[misc]
+            rgba = (r, g, b, 1.0)
+        else:
+            rgba = tuple(color)  # type: ignore[assignment]
+
+        cw = GeomVertexWriter(vdata, "color")
+        end_row = start_row + vertex_count
+        for row in range(start_row, end_row):
+            cw.setRow(row)
+            cw.setData4f(*rgba)  # type: ignore[misc]
 
     def get_tile_index(self, x: int, y: int) -> int:
         if self.tiles:
