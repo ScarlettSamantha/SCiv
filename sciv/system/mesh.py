@@ -238,7 +238,7 @@ class HexGrid:
                 topA: Tuple[float, float, float] = (ax, ay, cz + 0.02)
                 topB: Tuple[float, float, float] = (bx, by, cz + 0.02)
 
-                bottom_clamped = bottom_z - 0.05
+                bottom_clamped = bottom_z - 0.15
                 botA: Tuple[float, float, float] = (ax, ay, bottom_clamped)
                 botB: Tuple[float, float, float] = (bx, by, bottom_clamped)
 
