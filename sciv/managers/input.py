@@ -60,6 +60,9 @@ class Input(Singleton, DirectObject):
         self.selected_tile: Optional["Tile"] = None
         self.selected_unit: Optional["Unit"] = None
         self._last_pick_time: float = 0.0
+        self._last_right_click_time: float = 0.0
+        self._last_right_release_time: float = 0.0
+        self._right_button_held: bool = False
         self.pick_timeout: float = 1 / 15
         self.long_press_time: float = 0.5
         self.ranged_targeting: RangedTargeting | None = None
@@ -117,6 +120,12 @@ class Input(Singleton, DirectObject):
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
 
     def on_right_down(self):
+        if self._right_button_held:
+            return
+
+        self._right_button_held = True
+        self._last_right_click_time = time.time()
+
         clicked_object: NodePath | None = self.pick_object(dont_select=True)
         self.long_right_click = False
         if clicked_object is None:
@@ -142,21 +151,47 @@ class Input(Singleton, DirectObject):
         )
 
     def _is_still_right_click(self) -> bool:
+        self.base.task_mgr.remove("right-click-delay-pick")
         if self.game_ui is None:
             return False
-        # @TODO: Refactor this to use a better method of checking for long right click
-        if self.game_ui.unit_path_renderer is not None and self.game_ui.unit_path_renderer.is_visible():
+        if self.base.mouseWatcherNode.isButtonDown("mouse3"):
             self.long_right_click = True
+            self.on_long_right_click()
             return True
         self.long_right_click = False
-        MessengerGlobal.messenger.send("mouse3-down-long")
         return False
+
+    def on_long_right_click(self) -> None:
+        if self._last_right_release_time > self._last_right_click_time:
+            return  # Ignore if the button was released before the long click was registered.
+
+        MessengerGlobal.messenger.send("mouse3-down-long")
+
+        assert self.game_ui is not None, "Game UI should be initialized."
+
+        target: NodePath | None = self.pick_object(dont_select=True)
+        if target is None:
+            return
+
+        net_type: str = target.getNetTag(NET_TYPE_FIELD)  # type: ignore
+        net_id = target.getNetTag(NET_NODE_TAG_ID_FIELD)
+
+        if NET_TYPE.UNIT.value == net_type:
+            if (
+                unit := UnitManager.get_singleton_instance().find_unit(net_id)
+            ) is not None and self.selected_unit is not None:
+                self.game_ui.open_player_attack_info(self.selected_unit, unit)
 
     def is_long_right_click(self) -> bool:
         return self.long_right_click is True
 
     def on_right_click(self):
         from gameplay.unit import CantMoveReason
+
+        self._last_right_release_time = time.time()
+        self._right_button_held = False
+
+        MessengerGlobal.messenger.send("ui.update.ui.close_player_attack_info")
 
         if self.game_ui is None:
             return
@@ -288,7 +323,6 @@ class Input(Singleton, DirectObject):
 
         self.pickerNP: NodePath[CollisionNode] = self.base.camera.attachNewNode(picker_node)  # type: ignore
         self.picker.addCollider(self.pickerNP, self.pq)  # type: ignore
-        self.register()  # Ensures key bindings are set
 
     def on_inspect_entity(self) -> None:
         if self.selected_tile is None and self.selected_unit is None:

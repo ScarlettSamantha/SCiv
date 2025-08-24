@@ -702,8 +702,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def close_player_attack_info(self):
         if self.player_attack_info is not None:
-            self.remove_widget(self.player_attack_info)
             self.player_attack_info.destroy()
+            self.remove_widget(self.player_attack_info)
             self.player_attack_info = None
 
     def build_unit_path_renderer(self):
