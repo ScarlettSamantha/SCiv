@@ -3,7 +3,11 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Ty
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from kivy.uix.widget import Widget
+from gameplay.civic import Civic, CivicSubtree, CivicTree
+from gameplay.civics.core.tree.core import CoreCivicTree
+from helpers.cache import Cache
+from helpers.os import WindowsHelper
+from helpers.placeholder import Placeholder
 from kivy.graphics import Color, Line, Rectangle, Triangle  # type: ignore
 from kivy.uix.anchorlayout import AnchorLayout  # NEW
 from kivy.uix.behaviors import ButtonBehavior
@@ -12,19 +16,14 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
-
-from gameplay.civic import Civic, CivicSubtree, CivicTree
-from gameplay.civics.core.tree.core import CoreCivicTree
-from helpers.cache import Cache
-from helpers.placeholder import Placeholder
+from kivy.uix.widget import Widget
 from managers.player import PlayerManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
-from helpers.os import WindowsHelper
 
 if TYPE_CHECKING:
-    from menus.screens.game_ui import GameUIScreen  # type: ignore
     from gameplay.player import Player
+    from menus.screens.game_ui import GameUIScreen  # type: ignore
 
 
 class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
@@ -105,6 +104,17 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
     def _on_click(self, *args: Any):
         if self.on_click:
             self.on_click(self)
+
+    def destroy(self) -> None:
+        del self.icon
+        self.base.taskMgr.remove(self._task_name)
+        self.hide_tooltip()
+        self.unbind(on_release=self._on_click)  # type: ignore
+        self.clear_widgets()
+        self.canvas.before.clear()
+        self.canvas.after.clear()
+        self.canvas.clear()
+        super().destroy()
 
 
 class SubtreeCard(BoxLayout):
@@ -395,6 +405,7 @@ class Civics(FloatLayout, DirectObject):
         self._bg_rect.size = self.size
 
     def destroy(self) -> None:
+        [widget.destroy() for widget in self.civic_node_map.values() if hasattr(widget, "destroy")]  # type: ignore
         self._is_build = False
         self.disabled = True
         self.popup_disabled = True

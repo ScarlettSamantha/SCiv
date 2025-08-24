@@ -89,7 +89,7 @@ class ResearchButton(TooltippedButton):
         tooltip_text = value.on_tooltip() if hasattr(value, "on_tooltip") else getattr(value, "name", "Unknown Tech")
         tooltip_text += f"\n\nRequires:\n- {'\n- '.join(requires) if requires else 'None'}"
 
-        tech_icon = TooltippedImage(
+        self.tech_icon = TooltippedImage(
             source=tech_icon_src,
             tooltip_text=tooltip_text,
             tooltip_image_source=tech_icon_src,
@@ -118,7 +118,7 @@ class ResearchButton(TooltippedButton):
             text_size=(None, None),  # type: ignore
         )
 
-        self._title_row.add_widget(tech_icon)
+        self._title_row.add_widget(self.tech_icon)
         self._title_row.add_widget(self._name_lbl)
         self._title_row.add_widget(self._cost_lbl)
 
@@ -237,6 +237,16 @@ class ResearchButton(TooltippedButton):
         super().on_release()  #  type: ignore
         self._refresh_content()
 
+    def destroy(self) -> None:
+        [widget.destroy() for widget in self._title_row.children if hasattr(widget, "destroy")]  # type: ignore
+        [widget.destroy() for widget in self._second_line.children if hasattr(widget, "destroy")]  # type: ignore
+        self.unbind(on_release=self.on_release)
+        self.clear_widgets()
+        self.canvas.after.clear()
+        self.canvas.before.clear()
+        self.canvas.clear()
+        super().destroy()
+
 
 class Research(FloatLayout, DirectObject):
     def __init__(self, tree: TechTree, manager: "GameUIScreen", **kwargs: Any) -> None:
@@ -263,6 +273,10 @@ class Research(FloatLayout, DirectObject):
         self._arrow_head_refs: List[Dict[str, Instruction | Line]] = []
         self.register()
 
+    def destroy(self) -> None:
+        self.clear()
+        self.is_open = False
+
     def register(self) -> None:
         self.accept("ui.update.ui.refresh_research_ui", self.update)
         self.bind(height=lambda *_: self.rebuild_layout())
@@ -288,7 +302,7 @@ class Research(FloatLayout, DirectObject):
         self._arrow_head_refs.clear()
 
         self._float_layout.clear_widgets()
-        self._buttons.clear()
+        [button.destroy() for button in self._buttons.values()]
 
     def build(self) -> None:
         if self._is_build:

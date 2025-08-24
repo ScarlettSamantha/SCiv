@@ -833,6 +833,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def close_research(self):
         if self.research is not None:
+            self.research.destroy()
             self.unregister_non_collidable(self.research)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.research.popup_disabled = True

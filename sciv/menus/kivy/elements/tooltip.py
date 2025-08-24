@@ -1,5 +1,6 @@
 import typing
-from typing import TYPE_CHECKING, Any, List, Self, Tuple
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Self, Tuple
 
 from direct.task.Task import Task
 from gameplay.civilization import T_TranslationOrStr
@@ -19,6 +20,56 @@ from managers.ui import ui
 if TYPE_CHECKING:
     from game import OpenCiv
     from menus.screens.game_ui import GameUIScreen
+
+
+class TooltipSet(Enum):
+    TECHNOLOGY_TREE = "technology_tree"
+    CIVICS_TREE = "civics_tree"
+
+
+class TooltipSets:
+    sets: Dict[TooltipSet, bool] = {
+        TooltipSet.TECHNOLOGY_TREE: True,
+        TooltipSet.CIVICS_TREE: True,
+    }
+
+    @classmethod
+    def is_enabled(cls, key: TooltipSet) -> bool:
+        return cls.sets.get(key, True)
+
+    @classmethod
+    def set_enabled(cls, key: TooltipSet, enabled: bool):
+        cls.sets[key] = enabled
+
+    @classmethod
+    def toggle(cls, key: TooltipSet):
+        cls.sets[key] = not cls.sets.get(key, True)
+
+    @classmethod
+    def disable_all(cls):
+        for key in cls.sets.keys():
+            cls.sets[key] = False
+
+    @classmethod
+    def enable_all(cls):
+        for key in cls.sets.keys():
+            cls.sets[key] = True
+
+    @classmethod
+    def clear(cls):
+        cls.sets = {}
+
+    @classmethod
+    def get_all(cls) -> Dict[TooltipSet, bool]:
+        return cls.sets
+
+    @classmethod
+    def enable(cls, key: TooltipSet):
+        cls.sets[key] = True
+
+    @classmethod
+    def disable(cls, key: TooltipSet):
+        cls.sets[key] = False
 
 
 class TooltipLabel(BoxLayout):
@@ -84,6 +135,7 @@ class TooltipBehavior:
         self._tooltip_trigger = None
         self._suppress_tooltip = False
         self._task_name = f"_poll_mouse_pos_{id(self)}"
+        self.tooltip_set: TooltipSet | None = kwargs.pop("tooltip_set", None)
         self.base.taskMgr.add(self._poll_mouse_pos, self._task_name, delay=1 / 5)  # type: ignore
         if hasattr(self, "register_event_type"):
             self.register_event_type("on_enter")  # type: ignore
@@ -134,6 +186,9 @@ class TooltipBehavior:
         self.tooltip_label.pos = (tx, ty)  # type: ignore
 
     def on_enter(self, *args: Any):
+        if self._has_disabled_ancestor():
+            return
+
         if not self.tooltip_visible and self.tooltip_text and not self._suppress_tooltip:
             if "<br>" in self.tooltip_text or "\n" in self.tooltip_text:
                 self.tooltip_multiline = True
@@ -176,11 +231,17 @@ class TooltipBehavior:
 
     def _has_disabled_ancestor(self) -> bool:
         widget: Self = self
-        while widget:
+        i = 0
+        while widget and i < 5:
+            i += 1
             if hasattr(widget, "popup_disabled"):  # type: ignore
                 return bool(widget.popup_disabled)  # type: ignore
             widget = widget.parent  # type: ignore
         return False
+
+    def destroy(self) -> None:
+        self.base.taskMgr.remove(self._task_name)
+        self.hide_tooltip()
 
 
 class TooltippedImage(Image, TooltipBehavior):
