@@ -732,6 +732,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.player_target_info is None:
             self.player_target_info = UnitSummaryPanel()
             self.add_widget(self.player_target_info)
+            self.send_to_back(self.player_target_info)
         self.player_target_info.set_unit(unit)
 
     def close_unit_summary_panel(self):
