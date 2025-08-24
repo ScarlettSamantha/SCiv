@@ -97,6 +97,7 @@ class CombatLog:
             "defending_unit": str(outcome.defender_entity.name) if outcome.defender_entity else "Unknown Defender",
             "attacking_unit": str(outcome.attacker_entity.name) if outcome.attacker_entity else "Unknown Attacker",
             "damage": f"{outcome.attacker_damage.__round__(2)}" if outcome.attacker_damage > 0 else "",
+            "retaliation_damage": f"{outcome.defender_damage.__round__(2)}" if outcome.defender_damage > 0 else "",
             "defender_owner_name": f"[color={Colors.to_hex(outcome.defender_player.get_color())}]{outcome.defender_player.get_name_short()}[/color]"
             if outcome.defender_player
             else "Unknown Defender Owner",

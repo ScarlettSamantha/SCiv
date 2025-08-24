@@ -125,13 +125,10 @@ class Input(Singleton, DirectObject):
 
         self._right_button_held = True
         self._last_right_click_time = time.time()
-
         clicked_object: NodePath | None = self.pick_object(dont_select=True)
         self.long_right_click = False
-        if clicked_object is None:
-            return
 
-        if clicked_object.getNetTag(NET_TYPE_FIELD) == NET_TYPE.TILE.value:
+        if clicked_object and clicked_object.getNetTag(NET_TYPE_FIELD) == NET_TYPE.TILE.value:
             assert self.game_ui is not None, "Game UI should be initialized."
 
             if self.selected_unit is None:
@@ -144,22 +141,20 @@ class Input(Singleton, DirectObject):
 
             self.game_ui.open_unit_path_renderer(self.selected_unit, tile)
 
+        self._long_press_task_name = "input-long-right-click"
         self.base.taskMgr.doMethodLater(
             self.long_press_time,
-            lambda task: self._is_still_right_click(),  # type: ignore
-            "right-click-delay-pick",  # type: ignore
+            self._check_long_right_click,
+            self._long_press_task_name,
         )
 
-    def _is_still_right_click(self) -> bool:
-        self.base.task_mgr.remove("right-click-delay-pick")
-        if self.game_ui is None:
-            return False
-        if self.base.mouseWatcherNode.isButtonDown("mouse3"):
+    def _check_long_right_click(self, task: Task.Task) -> int:
+        if self.base.mouseWatcherNode.isButtonDown("mouse3"):  # type: ignore
             self.long_right_click = True
             self.on_long_right_click()
-            return True
-        self.long_right_click = False
-        return False
+        else:
+            self.long_right_click = False
+        return Task.done
 
     def on_long_right_click(self) -> None:
         if self._last_right_release_time > self._last_right_click_time:
@@ -191,7 +186,11 @@ class Input(Singleton, DirectObject):
         self._last_right_release_time = time.time()
         self._right_button_held = False
 
-        MessengerGlobal.messenger.send("ui.update.ui.close_player_attack_info")
+        if self._long_press_task_name:
+            self.base.taskMgr.remove(self._long_press_task_name)
+            self._long_press_task_name = None
+
+        messenger.send("ui.update.ui.close_player_attack_info")
 
         if self.game_ui is None:
             return
@@ -211,13 +210,13 @@ class Input(Singleton, DirectObject):
             return
 
         if NET_TYPE.TILE.value == net_type:
-            # If the user is doing a short right click, move the unit
             if not self.is_long_right_click():
-                if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))) is None:
+                tile = TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))
+                if tile is None:
                     self.logger.warning(f"Tile with ID {net_id} not found.")
-                    return
-                if self.selected_unit.can_move_to_tile(tile, get_tiles=False) == CantMoveReason.COULD_MOVE:
-                    self.move_selected_unit_to_tile(tile)
+                else:
+                    if self.selected_unit.can_move_to_tile(tile, get_tiles=False) == CantMoveReason.COULD_MOVE:
+                        self.move_selected_unit_to_tile(tile)
 
         self.game_ui.close_unit_path_renderer()
 

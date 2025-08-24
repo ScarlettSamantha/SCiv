@@ -657,11 +657,11 @@
         "combat_log": {
           "combat_log": "Combat Log",
           "results": {
-            "defender_killed": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and killed by {damage}.",
-            "defender_damaged": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and damaged for {damage}.",
-            "attacker_killed": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and killed for {damage}.",
-            "attacker_damaged": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and damaged for {damage}.",
-            "interrupted": "Attacker({attacking_unit}) was interrupted by {defending_unit} and killed for {damage}.",
+            "defender_killed": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and killed by [color=#ff0000]{damage}[/color].",
+            "defender_damaged": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and damaged for [color=#ff0000]{damage} and retaliated for [color=#ff0000]{retaliation_damage}[/color].",
+            "attacker_killed": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and killed for [color=#ff0000]{damage}[/color].",
+            "attacker_damaged": "Attacker {attacking_unit}({attacker_owner_name}) was counter attacked by {defending_unit}({defender_owner_name}) and damaged for [color=#ff0000]{damage}[/color] and retaliated for [color=#ff0000]{retaliation_damage}[/color].",
+            "interrupted": "Attacker({attacking_unit}) was interrupted by {defending_unit} and killed for [color=#ff0000]{damage}[/color].",
             "no_range": "Attacker({attacking_unit}) has no range to attack {defending_unit}.",
             "no_movement": "Attacker({attacking_unit}) has no movement to attack {defending_unit}.",
             "no_points": "Attacker({attacking_unit}) has no points to attack {defending_unit}."

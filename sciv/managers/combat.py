@@ -96,8 +96,39 @@ class Combat:
 
     @classmethod
     def _zero(cls, status: CombatResults, attacker: "Player", defender: "Player") -> CombatOutcome:
-        # No combat occurred or failed checks
+        # No combat: keep current state for UI correctness
         return CombatOutcome(status, 0.0, 0.0, False, False, False, attacker, defender, None, None, 0.0, 0.0)
+
+    @classmethod
+    def _make_outcome_with_hp(
+        cls,
+        status: CombatResults,
+        attacker_damage: float,
+        defender_damage: float,
+        attacker_killed: bool,
+        defender_killed: bool,
+        attacker_retaliated: bool,
+        attacker: T_TARGET_OPTIONAL,
+        defender: T_TARGET_OPTIONAL,
+        attacker_remaining_hp: float,
+        defender_remaining_hp: float,
+    ) -> CombatOutcome:
+        att_player = attacker.get_owner() if attacker else None
+        def_player = defender.get_owner() if defender else None
+        return CombatOutcome(
+            status,
+            attacker_damage,
+            defender_damage,
+            attacker_killed,
+            defender_killed,
+            attacker_retaliated,
+            att_player,
+            def_player,
+            attacker,
+            defender,
+            max(0.0, attacker_remaining_hp),
+            max(0.0, defender_remaining_hp),
+        )
 
     @classmethod
     def _roll(cls, base: float) -> float:
@@ -140,70 +171,128 @@ class Combat:
         attack_stats: CombatStats = gather_stats(attacker)
         defend_stats: CombatStats = gather_stats(defender)
 
-        # movement
         if getattr(attacker, "has_moved", False):
-            return cls._zero(CombatResults.NO_MOVEMENT, attacker.get_owner(), defender.get_owner())
+            return cls._make_outcome_with_hp(
+                CombatResults.NO_MOVEMENT,
+                0.0,
+                0.0,
+                False,
+                False,
+                False,
+                attacker,
+                defender,
+                attacker.health(),
+                defender.health(),
+            )
 
-        # range
-        dist: int = attacker.get_tile().get_distance(defender.get_tile())
+        dist = int(attacker.get_tile().get_distance(defender.get_tile()))
         if dist < attack_stats.min_range or dist > attack_stats.max_range:
-            return cls._zero(CombatResults.NO_RANGE, attacker.get_owner(), defender.get_owner())
+            return cls._make_outcome_with_hp(
+                CombatResults.NO_RANGE,
+                0.0,
+                0.0,
+                False,
+                False,
+                False,
+                attacker,
+                defender,
+                attacker.health(),
+                defender.health(),
+            )
 
-        # friendly fire (no isinstance with string)
         if attacker.get_owner() == defender.get_owner() and not cls.rules.get_allow_friendly_fire_rule():
-            return cls._zero(CombatResults.OWN_UNIT_ATTACK_DISABLED, attacker.get_owner(), defender.get_owner())
+            return cls._make_outcome_with_hp(
+                CombatResults.OWN_UNIT_ATTACK_DISABLED,
+                0.0,
+                0.0,
+                False,
+                False,
+                False,
+                attacker,
+                defender,
+                attacker.health(),
+                defender.health(),
+            )
 
-        # points
-        cost: float = attack_stats.melee_cost if dist == cls.MELE_RANGE else attack_stats.ranged_cost
-        if getattr(attacker, "attack_points_left", 0) < cost:
-            return cls._zero(CombatResults.NO_POINTS, attacker.get_owner(), defender.get_owner())
+        melee_viable: bool = (
+            dist <= cls.MELE_RANGE and attack_stats.min_range <= cls.MELE_RANGE and attack_stats.melee_attack > 0.0
+        )
+        use_melee: bool = melee_viable
+        atk_cost: float = attack_stats.melee_cost if use_melee else attack_stats.ranged_cost
+        if getattr(attacker, "attack_points_left", 0.0) < atk_cost:
+            return cls._make_outcome_with_hp(
+                CombatResults.NO_POINTS,
+                0.0,
+                0.0,
+                False,
+                False,
+                False,
+                attacker,
+                defender,
+                attacker.health(),
+                defender.health(),
+            )
 
-        # damage calc (attacker → defender)
-        raw_atk: float = cls._roll(attack_stats.melee_attack if dist == cls.MELE_RANGE else attack_stats.ranged_attack)
-        defense_val: float = defend_stats.melee_defense if dist == cls.MELE_RANGE else defend_stats.ranged_defense
-        net_atk: float = max(0.0, raw_atk - max(defense_val - attack_stats.armor_penetration, 0.0))
+        raw_atk: float = cls._roll(attack_stats.melee_attack if use_melee else attack_stats.ranged_attack)
+        defense_val: float = defend_stats.melee_defense if use_melee else defend_stats.ranged_defense
+        eff_def: float = max(0.0, defense_val - attack_stats.armor_penetration)
+        net_atk: float = max(0.0, raw_atk - eff_def)
+
+        a_hp0: float = attacker.health()
+        d_hp0: float = defender.health()
+        d_hp1: float = d_hp0 - net_atk
 
         if not simulation:
             defender_killed = defender.receive_damage(net_atk)
+            d_hp1 = defender.health()  # authoritative after mutation
         else:
-            defender_killed = defender.health() - net_atk <= 0
+            defender_killed = d_hp1 <= 0.0
 
         attacker_killed = False
         attacker_retaliated = False
-        defender_damage = 0.0
+        dmg_to_attacker = 0.0
+        a_hp1 = a_hp0
 
-        # retaliation only if defender survived and is in range
         if (
             not defender_killed
             and defend_stats.can_retaliate
-            and dist >= defend_stats.min_range
-            and dist <= defend_stats.max_range
+            and defend_stats.min_range <= dist <= defend_stats.max_range
         ):
-            raw_ret = cls._roll(defend_stats.melee_attack if dist == cls.MELE_RANGE else defend_stats.ranged_attack)
-            atk_def_val = attack_stats.melee_defense if dist == cls.MELE_RANGE else attack_stats.ranged_defense
-            defender_damage = max(0.0, raw_ret - max(atk_def_val - defend_stats.armor_penetration, 0.0))
+            raw_ret: float = cls._roll(defend_stats.melee_attack if use_melee else defend_stats.ranged_attack)
+            atk_def_val: float = attack_stats.melee_defense if use_melee else attack_stats.ranged_defense
+            eff_def_ret: float = max(0.0, atk_def_val - defend_stats.armor_penetration)
+            dmg_to_attacker: float = max(0.0, raw_ret - eff_def_ret)
+            a_hp1 = a_hp0 - dmg_to_attacker
             if not simulation:
-                attacker_killed = attacker.receive_damage(defender_damage)
+                attacker_killed = attacker.receive_damage(dmg_to_attacker)
+                a_hp1: float = attacker.health()
             else:
-                attacker_killed = attacker.health() - defender_damage <= 0
+                attacker_killed: bool = a_hp1 <= 0.0
             attacker_retaliated = True
 
-        # spend points only in real combat
         if not simulation:
-            attacker.attack_points_left -= cost
+            attacker.attack_points_left -= atk_cost
 
-        # final status
         if defender_killed:
             status = CombatResults.DEFENDER_KILLED
         elif attacker_killed:
             status = CombatResults.ATTACKER_KILLED
-        elif attacker_retaliated and defender_damage > 0:
+        elif attacker_retaliated and dmg_to_attacker > 0.0:
             status = CombatResults.ATTACKER_DAMAGED
         else:
             status = CombatResults.DEFENDER_DAMAGED
 
-        return cls._make_outcome(
-            status, net_atk, defender_damage, attacker_killed, defender_killed, attacker_retaliated, attacker, defender
+        return cls._make_outcome_with_hp(
+            status,
+            attacker_damage=net_atk,
+            defender_damage=dmg_to_attacker,  # damage dealt back to attacker
+            attacker_killed=attacker_killed,
+            defender_killed=defender_killed,
+            attacker_retaliated=attacker_retaliated,
+            attacker=attacker,
+            defender=defender,
+            attacker_remaining_hp=a_hp1,
+            defender_remaining_hp=d_hp1,
         )
 
 
