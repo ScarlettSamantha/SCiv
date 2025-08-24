@@ -17,13 +17,11 @@ if TYPE_CHECKING:
 
 
 class PanelButton(Button):
-    border_px = NumericProperty(2)
     corner_pad = NumericProperty(2)
 
-    border_color = ListProperty([0.0, 0.0, 0.0, 1.0])  # black
-    bg_color = ListProperty([0.10, 0.10, 0.10, 1.0])  # dark gray
-    bg_color_down = ListProperty([0.22, 0.22, 0.22, 1.0])  # slightly lighter when pressed
-    text_color = ListProperty([0.92, 0.92, 0.92, 1.0])  # off-white
+    bg_color = ListProperty([0.0, 0.0, 0.0, 0.75])
+    bg_color_down = ListProperty([0.0, 0.0, 0.0, 0.95])
+    text_color = ListProperty([0.92, 0.92, 0.92, 1.0])
     disabled_alpha = NumericProperty(0.45)
 
     def __init__(self, **kwargs: Any):
@@ -42,20 +40,17 @@ class PanelButton(Button):
         self.background_disabled_down = ""
         self.border = (0, 0, 0, 0)
         self.background_color = (0, 0, 0, 0)
+
         self.color = self.text_color[:]
 
         with self.canvas.before:  # type: ignore
-            self._c_border = Color(*self.border_color)  # type: ignore
-            self._rect_border = Rectangle(pos=self.pos, size=self.size)  # type: ignore
             self._c_bg = Color(*self.bg_color)  # type: ignore
             self._rect_bg = Rectangle(pos=self.pos, size=self.size)  # type: ignore
 
         self.bind(
-            pos=self._recompute_rects,
-            size=self._recompute_rects,
-            border_px=lambda *_: self._recompute_rects(),
-            corner_pad=lambda *_: self._recompute_rects(),
-            border_color=lambda *_: self._set_color(self._c_border, self.border_color),
+            pos=self._recompute_rect,
+            size=self._recompute_rect,
+            corner_pad=lambda *_: self._recompute_rect(),
             bg_color=lambda *_: self._apply_state_colors(),
             bg_color_down=lambda *_: self._apply_state_colors(),
             text_color=lambda *_: setattr(self, "color", self.text_color[:]),
@@ -63,32 +58,26 @@ class PanelButton(Button):
             disabled=lambda *_: self._apply_state_colors(),
         )
 
-        self._recompute_rects()
+        self._recompute_rect()
         self._apply_state_colors()
 
     @staticmethod
     def _set_color(instr: Color, rgba: List[float]) -> None:
         instr.rgba = rgba  # type: ignore[attr-defined]
 
-    def _recompute_rects(self, *_: Any) -> None:
+    def _recompute_rect(self, *_: Any) -> None:
         x, y = cast(Tuple[float | int, float | int], self.pos)
         w, h = cast(Tuple[float | int, float | int], self.size)
-        b = float(self.border_px)
         pad = float(self.corner_pad)
-
-        self._rect_border.pos = (x, y)  # type: ignore
-        self._rect_border.size = (w, h)  # type: ignore
-
-        self._rect_bg.pos = (x + b + pad, y + b + pad)  # type: ignore
-        self._rect_bg.size = (w - 2 * (b + pad), h - 2 * (b + pad))  # type: ignore
+        self._rect_bg.pos = (x + pad, y + pad)  # type: ignore
+        self._rect_bg.size = (w - 2 * pad, h - 2 * pad)  # type: ignore
 
     def _apply_state_colors(self, *_: Any) -> None:
         base_bg: List[float] = self.bg_color_down if self.state == "down" else self.bg_color  # type: ignore
         alpha: float = base_bg[3]
-
         if self.disabled:
-            bg: List[float] = [base_bg[0], base_bg[1], base_bg[2], alpha * self.disabled_alpha]
-            txt: List[float] = [
+            bg = [base_bg[0], base_bg[1], base_bg[2], alpha * self.disabled_alpha]
+            txt = [
                 self.text_color[0],
                 self.text_color[1],
                 self.text_color[2],
@@ -97,15 +86,14 @@ class PanelButton(Button):
         else:
             bg = base_bg[:]
             txt = self.text_color[:]
-
         self._set_color(self._c_bg, bg)
         self.color = txt  # type: ignore
 
 
 class ActionBar(BoxLayout, DirectObject):
     def __init__(self, *args: Any, **kwargs: Any):
-        self.background_color = (0, 0, 0, 1)
-        self.border = (1, 1, 1, 1)
+        self.background_color = (0, 0, 0, 0)
+        self.border = (0, 0, 0, 0)
         self.background_image = ""
         super().__init__(*args, **kwargs)  # type: ignore
         self.frame: Optional[GridLayout] = None
