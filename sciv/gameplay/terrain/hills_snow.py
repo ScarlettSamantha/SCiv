@@ -1,13 +1,13 @@
 from typing import Any
 
 from gameplay.improvements.core.resources.mine import Mine
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class HillsSnow(BaseTerrain):
-    _name = "world.terrain.hills_snow"
+    _name = t_("world.terrain.hills_snow")
 
     movement_modifier = 0.5
     water_availability = 0.25

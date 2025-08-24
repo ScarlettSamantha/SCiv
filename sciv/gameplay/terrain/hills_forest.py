@@ -2,12 +2,12 @@ from typing import Any
 
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
-
-from ._base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class HillsForest(BaseTerrain):
-    _name = "world.terrain.hills_forest"
+    _name = t_("world.terrain.hills_forest")
     movement_modifier = 0.5
     water_availability = 0.5
     _fallback_color = (91, 128, 64)

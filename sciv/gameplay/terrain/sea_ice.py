@@ -1,10 +1,12 @@
 from typing import Any
+
 from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.colors import Colors
+from managers.i18n import t_
 
 
 class SeaIce(BaseTerrain):
-    _name = "world.terrain.flatland_grass"
+    _name = t_("world.terrain.sea_ice")
     movement_modifier = 1
     water_availability = 0.25
     _fallback_color = Colors.t4f_to_t3(Colors.WHITE)

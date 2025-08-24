@@ -346,6 +346,9 @@ class Player(BaseEntity):
     def get_effect(self, key: str) -> Effect | None:
         return self.effects.get_effect(key)
 
+    def get_civilization(self) -> Civilization:
+        return self.civilization
+
     def get_effects(self) -> Effects:
         return self.effects
 

@@ -3,13 +3,13 @@ from typing import Any
 from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.improvements.core.resources.pasture import Pasture
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class FlatGrass(BaseTerrain):
-    _name = "world.terrain.flatland_grass"
+    _name = t_("world.terrain.flatland_grass")
     movement_modifier = 0.5
     water_availability = 1
     _fallback_color = (106, 255, 0)

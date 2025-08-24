@@ -38,7 +38,7 @@ from menus.kivy.parts.player_attack import TargetingDuelPanel
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
-from menus.kivy.parts.player_select import UnitSummaryPanel
+from menus.kivy.parts.player_select import TargetPanel
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
@@ -103,7 +103,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.inspect: Optional[InspectEntity] = None
         self.player_attack_info: Optional[TargetingDuelPanel] = None
         self.unit_path_renderer: Optional[MovementPathBlocksRenderer] = None
-        self.player_target_info: Optional[UnitSummaryPanel] = None
+        self.player_target_info: Optional[TargetPanel] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
@@ -449,7 +449,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def clear_selected_unit(self):
         self.clear_action_bar()
         self.ui_manager.clear_selected_unit()
-        self.close_unit_summary_panel()
+        self.close_target_panel()
 
     def clear_selected_tile(self):
         self.ui_manager.clear_selected_tile()
@@ -526,6 +526,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.action_waiting_for = None  # Reset action waiting state
 
         else:
+            self.open_target_panel(_tile)
             self.ui_manager.select_tile(_tile)
             tile_change = True
 
@@ -559,9 +560,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if should_select_unit is True and _unit.is_alive():
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
-            self.open_unit_summary_panel(_unit)
+            self.open_target_panel(_unit)
         else:
-            self.close_unit_summary_panel()
+            self.close_target_panel()
 
         self.clear_action_bar()
         if self.ui_manager.current_unit is not None:
@@ -728,14 +729,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.unit_path_renderer is not None:
             self.unit_path_renderer.hide()
 
-    def open_unit_summary_panel(self, unit: Unit):
+    def open_target_panel(self, entity: Unit | Tile):
         if self.player_target_info is None:
-            self.player_target_info = UnitSummaryPanel()
+            self.player_target_info = TargetPanel()
             self.add_widget(self.player_target_info)
             self.send_to_back(self.player_target_info)
-        self.player_target_info.set_unit(unit)
+        self.player_target_info.show_for(entity)
 
-    def close_unit_summary_panel(self):
+    def close_target_panel(self):
         if self.player_target_info is not None:
             self.remove_widget(self.player_target_info)
             self.player_target_info = None

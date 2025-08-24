@@ -1,12 +1,12 @@
 from typing import Any
 
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class Coast(BaseTerrain):
-    _name = "world.terrain.coast"
+    _name = t_("world.terrain.coast")
     fallback_color = (0, 119, 255)
     movement_modifier = 0.5
 

@@ -1,12 +1,13 @@
 from typing import Any
-from gameplay.bits import Bit
-from gameplay.yields import Yields
 
-from ._base_terrain import BaseTerrain
+from gameplay.bits import Bit
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.yields import Yields
+from managers.i18n import t_
 
 
 class Volcano(BaseTerrain):
-    _name = "world.terrain.volcano"
+    _name = t_("world.terrain.volcano")
 
     _fallback_color = (30, 0, 0)  # Dark red color for volcano
 

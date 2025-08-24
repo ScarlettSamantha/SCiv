@@ -463,6 +463,11 @@ class Tile(BaseEntity):
     def get_prop_slots(self) -> Dict[str, Tuple[float, float, float]]:
         return self._prop_slots
 
+    def get_owner(self) -> Player:
+        if self.owner is None:
+            return PlayerManager.get_nature()
+        return super().get_owner()
+
     def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
 

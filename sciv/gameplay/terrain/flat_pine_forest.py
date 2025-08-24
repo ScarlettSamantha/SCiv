@@ -3,13 +3,13 @@ from typing import Any
 
 from gameplay.bits import Bit
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class FlatPineForest(BaseTerrain):
-    _name = "world.terrain.flat_pine_forest"
+    _name = t_("world.terrain.flatland_pine_forest")
     movement_modifier = 0.5
     water_availability = 0.75
     _fallback_color = (27, 64, 0)
