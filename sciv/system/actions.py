@@ -42,6 +42,7 @@ class Action:
         self.useable: bool = usable
         self.logger = LogManager.get_singleton_instance().engine.getChild("actions")
         self.executor: Optional[T_TARGET] = executor
+        self._has_run: bool = False
 
         self.condition: Optional[Callable[[Self], bool] | bool] = condition
         self.action: Callable[..., Optional[Any]] = action
@@ -76,6 +77,9 @@ class Action:
         self.use_target_arrow: bool = False
 
         self.action_result: Optional[Any] = None
+
+    def has_run(self) -> bool:
+        return self._has_run
 
     @property
     def is_disabled(self) -> bool:
@@ -112,6 +116,8 @@ class Action:
             condition_met = self.condition
         elif isinstance(self.condition, Callable):
             condition_met = self.condition(self)
+
+        self._has_run = True
 
         if self.condition is not None and condition_met is False:
             if self.on_failure is not None:

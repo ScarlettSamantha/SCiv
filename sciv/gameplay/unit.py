@@ -23,7 +23,6 @@ from managers.combat import T_TARGET, Combat, CombatOutcome, CombatResults
 from managers.combat_log import CombatLog, CombatLogEntry
 from managers.entity import EntityManager, EntityType, uuid4
 from managers.i18n import T_TranslationOrStrOrNone
-from managers.player import PlayerManager
 from managers.unit import UnitManager
 from panda3d.core import (
     BitMask32,
@@ -569,17 +568,20 @@ class Unit(BaseEntity, ABC):
         for _tile in tiles:
             if (self.moves_left - _tile.movement_cost) < 0:
                 self._move_to_tile(current_tile, departing_tile)
+                MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
                 return CantMoveReason.NO_MOVES
 
             self.moves_left -= _tile.movement_cost
 
             if _tile.is_visisted_by(self) is False:
                 self._move_to_tile(tile=_tile, clear_departing_tile=departing_tile)
+                MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             current_tile = _tile
 
         self._move_to_tile(tile=current_tile, clear_departing_tile=departing_tile)
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
         if current_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
@@ -595,9 +597,6 @@ class Unit(BaseEntity, ABC):
         self.model = self.load_model()
         self.calculate_model_position()
         self.get_tile().add_unit(self)
-
-        if self.owner == PlayerManager.session_player():
-            MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
 
     def calculate_model_position(self) -> None:
         tile_pos: Tuple[float, float, float] = self.get_tile().get_cords()

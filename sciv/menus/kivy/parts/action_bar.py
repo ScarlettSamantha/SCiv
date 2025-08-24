@@ -3,14 +3,13 @@ from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Type, Ty
 
 from direct.showbase.DirectObject import DirectObject
 from gameplay.improvement import Improvement
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Line, Rectangle
 from kivy.metrics import dp
-from kivy.properties import ListProperty, NumericProperty
+from kivy.properties import BooleanProperty, ListProperty, NumericProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
-
-from sciv.system.actions import Action
+from system.actions import Action
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
@@ -23,6 +22,10 @@ class PanelButton(Button):
     bg_color_down = ListProperty([0.0, 0.0, 0.0, 0.95])
     text_color = ListProperty([0.92, 0.92, 0.92, 1.0])
     disabled_alpha = NumericProperty(0.45)
+
+    highlight = BooleanProperty(False)  # type: ignore
+    highlight_color = ListProperty([1.0, 1.0, 1.0, 1.0])
+    highlight_width = NumericProperty(2)
 
     def __init__(self, **kwargs: Any):
         kwargs.setdefault("size_hint", (None, None))
@@ -40,6 +43,7 @@ class PanelButton(Button):
         self.background_disabled_down = ""
         self.border = (0, 0, 0, 0)
         self.background_color = (0, 0, 0, 0)
+        self.highlight: bool = False
 
         self.color = self.text_color[:]
 
@@ -47,30 +51,38 @@ class PanelButton(Button):
             self._c_bg = Color(*self.bg_color)  # type: ignore
             self._rect_bg = Rectangle(pos=self.pos, size=self.size)  # type: ignore
 
+        with self.canvas.after:  # type: ignore
+            self._c_hl = Color(*self.highlight_color)  # type: ignore
+            self._line_hl = Line(rectangle=(0, 0, 0, 0), width=float(self.highlight_width))  # type: ignore
+
         self.bind(
-            pos=self._recompute_rect,
-            size=self._recompute_rect,
-            corner_pad=lambda *_: self._recompute_rect(),
+            pos=self._recompute_geometry,
+            size=self._recompute_geometry,
+            corner_pad=lambda *_: self._recompute_geometry(),
+            highlight_width=lambda *_: self._recompute_geometry(),
             bg_color=lambda *_: self._apply_state_colors(),
             bg_color_down=lambda *_: self._apply_state_colors(),
             text_color=lambda *_: setattr(self, "color", self.text_color[:]),
             state=lambda *_: self._apply_state_colors(),
             disabled=lambda *_: self._apply_state_colors(),
+            highlight=lambda *_: self._apply_highlight(),
+            highlight_color=lambda *_: self._apply_highlight(),
         )
 
-        self._recompute_rect()
+        self._recompute_geometry()
         self._apply_state_colors()
+        self._apply_highlight()
 
-    @staticmethod
-    def _set_color(instr: Color, rgba: List[float]) -> None:
-        instr.rgba = rgba  # type: ignore[attr-defined]
-
-    def _recompute_rect(self, *_: Any) -> None:
+    def _recompute_geometry(self, *_: Any) -> None:
         x, y = cast(Tuple[float | int, float | int], self.pos)
         w, h = cast(Tuple[float | int, float | int], self.size)
         pad = float(self.corner_pad)
         self._rect_bg.pos = (x + pad, y + pad)  # type: ignore
         self._rect_bg.size = (w - 2 * pad, h - 2 * pad)  # type: ignore
+
+        hw = float(self.highlight_width) * 0.5
+        self._line_hl.rectangle = (x + hw, y + hw, w - 2 * hw, h - 2 * hw)  # type: ignore
+        self._line_hl.width = float(self.highlight_width)  # type: ignore
 
     def _apply_state_colors(self, *_: Any) -> None:
         base_bg: List[float] = self.bg_color_down if self.state == "down" else self.bg_color  # type: ignore
@@ -89,6 +101,27 @@ class PanelButton(Button):
         self._set_color(self._c_bg, bg)
         self.color = txt  # type: ignore
 
+    def _apply_highlight(self, *_: Any) -> None:
+        col = self.highlight_color[:]
+        if not self.highlight:
+            col[3] = 0.0  # hide by zeroing alpha
+        self._set_color(self._c_hl, col)
+
+    # Convenience API
+    def toggle_highlight(self, on: bool | None = None) -> None:
+        self.highlight = (not self.highlight) if on is None else bool(on)
+
+    @staticmethod
+    def _set_color(instr: Color, rgba: List[float]) -> None:
+        instr.rgba = rgba  # type: ignore[attr-defined]
+
+    def _recompute_rect(self, *_: Any) -> None:
+        x, y = cast(Tuple[float | int, float | int], self.pos)
+        w, h = cast(Tuple[float | int, float | int], self.size)
+        pad = float(self.corner_pad)
+        self._rect_bg.pos = (x + pad, y + pad)  # type: ignore
+        self._rect_bg.size = (w - 2 * pad, h - 2 * pad)  # type: ignore
+
 
 class ActionBar(BoxLayout, DirectObject):
     def __init__(self, *args: Any, **kwargs: Any):
@@ -100,8 +133,13 @@ class ActionBar(BoxLayout, DirectObject):
         self.prepare_action: Optional[Callable[..., Any]] = None
         self.prepare_build_action: Optional[Callable[..., Any]] = None
 
+        self.current_unit: Optional["Unit"] = None
+        self.action_preparer: Callable[..., Any] | None = None
+        self.build_action_preparer: Callable[..., Any] | None = None
+        self.current_action: Optional[Action] = None
+
     def build(self) -> GridLayout:
-        self.frame = GridLayout(  # noqa: F821
+        self.frame = GridLayout(
             orientation="lr-tb",
             size_hint=(None, None),
             width=1000,
@@ -113,22 +151,29 @@ class ActionBar(BoxLayout, DirectObject):
         )
         return self.frame
 
-    def generate(
-        self,
-        unit: "Unit",
-        action_preparer: Callable[..., Any],
-        build_action_preparer: Callable[..., Any],
-    ) -> None:
-        actions: List[Action] = unit.get_actions()
+    def fire_event(self, *args: Any, **kwargs: Any) -> None:
+        if self.prepare_action is not None:
+            self.prepare_action(*args, **kwargs)
+        self.current_action = kwargs.get("action", None)
+        self.clear_buttons()
+        self._generate_buttons()
+
+    def _generate_buttons(self) -> None:
+        if self.current_unit is None or self.prepare_action is None or self.prepare_build_action is None:
+            return
+
+        actions: List[Action] = self.current_unit.get_actions()
         for action in actions:
             btn = PanelButton(text=str(action.name))
             if action.is_disabled:
                 btn.disabled = True
-            btn.bind(on_press=partial(action_preparer, action=action, executor=unit))  # type: ignore
+            if self.current_action is not None and action == self.current_action and not self.current_action.has_run():
+                btn.highlight = True
+            btn.bind(on_press=partial(self.fire_event, action=action, executor=self.current_unit))  # type: ignore
             self.add_button(btn)
 
-        if unit.can_build is True:
-            improvements: List[Type[Improvement]] = unit.get_tile().get_buildable_improvements()
+        if self.current_unit.can_build is True:
+            improvements: List[Type[Improvement]] = self.current_unit.get_tile().get_buildable_improvements()
             for _improvement in improvements:
                 condition_check: TypeIs[Callable[..., object]] | bool = (
                     isinstance(_improvement.placeable_on_condition, bool)
@@ -141,15 +186,35 @@ class ActionBar(BoxLayout, DirectObject):
 
                 if (
                     _improvement.placeable_on_tiles is True
-                    and not unit.get_tile().improvements().has(_improvement)
+                    and not self.current_unit.get_tile().improvements().has(_improvement)
                     and visible_condition_check
                 ):
                     btn = PanelButton(text=str(_improvement.name))
-                    btn.disabled = not unit.can_build or unit.get_tile().owner != unit.owner or condition_check is False
+                    btn.disabled = (
+                        not self.current_unit.can_build
+                        or self.current_unit.get_tile().owner != self.current_unit.owner
+                        or condition_check is False
+                    )
                     btn.bind(  # type: ignore
-                        on_press=lambda x, improvement=_improvement: self.prepare_build_action(improvement, unit)  # type: ignore
+                        on_press=lambda x, improvement=_improvement: self.prepare_build_action(
+                            improvement, self.current_unit
+                        )  # type: ignore
                     )
                     self.add_button(btn)
+
+    def generate(
+        self,
+        unit: "Unit",
+        action_preparer: Callable[..., Any],
+        build_action_preparer: Callable[..., Any],
+        current_action: Optional[Action] = None,
+    ) -> None:
+        self.current_unit = unit
+        self.prepare_action = action_preparer
+        self.prepare_build_action = build_action_preparer
+        self.current_action = current_action
+        self.clear_buttons()
+        self._generate_buttons()
 
     def get_frame(self) -> GridLayout:
         if not self.frame:

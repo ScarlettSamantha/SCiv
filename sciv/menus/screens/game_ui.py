@@ -578,7 +578,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.clear_action_bar()
             return
 
-        self.clear_action_bar()
         self.generate_buttons_for_unit_actions(self.ui_manager.current_unit)
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
@@ -591,10 +590,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if _unit is not None:
             if self.action_bar_frame is None:
                 raise AssertionError("Action bar frame is not initialized.")
+
             self.action_bar_frame.generate(
                 unit=_unit,
                 action_preparer=self.prepare_action,
                 build_action_preparer=self.prepare_build_action,
+                current_action=self.wait_for_action_of_user,
             )
 
     def update_ui_elements(self):
