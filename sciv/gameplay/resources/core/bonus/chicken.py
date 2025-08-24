@@ -29,6 +29,10 @@ class Chicken(BaseBonusResource):
     spawn_amount = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     improvement_required = [Farm]
+    model = "assets/models/resources/chicken.glb"
+    model_size = 0.75
+    model_position = (0.0, 0.0, 0.01)
+    model_hpr = (0, 0, 0)
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)
