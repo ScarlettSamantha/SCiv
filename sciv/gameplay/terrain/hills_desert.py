@@ -1,12 +1,12 @@
 from typing import Any
 
 from gameplay.improvements.core.resources.mine import Mine
-
-from ._base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class HillsDesert(BaseTerrain):
-    _name = "world.terrain.hills_desert"
+    _name = t_("world.terrain.hills_desert")
     movement_modifier = 0.5
     water_availability = 0.25
     _fallback_color = (255, 226, 128)

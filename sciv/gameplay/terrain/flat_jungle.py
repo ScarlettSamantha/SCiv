@@ -2,13 +2,13 @@ from typing import Any
 
 from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class FlatJungle(BaseTerrain):
-    _name = "world.terrain.flatland_jungle"
+    _name = t_("world.terrain.flatland_jungle")
     movement_modifier = 0.5
     water_availability = 0
     _fallback_color = (45, 64, 32)

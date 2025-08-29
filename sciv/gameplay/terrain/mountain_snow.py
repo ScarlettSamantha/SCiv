@@ -1,12 +1,12 @@
 import random
 from typing import Any
-from managers.i18n import T_TranslationOrStr
 
-from ._base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class MountainSnow(BaseTerrain):
-    _name = "world.terrain.mountain_snow"
+    _name = t_("world.terrain.mountain_snow")
     _fallback_color = (255, 255, 255)
     can_spawn_resources = False
 

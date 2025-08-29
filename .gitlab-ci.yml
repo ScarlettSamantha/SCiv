@@ -269,6 +269,7 @@ upload-rsync:
     - export RSYNC_USER="${RSYNC_USER:-${REMOTE_UPLOAD_USER:-}}"
     - export REMOTE_ROOT="${REMOTE_ROOT:-${REMOTE_UPLOAD_ROOT:-}}"
     - export REMOTE_PATH="${REMOTE_PATH:-$REMOTE_ROOT/$CI_COMMIT_REF_NAME}"
+    - export SSH_PRIVATE_KEY_B64="${SSH_PRIVATE_KEY_B64:-}"
     - eval "$(ssh-agent -s)"
     - mkdir -p ~/.ssh
     - |

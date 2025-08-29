@@ -5,13 +5,13 @@ from gameplay.bits import Bit, GroupMode
 from gameplay.improvements.core.resources.farm import Farm
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class FlatForest(BaseTerrain):
-    _name = "world.terrain.flatland_forest"
+    _name = t_("world.terrain.flatland_forest")
     movement_modifier = 0.5
     water_availability = 0.75
     _fallback_color = (91, 128, 64)

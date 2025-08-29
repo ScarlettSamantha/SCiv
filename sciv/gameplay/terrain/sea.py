@@ -1,12 +1,13 @@
 from typing import Any
-from gameplay.yields import Yields
 
-from ._base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.yields import Yields
 from helpers.colors import Colors
+from managers.i18n import t_
 
 
 class Sea(BaseTerrain):
-    _name = "world.terrain.sea_water"
+    _name = t_("world.terrain.sea_water")
     _fallback_color = Colors.t4f_to_t3(Colors.BLUE)
 
     def __init__(self, *args: Any, **kwargs: Any):

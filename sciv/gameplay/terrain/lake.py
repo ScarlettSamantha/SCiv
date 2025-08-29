@@ -1,13 +1,12 @@
 from typing import Any
 
+from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
-from managers.i18n import T_TranslationOrStrOrNone
-
-from ._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStrOrNone, t_
 
 
 class Lake(BaseTerrain):
-    _name: T_TranslationOrStrOrNone = "world.terrain.lake"
+    _name: T_TranslationOrStrOrNone = t_("world.terrain.lake")
     model_scale: float = 0.41
     _fallback_color = (0, 204, 255)
 

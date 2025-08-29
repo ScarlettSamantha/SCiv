@@ -68,6 +68,7 @@ class Input(Singleton, DirectObject):
         self.ranged_targeting: RangedTargeting | None = None
         self.game_ui: "GameUIScreen | None" = None
         self.unit_manager: "UnitManager | None" = None
+        self._long_press_task_name: Optional[str] = None
 
         self.long_right_click: bool | None = None
 
@@ -139,7 +140,8 @@ class Input(Singleton, DirectObject):
                 self.logger.warning(f"Tile with ID {target} not found.")
                 return
 
-            self.game_ui.open_unit_path_renderer(self.selected_unit, tile)
+            if not self.game_ui.waiting_for_world_input and self.game_ui.wait_for_action is None:
+                self.game_ui.open_unit_path_renderer(self.selected_unit, tile)
 
         self._long_press_task_name = "input-long-right-click"
         self.base.taskMgr.doMethodLater(
@@ -173,8 +175,10 @@ class Input(Singleton, DirectObject):
 
         if NET_TYPE.UNIT.value == net_type:
             if (
-                unit := UnitManager.get_singleton_instance().find_unit(net_id)
-            ) is not None and self.selected_unit is not None:
+                (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is not None
+                and self.selected_unit is not None
+                and self.game_ui.action_waiting_for is None
+            ):
                 self.game_ui.open_player_attack_info(self.selected_unit, unit)
 
     def is_long_right_click(self) -> bool:
@@ -215,10 +219,15 @@ class Input(Singleton, DirectObject):
                 if tile is None:
                     self.logger.warning(f"Tile with ID {net_id} not found.")
                 else:
-                    if self.selected_unit.can_move_to_tile(tile, get_tiles=False) == CantMoveReason.COULD_MOVE:
+                    if (
+                        self.game_ui.wait_for_next_input_of_user is False
+                        and self.game_ui.wait_for_action_of_user is None
+                        and self.selected_unit.can_move_to_tile(tile, get_tiles=False) == CantMoveReason.COULD_MOVE
+                    ):
                         self.move_selected_unit_to_tile(tile)
 
         self.game_ui.close_unit_path_renderer()
+        self.game_ui.refresh_action_bar()
 
     def move_selected_unit_to_tile(self, tile: "Tile") -> None:
         from gameplay.unit import CantMoveReason

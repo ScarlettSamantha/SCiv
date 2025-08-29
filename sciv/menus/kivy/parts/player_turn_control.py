@@ -3,9 +3,9 @@ from typing import TYPE_CHECKING, Any, Optional
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
-
 from managers.i18n import t_
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class PlayerTurnControl(FloatLayout, DirectObject):
-    def __init__(self, base: "OpenCiv", **kwargs: Any):
+    def __init__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
         super().__init__(**kwargs)  # type: ignore
         self.base: "OpenCiv" = base
 
@@ -33,16 +33,17 @@ class PlayerTurnControl(FloatLayout, DirectObject):
         return self.frame
 
     def build_debug_frame(self) -> FloatLayout:
-        # --- Player Turn Control (Bottom-Right Corner) ---
+        win_size = self.base.win.get_x_size()
+
         self.frame = FloatLayout(
             size_hint=(None, None),
             width=200,
             height=100,
-            pos_hint={"right": 1, "y": 0},
+            pos=(dp(win_size - 210), dp(10)),
         )
 
         with self.frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.7)  # Black background with 70% opacity
+            Color(0, 0, 0, 0.70)
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
         def update_debug_rect(instance: FloatLayout, value: Any):

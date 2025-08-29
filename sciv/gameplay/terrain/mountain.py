@@ -1,11 +1,11 @@
 from typing import Any
 
-
-from ._base_terrain import BaseTerrain
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import t_
 
 
 class Mountain(BaseTerrain):
-    _name = "world.terrain.mountain"
+    _name = t_("world.terrain.mountain")
     _fallback_color = 112, 83, 15
     can_spawn_resources = False
 

@@ -656,6 +656,9 @@
         },
         "combat_log": {
           "combat_log": "Combat Log",
+          "expand": "Expand",
+          "collapse": "Collapse",
+          "compact": "Compact ({max_entries})",
           "results": {
             "defender_killed": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and killed by [color=#ff0000]{damage}[/color].",
             "defender_damaged": "Defender {defending_unit}({defender_owner_name}) was attack by {attacking_unit}({attacker_owner_name}) and damaged for [color=#ff0000]{damage} and retaliated for [color=#ff0000]{retaliation_damage}[/color].",
@@ -666,6 +669,20 @@
             "no_movement": "Attacker({attacking_unit}) has no movement to attack {defending_unit}.",
             "no_points": "Attacker({attacking_unit}) has no points to attack {defending_unit}."
           }
+        },
+        "unit_info": {
+          "title": "Unit Info",
+          "unit_info": "Unit Info"
+        },
+        "tile_info": {
+          "title": "Tile Info",
+          "tile_info": "Tile Info",
+          "terrain": "Terrain: {terrain}",
+          "features": "Features: {features}",
+          "resources": "Resources: {resources}",
+          "improvements": "Improvements: {improvements}",
+          "owner": "Owner: {owner}",
+          "yields": "Yields: {yields}"
         }
       },
       "messages": {
@@ -727,14 +744,30 @@
     "world": {
       "terrain": {
         "mountain": "Mountain",
+        "mountain_snow": "Snowy Mountain",
         "ocean": "Ocean",
         "coast": "Coast",
+        "sea_water": "Sea water",
+        "sea_ice": "Sea ice",
+        "lake": "Lake",
+        "city": "City",
 
-        "flat_desert": "Flat desert",
-        "flat_forest": "Flat forest",
-        "flat_snow": "Flat now",
-        "flat_tundra": "Flat tundra",
-        "flat_wasteland": "Flat wasteland",
+        "flatland_grass": "Flat grassland",
+        "flatland_plains": "Flat plains",
+        "flatland_swamp": "Flat swamp",
+        "flatland_jungle": "Flat jungle",
+        "flatland_marsh": "Flat marsh",
+        "flatland_tundra": "Flat tundra",
+        "flatland_snow": "Flat snow",
+        "flatland_scrubland": "Flat scrubland",
+        "flatland_savanna": "Flat savanna",
+        "flatland_forest": "Flat forest",
+        "flatland_desert": "Flat desert",
+        "flatland_pine_forest": "Flat pine forest",
+        "flatland_heavy_forest": "Flat heavy forest",
+        "flatland_light_jungle": "Flat light jungle",
+        "flatland_ice": "Flat ice",
+        "flatland_tundra_snow": "Flat tundra snow",
 
         "hills_desert": "Hilly Dessert",
         "hills_forest": "Hilly Forest",
@@ -1585,6 +1618,14 @@
               "description": "Internal game mechanics resource"
             }
           },
+          "corn": {
+            "name": "Corn",
+            "description": "A cereal grain used for food and animal feed."
+          },
+          "cocoa": {
+            "name": "Cocoa",
+            "description": "A tropical crop used to produce chocolate."
+          },
           "chicken": {
             "name": "Chicken",
             "description": "A domesticated bird raised for meat and eggs."
@@ -2364,6 +2405,7 @@
         }
       },
       "improvements": {
+        "improvements": "improvements",
         "core": {
           "basic": {
             "mine": {

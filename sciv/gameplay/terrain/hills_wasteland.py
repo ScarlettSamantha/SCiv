@@ -1,9 +1,9 @@
 # Lake class
 from typing import Any
-from gameplay.improvements.core.resources.mine import Mine
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
-from ._base_terrain import BaseTerrain
+from gameplay.improvements.core.resources.mine import Mine
+from gameplay.terrain._base_terrain import BaseTerrain
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 
 class Lake(BaseTerrain):

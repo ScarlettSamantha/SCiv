@@ -27,7 +27,7 @@ from managers.world import World
 from menus.kivy.elements.log_popup import LogPopup
 from menus.kivy.elements.message import MessageRenderer
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
-from menus.kivy.parts.action_bar import ActionBar
+from menus.kivy.parts.action_bar import PlayerActionBar
 from menus.kivy.parts.city import CityUI
 from menus.kivy.parts.civics import Civics
 from menus.kivy.parts.debug import DebugPanel
@@ -38,6 +38,7 @@ from menus.kivy.parts.player_attack import TargetingDuelPanel
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
 from menus.kivy.parts.player_info import PlayerInfo
 from menus.kivy.parts.player_list import PlayerList
+from menus.kivy.parts.player_select import TargetPanel
 from menus.kivy.parts.player_turn_control import PlayerTurnControl
 from menus.kivy.parts.research import Research
 from menus.kivy.parts.stats import StatsPanel
@@ -85,7 +86,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.root_layout: Optional[FloatLayout] = None
 
-        self.action_bar_frame: Optional[ActionBar] = None
+        self.action_bar_frame: Optional[PlayerActionBar] = None
         self.debug_frame: Optional[DebugPanel] = None
         self.stats_frame: Optional[StatsPanel] = None
         self.debug_actions: Optional[DebugActions] = None
@@ -102,6 +103,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.inspect: Optional[InspectEntity] = None
         self.player_attack_info: Optional[TargetingDuelPanel] = None
         self.unit_path_renderer: Optional[MovementPathBlocksRenderer] = None
+        self.player_target_info: Optional[TargetPanel] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
@@ -128,13 +130,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_combat_log()
         self.build_messenger()
 
-        if self.debug_map_stats is not None:
-            self.debug_map_stats.update()
-
-        self.add_widget(self.build_debug_map_stats())  # type: ignore
-        # self.add_widget(self.build_debug_frame())  # type: ignore
         self.add_widget(self.build_top_bar())  # type: ignore
-        self.add_widget(self.build_stats_frame())  # type: ignore
 
         self.register_non_collidable(self.player_combat_log)  # type: ignore
         self.accept(
@@ -203,9 +199,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def refresh_city(self, city: City | None = None, *args: Any, **kwargs: Any):
         if self.city_ui is not None:
-            if city is not None:
-                self.city_ui.set_city(city)
-            self.city_ui.update()
+            self.city_ui.show(city)
 
     def on_escape(self):
         if self.research is not None and self.research.is_open:
@@ -249,6 +243,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.showing_city = None
             self.close_city_ui()
 
+    def process_turn(self):
+        self.refresh_city()
+        self.refresh_action_bar()
+
     def process_city_click(self, city: Any):
         self.open_city_ui(city=city)
 
@@ -265,7 +263,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             raise AssertionError("Camera panel is not initialized.")
         return self.stats_frame
 
-    def get_action_bar_frame(self) -> ActionBar:
+    def get_action_bar_frame(self) -> PlayerActionBar:
         if self.action_bar_frame is None:
             raise AssertionError("Action bar is not initialized.")
         return self.action_bar_frame
@@ -357,7 +355,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         return self.inspect
 
     def build_action_bar(self) -> GridLayout:
-        self.action_bar_frame = ActionBar()
+        self.action_bar_frame = PlayerActionBar(self._base)
         return self.action_bar_frame.build()
 
     def build_stats_frame(self) -> FloatLayout:
@@ -422,7 +420,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def build_combat_log(self) -> PlayerCombatLog:
         combat_log = CombatLog()
         logs: List[CombatLogEntry] = combat_log.get_entries(PlayerManager.session_player())
-        self.player_combat_log = PlayerCombatLog(log=logs)
+        self.player_combat_log = PlayerCombatLog(log=logs, base=self._base)
         self.player_combat_log.build()
         self.player_combat_log.update()
         self.add_widget(self.player_combat_log)
@@ -447,6 +445,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def clear_selected_unit(self):
         self.clear_action_bar()
         self.ui_manager.clear_selected_unit()
+        self.close_target_panel()
 
     def clear_selected_tile(self):
         self.ui_manager.clear_selected_tile()
@@ -523,6 +522,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.action_waiting_for = None  # Reset action waiting state
 
         else:
+            self.open_target_panel(_tile)
             self.ui_manager.select_tile(_tile)
             tile_change = True
 
@@ -556,12 +556,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if should_select_unit is True and _unit.is_alive():
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
-
-        # if _unit != self.ui_manager.current_unit:
-        #     if should_select_unit is True:
-        #         if self.debug_frame is not None:
-        #             if _unit.is_alive():
-        #                 self.debug_frame.update_debug_info_for_unit(_unit)
+            self.open_target_panel(_unit)
+        else:
+            self.close_target_panel()
 
         self.clear_action_bar()
         if self.ui_manager.current_unit is not None:
@@ -578,7 +575,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.clear_action_bar()
             return
 
-        self.clear_action_bar()
         self.generate_buttons_for_unit_actions(self.ui_manager.current_unit)
 
     def generate_buttons_for_unit_actions(self, unit: str | BaseEntity):
@@ -591,10 +587,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if _unit is not None:
             if self.action_bar_frame is None:
                 raise AssertionError("Action bar frame is not initialized.")
+
             self.action_bar_frame.generate(
                 unit=_unit,
                 action_preparer=self.prepare_action,
                 build_action_preparer=self.prepare_build_action,
+                current_action=self.wait_for_action_of_user,
             )
 
     def update_ui_elements(self):
@@ -727,6 +725,18 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.unit_path_renderer is not None:
             self.unit_path_renderer.hide()
 
+    def open_target_panel(self, entity: Unit | Tile):
+        if self.player_target_info is None:
+            self.player_target_info = TargetPanel()
+            self.add_widget(self.player_target_info)
+            self.send_to_back(self.player_target_info)
+        self.player_target_info.show_for(entity)
+
+    def close_target_panel(self):
+        if self.player_target_info is not None:
+            self.remove_widget(self.player_target_info)
+            self.player_target_info = None
+
     def open_log(self):
         self.log.open()
         self.lock_input()
@@ -738,14 +748,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def open_city_ui(self, city: City):
         self.close_city_ui()
-        self.city_ui = CityUI(screen=self, base=self._base, name="", background_color=(0, 0, 0, 1), border=(0, 0, 0, 1))
+        self.city_ui = CityUI(
+            screen=self,
+            base=self._base,
+            name="",
+        )
 
         assert self.city_ui is not None, "City UI is not initialized."
-        assert self.city_ui.frame is not None, "City UI frame is not initialized."
-
         assert self.root_layout is not None, "Root layout is not initialized."
-        self.root_layout.add_widget(self.city_ui.build())
-        self.city_ui.show(city=city)
+
+        self.city_ui.show(city)
+        self.root_layout.add_widget(self.city_ui)
 
     def close_city_ui(self):
         if self.city_ui is None:
@@ -821,6 +834,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def close_research(self):
         if self.research is not None:
+            self.research.destroy()
             self.unregister_non_collidable(self.research)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.research.popup_disabled = True

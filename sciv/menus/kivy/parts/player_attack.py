@@ -344,9 +344,10 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
         kwargs.setdefault("orientation", "vertical")
         kwargs.setdefault("spacing", dp(4))
         kwargs.setdefault("padding", dp(6))
-        kwargs.setdefault("size_hint", (0.30, None))
+        kwargs.setdefault("size_hint", (None, None))
+        kwargs.setdefault("width", dp(1150))
         kwargs.setdefault("height", dp(250))
-        kwargs.setdefault("pos_hint", {"center_x": 0.4, "y": 0.075})
+        kwargs.setdefault("pos_hint", {"center_x": 0.5, "y": 0.1})
 
         super().__init__(**kwargs)
 

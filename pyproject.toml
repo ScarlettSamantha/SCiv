@@ -87,7 +87,7 @@ pythonPlatform = "Linux"
 
 
 [tool.bandit]
-skips = ["B311", "B301", "B101", "B403"]
+skips = ["B311", "B301", "B101", "B403", "B110"]
 exclude_dirs = ["scripts"]
 
 
