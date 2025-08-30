@@ -213,12 +213,6 @@ class HexGrid:
             col, row = tile.x, tile.y
             cz = tile.calculate_z_pos_on_altitude()[2]
 
-            if cz <= bottom_z:
-                self.wall_starts.append(None)
-                self.wall_vertex_counts.append(0)
-                tile.visible_sides = {i: False for i in range(6)}
-                continue
-
             start_row = idx
 
             centerX: float = col * horizontal_spacing
