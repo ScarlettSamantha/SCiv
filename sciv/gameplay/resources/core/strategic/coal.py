@@ -32,6 +32,8 @@ class Coal(BaseStrategicResource):
     coverage = 0.75
     spawn_amount = 3.0
     improvement_required = [Mine]
+    model = ("assets/models/resources/pile_coal.glb", None)
+    model_size = 0.33
 
     def __init__(self, value: int | float = 0):
         super().__init__(value=value)

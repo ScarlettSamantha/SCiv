@@ -44,6 +44,7 @@ class Colors:
     LIGHT_GREEN: Tuple4f = (0.5, 1, 0.5, 1)
     TEA_LEAF: Tuple4f = (0.54, 0.65, 0.34, 1)
     DARK_BLUE: Tuple4f = (0, 0, 0.55, 1)
+    LIGHT_YELLOW: Tuple4f = (1.0, 1.0, 0, 1)
 
     COLORS: List[Tuple4f] = [
         RED,

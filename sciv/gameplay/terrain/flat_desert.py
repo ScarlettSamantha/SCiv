@@ -9,7 +9,7 @@ class FlatDesert(BaseTerrain):
     _name = t_("world.terrain.flatland_desert")
     movement_modifier = 0.5
     water_availability = 0
-    _fallback_color = (253, 255, 128)
+    _fallback_color = (128, 128, 40)
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
