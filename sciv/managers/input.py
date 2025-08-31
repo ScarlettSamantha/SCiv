@@ -317,8 +317,6 @@ class Input(Singleton, DirectObject):
         self.base = base
         self.map = World.get_singleton_instance()
 
-        return super().__setup__(*args, **kwargs)
-
     def inject_into_camera(self):
         self.picker = CollisionTraverser()
         self.pq = CollisionHandlerQueue()

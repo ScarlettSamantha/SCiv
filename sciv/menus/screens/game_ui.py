@@ -1,9 +1,10 @@
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
+from gameplay.age import Age
 from gameplay.city import City
 from gameplay.civic import CivicTree
 from gameplay.improvement import Improvement
@@ -17,6 +18,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
+from managers.ages import AgesManager
 from managers.combat import T_TARGET
 from managers.combat_log import CombatLog, CombatLogEntry
 from managers.entity import EntityManager, EntityType
@@ -26,6 +28,7 @@ from managers.unit import UnitManager
 from managers.world import World
 from menus.kivy.elements.log_popup import LogPopup
 from menus.kivy.elements.message import MessageRenderer
+from menus.kivy.elements.modal import ModalImagePopup
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 from menus.kivy.parts.action_bar import PlayerActionBar
 from menus.kivy.parts.city import CityUI
@@ -95,6 +98,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.city_ui: Optional[CityUI] = None
         self.top_bar: Optional[TopBar] = None
         self.research: Optional[Research] = None
+        self.age_popup: Optional[ModalImagePopup] = None
         self.civics: Optional[Civics] = None
         self.player_list: Optional[PlayerList] = None
         self.player_info: Optional[PlayerInfo] = None
@@ -158,6 +162,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.user.enemy_city_clicked", self.process_enemy_city_click)
 
         self.accept("ui.update.ui.unit_unselected", self.clear_action_bar)
+
+        self.accept("game.era.progressing", self.open_age_popup)
 
         self.accept("system.unit.destroyed", self.clear_action_bar)
         self.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
@@ -500,26 +506,23 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.close_city_ui()
             self.showing_city = None
 
-        # self.debug_frame.update_debug_info_for_tile(_tile)  # type: ignore # We know it exists because it's initialized in build_screen
-
         if self.wait_for_next_input_of_user is False:
-            self.clear_selected_unit()  # Clear the action bar
+            self.clear_selected_unit()
 
         generate_buttons: bool = True
-        # If we are waiting for an action, execute it now
         if self.wait_for_next_input_of_user and self.wait_for_action_of_user is not None:
             self.run_prepared_action(tile=tile)  # type: ignore
-            self.wait_for_action_of_user = None  # Call the stored action with the tile
+            self.wait_for_action_of_user = None
             self.wait_for_next_input_of_user = False
 
             if self.wait_for_action is not None and self.wait_for_action.keep_targeting_after_use is False:
                 if self.ui_manager.select_tile(_tile):
-                    tile_change = True  # We changed the selected tile, so we need to update the unit selection
+                    tile_change = True
             else:
                 generate_buttons = False
 
-            self.wait_for_action_of_user = None  # Reset state
-            self.action_waiting_for = None  # Reset action waiting state
+            self.wait_for_action_of_user = None
+            self.action_waiting_for = None
 
         else:
             self.open_target_panel(_tile)
@@ -534,7 +537,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def process_unit_click(self, unit: Optional[Union[str, "Tile"]] = None) -> bool:
         self.logger.debug(f"Unit clicked: {unit}")
         if isinstance(unit, str):
-            _unit: Optional[BaseEntity] = EntityManager.get_singleton_instance().get(EntityType.UNIT, unit)
+            _unit: Optional[BaseEntity] = cast(
+                Optional[BaseEntity], EntityManager.get_singleton_instance().get(EntityType.UNIT, unit)
+            )
         else:
             _unit: Optional[BaseEntity] = unit if isinstance(unit, Unit) else None
 
@@ -551,7 +556,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 should_select_unit = False
             self.wait_for_next_input_of_user = False
             self.wait_for_action_of_user = None  # Reset state
-            # self.wait_for_action = None
             self.action_waiting_for = None
 
         if should_select_unit is True and _unit.is_alive():
@@ -736,6 +740,28 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.player_target_info is not None:
             self.remove_widget(self.player_target_info)
             self.player_target_info = None
+
+    def open_age_popup(self, age_name: "str | Age", *args: Any, **kwargs: Any):
+        if isinstance(age_name, str):
+            age: Age = AgesManager.get_singleton_instance().get_age(age_name)
+        else:
+            age: Age = age_name
+        if self.age_popup is not None:
+            self.age_popup.dismiss()
+            self.age_popup = None
+
+        self.age_popup = ModalImagePopup(
+            title=f"{age.get_name()} Age Reached!",
+            message=f"You have entered the {age.get_name()} era.",
+            image_source=age.get_transition_image(),
+            size_hint=(0.5, 0.5),
+        )
+        self.age_popup.open()
+
+    def close_age_popup(self):
+        if self.age_popup is not None:
+            self.age_popup.dismiss()
+            self.age_popup = None
 
     def open_log(self):
         self.log.open()

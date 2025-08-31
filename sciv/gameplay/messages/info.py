@@ -24,6 +24,7 @@ class InfoMessage(Message):
         is_clickable: bool = True,
         is_disabled: bool = False,
         is_blocking: bool = False,
+        is_unique: bool = False,
         on_click_arguments: Dict[Any, Any] = {},
     ):
         super().__init__(
@@ -38,6 +39,7 @@ class InfoMessage(Message):
             is_disabled=is_disabled,
             on_click_arguments=on_click_arguments,
             is_blocking=is_blocking,
+            is_unique=is_unique,
         )
         self._icon = (
             icon

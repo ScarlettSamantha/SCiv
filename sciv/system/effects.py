@@ -2,6 +2,7 @@ import weakref
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Type, Union, cast
 
+from gameplay.effect import BaseEntityType
 from gameplay.yields import Yields
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ parent_types = Union["City", "Tile", "Player", "World", "Unit", "Improvement", "
 
 
 class Effects:
-    def __init__(self, parent: parent_types) -> None:
+    def __init__(self, parent: parent_types, effects: List[Type["Effect"]] = []) -> None:
         self._parent: weakref.ReferenceType[parent_types] = weakref.ref(parent)
         self._effects: Dict[str, "Effect"] = {}
         self._effects_num: int = 0
@@ -237,7 +238,7 @@ class EffectPlacers(Enum):
     PLACE_ON_UNIT = 6
     PLACE_ON_IMPROVEMENT = 7
 
-    def place(self, base_object: "Tile | City | Player | World | Improvement", effect: "Effect") -> None:
+    def place(self, base_object: "BaseEntityType", effect: "Effect") -> None:
         from gameplay.city import City
         from gameplay.improvement import Improvement
         from gameplay.player import Player
@@ -260,5 +261,39 @@ class EffectPlacers(Enum):
             _place_on_improvement(base_object, effect)
         elif self == EffectPlacers.PLACE_ON_UNIT and isinstance(base_object, "Unit"):
             _place_on_unit(base_object, effect)
+        else:
+            raise ValueError("Invalid place method.")
+
+    def remove(
+        self,
+        base_object: "Tile | City | Player | World | Improvement",
+        effect: "Effect",
+        execute_on_remove: bool = True,
+    ) -> None:
+        from gameplay.city import City
+        from gameplay.improvement import Improvement
+        from gameplay.player import Player
+        from gameplay.tile import Tile
+        from managers.world import World
+
+        if self == EffectPlacers.PLACE_ON_TILE and isinstance(base_object, Tile):
+            Effect.remove_effect_from_entity(base_object, effect, execute_on_remove=execute_on_remove)
+        elif self == EffectPlacers.PLACE_ON_PLAYERS_TILE and isinstance(base_object, Player):
+            for tile in base_object.tiles.get_tiles().values():
+                Effect.remove_effect_from_entity(tile, effect, execute_on_remove=execute_on_remove)
+        elif self == EffectPlacers.PLACE_ON_CITY_TILES and isinstance(base_object, City):
+            for tile in base_object.owned_tiles:
+                Effect.remove_effect_from_entity(tile, effect, execute_on_remove=execute_on_remove)
+        elif self == EffectPlacers.PLACE_ON_CITY and isinstance(base_object, City):
+            Effect.remove_effect_from_entity(base_object, effect, execute_on_remove=execute_on_remove)
+        elif self == EffectPlacers.PLACE_ON_PLAYER and isinstance(base_object, Player):
+            Effect.remove_effect_from_entity(base_object, effect, execute_on_remove=execute_on_remove)
+        elif self == EffectPlacers.PLACE_ON_WORLD and isinstance(base_object, World):
+            Effect.remove_effect_from_entity(base_object, effect, execute_on_remove=execute_on_remove)
+        elif self == EffectPlacers.PLACE_ON_IMPROVEMENT and isinstance(base_object, Improvement):
+            Effect.remove_effect_from_entity(base_object, effect, execute_on_remove=execute_on_remove)
+            base_object.get_tile().render()
+        elif self == EffectPlacers.PLACE_ON_UNIT and isinstance(base_object, "Unit"):
+            Effect.remove_effect_from_entity(base_object, effect, execute_on_remove=execute_on_remove)
         else:
             raise ValueError("Invalid place method.")

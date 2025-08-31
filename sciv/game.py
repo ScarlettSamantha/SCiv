@@ -19,7 +19,6 @@ from helpers.os import WindowsHelper
 from helpers.paths import PathsHelper
 from kivy.config import Config
 from managers.i18n import I18nManager, set_i18n
-from managers.input import Input
 from managers.unit import UnitManager
 from panda3d.core import loadPrcFile
 from panda3d_kivy import monkey  # type: ignore
@@ -39,10 +38,21 @@ if TYPE_CHECKING:
 class OpenCiv(ShowBase):
     def __init__(self):
         from helpers.cache import Cache
+        from managers.config import ConfigManager
+
+        if ConfigManager.get_singleton_instance() is None:  # type: ignore
+            ConfigManager.set_singleton_instance(ConfigManager())
+
         from helpers.debug import Debug
         from managers.assets import AssetManager
-        from managers.config import ConfigManager
+        from managers.input import Input
         from managers.log import LogManager
+
+        self.logger = LogManager.set_instance(LogManager())
+        assert self.logger is not None
+        self.logger.setup_loggers()
+
+        from managers.entity import EntityManager
         from managers.ui import ui
         from system.camera import Camera
         from system.lights import setup_lights
@@ -72,6 +82,7 @@ class OpenCiv(ShowBase):
         base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
         PathsHelper.base_path = str(base_file_path)
         ShowBase.__init__(self)
+        self.cache = Cache
         config_mgr.apply_config_to_prc()
         config_mgr.disable_vsync()
 
@@ -92,8 +103,6 @@ class OpenCiv(ShowBase):
 
         # Logging
         loading_screen.next_stage("Setting up logging")
-        self.logger = LogManager.get_singleton_instance()
-        self.logger.setup_loggers()
 
         # Cache
         Cache.set_showbase_instance(self)
@@ -126,10 +135,15 @@ class OpenCiv(ShowBase):
 
         from managers.game import Game
 
+        self.entity_manager = EntityManager(base=self)
+        EntityManager.set_singleton_instance(self.entity_manager)
+        self.entity_manager.__setup__(self)
+
         # Asset manager
         self.engine_logger.info("Setting up asset manager")
         loading_screen.next_stage("Setting up asset manager")
-        self.asset_manager: AssetManager = AssetManager.get_singleton_instance()
+
+        self.asset_manager: AssetManager = AssetManager()
         AssetManager.set_singleton_instance(self.asset_manager)
         self.asset_manager.set_base(self)
 
@@ -145,6 +159,14 @@ class OpenCiv(ShowBase):
         self.engine_logger.info("Setting up lights")
         setup_lights(self)
 
+        self.engine_logger.info("Setting up world")
+        loading_screen.next_stage("Setting up world")
+        from managers.world import World
+
+        self.world = World(self)
+        World.set_instance(self.world)
+        self.world.__setup__(self)
+
         # Game manager
         self.engine_logger.info("Setting up game manager")
         loading_screen.next_stage("Setting up game manager")
@@ -152,12 +174,6 @@ class OpenCiv(ShowBase):
         Game.set_singleton_instance(self.game_manager_instance)
 
         # World
-        self.engine_logger.info("Setting up world")
-        loading_screen.next_stage("Setting up world")
-        from managers.world import World
-
-        self.world = World.get_singleton_instance()
-        self.world.__setup__()
 
         # Unit manager
         loading_screen.next_stage("Setting up unit manager")

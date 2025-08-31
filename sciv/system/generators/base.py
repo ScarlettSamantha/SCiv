@@ -146,6 +146,9 @@ class BaseGenerator(ABC):
                 chosen_civilization: Type[Civilization] = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
                 while True:
                     chosen_civilization = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
+                    assert issubclass(chosen_civilization, Civilization), (
+                        "CivilizationRepository.random() returned an instance it should be a class."
+                    )
                     already_ingame: bool = False
 
                     if chosen_civilization in civs_ingame:

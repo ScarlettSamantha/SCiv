@@ -14,11 +14,13 @@ from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from helpers.cache import Cache
 from helpers.debug import Debug, PerformanceLogger
 from helpers.optimizations import debounce
+from managers.ages import AgesManager
 from managers.config import ConfigManager
 from managers.debug import DebugManager
 from managers.entity import EntityManager, EntityType
 from managers.input import Input
 from managers.player import PlayerManager
+from managers.property import PropertiesManager, Property
 from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
@@ -31,10 +33,12 @@ from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 
 if TYPE_CHECKING:
+    from gameplay.age import Age
     from gameplay.effect import Effect
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from managers.entity import Property
     from system.generators.base import BaseGenerator
 
     from sciv.game import OpenCiv
@@ -51,18 +55,24 @@ class Game(Singleton, DirectObject):
         self.base: "OpenCiv" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")  # type: ignore
 
-        self.ui: ui = ui.get_singleton_instance(base=self.base)
+        self.ui: ui = ui.get_singleton_instance()
         self.world: World = World.get_singleton_instance()
         self.input: Input = Input.get_singleton_instance()
-        self.turn: Turn = Turn.get_singleton_instance(base=self.base)
+        self.turn: Turn = Turn.get_singleton_instance()
+        self.ages: AgesManager = AgesManager.get_singleton_instance()
         self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
         self.debug: DebugManager = DebugManager.get_singleton_instance()
         self.shader: Shaders = Shaders()
         self.border: Borders | None = None
         self.config: ConfigManager = ConfigManager.get_singleton_instance()
-        self.entities: EntityManager = EntityManager.get_singleton_instance(base=self.base)
-        self.unit: UnitManager = UnitManager.get_singleton_instance(base=self.base)
+        self.entities: EntityManager = EntityManager.get_singleton_instance()
+
+        self.properties_manager: PropertiesManager = PropertiesManager()
+        PropertiesManager.set_singleton_instance(self.properties_manager)
+
+        self.unit: UnitManager = UnitManager(base=self.base)
+        UnitManager.set_instance(self.unit)
         self.mesh_grid: Optional[HexGrid] = None
         self.game_settings: GameSettings | None = None
 
@@ -92,12 +102,15 @@ class Game(Singleton, DirectObject):
             enemies=None,
             difficulty=1,
         )
+        Cache.set_game_settings(self.properties)
 
         self._is_paused: bool = False
         self.debug_enabled: bool = False
 
         self.configure_environment()
         self.register()
+
+        self.register_callback_inputs()
 
     def register(self):
         def messenger():
@@ -140,18 +153,20 @@ class Game(Singleton, DirectObject):
 
     def load(self, session_name: str):
         MessengerGlobal.messenger.send("game.state.load_start")
+
+        self.ui = self.base.ui_manager
+        self.turn = Turn(base=self.base)
+        Turn.set_instance(self.turn)
+
         self.reset_game()
         self.entities.session = session_name
         self.entities.load()
 
         world_tiles: Dict[Any, "Tile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
-
         players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
-
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
-
         effects: Dict[str, "Effect"] = self.entities.get_all(EntityType.EFFECT)  # type: ignore
-
+        properties: Dict[str, "Property"] = self.entities.get_all(EntityType.PROPERTY)  # type: ignore
         self.mesh_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
         Cache.set_showbase_instance(self.base)
         if self.mesh_grid is None:
@@ -167,10 +182,16 @@ class Game(Singleton, DirectObject):
         self.camera.recenter()
         self.turn.activate()
 
-        self.properties = self.entities.get_all(EntityType.GAME_SETTINGS).get("game_settings")  # type: ignore
-        self.properties.load_state()  # type: ignore
+        self.properties_manager = PropertiesManager()
+        PropertiesManager.set_singleton_instance(self.properties_manager)
+        self.properties_manager.load(properties)  # type: ignore
 
-        self.game_settings = self.properties
+        self.ages = AgesManager()
+        AgesManager.set_instance(self.ages)
+        self.ages.load_ages()
+        _property: Property = self.properties_manager.get_singleton_instance().get_property("game.current_age")
+        self.ages.set_age(_property)  # type: ignore
+
         self.border = Borders(self.world.get_size(), self.shader, self.base.render)  # type: ignore
         turn = self.entities.get_meta_data("turn")
         if turn is None:
@@ -261,12 +282,13 @@ class Game(Singleton, DirectObject):
         self.accept("system.game.start_load", self.on_game_start)
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
+        self.accept("game.era.progressing", self.on_age_progressing)
 
-    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any) -> None:
-        super().__setup__(*args, **kwargs)
-        self.base = base
-
-        self.register_callback_inputs()
+    def on_age_progressing(self, new_age: "Age"):
+        if self.properties is None:
+            raise AssertionError("Game properties not set")
+        self.properties.set_age(new_age)
+        self.entities.add_property("game.current_age", new_age)
 
     def toggle_wireframe(self):
         if not self.debug_enabled:
@@ -373,15 +395,13 @@ class Game(Singleton, DirectObject):
         if players is None:
             raise ValueError("No players were setup")
 
-    def on_game_start(self, map_size: str | Tuple[int, int], civilization: str | Type[Civilization], num_players: int):
+    def on_game_start(self, map_size: str | Tuple[int, int], civilization: Type[Civilization], num_players: int):
         if self.properties is None:
             raise AssertionError("Game properties not set")
         self.logger.info("Game start requested")
 
-        self.reset_game()
-
         self.properties.num_enemies = num_players
-        self.properties.player = Civilization.get(civilization) if isinstance(civilization, str) else civilization  # type: ignore
+        self.properties.player = civilization
         self.properties.width = int(map_size.split("x")[0]) if isinstance(map_size, str) else map_size[0]
         self.properties.height = int(map_size.split("x")[1]) if isinstance(map_size, str) else map_size[1]
 
@@ -401,6 +421,10 @@ class Game(Singleton, DirectObject):
         Cache.set_showbase_instance(self.base)
 
         self.active_generator = self.world.get_generator()  # type: ignore
+
+        if self.ui is None:  # type: ignore
+            self.ui = self.base.ui_manager
+
         self.generate_world()
 
         self.logger.info("World generation complete")
@@ -412,7 +436,8 @@ class Game(Singleton, DirectObject):
         if self.active_generator is None:
             raise AssertionError("No generator was found, should have been set in generate_world")
 
-        self.turn = Turn.get_singleton_instance(self.base)
+        self.turn = Turn(base=self.base)
+        Turn.set_instance(self.turn)
         self.logger.info("Activating turn")
         self.turn.activate()
 
@@ -426,6 +451,10 @@ class Game(Singleton, DirectObject):
         seed = self.active_generator.randomize_seed()
         self.active_generator.config.seed = seed
         self.properties.seed = seed  # type: ignore
+
+        assert self.properties is not None
+        Cache.set_game_settings(self.properties)
+
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
 
@@ -433,6 +462,12 @@ class Game(Singleton, DirectObject):
         self.render_field()
         self.logger.info("Field setup complete")
 
+        if self.ages is None:  # type: ignore
+            self.ages = AgesManager()
+            AgesManager.set_instance(self.ages)
+
+        self.ages.begin()
+        self.entities.add_property("game.current_age", self.ages.get_current_age().dump())
         self.logger.info("Post-generation sequence")
         MessengerGlobal.messenger.send("game.state.load_complete")
         MessengerGlobal.messenger.send("game.state.true_game_start")

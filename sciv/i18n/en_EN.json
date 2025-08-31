@@ -2366,6 +2366,10 @@
       },
       "ages": {
         "core": {
+          "prehistoric": {
+            "name": "Prehistoric",
+            "description": "Time before written records"
+          },
           "ancient": {
             "name": "Ancient",
             "description": "Early human civilization period"

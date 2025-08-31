@@ -2,14 +2,12 @@ import random
 import weakref
 from logging import Logger
 from math import sqrt
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from gameplay.repositories.tile import TileRepository
-from helpers.cache import Cache
-from helpers.model import ModelHelper
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
@@ -30,8 +28,8 @@ if TYPE_CHECKING:
 class World(Singleton, DirectObject):
     logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("world")
 
-    def __setup__(self):
-        self.base = Cache.get_showbase_instance()
+    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
+        self.base = base
         self.hex_radius: float = 0.5
         self.col_spacing: float = 1.4
         self.cols: int = 5  # x
@@ -50,6 +48,8 @@ class World(Singleton, DirectObject):
         self.base: "OpenCiv" = base
 
     def reset(self):
+        from helpers.model import ModelHelper
+
         self.map = {}
         self.grid = {}
         self.effects = Effects(self)

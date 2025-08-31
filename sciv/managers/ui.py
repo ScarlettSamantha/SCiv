@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -56,7 +56,7 @@ class ui(Singleton, DirectObject):
         self.previous_unit: Optional[Unit] = None
 
         self.game_menu_state: Optional[Game] = None
-        self.registered = False if not self.registered else self.register
+        self.registered = False
 
         self.game_gui: Optional[SCivGUI] = None
 
@@ -75,9 +75,6 @@ class ui(Singleton, DirectObject):
         self.highlighted_tiles: List[Tile] = []
         self.highlight_tile_radius: int = 2
         self.notifications: Notification = Notification()
-
-    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
-        super().__setup__(*args, **kwargs)
         self._base = base
         self.registered = False
         if not self.registered:
@@ -458,7 +455,7 @@ class ui(Singleton, DirectObject):
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
-            result: BaseEntity | None = self.get_entities().get(EntityType.UNIT, unit[0])
+            result: BaseEntity | None = cast(BaseEntity | None, self.get_entities().get(EntityType.UNIT, unit[0]))
             if result is None:
                 return
 

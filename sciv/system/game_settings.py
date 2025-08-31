@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
 
 if TYPE_CHECKING:
+    from gameplay.age import Age
     from system.generators.base import BaseGenerator
 
 
@@ -30,6 +31,7 @@ class GameSettings:
         self.difficulty: int = difficulty
         self.num_enemies: int = num_enemies
         self.seed: Optional[int] = seed
+        self.age: "Age | None" = None
 
     def __getstate__(self) -> object:
         return self.__dict__.copy()
@@ -39,10 +41,18 @@ class GameSettings:
 
     def dump(self) -> dict[str, Any]:
         data: dict[str, Any] = self.__dict__.copy()
-        data["player"] = f"{self.player.__module__}.{self.player.__name__}"
+        data["player"] = f"{self.player.__module__}.{self.player.__class__}"
+        if self.age is not None:
+            data["age"] = self.age.dump()
         return data
 
-    def load_state(self) -> None:
+    def load_state(self, data: Dict[str, Any]) -> None:
         from managers.entity import EntityManager
 
-        self.player = EntityManager.dynamic_import(self.player)  # type: ignore
+        self.age = EntityManager.dynamic_import(data.get("game.current_age").value.get("cls_ref"))  # type: ignore
+
+    def set_age(self, age: "Age") -> None:
+        self.age = age
+
+    def get_age(self) -> "Age | None":
+        return self.age

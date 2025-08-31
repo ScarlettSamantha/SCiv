@@ -1,6 +1,8 @@
 from typing import Any, Optional
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
+from gameplay.repositories.civilization import Civilization
 from helpers.colors import Colors
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
@@ -10,8 +12,6 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.widget import Widget
 from menus.kivy.elements.clickable_label import ClickableLabel
-
-from gameplay.repositories.civilization import Civilization
 
 
 class MainMenuScreen(Screen):
@@ -148,7 +148,7 @@ class MainMenuScreen(Screen):
         return float_layout
 
     def quick_start(self, _: Optional[Button] = None):
-        messenger.send("system.game.start_load", [(25, 25), Civilization.random(num=1), 3])
+        MessengerGlobal.messenger.send("system.game.start_load", [(25, 25), Civilization.random(num=1), 3])
 
     def _on_label_click(self, *args: Any, **kwargs: Any) -> None:
         from helpers.debug import Debug

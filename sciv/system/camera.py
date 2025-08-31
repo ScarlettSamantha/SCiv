@@ -132,9 +132,6 @@ class Camera(Singleton, DirectObject):
         self._desired_zoom = self.zoom
         self.update_camera_position()
 
-    def __setup__(self, *args: Any, **kwargs: Any):
-        return super().__setup__(*args, **kwargs)
-
     def base_camera(self) -> NodePath | PandaCamera:
         """Return the camera node."""
         return self.base.camera  # type: ignore

@@ -3,11 +3,6 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from kivy.uix.widget import Widget
-from kivy.graphics import Color, Rectangle
-from kivy.uix.anchorlayout import AnchorLayout
-from kivy.uix.boxlayout import BoxLayout
-
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
@@ -15,12 +10,17 @@ from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.science import Science
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
+from helpers.os import WindowsHelper
 from helpers.placeholder import Placeholder
+from kivy.graphics import Color, Rectangle
+from kivy.uix.anchorlayout import AnchorLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.widget import Widget
+from managers.ages import AgesManager
 from managers.player import PlayerManager
 from managers.turn import Turn
 from menus.kivy.elements.button_self_resizable import SelfResizableButton
 from menus.screens.loading import ImageLabel
-from helpers.os import WindowsHelper
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -76,6 +76,9 @@ class TopBar(BoxLayout, DirectObject):
         self.base: "OpenCiv" = base
         self.background_color: Tuple4f = background_color
         self.border: Tuple4f = border
+        self.ages_manager: AgesManager = AgesManager.get_singleton_instance()
+
+        self.age_label: Optional[ImageLabel] = None
 
         self.research_label: Optional[ResearchButton] = None
         self.gold_label: Optional[ImageLabel] = None
@@ -83,13 +86,12 @@ class TopBar(BoxLayout, DirectObject):
         self.culture_label: Optional[CultureButton] = None
         self.turn_label: Optional[ImageLabel] = None
 
-        # Build 3 sub-boxes: left 30%, center 40%, right 30%
-        self.left_container = BoxLayout(size_hint=(0.3, 1), orientation="horizontal", padding=(5, 0))
+        self.left_container = BoxLayout(size_hint=(0.3, 1), orientation="horizontal", padding=(5, 0), spacing=10)
         self.add_widget(self.left_container)  # type: ignore
 
         self.center_anchor = AnchorLayout(size_hint=(0.4, 1), anchor_x="center", anchor_y="center")
         self.center_container = BoxLayout(orientation="horizontal", spacing=10, size_hint=(None, None))
-        # Let the BoxLayout’s width shrink or grow to fit children
+
         self.center_container.bind(  # type: ignore
             minimum_width=self.center_container.setter("width"),  # type: ignore
             minimum_height=self.center_container.setter("height"),  # type: ignore
@@ -100,14 +102,12 @@ class TopBar(BoxLayout, DirectObject):
         self.right_container = BoxLayout(size_hint=(0.3, 1), orientation="horizontal", padding=(5, 0))
         self.add_widget(self.right_container)  # type: ignore
 
-        # Draw background rectangle
         with self.canvas.before:
             Color(*self.background_color)
             self.rect = Rectangle(size=self.size, pos=self.pos)  # type: ignore
 
         self.bind(size=self._update_rect, pos=self._update_rect)  # type: ignore
 
-        # Register event and build the bar
         self.register()
 
     def _update_rect(self, *_):
@@ -121,7 +121,13 @@ class TopBar(BoxLayout, DirectObject):
         if self.is_build:
             return self
 
-        # Create labels
+        self.ages_label = ImageLabel(
+            text=str(AgesManager.get_singleton_instance().get_current_age().name),
+            size_hint=(None, 1),
+            width=150,
+            img_source=str(Placeholder.getPlaceholderImagePathSmallIcon()),
+        )
+
         self.research_label = ResearchButton(
             text="Researching: None",
             size_hint=(None, 1),
@@ -160,12 +166,10 @@ class TopBar(BoxLayout, DirectObject):
             img_source=turn_path,
         )
 
-        # Add them to the respective container
-        # Left container can hold your "research" text
         self.left_container.add_widget(self.research_label)  # type: ignore
         self.left_container.add_widget(self.culture_label)  # type: ignore
+        self.left_container.add_widget(self.ages_label)  # type: ignore
 
-        # Center container for turn, culture, gold, etc.
         self.center_container.add_widget(self.gold_label)  # type: ignore
         self.center_container.add_widget(self.turn_label)  # type: ignore
         self.center_container.add_widget(self.faith_label)  # type: ignore
@@ -196,6 +200,7 @@ class TopBar(BoxLayout, DirectObject):
             for label in (
                 self.research_label,
                 self.culture_label,
+                self.ages_label,
                 self.gold_label,
                 self.faith_label,
                 self.turn_label,
@@ -220,23 +225,20 @@ class TopBar(BoxLayout, DirectObject):
 
         self.turn_label.text = f"Turn: {turn}"  # type: ignore
 
+        self.ages_label.text = str(self.ages_manager.get_current_age().name)
+
     def reset(self):
-        """Rebuild the top bar from scratch."""
         self.clear_widgets()
         self.build()
 
     def add_widget_item(self, widget: Widget) -> Optional[Widget]:
-        """Add a widget somewhere on the bar if you want."""
-        # Example: add to right container
         self.right_container.add_widget(widget)  # type: ignore
         return widget
 
     def remove_widget_item(self, widget: Widget) -> Optional[Widget]:
-        """Remove a widget from the bar."""
         if widget in self.right_container.children:
             self.right_container.remove_widget(widget)  # type: ignore
         return widget
 
     def on_click_research(self, *args: Any):
-        """Handle clicking the research label."""
         MessengerGlobal.messenger.send("ui.update.ui.show_research_ui")

@@ -24,42 +24,35 @@ class Condition:
         self._validate_params()
 
     def _validate_params(self) -> None:
-        """Check if all required parameters are provided."""
-        missing_params = [param for param in self.required_params if param not in self.params]
+        missing_params: List[str] = [param for param in self.required_params if param not in self.params]
         if missing_params:
             raise ValueError(f"Missing required parameters: {', '.join(missing_params)}")
 
     def __getstate__(self) -> object:
-        state = self.__dict__.copy()
+        state: Dict[str, Any] = self.__dict__.copy()
         state.pop("_condition", None)
         state["_cls"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
         return state
 
     def set(self, condition: Callable[..., bool]) -> None:
-        """Set the condition function."""
         self._condition = condition
 
     def _invoke_condition(self) -> bool:
-        """Invoke the condition function safely."""
         if self._condition is None:
             return True
-
         try:
-            return self._condition(**self.params)  # Unpacking self.params
+            return self._condition(**self.params)
         except TypeError as e:
             raise TypeError(f"Error invoking condition function: {e}") from e
 
     def is_met(self) -> bool:
-        """Evaluate the condition function safely."""
         return self._invoke_condition()
 
     def __call__(self, *args: Any, **kwargs: Any) -> bool:
-        """Invoke the condition check."""
         return self.is_met()
 
     @classmethod
     def no_condition(cls) -> Self:
-        """Return a no-op condition."""
         return cls()
 
 
@@ -77,7 +70,7 @@ class Conditions:
 
     def are_met(self, params: Dict[str, Any] = {}) -> bool:
         self.condition_params.update(params)
-        """Evaluate all conditions based on the conditional type."""
+
         if self.conditional_type == ConditionalTypes.AND:
             for condition in self._conditions:
                 if not condition(**self.condition_params):
@@ -93,32 +86,25 @@ class Conditions:
             raise ValueError("Invalid conditional type")
 
     def add(self, condition: Condition) -> None:
-        """Add a condition to the list."""
         self._conditions.append(condition)
 
     def remove(self, condition: Condition) -> None:
-        """Remove a condition from the list."""
         self._conditions.remove(condition)
 
     def set_or(self) -> None:
-        """Set the conditional type to OR."""
         self.conditional_type = ConditionalTypes.OR
 
     def set_and(self) -> None:
-        """Set the conditional type to AND."""
         self.conditional_type = ConditionalTypes.AND
 
     def __call__(self, *args: Any, **kwargs: Any) -> bool:
-        """Invoke the conditions check."""
         return self.are_met(params=self.condition_params)
 
     def __iter__(self) -> Iterator[Condition]:
-        """Iterate over the conditions."""
         return iter(self._conditions)
 
     @classmethod
     def no_conditions(cls) -> Self:
-        """Return a no-op conditions group."""
         return cls()
 
 
@@ -138,7 +124,11 @@ class BuildCondition(Condition):
 
 class ResearchCondition(Condition):
     def __init__(
-        self, tech: List[Type["Tech"]] | Type["Tech"], player: Optional["Player"] = None, *args: Any, **kwargs: Any
+        self,
+        tech: List[Type["Tech"]] | Type["Tech"],
+        player: Optional["Player"] = None,
+        *args: Any,
+        **kwargs: Any,
     ):
         if not isinstance(tech, list):
             tech = [tech]
@@ -149,14 +139,35 @@ class ResearchCondition(Condition):
         self._condition = self._research_condition
 
     def _research_condition(self, player: Optional["Player"], tech: List[Type["Tech"]]) -> bool:
-        """Check if the player has researched the tech."""
         if player is None:
             player = PlayerManager.session_player()
 
-        for t in tech:
-            if not player.has_researched_tech(t):
-                return False
-        return True
+        if self.params.get("condition_type", ConditionalTypes.AND) == ConditionalTypes.OR:
+            return any(player.has_researched_tech(t) for t in tech)
+        else:
+            return all(player.has_researched_tech(t) for t in tech)
+
+
+class GlobalResearchCondition(Condition):
+    def __init__(
+        self,
+        tech: List[Type["Tech"]] | Type["Tech"],
+        *args: Any,
+        **kwargs: Any,
+    ):
+        if not isinstance(tech, list):
+            tech = [tech]
+        super().__init__(*args, **kwargs)
+        self.params["tech"] = tech
+        self.required_params = ["tech"]
+        self._condition = self._global_research_condition
+
+    def _global_research_condition(self, tech: List[Type["Tech"]]) -> bool:
+        players = PlayerManager.players()
+        if self.params.get("condition_type", True):
+            return any(player.has_researched_tech(t) for t in tech for player in players.values())
+        else:
+            return all(player.has_researched_tech(t) for t in tech for player in players.values())
 
 
 class CivicTreeUnlockedCondition(Condition):
@@ -167,7 +178,6 @@ class CivicTreeUnlockedCondition(Condition):
         self._condition = self._civic_tree_unlocked_condition
 
     def _civic_tree_unlocked_condition(self, civic_tree: Type["CivicTree"], player: Optional["Player"] = None) -> bool:
-        """Check if the player has unlocked the civic tree."""
         if player is None:
             player = PlayerManager.session_player()
         return player.has_civic_tree_unlocked(civic_tree)
@@ -181,7 +191,6 @@ class CivicSubTreeUnlockedCondition(Condition):
         self._condition = self._civic_subtree_unlocked_condition
 
     def _civic_subtree_unlocked_condition(self, civic: Type["CivicSubtree"], player: Optional["Player"] = None) -> bool:
-        """Check if the player has unlocked the civic subtree."""
         if player is None:
             player = PlayerManager.session_player()
         return player.has_civic_subtree_unlocked(civic)
@@ -196,14 +205,12 @@ class CivicCondition(Condition):
         self._condition = self._civic_condition
 
     def _civic_condition(self, civic: Type["Civic"], player: Optional["Player"] = None) -> bool:
-        """Check if the player has researched the civic."""
         if player is None:
             player = PlayerManager.session_player()
 
         return player.has_civic(civic)
 
     def get_civic(self) -> Type["Civic"]:
-        """Get the civic associated with this condition."""
         return self.params.get("civic")  # type: ignore
 
 

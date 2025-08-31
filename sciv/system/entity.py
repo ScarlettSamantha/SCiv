@@ -13,6 +13,7 @@ from managers.i18n import T_TranslationOrStrOrNone
 from mixins.inspectable import Inspectable
 
 if TYPE_CHECKING:
+    from gameplay.effect import Effect
     from gameplay.player import Player
     from gameplay.tile import Tile
 
@@ -368,3 +369,22 @@ class BaseEntity(ABC, DirectObject, Inspectable):
             other_tile = other.tile
 
         return TileRepository.distance(tile, other_tile)
+
+    def add_effect(self, effect: "Effect") -> None:
+        from system.effects import Effects
+
+        if not hasattr(self, "effects"):
+            raise ValueError("This entity does not support effects")
+        assert isinstance(self.effects, Effects), "Effects attribute is not of type Effects"  # type: ignore
+        effects: Effects = self.effects  # type: ignore
+        effects.add_effect(effect)
+
+    def remove_effect(self, effect: "Effect") -> None:
+        from system.effects import Effects
+
+        if not hasattr(effect, "effects"):
+            raise ValueError("This entity does not support effects")
+
+        assert isinstance(self.effects, Effects), "Effects attribute is not of type Effects"  # type: ignore
+        effects: Effects = self.effects  # type: ignore
+        effects.remove_effect(effect)
