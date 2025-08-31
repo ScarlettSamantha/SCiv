@@ -146,6 +146,9 @@ class BaseGenerator(ABC):
                 chosen_civilization: Type[Civilization] = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
                 while True:
                     chosen_civilization = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
+                    assert issubclass(chosen_civilization, Civilization), (
+                        "CivilizationRepository.random() returned an instance it should be a class."
+                    )
                     already_ingame: bool = False
 
                     if chosen_civilization in civs_ingame:
@@ -186,14 +189,16 @@ class BaseGenerator(ABC):
 
             players.append(player)
 
-            if player.is_human:
-                PlayerManager.add(player, True)
+            player_manager = PlayerManager()
+            player_manager.set_singleton_instance(player_manager)
+            if player.turn_order == 0:
+                player_manager.add(player, True)
             elif player.is_nature:
-                PlayerManager.set_nature(player)
+                player_manager.set_nature(player)
             elif player.is_barbarian:
-                PlayerManager.set_barbarian(player)
+                player_manager.set_barbarian(player)
             else:
-                PlayerManager.add(player, False)
+                player_manager.add(player, False)
 
         return players
 

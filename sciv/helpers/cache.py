@@ -1,14 +1,16 @@
 from typing import TYPE_CHECKING, Optional
 from weakref import ReferenceType, ref
+
 from gameplay.rules import get_game_rules
 from managers.log import LogManager
 
-
 if TYPE_CHECKING:
-    from sciv.game import OpenCiv
-    from system.atlas import AtlasGenerator
     from gameplay.rules import GameRules
+    from managers.game import GameSettings
     from managers.i18n import I18nManager
+    from system.atlas import AtlasGenerator
+
+    from sciv.game import OpenCiv
 
 
 class Cache:
@@ -18,6 +20,7 @@ class Cache:
     _active_rules: Optional["GameRules"] = get_game_rules()
     _core_logger: Optional[LogManager] = None
     _i18n_instance: Optional["I18nManager"] = None
+    _game_settings: Optional["GameSettings"] = None
 
     @classmethod
     def set_showbase_instance(cls, instance: "OpenCiv"):
@@ -86,3 +89,14 @@ class Cache:
     def set_i18n_instance(cls, i18n: "I18nManager"):
         assert i18n is not None, "I18n instance cannot be not None."
         cls._i18n_instance = i18n
+
+    @classmethod
+    def get_game_settings(cls) -> "GameSettings":
+        if cls._game_settings is None:
+            raise AssertionError("Game settings instance is not set.")
+        return cls._game_settings
+
+    @classmethod
+    def set_game_settings(cls, settings: "GameSettings"):
+        assert settings is not None, "Game settings instance cannot be not None."
+        cls._game_settings = settings

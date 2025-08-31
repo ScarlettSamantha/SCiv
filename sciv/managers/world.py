@@ -2,14 +2,12 @@ import random
 import weakref
 from logging import Logger
 from math import sqrt
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
 from gameplay.repositories.tile import TileRepository
-from helpers.cache import Cache
-from helpers.model import ModelHelper
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
@@ -30,17 +28,15 @@ if TYPE_CHECKING:
 class World(Singleton, DirectObject):
     logger: Logger = LogManager.get_singleton_instance().gameplay.getChild("world")
 
-    def __setup__(self):
-        self.base = Cache.get_showbase_instance()
+    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
+        self.base = base
         self.hex_radius: float = 0.5
         self.col_spacing: float = 1.4
-        self.cols: int = 5  # x
-        self.rows: int = 5  # y
+        self.cols: int = 5
+        self.rows: int = 5
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
-        # Key is the tag, value is the tile.
         self.map: Dict[str, "Tile"] = {}
-        # Key is the (col, row) tuple, value is the tile.
         self.grid: Dict[Tuple[int, int], "Tile"] = {}
         self.generator: Optional[Type["BaseGenerator"]] = None
         self.effects: Effects = Effects(self)
@@ -50,6 +46,8 @@ class World(Singleton, DirectObject):
         self.base: "OpenCiv" = base
 
     def reset(self):
+        from helpers.model import ModelHelper
+
         self.map = {}
         self.grid = {}
         self.effects = Effects(self)
@@ -82,13 +80,13 @@ class World(Singleton, DirectObject):
         for tile in self.map.values():
             tile.load_state()
 
-        for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
-            city.load_state()
-
         for improvement in cast(
             List["Improvement"], EntityManager.get_singleton_instance().get_all(EntityType.IMPROVEMENT).values()
         ):  # type: ignore
             improvement.load_state()
+
+        for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
+            city.load_state()
 
         for effect in cast(List["Effect"], EntityManager.get_singleton_instance().get_all(EntityType.EFFECT).values()):  # type: ignore
             effect.load_state()
@@ -116,7 +114,6 @@ class World(Singleton, DirectObject):
         self.cols = cols
         self.rows = rows
 
-        # Compute the middle of the grid.
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
 
@@ -140,7 +137,7 @@ class World(Singleton, DirectObject):
     def get_grid(self) -> Dict[Tuple[int, int], "Tile"]:
         return self.grid
 
-    def on_turn_end(self, turn: int):  # We process the world on turn end. and we process the tiles.
+    def on_turn_end(self, turn: int):
         for tile in self.map.values():
             if (
                 tile.player is not None
@@ -149,7 +146,7 @@ class World(Singleton, DirectObject):
                 or len(tile.effects) > 0
                 or len(tile._improvements) > 0  # type: ignore
                 or tile.needs_tile_proecessing is True
-            ):  # We dont want to process tiles that have no player, city, units, effects or need tile processing this saves seconds of turn time.
+            ):
                 tile.on_turn_end(turn)
         self.effects.on_turn_end(turn)
 
@@ -176,8 +173,9 @@ class World(Singleton, DirectObject):
         tile.city_owner = weakref.ref(city)
         tile.owner = player
 
-        self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
-        city.player = player
+        if tile.is_city():
+            self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
+            city.player = player
         city.owned_tiles.append(tile)
 
         self.logger.info(f"Tile {tile} is now owned by {player}, sending message.")
@@ -196,17 +194,12 @@ class World(Singleton, DirectObject):
         can_own_tile: bool = False
 
         if tile.owner is None:
-            # No one owns this tile
             can_own_tile = True
-        # Determine if city can claim tile.
         elif tile.owner == PlayerManager.player():
-            # Player owns this tile
             can_own_tile = True
         elif tile.owner == PlayerManager.get_nature():
-            # Nature owns this tile
             can_own_tile = True
         else:
-            # Someone else owns this tile
             can_own_tile = False
 
         if can_own_tile:

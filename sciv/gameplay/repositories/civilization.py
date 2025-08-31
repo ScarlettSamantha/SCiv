@@ -20,8 +20,7 @@ class Civilization:
 
         classes = PyLoad.load_classes("gameplay/civilizations", base_classes=BaseCivilization)
         for key, _class in classes.items():
-            # Remove the base class from the list.
-            if _class == BaseCivilization:
+            if _class == BaseCivilization or _class.__name__ == "BaseCivilization" or _class == Civilization:
                 del classes[key]
             cls.raw_cache.append(_class)
             cls.cache[str(_class.name).lower()] = _class

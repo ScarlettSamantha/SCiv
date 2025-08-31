@@ -24,6 +24,7 @@ class Message:
         is_clickable: bool = False,
         is_blocking: bool = False,
         is_disabled: bool = False,
+        is_unique: bool = False,
         on_click_arguments: Dict[Any, Any] = {},
         created_at: float | None = None,
     ):
@@ -38,6 +39,7 @@ class Message:
         self.is_blocking: bool = is_blocking
         self.is_clickable: bool = is_clickable
         self.is_disabled: bool = is_disabled
+        self.is_unique: bool = is_unique
         self.on_click_arguments: Dict[Any, Any] = on_click_arguments
 
     @classmethod
@@ -185,6 +187,10 @@ class Messenger:
         self._expiry_heap: List[Tuple[float, int]] = []
 
     def add_message(self, message: Message) -> int:
+        if message.is_unique and any(
+            existing_msg.get_key() == message.get_key() for existing_msg in self.messages.values()
+        ):
+            return -1
         message_id = self._next_id
         self.messages[message_id] = message
         self._next_id += 1
@@ -208,6 +214,9 @@ class Messenger:
         while self._expiry_heap and self._expiry_heap[0][0] <= now:
             _, msg_id = heapq.heappop(self._expiry_heap)
             self.remove_message(msg_id)
+
+    def has_message_type(self, message_type: Type[Message]) -> bool:
+        return any(isinstance(msg, message_type) for msg in self.messages.values())
 
     def clear_messages(self) -> None:
         self.messages.clear()
@@ -266,7 +275,7 @@ class Messenger:
             _cls: Type[Message] = cast(Type[Message], EntityManager.dynamic_import(msg_data.get("cls_ref", "")))
             msg_data.pop("cls_ref", None)
             msg_data.pop("created_at", None)
-            self.messages[int(msg_id)] = _cls(**msg_data)
+            self.messages[int(msg_id)] = _cls.from_dict(msg_data)
 
         self._next_id = int(max(self.messages.keys(), default=0)) + 1 if self.messages else 0
         self.messages = OrderedDict(sorted(self.messages.items()))

@@ -15,7 +15,6 @@ class DebugManager(Singleton):
 
     def __setup__(self, *args: Any, **kwargs: Any) -> None:
         self.__load()
-        return super().__setup__(*args, **kwargs)
 
     def __load(self):
         from system.pyload import PyLoad

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -13,6 +13,7 @@ from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from managers.entity import EntityManager, EntityType
+from managers.game import Borders
 from managers.i18n import T_TranslationOrStr, Translation, t_
 from managers.player import PlayerManager
 from managers.world import World
@@ -41,8 +42,8 @@ class ui(Singleton, DirectObject):
         self.menus = []
         self._base: "OpenCiv" = base
         self.current_menu = None
-        self.game: Optional["Game"] = Game.get_singleton_instance()
-        self.map: World = World.get_singleton_instance()
+        self.game: Optional["Game"] = None
+        self.map: Optional[World] = None
 
         self.current_tile: Optional[Tile] = None
         self.previous_tile: Optional[Tile] = None
@@ -56,7 +57,7 @@ class ui(Singleton, DirectObject):
         self.previous_unit: Optional[Unit] = None
 
         self.game_menu_state: Optional[Game] = None
-        self.registered = False if not self.registered else self.register
+        self.registered = False
 
         self.game_gui: Optional[SCivGUI] = None
 
@@ -75,9 +76,6 @@ class ui(Singleton, DirectObject):
         self.highlighted_tiles: List[Tile] = []
         self.highlight_tile_radius: int = 2
         self.notifications: Notification = Notification()
-
-    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any):
-        super().__setup__(*args, **kwargs)
         self._base = base
         self.registered = False
         if not self.registered:
@@ -142,6 +140,7 @@ class ui(Singleton, DirectObject):
         self.accept("ui.request_main_menu", self.on_request_main_menu)
         self.accept("ui.request.reroll", self.on_reroll)
         self.accept("ui.request.open.popup", self.show_draggable_popup)
+        self.accept("game.gameplay.tiles.ownership_changed", self.on_tile_ownership_change)
 
         self.accept("ui.notification.check", lambda *args, **kwargs: Notification.check())
 
@@ -169,6 +168,9 @@ class ui(Singleton, DirectObject):
 
     def insert_refresh_frame(self):
         self._base.task_mgr.step()  # type: ignore
+
+    def on_tile_ownership_change(self, tile: "Tile", new_owner: "Player", old_owner: "Player | None" = None) -> None:
+        Borders.get_singleton_instance().refresh()
 
     def on_tile_hover(self, tile_coords: str) -> None: ...
 
@@ -326,6 +328,10 @@ class ui(Singleton, DirectObject):
             self.popups[id].dismiss()  # type: ignore
 
     def post_game_start(self):
+        from managers.game import Game
+
+        self.game = Game.get_singleton_instance()
+        self.map = self.game.world
         screen: "GameUIScreen" = self.get_gui().get_screen("game_ui")
         screen.player = PlayerManager.session_player()
         screen.build_screen()  # type: ignore
@@ -339,6 +345,7 @@ class ui(Singleton, DirectObject):
         PStatClient.disconnect()  # type: ignore
 
     def calculate_icons_for_tiles(self):
+        assert self.map is not None, "Map is not initialized"
         for _, tile in self.map.map.items():
             tile.tile_yield.calculate()
 
@@ -406,6 +413,7 @@ class ui(Singleton, DirectObject):
         self.keep_target_after_click = True
 
     def select_tile(self, tile: str | Tile) -> bool:
+        assert self.map is not None, "Map is not initialized"
         _tile: Optional[Tile] = None
         if isinstance(tile, str):
             x, y = tile.split("_")[-2:]
@@ -458,7 +466,7 @@ class ui(Singleton, DirectObject):
 
     def select_unit(self, unit: List[str] | Unit):
         if isinstance(unit, list):
-            result: BaseEntity | None = self.get_entities().get(EntityType.UNIT, unit[0])
+            result: BaseEntity | None = cast(BaseEntity | None, self.get_entities().get(EntityType.UNIT, unit[0]))
             if result is None:
                 return
 

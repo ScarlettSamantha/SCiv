@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Type
 
 if TYPE_CHECKING:
     from gameplay.improvement import Improvement
@@ -67,14 +67,13 @@ class ImprovementsSet:
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
-        from managers.entity import EntityManager, EntityType
+        from managers.entity import EntityManager
 
         entity_manager: EntityManager = EntityManager.get_singleton_instance()
 
         _improvements: List[str] = state.get("improvements", [])
         for improvement in _improvements:
-            improvement_instance: "Improvement | None" = cast(
-                "Improvement | None", entity_manager.get_ref(EntityType.IMPROVEMENT, improvement)
-            )
+            improvement_instance: "Improvement | None" = entity_manager.get_improvement(improvement)
+
             assert improvement_instance is not None, f"Improvement {improvement} not found in entity manager"
             self.add(improvement_instance)

@@ -26,7 +26,6 @@ class Core(TechTree):
         classes = PyLoad.load_classes("gameplay/techs/", package="gameplay.techs")
         ages = PyLoad.load_classes("gameplay/ages/core/", package="gameplay.ages.core")
 
-        # Just a type hint proxy
         def get_tech(self: Self, classes: Dict[str, Type[Tech]], key: str) -> Type[Tech]:
             try:
                 return classes[key]
@@ -50,23 +49,23 @@ class Core(TechTree):
             return _class
 
         def load_ages(self: Self, ages: Dict[str, Type[Age]]) -> None:
+            prehistoric = add_age_to_space(self, ages, "Prehistoric")
             ancient = add_age_to_space(self, ages, "Ancient")
             classical = add_age_to_space(self, ages, "Classical")
             medieval = add_age_to_space(self, ages, "Medieval")
             renaissance = add_age_to_space(self, ages, "Renaissance")
             industrial = add_age_to_space(self, ages, "Industrial")
-            modern = add_age_to_space(self, ages, "Modern")
             atomic = add_age_to_space(self, ages, "Atomic")
             information = add_age_to_space(self, ages, "Information")
             future = add_age_to_space(self, ages, "Future")
 
             all_ages: List[Age] = [
+                prehistoric,
                 ancient,
                 classical,
                 medieval,
                 renaissance,
                 industrial,
-                modern,
                 atomic,
                 information,
                 future,
@@ -77,8 +76,9 @@ class Core(TechTree):
         load_ages(self, ages)
 
         hunting_gathering: Type[Tech] = add_to_space(
-            self, classes, "HuntingGathering", add_age_to_space(self, ages, "Ancient")
+            self, classes, "HuntingGathering", add_age_to_space(self, ages, "Prehistoric")
         )
+
         trapping: Type[Tech] = add_to_space(self, classes, "Trapping", get_age(self, ages, "Ancient"))
         animal_husbandry: Type[Tech] = add_to_space(self, classes, "AnimalHusbandry", get_age(self, ages, "Ancient"))
         bronze_working: Type[Tech] = add_to_space(self, classes, "BronzeWorking", get_age(self, ages, "Ancient"))
@@ -146,31 +146,31 @@ class Core(TechTree):
         economics: Type[Tech] = add_to_space(self, classes, "Economics", get_age(self, ages, "Industrial"))
         rifling: Type[Tech] = add_to_space(self, classes, "Rifling", get_age(self, ages, "Industrial"))
 
-        combined_arms: Type[Tech] = add_to_space(self, classes, "CombinedArms", get_age(self, ages, "Modern"))
+        combined_arms: Type[Tech] = add_to_space(self, classes, "CombinedArms", get_age(self, ages, "Atomic"))
         advanced_ballistics: Type[Tech] = add_to_space(
-            self, classes, "AdvancedBallistics", get_age(self, ages, "Modern")
+            self, classes, "AdvancedBallistics", get_age(self, ages, "Atomic")
         )
-        advanced_flight: Type[Tech] = add_to_space(self, classes, "AdvancedFlight", get_age(self, ages, "Modern"))
-        electricity: Type[Tech] = add_to_space(self, classes, "Electricity", get_age(self, ages, "Modern"))
-        flight: Type[Tech] = add_to_space(self, classes, "Flight", get_age(self, ages, "Modern"))
-        guidance_systems: Type[Tech] = add_to_space(self, classes, "GuidanceSystems", get_age(self, ages, "Modern"))
-        lasers: Type[Tech] = add_to_space(self, classes, "Lasers", get_age(self, ages, "Modern"))
-        rocketry: Type[Tech] = add_to_space(self, classes, "Rocketry", get_age(self, ages, "Modern"))
-        satellites: Type[Tech] = add_to_space(self, classes, "Satellites", get_age(self, ages, "Modern"))
-        stealth_technology: Type[Tech] = add_to_space(self, classes, "StealthTechnology", get_age(self, ages, "Modern"))
+        advanced_flight: Type[Tech] = add_to_space(self, classes, "AdvancedFlight", get_age(self, ages, "Atomic"))
+        electricity: Type[Tech] = add_to_space(self, classes, "Electricity", get_age(self, ages, "Atomic"))
+        flight: Type[Tech] = add_to_space(self, classes, "Flight", get_age(self, ages, "Atomic"))
+        guidance_systems: Type[Tech] = add_to_space(self, classes, "GuidanceSystems", get_age(self, ages, "Atomic"))
+        lasers: Type[Tech] = add_to_space(self, classes, "Lasers", get_age(self, ages, "Atomic"))
+        rocketry: Type[Tech] = add_to_space(self, classes, "Rocketry", get_age(self, ages, "Atomic"))
+        satellites: Type[Tech] = add_to_space(self, classes, "Satellites", get_age(self, ages, "Atomic"))
+        stealth_technology: Type[Tech] = add_to_space(self, classes, "StealthTechnology", get_age(self, ages, "Atomic"))
         synthetic_materials: Type[Tech] = add_to_space(
-            self, classes, "SyntheticMaterials", get_age(self, ages, "Modern")
+            self, classes, "SyntheticMaterials", get_age(self, ages, "Atomic")
         )
         telecommunications: Type[Tech] = add_to_space(
-            self, classes, "Telecommunications", get_age(self, ages, "Modern")
+            self, classes, "Telecommunications", get_age(self, ages, "Atomic")
         )
-        military_science: Type[Tech] = add_to_space(self, classes, "MilitaryScience", get_age(self, ages, "Modern"))
+        military_science: Type[Tech] = add_to_space(self, classes, "MilitaryScience", get_age(self, ages, "Atomic"))
 
-        nuclear_fission: Type[Tech] = add_to_space(self, classes, "NuclearFission", get_age(self, ages, "Modern"))
-        plastics: Type[Tech] = add_to_space(self, classes, "Plastics", get_age(self, ages, "Modern"))
-        radio: Type[Tech] = add_to_space(self, classes, "Radio", get_age(self, ages, "Modern"))
-        combustion: Type[Tech] = add_to_space(self, classes, "Combustion", get_age(self, ages, "Modern"))
-        computers: Type[Tech] = add_to_space(self, classes, "Computers", get_age(self, ages, "Modern"))
+        nuclear_fission: Type[Tech] = add_to_space(self, classes, "NuclearFission", get_age(self, ages, "Atomic"))
+        plastics: Type[Tech] = add_to_space(self, classes, "Plastics", get_age(self, ages, "Atomic"))
+        radio: Type[Tech] = add_to_space(self, classes, "Radio", get_age(self, ages, "Atomic"))
+        combustion: Type[Tech] = add_to_space(self, classes, "Combustion", get_age(self, ages, "Atomic"))
+        computers: Type[Tech] = add_to_space(self, classes, "Computers", get_age(self, ages, "Atomic"))
 
         nanotechnology: Type[Tech] = add_to_space(self, classes, "Nanotechnology", get_age(self, ages, "Information"))
         nuclear_fusion: Type[Tech] = add_to_space(self, classes, "NuclearFusion", get_age(self, ages, "Information"))

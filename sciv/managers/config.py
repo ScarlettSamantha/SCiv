@@ -22,7 +22,6 @@ class ConfigManager(Singleton):
         self.config_data = self._load_config()
         self.config_fp: Optional[TextIOWrapper] = None
         self.apply_config_to_prc()
-        return super().__setup__(*args, **kwargs)
 
     @classmethod
     def __call__(cls, *args: Any, **kwargs: Any) -> "ConfigManager":

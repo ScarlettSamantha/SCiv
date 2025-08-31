@@ -1,11 +1,16 @@
-from typing import Any, Callable, Dict, List, Literal, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
+from helpers.paths import PathsHelper  # type: ignore
 from kivy.graphics import Color, Line, Rectangle
 from kivy.metrics import dp, sp  # type: ignore
 from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.image import Image
+from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.widget import Widget
 from managers.i18n import T_TranslationOrStr, t_
@@ -178,14 +183,14 @@ class ModalPanel(ModalView):
         self,
         text: T_TranslationOrStr,
         on_press: Optional[Callable[[], None]] = None,
-        width: int | float = dp(140),
-        height: int | float = dp(40),
+        width: int | float = 140,
+        height: int | float = 40,
         **button_kwargs: Dict[str, Any],
     ) -> Button:
         defaults: Dict[str, Any] = dict(
             size_hint=(None, None),
-            width=width,
-            height=height,
+            width=dp(width),
+            height=dp(height),
             background_normal="",
             background_down="",
             background_color=(0.18, 0.18, 0.18, 1),
@@ -207,3 +212,170 @@ class ModalPanel(ModalView):
         self.dismiss()
         if self._on_close_cb:
             self._on_close_cb()
+
+
+class ModalImagePopup(ModalView):
+    def __init__(
+        self,
+        *,
+        image: Optional[Union[str, "Image"]] = None,
+        title: str = "",
+        description: str = "",
+        **kwargs: Any,
+    ) -> None:
+        kwargs.setdefault("auto_dismiss", False)
+        kwargs.setdefault("size_hint", (0.8, 0.8))
+        kwargs.setdefault("pos_hint", {"center_x": 0.5, "center_y": 0.5})
+
+        image_source = kwargs.pop("image_source", None)
+        if image_source is not None and image is None:
+            image = image_source
+
+        message: str = kwargs.pop("message", "")
+        if message and not description:
+            description = message
+
+        super().__init__(**kwargs)
+
+        root = FloatLayout(size_hint=(1, 1))
+        self.add_widget(root)
+
+        self._bg_img = Image(
+            size_hint=(None, None),
+            allow_stretch=False,
+            keep_ratio=True,
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+        )
+        root.add_widget(self._bg_img)
+
+        self._overlay = BoxLayout(
+            orientation="vertical",
+            size_hint=(0.85, None),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
+            spacing=dp(8),
+            padding=(dp(16), dp(16), dp(16), dp(16)),
+        )
+        root.add_widget(self._overlay)
+
+        with self._overlay.canvas.before:
+            Color(0, 0, 0, 0.70)
+            self._overlay_bg = Rectangle(pos=self._overlay.pos, size=self._overlay.size)  # type: ignore
+
+        self._title_lbl = Label(
+            text=f"[b]{title}[/b]" if title else "",
+            markup=True,
+            halign="center",
+            valign="middle",
+            size_hint=(1, None),
+        )
+        self._overlay.add_widget(self._title_lbl)
+
+        self._desc_lbl = Label(
+            text=description or "",
+            markup=True,
+            halign="center",
+            valign="middle",
+            size_hint=(1, None),
+        )
+        self._overlay.add_widget(self._desc_lbl)
+
+        close_text = str(t_("ui.player_ui.generics.close"))
+
+        self._btn_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(44),
+            padding=(0, dp(4), 0, 0),
+        )
+        self._overlay.add_widget(self._btn_row)
+
+        self._close_btn = Button(
+            text=close_text,
+            size_hint=(None, None),
+            width=dp(120),
+            height=dp(36),
+            halign="center",
+            valign="middle",
+            background_normal="",
+            background_color=(0, 0, 0, 0.95),
+            color=(0.92, 0.92, 0.92, 1.0),
+        )
+        self._close_btn.bind(on_release=lambda *_: self.dismiss())
+        self._btn_row.add_widget(BoxLayout(size_hint=(1, 1)))
+        self._btn_row.add_widget(self._close_btn)
+        self._btn_row.add_widget(BoxLayout(size_hint=(1, 1)))
+
+        self.bind(size=self._center_image, pos=self._center_image)
+        self._bg_img.bind(texture=self._center_image)
+        self._overlay.bind(pos=self._on_overlay_resize_move, size=self._on_overlay_resize_move)
+
+        self._recompute_overlay_height()
+        self.bind(size=lambda *_: self._recompute_overlay_height())
+
+        self.set_content(image=image, title=title, description=description)
+
+    def set_content(
+        self,
+        *,
+        image: Optional[Union[str, "Image"]] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> None:
+        if image is not None:
+            self._apply_image(img=image)
+
+        if title is not None:
+            self._title_lbl.text = f"[b]{title}[/b]" if title else ""
+
+        if description is not None:
+            self._desc_lbl.text = description or ""
+
+        self._recompute_overlay_height()
+        self._center_image()
+
+    def _apply_image(self, img: Union[str, "Image"]) -> None:
+        if isinstance(img, Image):
+            if getattr(img, "texture", None) is not None:
+                self._bg_img.texture = img.texture
+                self._bg_img.source = ""
+            else:
+                self._bg_img.source = img.source
+            return
+
+        path: Path = PathsHelper.get_base_path() / img
+        self._bg_img.source = str(path)
+
+    def _center_image(self, *_: Any) -> None:
+        tex = self._bg_img.texture
+        if not tex:
+            return
+
+        iw, ih = tex.size
+        bw, bh = self.width, self.height  # type: ignore
+        if iw <= 0 or ih <= 0 or bw <= 0 or bh <= 0:
+            return
+
+        scale = min(bw / iw, bh / ih)  # type: ignore
+        w, h = iw * scale, ih * scale  # type: ignore
+
+        self._bg_img.size = (w, h)
+        self._bg_img.pos = (self.center_x - w / 2.0, self.center_y - h / 2.0)  # type: ignore
+
+    def _recompute_overlay_height(self) -> None:
+        pad_l, pad_t, pad_r, pad_b = (  #  type: ignore
+            self._overlay.padding  # type: ignore
+            if isinstance(self._overlay.padding, (tuple, list))  # type: ignore
+            else (dp(16), dp(16), dp(16), dp(16))
+        )
+        spacing = self._overlay.spacing or 0
+        total = pad_t + pad_b + spacing * (len(self._overlay.children) - 1)  # type: ignore
+        for child in self._overlay.children:
+            total += getattr(child, "height", dp(0))  # type: ignore
+        min_h = dp(120)
+        max_h = self.height * 0.75  # type: ignore
+        self._overlay.height = max(min_h, min(total, max_h))  # type: ignore
+
+    def _on_overlay_resize_move(self, *_: Any) -> None:
+        if hasattr(self, "_overlay_bg"):
+            self._overlay_bg.pos = self._overlay.pos  # type: ignore
+            self._overlay_bg.size = self._overlay.size  # type: ignore

@@ -2,13 +2,14 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from exceptions.invalid_pregame_condition import InvalidPregameCondition
 from managers.base import BaseManager
+from mixins.singleton import Singleton
 
 if TYPE_CHECKING:
     from gameplay.city import City
     from gameplay.player import Player
 
 
-class PlayerManager(BaseManager):
+class PlayerManager(BaseManager, Singleton):
     _players: Dict[
         int, "Player"
     ] = {}  # Players are stored in a dictionary with the key being the turn order. recalculated each turn.
@@ -102,8 +103,7 @@ class PlayerManager(BaseManager):
     @classmethod
     def session_player(cls) -> "Player":
         if cls._session_player is None:
-            raise InvalidPregameCondition("No player has been set for this")
-
+            raise InvalidPregameCondition("No player has been set for this session.")
         return cls._session_player
 
     @classmethod

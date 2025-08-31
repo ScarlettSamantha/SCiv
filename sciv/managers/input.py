@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from game import OpenCiv
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from managers.game import Game
     from menus.screens.game_ui import GameUIScreen
 
 NET_NODE_TAG_ID_FIELD: str = "net_node_tag_id"  # tag for the node path to identify it as a net node
@@ -69,6 +70,8 @@ class Input(Singleton, DirectObject):
         self.game_ui: "GameUIScreen | None" = None
         self.unit_manager: "UnitManager | None" = None
         self._long_press_task_name: Optional[str] = None
+        self.game: "Game | None" = None
+        self.unit_manager: UnitManager | None = None
 
         self.long_right_click: bool | None = None
 
@@ -311,13 +314,12 @@ class Input(Singleton, DirectObject):
         self.logger.info("Activating input raycaster.")
         self.active = True
 
-    def __setup__(self, base: "OpenCiv", *args: Any, **kwargs: Any) -> None:
+    def setup(self, base: "OpenCiv", *args: Any, **kwargs: Any) -> None:
         from managers.world import World
 
         self.base = base
         self.map = World.get_singleton_instance()
-
-        return super().__setup__(*args, **kwargs)
+        self.unit_manager = UnitManager.get_singleton_instance()
 
     def inject_into_camera(self):
         self.picker = CollisionTraverser()
@@ -469,8 +471,6 @@ class Input(Singleton, DirectObject):
         self.base.render.analyze()  # type: ignore
 
     def pick_object(self, dont_select: bool = False) -> NodePath | None:
-        from managers.game import Game
-
         now = time.time()
         if now - self._last_pick_time < self.pick_timeout:
             return None
@@ -486,6 +486,8 @@ class Input(Singleton, DirectObject):
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())  # type: ignore
         self.picker.traverse(self.base.render)  # type: ignore
+        assert self.game is not None, "Game instance should be initialized."
+        assert self.unit_manager is not None, "UnitManager instance should be initialized."
 
         if self.pq.getNumEntries() > 0:  # type: ignore
             self.pq.sortEntries()  # type: ignore
@@ -500,11 +502,11 @@ class Input(Singleton, DirectObject):
 
                 selected_object = False
                 if net_type in (NET_TYPE.MODEL.value, NET_TYPE.UNIT.value):
-                    if (unit := UnitManager.get_singleton_instance().find_unit(net_id)) is None:
+                    if (unit := self.unit_manager.find_unit(net_id)) is None:
                         self.logger.warning(f"Unit with ID {net_id} not found.")
                         return None
                     messenger.send("system.input.user.unit_clicked", [net_id])
-                    if Game.get_singleton_instance().handle_unit_click(unit):
+                    if self.game.handle_unit_click(unit):
                         selected_object = True
                         self.selected_tile = None
                         self.selected_unit = unit
@@ -516,7 +518,7 @@ class Input(Singleton, DirectObject):
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
 
-                    Game.get_singleton_instance().handle_tile_click(tile)
+                    self.game.handle_tile_click(tile)
                     self.selected_tile = tile
                     self.selected_unit = None
                     selected_object = True

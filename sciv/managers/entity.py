@@ -25,6 +25,7 @@ from system.save_file import BaseSaver, SaveJsonFile
 
 if TYPE_CHECKING:
     from gameplay.city import City
+    from gameplay.effect import Effect
     from gameplay.improvement import Improvement
     from gameplay.player import Player
     from gameplay.tile import Tile
@@ -33,6 +34,8 @@ if TYPE_CHECKING:
     from system.mesh import HexGrid
 
     from sciv.game import OpenCiv
+
+from managers.property import Property
 
 
 class EntityType(Enum):
@@ -44,20 +47,20 @@ class EntityType(Enum):
     EFFECT = ("_effects_", None)
     WORLD = ("_world_", None)
     GAME_SETTINGS = ("_game_settings_", None)
+    PROPERTY = ("_properties_", None)
 
     def __init__(
         self,
         storage_key: str,
-        base_type: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | None" = None,
+        base_type: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | Type[Property] | None" = None,
     ):
         self.storage_key: str = storage_key
-        self._base_type: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | None" = base_type
+        self._base_type: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | Type[Property] | None" = base_type
 
     @property
     def base_type(
         self,
-    ) -> "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]":
-        """Lazy import to avoid circular dependencies."""
+    ) -> "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | Type[Property]":
         if self._base_type is None:
             if self == EntityType.TILE:
                 from gameplay.tile import Tile
@@ -91,13 +94,16 @@ class EntityType(Enum):
                 from system.game_settings import GameSettings
 
                 self._base_type = GameSettings
+
+            elif self == EntityType.PROPERTY:
+                self._base_type = Property
             else:
                 raise NotImplementedError(f"Entity type {self} not implemented.")
 
         return self._base_type
 
     @classmethod
-    def fromEntity(cls, entity: "BaseEntity | HexGrid | GameSettings") -> "EntityType":
+    def fromEntity(cls, entity: "BaseEntity | HexGrid | GameSettings | Property") -> "EntityType":
         for etype in cls:
             if isinstance(entity, etype.base_type):
                 return etype
@@ -175,6 +181,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
         from gameplay.player import Player
         from gameplay.tile import Tile
         from gameplay.unit import Unit
+        from managers.property import Property
         from system.game_settings import GameSettings
         from system.mesh import HexGrid
 
@@ -185,8 +192,8 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
             section = entity_type.storage_key.strip("_")
             payload[section] = {}
             for tag, entity in entities.items():
-                if isinstance(entity, BaseEntity):
-                    if isinstance(entity, (Tile, Player, City, Unit, Improvement, Effect)):
+                if isinstance(entity, (BaseEntity, Property)):
+                    if isinstance(entity, (Tile, Player, City, Unit, Improvement, Effect, Property)):
                         state = entity.dump()
                 elif isinstance(entity, (HexGrid, GameSettings)):
                     state = entity.dump()
@@ -257,7 +264,7 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
         for entity_type in EntityType:
             section = entity_type.storage_key.strip("_")
             for tag, state in parsed.get(section, {}).items():
-                cls: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings]" = entity_type.base_type
+                cls: "Type[BaseEntity] | Type[HexGrid] | Type[GameSettings] | Type[Property]" = entity_type.base_type
                 cls_path = state.pop("_cls", None)
                 if cls_path:
                     module, name = cls_path.rsplit(".", 1)
@@ -430,7 +437,9 @@ class JSONEntityManagerSerializer(BaseEntityManagerSerializer):
 
 
 class EntityManager(Singleton):
-    _entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]] = {type_: {} for type_ in EntityType}
+    _entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings | Property"]] = {
+        type_: {} for type_ in EntityType
+    }
     _meta_data: Dict[str, Dict[str, Any]] = {"system": {}, "game": {}, "stats": {}, "player": {}}
 
     _default_serializer: Type[BaseEntityManagerSerializer] = JSONEntityManagerSerializer
@@ -468,8 +477,6 @@ class EntityManager(Singleton):
             "faces": 0,
         }
 
-        return super().__setup__(*args, **kwargs)
-
     def reset(self):
         self._meta_data = {"system": {}, "game": {}, "stats": {}, "player": {}}
         self.stats = {
@@ -484,7 +491,7 @@ class EntityManager(Singleton):
         }
         self.session = str(uuid4().hex)
         self.session_incrementor = 0
-        self._entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings"]] = {
+        self._entities: Dict[EntityType, Dict[str, "BaseEntity | HexGrid | GameSettings | Property"]] = {
             type_: {} for type_ in EntityType
         }
 
@@ -508,35 +515,40 @@ class EntityManager(Singleton):
         self.stats["total_tiles"] = len(self._entities[EntityType.TILE])
         self.stats["total_effects"] = len(self._entities[EntityType.EFFECT])
 
-    def object_type_to_storage(self, type: EntityType) -> Dict[str, "BaseEntity | HexGrid | GameSettings"]:
+    def object_type_to_storage(self, type: EntityType) -> Dict[str, "BaseEntity | HexGrid | GameSettings | Property"]:
         return self._entities[type]
 
-    def register(self, type: EntityType, entity: BaseEntity, key: str):
+    def register(self, type: EntityType, entity: BaseEntity | Property, key: str):
         if not self.check_object_against_type(type, entity):
             raise TypeError(f"Entity does not match expected type {type.base_type}")
 
-        storage: Dict[str, BaseEntity | HexGrid | GameSettings] = self.object_type_to_storage(type)
+        storage: Dict[str, BaseEntity | HexGrid | GameSettings | Property] = self.object_type_to_storage(type)
         if key in storage:
             return
 
         self.stats["total_entities_registered"] += 1
         self.stats["total_entities"] += 1
 
-        entity.entity_key = key
-        entity.entity_type_ref = type.storage_key
-        entity.is_registered = True
+        if isinstance(entity, BaseEntity):
+            entity.entity_key = key
+            entity.entity_type_ref = type.storage_key
+            entity.is_registered = True
         storage[key] = entity
 
-    def unregister(self, type: EntityType, entity: BaseEntity):
-        key = entity.tag if hasattr(entity, "tag") else entity.entity_key
+    def unregister(self, type: EntityType, entity: BaseEntity | Property):
+        if isinstance(entity, Property):
+            key: str | None = entity.name
+        else:
+            key = entity.tag if hasattr(entity, "tag") else entity.entity_key
 
         if key is None:
             self.logger.warning(f"Entity {str(entity)} has no key, cannot unregister.")
             return  # Already unregistered
 
-        entity.is_registered = False
-        entity.entity_key = None
-        entity.entity_type_ref = None
+        if not isinstance(entity, Property):
+            entity.is_registered = False
+            entity.entity_key = None
+            entity.entity_type_ref = None
 
         self.stats["total_entities_unregistered"] += 1
         self.stats["total_entities"] -= 1
@@ -548,25 +560,34 @@ class EntityManager(Singleton):
 
     def get_ref(
         self, type: EntityType, key: str, weak_ref: bool = False
-    ) -> "BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | HexGrid | GameSettings | None":
+    ) -> "BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings | Property] | HexGrid | GameSettings | Property | None":
         storage = self.object_type_to_storage(type)
         entity = storage.get(key)
         return ref(entity) if weak_ref and entity else entity
 
-    def get_ref_weak(self, type: EntityType, key: str) -> ReferenceType["BaseEntity | HexGrid | GameSettings"]:
+    def get_ref_weak(
+        self, type: EntityType, key: str
+    ) -> ReferenceType["BaseEntity | HexGrid | GameSettings | Property"]:
         unit_ref = self.get_ref(type, key, weak_ref=True)
 
         if not isinstance(unit_ref, ReferenceType):
             raise ValueError(f"Entity with key {key} does not exist.")
         return unit_ref
 
-    def get(self, type: EntityType, key: str) -> BaseEntity | None:
-        result = self.get_ref(type, key, weak_ref=False)
-        if not isinstance(result, BaseEntity):
+    def get(self, type: EntityType, key: str) -> BaseEntity | HexGrid | GameSettings | Property | None:
+        result: (
+            BaseEntity
+            | ReferenceType[BaseEntity | HexGrid | GameSettings | Property]
+            | HexGrid
+            | GameSettings
+            | Property
+            | None
+        ) = self.get_ref(type, key, weak_ref=False)
+        if isinstance(result, weakref.ReferenceType):
             raise AssertionError("Weak reference is not supported in get(), use get_ref() with weak_ref=True")
         return result
 
-    def search_key(self, key: str) -> Tuple[EntityType, BaseEntity | HexGrid | GameSettings] | None:
+    def search_key(self, key: str) -> Tuple[EntityType, BaseEntity | HexGrid | GameSettings | Property] | None:
         for entity_type, storage in self._entities.items():
             if key in storage:
                 return entity_type, storage[key]
@@ -577,7 +598,9 @@ class EntityManager(Singleton):
 
     def get_multiple(
         self, type: EntityType, keys: list[str], weak_refs: bool = False
-    ) -> list["BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | GameSettings | HexGrid | None"]:
+    ) -> list[
+        "BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings | Property] | GameSettings | HexGrid | Property | None"
+    ]:
         return [self.get_ref(type, key, weak_ref=weak_refs) for key in keys]
 
     def add_meta_data(self, key: str, value: Any):
@@ -601,28 +624,66 @@ class EntityManager(Singleton):
     def get_all_players(self) -> Dict[str, "Player"]:
         return self.get_all(type=EntityType.PLAYER)  # type: ignore # its fine it does not know that the base entity can only be a Player
 
+    def get_all_effects(self) -> Dict[str, "Effect"]:
+        return self.get_all(type=EntityType.EFFECT)  # type: ignore # its fine it does not know that the base entity can only be an Effect
+
     def get_game_settings(self) -> "GameSettings":
-        settings: BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | HexGrid | GameSettings | None = (
-            self.get_ref(EntityType.GAME_SETTINGS, "game_settings", weak_ref=False)
-        )
+        settings: (
+            BaseEntity
+            | ReferenceType[BaseEntity | HexGrid | GameSettings | Property]
+            | HexGrid
+            | GameSettings
+            | Property
+            | None
+        ) = self.get_ref(EntityType.GAME_SETTINGS, "game_settings", weak_ref=False)
         if not isinstance(settings, GameSettings):
             raise ValueError("Game settings not found or not of type GameSettings.")
         return settings
 
     def get_world_grid(self) -> "HexGrid":
-        grid: BaseEntity | ReferenceType[BaseEntity | HexGrid | GameSettings] | HexGrid | GameSettings | None = (
-            self.get_ref(EntityType.WORLD, "world_grid", weak_ref=False)
-        )
+        grid: (
+            BaseEntity
+            | ReferenceType[BaseEntity | HexGrid | GameSettings | Property]
+            | HexGrid
+            | GameSettings
+            | Property
+            | None
+        ) = self.get_ref(EntityType.WORLD, "world_grid", weak_ref=False)
         if not isinstance(grid, HexGrid):
             raise ValueError("World grid not found or not of type HexGrid.")
         return grid
 
-    def get_all(self, type: Optional[EntityType] = None) -> Dict[str, "BaseEntity | HexGrid | GameSettings"]:
+    def get_all_properties(self) -> Dict[str, "Property"]:
+        return cast(Dict[str, Property], self.get_all(type=EntityType.PROPERTY))
+
+    def add_property(self, name: str, value: Any) -> Property:
+        if self.has_property(name):
+            self.update_property(name, value)
+            data: Property | None = self.get_property(name)
+            assert data is not None
+            return data
+        prop = Property(name, value)
+        self.register(EntityType.PROPERTY, prop, name)
+        return prop
+
+    def update_property(self, name: str, value: Any) -> Property:
+        prop: Property | None = self.get_property(name)
+        if prop is None:
+            raise ValueError(f"Property {name} does not exist.")
+        prop.value = value
+        return prop
+
+    def has_property(self, name: str) -> bool:
+        return self.has(EntityType.PROPERTY, name)
+
+    def get_all(self, type: Optional[EntityType] = None) -> Dict[str, "BaseEntity | HexGrid | GameSettings | Property"]:
         if type is None:
             return {key: entity for storage in self._entities.values() for key, entity in storage.items()}
         return self.object_type_to_storage(type)
 
-    def get_all_refs(self, type: EntityType) -> Dict[str, ReferenceType["BaseEntity | HexGrid | GameSettings"]]:
+    def get_all_refs(
+        self, type: EntityType
+    ) -> Dict[str, ReferenceType["BaseEntity | HexGrid | GameSettings | Property"]]:
         return {k: ref(v) for k, v in self.object_type_to_storage(type).items()}
 
     def get_all_keys(self, type: EntityType) -> list[str]:
@@ -662,7 +723,7 @@ class EntityManager(Singleton):
             )
 
         saver_instance = self.saver()
-        saver_instance.set_data(data)
+        saver_instance.set_data(data=data)
         saver_instance.loaded_data_length = len(data)
         saver_instance.set_identifier(self.session)
         saver_instance.set_session_incrementor(self.session_incrementor)
@@ -696,7 +757,7 @@ class EntityManager(Singleton):
             raw_data,
         )
 
-        new_entities: Dict[EntityType, Dict[str, BaseEntity | GameSettings | HexGrid]] = {
+        new_entities: Dict[EntityType, Dict[str, BaseEntity | GameSettings | HexGrid | Property]] = {
             etype: {} for etype in EntityType
         }
 
@@ -708,6 +769,8 @@ class EntityManager(Singleton):
                     key = "game_settings"
                 elif isinstance(instance, HexGrid):  # type: ignore
                     key = "world_grid"
+                elif isinstance(instance, Property):  # type: ignore
+                    key = getattr(instance, "name", None)
                 else:
                     raise TypeError(
                         f"Unsupported entity type {type(instance)} for entity_type {entity_type.name}. "
@@ -721,11 +784,11 @@ class EntityManager(Singleton):
                     isinstance(instance, BaseEntity)
                     or isinstance(instance, HexGrid)
                     or isinstance(instance, GameSettings)
+                    or isinstance(instance, Property)
                 ), f"Instance must be a BaseEntity or HexGrid, got {type(instance)}"
                 assert key is not None, f"Entity key cannot be None for {entity_type.name}."
                 new_entities[entity_type][key] = instance
         del states
-        self.clear()
         gc.collect()
         self._entities = new_entities
 
@@ -781,7 +844,7 @@ class EntityManager(Singleton):
             self.logger.warning(f"Entity {str(key)} does not exist, cannot remove.")
             return
 
-        entity = self.get(type, key)
+        entity: BaseEntity | Property | None = cast(BaseEntity | Property | None, self.get(type, key))
         if entity is None:
             self.logger.warning(f"Entity {str(key)} is None, cannot remove.")
             return
@@ -798,3 +861,21 @@ class EntityManager(Singleton):
             return getattr(module, class_name)
         except (ImportError, AttributeError) as e:
             raise ImportError(f"Could not import {import_path}: {e}") from e
+
+    def get_property(self, name: str) -> Property | None:
+        prop: BaseEntity | None = cast(BaseEntity | None, self.get(EntityType.PROPERTY, name))
+        if prop is None:
+            return None
+        if not isinstance(prop, Property):
+            raise TypeError(f"Entity with key {name} is not a Property.")
+        return prop
+
+    def get_improvement(self, tag: str) -> "Improvement | None":
+        from gameplay.improvement import Improvement
+
+        imp: BaseEntity | None = cast(BaseEntity | None, self.get(EntityType.IMPROVEMENT, tag))
+        if imp is None:
+            return None
+        if not isinstance(imp, Improvement):
+            raise TypeError(f"Entity with key {tag} is not an Improvement.")
+        return imp

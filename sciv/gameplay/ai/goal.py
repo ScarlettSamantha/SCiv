@@ -72,6 +72,8 @@ class Goal:
 
     @classmethod
     def load_state(cls, state: Dict[str, Any], parent_ai: "AI") -> Self:
+        from managers.property import Property
+
         instance: Self = cls.__new__(cls)
 
         instance.name = state.get("name", "")
@@ -97,7 +99,7 @@ class Goal:
         assert _player is not None, f"Player with tag {player_tag} reference is None, cannot load state"
         instance.parent_ai = ref(parent_ai)
 
-        search_results: Tuple[EntityType, BaseEntity | HexGrid | GameSettings] | None = (
+        search_results: Tuple[EntityType, BaseEntity | HexGrid | GameSettings | Property] | None = (
             EntityManager.get_singleton_instance().search_key(key=target_tag)
         )
 
@@ -130,29 +132,23 @@ class Goal:
         return resolved_reference
 
     def is_for_unit(self) -> bool:
-        """Check if the goal is for a specific unit."""
         return self.for_unit
 
     def get_executing_unit(self) -> "Unit":
-        """Get the executing unit for this goal."""
         if self.executing_unit is None and self.for_unit:
             raise AIException("Executing unit is None when for_unit is True")
         return self.executing_unit  # type: ignore
 
     def get_target(self) -> T_TARGET:
-        """Get the target for this goal."""
         return self.target
 
     def is_achieved(self) -> bool:
-        """Check if the goal is achieved."""
         return self.achieved
 
     def mark_achieved(self) -> None:
-        """Mark the goal as achieved."""
         self.achieved = True
 
     def not_achieved(self) -> None:
-        """Mark the goal as not achieved."""
         self.achieved = False
 
     def calculate_if_achieved(self) -> bool:
@@ -176,16 +172,11 @@ class Goals:
         return self.goals
 
     def has_goal(self, goal: Type[Goal] | Goal) -> bool:
-        """Check if a specific goal is present in the list of goals."""
         if isinstance(goal, type):
             return any(isinstance(g, goal) for g in self.goals)
         return goal in self.goals
 
     def has_goal_for_unit(self, executing_unit: "Unit", goal_type: Optional[Type[Goal]] = None) -> bool:
-        """
-        Check if a specific unit has a goal of a certain type.
-        If goal_type is None, check for any goal for the unit.
-        """
         for goal in self.goals:
             if goal.for_unit and hasattr(goal, "executing_unit") and goal.executing_unit == executing_unit:
                 if goal_type is None or isinstance(goal, goal_type):

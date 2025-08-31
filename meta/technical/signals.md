@@ -64,6 +64,9 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.turn.process_city` (E:manager-turn | L: city)
 - `game.turn.end_process` (E:manager-turn | L:manager-game, L:ui-player-turn-control)
 
+- `game.era.progressing` (E: manager-ages | L: manager-ui)
+- `game.era.setting` (e: managers-ages | L: )
+
 - `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
 - `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
 

@@ -725,6 +725,11 @@
         "heal": {
           "button": "Heal entity"
         },
+        "tile_ownership": {
+          "button": "Change tile ownership",
+          "label": "Player",
+          "change_ownership": "Change ownership"
+        },
         "spawn_unit": {
           "button": "Spawn unit",
           "label": "Unit type",
@@ -1790,6 +1795,14 @@
             "name": "Silver",
             "description": "A precious metal valued for its use in jewelry, currency, and as an industrial metal."
           },
+          "chemicals": {
+            "name": "Chemicals",
+            "description": "Substances used in or produced by chemical processes."
+          },
+          "onions": {
+            "name": "Onions",
+            "description": "A bulbous vegetable used in cooking for its flavor."
+          },
           "aluminium": {
             "name": "Aluminium",
             "description": "A lightweight, silvery metal used in a wide variety of applications."
@@ -2366,6 +2379,10 @@
       },
       "ages": {
         "core": {
+          "prehistoric": {
+            "name": "Prehistoric",
+            "description": "Time before written records"
+          },
           "ancient": {
             "name": "Ancient",
             "description": "Early human civilization period"

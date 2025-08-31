@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, cast
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
+from managers.ages import AgesManager
 from managers.entity import EntityManager, EntityType
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
@@ -47,7 +48,6 @@ class Turn(Singleton, DirectObject):
         self.base: "OpenCiv" = base
         self.logger: Logger = self.base.get_child_logger("manager.turn")
         self.register()
-        return super().__setup__(*args, **kwargs)
 
     def register(self):
         self.accept("game.requests.end_turn", self.end_turn)
@@ -134,9 +134,20 @@ class Turn(Singleton, DirectObject):
             timings["units"] = (datetime.now() - _start).total_seconds()
             self.logger.debug(f"Turn {self.turn} processing for units took: {timings['units']:.4f} seconds.")
 
+        def checks():
+            _start = datetime.now()
+            self.logger.info("Processing end of turn checks.")
+            self.turn_stage = TurnStage.TURN_CHANGE_END
+
+            AgesManager.get_singleton_instance().on_turn_end(self.turn)
+
+            timings["checks"] = (datetime.now() - _start).total_seconds()
+            self.logger.debug(f"Turn {self.turn} processing for checks took: {timings['checks']:.4f} seconds.")
+
         world()
         players()
         units()
+        checks()
 
         self.turn += 1
         self.turn_stage = TurnStage.NO_TURN_CHANGE

@@ -8,11 +8,10 @@ from gameplay.condition import Conditions
 from gameplay.exceptions.improvement_exceptions import ImprovementUpgradeException
 from gameplay.yields import Yields
 from helpers.cache import Cache, LogManager
+from managers.entity import EntityType
 from managers.i18n import T_TranslationOrStrOrNone
 from system.effects import Effects
 from system.entity import BaseEntity
-
-from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -145,6 +144,9 @@ class Improvement(BaseEntity):
 
         self._health_left = getattr(self, "health_left", getattr(self, "max_health", 100))
 
+    def get_maintenance_cost(self) -> Yields:
+        return self._maintenance_cost
+
     @classmethod
     def on_tooltip(cls) -> str:
         tile_yield_improvement = cls.tile_yield_improvement.props(only_non_nul=True)
@@ -172,6 +174,7 @@ class Improvement(BaseEntity):
 
         if self.is_registered is True:
             return
+
         EntityManager.get_singleton_instance().register(entity=self, type=EntityType.IMPROVEMENT, key=self.tag)
 
     def unregister(self):
