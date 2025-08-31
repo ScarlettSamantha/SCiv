@@ -677,7 +677,9 @@ class Unit(BaseEntity, ABC):
     def get_unit_by_tag(cls, tag: str) -> Optional["Unit"]:
         from managers.entity import EntityType
 
-        entity: Unit | BaseEntity | None = EntityManager.get_singleton_instance().get(EntityType.UNIT, tag)
+        entity: Unit | BaseEntity | None = cast(
+            Unit | BaseEntity | None, EntityManager.get_singleton_instance().get(EntityType.UNIT, tag)
+        )
         if isinstance(entity, Unit):
             return entity
         return None
