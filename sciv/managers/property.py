@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, Dict, Self, Type, cast
 
 if TYPE_CHECKING:
     from gameplay.age import Age
-from sciv.mixins.singleton import Singleton
+from mixins.singleton import Singleton
 
 
 class Property:

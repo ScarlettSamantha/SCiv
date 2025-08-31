@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from threading import RLock
-from typing import Any, Dict, Type, TypeVar, cast
+from typing import Any, Dict, List, Type, TypeVar, cast
 
 T = TypeVar("T", bound="Singleton")
 
@@ -43,7 +41,33 @@ class Singleton:
             return instance
 
     @classmethod
-    def get_singleton_instance(cls: Type[T]) -> T:
+    def get_singleton_instance(cls: Type[T], *, allow_subclass_fallback: bool = False) -> T:
         with cls._lock:
             inst = cls._instances.get(cls)
-            return cast(T, inst)
+            if inst is not None:
+                return cast(T, inst)
+
+            if allow_subclass_fallback:
+                for instance_cls, inst in cls._instances.items():
+                    try:
+                        if issubclass(instance_cls, cls):
+                            return cast(T, inst)
+                    except TypeError:
+                        continue
+            raise ValueError(f"No instance of singleton class {cls.__name__} has been set.")
+
+    @classmethod
+    def debug_list_instances(cls) -> List[Dict[str, Any]]:
+        with cls._lock:
+            out: List[Any] = []
+            for k, v in cls._instances.items():
+                out.append(
+                    {
+                        "key_id": id(k),
+                        "key_repr": repr(k),
+                        "module": getattr(k, "__module__", None),
+                        "qualname": getattr(k, "__qualname__", None),
+                        "instance_id": id(v),
+                    }
+                )
+            return out

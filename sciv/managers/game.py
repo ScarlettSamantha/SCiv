@@ -55,13 +55,14 @@ class Game(Singleton, DirectObject):
         self.base: "OpenCiv" = base
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")  # type: ignore
 
+        self.ages: AgesManager | None = None
+
         self.ui: ui = ui.get_singleton_instance()
         self.world: World = World.get_singleton_instance()
         self.input: Input = Input.get_singleton_instance()
-        self.turn: Turn = Turn.get_singleton_instance()
-        self.ages: AgesManager = AgesManager.get_singleton_instance()
         self.camera: Camera = camera
         self.players: PlayerManager = PlayerManager()
+        PlayerManager.set_singleton_instance(self.players)
         self.debug: DebugManager = DebugManager.get_singleton_instance()
         self.shader: Shaders = Shaders()
         self.border: Borders | None = None
@@ -114,7 +115,7 @@ class Game(Singleton, DirectObject):
 
     def register(self):
         def messenger():
-            self.accept("window-event", self.config_saveback)
+            # self.accept("window-event", self.config_saveback)
             self.accept("game.turn.request_end", self.process_turn)
             self.accept("game.state.request_load", self.on_request_load)
             self.accept("game.state.main_menu", self.on_main_menu)
@@ -161,6 +162,7 @@ class Game(Singleton, DirectObject):
         self.reset_game()
         self.entities.session = session_name
         self.entities.load()
+        EntityManager.set_singleton_instance(self.entities)
 
         world_tiles: Dict[Any, "Tile"] = self.entities.get_all(EntityType.TILE)  # type: ignore
         players: Dict[str, "Player"] = self.entities.get_all(EntityType.PLAYER)  # type: ignore
@@ -224,6 +226,7 @@ class Game(Singleton, DirectObject):
         self.turn.reset()
         self.camera.reset()
         self.entities.reset()
+        EntityManager.set_singleton_instance(self.entities)
         self.players.reset()
         self.input.reset()
         self.unit.reset()
@@ -425,6 +428,13 @@ class Game(Singleton, DirectObject):
         if self.ui is None:  # type: ignore
             self.ui = self.base.ui_manager
 
+        self.debug = DebugManager()
+        DebugManager.set_singleton_instance(self.debug)
+        self.debug_enabled = self.config.get_by_key(("debug", "enable_debug"))
+
+        self.entities = EntityManager()
+        EntityManager.set_singleton_instance(self.entities)
+
         self.generate_world()
 
         self.logger.info("World generation complete")
@@ -444,7 +454,11 @@ class Game(Singleton, DirectObject):
         self.logger.info("Setting up camera")
         self.camera_setup()
 
+        self.players = PlayerManager()
+        PlayerManager.set_singleton_instance(self.players)
+
         player: "Player" = PlayerManager.player()
+
         self.entities.session = f"{player.name}"
 
         self.logger.info("Starting map generator")

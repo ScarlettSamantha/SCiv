@@ -40,8 +40,7 @@ class OpenCiv(ShowBase):
         from helpers.cache import Cache
         from managers.config import ConfigManager
 
-        if ConfigManager.get_singleton_instance() is None:  # type: ignore
-            ConfigManager.set_singleton_instance(ConfigManager())
+        ConfigManager.set_singleton_instance(ConfigManager())
 
         from helpers.debug import Debug
         from managers.assets import AssetManager
@@ -61,6 +60,11 @@ class OpenCiv(ShowBase):
         self.generate_os_integrations()
         self.debug: bool = DEBUG
         Debug.debug = self.debug
+
+        from managers.debug import DebugManager
+
+        self.debug_manager = DebugManager()
+        DebugManager.set_singleton_instance(self.debug_manager)
 
         self.version: str = __version__
         self.commit: str = get_git_commit()
@@ -126,6 +130,13 @@ class OpenCiv(ShowBase):
         self.engine_logger.info("Generating non-static assets")
         self.generate_non_static_assets()
 
+        from managers.game import Game
+        from managers.world import World
+
+        self.world = World(self)
+        World.set_instance(self.world)
+        self.world.__setup__(self)
+
         # Input manager
         loading_screen.next_stage("Setting up input manager")
         self.engine_logger.info("Setting up input manager")
@@ -133,13 +144,27 @@ class OpenCiv(ShowBase):
         Input.set_singleton_instance(self.input_manager)
         self.input_manager.inject_into_camera()
 
-        from managers.game import Game
+        # Camera
+        loading_screen.next_stage("Setting up camera")
+        self.engine_logger.info("Setting up camera")
+        self.game_camera = Camera(self)
+        Camera.set_singleton_instance(instance=self.game_camera)
+        self.game_camera.register()
+
+        self.ui_manager = ui(self)
+        ui.set_singleton_instance(self.ui_manager)
 
         self.entity_manager = EntityManager(base=self)
         EntityManager.set_singleton_instance(self.entity_manager)
+
+        self.engine_logger.info("Setting up game manager")
+        loading_screen.next_stage("Setting up game manager")
+        self.game_manager_instance = Game(self, self.game_camera)
+        Game.set_singleton_instance(self.game_manager_instance)
+        self.input_manager.game = self.game_manager_instance
+
         self.entity_manager.__setup__(self)
 
-        # Asset manager
         self.engine_logger.info("Setting up asset manager")
         loading_screen.next_stage("Setting up asset manager")
 
@@ -147,47 +172,25 @@ class OpenCiv(ShowBase):
         AssetManager.set_singleton_instance(self.asset_manager)
         self.asset_manager.set_base(self)
 
-        # Camera
-        loading_screen.next_stage("Setting up camera")
-        self.engine_logger.info("Setting up camera")
-        self.game_camera = Camera(self)
-        Camera.set_singleton_instance(self.game_camera)
-        self.game_camera.register()
-
-        # Lights
         loading_screen.next_stage("Setting up lights")
         self.engine_logger.info("Setting up lights")
         setup_lights(self)
 
         self.engine_logger.info("Setting up world")
         loading_screen.next_stage("Setting up world")
-        from managers.world import World
 
-        self.world = World(self)
-        World.set_instance(self.world)
-        self.world.__setup__(self)
-
-        # Game manager
-        self.engine_logger.info("Setting up game manager")
-        loading_screen.next_stage("Setting up game manager")
-        self.game_manager_instance = Game(self, self.game_camera)
-        Game.set_singleton_instance(self.game_manager_instance)
-
-        # World
-
-        # Unit manager
         loading_screen.next_stage("Setting up unit manager")
         self.engine_logger.info("Setting up unit manager")
         self.unit_manager = UnitManager(self)
         UnitManager.set_singleton_instance(self.unit_manager)
+        self.input_manager.unit_manager = self.unit_manager
+        self.input_manager.setup(self)
 
-        # UI manager
         self.engine_logger.info("Setting up UI manager")
         loading_screen.next_stage("Setting up kivy")
-        self.ui_manager = ui(self)
+
         self.ui_manager.map = self.world
 
-        # Continue or show "Ready"
         if config_mgr.get_by_key(("qol", "intro_skip")):
             self.on_loading_screen_continue()
             loading_screen.destroy()

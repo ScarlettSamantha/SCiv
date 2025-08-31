@@ -189,14 +189,16 @@ class BaseGenerator(ABC):
 
             players.append(player)
 
-            if player.is_human:
-                PlayerManager.add(player, True)
+            player_manager = PlayerManager()
+            player_manager.set_singleton_instance(player_manager)
+            if player.turn_order == 0:
+                player_manager.add(player, True)
             elif player.is_nature:
-                PlayerManager.set_nature(player)
+                player_manager.set_nature(player)
             elif player.is_barbarian:
-                PlayerManager.set_barbarian(player)
+                player_manager.set_barbarian(player)
             else:
-                PlayerManager.add(player, False)
+                player_manager.add(player, False)
 
         return players
 

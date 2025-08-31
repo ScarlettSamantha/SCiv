@@ -12,14 +12,14 @@ from kivy.uix.label import Label
 from managers.assets import AssetManager
 from managers.i18n import t_
 
-from sciv.gameplay.civilization import Civilization
-from sciv.gameplay.player import Player
-from sciv.gameplay.resource import BaseResource
-from sciv.gameplay.terrain._base_terrain import BaseTerrain
-from sciv.gameplay.tile import Tile
-from sciv.gameplay.unit import Unit
-from sciv.gameplay.yields import Yields
-from sciv.managers.entity import EntityType
+from gameplay.civilization import Civilization
+from gameplay.player import Player
+from gameplay.resource import BaseResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.tile import Tile
+from gameplay.unit import Unit
+from gameplay.yields import Yields
+from managers.entity import EntityType
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile as TileType

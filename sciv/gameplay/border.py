@@ -11,6 +11,7 @@ from helpers.geometry import generate_flat_top_hex
 from helpers.os import WindowsHelper
 from helpers.tiles import Tiles
 from managers.player import PlayerManager
+from mixins.singleton import Singleton
 from panda3d.core import (
     ClockObject,
     LVecBase3f,
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 import io
 
 
-class Borders(DirectObject):
+class Borders(DirectObject, Singleton):
     HEX_DIRECTIONS = Tiles.get_directions_dirs()
 
     COLOR_HEX_TOP_BORDERS = Colors.MAGENTA

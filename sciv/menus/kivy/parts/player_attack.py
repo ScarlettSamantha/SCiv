@@ -460,7 +460,7 @@ class TargetingDuelPanel(BoxLayout, DirectObject):
             pass
 
     def predict_combat(self) -> Tuple[float, float]:
-        from sciv.managers.combat import Combat
+        from managers.combat import Combat
 
         if self._attacker is None or self._defender is None:
             return 0.0, 0.0

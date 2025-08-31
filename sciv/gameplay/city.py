@@ -351,7 +351,7 @@ class City(BaseEntity, DirectObject.DirectObject):
             self.resource_required = None
 
             if isinstance(building, BaseCityImprovement):
-                self._improvements.add(building)
+                self.build(building)  # type: ignore
                 MessengerGlobal.messenger.send("game.gameplay.city.finish_building_improvement", [self, building])
 
             elif isinstance(building, Unit):  # type: ignore
@@ -598,7 +598,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         for improvement in self._improvements.get_all():
             tile_yields += improvement.tile_yield_improvement
-            tile_yields -= improvement.maintenance_cost
+            tile_yields -= improvement.get_maintenance_cost()
 
             for improvement_effect in improvement.effects.get_effects().values():
                 tile_yields += improvement_effect.yield_impact

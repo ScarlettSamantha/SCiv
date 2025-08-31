@@ -80,13 +80,13 @@ class World(Singleton, DirectObject):
         for tile in self.map.values():
             tile.load_state()
 
-        for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
-            city.load_state()
-
         for improvement in cast(
             List["Improvement"], EntityManager.get_singleton_instance().get_all(EntityType.IMPROVEMENT).values()
         ):  # type: ignore
             improvement.load_state()
+
+        for city in cast(Dict[str, "City"], EntityManager.get_singleton_instance().get_all(EntityType.CITY)).values():
+            city.load_state()
 
         for effect in cast(List["Effect"], EntityManager.get_singleton_instance().get_all(EntityType.EFFECT).values()):  # type: ignore
             effect.load_state()
@@ -173,8 +173,9 @@ class World(Singleton, DirectObject):
         tile.city_owner = weakref.ref(city)
         tile.owner = player
 
-        self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
-        city.player = player
+        if tile.is_city():
+            self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
+            city.player = player
         city.owned_tiles.append(tile)
 
         self.logger.info(f"Tile {tile} is now owned by {player}, sending message.")

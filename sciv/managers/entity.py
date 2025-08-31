@@ -789,7 +789,6 @@ class EntityManager(Singleton):
                 assert key is not None, f"Entity key cannot be None for {entity_type.name}."
                 new_entities[entity_type][key] = instance
         del states
-        self.clear()
         gc.collect()
         self._entities = new_entities
 
@@ -870,3 +869,13 @@ class EntityManager(Singleton):
         if not isinstance(prop, Property):
             raise TypeError(f"Entity with key {name} is not a Property.")
         return prop
+
+    def get_improvement(self, tag: str) -> "Improvement | None":
+        from gameplay.improvement import Improvement
+
+        imp: BaseEntity | None = cast(BaseEntity | None, self.get(EntityType.IMPROVEMENT, tag))
+        if imp is None:
+            return None
+        if not isinstance(imp, Improvement):
+            raise TypeError(f"Entity with key {tag} is not an Improvement.")
+        return imp
