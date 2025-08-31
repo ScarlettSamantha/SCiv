@@ -1790,6 +1790,10 @@
             "name": "Silver",
             "description": "A precious metal valued for its use in jewelry, currency, and as an industrial metal."
           },
+          "onion": {
+            "name": "Onion",
+            "description": "A bulbous vegetable used in cooking for its flavor."
+          },
           "aluminium": {
             "name": "Aluminium",
             "description": "A lightweight, silvery metal used in a wide variety of applications."
