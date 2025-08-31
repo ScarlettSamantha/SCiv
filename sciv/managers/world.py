@@ -32,13 +32,11 @@ class World(Singleton, DirectObject):
         self.base = base
         self.hex_radius: float = 0.5
         self.col_spacing: float = 1.4
-        self.cols: int = 5  # x
-        self.rows: int = 5  # y
+        self.cols: int = 5
+        self.rows: int = 5
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
-        # Key is the tag, value is the tile.
         self.map: Dict[str, "Tile"] = {}
-        # Key is the (col, row) tuple, value is the tile.
         self.grid: Dict[Tuple[int, int], "Tile"] = {}
         self.generator: Optional[Type["BaseGenerator"]] = None
         self.effects: Effects = Effects(self)
@@ -116,7 +114,6 @@ class World(Singleton, DirectObject):
         self.cols = cols
         self.rows = rows
 
-        # Compute the middle of the grid.
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
 
@@ -140,7 +137,7 @@ class World(Singleton, DirectObject):
     def get_grid(self) -> Dict[Tuple[int, int], "Tile"]:
         return self.grid
 
-    def on_turn_end(self, turn: int):  # We process the world on turn end. and we process the tiles.
+    def on_turn_end(self, turn: int):
         for tile in self.map.values():
             if (
                 tile.player is not None
@@ -149,7 +146,7 @@ class World(Singleton, DirectObject):
                 or len(tile.effects) > 0
                 or len(tile._improvements) > 0  # type: ignore
                 or tile.needs_tile_proecessing is True
-            ):  # We dont want to process tiles that have no player, city, units, effects or need tile processing this saves seconds of turn time.
+            ):
                 tile.on_turn_end(turn)
         self.effects.on_turn_end(turn)
 
@@ -196,17 +193,12 @@ class World(Singleton, DirectObject):
         can_own_tile: bool = False
 
         if tile.owner is None:
-            # No one owns this tile
             can_own_tile = True
-        # Determine if city can claim tile.
         elif tile.owner == PlayerManager.player():
-            # Player owns this tile
             can_own_tile = True
         elif tile.owner == PlayerManager.get_nature():
-            # Nature owns this tile
             can_own_tile = True
         else:
-            # Someone else owns this tile
             can_own_tile = False
 
         if can_own_tile:
