@@ -9,6 +9,7 @@ class MountainSnow(BaseTerrain):
     _name = t_("world.terrain.mountain_snow")
     _fallback_color = (255, 255, 255)
     can_spawn_resources = False
+    _model = "assets/models/terrain/mountain_snow.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

@@ -10,6 +10,8 @@ class HillsGrass(BaseTerrain):
     _name = t_("world.terrain.hills_grass")
     movement_modifier = 0.75
     water_availability = 0.75
+    _model = "assets/models/terrain/hill_grassland.glb"
+    model_hpr = (0.0, 0.0, 0.0)
     _fallback_color = (54, 109, 16)
 
     def __init__(self, *args: Any, **kwargs: Any):

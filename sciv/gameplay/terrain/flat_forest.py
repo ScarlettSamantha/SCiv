@@ -15,6 +15,7 @@ class FlatForest(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0.75
     _fallback_color = (91, 128, 64)
+    _model = "assets/models/terrain/flat_forest.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -36,7 +37,6 @@ class FlatForest(BaseTerrain):
         )
         bush2 = bush_bit.copy()
 
-        # make sure the *root* is OR (if you really want only one of the top‐level groups)
         self.bits.mode = GroupMode.OR
 
         tree_group = self.bits.add_group("tree")

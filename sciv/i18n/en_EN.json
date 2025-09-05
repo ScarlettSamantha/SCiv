@@ -1799,6 +1799,10 @@
             "name": "Chemicals",
             "description": "Substances used in or produced by chemical processes."
           },
+          "pearls": {
+            "name": "Pearls",
+            "description": "Precious gems formed within the shells of certain mollusks."
+          },
           "onions": {
             "name": "Onions",
             "description": "A bulbous vegetable used in cooking for its flavor."

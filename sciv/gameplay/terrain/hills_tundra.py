@@ -10,6 +10,7 @@ class HillsTundra(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0.25
     _fallback_color = (186, 186, 186)
+    _model = "assets/models/terrain/tundra_hills.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

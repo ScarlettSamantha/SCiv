@@ -10,6 +10,7 @@ class FlatTundraSnow(BaseTerrain):
     movement_modifier = 1
     water_availability = 0.25
     _fallback_color = (238, 238, 238)
+    _model = "assets/models/terrain/flat_iceland.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

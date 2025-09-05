@@ -1,20 +1,12 @@
-"""
-tile_renderer.py
-
-Contains TileRenderer, responsible for visualizing a Tile in the game world
-using Panda3D. Handles terrain and overlay cards, improvement models,
-resource icons, unit markers, city nameplates, and model loading.
-"""
-
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from direct.task import Task
 from gameplay.bits import BitsRenderer
 from gameplay.resource import BaseResource
 from helpers.cache import Cache
-from helpers.colors import Colors, Tuple4f
+from helpers.colors import Colors
 from helpers.debug import Debug
 from helpers.icons import Icons
 from helpers.images import (
@@ -25,7 +17,6 @@ from helpers.images import (
 from helpers.os import WindowsHelper
 from helpers.placeholder import Placeholder
 from managers.assets import AssetManager
-from managers.game import Game, HexGrid
 from managers.i18n import I18nManager, T_TranslationOrStr, get_i18n
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from panda3d.core import (
@@ -121,7 +112,7 @@ class TileRenderer:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
         size = 1.0
         cm.setFrame(-size, size, -size, size)
-        cm.setUvRange((0, 0), (1, 1))  # ensure we get uv coords
+        cm.setUvRange((0, 0), (1, 1))
 
         self.selector_np = self.anchor_node.attachNewNode(cm.generate())
         self.selector_np.setHpr(0, -90, 0)
@@ -130,14 +121,12 @@ class TileRenderer:
         self.selector_np.setDepthWrite(False)
         self.selector_np.hide()
 
-        # apply our flat-top hex shader
         self.selector_np.setShader(self.selector_shader)
 
-        # border thickness in UV-space (0–1), dash count & speed
         self.selector_np.setShaderInput("borderWidth", 0.03)  #  type: ignore
         self.selector_np.setShaderInput(  # type: ignore
             "hexRadius", math.sqrt(3) / 2.05
-        )  # Just a bit of offset from the hex radius # type: ignore
+        )  # type: ignore
         self.selector_np.setShaderInput("dashFreq", 18.0)  # type: ignore
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
         self.selector_np.setShaderInput("color", Colors.MAGENTA)  # type: ignore
@@ -150,7 +139,7 @@ class TileRenderer:
     def _update_selector_task(self, task: Task.Task) -> Task.Task:
         if not self.selector_enabled or self.selector_np is None:
             return Task.cont  # type: ignore
-        # update time uniform
+
         self.selector_np.setShaderInput("time", task.time)  #    type: ignore
         return Task.cont  # type: ignore
 
@@ -203,7 +192,7 @@ class TileRenderer:
 
         self.clear_ui()
 
-        self._draw_terrain_overlay()
+        # self._draw_terrain_overlay()
         self._draw_improvements()
 
         self._draw_resource_model()
@@ -454,12 +443,6 @@ class TileRenderer:
 
         overlay.setTexture(texture, 1)
 
-        color = Colors.to_normalized_float(self.tile.tile_terrain.wall_color(), 1.0)
-        mesh: "HexGrid" = Game.get_singleton_instance().get_mesh()
-        mesh.set_wall_color_for_tile(
-            mesh.get_tile_index_from_coords(self.tile.x, self.tile.y),
-            cast(Tuple4f, color),
-        )
         self.terrain_overlay_node = overlay
 
     def is_city(self) -> bool:

@@ -10,6 +10,8 @@ class SeaIce(BaseTerrain):
     movement_modifier = 1
     water_availability = 0.25
     _fallback_color = Colors.t4f_to_t3(Colors.WHITE)
+    _model = "assets/models/terrain/sea_ice.glb"
+    model_pos_z_offset = -0.41
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

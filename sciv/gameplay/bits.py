@@ -96,6 +96,7 @@ class Bits:
         self.groups: Dict[str, "Bits"] = {}
         self.enabled: bool = True
         self.disabled_bits: Dict[str, Bit] = {}
+        self.empty_probability: float = 0.0
 
     @property
     def full_path(self) -> str:
@@ -158,18 +159,16 @@ class Bits:
         if not parts:
             return
         key = parts[0]
-        # subgroup?
         if key in self.groups:
             self.groups[key]._set_disabled_state(parts[1:], disabled)
         else:
-            # leaf bit
-            bit = self.bits.get(key)
-            if bit:
-                bit.disabled = disabled
-                if disabled:
-                    self.disabled_bits[key] = bit
-                else:
-                    self.disabled_bits.pop(key, None)
+            if not (bit := self.bits.get(key)):
+                return
+            bit.disabled = disabled
+            if disabled:
+                self.disabled_bits[key] = bit
+            else:
+                self.disabled_bits.pop(key, None)
 
     def disable_bit(self, full_key: str) -> None:
         parts = full_key.split(".")
@@ -196,7 +195,11 @@ class Bits:
             return self.groups
         return {name: self.groups[name] for name in groups if name in self.groups}
 
-    def choose(self, num: int = 1, group: Optional[str] = None) -> List[Bit]:
+    def choose(self, num: int = 1, group: Optional[str] = None, allow_empty_probability: bool = True) -> List[Bit]:
+        if allow_empty_probability and self.empty_probability > 0.0:
+            if random.uniform(0.0, 1.0) < self.empty_probability:
+                return []
+
         container = self if group is None else self.groups.get(group)
         if container is None or not container.enabled:
             return []
@@ -206,11 +209,9 @@ class Bits:
     def is_disabled(self) -> bool:
         if not self.enabled:
             return True
-        # any enabled bit?
         for bit in self.bits.values():
             if not bit.disabled:
                 return False
-        # any subgroup not disabled?
         for sub in self.groups.values():
             if not sub.is_disabled():
                 return False

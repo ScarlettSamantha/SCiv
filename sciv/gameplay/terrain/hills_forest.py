@@ -11,6 +11,7 @@ class HillsForest(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0.5
     _fallback_color = (91, 128, 64)
+    _model = "assets/models/terrain/hill_forest.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

@@ -10,6 +10,7 @@ class HillsDesert(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0.25
     _fallback_color = (255, 226, 128)
+    _model = "assets/models/terrain/hill_desert.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

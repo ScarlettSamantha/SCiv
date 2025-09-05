@@ -12,6 +12,7 @@ class HillsSnow(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0.25
     _fallback_color = (238, 238, 238)
+    _model = "assets/models/terrain/hill_snow.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

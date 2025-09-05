@@ -9,12 +9,12 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
 from helpers.tiles import Tiles
 from managers import game
-from managers.entity import EntityManager, EntityType
+from managers.entity import EntityManager
 from system.generators.base import BaseGenerator, WorldParams
 from system.generators.resource_allocator import ResourceAllocator
-from system.mesh import HexGrid
 from system.pyload import PyLoad
 from system.subsystems.hexgen.enums import HexFeature, MapType, OceanType
+from system.tile_grid import TileModelGrid
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -39,7 +39,8 @@ class Basic(BaseGenerator):
         self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
         self.grid: Dict[Tuple[int, int], Tile] = {}
         self.map: Dict[str, Tile] = self.world.map
-        self.mesh_grid: Optional[HexGrid] = None
+
+        self.model_grid: Optional[TileModelGrid] = None
 
         self.resource_allocator: Optional[ResourceAllocator] = None
         self.world_generation_stats: Dict[str, Any] = {}
@@ -57,10 +58,10 @@ class Basic(BaseGenerator):
             "hydrosphere": True,
             "ocean_type": [OceanType.water],
             "random_seed": self.seed,
-            "roughness": 18,  # below 10 it seems to generate huge patches, 18 is nice, above 24 # it gets too rough
+            "roughness": 18,  # <10 huge patches; 18 nice; >24 too rough
             "height_range": (0, 240),
             "pressure": 1,  # bar
-            "axial_tilt": 18,  # This is the most important part of temperature its temperature range in degrees dont go over like 30 for a very hot map 10 for a cold map 18 is earth about
+            "axial_tilt": 18,
             # features
             "craters": True,
             "volcanoes": True,
@@ -93,7 +94,6 @@ class Basic(BaseGenerator):
         return classes
 
     def generate(self) -> bool:
-        """Generates the hex map, instantiates tiles without their default models, then builds GPU meshes using the tile's own Z calculation."""
         from system.subsystems.hexgen.mapgen import MapGen
 
         # Step 1: Generate raw world data via HexGen
@@ -117,41 +117,49 @@ class Basic(BaseGenerator):
                 hex_tile.render_pos = (x, y)
         end_conversion = datetime.now()
 
+        # Step 2b: Adjust water levels (aligns seas/lakes to a consistent plane)
         start_water_level_adjustment = datetime.now()
-        # Adjust water level based on the average height of the map
         self.adjust_water_levels()
         end_water_level_adjustment = datetime.now()
 
-        # Step 3: Instantiate tile objects WITHOUT rendering their Panda3D models
+        # Step 3: Instantiate gameplay Tile objects (no Panda models spawned here)
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_inst = datetime.now()
         self.instantiate_tiles()
         end_inst = datetime.now()
 
-        # Step 4: Build and position GPU meshes based on each tile's calculated Z
-        MessengerGlobal.messenger.send("ui.loading.next_step", ["Building meshes..."])
-        start_mesh = datetime.now()
-        # Create a height map from each tile's pos_z
+        # Step 3b: Give tiles model metadata so the renderer can pick correct models
+        # (reads from tile classes when available; falls back to a default)
+        self._assign_tile_models()
 
-        hexes = [tile for tile in self.world.grid.values()]
+        # Step 4: Render tiles as 3D models using TileModelGrid (RBC batching)
+        MessengerGlobal.messenger.send("ui.loading.next_step", ["Placing terrain models..."])
+        start_models = datetime.now()
 
-        self.mesh_grid = HexGrid(
+        hexes: List[Tile] = list(self.world.grid.values())
+
+        self.model_grid = TileModelGrid(
+            tiles=hexes,
             radius=1.0,
-            tiles=list(self.world.grid.values()),
             cols=self.config.width,
             rows=self.config.height,
+            default_model_path="assets/models/terrain/flat_grassland.glb",
         )
-        self.mesh_grid.grid_np.instance_to(self.base.render)  # type: ignore
-        game.Game.get_singleton_instance().game_settings = self.config
-        EntityManager.get_singleton_instance().register(EntityType.GAME_SETTINGS, self.config, "game_settings")  # type: ignore
-        game.Game.get_singleton_instance().mesh_grid = self.mesh_grid
+        self.model_grid.attach_to_render()
+        self.model_grid.collect()
 
+        # Keep compatibility for systems still probing game.mesh_grid
+        g = game.Game.get_singleton_instance()
+        g.model_grid = self.model_grid  # type: ignore[attr-defined]
+        g.mesh_grid = self.model_grid  # type: ignore[attr-defined]
+
+        # Keep gameplay tile bookkeeping
         for tile in hexes:
             tile.recalculate_grid_position(1)
 
         TileRepository.grid = self.world.grid
 
-        end_mesh = datetime.now()
+        end_models = datetime.now()
 
         # Step 5: Allocate resources and place units
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Allocating resources..."])
@@ -173,7 +181,7 @@ class Basic(BaseGenerator):
                 (end_water_level_adjustment - start_water_level_adjustment).total_seconds() * 1000, 2
             ),
             "instantiate_tiles": round((end_inst - start_inst).total_seconds() * 1000, 2),
-            "mesh_build": round((end_mesh - start_mesh).total_seconds() * 1000, 2),
+            "mesh_build": round((end_models - start_models).total_seconds() * 1000, 2),  # kept key for continuity
             "resources": round((end_res - start_res).total_seconds() * 1000, 2),
             "units": round((end_units - start_units).total_seconds() * 1000, 2),
         }
@@ -204,7 +212,7 @@ class Basic(BaseGenerator):
         if hex_tile.is_water:
             if geoform_id == 4 or HexFeature.lake in hex_tile.features:
                 return "Lake"
-            elif hex_tile.is_coast and geoform_id != 2:  # Shallow water, For some reason water is desert or grassland
+            elif hex_tile.is_coast and geoform_id != 2:
                 return "Coast"
             elif geoform_id == 2:
                 return "Sea"
@@ -264,14 +272,12 @@ class Basic(BaseGenerator):
                         return "HillsTundra"
 
                 else:
-                    if (
-                        biome_id in (WorldParams.desert,) and hex_temp > WorldParams.desert_temperature_threshold
-                    ):  # Desert or savannah, keep this high as it needs to be checked first before grassland
+                    if biome_id in (WorldParams.desert,) and hex_temp > WorldParams.desert_temperature_threshold:
                         return "FlatDesert"
                     elif (
                         biome_id in (WorldParams.grasslands, WorldParams.tropical_forest)
                         and hex_tile.moisture > WorldParams.moisture_threshold_mangrove_jungle
-                    ):  # Virtual Mangrove Actual grassland with high moister
+                    ):
                         return "FlatJungle"
                     elif (
                         biome_id in (WorldParams.tropical_forest,)
@@ -287,14 +293,14 @@ class Basic(BaseGenerator):
                         and hex_temp > WorldParams.grass_temperature_lower_threshold
                         and hex_temp < WorldParams.grass_temperature_upper_threshold
                         and hex_tile.moisture < WorldParams.forest_lower_threshold
-                    ):  # Grassland and when its a "desert" but to cold to be a desert
+                    ):
                         return "FlatGrass"
                     elif biome_id in (
                         WorldParams.tropical_forest,
                         WorldParams.temperate_rainforest,
                         WorldParams.temperate_forest,
                         WorldParams.boreal_forest,
-                    ):  # forest
+                    ):
                         if hex_temp < WorldParams.cold_forrest_temperature_threshold:
                             return "FlatPineForest"
                         elif moisture < WorldParams.moisture_threshold_heavy_forest - 1:
@@ -309,18 +315,17 @@ class Basic(BaseGenerator):
                         pass
                         # return "FlatJungle"
                         return "FlatForest"
-
-                    elif biome_id in (WorldParams.scrubland,):  # Scrubland
+                    elif biome_id in (WorldParams.scrubland,):
                         return "FlatScrubland"
-                    elif biome_id in (WorldParams.arctic,):  # Arctic / Ice
+                    elif biome_id in (WorldParams.arctic,):
                         return "FlatIce"
-                    elif biome_id in (WorldParams.tundra, WorldParams.alpine_tundra):  # 2 Tundra, 3 Alpine Tundra
-                        if hex_temp < -0:  # This is a cold tile or alpine
+                    elif biome_id in (WorldParams.tundra, WorldParams.alpine_tundra):
+                        if hex_temp < -0:
                             return "FlatTundraSnow"
                         else:
                             if hex_temp > WorldParams.grass_temperature_lower_threshold:
                                 return choice(("FlatTundra", "FlatForest"))
-                    elif biome_id in (13,):  # Wasteland
+                    elif biome_id in (13,):
                         return "FlatWasteland"
                     return choice(("FlatForest", "FlatGrass"))
 
@@ -371,7 +376,7 @@ class Basic(BaseGenerator):
         tile.is_water = water  # Sea is geoform_type 2 # type: ignore
         tile.is_land = land
         tile.is_coast = hex.is_coast
-        tile.terrain = hex.terrain  # This is  set by classify_terrain # type: ignore
+        tile.terrain = hex.terrain  # This is set by classify_terrain # type: ignore
         tile.hemisphere = Tile.HEMISPHERE_NORTH if hex.hemisphere.value == "Northern" else Tile.HEMISPHERE_SOUTH
         tile.is_sea = hex.geoform_type.id == 2  # Sea is geoform_type 2 # type: ignore
         tile.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore
@@ -396,20 +401,17 @@ class Basic(BaseGenerator):
     def adjust_water_levels(self) -> None:
         """
         Finds every connected group of water tiles (lakes + sea),
-        looks at all adjacent land‐tile altitudes, takes the minimum,
+        looks at all adjacent land-tile altitudes, takes the minimum,
         and then forces the entire water body to sit 1 unit below that minimum.
         """
         height = self.config.height
         width = self.config.width
 
-        visited: Set[Tuple[int, int]] = set()  # keep track of (col,row) we’ve already clustered
+        visited: Set[Tuple[int, int]] = set()
 
-        # Pre‐cache a reference to the raw hex‐grid for convenience
         raw = self.hex_grid.grid  # raw[col][row] => Hex
 
-        # Helper: given (c,r), return list of valid neighbor coords in odd‐q layout
         def neighbors(c: int, r: int) -> List[Tuple[int, int]]:
-            # odd‐q vertical layout offsets:
             offsets = Tiles.get_directions_per_col(c)
             result: List[Tuple[int, int]] = []
             for dc, dr in offsets:
@@ -420,12 +422,10 @@ class Basic(BaseGenerator):
 
         for col in range(height):
             for row in range(width):
-                # skip if not water or already visited
                 hex_tile = raw[col][row]
                 if not hex_tile.is_water or (col, row) in visited:
                     continue
 
-                # flood‐fill this water body:
                 queue = [(col, row)]
                 visited.add((col, row))
                 water_cluster = [(col, row)]
@@ -435,13 +435,11 @@ class Basic(BaseGenerator):
                     idx += 1
                     for nc, nr in neighbors(c0, r0):
                         neighbor_hex = raw[nc][nr]
-                        # if neighbor is water and not visited yet, add to cluster
                         if neighbor_hex.is_water and (nc, nr) not in visited:
                             visited.add((nc, nr))
                             queue.append((nc, nr))
                             water_cluster.append((nc, nr))
 
-                # gather all bordering land‐tile altitudes
                 border_altitudes: List[float] = []
                 for wc, wr in water_cluster:
                     for nc, nr in neighbors(wc, wr):
@@ -450,13 +448,11 @@ class Basic(BaseGenerator):
                             border_altitudes.append(neighbor_hex.altitude)
 
                 if not border_altitudes:
-                    # No adjacent land at all (e.g. an “ocean” pool that maybe touches the map edge).
                     continue
 
                 min_adj_land = min(border_altitudes)
-                water_level = min_adj_land - 1  # one unit below the lowest land tile
+                water_level = min_adj_land - 1
 
-                # assign every hex in this water_cluster exactly that altitude
                 for wc, wr in water_cluster:
                     raw[wc][wr].altitude = water_level
 
@@ -475,3 +471,19 @@ class Basic(BaseGenerator):
         dx = abs(hex1.x - hex2.x)
         dy = abs(hex1.y - hex2.y)
         return max(dx, dy, abs(dx - dy))
+
+    def _assign_tile_models(self) -> None:
+        for _, tile in self.world.grid.items():
+            model_key = tile.get_terrain().get_key()
+
+            path: str = tile.get_model()
+            scale = getattr(tile, "model_scale", 1.0)
+            scale = (float(scale), float(scale), float(scale))
+            hpr = getattr(tile, "model_hpr", (0.0, 0.0, 0.0))
+            z_off = float(getattr(tile, "model_z_offset", 0.0))
+
+            setattr(tile, "model_key", str(model_key))
+            setattr(tile, "model_path", str(path))
+            setattr(tile, "model_scale", tuple(map(float, scale)))
+            setattr(tile, "model_hpr", tuple(map(float, hpr)))
+            setattr(tile, "model_z_offset", float(z_off))

@@ -9,6 +9,8 @@ from managers.i18n import t_
 class Sea(BaseTerrain):
     _name = t_("world.terrain.sea_water")
     _fallback_color = Colors.t4f_to_t3(Colors.BLUE)
+    _model = "assets/models/terrain/sea.glb"
+    model_pos_z_offset = -0.41
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

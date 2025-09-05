@@ -496,11 +496,6 @@ class Game(Singleton, DirectObject):
 
         self.calculate_vision()
 
-        if (mesh_grid := self.active_generator.mesh_grid) is None:  # type: ignore
-            raise ValueError("Mesh grid has not been generated yet. Call generate_world() first.")
-
-        self.mesh_grid = mesh_grid
-        self.entities.register(type=EntityType.WORLD, entity=self.mesh_grid, key="world_grid")  # type: ignore
         self.players.on_game_start()
         self.border.setup_borders()
         self.base.get_camera().on_window_resize(None)  # type: ignore

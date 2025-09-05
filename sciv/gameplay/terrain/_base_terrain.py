@@ -4,9 +4,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Ty
 
 from gameplay.yields import Yields
 from helpers.colors import Tuple4f
-from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
-
 from managers.entity import EntityManager
+from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 
 if TYPE_CHECKING:
     from gameplay.bits import Bit
@@ -24,7 +23,12 @@ if TYPE_CHECKING:
 class BaseTerrain(ABC):
     _key: str = ""
     _name: T_TranslationOrStrOrNone = None
-    _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = None
+    _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = (
+        "assets/models/terrain/flat_grassland.glb"
+    )
+    model_scale = (1.72, 1.72, 4)
+    model_pos_z_offset = -0.81
+    model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     can_spawn_resources: bool = True
     _fallback_color: Tuple[float, float, float] = (0, 119, 255)
 

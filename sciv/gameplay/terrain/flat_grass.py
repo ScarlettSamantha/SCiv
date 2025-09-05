@@ -13,6 +13,7 @@ class FlatGrass(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 1
     _fallback_color = (106, 255, 0)
+    _model = "assets/models/terrain/flat_grassland.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

@@ -7,6 +7,7 @@ from managers.i18n import t_
 
 class FlatDesert(BaseTerrain):
     _name = t_("world.terrain.flatland_desert")
+    _model = "assets/models/terrain/flat_desert.glb"
     movement_modifier = 0.5
     water_availability = 0
     _fallback_color = (128, 128, 40)

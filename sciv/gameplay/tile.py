@@ -710,6 +710,9 @@ class Tile(BaseEntity):
     def get_terrain(self) -> BaseTerrain:
         return self.tile_terrain
 
+    def get_model(self) -> str:
+        return str(self.get_terrain().get_model())
+
     def get_climbable(self) -> bool:
         return self.climbable
 

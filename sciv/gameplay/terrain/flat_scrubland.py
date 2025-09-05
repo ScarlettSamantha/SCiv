@@ -10,6 +10,8 @@ from managers.i18n import t_
 class FlatScrubland(BaseTerrain):
     _name = t_("world.terrain.flatland_scrubland")
     movement_modifier = 0.5
+    _model = "assets/models/terrain/flat_scrubland.glb"
+    model_pos_z_offset = -0.8
     water_availability = 0.75
     _fallback_color = (127, 179, 90)
 
