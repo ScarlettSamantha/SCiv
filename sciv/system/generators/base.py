@@ -109,9 +109,6 @@ class BaseGenerator(ABC):
         return player
 
     def assign_ai(self, player: "Player") -> None:
-        """
-        Assigns an AI class to a player
-        """
         from gameplay.ai.implementations.barbarians import BarbariansAI
         from gameplay.ai.implementations.enemy import EnemyAI
         from gameplay.ai.implementations.nature import NatureAI
@@ -156,7 +153,7 @@ class BaseGenerator(ABC):
                     else:
                         civs_ingame.append(chosen_civilization)
 
-                    if already_ingame is False:  # We try to avoid having the same civilization twice
+                    if already_ingame is False:
                         break
 
             chosen_personality: Type[BasePersonality] = PersonalityRepository.random()  # type: ignore # due to the num argument is 1 it will always return a single instance not a list of instances.
@@ -179,7 +176,7 @@ class BaseGenerator(ABC):
             player: Player = self.generate_player(
                 personality=chosen_personality(),
                 civilization=civ,
-                leader=None,  # None means it will pick from its own list of registered leaders
+                leader=None,
                 turn_order=i,
                 is_player=i == 0,
                 is_nature=i == 1,
@@ -213,25 +210,24 @@ class BaseGenerator(ABC):
         from gameplay.units.core.classes.civilian.settler import Settler
 
         units: List[Unit] = []
-        occupied_tiles: List["Tile"] = []  # Track placed player locations
+        occupied_tiles: List["Tile"] = []
 
-        min_distances: List[int] = [5, 4, 3]  # Distances to attempt
+        min_distances: List[int] = [5, 4, 3]
 
         def has_sufficient_land(tile: "Tile", radius: int, threshold: float) -> bool:
-            """Checks if the tile has at least the given ratio of land within the radius."""
             neighbors: List[Tile] = TileRepository.get_neighbors(tile, radius=radius)
             land_tiles = sum(1 for n in neighbors if not n.is_water)
             return (land_tiles / max(1, len(neighbors))) >= threshold
 
         for player in PlayerManager.players().values():
-            if player.is_nature or player.is_barbarian:  # Skip nature and barbarian players as they don't have settlers
+            if player.is_nature or player.is_barbarian:
                 continue
 
             spawn_tile: Optional[Tile] = None
-            fallback_tile: Optional[Tile] = None  # Store a fallback tile if needed
+            fallback_tile: Optional[Tile] = None
 
             for min_distance in min_distances:
-                for _ in range(max_attempts):  # Limit attempts to prevent infinite loops
+                for _ in range(max_attempts):
                     _spawn_tile: Optional[Tile] = self.base.world.random_tile()
 
                     if not _spawn_tile or not _spawn_tile.is_spawnable_upon() or not _spawn_tile.is_passable():
@@ -241,7 +237,6 @@ class BaseGenerator(ABC):
                         TileRepository.hex_distance(_spawn_tile, tile) >= min_distance for tile in occupied_tiles
                     )
 
-                    # Check if the tile has coastal neighbors
                     neighbors: List[Tile] = TileRepository.get_neighbors(_spawn_tile, radius=1)
                     has_coastal_neighbor: bool = any(n.is_water and n.is_coast for n in neighbors)
                     near_map_edge: bool = TileRepository.is_near_map_edge(
@@ -249,23 +244,19 @@ class BaseGenerator(ABC):
                     )
                     sufficient_land: bool = has_sufficient_land(_spawn_tile, land_check_radius, land_ratio_threshold)
 
-                    # Prefer coastal-adjacent tiles that are not near the map edge and have sufficient land
                     if has_coastal_neighbor and not near_map_edge and sufficient_land and distance_ok:
                         spawn_tile = _spawn_tile
-                        break  # Stop looking if we find a valid tile
+                        break
 
-                    # Store a fallback tile that avoids map edges and has enough land if possible
                     if distance_ok and not near_map_edge and sufficient_land and fallback_tile is None:
-                        fallback_tile = _spawn_tile  # Store the first valid inland tile
+                        fallback_tile = _spawn_tile
 
-                    # Secondary fallback: Accept a tile near the edge if necessary
                     if distance_ok and fallback_tile is None:
                         fallback_tile = _spawn_tile
 
                 if spawn_tile:
-                    break  # Stop lowering distance if we found a good tile
+                    break
 
-            # Fallback if no preferred tile was found
             if spawn_tile is None:
                 spawn_tile = fallback_tile
 
@@ -293,10 +284,6 @@ class BaseGenerator(ABC):
 
     @abstractmethod
     def randomize_seed(self) -> int:
-        """
-        Randomizes the seed for the generator.
-        This is used to ensure that each generation is unique.
-        """
         import random
 
         seed = random.randint(0, 2**31 - 1)

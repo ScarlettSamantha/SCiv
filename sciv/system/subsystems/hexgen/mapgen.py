@@ -1,13 +1,10 @@
-import datetime
 import random
 import sys
 from itertools import count
 from typing import Any, Deque, Dict, List, Set, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 from helpers.debug import Debug as DebugHelper
-from matplotlib.patches import RegularPolygon
 from system.subsystems.hexgen.enums import (
     GeoformType,
     HexFeature,
@@ -43,42 +40,29 @@ default_params: Dict[str, Any] = {
     "random_seed": None,
     "roughness": 8,
     "height_range": (0, 255),
-    "pressure": 1,  # bar
+    "pressure": 1,
     "axial_tilt": 23,
-    # features
     "craters": False,
     "volcanoes": True,
     "num_volcanoes": 5,
     "volcano_area_size": 1,
     "num_rivers": 50,
-    # territories
     "num_territories": 0,
+    "desert_target_ratio": 0.12,
+    "steppe_target_ratio": 0.10,
+    "wind_dir": "west",
+    "hadley_strength": 0.8,
+    "coast_decay": 3.0,
+    "rain_shadow_strength": 1.6,
+    "lapse_rate_c_per_km": 6.5,
+    "max_elev_m": 4000,
+    "equator_temp": 28.0,
+    "pole_temp": -12.0,
 }
-
-default_params.update(
-    {
-        # climate knobs
-        "climate_enable": True,
-        "desert_target_ratio": 0.12,  # 12% of *hot* land tends to desert
-        "steppe_target_ratio": 0.10,  # ~10% becomes steppe/scrub
-        "wind_dir": "west",  # prevailing wind for orographic pass
-        "hadley_strength": 0.8,  # 0..1, equator-wet / 30° dry belts
-        "coast_decay": 3.0,  # tiles to halve coastal moisture
-        "rain_shadow_strength": 1.6,  # >1 strengthens lee-side drying
-        "lapse_rate_c_per_km": 6.5,  # °C per km
-        "max_elev_m": 4000,  # mapping of altitude 255 → meters
-        "equator_temp": 28.0,  # °C at sea level
-        "pole_temp": -12.0,  # °C at sea level
-    }
-)
 
 
 class MapGen:
-    """generates a heightmap as an array of integers between 1 and 255
-    using the diamond-square algorithm"""
-
     def __init__(self, params: Dict[str, Any], debug: bool = False):
-        """initialize"""
         self.params: Dict[str, Any] = default_params
         self.params.update(params)
         self._seed_rngs()
@@ -111,7 +95,7 @@ class MapGen:
             print("Making coastal moisture") if self.debug else False
             for y, row in enumerate(self.hex_grid.grid):
                 for x, _ in enumerate(row):
-                    self.num_tiles += 1  # count the number of tiles when we're here anyway.
+                    self.num_tiles += 1
                     _hex: "Hex" = self.hex_grid.grid[x][y]
                     if _hex.is_land:
                         if _hex.distance <= 5:
@@ -121,9 +105,8 @@ class MapGen:
                         if _hex.distance <= 1:
                             _hex.moisture += random.randint(1, 6)
 
-        # generate aquifers
         factor_min_max: int = 2
-        max_aquifers: int = self.num_tiles // 80  # Floor Devide needs to be smaller to get the bigger integer
+        max_aquifers: int = self.num_tiles // 80
         min_aquifers: int = max_aquifers // factor_min_max
         num_aquifers = random.randint(min_aquifers, max_aquifers)
 
@@ -139,7 +122,6 @@ class MapGen:
                 aquifers.append(_hex)
 
         for hex in aquifers:
-            # print("Aquifer at ", hex)
             r1: List["Hex"] = hex.bubble(distance=3)
             for hex in r1:
                 if hex.is_land:
@@ -156,22 +138,17 @@ class MapGen:
         if self.params.get("craters") is True:
             self.generate_craters()
 
-        # volcanoes
         if self.params.get("volcanoes", True):
             self.generate_volcanoes()
 
         self.territories: List[Territory] = []
-
-        self.generate_territories()
-
         self.geoforms: List[Geoform] = []
 
+        self.generate_territories()
         self._determine_landforms()
-
         self._detect_lakes()
 
     def generate_craters(self):
-        # decide number of craters
         num_craters = random.randint(0, 15)
         if self.debug:
             print("Making {} craters".format(num_craters))
@@ -188,7 +165,7 @@ class MapGen:
             )
 
         for crater in craters:
-            center_hex = crater.get("hex")
+            center_hex: "Hex" = crater.get("hex")
             size = crater.get("size")
             hexes: List["Hex"] = []
 
@@ -218,7 +195,6 @@ class MapGen:
                         i.altitude = max(i.altitude, np.float64(0))
 
     def _local_ruggedness(self, h: "Hex") -> float:
-        # mean absolute altitude difference to neighbors
         diffs = [abs(float(h.altitude) - float(n.altitude)) for _, n in h.neighbors]
         return sum(diffs) / max(1, len(diffs))
 
@@ -229,7 +205,6 @@ class MapGen:
         volcanoes: List[Dict[str, Any]] = []
         size: int = int(self.params.get("volcano_area_size", 1))
 
-        # In generate_volcanoes(), replace the center_hex selection loop with:
         tries = 0
         while len(volcanoes) < num_volcanoes and tries < num_volcanoes * 20:
             tries += 1
@@ -238,7 +213,6 @@ class MapGen:
                 continue
             if any(nh.has_feature(HexFeature.volcano) or nh.is_water for nh in center_hex.bubble(distance=5) or []):
                 continue
-            # prefer rugged areas
             if self._local_ruggedness(center_hex) < 8.0:
                 continue
             extra_height = random.randint(75, 150)
@@ -256,10 +230,6 @@ class MapGen:
                 hex.add_feature(HexFeature.volcano)
 
     def generate_territories(self):
-        """
-        Makes territories
-        """
-        # select number of territories to place
         num_territories = self.params.get("num_territories", 0)
 
         if self.debug:
@@ -281,12 +251,11 @@ class MapGen:
                 self.territories.append(Territory(self.hex_grid, hex_s, c, color))
                 c += 1
 
-        # loop over each, adding hexes
         total_hexes = self.hex_grid.size * self.hex_grid.size
         count = 0
-        while count < total_hexes:  #  i in range(0, 15):
+        while count < total_hexes:
             count = 0
-            territories = self.territories
+            territories: List[Territory] = self.territories
             random.shuffle(territories)
             for t in territories:
                 frontier = t.frontier
@@ -297,9 +266,8 @@ class MapGen:
                         t.last_added.append(f)
                 count += t.size
 
-        # remove water hexes
         for t in self.territories:
-            members = t.members
+            members: List["Hex"] = t.members
             t.members = [h for h in t.members if h.is_land]
             water_hexes = (h for h in members if h.is_water)
             for h in water_hexes:
@@ -429,15 +397,14 @@ class MapGen:
         if self.debug:
             print(f"Making {num_rivers} rivers (drainage-based)")
 
-        filled_alt: Dict[Any, Any] = self._priority_flood_filled_alt()
-        flow_dir = self._compute_flow_dir(filled_alt)
-        acc = self._flow_accumulation(flow_dir)
+        filled_alt: Dict[Hex, float] = self._priority_flood_filled_alt()
+        flow_dir: Dict[Hex, float] = self._compute_flow_dir(filled_alt)
+        acc: Dict[Hex, float] = self._flow_accumulation(flow_dir)
 
-        # Candidate seeds: inland, above sealevel + margin, and with strong accumulation
-        margin = max(10.0, (self.hex_grid.sealevel if hasattr(self.hex_grid, "sealevel") else 0) + 10.0)
-        candidates = [h for h in self.hex_grid.hexes if h.is_inland and float(h.altitude) > margin]
+        margin: float = max(10.0, (self.hex_grid.sealevel if hasattr(self.hex_grid, "sealevel") else 0) + 10.0)
+        candidates: List[Hex] = [h for h in self.hex_grid.hexes if h.is_inland and float(h.altitude) > margin]
         candidates.sort(key=lambda h: (acc.get(h, 0.0), float(h.altitude)), reverse=True)
-        sources = candidates[: min(num_rivers, len(candidates))]
+        sources: List[Hex] = candidates[: min(num_rivers, len(candidates))]
 
         self.rivers.clear()
         self.rivers_sources = []
@@ -446,7 +413,7 @@ class MapGen:
             dn = flow_dir.get(src_hex)
             if dn is None:
                 continue
-            first_side = src_hex.get_side_to(dn)
+            first_side = src_hex.get_side_to(dn)  # type: ignore
             if first_side is None:
                 continue
 
@@ -458,11 +425,11 @@ class MapGen:
             visited_chain = {cur_hex}
 
             while True:
-                dn = flow_dir.get(cur_hex)
+                dn = flow_dir.get(cur_hex)  # type: ignore
                 if dn is None:
                     break
 
-                side_to_dn = cur_hex.get_side_to(dn)
+                side_to_dn = cur_hex.get_side_to(dn)  # type: ignore
                 if side_to_dn is None:
                     break
 
@@ -470,7 +437,7 @@ class MapGen:
                 if edge is None:
                     break
 
-                already_river = edge.is_river
+                already_river = edge.is_river  # type: ignore
 
                 edge.is_river = True
                 cur_seg.side = side_to_dn  # type: ignore
@@ -480,7 +447,7 @@ class MapGen:
 
                 if dn in visited_chain:
                     break
-                visited_chain.add(dn)
+                visited_chain.add(dn)  # type: ignore
 
                 nxt = RiverSegment(self.hex_grid, dn.x, dn.y, side_to_dn, False)  # type: ignore
                 cur_seg.next = nxt
@@ -542,7 +509,7 @@ class MapGen:
                 acc[d] = acc.get(d, 1.0) + acc[h]
         return acc
 
-    def _priority_flood_filled_alt(self) -> Dict[Any, Any]:
+    def _priority_flood_filled_alt(self) -> Dict["Hex", float]:
         import heapq
         import itertools
 
@@ -558,7 +525,7 @@ class MapGen:
 
         filled_alt: Dict["Hex", float] = {}
         in_queue: Set["Hex"] = set()
-        pq: list[tuple[float, int, object]] = []  # (alt, tie, Hex)
+        pq: List[Tuple[float, int, "Hex"]] = []
         tie: count[int] = itertools.count()
 
         def push(h: "Hex", alt: float) -> None:
@@ -594,7 +561,7 @@ class MapGen:
     def _detect_lakes(self) -> None:
         from collections import deque
 
-        grid = self.hex_grid.grid
+        grid: np.ndarray[Any, Any] = self.hex_grid.grid
         size_x = len(grid)
         size_y = len(grid[0]) if size_x else 0
         if size_x == 0:
@@ -647,7 +614,7 @@ class MapGen:
                             self.geoforms.append(Geoform(set([h]), h.geoform_type))
 
             def flood_fill(start_hex: "Hex", target_type: Any) -> Set["Hex"]:
-                queue = [start_hex]
+                queue: List["Hex"] = [start_hex]
                 visited: Set["Hex"] = set()
                 while queue:
                     current = queue.pop()
@@ -664,10 +631,10 @@ class MapGen:
 
             with Timer("\tFinding contiguous geoforms", self.debug):
                 sys.setrecursionlimit(10000)
-                current = first_hex_without_geoform(self.hex_grid.grid.tolist())
+                current: "Hex | None" = first_hex_without_geoform(self.hex_grid.grid.tolist())
                 while current is not None:
                     if current.is_land:
-                        hexes = flood_fill(current, current.type)
+                        hexes: Set["Hex"] = flood_fill(current, current.type)
                         size = len(hexes)
                         geotype = (
                             GeoformType.small_island
@@ -678,7 +645,7 @@ class MapGen:
                         )
                     else:
                         hexes = flood_fill(current, current.type)
-                        size = len(hexes)
+                        size: int = len(hexes)
                         geotype = GeoformType.lake if size < 3 else GeoformType.sea if size < 100 else GeoformType.ocean
                     assign_geoform(hexes, geotype)
                     current = first_hex_without_geoform(self.hex_grid.grid.tolist())
@@ -772,45 +739,29 @@ class MapGen:
                 print("There is now {} geoforms".format(len(self.geoforms)))
 
     def is_river(self, edge: HexSide) -> bool:
-        """
-        Determines if an edge has a river
-        :param edge: Edge
-        :return: Boolean
-        """
         for r in self.rivers_sources:
             while r.next is not None:
                 if r.edge == edge:
                     return True
-                r = r.next
+                r: RiverSegment = r.next
         return False
 
-    def hex_distance(self, a: tuple[int, int], b: tuple[int, int]) -> int:
-        """
-        Returns the distance (number of steps) between two hexes in axial coordinates (q, r).
-        """
+    def hex_distance(self, a: Tuple[int, int], b: Tuple[int, int]) -> int:
         aq, ar = a
         bq, br = b
         return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
 
     def get_side_to(self, target_hex: "Hex") -> "HexSide | None":
-        """
-        Returns the HexSide direction from this hex to target_hex.
-        Assumes self.neighbors is a dict {HexSide: Hex}.
-        """
         for side, neighbor in self.neighbors.items():  # type: ignore
             if neighbor is target_hex:
                 return side  # type: ignore
         return None
 
     def get_edge(self, side: "HexSide") -> "HexSide | None":
-        """
-        Returns the edge object for the given side.
-        """
         return self.edges[side]  # type: ignore # Or however you store your edge objects
 
     @staticmethod
     def _axial_to_cube(q: int, r: int) -> Tuple[float, float, float]:
-        """Convert axial (q, r) to cube (x, y, z) coords."""
         x = float(q)
         z = float(r)
         y = -x - z
@@ -818,26 +769,22 @@ class MapGen:
 
     @staticmethod
     def _cube_to_axial(x: int, y: int, z: int) -> Tuple[int, int]:
-        """Convert cube (x, y, z) back to axial (q, r)."""
         return x, z
 
     @staticmethod
     def _cube_lerp(a: float, b: float, t: float) -> float:
-        """Linear interpolation between a and b."""
         return a + (b - a) * t
 
     @staticmethod
     def _cube_round(x: float, y: float, z: float) -> Tuple[int, int, int]:
-        """Round floating cube coords to the nearest hex cube coords."""
-        rx = round(x)
-        ry = round(y)
-        rz = round(z)
+        rx: int = round(x)
+        ry: int = round(y)
+        rz: int = round(z)
 
-        x_diff = abs(rx - x)
-        y_diff = abs(ry - y)
-        z_diff = abs(rz - z)
+        x_diff: float = abs(rx - x)
+        y_diff: float = abs(ry - y)
+        z_diff: float = abs(rz - z)
 
-        # fix the largest difference to ensure x + y + z = 0
         if x_diff > y_diff and x_diff > z_diff:
             rx = -ry - rz
         elif y_diff > z_diff:
@@ -848,84 +795,28 @@ class MapGen:
         return rx, ry, rz
 
     def straight_line_path(self, a: Tuple[int, int], b: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """
-        Returns a list of axial coordinates (q, r) forming a straight-line path
-        between hex a and hex b (inclusive) using cube-coordinate interpolation.
-        """
-        # Convert endpoints to cube coords
         x1, y1, z1 = self._axial_to_cube(*a)
         x2, y2, z2 = self._axial_to_cube(*b)
 
-        # Number of steps
         N = self.hex_distance(a, b)
         path: List[Tuple[int, int]] = []
 
         for i in range(N + 1):
             t = 0.0 if N == 0 else i / N
-            # interpolate each cube axis
-            xi = self._cube_lerp(x1, x2, t)
-            yi = self._cube_lerp(y1, y2, t)
-            zi = self._cube_lerp(z1, z2, t)
-            # round to nearest hex
+
+            xi: float = self._cube_lerp(x1, x2, t)
+            yi: float = self._cube_lerp(y1, y2, t)
+            zi: float = self._cube_lerp(z1, z2, t)
+
             rx, ry, rz = self._cube_round(xi, yi, zi)
-            # convert back to axial and append
+
             path.append(self._cube_to_axial(rx, ry, rz))
 
         return path
 
     def find_river(self, x: int, y: int) -> List[HexSide]:
-        """Finds river segments at an hex's x and y coordinates. Returns a list of EdgeSides
-        representing where the river segments are"""
         seg: List[HexSide] = []
         for s in self.rivers:
             if s.x == x and s.y == y:
                 seg.append(s.side)
         return seg
-
-    def debug_draw_hex_rivers(self) -> None:
-        """
-        Hex-based debug: gray=land, cyan=sea, dark blue=lakes, bright blue=rivers.
-        """
-        grid = self.hex_grid.grid
-        cols, rows = len(grid), len(grid[0])
-        fig, ax = plt.subplots(figsize=(16, 16))  # type: ignore
-
-        # flat-topped hex parameters
-        side: float = 1.0
-        height: float = np.sqrt(3) * side
-
-        # draw each hex
-        for i in range(cols):
-            for j in range(rows):
-                h = grid[i][j]
-                x = side * 1.5 * i
-                y = height * (j + 0.5 * (i % 2))
-
-                if h.has_feature(HexFeature.lake):
-                    face = "#013f86"  # dark blue
-                elif getattr(h, "is_water", False):
-                    face = "#15b2d3"  # cyan
-                else:
-                    face = "#cccccc"  # light gray
-
-                hex_patch = RegularPolygon(
-                    (x, y),
-                    numVertices=6,
-                    radius=side,
-                    orientation=np.pi / 6,  # flat top
-                    facecolor=face,
-                    edgecolor="k",
-                    linewidth=0.2,
-                )
-                ax.add_patch(hex_patch)
-
-        # overlay river points
-        xs, ys = [], []
-        for seg in self.rivers:
-            xs.append(side * 1.5 * seg.x)  # type: ignore
-            ys.append(height * (seg.y + 0.5 * (seg.x % 2)))  # type: ignore
-        ax.scatter(xs, ys, c="b", s=10)  # type: ignore
-
-        ax.set_aspect("equal")
-        ax.axis("off")
-        plt.savefig(f"debugging/river_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png")  # type: ignore

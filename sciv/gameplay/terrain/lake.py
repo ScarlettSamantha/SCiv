@@ -1,10 +1,9 @@
 from typing import Any
 
+from gameplay.bits import Bit, Bits
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
 from managers.i18n import T_TranslationOrStrOrNone, t_
-
-from gameplay.bits import Bit, Bits
 
 
 class Lake(BaseTerrain):
@@ -27,7 +26,7 @@ class Lake(BaseTerrain):
         lake_plants_b = Bit(model="water_plants_2.glb", scale=1.0, offset=(0, 0, 0))
         lake_plants_c = Bit(model="water_plants_3.glb", scale=1.0, offset=(0, 0, 0))
 
-        self.bits.empty_probability = 0.45
+        self.bits.empty_probability = 0.65
 
         self.bits.add_group("lake_plants").add_bit(lake_plants_a)
         self.bits.mode = self.bits.mode.OR
