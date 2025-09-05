@@ -1799,6 +1799,10 @@
             "name": "Chemicals",
             "description": "Substances used in or produced by chemical processes."
           },
+          "silk": {
+            "name": "Silk",
+            "description": "A natural fiber produced by silkworms, used in textiles."
+          },
           "pearls": {
             "name": "Pearls",
             "description": "Precious gems formed within the shells of certain mollusks."

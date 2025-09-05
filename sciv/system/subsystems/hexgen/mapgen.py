@@ -1,12 +1,13 @@
 import datetime
 import random
 import sys
-from typing import Any, Dict, List, Set, Tuple
-from matplotlib.patches import RegularPolygon
-import numpy as np
+from itertools import count
+from typing import Any, Deque, Dict, List, Set, Tuple
+
 import matplotlib.pyplot as plt
+import numpy as np
 from helpers.debug import Debug as DebugHelper
-from system.subsystems.hexgen.hex import Hex
+from matplotlib.patches import RegularPolygon
 from system.subsystems.hexgen.enums import (
     GeoformType,
     HexFeature,
@@ -16,7 +17,7 @@ from system.subsystems.hexgen.enums import (
 from system.subsystems.hexgen.geoform import Geoform
 from system.subsystems.hexgen.grid import Grid
 from system.subsystems.hexgen.heightmap import Heightmap
-from system.subsystems.hexgen.hex import HexSide
+from system.subsystems.hexgen.hex import Hex, HexSide
 from system.subsystems.hexgen.river import RiverSegment
 from system.subsystems.hexgen.territory import Territory
 from system.subsystems.hexgen.util import (
@@ -54,6 +55,23 @@ default_params: Dict[str, Any] = {
     "num_territories": 0,
 }
 
+default_params.update(
+    {
+        # climate knobs
+        "climate_enable": True,
+        "desert_target_ratio": 0.12,  # 12% of *hot* land tends to desert
+        "steppe_target_ratio": 0.10,  # ~10% becomes steppe/scrub
+        "wind_dir": "west",  # prevailing wind for orographic pass
+        "hadley_strength": 0.8,  # 0..1, equator-wet / 30° dry belts
+        "coast_decay": 3.0,  # tiles to halve coastal moisture
+        "rain_shadow_strength": 1.6,  # >1 strengthens lee-side drying
+        "lapse_rate_c_per_km": 6.5,  # °C per km
+        "max_elev_m": 4000,  # mapping of altitude 255 → meters
+        "equator_temp": 28.0,  # °C at sea level
+        "pole_temp": -12.0,  # °C at sea level
+    }
+)
+
 
 class MapGen:
     """generates a heightmap as an array of integers between 1 and 255
@@ -63,6 +81,7 @@ class MapGen:
         """initialize"""
         self.params: Dict[str, Any] = default_params
         self.params.update(params)
+        self._seed_rngs()
 
         self.debug = DebugHelper.world_generation()
 
@@ -198,20 +217,29 @@ class MapGen:
                         i.altitude = center_hex.altitude - 20
                         i.altitude = max(i.altitude, np.float64(0))
 
+    def _local_ruggedness(self, h: "Hex") -> float:
+        # mean absolute altitude difference to neighbors
+        diffs = [abs(float(h.altitude) - float(n.altitude)) for _, n in h.neighbors]
+        return sum(diffs) / max(1, len(diffs))
+
     def generate_volcanoes(self):
         num_volcanoes: int = int(self.params.get("num_volcanoes", 1))
         if self.debug:
             print("Making {} volcanoes".format(num_volcanoes))
         volcanoes: List[Dict[str, Any]] = []
         size: int = int(self.params.get("volcano_area_size", 1))
-        while len(volcanoes) < num_volcanoes:
+
+        # In generate_volcanoes(), replace the center_hex selection loop with:
+        tries = 0
+        while len(volcanoes) < num_volcanoes and tries < num_volcanoes * 20:
+            tries += 1
             center_hex: Hex = random.choice(self.hex_grid.hexes)
-            neigh_tiles: List[Hex] | Hex = center_hex.bubble(distance=5)
-            if neigh_tiles:
-                for nh in neigh_tiles:
-                    if nh.has_feature(HexFeature.volcano) or nh.is_water:
-                        continue
-            if center_hex.altitude < 50:
+            if center_hex.is_water or float(center_hex.altitude) < 50:
+                continue
+            if any(nh.has_feature(HexFeature.volcano) or nh.is_water for nh in center_hex.bubble(distance=5) or []):
+                continue
+            # prefer rugged areas
+            if self._local_ruggedness(center_hex) < 8.0:
                 continue
             extra_height = random.randint(75, 150)
             volcanoes.append(dict(hex=center_hex, size=size, height=extra_height))
@@ -338,160 +366,145 @@ class MapGen:
         for t in self.territories:
             t.find_groups()
 
-    def _get_distances(self):
-        """
-        Gets the distances each land pixel is to the coastline.
-        TODO: Make this more efficient
-        """
-
+    def _get_distances(self) -> None:
         if not self.params.get("hydrosphere"):
-            # we don't care about distances otherwise
             return
 
-        for y, row in enumerate(self.hex_grid.grid):
-            for x, _ in enumerate(row):
-                h = self.hex_grid.grid[x][y]
-                if h.is_land:
-                    count = 1
-                    numbers: List[int] = []
+        from collections import deque
 
-                    east = h.hex_east
-                    while east.is_land is True and count < self.hex_grid.size * 2:
-                        east = east.hex_east
-                        count += 1
-                    numbers.append(count)
-                    count = 1
+        grid: np.ndarray[Any, Any] = self.hex_grid.grid
 
-                    west = h.hex_west
-                    while west.is_land is True and count < self.hex_grid.size * 2:
-                        west = west.hex_west
-                        count += 1
-                    numbers.append(count)
-                    count = 1
+        if hasattr(grid, "shape"):
+            cols = int(grid.shape[0])
+            rows = int(grid.shape[1]) if cols else 0
+        else:
+            cols = len(grid)
+            rows = len(grid[0]) if cols else 0
 
-                    north_east = h.hex_north_east
-                    while north_east.is_land is True and count < self.hex_grid.size * 2:
-                        north_east = north_east.hex_north_east
-                        count += 1
-                    numbers.append(count)
-                    count = 1
+        if cols == 0 or rows == 0:
+            return
 
-                    north_west = h.hex_north_west
-                    while north_west.is_land is True and count < self.hex_grid.size * 2:
-                        north_west = north_west.hex_north_west
-                        count += 1
+        BIG = 10**9
+        for x in range(cols):
+            for y in range(rows):
+                h = grid[x][y]
+                h.distance = BIG
 
-                    numbers.append(count)
-                    count = 1
+        q: Deque[Any] = deque()
+        for x in range(cols):
+            for y in range(rows):
+                h = grid[x][y]
+                if not h.is_land:
+                    continue
+                if any(n.is_water for _, n in h.neighbors):
+                    h.distance = 0
+                    q.append(h)
 
-                    south_west = h.hex_south_west
-                    while south_west.is_land is True and count < self.hex_grid.size * 2:
-                        south_west = south_west.hex_south_west
-                        count += 1
-                    numbers.append(count)
-                    count = 1
+        while q:
+            cur = q.popleft()
+            cd = cur.distance
+            for _, n in cur.neighbors:
+                if n.is_land and n.distance > cd + 1:
+                    n.distance = cd + 1
+                    q.append(n)
 
-                    south_east = h.hex_south_east
-                    while south_east.is_land is True and count < self.hex_grid.size * 2:
-                        south_east = south_east.hex_south_east
-                        count += 1
-                    numbers.append(count)
+    def _seed_rngs(self) -> None:
+        seed = self.params.get("random_seed")
+        if isinstance(seed, int):
+            try:
+                import numpy as _np
 
-                    h.distance = min(numbers)
+                _np.random.seed(seed % 2**32)
+            except Exception:
+                pass
+            random.seed(seed)
 
     def _generate_rivers(self) -> None:
-        """
-        Generate rivers so they always end in sea or lake, or connect to each other:
-        - pick N random high-altitude inland sources
-        - follow the steepest downslope at each step
-        - if next tile is sea (h.is_sea) or lake (h.is_lake), mark & stop
-        - if another river ends within 2 tiles, connect to that river
-        - if you get stuck on a plateau, spawn a lake there
-        """
-        num_rivers = self.params.get("num_rivers", 0)
-        if self.debug:
-            print(f"Making {num_rivers} rivers")
-
-        # 1) pick all valid sources once
-        candidates = [
-            h for row in self.hex_grid.grid for h in row if h.is_inland and h.altitude > self.hex_grid.sealevel + 35
-        ]
-        if not candidates:
-            if self.debug:
-                print("No valid river sources found.")
+        num_rivers = int(self.params.get("num_rivers", 0))
+        if num_rivers <= 0:
+            self.rivers = []
+            self.rivers_sources = []
             return
 
-        sources = random.sample(candidates, min(num_rivers, len(candidates)))
-        self.rivers_sources = [
-            RiverSegment(self.hex_grid, h.x, h.y, random.choice(list(HexSide)), True) for h in sources
-        ]
+        if self.debug:
+            print(f"Making {num_rivers} rivers (drainage-based)")
 
-        # 2) grow each river
+        filled_alt: Dict[Any, Any] = self._priority_flood_filled_alt()
+        flow_dir = self._compute_flow_dir(filled_alt)
+        acc = self._flow_accumulation(flow_dir)
+
+        # Candidate seeds: inland, above sealevel + margin, and with strong accumulation
+        margin = max(10.0, (self.hex_grid.sealevel if hasattr(self.hex_grid, "sealevel") else 0) + 10.0)
+        candidates = [h for h in self.hex_grid.hexes if h.is_inland and float(h.altitude) > margin]
+        candidates.sort(key=lambda h: (acc.get(h, 0.0), float(h.altitude)), reverse=True)
+        sources = candidates[: min(num_rivers, len(candidates))]
+
         self.rivers.clear()
-        for src in self.rivers_sources:
-            seg = src
+        self.rivers_sources = []
+
+        for src_hex in sources:
+            dn = flow_dir.get(src_hex)
+            if dn is None:
+                continue
+            first_side = src_hex.get_side_to(dn)
+            if first_side is None:
+                continue
+
+            head = RiverSegment(self.hex_grid, src_hex.x, src_hex.y, first_side, True)  # type: ignore
+            self.rivers_sources.append(head)
+
+            cur_hex = src_hex
+            cur_seg = head
+            visited_chain = {cur_hex}
+
             while True:
-                down = seg.edge.down
-
-                # ------------- river connection step -------------
-                nearby = self._find_nearby_river_end(down, radius=2)
-                if nearby:
-                    path = self.hex_grid.straight_line_path((down.x, down.y), (nearby.x, nearby.y))
-                    for px, py in path[1:]:  # [1:] skips the current hex
-                        h = self.hex_grid.get(px, py)
-                        if not h:
-                            break
-                        prev_hex = seg.edge.down
-                        side = prev_hex.get_side_to(h)  # type: ignore
-                        if side is not None:
-                            edge = prev_hex.get_edge(side)  # type: ignore
-                            if edge is None:
-                                break
-                            edge.is_river = True
-                            seg.next = RiverSegment(self.hex_grid, px, py, side, False)  # type: ignore
-                            seg = seg.next
-                    # Mark the final segment as river too
-                    seg.edge.is_river = True
-                    break  # Connected, so end river here
-
-                # stop if we've hit sea or lake
-                if getattr(down, "is_sea", False) or getattr(down, "is_lake", False):
-                    seg.edge.is_river = True
+                dn = flow_dir.get(cur_hex)
+                if dn is None:
                     break
 
-                # plateau → spawn a lake and stop
-                nbrs = [(s, down.get_edge(s)) for s in HexSide]
-                nbrs = [(s, e) for s, e in nbrs if e and e.down.altitude < down.altitude]
-                if not nbrs:
-                    down.add_feature(HexFeature.lake)
-                    seg.edge.is_river = True
+                side_to_dn = cur_hex.get_side_to(dn)
+                if side_to_dn is None:
                     break
 
-                # pick steepest next edge
-                next_side, next_edge = min(nbrs, key=lambda se: se[1].down.altitude)
-
-                # if next hex is water (but not necessarily lake) treat as sea end
-                nxt = next_edge.down
-                if getattr(nxt, "is_sea", False) or getattr(nxt, "is_lake", False):
-                    next_edge.is_river = True
+                edge = cur_hex.get_edge(side_to_dn)  # type: ignore
+                if edge is None:
                     break
 
-                # otherwise advance
-                seg.next = RiverSegment(self.hex_grid, next_edge.one.x, next_edge.one.y, next_side, False)
-                seg = seg.next
+                already_river = edge.is_river
 
-            # collect & mark whole chain
-            s2 = src
-            while s2:
-                s2.edge.is_river = True
-                self.rivers.append(s2)
-                s2 = s2.next
+                edge.is_river = True
+                cur_seg.side = side_to_dn  # type: ignore
+
+                if already_river:
+                    break
+
+                if dn in visited_chain:
+                    break
+                visited_chain.add(dn)
+
+                nxt = RiverSegment(self.hex_grid, dn.x, dn.y, side_to_dn, False)  # type: ignore
+                cur_seg.next = nxt
+                cur_seg = nxt
+                cur_hex = dn
+
+            s = head
+            while s:
+                self.rivers.append(s)
+                s = s.next
+
+        for seg in self.rivers:
+            h = self.hex_grid.get(seg.x, seg.y)
+            if not h or not h.is_land:
+                continue
+            h.moisture += 2
+            for _, nhex in h.neighbors:
+                if nhex.is_land:
+                    nhex.moisture += 1
+                for _, n2 in nhex.neighbors:
+                    if n2.is_land:
+                        n2.moisture += 0.5
 
     def _find_nearby_river_end(self, hex: "Hex", radius: int = 2):
-        """
-        Find a river segment in self.rivers that is an END (no .next)
-        and is within 'radius' tiles of hex h. Returns the hex to connect to, or None.
-        """
         for other in self.rivers:
             if other.next is not None:
                 continue
@@ -500,54 +513,121 @@ class MapGen:
                 return other.edge.down
         return None
 
+    def _compute_flow_dir(self, filled_alt: Dict[Any, Any]) -> Dict[Any, Any]:
+        flow_dir: Dict[Any, Any] = {}
+        for h in self.hex_grid.hexes:
+            if h.is_water:
+                flow_dir[h] = None
+                continue
+            best = None
+            best_alt = float(filled_alt[h])
+            for _, n in h.neighbors:
+                fa = float(filled_alt.get(n, n.altitude))
+                if fa < best_alt:
+                    best_alt = fa
+                    best = n
+            flow_dir[h] = best
+        return flow_dir
+
+    def _flow_accumulation(self, flow_dir: Dict[Any, Any]) -> Dict["Hex", float]:
+        ordered: List[Hex] = sorted(
+            (h for h in self.hex_grid.hexes if not h.is_water),
+            key=lambda h: float(h.altitude),
+            reverse=True,
+        )
+        acc: Dict["Hex", float] = {h: 1.0 for h in ordered}
+        for h in ordered:
+            d = flow_dir[h]
+            if d is not None:
+                acc[d] = acc.get(d, 1.0) + acc[h]
+        return acc
+
+    def _priority_flood_filled_alt(self) -> Dict[Any, Any]:
+        import heapq
+        import itertools
+
+        grid = self.hex_grid.grid
+        if hasattr(grid, "shape"):
+            cols = int(grid.shape[0])
+            rows = int(grid.shape[1]) if cols else 0
+        else:
+            cols = len(grid)
+            rows = len(grid[0]) if cols else 0
+        if cols == 0 or rows == 0:
+            return {}
+
+        filled_alt: Dict["Hex", float] = {}
+        in_queue: Set["Hex"] = set()
+        pq: list[tuple[float, int, object]] = []  # (alt, tie, Hex)
+        tie: count[int] = itertools.count()
+
+        def push(h: "Hex", alt: float) -> None:
+            if h in in_queue:
+                return
+            in_queue.add(h)
+            heapq.heappush(pq, (float(alt), next(tie), h))
+
+        for x in range(cols):
+            for y in range(rows):
+                h = grid[x][y]
+                if h.is_water:
+                    push(h, float(h.altitude))
+                elif x == 0 or y == 0 or x == cols - 1 or y == rows - 1:
+                    push(h, float(h.altitude))
+
+        eps = 1e-3
+
+        while pq:
+            alt, _, h = heapq.heappop(pq)  # type: ignore
+            h: "Hex"
+            if h in filled_alt:
+                continue
+            filled_alt[h] = alt
+            for _, n in h.neighbors:
+                if n in filled_alt:
+                    continue
+                n_alt = float(n.altitude)
+                push(n, max(n_alt, alt + eps))
+
+        return filled_alt
+
     def _detect_lakes(self) -> None:
-        """
-        Detects all lakes by finding clusters of connected water tiles
-        that are fully surrounded by land (not connected to the map edge).
-        Marks those clusters with HexFeature.lake.
-        """
-        from system.subsystems.hexgen.hex import Hex
-        from gameplay.repositories.tile import TileRepository
+        from collections import deque
 
-        visited: Set[Hex] = set()
-        size_x = len(self.hex_grid.grid)
-        size_y = len(self.hex_grid.grid[0]) if size_x > 0 else 0
+        grid = self.hex_grid.grid
+        size_x = len(grid)
+        size_y = len(grid[0]) if size_x else 0
+        if size_x == 0:
+            return
 
-        # Helper to determine if a cluster touches the map edge
-        def touches_edge(hexes: Set[Hex]) -> bool:
-            for h in hexes:
-                if h.x == 0 or h.y == 0 or h.x == size_x - 1 or h.y == size_y - 1:
-                    return True
-            return False
+        visited: Set["Hex"] = set()
 
-        # Scan all tiles in the map
         for x in range(size_x):
             for y in range(size_y):
-                hex = self.hex_grid.grid[x][y]
-                # Only process unvisited water tiles
-                if hex in visited or not hex.is_water:
+                h0 = grid[x][y]
+                if not h0.is_water or h0 in visited:
                     continue
 
-                grid_dict = {
-                    (x, y): self.hex_grid.grid[x][y]
-                    for x in range(len(self.hex_grid.grid))
-                    for y in range(len(self.hex_grid.grid[0]))
-                }
-                lakes, visited = TileRepository.flood_fill(hex, grid_dict, lambda t: t.is_water, visited)
+                comp: Set[Any] = set()
+                q: Deque[Any] = deque([h0])
+                visited.add(h0)
+                touch = False
 
-                if not lakes:
-                    continue
+                while q:
+                    h = q.popleft()
+                    comp.add(h)
+                    if h.x == 0 or h.y == 0 or h.x == size_x - 1 or h.y == size_y - 1:
+                        touch = True
+                    for _, n in h.neighbors:
+                        if n.is_water and n not in visited:
+                            visited.add(n)
+                            q.append(n)
 
-                # Only mark as a lake if not touching the map edge
-                if not touches_edge(lakes):
-                    for hex in lakes:
-                        hex.add_feature(HexFeature.lake)
+                if not touch:
+                    for h in comp:
+                        h.add_feature(HexFeature.lake)
                     if self.debug:
-                        print(f"Lake detected at {[(hex.x, hex.y) for hex in lakes]} (size: {len(lakes)})")
-                # else: it's part of sea/ocean
-
-        if self.debug:
-            print("Lake detection complete.")
+                        print(f"Lake detected: size={len(comp)}")
 
     def _determine_landforms(self):
         with Timer("Finding geographic features", self.debug):

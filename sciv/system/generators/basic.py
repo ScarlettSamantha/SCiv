@@ -53,7 +53,7 @@ class Basic(BaseGenerator):
             "year_length": 365,
             "day_length": 24,
             "base_temp": 0,
-            "avg_temp": 14,  # 8 is cold 10 is average, 14 is decent, 18 is hot, 22 is very hot
+            "avg_temp": 12,  # 8 is cold 10 is average, 14 is decent, 18 is hot, 22 is very hot
             "sea_percent": 40,
             "hydrosphere": True,
             "ocean_type": [OceanType.water],
@@ -128,11 +128,8 @@ class Basic(BaseGenerator):
         self.instantiate_tiles()
         end_inst = datetime.now()
 
-        # Step 3b: Give tiles model metadata so the renderer can pick correct models
-        # (reads from tile classes when available; falls back to a default)
         self._assign_tile_models()
 
-        # Step 4: Render tiles as 3D models using TileModelGrid (RBC batching)
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Placing terrain models..."])
         start_models = datetime.now()
 
@@ -145,15 +142,14 @@ class Basic(BaseGenerator):
             rows=self.config.height,
             default_model_path="assets/models/terrain/flat_grassland.glb",
         )
+
         self.model_grid.attach_to_render()
         self.model_grid.collect()
 
-        # Keep compatibility for systems still probing game.mesh_grid
         g = game.Game.get_singleton_instance()
         g.model_grid = self.model_grid  # type: ignore[attr-defined]
         g.mesh_grid = self.model_grid  # type: ignore[attr-defined]
 
-        # Keep gameplay tile bookkeeping
         for tile in hexes:
             tile.recalculate_grid_position(1)
 
@@ -161,7 +157,6 @@ class Basic(BaseGenerator):
 
         end_models = datetime.now()
 
-        # Step 5: Allocate resources and place units
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Allocating resources..."])
         start_res = datetime.now()
         self.resource_allocator = ResourceAllocator(self.world.grid, self.get_all_resources())
@@ -173,7 +168,6 @@ class Basic(BaseGenerator):
         self.place_starting_units()
         end_units = datetime.now()
 
-        # Record timing stats
         self.world_generation_stats["durations"] = {
             "hexgen": round((end_hexgen_time - start_time).total_seconds() * 1000, 2),
             "conversion": round((end_conversion - start_conversion).total_seconds() * 1000, 2),
@@ -199,16 +193,32 @@ class Basic(BaseGenerator):
         return True
 
     def classify_terrain(self, hex_tile: "Hex") -> str:
-        biome_id: int = hex_tile.biome.id  # type: ignore
-        geoform_id: int = hex_tile.geoform_type.id  # type: ignore
-        hex_temp: int = int(hex_tile.temperature[0])  # type: ignore
-        hex_alt: int = int(hex_tile.altitude)  # type: ignore
-        moisture: float = hex_tile.moisture  # type: ignore
+        biome_id: int = int(
+            getattr(hex_tile, "biome_id", getattr(getattr(hex_tile, "biome", None), "id", WorldParams.grasslands))
+        )
+        if hasattr(hex_tile, "temp_c"):
+            hex_temp = float(hex_tile.temperature)  # type: ignore
+        elif (
+            hasattr(hex_tile, "temperature")
+            and isinstance(hex_tile.temperature, (list, tuple))  # type: ignore
+            and hex_tile.temperature
+        ):
+            hex_temp = float(hex_tile.temperature[0])
 
-        if HexFeature.volcano in hex_tile.features:  # if we dont have flow its just the area around it.
+        elif hasattr(hex_tile, "base_temperature"):
+            hex_temp = float(hex_tile.base_temperature[0])
+        else:
+            hex_temp = 12.0
+        hex_temp_i = int(round(hex_temp))
+
+        moisture_like = float(hex_tile.moisture)
+
+        geoform_id: int = int(getattr(getattr(hex_tile, "geoform_type", None), "id", 0))
+        hex_alt: int = int(hex_tile.altitude)
+
+        if HexFeature.volcano in hex_tile.features:
             return "Volcano"
 
-        # Water check
         if hex_tile.is_water:
             if geoform_id == 4 or HexFeature.lake in hex_tile.features:
                 return "Lake"
@@ -216,122 +226,99 @@ class Basic(BaseGenerator):
                 return "Coast"
             elif geoform_id == 2:
                 return "Sea"
-            elif biome_id in (WorldParams.tundra,) or hex_tile.temperature[0] < -1:
+            elif biome_id in (WorldParams.tundra,) or hex_temp < -1:
                 return "SeaIce"
             else:
                 return "Sea"
-        elif hex_tile.is_land:
-            # Its land
 
-            # Check for mountains
-            if hex_tile.altitude > WorldParams.hills_to_mountains_threshold:
-                if hex_temp < -2:
-                    return "MountainSnow"
-                else:
-                    return "Mountain"
-            # Check for hills
+        if hex_tile.altitude > WorldParams.hills_to_mountains_threshold:
+            return "MountainSnow" if hex_temp_i < -2 else "Mountain"
+
+        if hex_alt > WorldParams.flat_to_hills_threshold:
+            if biome_id not in (WorldParams.scrubland, WorldParams.savanna, WorldParams.desert) and hex_temp_i < 0:
+                return "HillsSnow"
+            elif biome_id in (WorldParams.savanna, WorldParams.desert):
+                return "HillsDesert"
+            elif (
+                biome_id in (WorldParams.grasslands, WorldParams.scrubland)
+                and WorldParams.forest_lower_threshold <= hex_temp <= WorldParams.grass_temperature_upper_threshold
+                and moisture_like < WorldParams.forest_lower_threshold
+            ):
+                return "HillsGrassland"
+            elif biome_id in (
+                WorldParams.grasslands,
+                WorldParams.tropical_forest,
+                WorldParams.temperate_rainforest,
+                WorldParams.temperate_forest,
+                WorldParams.boreal_forest,
+                WorldParams.scrubland,
+            ):
+                return "HillsForest"
+            elif hex_temp < WorldParams.forest_lower_threshold and biome_id not in (
+                WorldParams.scrubland,
+                WorldParams.savanna,
+                WorldParams.desert,
+            ):
+                return "HillsTundra"
+
+        if biome_id == WorldParams.desert and hex_temp > WorldParams.desert_temperature_threshold:
+            return "FlatDesert"
+
+        if (
+            biome_id in (WorldParams.grasslands, WorldParams.tropical_forest)
+            and moisture_like > WorldParams.moisture_threshold_mangrove_jungle
+        ):
+            return "FlatJungle"
+
+        if biome_id in (WorldParams.tropical_forest,) and hex_temp < WorldParams.light_jungle_temperature_threshold:
+            return "FlatLightJungle"
+
+        if (
+            biome_id in (WorldParams.savanna, WorldParams.desert)
+            and hex_temp <= WorldParams.desert_temperature_threshold
+        ) or (
+            biome_id in (WorldParams.grasslands,)
+            and WorldParams.grass_temperature_lower_threshold < hex_temp < WorldParams.grass_temperature_upper_threshold
+            and moisture_like < WorldParams.forest_lower_threshold
+        ):
+            return "FlatGrass"
+
+        if biome_id in (
+            WorldParams.tropical_forest,
+            WorldParams.temperate_rainforest,
+            WorldParams.temperate_forest,
+            WorldParams.boreal_forest,
+        ):
+            if hex_temp < WorldParams.cold_forrest_temperature_threshold:
+                return "FlatPineForest"
+            elif moisture_like < WorldParams.moisture_threshold_heavy_forest - 1:
+                return "FlatForest"
             else:
-                if int(hex_alt) > WorldParams.flat_to_hills_threshold:
-                    if (
-                        biome_id
-                        not in (
-                            WorldParams.scrubland,
-                            WorldParams.savanna,
-                            WorldParams.desert,
-                        )
-                        and hex_temp < 0
-                    ):
-                        return "HillsSnow"
-                    elif biome_id in (WorldParams.savanna, WorldParams.desert):
-                        return "HillsDesert"
-                    elif (
-                        biome_id
-                        in (
-                            WorldParams.grasslands,
-                            WorldParams.scrubland,
-                        )
-                        and hex_temp >= WorldParams.forest_lower_threshold
-                        and hex_temp <= WorldParams.grass_temperature_upper_threshold
-                        and hex_tile.moisture < WorldParams.forest_lower_threshold
-                    ):
-                        return "HillsGrassland"
-                    elif biome_id in (
-                        WorldParams.grasslands,
-                        WorldParams.tropical_forest,
-                        WorldParams.temperate_rainforest,
-                        WorldParams.temperate_forest,
-                        WorldParams.boreal_forest,
-                        WorldParams.scrubland,
-                    ):
-                        return "HillsForest"
-                    elif hex_temp < WorldParams.forest_lower_threshold and biome_id not in (
-                        WorldParams.scrubland,
-                        WorldParams.savanna,
-                        WorldParams.desert,
-                    ):
-                        return "HillsTundra"
+                return "FlatHeavyForest"
 
-                else:
-                    if biome_id in (WorldParams.desert,) and hex_temp > WorldParams.desert_temperature_threshold:
-                        return "FlatDesert"
-                    elif (
-                        biome_id in (WorldParams.grasslands, WorldParams.tropical_forest)
-                        and hex_tile.moisture > WorldParams.moisture_threshold_mangrove_jungle
-                    ):
-                        return "FlatJungle"
-                    elif (
-                        biome_id in (WorldParams.tropical_forest,)
-                        and hex_temp < WorldParams.light_jungle_temperature_threshold
-                    ):
-                        return "FlatLightJungle"
+        if biome_id == WorldParams.savanna:
+            return "FlatSavanna"
 
-                    elif (
-                        biome_id in (WorldParams.savanna, WorldParams.desert)
-                        and hex_temp <= WorldParams.desert_temperature_threshold
-                    ) or (
-                        biome_id in (WorldParams.grasslands,)
-                        and hex_temp > WorldParams.grass_temperature_lower_threshold
-                        and hex_temp < WorldParams.grass_temperature_upper_threshold
-                        and hex_tile.moisture < WorldParams.forest_lower_threshold
-                    ):
-                        return "FlatGrass"
-                    elif biome_id in (
-                        WorldParams.tropical_forest,
-                        WorldParams.temperate_rainforest,
-                        WorldParams.temperate_forest,
-                        WorldParams.boreal_forest,
-                    ):
-                        if hex_temp < WorldParams.cold_forrest_temperature_threshold:
-                            return "FlatPineForest"
-                        elif moisture < WorldParams.moisture_threshold_heavy_forest - 1:
-                            return "FlatForest"
-                        else:
-                            return "FlatHeavyForest"
-                    elif biome_id in (WorldParams.savanna,):  # Savanna
-                        return "FlatSavanna"
-                    elif biome_id in (
-                        WorldParams.tropical_rainforest,
-                    ):  # Fake tile type: Jungle not (Tropical Rainforest)
-                        pass
-                        # return "FlatJungle"
-                        return "FlatForest"
-                    elif biome_id in (WorldParams.scrubland,):
-                        return "FlatScrubland"
-                    elif biome_id in (WorldParams.arctic,):
-                        return "FlatIce"
-                    elif biome_id in (WorldParams.tundra, WorldParams.alpine_tundra):
-                        if hex_temp < -0:
-                            return "FlatTundraSnow"
-                        else:
-                            if hex_temp > WorldParams.grass_temperature_lower_threshold:
-                                return choice(("FlatTundra", "FlatForest"))
-                    elif biome_id in (13,):
-                        return "FlatWasteland"
-                    return choice(("FlatForest", "FlatGrass"))
+        if biome_id == WorldParams.tropical_rainforest:
+            return "FlatForest"
 
-        raise ValueError(
-            f"Terrain not found for hex_tile: {hex_tile}|{hex_tile.biome}[{biome_id}]|{hex_tile.geoform_type}|{int(hex_tile.temperature[0])}|{hex_tile.altitude}"
-        )
+        if biome_id == WorldParams.scrubland:
+            return "FlatScrubland"
+
+        if biome_id == WorldParams.arctic:
+            return "FlatIce"
+
+        if biome_id in (WorldParams.tundra, WorldParams.alpine_tundra):
+            if hex_temp < 0:
+                return "FlatTundraSnow"
+            else:
+                if hex_temp > WorldParams.grass_temperature_lower_threshold:
+                    return choice(("FlatTundra", "FlatForest"))
+
+        if biome_id == 13:
+            return "FlatWasteland"
+
+        return choice(("FlatForest", "FlatGrass"))
 
     def instantiate_tiles(self):
         """Creates Tile objects and places them on the grid."""

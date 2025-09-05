@@ -35,10 +35,12 @@ class Hex:
         self.edge_north_west = None
         self.edge_south_west = None
 
+        self.princep_u = 0.0
+
         self.gameplay_resource: Optional[Type[BaseResource]] = None
 
         self.distance = 0  # distance in hexes to the coast. 0 if no coast
-        self.moisture = 0
+        self.moisture = 0.0
 
         self.territory: Optional[Territory] = None
         self.marked = False  # marked by the grouping algorithm

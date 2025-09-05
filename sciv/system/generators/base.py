@@ -39,10 +39,10 @@ class WorldParams:
         tropical_rainforest,  # id 12 | 'R' | 'Tropical Rainforest'
     ) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
 
-    desert_temperature_threshold = 20
+    desert_temperature_threshold = 15
     grass_temperature_upper_threshold = 30
     grass_temperature_lower_threshold = 10
-    forest_lower_threshold = 1.5
+    forest_lower_threshold = 2.0
     moisture_threshold_mangrove_jungle = 12
     moisture_threshold_heavy_forest = 8
     light_jungle_temperature_threshold = 25
