@@ -180,7 +180,7 @@ class Tile(BaseEntity):
             "nw": None,
         }
 
-        self.z_scale = 1.75
+        self.z_scale = 1.5
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.destroyed = False
         self.is_water = False

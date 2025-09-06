@@ -1,6 +1,7 @@
 import random
 from typing import Any
 
+from gameplay.bits import Bit
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
 
@@ -9,7 +10,7 @@ class MountainSnow(BaseTerrain):
     _name = t_("world.terrain.mountain_snow")
     _fallback_color = (255, 255, 255)
     can_spawn_resources = False
-    _model = "assets/models/terrain/mountain_snow.glb"
+    _model = "assets/models/terrain/flat_snow.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -27,3 +28,9 @@ class MountainSnow(BaseTerrain):
 
     def model(self) -> T_TranslationOrStr:
         return str(self._model)
+
+    def register_bits(self) -> None:
+        mountain = Bit(
+            "mountain_snow.glb", scale=1.30, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0)
+        )
+        self.bits.add_bit(mountain)

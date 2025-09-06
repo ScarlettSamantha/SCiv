@@ -1,5 +1,6 @@
 from typing import Any
 
+from gameplay.bits import Bit
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import t_
 
@@ -7,6 +8,7 @@ from managers.i18n import t_
 class Mountain(BaseTerrain):
     _name = t_("world.terrain.mountain")
     _fallback_color = 112, 83, 15
+    model_pos_z_offset = -0.0
     can_spawn_resources = False
     _model = "assets/models/terrain/mountain.glb"
 
@@ -19,3 +21,9 @@ class Mountain(BaseTerrain):
         self.passable: bool = False
         self.passable_without_tech: bool = False
         self._texture = "mountain_dirt.png"
+
+    def register_bits(self) -> None:
+        mountain = Bit(
+            "mountain.glb", scale=1.30, preferred_slot="center", offset=(0.0, 0.0, -0.00), hpr=(45.0, 0.0, 0.0)
+        )
+        self.bits.add_bit(mountain)

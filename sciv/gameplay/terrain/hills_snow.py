@@ -5,6 +5,8 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
 from managers.i18n import t_
 
+from gameplay.bits import Bit
+
 
 class HillsSnow(BaseTerrain):
     _name = t_("world.terrain.hills_snow")
@@ -21,3 +23,7 @@ class HillsSnow(BaseTerrain):
 
         self.tile_yield_base = Yields(production=1)
         self._texture = "hills_snow.png"
+
+    def register_bits(self) -> None:
+        hill = Bit("snow_hill.glb", scale=1.32, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0))
+        self.bits.add_bit(hill)

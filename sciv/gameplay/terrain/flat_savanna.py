@@ -9,6 +9,7 @@ class FlatSavanna(BaseTerrain):
     _name = t_("world.terrain.flatland_savanna")
     movement_modifier = 0.5
     water_availability = 0
+    model_pos_z_offset = -0.40
     _fallback_color = Colors.t4f_to_t3(Colors.YELLOW)
     _model = "assets/models/terrain/savanna.glb"
 

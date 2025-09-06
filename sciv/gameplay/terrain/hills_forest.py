@@ -1,5 +1,6 @@
 from typing import Any
 
+from gameplay.bits import Bit
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -21,14 +22,7 @@ class HillsForest(BaseTerrain):
         self._texture = "hills_forest.png"
 
     def register_bits(self) -> None:
-        # self.bits.add_bit(
-        #     Bit(
-        #         model="hill_grass_tree_rock.glb",
-        #         scale=0.45,
-        #         preferred_slot="center",
-        #         allow_auto_scale=False,
-        #         blocks_resource_model_spawning=True,
-        #         offset=(0, 0, -0.3),
-        #     )
-        # )
-        return super().register_bits()
+        hill = Bit(
+            "forest_hill.glb", scale=1.30, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0)
+        )
+        self.bits.add_bit(hill)

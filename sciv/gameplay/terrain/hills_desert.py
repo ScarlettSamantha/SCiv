@@ -11,6 +11,7 @@ class HillsDesert(BaseTerrain):
     water_availability = 0.25
     _fallback_color = (255, 226, 128)
     _model = "assets/models/terrain/hill_desert.glb"
+    model_pos_z_offset = -0.4
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
