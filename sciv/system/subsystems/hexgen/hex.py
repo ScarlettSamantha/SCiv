@@ -36,6 +36,8 @@ class Hex:
         self.edge_south_west = None
 
         self.princep_u = 0.0
+        self.terrain: str = ""
+        self.render_pos: Optional[Tuple[float, float]] = (0.0, 0.0)
 
         self.gameplay_resource: Optional[Type[BaseResource]] = None
 

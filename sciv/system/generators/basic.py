@@ -35,9 +35,7 @@ class Basic(BaseGenerator):
         self.seed: Optional[int] = config.seed if config.seed is not None else None
         self.generate_seed = self.seed is None
 
-        # Load tile definitions
         self.tiles_dict: Dict[str, Type[Tile]] = self.load_tiles()
-        self.grid: Dict[Tuple[int, int], Tile] = {}
         self.map: Dict[str, Tile] = self.world.map
 
         self.model_grid: Optional[TileModelGrid] = None
@@ -62,13 +60,11 @@ class Basic(BaseGenerator):
             "height_range": (0, 240),
             "pressure": 1,  # bar
             "axial_tilt": 18,
-            # features
             "craters": True,
             "volcanoes": True,
             "volcano_area_size": 1,
             "num_volcanoes": max(1, self.number_of_tiles // 1500),
             "num_rivers": self.number_of_tiles // 100,
-            # territories
             "num_territories": self.number_of_tiles // 100,
         }
 
@@ -86,7 +82,6 @@ class Basic(BaseGenerator):
         from gameplay.tile import Tile
 
         classes = PyLoad.load_classes("gameplay/tiles", base_classes=Tile)
-        # Remove the base class from the list
         if "Tile" in classes:
             del classes["Tile"]
         return classes
@@ -104,7 +99,7 @@ class Basic(BaseGenerator):
         start_conversion = datetime.now()
         for col in range(self.config.height):
             for row in range(self.config.width):
-                hex_tile = self.hex_grid.grid[col][row]  # type: ignore
+                hex_tile: "Hex" = self.hex_grid.grid[col][row]  # type: ignore
                 x = col * self.world.col_spacing
                 y = row * self.world.row_spacing + (self.world.row_spacing * 0.5 if col % 2 else 0)
                 terrain = self.classify_terrain(hex_tile)
@@ -112,9 +107,9 @@ class Basic(BaseGenerator):
                 hex_tile.render_pos = (x, y)
         end_conversion = datetime.now()
 
-        start_water_level_adjustment = datetime.now()
+        start_water_level_adjustment: datetime = datetime.now()
         self.adjust_water_levels()
-        end_water_level_adjustment = datetime.now()
+        end_water_level_adjustment: datetime = datetime.now()
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_inst = datetime.now()
@@ -183,6 +178,7 @@ class Basic(BaseGenerator):
         EntityManager.get_singleton_instance().add_meta_data("world_generation_stats", self.world_generation_stats)
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Done..."])
+        self.grid = self.world.grid
         return True
 
     def classify_terrain(self, hex_tile: "Hex") -> str:
@@ -432,7 +428,9 @@ class Basic(BaseGenerator):
         from gameplay.resource import ResourceType
 
         instance = ResourceRepository()
-        resources = instance.all_by_type([ResourceType.STRATEGIC, ResourceType.BONUS, ResourceType.LUXURY])
+        resources: List[Type[BaseResource]] = instance.all_by_type(
+            [ResourceType.STRATEGIC, ResourceType.BONUS, ResourceType.LUXURY]
+        )
         return resources
 
     def _hex_distance(self, hex1: "Hex", hex2: "Hex") -> int:

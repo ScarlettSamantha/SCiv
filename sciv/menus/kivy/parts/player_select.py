@@ -270,13 +270,10 @@ class TargetPanel(BoxLayout, DirectObject):
         self._add_stat_row(str(t_("world.stats.moisture")), self._fmt_num(tile.moisture))
 
         terrain: BaseTerrain = tile.get_terrain()
-
-        name = getattr(terrain, "name", None)
-        if name:
-            self._add_stat_row("Terrain", str(tile.get_terrain().name))
+        self._add_stat_row("Terrain", str(terrain.get_name()))
 
         owner: Player | Any | None = tile.get_owner()
-        self._add_stat_row("Owner", str(getattr(owner, "name", None)))
+        self._add_stat_row("Owner", str(owner.get_name_short() if owner else "Nature"))
 
         passable = getattr(tile, "passable", None)
         walkable = getattr(tile, "walkable", None)

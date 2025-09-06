@@ -178,7 +178,7 @@ class ui(Singleton, DirectObject):
 
     def on_escape_press(self):
         if self.game is None:
-            raise ValueError("Game not initialized")
+            return
 
     def on_game_over_player(self, player: Player, reason: LoseConditions):
         MessengerGlobal.messenger.send(

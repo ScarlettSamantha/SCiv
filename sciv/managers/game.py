@@ -31,7 +31,6 @@ from system.generators.basic import Basic
 from system.mesh import HexGrid
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
-
 from system.tile_grid import TileModelGrid
 
 if TYPE_CHECKING:
@@ -511,6 +510,9 @@ class Game(Singleton, DirectObject):
         if self.performance_logger is not None:
             self.performance_logger.activate()
 
+        if Debug.world_generation():
+            Debug.dump_map_generation_data(generator=self.active_generator, tiles=list(self.world.map.values()))
+
         self.logger.info("Game start complete")
 
     def calculate_vision(self):
@@ -523,9 +525,7 @@ class Game(Singleton, DirectObject):
                 player.vision.add_visible_unit(unit)
 
     def process_turn(self):
-        if (
-            not Lose.check_if_game_over()
-        ):  # This gets returned via the messenger as `system.game.player_game_over` if player
+        if not Lose.check_if_game_over():
             self.turn.end_turn()
         else:
             self.logger.info("Game over detected, not processing turn.")

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 from gameplay.civic import CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
@@ -14,7 +15,6 @@ from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
-
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
@@ -66,6 +66,16 @@ class BaseGenerator(ABC):
         self.world: World = World.get_singleton_instance()
         self.world_generation_stats: Dict[str, Any] = {}
         self.model_grid: Optional[TileModelGrid] = None
+        self.debug_dump_data: Dict[str, Dict[str, Any]] = {
+            "meta": {
+                "rows": self.config.width,
+                "cols": self.config.height,
+                "seed": self.config.seed,
+                "at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+            "tiles": {},
+        }
+        self.grid: Dict[Tuple[int, int], "Tile"] = {}
 
     @abstractmethod
     def generate(self) -> bool: ...
@@ -291,4 +301,5 @@ class BaseGenerator(ABC):
 
         seed = random.randint(0, 2**31 - 1)
         self.config.seed = seed
+        self.debug_dump_data["meta"]["seed"] = seed
         return seed

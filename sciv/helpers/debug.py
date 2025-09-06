@@ -1,6 +1,5 @@
 import gzip
 import io
-import json
 import logging
 import re
 import subprocess  # nosec: B404
@@ -9,6 +8,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, NoReturn, Optional, Tuple
 
+import orjson as json
 from direct.task.Task import Task
 from helpers.cache import Cache
 from helpers.paths import PathsHelper
@@ -16,8 +16,10 @@ from managers.config import ConfigManager
 from panda3d.core import ClockObject, PythonTask
 
 if TYPE_CHECKING:
+    from gameplay.tile import Tile
     from sentry_sdk import init
     from sentry_sdk.types import Event, Hint
+    from system.generators.base import BaseGenerator
 
 
 class Debugs(Enum):
@@ -510,6 +512,50 @@ class Debug:
             logging.exception("trigger_sentry_dump failed: %s", e)
             return None
 
+    @classmethod
+    def dump_map_generation_data(cls, generator: "BaseGenerator", tiles: List["Tile"]) -> None:
+        json_data: bytes = json.dumps(cls.dump_map(generator.debug_dump_data, tiles))
+        debug_dir: str = str(Path(PathsHelper.get_debug_dir()) / "map_dumps")
+        timestamp: str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        if not Path(debug_dir).exists():
+            Path(debug_dir).mkdir(parents=True, exist_ok=True)
+
+        file_path: str = f"{debug_dir}/map_{timestamp}.json"
+        fp: gzip.GzipFile = gzip.open(file_path + ".gz", "wb")
+        fp.write(json_data)
+        fp.close()
+
+    @classmethod
+    def dump_map(cls, data: Dict[str, Any], tiles: List["Tile"]) -> Dict[str, Any]:
+        for tile in tiles:
+            data["tiles"][f"{tile.x}, {tile.y}"] = cls.debug_dump_tile(tile)
+        return data
+
+    @classmethod
+    def debug_dump_tile(cls, tile: "Tile") -> Dict[str, Any]:
+        from gameplay.resource import BaseResource
+
+        resources: List[BaseResource] = list(tile.resources.flatten_non_mechanic().values())
+        resource: BaseResource | None = resources[0] if len(resources) > 0 else None
+        data: Dict[str, Any] = {
+            "x": tile.x,
+            "y": tile.y,
+            "altitude": tile.altitude,
+            "temperature": tile.temperature,
+            "moisture": tile.moisture,
+            "terrain": tile.get_terrain().get_key(),
+            "is_water": tile.is_water,
+            "is_land": tile.is_land,
+            "is_coast": tile.is_coast,
+            "is_sea": tile.is_sea,
+            "is_lake": tile.is_lake,
+            "geoform_type": tile.geoforms,
+            "features": [str(f) for f in tile.features],
+            "resource": resource.key if resource else None,
+        }
+        return data
+
 
 class PerformanceLogData:
     def __init__(self, real_time: datetime, zoom_level: float, camera_pos: Tuple[int, int, int], fps: float):
@@ -582,7 +628,7 @@ class PerformanceLogger:
         payload = {"t": delta, **entry.to_dict()}
         line = json.dumps(payload)
 
-        self._buffer.append(line)
+        self._buffer.append(line.decode("utf-8"))
 
         if len(self._buffer) >= self.FLUSH_EVERY:
             self._flush_buffer()
