@@ -54,7 +54,7 @@ class Basic(BaseGenerator):
             "day_length": 24,
             "base_temp": 0,
             "avg_temp": 12,  # 8 is cold 10 is average, 14 is decent, 18 is hot, 22 is very hot
-            "sea_percent": 40,
+            "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water],
             "random_seed": self.seed,
