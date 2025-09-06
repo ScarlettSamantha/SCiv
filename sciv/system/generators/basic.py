@@ -73,7 +73,6 @@ class Basic(BaseGenerator):
         }
 
     def randomize_seed(self) -> int:
-        """Randomizes the seed for the map generation."""
         time = str(crc32(str(int(datetime.now().timestamp() * 1000)).encode()))[:-3]
         rand = str(randrange(2**12, 2**30))[:-3]
         micro = str(datetime.now().microsecond)[:-3]
@@ -84,7 +83,6 @@ class Basic(BaseGenerator):
         return self.seed
 
     def load_tiles(self) -> Dict[str, Type["Tile"]]:
-        """Loads tile classes dynamically."""
         from gameplay.tile import Tile
 
         classes = PyLoad.load_classes("gameplay/tiles", base_classes=Tile)
@@ -96,20 +94,17 @@ class Basic(BaseGenerator):
     def generate(self) -> bool:
         from system.subsystems.hexgen.mapgen import MapGen
 
-        # Step 1: Generate raw world data via HexGen
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
         start_time = datetime.now()
         self.hexgen_map = MapGen(self.map_params, debug=True)
         self.hex_grid: Grid = self.hexgen_map.hex_grid
         end_hexgen_time = datetime.now()
 
-        # Step 2: Classify terrain and compute 2D render positions
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Converting map..."])
         start_conversion = datetime.now()
         for col in range(self.config.height):
             for row in range(self.config.width):
                 hex_tile = self.hex_grid.grid[col][row]  # type: ignore
-                # Stagger odd-q layout
                 x = col * self.world.col_spacing
                 y = row * self.world.row_spacing + (self.world.row_spacing * 0.5 if col % 2 else 0)
                 terrain = self.classify_terrain(hex_tile)
@@ -117,12 +112,10 @@ class Basic(BaseGenerator):
                 hex_tile.render_pos = (x, y)
         end_conversion = datetime.now()
 
-        # Step 2b: Adjust water levels (aligns seas/lakes to a consistent plane)
         start_water_level_adjustment = datetime.now()
         self.adjust_water_levels()
         end_water_level_adjustment = datetime.now()
 
-        # Step 3: Instantiate gameplay Tile objects (no Panda models spawned here)
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_inst = datetime.now()
         self.instantiate_tiles()
@@ -321,26 +314,22 @@ class Basic(BaseGenerator):
         return choice(("FlatForest", "FlatGrass"))
 
     def instantiate_tiles(self):
-        """Creates Tile objects and places them on the grid."""
         for col in range(self.config.height):
             for row in range(self.config.width):
                 hex_tile = self.hex_grid.grid[col][row]  # type: ignore
 
                 x, y = hex_tile.x, hex_tile.y
                 terrain = hex_tile.terrain
-                # Find the correct tile class or default to FlatGrassland
                 tile_class = self.tiles_dict.get(terrain, self.tiles_dict.get("FlatGrassland"))
                 if tile_class is None:
                     raise ValueError(f"Tile class for terrain '{terrain}' not found.")
 
-                # Compute the rendering position using the correct offset
-                render_x = col * self.world.col_spacing  # Base X spacing
-                if col % 2 == 1:  # If the column is odd, apply staggered row offset
+                render_x = col * self.world.col_spacing
+                if col % 2 == 1:
                     render_y = row * self.world.row_spacing + (self.world.row_spacing * 0.5)
                 else:
-                    render_y = row * self.world.row_spacing  # Even columns align normally
+                    render_y = row * self.world.row_spacing
 
-                # Instantiate the tile object
                 obj_instance: Tile = tile_class(x, y, render_x, render_y)
                 self.enrich_from_extra_data(hex=hex_tile, tile=obj_instance)
                 obj_instance.pos_z = obj_instance.calculate_z_pos_on_altitude()[2]
@@ -386,11 +375,6 @@ class Basic(BaseGenerator):
         return tile
 
     def adjust_water_levels(self) -> None:
-        """
-        Finds every connected group of water tiles (lakes + sea),
-        looks at all adjacent land-tile altitudes, takes the minimum,
-        and then forces the entire water body to sit 1 unit below that minimum.
-        """
         height = self.config.height
         width = self.config.width
 
@@ -452,9 +436,6 @@ class Basic(BaseGenerator):
         return resources
 
     def _hex_distance(self, hex1: "Hex", hex2: "Hex") -> int:
-        """
-        Calculates the distance between two hex tiles using axial coordinates.
-        """
         dx = abs(hex1.x - hex2.x)
         dy = abs(hex1.y - hex2.y)
         return max(dx, dy, abs(dx - dy))
