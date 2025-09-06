@@ -63,12 +63,10 @@ class TileRenderer:
         self.atlas_width: int = 0
         self.atlas_height: int = 0
 
-        # Root anchor for all geometry and UI nodes
         self.anchor_node: NodePath = NodePath(f"tile_{tile.x}_{tile.y}_anchor")
         self.anchor_node.reparentTo(self.base.render)
         self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
 
-        # Geometry group: terrain, walls, improvements, models
         self.geometry_node: NodePath = self.anchor_node.attachNewNode("geometry_group")
         self.anchor_node.reparentTo(self.base.render)
         self.geometry_node.set_collide_mask(BitMask32.bit(1))
@@ -85,7 +83,6 @@ class TileRenderer:
         self.population_node: Optional[NodePath] = None
         self.action_icons_nodes: List[NodePath] = []
 
-        # Dynamic nodes
         self.terrain_overlay_node: Optional[NodePath] = None
         self.icon_overlay_node: Optional[NodePath] = None
         self.unit_markers_node: Optional[NodePath] = None
@@ -101,7 +98,6 @@ class TileRenderer:
             shader_vertex_path = WindowsHelper.win32_to_unix_path(shader_vertex_path)
             shader_fragment_path = WindowsHelper.win32_to_unix_path(shader_fragment_path)
 
-        # shader for tile selection
         self.selector_shader = Shader.load(Shader.SL_GLSL, vertex=shader_vertex_path, fragment=shader_fragment_path)
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
@@ -535,7 +531,6 @@ class TileRenderer:
         )
         icon_node.set_shader_input("icon_atlas", atlas_tex)  # type: ignore
 
-        # Prepare slots: population or first resource + base yields
         self.tile.calculate()
         base_yields = self.tile.get_tile_yield()
         if self.tile.city:
@@ -555,7 +550,6 @@ class TileRenderer:
                 continue
 
             if idx != 0 and isinstance(entry, BaseResource) and entry.value > 0.0:
-                # If it's a resource with a value, we use its icon
                 entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
 
             path = self._get_icon_virtual_path(entry, idx == 0 and not self.tile.city)
@@ -588,9 +582,6 @@ class TileRenderer:
         entry: Union[str, BaseResource],
         is_resource_slot: bool,
     ) -> Optional[str]:
-        """
-        Determine the atlas path for a given slot entry (population or resource/yield).
-        """
         if isinstance(entry, str):
             return entry.replace("resources/", "")
         if hasattr(entry, "icon"):
@@ -609,7 +600,6 @@ class TileRenderer:
         path_right: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_right.png")
 
         if WindowsHelper.is_windows():
-            # Convert to Unix path if not on Windows
             path_left = WindowsHelper.unix_to_win32_path(str(path_left))
             path_mid = WindowsHelper.unix_to_win32_path(str(path_mid))
             path_right = WindowsHelper.unix_to_win32_path(str(path_right))

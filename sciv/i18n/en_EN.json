@@ -743,6 +743,11 @@
         "clear_messages": {
           "button": "Clear messages",
           "clear_messages": "Clear messages"
+        },
+        "set_terrain_type": {
+          "button": "Set terrain type",
+          "label": "Terrain type",
+          "set_terrain_type": "Set terrain type"
         }
       }
     },
@@ -756,6 +761,7 @@
         "sea_ice": "Sea ice",
         "lake": "Lake",
         "city": "City",
+        "volcano": "Volcano",
 
         "flatland_grass": "Flat grassland",
         "flatland_plains": "Flat plains",

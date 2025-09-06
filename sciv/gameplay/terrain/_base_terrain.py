@@ -32,7 +32,6 @@ class BaseTerrain(ABC):
     can_spawn_resources: bool = True
     _fallback_color: Tuple[float, float, float] = (0, 119, 255)
 
-    # This is for things like a forrest, where the terrain is replaced by a new terrain type.
     _warn_user_before_build: bool = False
     _warn_user_before_build_text: T_TranslationOrStr = ""
     _warn_user_before_build_title: T_TranslationOrStr = ""
@@ -144,18 +143,13 @@ class BaseTerrain(ABC):
         return self.active_bits
 
     def model(self) -> T_TranslationOrStr:
-        # direct string
-
         if isinstance(self._model, str):
             return self._model
 
-        # factory callable
         if callable(self._model):
             return self._model()
 
-        # percentage-based dict
         if isinstance(self._model, dict):
-            # sum only positive percentages
             total_perc = sum(p for p in self._model.keys() if p > 0)
             if total_perc > 100.0:
                 raise ValueError(f"Total percentage too high: {total_perc}%")
@@ -170,7 +164,6 @@ class BaseTerrain(ABC):
                 if rand_val <= cumulative:
                     return mdl
 
-            # fallback
             if 0.0 in self._model:
                 return self._model[0]
 

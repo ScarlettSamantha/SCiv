@@ -4,7 +4,7 @@ from helpers.os import LinuxHelper, WindowsHelper
 
 
 class PathsHelper:
-    base_path: str = ""
+    base_path: str = str(Path(__file__).parent.parent.resolve())
 
     @classmethod
     def get_cache_dir(cls) -> str:
@@ -52,3 +52,11 @@ class PathsHelper:
     @classmethod
     def get_actions_dir(cls) -> Path:
         return cls.get_gameplay_dir() / "actions"
+
+    @classmethod
+    def get_assets_dir(cls) -> Path:
+        return cls.get_base_path() / "assets"
+
+    @classmethod
+    def get_terrain_dir(cls) -> Path:
+        return cls.get_gameplay_dir() / "terrain"

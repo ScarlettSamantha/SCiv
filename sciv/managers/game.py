@@ -32,6 +32,8 @@ from system.mesh import HexGrid
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 
+from system.tile_grid import TileModelGrid
+
 if TYPE_CHECKING:
     from gameplay.age import Age
     from gameplay.effect import Effect
@@ -68,6 +70,7 @@ class Game(Singleton, DirectObject):
         self.border: Borders | None = None
         self.config: ConfigManager = ConfigManager.get_singleton_instance()
         self.entities: EntityManager = EntityManager.get_singleton_instance()
+        self.world_tile_grid: Optional[TileModelGrid] = None
 
         self.properties_manager: PropertiesManager = PropertiesManager()
         PropertiesManager.set_singleton_instance(self.properties_manager)
@@ -472,6 +475,8 @@ class Game(Singleton, DirectObject):
         if not self.active_generator.generate():
             raise ValueError("There is no generator")
 
+        self.world_tile_grid = self.active_generator.model_grid
+
         self.logger.info("Setting up field")
         self.render_field()
         self.logger.info("Field setup complete")
@@ -543,3 +548,8 @@ class Game(Singleton, DirectObject):
         if self.mesh_grid is None:
             raise ValueError("Mesh grid has not been generated yet. Call generate_world() first.")
         return self.mesh_grid
+
+    def get_world_grid(self) -> TileModelGrid:
+        if self.world_tile_grid is None:
+            raise ValueError("World tile grid has not been generated yet. Call generate_world() first.")
+        return self.world_tile_grid

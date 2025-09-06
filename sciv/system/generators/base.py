@@ -14,6 +14,7 @@ from gameplay.tech import TechTree
 from gameplay.techs.trees.core import Core
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
+
 from system.game_settings import GameSettings
 
 if TYPE_CHECKING:
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from system.tile_grid import TileModelGrid
 
 
 class WorldParams:
@@ -63,6 +65,7 @@ class BaseGenerator(ABC):
         self.base: "OpenCiv" = base
         self.world: World = World.get_singleton_instance()
         self.world_generation_stats: Dict[str, Any] = {}
+        self.model_grid: Optional[TileModelGrid] = None
 
     @abstractmethod
     def generate(self) -> bool: ...

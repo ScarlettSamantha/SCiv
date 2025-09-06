@@ -12,12 +12,6 @@ if TYPE_CHECKING:
 
 
 class GroupMode(Enum):
-    """
-    Determines how bits and subgroups are combined:
-    - OR: randomly select one bit or one subgroup per level
-    - AND: include all bits and recurse into all subgroups
-    """
-
     OR = "or"
     AND = "and"
 
@@ -43,7 +37,7 @@ class Bit:
         default_lighting: bool = True,
     ):
         self.id: str = id or uuid.uuid4().hex
-        self.model: str = model if model.startswith(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
+        self.model: str = model if model.__contains__(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
         self.scale: float = scale
         self.offset: Tuple[float, float, float] = offset
         self.hpr: Tuple[float, float, float] = hpr
@@ -62,11 +56,19 @@ class Bit:
         hpr: Optional[Tuple[float, float, float]] = None,
     ) -> "Bit":
         _copy = copy(self)
-        _copy.id = str(uuid.uuid4().hex)  # Ensure a new unique ID
+        _copy.id = str(uuid.uuid4().hex)
         _copy.scale = scale if scale is not None else self.scale
         _copy.offset = offset if offset is not None else self.offset
         _copy.hpr = hpr if hpr is not None else self.hpr
         return _copy
+
+    def rotate(self, h: float = 0.0, p: float = 0.0, r: float = 0.0) -> "Bit":
+        self.hpr = (h, p, r)
+        return self
+
+    def scaleBit(self, factor: float) -> "Bit":
+        self.scale *= factor
+        return self
 
     def __getstate__(self) -> object:
         state = self.__dict__.copy()
@@ -107,7 +109,6 @@ class Bits:
 
     def __getstate__(self) -> object:
         state = self.__dict__.copy()
-        # Remove parent reference to avoid circular references
         state.pop("parent", None)
         state["mode"] = self.mode.name
         if self.bits:

@@ -16,7 +16,6 @@ class Volcano(BaseTerrain):
 
         self.name = "world.terrain.volcano"
         self.movement_modifier = 0.5
-
         self.passable: bool = False
         self.passable_without_tech: bool = False
 
@@ -29,7 +28,7 @@ class Volcano(BaseTerrain):
                 model="volcano.glb",
                 scale=1.3,
                 hpr=(-75, 0, 0),
-                offset=(0, 0, 0),
+                offset=(0, 0, 0.25),
                 default_lighting=False,
                 default_shader=False,
                 blocks_resource_model_spawning=True,

@@ -1,7 +1,8 @@
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple, Type
 
+from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.cache import Cache
 from panda3d.core import (
     CardMaker,
@@ -11,6 +12,9 @@ from panda3d.core import (
     RigidBodyCombiner,
     TransparencyAttrib,
 )
+
+from sciv.gameplay.repositories.terrain import TerrainRepository
+from sciv.helpers.paths import PathsHelper
 
 if TYPE_CHECKING:
     from managers.entity import Tile
@@ -40,6 +44,8 @@ class TileModelGrid:
         self.cols = cols or 10
         self.rows = rows or 10
         self.base = Cache.get_showbase_instance()
+        TerrainRepository.load(str(PathsHelper.get_terrain_dir()))
+        self.terrain_available: Set[Type["BaseTerrain"]] = TerrainRepository.get_all()
 
         self.root_np: NodePath = NodePath(PandaNode("tile_model_grid"))
         self._attached = False
@@ -106,6 +112,9 @@ class TileModelGrid:
         if old_np and not old_np.is_empty():
             old_np.remove_node()
         self._ensure_instance_for_tile(tile)
+        tile.calculate()
+        tile.renderer.render()
+        self.collect()
 
     def set_tile_tint(
         self, tile_or_index: "Tile | Tuple[int,int] | int", rgba: Tuple[float, float, float, float]
@@ -180,8 +189,6 @@ class TileModelGrid:
         self._rbc_nodes[key] = rbc_np
         self._rbc_controls[key] = ctrl
         return rbc_np, ctrl
-
-    # --- internals ------------------------------------------------------------
 
     def _ensure_instance_for_tile(self, tile: "Tile") -> None:
         spec = self._extract_spec_for_tile(tile)

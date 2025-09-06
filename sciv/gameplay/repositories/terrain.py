@@ -1,24 +1,25 @@
-from typing import List, Set, Type, cast
+from typing import TYPE_CHECKING, Dict, Set, Type, cast
 
-from gameplay.tile import BaseTerrain
+if TYPE_CHECKING:
+    from gameplay.tile import BaseTerrain
 
 
 class TerrainRepository:
-    _instances: Set[Type[BaseTerrain]] = set()
+    _instances: Set[Type["BaseTerrain"]] = set()
 
     @classmethod
-    def register_terrain(cls, terrain: Type[BaseTerrain]) -> None:
+    def register_terrain(cls, terrain: Type["BaseTerrain"]) -> None:
         cls._instances.add(terrain)
 
     @classmethod
-    def get_by_key(cls, key: str) -> Type[BaseTerrain] | None:
+    def get_by_key(cls, key: str) -> Type["BaseTerrain"] | None:
         for terrain in cls._instances:
             if terrain.get_key() == key:
                 return terrain
         return None
 
     @classmethod
-    def get_all(cls) -> Set[Type[BaseTerrain]]:
+    def get_all(cls) -> Set[Type["BaseTerrain"]]:
         return cls._instances
 
     @classmethod
@@ -26,7 +27,7 @@ class TerrainRepository:
         cls._instances.clear()
 
     @classmethod
-    def unregister_terrain(cls, terrain: Type[BaseTerrain]) -> None:
+    def unregister_terrain(cls, terrain: Type["BaseTerrain"]) -> None:
         if terrain in cls._instances:
             cls._instances.remove(terrain)
         else:
@@ -34,10 +35,13 @@ class TerrainRepository:
 
     @classmethod
     def load(cls, path: str) -> None:
+        from gameplay.terrain._base_terrain import BaseTerrain
         from system.pyload import PyLoad
 
-        classes: List[Type[BaseTerrain]] = cast(
-            List[Type[BaseTerrain]], PyLoad.load_classes(path, base_classes=(BaseTerrain,))
+        classes: Dict[str, Type["BaseTerrain"]] = cast(
+            Dict[str, Type["BaseTerrain"]], PyLoad.load_classes(directory=path, package="gameplay.terrain")
         )
-        for terrain in classes:
-            cls.register_terrain(terrain)
+        for _terrain in classes.values():
+            if _terrain == BaseTerrain:
+                continue
+            cls.register_terrain(_terrain)

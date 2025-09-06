@@ -42,3 +42,7 @@ def bezier_tangent(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, t: float) -> Vec3:
         return Vec3(0, 1, 0)
     d.normalize()
     return d
+
+
+def rotate_step(angle: float | int, step: float | int) -> float:
+    return round(angle / step) * step
