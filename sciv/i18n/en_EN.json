@@ -786,6 +786,13 @@
         "hills_snow": "Hilly Snow",
         "hills_tundra": "Hilly Tundra",
         "hills_wasteland": "Hilly Wasteland"
+      },
+      "stats": {
+        "altitude": "Altitude",
+        "temperature": "Temperature",
+        "rainfall": "Rainfall",
+        "fertility": "Fertility",
+        "moisture": "Moisture"
       }
     },
     "tiles": {

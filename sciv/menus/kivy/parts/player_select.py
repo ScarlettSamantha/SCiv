@@ -1,6 +1,13 @@
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 
 from direct.showbase.DirectObject import DirectObject
+from gameplay.civilization import Civilization
+from gameplay.player import Player
+from gameplay.resource import BaseResource
+from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.tile import Tile
+from gameplay.unit import Unit
+from gameplay.yields import Yields
 from helpers.colors import Colors
 from helpers.paths import PathsHelper
 from kivy.graphics import Color, Rectangle
@@ -10,16 +17,8 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from managers.assets import AssetManager
-from managers.i18n import t_
-
-from gameplay.civilization import Civilization
-from gameplay.player import Player
-from gameplay.resource import BaseResource
-from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tile import Tile
-from gameplay.unit import Unit
-from gameplay.yields import Yields
 from managers.entity import EntityType
+from managers.i18n import t_
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile as TileType
@@ -266,7 +265,9 @@ class TargetPanel(BoxLayout, DirectObject):
         self._add_stat_row("Coords", f"{x},{y}")
 
         altitude = tile.altitude
-        self._add_stat_row("Altitude", self._fmt_num(altitude))
+        self._add_stat_row(str(t_("world.stats.altitude")), self._fmt_num(altitude))
+        self._add_stat_row(str(t_("world.stats.temperature")), self._fmt_num(tile.temperature))
+        self._add_stat_row(str(t_("world.stats.moisture")), self._fmt_num(tile.moisture))
 
         terrain: BaseTerrain = tile.get_terrain()
 
