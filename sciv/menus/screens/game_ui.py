@@ -13,6 +13,7 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.tile import Tile
 from gameplay.unit import Unit
 from gameplay.unit_path import MovementPathBlocksRenderer
+from helpers.debug import Debug
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -133,6 +134,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.build_player_list()
         self.build_combat_log()
         self.build_messenger()
+
+        if Debug.debug:
+            self.add_widget(self.build_stats_frame())
 
         self.add_widget(self.build_top_bar())  # type: ignore
 
