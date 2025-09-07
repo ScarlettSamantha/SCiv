@@ -4,7 +4,7 @@ from gameplay.improvements.core.resources.farm import Farm
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.terrain.hills_grass import HillsGrass
+from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.tiles.land_grass import FlatGrass
 from managers.i18n import T_TranslationOrStr, t_
 
@@ -18,7 +18,7 @@ class Corn(BaseBonusResource):
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 95.0,
-        HillsGrass: 100.0,
+        FlatScrubland: 40.0,
         BaseTerrain: 0.0,
     }
     spawn_amount = 5.0

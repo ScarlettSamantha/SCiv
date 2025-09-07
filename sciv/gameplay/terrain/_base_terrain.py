@@ -26,7 +26,7 @@ class BaseTerrain(ABC):
     _model: Union[T_TranslationOrStr, Dict[int, str], Callable[..., str], None] = (
         "assets/models/terrain/flat_grassland.glb"
     )
-    model_scale = (1.72, 1.72, 1.72)
+    model_scale = (1.73, 1.73, 1.73)
     model_pos_z_offset = -0.05
     model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     can_spawn_resources: bool = True

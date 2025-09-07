@@ -180,6 +180,11 @@ class HexFeature(Enum):
     crater = "Crater"
     sea = "Sea"
     ocean = "Ocean"
+    inland_sea = "Inland Sea"
+    isthmus = "Isthmus"
+    bay = "Bay"
+    strait = "Strait"
+    peninsula = "Peninsula"
 
     @classmethod
     def from_name(cls, name: str) -> Optional["HexFeature"]:

@@ -118,6 +118,7 @@ class Tile(BaseEntity):
     is_sea: bool = False
     is_lake: bool = False
     is_coast: bool = False
+    is_inland_sea: bool = False
 
     altitude: float = 0.0
     hemisphere: int = HEMISPHERE_UNKNOWN
@@ -188,6 +189,7 @@ class Tile(BaseEntity):
         self.is_sea = False
         self.is_lake = False
         self.is_coast = False
+        self.is_inland_sea = False
 
         self.resources = Resources()
         self.units = Units()
@@ -227,7 +229,6 @@ class Tile(BaseEntity):
         self.block_resource_model_spawning = False
         self.needs_tile_proecessing = True
 
-        # register in the world
         self._entity_manager.register(EntityType.TILE, self, self.tag)
 
     def dump(self) -> Dict[str, Any]:
@@ -260,6 +261,7 @@ class Tile(BaseEntity):
             "is_sea",
             "is_lake",
             "is_coast",
+            "is_inland_sea",
             "destroyed",
             "edges",
             "_biome",
@@ -514,6 +516,7 @@ class Tile(BaseEntity):
         state.pop("is_land", None)
         state.pop("is_sea", None)
         state.pop("is_lake", None)
+        state.pop("is_inland_sea", None)
         state.pop("_edges", None)
         state.pop("tile")
         return state
@@ -525,6 +528,7 @@ class Tile(BaseEntity):
             | (4 if self.is_sea else 0)
             | (8 if self.is_lake else 0)
             | (16 if self.is_coast else 0)
+            | (32 if self.is_inland_sea else 0)
         )
 
     def _from_is_flags(self, flags: int) -> None:
@@ -533,6 +537,7 @@ class Tile(BaseEntity):
         self.is_sea = bool(flags & 4)
         self.is_lake = bool(flags & 8)
         self.is_coast = bool(flags & 16)
+        self.is_inland_sea = bool(flags & 32)
 
     def _calculate_visible_sides(self) -> int:
         return sum(1 << i for i, v in self.visible_sides.items() if v)
@@ -558,6 +563,7 @@ class Tile(BaseEntity):
             "is_sea": str(self.is_sea),
             "is_lake": str(self.is_lake),
             "is_coast": str(self.is_coast),
+            "is_inland_sea": str(self.is_inland_sea),
             "is_city": self.is_city(),
             "city": self.city.tag if self.city else None,
             "city_owner": str(self.get_city_owner().get_tag()) if self.city_owner else None,  # type: ignore
@@ -686,7 +692,7 @@ class Tile(BaseEntity):
         self.renderer.render()
 
     def on_turn_end(self, turn: int) -> None:
-        if len(self._improvements) > 0:  # We only process improvements if we have any.
+        if len(self._improvements) > 0:
             self._improvements.on_turn_end(turn)
 
         if len(self.effects) > 0:
@@ -694,7 +700,7 @@ class Tile(BaseEntity):
 
         if len(self.units) > 0:
             for unit in self.units.all():
-                unit.attack_points_left = unit.attack_points  # Reset attack points for the next turn
+                unit.attack_points_left = unit.attack_points
 
     def calculate_z_pos_on_altitude(self) -> Tuple[float, float, float]:
         pos_z = scale_value(min(self.altitude, 240), 44, 240, 0, 1.5)

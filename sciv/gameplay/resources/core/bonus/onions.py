@@ -26,8 +26,8 @@ class Onions(BaseBonusResource):
         FlatForest: 40.0,
         FlatDesert: 20.0,
         FlatScrubland: 45.0,
-        HillsForest: 50.0,
-        HillsGrass: 45.0,
+        HillsForest: 25.0,
+        HillsGrass: 25.0,
     }
     coverage = 0.9
     spawn_amount = 5.0

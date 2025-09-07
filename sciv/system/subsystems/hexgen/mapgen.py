@@ -58,6 +58,8 @@ default_params: Dict[str, Any] = {
     "max_elev_m": 4000,
     "equator_temp": 28.0,
     "pole_temp": -12.0,
+    "lake_to_sea_tiles": 100,
+    "sea_to_ocean_tiles": 150,
 }
 
 
@@ -568,6 +570,7 @@ class MapGen:
             return
 
         visited: Set["Hex"] = set()
+        lake_to_sea = int(self.params.get("lake_to_sea_tiles", 60))
 
         for x in range(size_x):
             for y in range(size_y):
@@ -590,35 +593,27 @@ class MapGen:
                             visited.add(n)
                             q.append(n)
 
-                if not touch:
+                if not touch and len(comp) <= lake_to_sea:
                     for h in comp:
                         h.add_feature(HexFeature.lake)
                     if self.debug:
                         print(f"Lake detected: size={len(comp)}")
+                elif not touch and len(comp) > lake_to_sea:
+                    for h in comp:
+                        h.add_feature(HexFeature.inland_sea)
+                    if self.debug:
+                        print(f"Inland sea detected: size={len(comp)}")
 
     def _determine_landforms(self):
         with Timer("Finding geographic features", self.debug):
-            with Timer("\tPlacing initial geoforms", self.debug):
-                for y, row in enumerate(self.hex_grid.grid):
-                    for x, _ in enumerate(row):
-                        h: Hex = self.hex_grid.grid[x][y]
-                        if is_isthmus(h):
-                            h.geoform_type = GeoformType.isthmus
-                        elif is_bay(h):
-                            h.geoform_type = GeoformType.bay
-                        elif is_strait(h):
-                            h.geoform_type = GeoformType.strait
-                        elif is_peninsula(h):
-                            h.geoform_type = GeoformType.peninsula
-                        if h.geoform_type is not None:
-                            self.geoforms.append(Geoform(set([h]), h.geoform_type))
 
-            def flood_fill(start_hex: "Hex", target_type: Any) -> Set["Hex"]:
-                queue: List["Hex"] = [start_hex]
-                visited: Set["Hex"] = set()
+            def flood_fill(start_hex: "Hex", target_type: Any) -> set["Hex"]:
+                queue: list["Hex"] = [start_hex]
+                visited: set["Hex"] = set()
                 while queue:
                     current = queue.pop()
-                    if current in visited or current.geoform_type is not None or current.type != target_type:
+                    # Important: do not block on current.geoform_type; only the HexType matters.
+                    if current in visited or current.type != target_type:
                         continue
                     visited.add(current)
                     queue.extend(n[1] for n in current.neighbors if n[1] not in visited)
@@ -631,6 +626,18 @@ class MapGen:
 
             with Timer("\tFinding contiguous geoforms", self.debug):
                 sys.setrecursionlimit(10000)
+
+                grid = self.hex_grid.grid
+                if hasattr(grid, "shape"):
+                    cols = int(grid.shape[0])
+                    rows = int(grid.shape[1]) if cols else 0
+                else:
+                    cols = len(grid)
+                    rows = len(grid[0]) if cols else 0
+
+                lake_to_sea = int(self.params.get("lake_to_sea_tiles", 60))
+                sea_to_ocean = int(self.params.get("sea_to_ocean_tiles", 100))
+
                 current: "Hex | None" = first_hex_without_geoform(self.hex_grid.grid.tolist())
                 while current is not None:
                     if current.is_land:
@@ -646,7 +653,12 @@ class MapGen:
                     else:
                         hexes = flood_fill(current, current.type)
                         size: int = len(hexes)
-                        geotype = GeoformType.lake if size < 3 else GeoformType.sea if size < 100 else GeoformType.ocean
+                        touches_edge = any((h.x == 0 or h.y == 0 or h.x == cols - 1 or h.y == rows - 1) for h in hexes)
+                        if not touches_edge:
+                            geotype = GeoformType.lake if size <= lake_to_sea else GeoformType.sea
+                        else:
+                            geotype = GeoformType.sea if size < sea_to_ocean else GeoformType.ocean
+
                     assign_geoform(hexes, geotype)
                     current = first_hex_without_geoform(self.hex_grid.grid.tolist())
 
@@ -738,6 +750,19 @@ class MapGen:
             if self.debug:
                 print("There is now {} geoforms".format(len(self.geoforms)))
 
+            with Timer("\tAnnotating overlays (straits/bays/isthmuses/peninsulas)", self.debug):
+                for y, row in enumerate(self.hex_grid.grid):
+                    for x, _ in enumerate(row):
+                        h: Hex = self.hex_grid.grid[x][y]
+                        if is_isthmus(h):
+                            h.add_feature(HexFeature.isthmus)
+                        elif is_bay(h):
+                            h.add_feature(HexFeature.bay)
+                        elif is_strait(h):
+                            h.add_feature(HexFeature.strait)
+                        elif is_peninsula(h):
+                            h.add_feature(HexFeature.peninsula)
+
     def is_river(self, edge: HexSide) -> bool:
         for r in self.rivers_sources:
             while r.next is not None:
@@ -758,7 +783,7 @@ class MapGen:
         return None
 
     def get_edge(self, side: "HexSide") -> "HexSide | None":
-        return self.edges[side]  # type: ignore # Or however you store your edge objects
+        return self.edges[side]  # type: ignore
 
     @staticmethod
     def _axial_to_cube(q: int, r: int) -> Tuple[float, float, float]:

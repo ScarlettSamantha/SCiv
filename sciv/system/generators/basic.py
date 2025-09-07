@@ -200,7 +200,7 @@ class Basic(BaseGenerator):
         if hex_tile.is_water:
             if geoform_id == 4 or HexFeature.lake in hex_tile.features:
                 return "Lake"
-            elif hex_tile.is_coast and geoform_id != 2:
+            elif hex_tile.is_coast:
                 return "Coast"
             elif geoform_id == 2:
                 return "Sea"
@@ -343,6 +343,7 @@ class Basic(BaseGenerator):
         tile.features = hex.features
         tile.is_water = water  # Sea is geoform_type 2 # type: ignore
         tile.is_land = land
+        tile.is_inland_sea = HexFeature.inland_sea in hex.features
         tile.is_coast = hex.is_coast
         tile.terrain = hex.terrain  # This is set by classify_terrain # type: ignore
         tile.hemisphere = Tile.HEMISPHERE_NORTH if hex.hemisphere.value == "Northern" else Tile.HEMISPHERE_SOUTH

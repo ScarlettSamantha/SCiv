@@ -4,11 +4,12 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.deer import HuntingCamp
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from managers.i18n import T_TranslationOrStr, t_
-from gameplay.terrain.flat_tundra import FlatTundra
-from gameplay.terrain.hills_tundra import HillsTundra
 from gameplay.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_scrubland import FlatScrubland
+from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.hills_tundra import HillsTundra
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Furs(BaseLuxuryResource):
@@ -20,10 +21,11 @@ class Furs(BaseLuxuryResource):
     icon: str = "assets/icons/resources/core/luxury/hex_border_furs.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
-        FlatForest: 70.0,
-        HillsForest: 70.0,
-        HillsTundra: 70.0,
-        FlatTundra: 70.0,
+        FlatScrubland: 70.0,
+        FlatForest: 50.0,
+        HillsForest: 30.0,
+        HillsTundra: 40.0,
+        FlatTundra: 20.0,
     }
     spawn_amount = 5.0
     improvement_required = [HuntingCamp]

@@ -21,11 +21,11 @@ class Horses(BaseStrategicResource):
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/strategic/bordered_horse.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
-        FlatGrass: 50.0,
+        FlatGrass: 60.0,
         FlatScrubland: 80.0,
         FlatSavanna: 50.0,
         FlatIce: 0.0,
-        HillsGrass: 70.0,
+        HillsGrass: 30.0,
         HillsForestTerrain: 40.0,
         BaseTerrain: 0.0,
     }

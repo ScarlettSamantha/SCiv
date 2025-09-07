@@ -1,6 +1,5 @@
-from typing import TYPE_CHECKING, List, Set
 import uuid
-
+from typing import TYPE_CHECKING, List, Set
 
 from system.subsystems.hexgen.hex import Hex
 
@@ -12,7 +11,7 @@ class Geoform:
     """A landmass or water feature"""
 
     def __init__(self, hexes: set["Hex"], geotype: "GeoformType"):
-        self.type = geotype  # GeoformType
+        self.type: "GeoformType" = geotype  # GeoformType
         self.hexes: Set["Hex"] = hexes  # set
         self.size = len(hexes)
         self.id = uuid.uuid4()  # uuid

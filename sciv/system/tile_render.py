@@ -511,7 +511,7 @@ class TileRenderer:
         icon_node.setTransparency(TransparencyAttrib.M_alpha)
         icon_node.setAttrib(ColorBlendAttrib.makeOff())
         icon_node.setBin("fixed", 60)
-        icon_node.setDepthTest(True)
+        icon_node.setDepthTest(False)
         icon_node.setDepthWrite(False)
         icon_node.setHpr(0, -90, 0)
         icon_node.setScale(0.75)
