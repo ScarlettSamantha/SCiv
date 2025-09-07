@@ -1,10 +1,9 @@
 from typing import Any
 
+from gameplay.bits import Bit
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import t_
-
-from sciv.gameplay.bits import Bit
 
 
 class HillsDesert(BaseTerrain):

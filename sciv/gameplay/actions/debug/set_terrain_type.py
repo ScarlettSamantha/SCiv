@@ -1,11 +1,10 @@
 from typing import TYPE_CHECKING, Any, Set, Type, cast
 
+from game import PathsHelper
 from gameplay.actions.debug.debug_action import DebugAction
+from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.input import InputHelper
 from menus.kivy.parts.popup import MenuPopup
-
-from sciv.game import PathsHelper
-from sciv.gameplay.terrain._base_terrain import BaseTerrain
 
 if TYPE_CHECKING:
     from gameplay.terrain._base_terrain import BaseTerrain

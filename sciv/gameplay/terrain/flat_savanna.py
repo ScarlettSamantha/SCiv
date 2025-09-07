@@ -4,7 +4,7 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.colors import Colors
 from managers.i18n import t_
 
-from sciv.gameplay.bits import Bit
+from gameplay.bits import Bit
 
 
 class FlatSavanna(BaseTerrain):

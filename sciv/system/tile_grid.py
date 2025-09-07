@@ -13,8 +13,8 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
-from sciv.gameplay.repositories.terrain import TerrainRepository
-from sciv.helpers.paths import PathsHelper
+from gameplay.repositories.terrain import TerrainRepository
+from helpers.paths import PathsHelper
 
 if TYPE_CHECKING:
     from managers.entity import Tile
