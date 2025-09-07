@@ -186,7 +186,12 @@ class MapGen:
         for h in self.hex_grid.hexes:
             if not h.is_land:
                 continue
-            if (n.is_water and n.geoform == GeoformType.lake for _, n in h.neighbors):
+
+            def _is_lake(n: Hex) -> bool:
+                g = getattr(n, "geoform", None)
+                return n.is_water and g is not None and g.type == GeoformType.lake
+
+            if any(_is_lake(n) for _, n in h.neighbors):
                 lake_edge_sources.append(h)
 
         if lake_edge_sources:
@@ -424,24 +429,11 @@ class MapGen:
 
     def _seed_rngs(self) -> None:
         seed = self.params.get("random_seed")
-
-        self.rng = random.Random(seed) if seed is not None else random.Random()
-
-        if isinstance(seed, int):
-            try:
-                import numpy as _np
-
-                _np.random.seed(seed % 2**32)
-            except Exception:
-                pass
-            random.seed(seed)
-        else:
-            pass
-
+        self.rng = random.Random(seed)
         try:
             import numpy as _np
 
-            self.np_rng = _np.random.default_rng(seed) if seed is not None else _np.random.default_rng()
+            self.np_rng = _np.random.default_rng(seed)
         except Exception:
             self.np_rng = None
 
@@ -802,8 +794,8 @@ class MapGen:
                 print("There is now {} geoforms".format(len(self.geoforms)))
 
             with Timer("\tAnnotating overlays (straits/bays/isthmuses/peninsulas)", self.debug):
-                for y, row in enumerate(self.hex_grid.grid):
-                    for x, _ in enumerate(row):
+                for x, col in enumerate(self.hex_grid.grid):
+                    for y, _ in enumerate(col):
                         h: Hex = self.hex_grid.grid[x][y]
                         if is_isthmus(h):
                             h.add_feature(HexFeature.isthmus)
