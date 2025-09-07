@@ -106,6 +106,7 @@ class Game(Singleton, DirectObject):
             difficulty=1,
         )
         Cache.set_game_settings(self.properties)
+        self.game_settings = self.properties
 
         self._is_paused: bool = False
         self.debug_enabled: bool = False
@@ -438,7 +439,7 @@ class Game(Singleton, DirectObject):
         EntityManager.set_singleton_instance(self.entities)
 
         self.generate_world()
-
+        self.game_settings = self.properties
         self.logger.info("World generation complete")
 
         self.logger.info(f"Setting up players({self.properties.num_enemies})")  # type: ignore
