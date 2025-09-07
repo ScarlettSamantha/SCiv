@@ -1,6 +1,6 @@
 import weakref
 from datetime import datetime
-from random import choice, randrange
+from random import randrange
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
 from zlib import crc32
 
@@ -13,7 +13,7 @@ from managers.entity import EntityManager
 from system.generators.base import BaseGenerator, WorldParams
 from system.generators.resource_allocator import ResourceAllocator
 from system.pyload import PyLoad
-from system.subsystems.hexgen.enums import HexFeature, MapType, OceanType
+from system.subsystems.hexgen.enums import GeoformType, HexFeature, MapType, OceanType
 from system.tile_grid import TileModelGrid
 
 if TYPE_CHECKING:
@@ -51,21 +51,23 @@ class Basic(BaseGenerator):
             "year_length": 365,
             "day_length": 24,
             "base_temp": 0,
-            "avg_temp": 11,  # 8 is cold 10 is average, 14 is decent, 18 is hot, 22 is very hot
+            "avg_temp": 10,  # 8 is cold 10 is average, 14 is decent, 18 is hot, 22 is very hot
             "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water],
             "random_seed": self.seed,
-            "roughness": 18,  # <10 huge patches; 18 nice; >24 too rough
+            "roughness": 17,  # <10 huge patches; 18 nice; >24 too rough
             "height_range": (0, 240),
             "pressure": 1,  # bar
             "axial_tilt": 18,
             "craters": True,
             "volcanoes": True,
             "volcano_area_size": 1,
-            "num_volcanoes": max(1, self.number_of_tiles // 2500),
+            "num_volcanoes": max(1, self.number_of_tiles // 2000),
             "num_rivers": self.number_of_tiles // 400,
-            "num_territories": self.number_of_tiles // 100,
+            "num_territories": self.number_of_tiles // 300,
+            "lake_to_sea_tiles": 100,
+            "sea_to_ocean_tiles": 150,
         }
 
     def randomize_seed(self) -> int:
@@ -188,26 +190,22 @@ class Basic(BaseGenerator):
 
         hex_temp = float(hex_tile.temperature[0])
         hex_temp_i = int(round(hex_temp))
-
         moisture_like = float(hex_tile.moisture)
 
-        geoform_id: int = int(getattr(getattr(hex_tile, "geoform_type", None), "id", 0))
+        geotype = getattr(hex_tile, "geoform_type", None)
         hex_alt: int = int(hex_tile.altitude)
 
         if HexFeature.volcano in hex_tile.features:
             return "Volcano"
 
         if hex_tile.is_water:
-            if geoform_id == 4 or HexFeature.lake in hex_tile.features:
+            if geotype == GeoformType.lake:
                 return "Lake"
-            elif hex_tile.is_coast:
+            if hex_tile.is_coast:
                 return "Coast"
-            elif geoform_id == 2:
-                return "Sea"
-            elif biome_id in (WorldParams.tundra,) or hex_temp < -1:
+            if geotype in (GeoformType.sea, GeoformType.ocean) and hex_tile.temperature[0] < -1:
                 return "SeaIce"
-            else:
-                return "Sea"
+            return "Sea"
 
         if hex_tile.altitude > WorldParams.hills_to_mountains_threshold:
             return "MountainSnow" if hex_temp_i < -2 else "Mountain"
@@ -243,50 +241,32 @@ class Basic(BaseGenerator):
             ):
                 return "HillsTundra"
 
-        if (
-            biome_id in (WorldParams.grasslands, WorldParams.tropical_forest)
-            and moisture_like > WorldParams.moisture_threshold_mangrove_jungle
-        ):
-            return "FlatJungle"
-
-        if biome_id in (WorldParams.tropical_forest,) and hex_temp < WorldParams.light_jungle_temperature_threshold:
+        if biome_id == WorldParams.tropical_forest:
             return "FlatLightJungle"
 
-        if (
-            biome_id in (WorldParams.grasslands,)
-            and WorldParams.grass_temperature_lower_threshold < hex_temp < WorldParams.grass_temperature_upper_threshold
-            and moisture_like < WorldParams.forest_lower_threshold
-            and moisture_like < WorldParams.moisture_threshold_grassland_lower
-        ):
+        if biome_id == WorldParams.temperate_rainforest:
+            return "FlatJungle"
+
+        if biome_id == WorldParams.grasslands:
             return "FlatGrass"
 
-        if biome_id == WorldParams.desert and moisture_like < WorldParams.scrubland_temperature_threshold:
+        if biome_id == WorldParams.desert:
             return "FlatDesert"
 
-        if biome_id in (
-            WorldParams.tropical_forest,
-            WorldParams.temperate_rainforest,
-            WorldParams.temperate_forest,
-            WorldParams.boreal_forest,
-        ):
-            if hex_temp < WorldParams.cold_forrest_temperature_threshold:
-                return "FlatPineForest"
-            elif moisture_like < WorldParams.moisture_threshold_heavy_forest - 1:
+        if biome_id == WorldParams.temperate_forest:
+            if moisture_like < WorldParams.moisture_threshold_heavy_forest:
                 return "FlatForest"
             else:
                 return "FlatHeavyForest"
 
-        if biome_id == WorldParams.savanna:
-            if (
-                moisture_like > WorldParams.moisture_threshold_grassland_lower
-                and hex_temp < WorldParams.desert_temperature_threshold
-            ):
-                return "FlatGrass"
-            else:
-                return "FlatSavanna"
+        if biome_id == WorldParams.boreal_forest:
+            return "FlatPineForest"
 
         if biome_id == WorldParams.tropical_rainforest:
             return "FlatForest"
+
+        if biome_id == WorldParams.savanna:
+            return "FlatSavanna"
 
         if biome_id == WorldParams.scrubland:
             return "FlatScrubland"
@@ -294,16 +274,13 @@ class Basic(BaseGenerator):
         if biome_id == WorldParams.arctic:
             return "FlatIce"
 
-        if biome_id in (WorldParams.tundra, WorldParams.alpine_tundra):
-            if hex_temp < 0 and moisture_like > WorldParams.moisture_threshold_tundra_snow_lower:
-                return "FlatTundraSnow"
-            else:
-                return "FlatTundra"
+        if biome_id == WorldParams.alpine_tundra:
+            return "FlatTundraSnow"
 
-        if biome_id == 13:
-            return "FlatWasteland"
+        if biome_id == WorldParams.tundra:
+            return "FlatTundra"
 
-        return choice(("FlatTundra",))
+        raise ValueError(f"Could not classify terrain for hex {hex_tile} with biome id {biome_id}")
 
     def instantiate_tiles(self):
         for col in range(self.config.height):
@@ -332,29 +309,49 @@ class Basic(BaseGenerator):
     def enrich_from_extra_data(cls, hex: "Hex", tile: "Tile") -> "Tile":
         from gameplay.tile import Tile
 
-        land = hex.is_land and not hex.is_water and HexFeature.lake not in hex.features and hex.geoform_type != 4  # type: ignore
-        water = not land
+        def _waterbody_touches_edge() -> bool:
+            g = getattr(hex, "geoform", None)
+            if not g:
+                return False
+            max_i = hex.grid.size - 1  # grid is square
+            for h in g.hexes:
+                if h.x == 0 or h.y == 0 or h.x == max_i or h.y == max_i:
+                    return True
+            return False
 
         tile.altitude = float(hex.altitude)
         tile.temperature = round(hex.base_temperature[0], 2)
-        tile.moisture = hex.moisture
-        tile._biome = hex.biome.list()[0]  # This is set by classify_terrain # type: ignore
-        tile.geoform_type = hex.geoform_type.id  # type: ignore
-        tile.features = hex.features
-        tile.is_water = water  # Sea is geoform_type 2 # type: ignore
-        tile.is_land = land
-        tile.is_inland_sea = HexFeature.inland_sea in hex.features
-        tile.is_coast = hex.is_coast
-        tile.terrain = hex.terrain  # This is set by classify_terrain # type: ignore
+        tile.moisture = float(hex.moisture)
+        tile._biome = hex.biome.list()[0]  # set by classify_terrain  # type: ignore
+        if hex.geoform_type is not None:
+            tile.geoforms = hex.geoform_type
+        tile.features = set(hex.features)
+
+        gtype = getattr(hex, "geoform_type", None)
+        tile.is_water = bool(hex.is_water)
+        tile.is_land = bool(hex.is_land)
+
+        tile.is_lake = bool(gtype == GeoformType.lake)
+        tile.is_sea = bool(gtype in (GeoformType.sea, GeoformType.ocean))
+        tile.is_inland_sea = bool(gtype == GeoformType.sea and not _waterbody_touches_edge())
+
+        # Coast: water-side coastline only (and never true for lakes)
+        tile.is_coast = bool(hex.is_coast)
+
+        tile.terrain = str(hex.terrain)  # type: ignore
+
+        # Hemisphere
         tile.hemisphere = Tile.HEMISPHERE_NORTH if hex.hemisphere.value == "Northern" else Tile.HEMISPHERE_SOUTH
-        tile.is_sea = hex.geoform_type.id == 2  # Sea is geoform_type 2 # type: ignore
-        tile.is_lake = HexFeature.lake in hex.features or hex.geoform_type == 4  # type: ignore
+
+        # Optional enum text label for UI
         if hex.geoform_type is not None:
             tile.geoforms = hex.geoform_type.list()[0]
 
+        # Resource instance
         if (resource := hex.get_gameplay_resource()) is not None:
             tile.instance_resource(resource)
 
+        # Edges (keep as-is)
         edge_names: List[str] = list(tile.edges.keys())
         if len(edge_names) != 6:
             raise ValueError(f"Hex {hex} has {len(edge_names)} edges, expected 6.")

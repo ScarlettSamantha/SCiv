@@ -11,7 +11,7 @@ class Lake(BaseTerrain):
     _name: T_TranslationOrStrOrNone = t_("world.terrain.lake")
     _model = "assets/models/terrain/lake.glb"
     _fallback_color = (0, 204, 255)
-    model_pos_z_offset = -0.41
+    model_pos_z_offset = -0.20
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

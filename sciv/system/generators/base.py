@@ -39,20 +39,21 @@ class WorldParams:
         temperate_rainforest,  # id 10 | 'T' | 'Temperate Rainforest'
         tropical_forest,  # id 11 | 'r' | 'Tropical Forest'
         tropical_rainforest,  # id 12 | 'R' | 'Tropical Rainforest'
-    ) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+        wasteland,  # id 13 | 'w' | 'Wasteland'
+    ) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
 
     desert_temperature_threshold = 17
     grass_temperature_upper_threshold = 30
     grass_temperature_lower_threshold = 10
-    forest_lower_threshold = 9.0
-    moisture_threshold_mangrove_jungle = 12
-    moisture_threshold_heavy_forest = 8
-    moisture_threshold_tundra_snow_lower = 5
+    forest_lower_threshold = 5.0
+    moisture_threshold_mangrove_jungle = 16
+    moisture_threshold_heavy_forest = 10
+    moisture_threshold_tundra_snow_lower = 2
     moisture_threshold_grassland_lower = 4
-    light_jungle_temperature_threshold = 25
+    light_jungle_temperature_threshold = 30
     cold_forrest_temperature_threshold = 8
     scrubland_temperature_threshold = 4
-    flat_to_hills_threshold = 180
+    flat_to_hills_threshold = 170
     hills_to_mountains_threshold = 217
 
 

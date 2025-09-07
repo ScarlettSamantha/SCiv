@@ -1,7 +1,7 @@
 import random
 import sys
 from itertools import count
-from typing import Any, Deque, Dict, List, Set, Tuple
+from typing import Any, Callable, Deque, Dict, List, Set, Tuple
 
 import numpy as np
 from helpers.debug import Debug as DebugHelper
@@ -52,12 +52,12 @@ default_params: Dict[str, Any] = {
     "steppe_target_ratio": 0.10,
     "wind_dir": "west",
     "hadley_strength": 0.8,
-    "coast_decay": 3.0,
+    "coast_decay": 2.5,
     "rain_shadow_strength": 1.6,
     "lapse_rate_c_per_km": 6.5,
     "max_elev_m": 4000,
     "equator_temp": 28.0,
-    "pole_temp": -12.0,
+    "pole_temp": -20.0,
     "lake_to_sea_tiles": 100,
     "sea_to_ocean_tiles": 150,
 }
@@ -65,23 +65,22 @@ default_params: Dict[str, Any] = {
 
 class MapGen:
     def __init__(self, params: Dict[str, Any], debug: bool = False):
-        self.params: Dict[str, Any] = default_params
-        self.params.update(params)
+        self.params: Dict[str, Any] = {**default_params, **params}
+
+        self.debug = bool(debug) or DebugHelper.world_generation()
+
         self._seed_rngs()
-
-        self.debug = DebugHelper.world_generation()
-
-        if type(params.get("random_seed")) is int:
-            random.seed(params.get("random_seed"))
 
         with Timer("Building Heightmap", self.debug):
             self.heightmap = Heightmap(self.params, self.debug)
 
         self.hex_grid: Grid = Grid(self.heightmap, self.params)
-        if self.debug is True:
+        if self.debug:
             print("\tAverage Height: {}".format(self.hex_grid.average_height))
             print("\tHighest Height: {}".format(self.hex_grid.highest_height))
             print("\tLowest Height: {}".format(self.hex_grid.lowest_height))
+
+        self.num_tiles: int = self.hex_grid.size * self.hex_grid.size
 
         self.rivers: List[Any] = []
         self.rivers_sources: List[RiverSegment] = []
@@ -89,53 +88,38 @@ class MapGen:
         with Timer("Computing hex distances", self.debug):
             self._get_distances()
 
-        self.num_tiles: int = 0
-
         if self.params.get("hydrosphere"):
             self._generate_rivers()
-
-            print("Making coastal moisture") if self.debug else False
-            for y, row in enumerate(self.hex_grid.grid):
-                for x, _ in enumerate(row):
-                    self.num_tiles += 1
-                    _hex: "Hex" = self.hex_grid.grid[x][y]
-                    if _hex.is_land:
-                        if _hex.distance <= 5:
-                            _hex.moisture += 1
-                        if _hex.distance <= 3:
-                            _hex.moisture += random.randint(1, 3)
-                        if _hex.distance <= 1:
-                            _hex.moisture += random.randint(1, 6)
 
         factor_min_max: int = 2
         max_aquifers: int = self.num_tiles // 80
         min_aquifers: int = max_aquifers // factor_min_max
-        num_aquifers = random.randint(min_aquifers, max_aquifers)
+        num_aquifers = self.rng.randint(min_aquifers, max_aquifers) if max_aquifers > 0 else 0
 
-        if self.params.get("hydrosphere") is False or self.params.get("sea_percent") == 100:
+        if not self.params.get("hydrosphere") or int(self.params.get("sea_percent", 0)) == 100:
             num_aquifers = 0
 
         aquifers: List["Hex"] = []
         while len(aquifers) < num_aquifers:
-            rx = random.randint(0, len(self.hex_grid.grid) - 1)
-            ry = random.randint(0, len(self.hex_grid.grid) - 1)
+            rx = self.rng.randint(0, len(self.hex_grid.grid) - 1)
+            ry = self.rng.randint(0, len(self.hex_grid.grid) - 1)
             _hex: "Hex" = self.hex_grid.grid[rx][ry]
             if _hex.is_land and _hex.moisture < 5:
                 aquifers.append(_hex)
 
         for hex in aquifers:
             r1: List["Hex"] = hex.bubble(distance=3)
-            for hex in r1:
-                if hex.is_land:
-                    hex.moisture += random.randint(0, 2)
+            for h in r1:
+                if h.is_land:
+                    h.moisture += self.rng.randint(0, 2)
             r2: List["Hex"] = hex.bubble(distance=2)
-            for hex in r2:
-                if hex.is_land:
-                    hex.moisture += 1
+            for h in r2:
+                if h.is_land:
+                    h.moisture += 1
             r3: List["Hex"] = hex.surrounding
-            for hex in r3:
-                if hex.is_land:
-                    hex.moisture += 1
+            for h in r3:
+                if h.is_land:
+                    h.moisture += 1
 
         if self.params.get("craters") is True:
             self.generate_craters()
@@ -147,20 +131,81 @@ class MapGen:
         self.geoforms: List[Geoform] = []
 
         self.generate_territories()
+
         self._determine_landforms()
         self._detect_lakes()
 
+        if self.params.get("hydrosphere"):
+            with Timer("Applying moisture diffusion (coast/rivers/lakes)", self.debug):
+                self._apply_moisture()
+
+        self._integrity_checks()
+
+    def _apply_moisture(self) -> None:
+        import math
+
+        BIG = 10**9
+        lam = float(self.params.get("coast_decay", 3.0))
+        lam = max(0.5, lam)  # avoid div-by-zero; small half-hex limit
+
+        def is_sea_coast_hex(h: Hex) -> bool:
+            if not h.is_land:
+                return False
+            for _, n in h.neighbors:
+                if n.is_water and getattr(n, "geoform", None) is not None:
+                    if n.geoform.type in (GeoformType.sea, GeoformType.ocean):  # type: ignore[attr-defined]
+                        return True
+            return False
+
+        sea_dist = self._distance_field(is_sea_coast_hex)
+        A_coast = 6.0
+        max_d = int(min(100, math.ceil(4.0 * lam)))
+
+        for h, d in sea_dist.items():
+            if d >= BIG or d > max_d:
+                continue
+            h.moisture += A_coast * math.exp(-float(d) / lam)
+
+        river_sources: List[Hex] = []
+        for h in self.hex_grid.hexes:
+            if not h.is_land:
+                continue
+            edges = getattr(h, "edges", None)
+            if not edges:
+                continue
+            if any(e is not None and getattr(e, "is_river", False) for e in edges):
+                river_sources.append(h)
+
+        if river_sources:
+            A_river = 3.0
+            lam_r = max(0.5, 0.7 * lam)
+            steps_r = int(min(60, math.ceil(3.0 * lam_r)))
+            self._diffuse_from_sources(river_sources, A_river, lam_r, steps_r)
+
+        lake_edge_sources: List[Hex] = []
+        for h in self.hex_grid.hexes:
+            if not h.is_land:
+                continue
+            if (n.is_water and n.geoform == GeoformType.lake for _, n in h.neighbors):
+                lake_edge_sources.append(h)
+
+        if lake_edge_sources:
+            A_lake = 4.5
+            lam_l = 4.5
+            steps_l = 3
+            self._diffuse_from_sources(lake_edge_sources, A_lake, lam_l, steps_l)
+
     def generate_craters(self):
-        num_craters = random.randint(0, 15)
+        num_craters = self.rng.randint(0, 15)
         if self.debug:
             print("Making {} craters".format(num_craters))
         craters: List[Any] = []
 
         while len(craters) < num_craters:
-            size = random.randint(1, 3)
+            size = self.rng.randint(1, 3)
             craters.append(
                 dict(
-                    hex=random.choice(self.hex_grid.hexes),
+                    hex=self.rng.choice(self.hex_grid.hexes),
                     size=size,
                     depth=10 * size,
                 )
@@ -172,25 +217,25 @@ class MapGen:
             hexes: List["Hex"] = []
 
             if size >= 1:
-                for hex in center_hex.surrounding:
-                    hex.add_feature(HexFeature.crater)
-                    hex.altitude = center_hex.altitude - 5
-                    hex.altitude = max(hex.altitude, np.float64(0))
+                for h in center_hex.surrounding:
+                    h.add_feature(HexFeature.crater)
+                    h.altitude = center_hex.altitude - 5
+                    h.altitude = max(h.altitude, np.float64(0))
             elif size >= 2:
                 hexes = center_hex.bubble(distance=2)
-                for hex in hexes:
-                    hex.add_feature(HexFeature.crater)
-                    hex.altitude = center_hex.altitude - 10
-                    hex.altitude = max(hex.altitude, np.float64(0))
+                for h in hexes:
+                    h.add_feature(HexFeature.crater)
+                    h.altitude = center_hex.altitude - 10
+                    h.altitude = max(h.altitude, np.float64(0))
             elif size >= 3:
                 hexes = center_hex.bubble(distance=3)
-                for hex in hexes:
-                    hex.add_feature(HexFeature.crater)
-                    hex.altitude = center_hex.altitude - 15
-                    hex.altitude = max(hex.altitude, np.float64(0))
+                for h in hexes:
+                    h.add_feature(HexFeature.crater)
+                    h.altitude = center_hex.altitude - 15
+                    h.altitude = max(h.altitude, np.float64(0))
 
-            for hex in hexes[: round(len(hexes) / 3)]:
-                for i in hex.surrounding:
+            for h in hexes[: round(len(hexes) / 3)]:
+                for i in h.surrounding:
                     if i.has_feature(HexFeature.crater) is False:
                         i.add_feature(HexFeature.crater)
                         i.altitude = center_hex.altitude - 20
@@ -210,45 +255,44 @@ class MapGen:
         tries = 0
         while len(volcanoes) < num_volcanoes and tries < num_volcanoes * 20:
             tries += 1
-            center_hex: Hex = random.choice(self.hex_grid.hexes)
+            center_hex: Hex = self.rng.choice(self.hex_grid.hexes)
             if center_hex.is_water or float(center_hex.altitude) < 50:
                 continue
             if any(nh.has_feature(HexFeature.volcano) or nh.is_water for nh in center_hex.bubble(distance=5) or []):
                 continue
             if self._local_ruggedness(center_hex) < 8.0:
                 continue
-            extra_height = random.randint(75, 150)
+            extra_height = self.rng.randint(75, 150)
             volcanoes.append(dict(hex=center_hex, size=size, height=extra_height))
 
-        if size == 0 or size == 1:
+        if size in (0, 1):
             for volcano in volcanoes:
                 height: int = volcano.get("height", 0)
-                hex: "Hex" = volcano["hex"]
+                h: "Hex" = volcano["hex"]
                 if self.debug:
                     print(f"Volcano: Size: {size}, Height: {height}")
-                hex.altitude = np.float64(
-                    min(hex.altitude + height, self.params.get("height_range", (0, 255))[1] - 120)
-                )
-                hex.add_feature(HexFeature.volcano)
+                h.altitude = np.float64(min(h.altitude + height, self.params.get("height_range", (0, 255))[1] - 120))
+                h.add_feature(HexFeature.volcano)
 
     def generate_territories(self):
-        num_territories = self.params.get("num_territories", 0)
+        num_territories = int(self.params.get("num_territories", 0))
 
         if self.debug:
-            print("Making {} territories".format(num_territories)) if self.debug else False
+            print("Making {} territories".format(num_territories))
 
-        c = 0
         if num_territories == 0:
             return
+
+        c = 0
         while len(self.territories) < num_territories:
-            rx = random.randint(0, len(self.hex_grid.grid) - 1)
-            ry = random.randint(0, len(self.hex_grid.grid) - 1)
+            rx = self.rng.randint(0, len(self.hex_grid.grid) - 1)
+            ry = self.rng.randint(0, len(self.hex_grid.grid) - 1)
             hex_s = self.hex_grid.grid[rx][ry]
             if hex_s.is_land:
                 color = (
-                    random.randint(0, 255),
-                    random.randint(0, 255),
-                    random.randint(0, 255),
+                    self.rng.randint(0, 255),
+                    self.rng.randint(0, 255),
+                    self.rng.randint(0, 255),
                 )
                 self.territories.append(Territory(self.hex_grid, hex_s, c, color))
                 c += 1
@@ -257,8 +301,8 @@ class MapGen:
         count = 0
         while count < total_hexes:
             count = 0
-            territories: List[Territory] = self.territories
-            random.shuffle(territories)
+            territories: List[Territory] = self.territories[:]
+            self.rng.shuffle(territories)
             for t in territories:
                 frontier = t.frontier
                 for f in frontier:
@@ -278,7 +322,7 @@ class MapGen:
         if self.debug:
             print("Merging barren territories")
 
-        if self.params.get("num_territories", 0) > 0:
+        if len(self.territories) > 0:
             top: List["Territory"] = []
             bottom: List["Territory"] = []
             for t in self.territories:
@@ -293,7 +337,7 @@ class MapGen:
             if len(top) > 0:
                 if self.debug:
                     print("Merging {} territories from the top of the map".format(len(top)))
-                pick_top = random.choice(top)
+                pick_top = self.rng.choice(top)
                 top.remove(pick_top)
                 for t in self.territories:
                     if t in top:
@@ -303,7 +347,7 @@ class MapGen:
             if len(bottom) > 0:
                 if self.debug:
                     print("Merging {} territories from the bottom of the map".format(len(bottom)))
-                pick_bottom = random.choice(bottom)
+                pick_bottom = self.rng.choice(bottom)
                 bottom.remove(pick_bottom)
                 for t in self.territories:
                     if t in bottom:
@@ -332,7 +376,7 @@ class MapGen:
                 print("There are now {} territories".format(len(self.territories)))
 
         if self.debug:
-            print("Splitting territories into contiguous blocks") if self.debug else False
+            print("Splitting territories into contiguous blocks")
         for t in self.territories:
             t.find_groups()
 
@@ -380,6 +424,9 @@ class MapGen:
 
     def _seed_rngs(self) -> None:
         seed = self.params.get("random_seed")
+
+        self.rng = random.Random(seed) if seed is not None else random.Random()
+
         if isinstance(seed, int):
             try:
                 import numpy as _np
@@ -388,6 +435,15 @@ class MapGen:
             except Exception:
                 pass
             random.seed(seed)
+        else:
+            pass
+
+        try:
+            import numpy as _np
+
+            self.np_rng = _np.random.default_rng(seed) if seed is not None else _np.random.default_rng()
+        except Exception:
+            self.np_rng = None
 
     def _generate_rivers(self) -> None:
         num_rivers = int(self.params.get("num_rivers", 0))
@@ -598,11 +654,6 @@ class MapGen:
                         h.add_feature(HexFeature.lake)
                     if self.debug:
                         print(f"Lake detected: size={len(comp)}")
-                elif not touch and len(comp) > lake_to_sea:
-                    for h in comp:
-                        h.add_feature(HexFeature.inland_sea)
-                    if self.debug:
-                        print(f"Inland sea detected: size={len(comp)}")
 
     def _determine_landforms(self):
         with Timer("Finding geographic features", self.debug):
@@ -612,7 +663,6 @@ class MapGen:
                 visited: set["Hex"] = set()
                 while queue:
                     current = queue.pop()
-                    # Important: do not block on current.geoform_type; only the HexType matters.
                     if current in visited or current.type != target_type:
                         continue
                     visited.add(current)
@@ -638,7 +688,8 @@ class MapGen:
                 lake_to_sea = int(self.params.get("lake_to_sea_tiles", 60))
                 sea_to_ocean = int(self.params.get("sea_to_ocean_tiles", 100))
 
-                current: "Hex | None" = first_hex_without_geoform(self.hex_grid.grid.tolist())
+                grid_list = self.hex_grid.grid.tolist()
+                current: "Hex | None" = first_hex_without_geoform(grid_list)
                 while current is not None:
                     if current.is_land:
                         hexes: Set["Hex"] = flood_fill(current, current.type)
@@ -660,7 +711,7 @@ class MapGen:
                             geotype = GeoformType.sea if size < sea_to_ocean else GeoformType.ocean
 
                     assign_geoform(hexes, geotype)
-                    current = first_hex_without_geoform(self.hex_grid.grid.tolist())
+                    current = first_hex_without_geoform(grid_list)
 
             def calculate_neighbors():
                 for geoform in self.geoforms:
@@ -763,27 +814,35 @@ class MapGen:
                         elif is_peninsula(h):
                             h.add_feature(HexFeature.peninsula)
 
+    def _integrity_checks(self) -> None:
+        if not self.debug:
+            return
+        bad_pairs = 0
+        for g in self.geoforms:
+            if g.type != GeoformType.lake:
+                continue
+            for h in g.hexes:
+                for _, n in h.neighbors:
+                    ng = getattr(n, "geoform", None)
+                    if n.is_water and ng and ng.type in (GeoformType.sea, GeoformType.ocean):
+                        bad_pairs += 1
+                        print("[WARN] Lake touches sea/ocean at", h.x, h.y, "→", n.x, n.y)
+                        break
+        if bad_pairs == 0 and self.debug:
+            print("Integrity: no lake-to-sea adjacency detected.")
+
     def is_river(self, edge: HexSide) -> bool:
         for r in self.rivers_sources:
             while r.next is not None:
                 if r.edge == edge:
                     return True
-                r: RiverSegment = r.next
+                r = r.next  # type: ignore[assignment]
         return False
 
     def hex_distance(self, a: Tuple[int, int], b: Tuple[int, int]) -> int:
         aq, ar = a
         bq, br = b
         return (abs(aq - bq) + abs(aq + ar - bq - br) + abs(ar - br)) // 2
-
-    def get_side_to(self, target_hex: "Hex") -> "HexSide | None":
-        for side, neighbor in self.neighbors.items():  # type: ignore
-            if neighbor is target_hex:
-                return side  # type: ignore
-        return None
-
-    def get_edge(self, side: "HexSide") -> "HexSide | None":
-        return self.edges[side]  # type: ignore
 
     @staticmethod
     def _axial_to_cube(q: int, r: int) -> Tuple[float, float, float]:
@@ -845,3 +904,54 @@ class MapGen:
             if s.x == x and s.y == y:
                 seg.append(s.side)
         return seg
+
+    def _distance_field(self, is_source_hex: Callable[[Hex], bool]) -> Dict[Hex, int]:
+        from collections import deque
+
+        dist: Dict[Hex, int] = {}
+        q: Deque[Hex] = deque()
+
+        for h in self.hex_grid.hexes:
+            if h.is_land and is_source_hex(h):
+                dist[h] = 0
+                q.append(h)
+
+        while q:
+            cur = q.popleft()
+            cd = dist[cur]
+            for _, n in cur.neighbors:
+                if not n.is_land:
+                    continue
+                if n not in dist:
+                    dist[n] = cd + 1
+                    q.append(n)
+
+        return dist
+
+    def _diffuse_from_sources(self, sources: List[Hex], amplitude: float, lam: float, max_steps: int) -> None:
+        import math
+        from collections import deque
+
+        if not sources:
+            return
+
+        visited: Set[Hex] = set()
+        q: Deque[Tuple[Hex, int]] = deque()
+
+        for s in sources:
+            if s.is_land and s not in visited:
+                visited.add(s)
+                q.append((s, 0))
+                s.moisture += amplitude
+
+        while q:
+            cur, d = q.popleft()
+            nd = d + 1
+            if nd > max_steps:
+                continue
+            for _, n in cur.neighbors:
+                if not n.is_land or n in visited:
+                    continue
+                visited.add(n)
+                n.moisture += amplitude * math.exp(-float(nd) / lam)
+                q.append((n, nd))

@@ -189,44 +189,60 @@ class Hex:
 
     @property
     def biome(self) -> Biome:
-        """
-        Computes the biome
-        :return: Biome
-        """
+        DESERT_TRANSITION_RAIN_THRESHOLD = 3.0
+        GRASS_TO_FOREST_TRANSITION_THRESHOLD = 7.0
+        RAIN_FOREST_THRESHOLD = 20.0
+        FROST_LOWER_TEMP = 0.0
+        FOREST_LOWER_TEMP = 5.0
+        RAIN_FOREST_TEMPERATURE_THRESHOLD = 25.0
+
         map_type = self.grid.params.get("map_type")
-        if map_type is MapType.terran:
-            temp = self.temperature[0]
-            rain = self.moisture
-            if temp <= -10:
-                return Biome.arctic
-            elif 5 < rain and temp <= 0:
-                return Biome.alpine_tundra
-            elif 0 <= rain <= 5 and temp <= 0:
-                return Biome.tundra
-            elif 5 < rain and 0 < temp <= 7:
-                return Biome.boreal_forest
-            elif 0 <= rain <= 3.5 and 0 < temp <= 20:
-                return Biome.grasslands
-            elif 3.5 < rain <= 5 and 0 < temp <= 20:
-                return Biome.shrubland
-            elif 0 <= rain < 4 and 20 < temp:
-                return Biome.desert
-            elif 4 <= rain <= 8 and 20 < temp:
-                return Biome.shrubland
-            elif 5 < rain <= 10 and 7 < temp <= 20:
-                return Biome.savanna
-            elif 10 < rain <= 20 and 7 < temp <= 20:
-                return Biome.temperate_forest
-            elif 20 < rain and 7 < temp <= 20:
-                return Biome.temperate_rainforest
-            elif 8 < rain <= 20 and 20 < temp:
-                return Biome.tropical_forest
-            elif 20 < rain and 20 < temp:
-                return Biome.tropical_rainforest
+        if map_type is not MapType.terran:
+            return Biome.lifeless
 
-            raise Exception("Biome invalid Rainfall: {}, Temperature: {}".format(rain, temp))
+        temp = self.temperature[0]
+        rain = min(RAIN_FOREST_TEMPERATURE_THRESHOLD + 1, self.moisture)
 
-        return Biome.lifeless
+        # 1) Extreme cold first (keep simple unless you have elevation/ice to split alpine vs arctic)
+        if temp <= FROST_LOWER_TEMP:
+            return Biome.arctic
+
+        # 2) Wet/hot first so deserts don't steal them
+        if rain >= RAIN_FOREST_THRESHOLD and temp >= RAIN_FOREST_TEMPERATURE_THRESHOLD:
+            return Biome.tropical_rainforest
+        if rain >= RAIN_FOREST_THRESHOLD and FOREST_LOWER_TEMP <= temp < RAIN_FOREST_TEMPERATURE_THRESHOLD:
+            return Biome.temperate_rainforest
+
+        # 3) Forest bands
+        if (
+            GRASS_TO_FOREST_TRANSITION_THRESHOLD <= rain < RAIN_FOREST_THRESHOLD
+            and temp >= RAIN_FOREST_TEMPERATURE_THRESHOLD
+        ):
+            return Biome.tropical_forest
+        if (
+            GRASS_TO_FOREST_TRANSITION_THRESHOLD <= rain < RAIN_FOREST_THRESHOLD
+            and FOREST_LOWER_TEMP <= temp < RAIN_FOREST_TEMPERATURE_THRESHOLD
+        ):
+            return Biome.temperate_forest
+        if rain <= RAIN_FOREST_THRESHOLD and 0.0 < temp <= FOREST_LOWER_TEMP:
+            return Biome.boreal_forest
+
+        # 4) Grass/shrub/dry
+        if DESERT_TRANSITION_RAIN_THRESHOLD <= rain <= GRASS_TO_FOREST_TRANSITION_THRESHOLD and 5.0 <= temp <= 30.0:
+            return Biome.grasslands
+        if 2.0 <= rain <= RAIN_FOREST_THRESHOLD and 0.0 < temp <= 10.0:
+            return Biome.shrubland
+
+        if 2.5 <= rain <= DESERT_TRANSITION_RAIN_THRESHOLD and 10.0 <= temp <= 40.0:
+            return Biome.savanna
+        if 0.0 <= rain <= DESERT_TRANSITION_RAIN_THRESHOLD and 10.0 < temp <= 40.0:
+            return Biome.desert
+
+        # 6) Tundra — keep your moisture cutoff but narrow temp a bit if tundra is too common
+        if 0.0 <= rain and 0.0 < temp <= 10.0:
+            return Biome.tundra
+
+        raise Exception("Biome invalid Temp: {} Rain: {}".format(temp, rain))
 
     @property
     def max_size(self) -> int:

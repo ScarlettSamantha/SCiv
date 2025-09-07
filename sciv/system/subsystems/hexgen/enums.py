@@ -67,9 +67,6 @@ class SuperEnum(Enum):
         return list(cls)
 
 
-# --- Enums ---
-
-
 class Biome(SuperEnum):
     __keys__: ClassVar[List[str]] = ["id", "code", "title", "color", "base_fertility", "color_satellite"]
 
@@ -97,8 +94,8 @@ class Biome(SuperEnum):
     @classmethod
     def from_id(cls, id_: int) -> "Biome | None":
         for biome in cls.items():
-            if biome.id == id_:
-                return biome
+            if biome.id == id_:  # type: ignore
+                return biome  # type: ignore
         return None
 
 

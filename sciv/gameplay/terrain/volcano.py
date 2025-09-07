@@ -23,17 +23,12 @@ class Volcano(BaseTerrain):
         self._texture = "volcano.png"
 
     def register_bits(self) -> None:
-        self.bits.add_bit(
-            Bit(
-                model="volcano.glb",
-                scale=1.3,
-                hpr=(-75, 0, 0),
-                offset=(0, 0, 0.25),
-                default_lighting=False,
-                default_shader=False,
-                blocks_resource_model_spawning=True,
-                preferred_slot="center",
-            )
+        volcano = Bit(
+            model="volcano.glb",
+            scale=1.3,
+            hpr=(-75, 0, 0),
+            offset=(0, 0, 0.0),
+            blocks_resource_model_spawning=True,
+            preferred_slot="center",
         )
-
-        return super().register_bits()
+        self.bits.add_bit(volcano)
