@@ -1,8 +1,7 @@
 import typing
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Self, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
-from direct.task.Task import Task
 from gameplay.civilization import T_TranslationOrStr
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
@@ -16,10 +15,10 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from managers.i18n import T_TranslationOrStrOrNone
 from managers.ui import ui
+from system.tooltip_poller import TooltipPoller
 
 if TYPE_CHECKING:
     from game import OpenCiv
-    from menus.screens.game_ui import GameUIScreen
 
 
 class TooltipSet(Enum):
@@ -73,7 +72,7 @@ class TooltipSets:
 
 
 class TooltipLabel(BoxLayout):
-    def __init__(self, text: str, markup: bool = False, image_source: str | None | Image = None, **kwargs: Any):
+    def __init__(self, text: str, markup: bool = True, image_source: str | None | Image = None, **kwargs: Any):
         super().__init__(orientation="horizontal", spacing=dp(6), padding=(dp(10), dp(6)), **kwargs)  # type: ignore
         self.size_hint = (None, None)  # type: ignore
         self.opacity = 0
@@ -89,10 +88,11 @@ class TooltipLabel(BoxLayout):
             else:
                 self.icon = image_source
             self.icon.pos_hint = {"x": 0, "top": 1}
+            self.add_widget(self.icon)
 
         self.label = Label(
             text=text,
-            markup=markup,
+            markup=True,
             color=(1, 1, 1, 1),
             size_hint=(None, None),
             text_size=(None, None),  # type: ignore
@@ -134,31 +134,95 @@ class TooltipBehavior:
         self.tooltip_label: TooltipLabel | None = None
         self._tooltip_trigger = None
         self._suppress_tooltip = False
-        self._task_name = f"_poll_mouse_pos_{id(self)}"
         self.tooltip_set: TooltipSet | None = kwargs.pop("tooltip_set", None)
-        self.base.taskMgr.add(self._poll_mouse_pos, self._task_name, delay=1 / 5)  # type: ignore
+
+        self.hovered: bool = False
+
+        TooltipPoller.instance().register(self)
+
+        self.bind(tooltip_visible=self._on_tooltip_visible)  # type: ignore
+
         if hasattr(self, "register_event_type"):
             self.register_event_type("on_enter")  # type: ignore
             self.register_event_type("on_leave")  # type: ignore
 
-    def _poll_mouse_pos(self, task: Task) -> int:
+        if hasattr(self, "bind"):
+            try:
+                self.bind(opacity=lambda *_: self.maybe_hide_if_not_pollworthy())  # type: ignore
+                self.bind(parent=lambda *_: self.maybe_hide_if_not_pollworthy())  # type: ignore
+                self.bind(size=lambda *_: self.maybe_hide_if_not_pollworthy())  # type: ignore
+                self.bind(pos=lambda *_: self.maybe_hide_if_not_pollworthy())  # type: ignore
+                self.bind(tooltip_text=lambda *_: self.maybe_hide_if_not_pollworthy())  # type: ignore
+            except Exception:
+                pass  # nosec: B110
+
+    def _on_tooltip_visible(self, instance: "TooltipBehavior", value: bool):
+        if self.tooltip_set and not TooltipSets.is_enabled(self.tooltip_set):
+            if value:
+                self.hide_tooltip()
+            self._suppress_tooltip = True
+        else:
+            self._suppress_tooltip = False
+
+    def show_tooltip(self, *args: Any) -> None:
+        if self.tooltip_visible or self._suppress_tooltip:
+            return
+        if not (self.tooltip_text or getattr(self, "tooltip_image_source", "")):
+            return
+
+        img_src = self.tooltip_image_source if self.tooltip_image_source else None
+        self.tooltip_label = TooltipLabel(
+            text=self.tooltip_text,
+            markup=True,
+            image_source=img_src,
+            size_hint=(None, None),
+        )
+        if self.tooltip_multiline:
+            self.tooltip_label.label.text_size = (dp(300), None)
+            self.tooltip_label.label.halign = "left"
+
+        parent = ui.get_singleton_instance().get_main_game_ui()
+        if self.tooltip_label in parent.children:
+            parent.remove_widget(self.tooltip_label)
+        parent.add_widget(self.tooltip_label)
+
         if self.base.mouseWatcherNode.hasMouse():  # type: ignore
             win_size = self.base.win.getSize()  # type: ignore
             px = (self.base.mouseWatcherNode.getMouseX() + 1) * 0.5 * win_size[0]  # type: ignore
             py = (self.base.mouseWatcherNode.getMouseY() + 1) * 0.5 * win_size[1]  # type: ignore
-            in_bounds = self.collide_point(*self.to_widget(px, py))  # type: ignore
-            if in_bounds:
-                self.dispatch("on_enter")  # type: ignore
-                if self.tooltip_visible:
-                    self.update_tooltip_position(px, py)  # type: ignore
-            else:
-                self.dispatch("on_leave")  # type: ignore
-        return Task.cont
+            self.update_tooltip_position(px, py)
 
-    def update_tooltip_position(self, x: float, y: float):
+        self.tooltip_label.opacity = 1
+        self.tooltip_visible = True
+
+    def hide_tooltip(self) -> None:
+        if not self.tooltip_visible:
+            return
+        if self.tooltip_label:
+            self.tooltip_label.opacity = 0
+            if self.tooltip_label.parent:
+                self.tooltip_label.parent.remove_widget(self.tooltip_label)
+            self.tooltip_label = None
+        self.tooltip_visible = False
+
+    def handle_global_mouse(self, px: float, py: float) -> None:
+        in_bounds = self.collide_point(*self.to_widget(px, py))  # type: ignore
+
+        if in_bounds and not self.hovered:
+            self.hovered = True
+            self.dispatch("on_enter")  # type: ignore
+        elif not in_bounds and self.hovered:
+            self.hovered = False
+            self.dispatch("on_leave")  # type: ignore
+
+        if in_bounds and self.tooltip_visible:
+            self.update_tooltip_position(px, py)
+
+    def update_tooltip_position(self, x: float, y: float) -> None:
         if not self.tooltip_label:
             return
-        parent: "GameUIScreen" = ui.get_singleton_instance().get_main_game_ui()
+
+        parent = ui.get_singleton_instance().get_main_game_ui()
         local_x, local_y = parent.to_widget(x, y)
 
         try:
@@ -185,10 +249,20 @@ class TooltipBehavior:
 
         self.tooltip_label.pos = (tx, ty)  # type: ignore
 
-    def on_enter(self, *args: Any):
-        if self._has_disabled_ancestor():
-            return
+    def should_poll(self) -> bool:
+        if self._suppress_tooltip:
+            return False
+        if not self.tooltip_text and not getattr(self, "tooltip_image_source", ""):
+            return False
+        return True
 
+    def maybe_hide_if_not_pollworthy(self) -> None:
+        if not self.should_poll():
+            if self.tooltip_visible:
+                self.hide_tooltip()
+            self.hovered = False
+
+    def on_enter(self, *args: Any):
         if not self.tooltip_visible and self.tooltip_text and not self._suppress_tooltip:
             if "<br>" in self.tooltip_text or "\n" in self.tooltip_text:
                 self.tooltip_multiline = True
@@ -201,46 +275,14 @@ class TooltipBehavior:
             self._tooltip_trigger = None
         self.hide_tooltip()
 
-    def show_tooltip(self, dt: float) -> int:
-        image_src = self.tooltip_image_source or getattr(self, "source", "")
-        self.tooltip_label = TooltipLabel(
-            text=self.tooltip_text,
-            markup=True,
-            image_source=image_src if image_src else None,
-        )
-        parent: "GameUIScreen" = ui.get_singleton_instance().get_main_game_ui()
-        if self.tooltip_label in parent.children:
-            parent.remove_widget(self.tooltip_label)
-        parent.add_widget(self.tooltip_label)
-
-        if self.base.mouseWatcherNode.hasMouse():  # type: ignore
-            win_size = self.base.win.getSize()  # type: ignore
-            px = (self.base.mouseWatcherNode.getMouseX() + 1) * 0.5 * win_size[0]  # type: ignore
-            py = (self.base.mouseWatcherNode.getMouseY() + 1) * 0.5 * win_size[1]  # type: ignore
-            self.update_tooltip_position(px, py)  # type: ignore
-
-        self.tooltip_label.opacity = 1
-        self.tooltip_visible = True
-        return 0
-
-    def hide_tooltip(self):
-        if self.tooltip_label and self.tooltip_visible:
-            ui.get_singleton_instance().get_main_game_ui().remove_widget(self.tooltip_label)
-        self.tooltip_label = None
-        self.tooltip_visible = False
-
-    def _has_disabled_ancestor(self) -> bool:
-        widget: Self = self
-        i = 0
-        while widget and i < 5:
-            i += 1
-            if hasattr(widget, "popup_disabled"):  # type: ignore
-                return bool(widget.popup_disabled)  # type: ignore
-            widget = widget.parent  # type: ignore
-        return False
-
     def destroy(self) -> None:
-        self.base.taskMgr.remove(self._task_name)
+        if self._tooltip_trigger:
+            try:
+                self._tooltip_trigger.cancel()  # type: ignore
+            except Exception:
+                pass
+            self._tooltip_trigger = None
+        TooltipPoller.instance().unregister(self)
         self.hide_tooltip()
 
 
@@ -340,7 +382,7 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
         self.height = dp(64)
         self.width = dp(200)
 
-        self._title_lbl = Label(text=self.primary_text, size_hint_y=None)
+        self._title_lbl = Label(text=self.primary_text, size_hint_y=None, markup=True)
         self._title_lbl.bind(texture_size=self._update_label_height)  # type: ignore
         self.add_widget(self._title_lbl)
 
@@ -391,7 +433,7 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
             img = TooltippedImage(
                 source=src,
                 tooltip_text=tip,
-                tooltip_markup=False,
+                tooltip_markup=True,
                 tooltip_multiline=True,
                 tooltip_image_source=src,
                 size_hint=(None, None),
@@ -406,6 +448,7 @@ class TooltippedButton(ButtonBehavior, BoxLayout, TooltipBehavior):
                 text=self.secondary_text,
                 valign="middle",
                 halign="left",
+                markup=True,
                 size_hint=(None, None),
             )
             lbl.text_size = (None, icon_size)  # type: ignore

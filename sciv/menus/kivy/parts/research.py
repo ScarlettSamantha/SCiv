@@ -93,7 +93,7 @@ class ResearchButton(TooltippedButton):
             source=tech_icon_src,
             tooltip_text=tooltip_text,
             tooltip_image_source=tech_icon_src,
-            tooltip_markup=False,
+            tooltip_markup=True,
             tooltip_multiline=True,
             size_hint=(None, None),
             size=(dp(20), dp(20)),

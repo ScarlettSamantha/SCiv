@@ -84,7 +84,6 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         self.tooltip_image_source = icon_src
         self.tooltip_multiline = True
 
-        # Background and Icon
         with self.canvas.before:
             self.bg_color = Color(0.3, 0.3, 0.3, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
@@ -107,7 +106,6 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
 
     def destroy(self) -> None:
         del self.icon
-        self.base.taskMgr.remove(self._task_name)
         self.hide_tooltip()
         self.unbind(on_release=self._on_click)  # type: ignore
         self.clear_widgets()
@@ -163,7 +161,6 @@ class SubtreeCard(BoxLayout):
             row.width = len(civics_in_row) * node_w + (len(civics_in_row) - 1) * col_spacing
             row.height = node_h
 
-            # centre row inside the fixed‑width card
             anchor = AnchorLayout(size_hint=(1, None), height=node_h)
             anchor.add_widget(row)
             rows_box.add_widget(anchor)
@@ -175,7 +172,6 @@ class SubtreeCard(BoxLayout):
 
         rows_box.height = len(tiers) * node_h + (len(tiers) - 1) * row_spacing
 
-        # occupy remaining space, keep centred
         main_anchor = AnchorLayout(size_hint=(1, 1), anchor_x="center", anchor_y="center")
         main_anchor.add_widget(rows_box)
         self.add_widget(main_anchor)
@@ -297,24 +293,21 @@ class Civics(FloatLayout, DirectObject):
 
             node.tooltip_text = "\n".join(map(str, tooltip_parts))
 
-            # Set background color based on state
             if completed:
-                node.bg_color.rgba = (0.0, 0.4, 1.0, 1.0)  # Blue for completed
+                node.bg_color.rgba = (0.0, 0.4, 1.0, 1.0)
             elif unlockable and can_afford:
-                node.bg_color.rgba = (1.0, 1.0, 0.0, 1.0)  # Yellow = buyable now
+                node.bg_color.rgba = (1.0, 1.0, 0.0, 1.0)
             elif unlockable:
-                node.bg_color.rgba = (0.2, 0.6, 0.2, 1.0)  # Green = unlockable
+                node.bg_color.rgba = (0.2, 0.6, 0.2, 1.0)
             else:
-                node.bg_color.rgba = (0.3, 0.3, 0.3, 1.0)  # Default gray
+                node.bg_color.rgba = (0.3, 0.3, 0.3, 1.0)
 
-            # Optional dimming for unavailable
             node.opacity = 1.0 if not completed and unlockable else 0.5
 
     def build(self) -> None:
         if self._is_build:
             return
 
-        # full‑screen horizontal scroll area
         self.scroll_view = HorizontalScrollView(
             do_scroll_x=True,
             do_scroll_y=False,
@@ -333,7 +326,6 @@ class Civics(FloatLayout, DirectObject):
         )
         self.layout.bind(minimum_width=self.layout.setter("width"))  # type: ignore
 
-        # background
         with self.canvas.before:  # type: ignore
             Color(0.2, 0.2, 0.2, 1)
             self._bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
@@ -347,12 +339,6 @@ class Civics(FloatLayout, DirectObject):
         self.popup_disabled = False
 
     def draw_dependency_lines(self) -> None:
-        """
-        Draw arrows from each civic to the ones it unlocks,
-        assuming civics are in a two-row layout:
-            - Arrows go from bottom of top-row nodes to top of bottom-row nodes.
-        """
-
         def get_relative_pos(widget: Widget, ancestor: Widget) -> Tuple[int, int] | Tuple[int | float, int | float]:
             pos = widget.center
             current = widget
