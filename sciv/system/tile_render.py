@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from direct.task import Task
-from gameplay.bits import BitsRenderer
+from system.bits_renderer import BitsRenderer
 from gameplay.resource import BaseResource
 from helpers.cache import Cache
 from helpers.colors import Colors
