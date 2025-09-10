@@ -14,6 +14,7 @@ from gameplay.player import Player
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.tile_slots import default_slots
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
@@ -51,19 +52,6 @@ class CantBuildReason(Enum):
     NOT_CONSTRUCTABLE_BUILDER = 8
     IMPROVEMENT_ALREADY_EXISTS = 9
     IMPROVEMENT_TILE_NOT_PASSABLE = 10
-
-
-default_slots = {
-    "e": (0.45, 0.0, 0),
-    "ne": (0.375, 0.35, 0),
-    "nw": (-0.375, 0.35, 0),
-    "w": (-0.45, 0.0, 0),
-    "sw": (-0.375, -0.35, 0),
-    "se": (0.375, -0.35, 0),
-    "center": (0.0, 0.0, 0),
-    "n": (0.0, 0.45, 0),
-    "s": (0.0, -0.45, 0),
-}
 
 
 @dataclass(init=False, eq=False, unsafe_hash=False)
