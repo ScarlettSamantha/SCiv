@@ -6,6 +6,12 @@
             "type": "shell",
             "command": "cd ${workspaceFolder}/stubs/kivy && git pull origin main && cd ${workspaceFolder}",
             "problemMatcher": []
+        },
+        {
+            "label": "PySpy: Profile Main Game File",
+            "type": "shell",
+            "command": "/usr/bin/python3 -m py-spy record ./run.py -f speedscope -o profile.speedscope.json",
+            "problemMatcher": [],
         }
     ]
 }
