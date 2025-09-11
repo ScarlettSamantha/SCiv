@@ -12,11 +12,7 @@ def bootstrap():
     from game import OpenCiv
 
     app = OpenCiv()
-
-    try:
-        app.run()
-    except (Exception, KeyboardInterrupt) as _:
-        print("Goodbye :-)")
+    app.run()
 
 
 if __name__ == "__main__":
