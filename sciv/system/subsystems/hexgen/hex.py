@@ -41,7 +41,7 @@ class Hex:
 
         self.gameplay_resource: Optional[Type[BaseResource]] = None
 
-        self.distance = 0  # distance in hexes to the coast. 0 if no coast
+        self.distance = 0.0
         self.moisture = 0.0
 
         self.territory: Optional[Territory] = None
@@ -50,11 +50,7 @@ class Hex:
         self.bubble_cache: Dict[Any, Any] = dict()
 
         self.features: Set[Any] = set()
-
-        # geoform type
         self.geoform_type: Optional[GeoformType] = None
-
-        # geoform instance if it exists
         self.geoform: Optional[Any] = None
 
         self._neighbors: Optional[List[tuple[HexEdge, "Hex"]]] = None
@@ -62,7 +58,6 @@ class Hex:
         world_pressure = self.grid.params.get("surface_pressure", 1013.25)
         self.pressure: Tuple[float, float] = (float(world_pressure), float(world_pressure))
 
-        # instance of a sea
         self.sea = None
 
         self.id = uuid.uuid4()
@@ -74,27 +69,12 @@ class Hex:
         return self.gameplay_resource
 
     def has_feature(self, feature: HexFeature):
-        """
-        Does this hex have this feature
-        :param feature: HexFeature
-        :return:
-        """
         return feature in self.features
 
     def add_feature(self, feature: HexFeature):
-        """
-        Adds a feature
-        :param feature: HexFeature
-        :return: None
-        """
         self.features.add(feature)
 
     def remove_feature(self, feature: HexFeature):
-        """
-        Removes a feature
-        :param feature: HexFeature
-        :return: None
-        """
         self.features.remove(feature)
 
     @property
@@ -118,7 +98,6 @@ class Hex:
 
     @property
     def latitude(self) -> float:
-        """Hex's current Latitude. Negative is south, positive is north"""
         ratio = self.x / self.grid.size
         if ratio < 0.5:  # north
             return (1 - ratio / 0.5) * 90
@@ -129,7 +108,6 @@ class Hex:
     def zone(self) -> Zones:
         axial_tilt: float = float(abs(self.grid.params.get("axial_tilt", 18)))
 
-        # northern polar zone
         northern_polar_zone: float = axial_tilt
         southern_polar_zone: float = -(0 - axial_tilt)
         northern_tropic_zone = axial_tilt
@@ -157,26 +135,12 @@ class Hex:
 
     @property
     def base_temperature(self) -> tuple[float, float]:
-        """
-        Computes the temperature of this hex. Takes into account the latitude (x-coord) and
-        the altitude (higher is colder)
-        :return: number
-        """
-        # import ipdb; ipdb.set_trace()
         ratio = self.latitude_ratio
         avg_temp = self.grid.params.get("avg_temp", 10)
         volitility: float = round(abs(self.grid.params.get("axial_tilt", 18)))
         base_temp = self.grid.params.get("base_temp")
         min_temp: int = max(avg_temp - volitility, base_temp)
-        # global avg temperature should be around ratio 0.4 and 0.6
-
-        # part1 includes latitude only
         part1: float = (abs(min_temp) + (avg_temp + volitility)) * ratio + min_temp
-        # return (part1, part1)
-        # print(base_temp, avg_temp, volitility, min_temp, ratio, part1)
-        #       43         73          16         57
-
-        # part2 includes altitude
         factor: int = 7
         if self.is_water:
             factor = 8
@@ -191,10 +155,10 @@ class Hex:
     def biome(self) -> Biome:
         DESERT_TRANSITION_RAIN_THRESHOLD = 3.0
         GRASS_TO_FOREST_TRANSITION_THRESHOLD = 7.0
-        RAIN_FOREST_THRESHOLD = 20.0
+        RAIN_FOREST_THRESHOLD = 17.5
         FROST_LOWER_TEMP = 0.0
         FOREST_LOWER_TEMP = 5.0
-        RAIN_FOREST_TEMPERATURE_THRESHOLD = 25.0
+        RAIN_FOREST_TEMPERATURE_THRESHOLD = 22.5
 
         map_type = self.grid.params.get("map_type")
         if map_type is not MapType.terran:
@@ -203,17 +167,15 @@ class Hex:
         temp = self.temperature[0]
         rain = min(RAIN_FOREST_TEMPERATURE_THRESHOLD + 1, self.moisture)
 
-        # 1) Extreme cold first (keep simple unless you have elevation/ice to split alpine vs arctic)
         if temp <= FROST_LOWER_TEMP:
             return Biome.arctic
 
-        # 2) Wet/hot first so deserts don't steal them
+        # Wet/hot first so deserts don't steal them
         if rain >= RAIN_FOREST_THRESHOLD and temp >= RAIN_FOREST_TEMPERATURE_THRESHOLD:
             return Biome.tropical_rainforest
         if rain >= RAIN_FOREST_THRESHOLD and FOREST_LOWER_TEMP <= temp < RAIN_FOREST_TEMPERATURE_THRESHOLD:
             return Biome.temperate_rainforest
 
-        # 3) Forest bands
         if (
             GRASS_TO_FOREST_TRANSITION_THRESHOLD <= rain < RAIN_FOREST_THRESHOLD
             and temp >= RAIN_FOREST_TEMPERATURE_THRESHOLD
@@ -227,7 +189,6 @@ class Hex:
         if rain <= RAIN_FOREST_THRESHOLD and 0.0 < temp <= FOREST_LOWER_TEMP:
             return Biome.boreal_forest
 
-        # 4) Grass/shrub/dry
         if DESERT_TRANSITION_RAIN_THRESHOLD <= rain <= GRASS_TO_FOREST_TRANSITION_THRESHOLD and 5.0 <= temp <= 30.0:
             return Biome.grasslands
         if 2.0 <= rain <= RAIN_FOREST_THRESHOLD and 0.0 < temp <= 10.0:
@@ -238,7 +199,6 @@ class Hex:
         if 0.0 <= rain <= DESERT_TRANSITION_RAIN_THRESHOLD and 10.0 < temp <= 40.0:
             return Biome.desert
 
-        # 6) Tundra — keep your moisture cutoff but narrow temp a bit if tundra is too common
         if 0.0 <= rain and 0.0 < temp <= 10.0:
             return Biome.tundra
 
@@ -250,10 +210,6 @@ class Hex:
 
     @property
     def map_surrounding(self) -> list[Any]:
-        """
-        Returns the surrounding hexes without wrapping about the map
-        :return: list of Hex
-        """
         # east
         sur: List[Hex] = []
         if self.y != self.max_size:
@@ -289,7 +245,6 @@ class Hex:
 
     @property
     def hex_east(self):
-        """Returns the hex to the East or None if end of map"""
         if self.y == self.max_size:
             return self.grid.find_hex(self.x, 0)
         else:
@@ -297,7 +252,6 @@ class Hex:
 
     @property
     def hex_west(self):
-        """Returns the hex to the West or None if end of map"""
         if self.y == 0:
             return self.grid.find_hex(self.x, self.max_size)
         else:
@@ -305,7 +259,6 @@ class Hex:
 
     @property
     def hex_north_west(self):
-        """Returns the hex to the north west"""
         if self.x == 0:  # top of map
             return self.grid.find_hex(0, round(self.y / -1 + self.max_size))
         elif self.y == 0 and self.x % 2 == 0:  # left of map and even
@@ -318,7 +271,6 @@ class Hex:
 
     @property
     def hex_north_east(self):
-        """Returns the hex to the North East or None if end of map"""
         if self.x == 0:  # top of map
             return self.grid.find_hex(0, round(self.y / -1 + self.max_size))
         elif self.y == self.max_size and self.x % 2 == 1:  # right of map and x is odd
@@ -331,7 +283,6 @@ class Hex:
 
     @property
     def hex_south_west(self):
-        """Returns the hex to the South West or None if end of map"""
         if self.x == self.max_size:  # bottom of map
             return self.grid.find_hex(self.max_size, round(self.y / -1 + self.max_size))
         elif self.y == 0 and self.x % 2 == 0:  # left of map and x is even
@@ -344,7 +295,6 @@ class Hex:
 
     @property
     def hex_south_east(self):
-        """Returns the hex to the South East or None if end of map"""
         if self.x == self.max_size:  # bottom of map
             return self.grid.find_hex(self.max_size, round(self.y / -1 + self.max_size))
         elif self.y == self.max_size and self.x % 2 == 1:  # right of map and x is odd
@@ -356,7 +306,6 @@ class Hex:
                 return self.grid.find_hex(self.x + 1, self.y + 1)
 
     def neighbor_at(self, direction: HexEdge) -> "Hex":
-        """Given a HexEdge, find the hex on the other side of this edge"""
         if direction is HexEdge.east:
             return self.hex_east
         elif direction is HexEdge.south_east:
@@ -372,10 +321,6 @@ class Hex:
 
     @property
     def surrounding(self) -> List["Hex"]:
-        """
-        Returns a list of all surrounding hexes
-        Returns: Hex
-        """
         return [
             self.hex_east,
             self.hex_south_east,
@@ -387,7 +332,6 @@ class Hex:
 
     @property
     def neighbors(self) -> List[tuple[HexEdge, "Hex"]]:
-        """Surrounding hexes with HexEdge enums"""
         if self._neighbors is not None:
             return self._neighbors
         else:
@@ -427,10 +371,6 @@ class Hex:
 
     @property
     def is_land(self) -> bool:
-        """
-        Determines whether or not this is a land hex. (Altitude over sealevel)
-        :return: Boolean
-        """
         return bool(self.altitude >= self.grid.sealevel)
 
     @property
@@ -471,7 +411,6 @@ class Hex:
         return self.is_coast_water
 
     def decide_slope(self, one: "Hex", two: "Hex") -> tuple[Any, Any]:
-        """Returns UP, DOWN tuple"""
         if one.altitude < two.altitude:
             return two, one
         return one, two
@@ -499,7 +438,6 @@ class Hex:
         ]
 
     def calculate(self):
-        """Calculate the edges"""
         h1 = self.hex_north_east
         h2 = self.hex_south_east
         up, down = self.decide_slope(h1, h2)

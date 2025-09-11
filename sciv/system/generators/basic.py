@@ -113,6 +113,8 @@ class Basic(BaseGenerator):
         self.adjust_water_levels()
         end_water_level_adjustment: datetime = datetime.now()
 
+        self._desertize_adjacent_tundra()
+
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_inst = datetime.now()
         self.instantiate_tiles()
@@ -281,6 +283,45 @@ class Basic(BaseGenerator):
             return "FlatTundra"
 
         raise ValueError(f"Could not classify terrain for hex {hex_tile} with biome id {biome_id}")
+
+    def _desertize_adjacent_tundra(self) -> int:
+        height = self.config.height
+        width = self.config.width
+        raw = self.hex_grid.grid
+
+        DESERTS = {"FlatDesert", "HillsDesert"}
+        TUNDRA_FLATS = {"FlatTundra"}
+
+        def neighbors(c: int, r: int):
+            for dc, dr in Tiles.get_directions_per_col(c):
+                nc, nr = c + dc, r + dr
+                if 0 <= nc < height and 0 <= nr < width:
+                    yield nc, nr
+
+        def terrain_at(c: int, r: int) -> str:
+            h = raw[c][r]
+            t = h.terrain
+            if not t:
+                tile = self.world.grid.get((c, r))
+                if tile is not None:
+                    t = tile.get_terrain().get_key()
+            return t or ""
+
+        to_convert: List[Tuple[int, int]] = []
+        for c in range(height):
+            for r in range(width):
+                terr = terrain_at(c, r)
+                if terr not in TUNDRA_FLATS:
+                    continue
+                for nc, nr in neighbors(c, r):
+                    if terrain_at(nc, nr) in DESERTS:
+                        to_convert.append((c, r))
+                        break
+
+        for c, r in to_convert:
+            self.hex_grid.grid[c][r].terrain = "FlatDesert"
+
+        return len(to_convert)
 
     def instantiate_tiles(self):
         for col in range(self.config.height):
