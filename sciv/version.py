@@ -6,8 +6,8 @@ except ImportError:
     pkg_resources = None
 
 __major__: int = 0
-__minor__: int = 1
-__patch__: int = 7
+__minor__: int = 2
+__patch__: int = 0
 __revision__: int = 1
 __isdev__: bool = True
 
@@ -19,11 +19,10 @@ else:
     __build__: str = ""
 
 __version__: str = f"{__major__}.{__minor__}.{__patch__}{__pre_release__}{__build__}"
-__version_name__ = "Ranged Combat"
+__version_name__ = "Proof of Concept"
 
 
 def get_package_version(package_name: str) -> str:
-    """Retrieve the version of a package using importlib.metadata with a fallback to pkg_resources."""
     try:
         return version(package_name)
     except PackageNotFoundError:
