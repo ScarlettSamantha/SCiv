@@ -2,15 +2,19 @@ import random
 import uuid
 from copy import copy
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class GroupMode(Enum):
     OR = "or"
     AND = "and"
 
-    def __getstate__(self) -> object:
+    def dump(self) -> Dict[str, Any]:
         return {"name": self.name, "value": self.value}
+
+    def load(self, data: Dict[str, Any]) -> "GroupMode":
+        name = data.get("name", self.name)
+        return GroupMode[name]
 
 
 class Bit:
@@ -36,7 +40,7 @@ class Bit:
         self.offset: Tuple[float, float, float] = offset
         self.hpr: Tuple[float, float, float] = hpr
         self.preferred_slot: Optional[str] = preferred_slot
-        self.net_tag: str = uuid.uuid4().hex
+        self.net_tag: str = id or uuid.uuid4().hex
         self.allow_auto_scale: bool = allow_auto_scale
         self.disabled: bool = disabled
         self.blocks_resource_model_spawning: bool = blocks_resource_model_spawning
@@ -51,10 +55,40 @@ class Bit:
     ) -> "Bit":
         _copy = copy(self)
         _copy.id = str(uuid.uuid4().hex)
+        _copy.net_tag = _copy.id or uuid.uuid4().hex
         _copy.scale = scale if scale is not None else self.scale
         _copy.offset = offset if offset is not None else self.offset
         _copy.hpr = hpr if hpr is not None else self.hpr
         return _copy
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "scale": self.scale,
+            "offset": self.offset,
+            "hpr": self.hpr,
+            "preferred_slot": self.preferred_slot,
+            "allow_auto_scale": self.allow_auto_scale,
+            "disabled": self.disabled,
+            "blocks_resource_model_spawning": self.blocks_resource_model_spawning,
+            "net_tag": self.net_tag,
+            "cls_ref": f"{self.__module__}.{self.__class__.__name__}",
+        }
+
+    def load_dump(self, data: Dict[str, Any]) -> "Bit":
+        self.id = data.get("id", self.id)
+        self.scale = data.get("scale", self.scale)
+        self.offset = tuple(data.get("offset", self.offset))
+        self.hpr = tuple(data.get("hpr", self.hpr))
+        self.preferred_slot = data.get("preferred_slot", self.preferred_slot)
+        self.allow_auto_scale = data.get("allow_auto_scale", self.allow_auto_scale)
+        self.disabled = data.get("disabled", self.disabled)
+        self.blocks_resource_model_spawning = data.get(
+            "blocks_resource_model_spawning",
+            self.blocks_resource_model_spawning,
+        )
+        self.net_tag = data.get("net_tag", self.net_tag)
+        return self
 
     def rotate(self, h: float = 0.0, p: float = 0.0, r: float = 0.0) -> "Bit":
         self.hpr = (h, p, r)
@@ -101,18 +135,34 @@ class Bits:
             return f"{parent_path}.{self.name}" if parent_path else self.name
         return ""
 
-    def __getstate__(self) -> object:
-        state = self.__dict__.copy()
-        state.pop("parent", None)
-        state["mode"] = self.mode.name
+    def dump(self) -> Dict[str, Any]:
+        result: Dict[str, Any] = {}
         if self.bits:
-            state["bits"] = {
-                k: f"{v.__module__}.{v.__class__.__name__}.{str(v.model.replace('/', '_'))}"
-                for k, v in self.bits.items()
-            }
-        else:
-            state["bits"] = {}
-        return state
+            result["bits"] = {k: v.dump() for k, v in self.bits.items()}
+        if self.groups:
+            result["groups"] = {k: v.dump() for k, v in self.groups.items()}
+        result["mode"] = self.mode.value
+        result["enabled"] = self.enabled
+        result["empty_probability"] = self.empty_probability
+        return result
+
+    def load(self, data: Dict[str, Any]) -> "Bits":
+        self.mode = GroupMode[data.get("mode", self.mode.name)]
+        self.enabled = data.get("enabled", self.enabled)
+        self.empty_probability = data.get("empty_probability", self.empty_probability)
+        bits_data = data.get("bits", {})
+        for k, v in bits_data.items():
+            bit = Bit(model="")
+            bit.load_dump(v)
+            self.bits[k] = bit
+            if bit.disabled:
+                self.disabled_bits[k] = bit
+        groups_data = data.get("groups", {})
+        for k, v in groups_data.items():
+            group = Bits(parent=self, name=k)
+            group.load(v)
+            self.groups[k] = group
+        return self
 
     def _get_full_bit_key(self, bit_id: str) -> str:
         path = self.full_path

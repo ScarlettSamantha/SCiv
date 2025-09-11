@@ -249,7 +249,7 @@ class Unit(BaseEntity, ABC):
 
             self.unit_icons.set_depth_write(True)  # type: ignore
             self.unit_icons.set_depth_test(True)  # type: ignore
-            self.unit_icons.setTwoSided(True)  # type: ignore
+            self.unit_icons.setTwoSided(two_sided=True)  # type: ignore
 
             self.unit_icons.set_bin("transparent", 90)  # type: ignore
 

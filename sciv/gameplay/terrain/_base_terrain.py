@@ -79,10 +79,13 @@ class BaseTerrain(ABC):
             "model_rotation": str(self.model_rotation),
             "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
             "fallback_color": self.fallback_color,
+            "bits": self.bits.dump(),
         }
         return data
 
     def load_state(self, state: Dict[str, Any]) -> None:
+        from gameplay.bits import Bits
+
         self.name = state.get("name", "")
         self._model = state.get("model", "")
         self.water_availability = state.get("water_availability", 1.0)
@@ -105,6 +108,9 @@ class BaseTerrain(ABC):
             self.uv_map = uv_map
 
         supported_improvements: List[str] = state.get("supported_improvements", [])
+
+        self.bits = Bits()
+        self.bits.load(state.get("bits", {}))
 
         for imp in supported_improvements:
             improvement_class: Type["Improvement"] = EntityManager.get_singleton_instance().dynamic_import(imp)
@@ -209,11 +215,9 @@ class BaseTerrain(ABC):
     def get_warning_text(self) -> Tuple[T_TranslationOrStr, T_TranslationOrStr]:
         return self._warn_user_before_build_title, self._warn_user_before_build_text
 
-    def on_spawn(self): ...  # meant for runtime decisions like neighbor evaluation when determining yield.
+    def on_spawn(self): ...
 
-    def on_build_upon(
-        self, improvement: "Improvement"
-    ): ...  # this is mostly for things like forests, where the terrain is replaced by a new terrain type.
+    def on_build_upon(self, improvement: "Improvement"): ...
 
     def get_atlas_uv(self) -> Tuple[int, int]:
         return self.uv_map

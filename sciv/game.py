@@ -18,6 +18,9 @@ from helpers.direct_loading_screen import LoadingScreen
 from helpers.os import WindowsHelper
 from helpers.paths import PathsHelper
 from kivy.config import Config
+
+Config.set("graphics", "maxfps", "200")  # type: ignore
+
 from managers.i18n import I18nManager, set_i18n
 from managers.unit import UnitManager
 from panda3d.core import loadPrcFile
@@ -86,9 +89,7 @@ class OpenCiv(ShowBase):
         base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
         PathsHelper.base_path = str(base_file_path)
         ShowBase.__init__(self)
-        self.cache = Cache
         config_mgr.apply_config_to_prc()
-        config_mgr.disable_vsync()
 
         self.config_manager: ConfigManager = config_mgr
         self.base_path: pathlib.Path = pathlib.Path.cwd().absolute()
@@ -96,7 +97,6 @@ class OpenCiv(ShowBase):
         if WindowsHelper.is_windows():
             WindowsHelper.load_dll(str(self.base_path / "libs/win-amd64/glew32.dll"))
 
-        # Loading screen
         loading_screen = LoadingScreen(
             self, [str(self.base_path / "assets" / "logo.png")], 15, on_continue=self.on_loading_screen_continue
         )
@@ -105,19 +105,15 @@ class OpenCiv(ShowBase):
         loading_screen.next_stage("Loading Panda3D")
         self.disableMouse()
 
-        # Logging
         loading_screen.next_stage("Setting up logging")
 
-        # Cache
         Cache.set_showbase_instance(self)
         self.engine_logger: Logger = self.logger.engine.getChild("Main")
         self.engine_logger.info("Starting OpenCiv")
 
-        # Messenger
         loading_screen.next_stage("Loading Messenger")
         self.messenger: Messenger = Messenger()
 
-        # Internationalization
         loading_screen.next_stage(f"Loading translations for {self.config_manager.get_language()}")
         self.engine_logger.info("Setting up i18n")
 
@@ -125,7 +121,6 @@ class OpenCiv(ShowBase):
         Cache.set_i18n_instance(self.i18n)
         set_i18n(self.i18n)
 
-        # Generate assets
         loading_screen.next_stage("Generating assets")
         self.engine_logger.info("Generating non-static assets")
         self.generate_non_static_assets()
@@ -137,14 +132,12 @@ class OpenCiv(ShowBase):
         World.set_instance(self.world)
         self.world.__setup__(self)
 
-        # Input manager
         loading_screen.next_stage("Setting up input manager")
         self.engine_logger.info("Setting up input manager")
         self.input_manager = Input(self)
         Input.set_singleton_instance(self.input_manager)
         self.input_manager.inject_into_camera()
 
-        # Camera
         loading_screen.next_stage("Setting up camera")
         self.engine_logger.info("Setting up camera")
         self.game_camera = Camera(self)
