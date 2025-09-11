@@ -78,6 +78,7 @@ class ui(Singleton, DirectObject):
         self.notifications: Notification = Notification()
         self._base = base
         self.registered = False
+        self.result = None
         if not self.registered:
             self.register()
             self.registered = True
@@ -125,6 +126,7 @@ class ui(Singleton, DirectObject):
         from menus.kivy.core import SCivGUI
 
         self.game_gui = SCivGUI(self._base)
+        self.result = self.game_gui.display_region.get_draw_callback()  # type: ignore # We store the original draw callback to force the return of window. This is a known bug
         self.game_gui.run()  # type: ignore
 
     def register(self) -> bool:
