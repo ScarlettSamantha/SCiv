@@ -39,7 +39,7 @@ class Cache:
         return cls._core_logger
 
     @classmethod
-    def get_weakref(cls) -> ReferenceType["OpenCiv"]:
+    def get_weakref(cls) -> "ReferenceType[OpenCiv]":
         assert cls._instance is not None, "Cache instance is not set."
         return ref(cls._instance)
 
