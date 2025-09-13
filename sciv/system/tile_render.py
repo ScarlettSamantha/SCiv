@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from direct.task import Task
-from system.bits_renderer import BitsRenderer
 from gameplay.resource import BaseResource
 from helpers.cache import Cache
 from helpers.colors import Colors
@@ -36,6 +35,7 @@ from panda3d.core import (
 from PIL import Image
 from PIL.ImageFont import FreeTypeFont
 from system.atlas import AtlasGenerator
+from system.bits_renderer import BitsRenderer
 
 if TYPE_CHECKING:
     from gameplay.city import City
@@ -77,7 +77,7 @@ class TileRenderer:
         self.available_actions: List[str] = []
         self.ui_node: NodePath = self.anchor_node.attachNewNode("ui_group")
 
-        self.city_ui_node: NodePath = self.ui_node.attachNewNode("city_ui_group")
+        self.city_ui_node: Optional[NodePath] = None
         self.healthbar_node: Optional[NodePath] = None
         self.build_queue_node: Optional[NodePath] = None
         self.population_node: Optional[NodePath] = None
@@ -101,8 +101,6 @@ class TileRenderer:
         self.selector_shader = Shader.load(Shader.SL_GLSL, vertex=shader_vertex_path, fragment=shader_fragment_path)
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
-
-        self._build_selector_quad()
 
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
@@ -141,24 +139,28 @@ class TileRenderer:
 
     def toggle_tile_selector(self, enable: bool) -> None:
         self.selector_enabled = enable
-        if self.selector_np:
-            if enable:
-                self.on_select()
+        if enable:
+            self.on_select()
+            if self.selector_np:
                 if self.tile.owner is not None:
                     color = self.tile.get_owner().color
                 else:
                     color = Colors.WHITE
                 self.selector_np.setShaderInput("color", color)  # type: ignore
                 self.selector_np.show()
-            else:
-                self.selector_np.hide()
-                self.on_deselect()
+        else:
+            self.on_deselect()
 
     def on_select(self) -> None:
+        if self.selector_np is None:
+            self._build_selector_quad()
         self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 10)  # type: ignore
 
     def on_deselect(self) -> None:
         self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
+        if self.selector_np is not None:
+            self.selector_np.removeNode()
+            self.selector_np = None
 
     def clear_ui(self) -> None:
         for child in self.ui_node.getChildren():
@@ -169,7 +171,10 @@ class TileRenderer:
         self.unit_markers_node = None
         self.city_nameplate_node = None
 
-        self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+        if self.city_ui_node is not None:
+            self.city_ui_node.removeNode()
+        self.city_ui_node = None
+
         self.healthbar_node = None
         self.build_queue_node = None
         self.population_node = None
@@ -177,6 +182,11 @@ class TileRenderer:
 
     def destroy(self) -> None:
         self.clear_ui()
+        self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
+        if self.selector_np is not None:
+            self.selector_np.removeNode()
+            self.selector_np = None
+
         self.anchor_node.removeNode()
         self.geometry_node.removeNode()
         self.clear_models()
@@ -188,15 +198,15 @@ class TileRenderer:
 
         self.clear_ui()
 
-        # self._draw_terrain_overlay()
         self._draw_improvements()
-
         self._draw_resource_model()
-
         self._draw_yield_and_population_icons()
 
-        self._draw_city_nameplate()
-        self._draw_city_ui()
+        if self.tile.city:
+            if self.city_ui_node is None:
+                self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+            self._draw_city_nameplate()
+            self._draw_city_ui()
 
         self.bits_renderer.render()
 
@@ -209,8 +219,15 @@ class TileRenderer:
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
 
-    def update(self):
-        self.city_ui_node.removeNode()
+    def update(self) -> None:
+        if not self.tile.city:
+            if self.city_ui_node is not None:
+                self.city_ui_node.removeNode()
+                self.city_ui_node = None
+            return
+
+        if self.city_ui_node is not None:
+            self.city_ui_node.removeNode()
         self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
         self._draw_city_ui()
 
@@ -218,7 +235,10 @@ class TileRenderer:
         if not self.tile.city:
             return
 
-        parent: NodePath[PandaNode] = self.city_ui_node
+        if self.city_ui_node is None:
+            self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+
+        parent: NodePath = self.city_ui_node
 
         i18n: I18nManager = get_i18n()
         city: "City" = self.tile.city
