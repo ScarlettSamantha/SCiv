@@ -18,7 +18,7 @@ class Clams(BaseBonusResource):
     description: T_TranslationOrStr = t_("content.resources.core.clams.description")
     _color = (1.0, 0.0, 1.0)
     icon: str = "assets/icons/resources/core/bonus/hex_border_clams.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 10.0, Coast: 90.0, SeaIce: 0.0, Lake: 40.0}
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 10.0, Coast: 90.0, SeaIce: 0.0, Lake: 55.0}
     spawn_amount = 3.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
     coverage = 2.2

@@ -7,6 +7,7 @@ from gameplay.terrain.coast import Coast
 from gameplay.terrain.flat_desert import FlatDesert
 from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.sea import Sea
+from gameplay.terrain.sea_ice import SeaIce
 from managers.i18n import T_TranslationOrStr, t_
 
 
@@ -18,6 +19,7 @@ class Oil(BaseStrategicResource):
     coverage = 3
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         Sea: 70.0,
+        SeaIce: 90.0,
         Coast: 40.0,
         BaseTerrain: 5.0,
         FlatSavanna: 70.0,
@@ -25,7 +27,7 @@ class Oil(BaseStrategicResource):
     }
     icon: str = "assets/icons/resources/core/strategic/bordered_oil.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.BOTH
-    spawn_amount = 3.0
+    spawn_amount = 3.5
     model = ("assets/models/resources/oil_barrel.glb", None)
     model_size = 0.33
 
