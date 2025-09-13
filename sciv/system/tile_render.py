@@ -683,9 +683,8 @@ class TileRenderer:
         full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
         self.last_result = None
 
-        loaded_model: NodePath[PandaNode] = AssetManager.load_model(full_path)
-
-        if not loaded_model:
+        model_tpl: NodePath = AssetManager.load_model(full_path)
+        if not model_tpl:
             self.tile.logger.error(f"Model {full_path} could not be loaded.")
             return None
 
@@ -696,16 +695,12 @@ class TileRenderer:
         else:
             x, y, z = pos_offset
 
-        loaded_model.setScale(max(0.01, scale))
-        loaded_model.setHpr(*hpr)
-
-        node: NodePath[PandaNode] = loaded_model.instanceTo(self.geometry_node)
-
-        if flatten_model:
-            node.flatten_medium()
-
+        node: NodePath = model_tpl.instanceTo(self.geometry_node)
         node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
         node.setPos(x, y, z)
+        node.setScale(max(0.01, scale))
+        node.setHpr(*hpr)
+
         node.setCollideMask(BitMask32.bit(1))
         node.setTag(NET_TYPE_FIELD, str(net_type.value))
 
@@ -720,7 +715,7 @@ class TileRenderer:
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
 
         self.models.append(node)
-        self.last_result: Optional[NodePath[PandaNode]] = node
+        self.last_result = node
         if Debug.world_spawning():
             self.tile.logger.debug(f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}.")
 

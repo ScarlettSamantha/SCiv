@@ -12,11 +12,12 @@ class BitsRenderer:
     def __init__(self, tile: "Tile", parent: Optional[NodePath] = None) -> None:
         self.tile: "Tile" = tile
         self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.get_prop_slots()
-        self._bit_slot_assignments: Dict[str, Bit] = {}
+        self._bit_slot_assignments: Dict[str, "Bit"] = {}
+        self._bit_models: Dict[str, NodePath] = {}
         self.parent: NodePath = parent if parent else tile.renderer.geometry_node
 
     def render(self) -> None:
-        active_bits = {b.id: b for b in self.tile.get_terrain().get_bits() if not b.is_disabled()}
+        active_bits: Dict[str, "Bit"] = {b.id: b for b in self.tile.get_terrain().get_bits() if not b.is_disabled()}
 
         for slot, bit in list(self._bit_slot_assignments.items()):
             if bit.id not in active_bits:
@@ -82,15 +83,15 @@ class BitsRenderer:
             parent=self.parent,
             flatten_model=False,
         )
-        if model is not None:
-            model.flatten_strong()
+        if model:
+            self._bit_models[bit.id] = model
 
     def _unrender_slot(self, slot_name: str) -> None:
-        bit = self._bit_slot_assignments.get(slot_name)
+        bit: "Bit | None" = self._bit_slot_assignments.get(slot_name)
         if not bit:
             return
 
-        self.tile.renderer.remove_model(bit.model)
+        self.tile.renderer.remove_model(bit.id)
 
     def disable_all(self) -> None:
         for bit in self.tile.get_terrain().get_bits():
