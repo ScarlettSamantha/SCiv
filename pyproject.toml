@@ -1,6 +1,6 @@
 [tool.briefcase]
 project_name = "SCiv"
-version = "0.1.7"
+version = "0.2.0"
 package = "nl.scarlettbytes.sciv"
 bundle = "nl.scarlettbytes.sciv"
 author = "Scarlett Samantha Verheul"
@@ -82,7 +82,7 @@ exclude = [
   "**/*.pyi",
   "sciv/system/subsystems/hexgen/",
 ]
-stubPath = "./typings"
+stubPath = "./stubs"
 pythonPlatform = "Linux"
 
 
