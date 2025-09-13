@@ -11,6 +11,7 @@ class FlatLightJungle(BaseTerrain):
     movement_modifier = 0.5
     water_availability = 0
     _fallback_color = (91, 128, 64)
+    _model = "assets/models/terrain/flat_jungle.glb"
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -23,17 +24,9 @@ class FlatLightJungle(BaseTerrain):
     def register_bits(self) -> None:
         from gameplay.bits import Bit
 
-        tree_1 = Bit("jungle_tree_1.glb", scale=0.3, offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0))
-        tree_2 = Bit("jungle_tree_2.glb", scale=0.3, offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0))
-        tree_3 = Bit("jungle_tree_3.glb", scale=0.3, offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0))
+        swamp = Bit("swamp.glb", scale=0.75, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0), preferred_slot="center")
 
         self.bits.mode = self.bits.mode.OR
 
-        group_1 = self.bits.add_group("tree_1")
-        group_1.add_bit(tree_1)
-
-        group_2 = self.bits.add_group("tree_2")
-        group_2.add_bit(tree_2)
-
-        group_3 = self.bits.add_group("tree_3")
-        group_3.add_bit(tree_3)
+        group_1 = self.bits.add_group("swamp")
+        group_1.add_bit(swamp)

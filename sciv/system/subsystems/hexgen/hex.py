@@ -158,7 +158,7 @@ class Hex:
         RAIN_FOREST_THRESHOLD = 17.5
         FROST_LOWER_TEMP = 0.0
         FOREST_LOWER_TEMP = 5.0
-        RAIN_FOREST_TEMPERATURE_THRESHOLD = 22.5
+        RAIN_FOREST_TEMPERATURE_THRESHOLD = 24.5
 
         map_type = self.grid.params.get("map_type")
         if map_type is not MapType.terran:
