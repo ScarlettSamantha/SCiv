@@ -5,7 +5,7 @@ framebuffer-srgb 0
 hardware-animated-vertices true
 basic-shaders-only false
 flatten-collision-nodes 1
-sampler-object-limit 32086
+sampler-object-limit 16086
 default-bin opaque,10
 sort-geom true 
 x-wm-class openciv
@@ -15,11 +15,9 @@ sync-video #f
 #want-tk true
 yield-timeslice #t
 client-sleep 0.005
-allow-portal-cull 1
 clock-mode normal
 flatten-collision-nodes 1
-garbage-collect-states-rate 10.0
+garbage-collect-states-rate 20.0
 geom-cache-size 20000
 tk-main-loop false
 window-title OpenCiv
-threading-module cull
