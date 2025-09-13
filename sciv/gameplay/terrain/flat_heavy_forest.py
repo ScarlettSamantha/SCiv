@@ -29,6 +29,6 @@ class FlatHeavyForest(BaseTerrain):
 
     def register_bits(self) -> None:
         forest = Bit(
-            "flat_heavy_forest.glb", scale=1.30, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0)
+            "flat_heavy_forest.glb", scale=1.65, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0)
         )
         self.bits.add_bit(forest)

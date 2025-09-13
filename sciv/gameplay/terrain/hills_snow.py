@@ -1,11 +1,10 @@
 from typing import Any
 
+from gameplay.bits import Bit
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.yields import Yields
 from managers.i18n import t_
-
-from gameplay.bits import Bit
 
 
 class HillsSnow(BaseTerrain):
@@ -25,5 +24,5 @@ class HillsSnow(BaseTerrain):
         self._texture = "hills_snow.png"
 
     def register_bits(self) -> None:
-        hill = Bit("snow_hill.glb", scale=1.32, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0))
+        hill = Bit("snow_hill.glb", scale=1.65, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(30.0, 0.0, 0.0))
         self.bits.add_bit(hill)

@@ -23,12 +23,12 @@ class Hardwood(BaseBonusResource):
         BaseTerrain: 0.0,
         FlatForest: 70.0,
         FlatHeavyForest: 70.0,
-        FlatJungle: 70.0,
-        FlatPineForest: 70.0,
+        FlatJungle: 10.0,
+        FlatPineForest: 90.0,
         HillsForest: 70.0,
     }
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    coverage = 1.2
+    coverage = 1.75
     spawn_amount = 5.0
     improvement_required = [LoggingCamp]
     model = "assets/models/resources/pile_wood.glb"

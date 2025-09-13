@@ -7,5 +7,6 @@
   "settings": {
     "ruff.organizeImports": true,
     "python.analysis.stubPath": "../stubs"
+    
   }
 }

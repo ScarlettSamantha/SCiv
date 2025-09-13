@@ -6,6 +6,9 @@ from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from managers.i18n import T_TranslationOrStr, t_
 
+from sciv.gameplay.terrain.flat_desert import FlatDesert
+from sciv.gameplay.terrain.hills_desert import HillsDesert
+
 
 class Jade(BaseLuxuryResource):
     key: str = "resource.core.luxury.jade"
@@ -14,7 +17,11 @@ class Jade(BaseLuxuryResource):
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/bordered_emerald.png"
-    spawn_chance: float | Dict[Type[BaseTerrain], float] = 90.0
+    spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        BaseTerrain: 0.0,
+        FlatDesert: 20.0,
+        HillsDesert: 30.0,
+    }
     spawn_amount = 5.0
     coverage = 0.2
     improvement_required = [Mine]

@@ -10,7 +10,7 @@ class FlatIce(BaseTerrain):
     water_availability = 0.25
     _fallback_color = (255, 255, 255)
     _model = "assets/models/terrain/flat_iceland.glb"
-    model_pos_z_offset = -0.20
+    model_pos_z_offset = -0.0
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

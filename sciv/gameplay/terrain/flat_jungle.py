@@ -29,19 +29,19 @@ class FlatJungle(BaseTerrain):
 
         jungle_tree_1 = Bit(
             model="jungle_tree_1.glb",
-            scale=0.35,
+            scale=0.15,
             offset=(0, 0, 0),
             allow_auto_scale=False,
         )
         jungle_tree_2 = Bit(
             model="jungle_tree_2.glb",
-            scale=0.35,
+            scale=0.15,
             offset=(0, 0, 0),
             allow_auto_scale=False,
         )
         jungle_tree_3 = Bit(
             model="jungle_tree_3.glb",
-            scale=0.35,
+            scale=0.15,
             offset=(0, 0, 0),
             allow_auto_scale=False,
         )

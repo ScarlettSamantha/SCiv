@@ -65,7 +65,7 @@ class Tile(BaseEntity):
     _prop_slots: Dict[str, Tuple[float, float, float]] = field(
         default_factory=lambda: {k: (v[0], v[1], float(v[2])) for k, v in default_slots.items()}, repr=False
     )
-    z_scale: float = 1.75
+    z_scale: float = 1.65
 
     x: int = 0
     y: int = 0

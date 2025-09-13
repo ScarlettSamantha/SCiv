@@ -24,9 +24,39 @@ class FlatLightJungle(BaseTerrain):
     def register_bits(self) -> None:
         from gameplay.bits import Bit
 
-        swamp = Bit("swamp.glb", scale=0.75, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0), preferred_slot="center")
+        tree_1 = Bit("jungle_tree_4.glb", scale=0.60, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0))
+        tree_trunk = Bit("jungle_tree_trunk.glb", scale=0.155, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0))
+        tree_trunk_2 = Bit("jungle_tree_trunk_2.glb", scale=0.155, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0))
+        leaves = Bit("jungle_leaves.glb", scale=0.60, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0))
+        leaves_2 = Bit("jungle_leaves_2.glb", scale=0.60, offset=(0.0, 0.0, 0.02), hpr=(45.0, 0.0, 0.0))
 
         self.bits.mode = self.bits.mode.OR
 
-        group_1 = self.bits.add_group("swamp")
-        group_1.add_bit(swamp)
+        group_1 = self.bits.add_group("tree_1", mode=self.bits.mode.AND)
+        group_1.add_bit(tree_1)
+        group_1.add_bit(tree_1.rotate(90).copy())
+        group_1.add_bit(tree_trunk.rotate(180).copy())
+        group_1.add_bit(leaves.rotate(270).copy())
+        group_1.add_bit(tree_1.rotate(310).copy())
+        group_1.add_bit(leaves_2.rotate(45).copy())
+        group_1.add_bit(tree_trunk_2.rotate(135).copy())
+
+        group_2 = self.bits.add_group("tree_2", mode=self.bits.mode.AND)
+        group_2.add_bit(tree_1)
+        group_2.add_bit(tree_trunk.rotate(90).copy())
+        group_2.add_bit(leaves.rotate(180).copy())
+        group_2.add_bit(tree_1.rotate(270).copy())
+        group_2.add_bit(tree_trunk.rotate(310).copy())
+        group_2.add_bit(leaves_2.rotate(45).copy())
+        group_2.add_bit(leaves.rotate(135).copy())
+        group_2.add_bit(tree_trunk_2.rotate(225).copy())
+
+        group_3 = self.bits.add_group("tree_3", mode=self.bits.mode.AND)
+        group_3.add_bit(tree_1)
+        group_3.add_bit(tree_trunk.rotate(90).copy())
+        group_3.add_bit(leaves.rotate(180).copy())
+        group_3.add_bit(tree_1.rotate(270).copy())
+        group_3.add_bit(tree_trunk.rotate(310).copy())
+        group_3.add_bit(leaves_2.rotate(45).copy())
+        group_3.add_bit(tree_trunk_2.rotate(135).copy())
+        group_3.add_bit(leaves.rotate(225).copy())

@@ -8,7 +8,7 @@ from managers.i18n import t_
 
 class Volcano(BaseTerrain):
     _name = t_("world.terrain.volcano")
-
+    _model = "assets/models/terrain/volcano.glb"
     _fallback_color = (30, 0, 0)  # Dark red color for volcano
 
     def __init__(self, *args: Any, **kwargs: Any):
@@ -25,8 +25,8 @@ class Volcano(BaseTerrain):
     def register_bits(self) -> None:
         volcano = Bit(
             model="volcano.glb",
-            scale=1.3,
-            hpr=(-75, 0, 0),
+            scale=1.65,
+            hpr=(30, 0, 0),
             offset=(0, 0, 0.0),
             blocks_resource_model_spawning=True,
             preferred_slot="center",

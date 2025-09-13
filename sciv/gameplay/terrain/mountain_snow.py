@@ -31,6 +31,6 @@ class MountainSnow(BaseTerrain):
 
     def register_bits(self) -> None:
         mountain = Bit(
-            "mountain_snow.glb", scale=1.30, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0)
+            "mountain_snow.glb", scale=1.65, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(30.0, 0.0, 0.0)
         )
         self.bits.add_bit(mountain)
