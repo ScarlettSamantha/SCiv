@@ -44,7 +44,7 @@ class CantBuildReason(Enum):
     COULD_BUILD = 0
     NO_TECH = 1
     NO_RESOURCE = 2
-    NOT_PLACEABLE_UPON_TILES = 3  # This is an error in the code, PLACEABLE_ON_TILES should be true if this is the case.
+    NOT_PLACEABLE_UPON_TILES = 3  # PLACEABLE_ON_TILES should be true if this is the case.
     NOT_PLACEABLE_UPON_CITY = 4
     NOT_PLACEABLE_UPON_CONDITION = 5
     NOT_PLACEABLE_BY_PLAYER = 6
@@ -143,11 +143,11 @@ class Tile(BaseEntity):
         super().__init__(tile=weakref.ref(self))
 
         self.entity_type_ref = EntityType.TILE.value
-        self.x = x
-        self.y = y
-        self.pos_x = pos_x
-        self.pos_y = pos_y
-        self.pos_z = pos_z
+        self.x: int = x
+        self.y: int = y
+        self.pos_x: float = pos_x
+        self.pos_y: float = pos_y
+        self.pos_z: float = pos_z
 
         self.tag = self.generate_tag()
 
@@ -160,7 +160,7 @@ class Tile(BaseEntity):
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
         self._prop_slots = {k: (float(v[0]), float(v[1]), float(v[2])) for k, v in default_slots.items()}
-        self._edges = {
+        self._edges: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = {
             "n": None,
             "ne": None,
             "se": None,
@@ -169,40 +169,40 @@ class Tile(BaseEntity):
             "nw": None,
         }
 
-        self.z_scale = 1.5
+        self.z_scale: float = 1.5
         self.hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-        self.destroyed = False
-        self.is_water = False
-        self.is_land = False
-        self.is_sea = False
-        self.is_lake = False
-        self.is_coast = False
-        self.is_inland_sea = False
+        self.destroyed: bool = False
+        self.is_water: bool = False
+        self.is_land: bool = False
+        self.is_sea: bool = False
+        self.is_lake: bool = False
+        self.is_coast: bool = False
+        self.is_inland_sea: bool = False
 
-        self.resources = Resources()
-        self.units = Units()
-        self.tile_yield = Yields(
+        self.resources: Resources = Resources()
+        self.units: Units = Units()
+        self.tile_yield: Yields = Yields(
             gold=0.0, production=1.0, science=0.0, food=1.0, culture=0.0, housing=0.0, mode=Yields.BASE
         )
-        self.passable = True
-        self.passable_without_tech = True
-        self.walkable = True
-        self.climbable = True
+        self.passable: bool = True
+        self.passable_without_tech: bool = True
+        self.walkable: bool = True
+        self.climbable: bool = True
         self.tile_terrain = BaseTerrain()
 
-        self.altitude = 0.0
-        self.hemisphere = Tile.HEMISPHERE_UNKNOWN
-        self.temperature = 0.0
-        self.moisture = 0.0
-        self.inherit_passability_from_terrain = True
-        self.coast_directions = set()
-        self.biome = 0
-        self._improvements = ImprovementsSet()
-        self._features = set()
-        self._geoforms = None
+        self.altitude: float = 0.0
+        self.hemisphere: int = Tile.HEMISPHERE_UNKNOWN
+        self.temperature: float = 0.0
+        self.moisture: float = 0.0
+        self.inherit_passability_from_terrain: bool = True
+        self.coast_directions: Set[int] = set()
+        self.biome: int = 0
+        self._improvements: ImprovementsSet = ImprovementsSet()
+        self._features: Set["HexFeature | None"] = set()
+        self._geoforms: GeoformType | None = None
 
-        self.meshCollider = True
-        self.is_selected = False
+        self.meshCollider: bool = True
+        self.is_selected: bool = False
 
         if hasattr(self, "_tile_terrain"):
             self.tile_terrain = self._tile_terrain
@@ -242,7 +242,7 @@ class Tile(BaseEntity):
             "base",
             "logger",
             "renderer",
-            "tile_yield",  # we don't want to dump the tile yield here, as it is calculated.
+            "tile_yield",
             "is_selected",
             "is_water",
             "is_land",
