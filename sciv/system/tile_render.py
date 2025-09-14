@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from gameplay.improvement import Improvement
 
 
 class TileRenderer:
@@ -232,8 +233,8 @@ class TileRenderer:
         if self.city_ui_node is not None:
             self.city_ui_node.removeNode()
         self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+        self._draw_improvements()
         self._draw_city_ui()
-        self.bits_renderer.render()
 
     def _draw_city_ui(self) -> None:
         if not self.tile.city:
@@ -468,8 +469,23 @@ class TileRenderer:
     def is_city(self) -> bool:
         return self.tile.city is not None
 
+    def get_city(self) -> "City":
+        assert self.tile.city is not None, "Tile has no city."
+        return self.tile.city
+
+    def _render_improvements_as_bit(self, improvement: "Improvement") -> None:
+        self.bits_renderer.add_bit(improvement.as_bit())
+
     def _draw_improvements(self) -> None:
-        for improvement in self.tile._improvements.get_all():  # type: ignore
+        if self.tile.is_city():
+            improvements = self.get_city().get_improvements().all()
+            for improvement in improvements:
+                self._render_improvements_as_bit(improvement)
+            return
+
+        improvements = self.tile.get_improvements().get_all()
+
+        for improvement in improvements:  # type: ignore
             path = improvement.model
             if not path:
                 continue

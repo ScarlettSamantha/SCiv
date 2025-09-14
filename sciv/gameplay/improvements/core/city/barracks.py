@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 class Barracks(BaseCityImprovement):
     name = t_("content.improvements.core.city.barracks.name")
     description = t_("content.improvements.core.city.barracks.description")
-    _model = ""
+    _model = "cities/barracks_stage_1.glb"
+    _model_preferred_slot = "city_s"
+    _model_scale = 0.20
 
     def __init__(self, tile: "Tile", owner: "Player", *args: Any, **kwargs: Any):
         super().__init__(tile=tile, owner=owner, *args, **kwargs)

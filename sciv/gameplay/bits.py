@@ -12,6 +12,7 @@ class DisplayMode(Enum):
     HIDE_ON_SELECT = 0b00000100
     CLEAR_CENTER_SLOT = 0b00001000
     OVERRULES_RESOURCE_MODEL = 0b00010000
+    CITY_IMPROVEMENT = 0b00100000
 
 
 class GroupMode(Enum):
@@ -121,7 +122,9 @@ class Bit:
         return not (self.display_mode & DisplayMode.HIDE_ON_SELECT.value)
 
     def blocks_resource_model(self) -> bool:
-        return bool(self.display_mode & DisplayMode.OVERRULES_RESOURCE_MODEL.value)
+        return bool(
+            self.display_mode & (DisplayMode.OVERRULES_RESOURCE_MODEL.value | DisplayMode.CITY_IMPROVEMENT.value)
+        )
 
     def rotate(self, h: float = 0.0, p: float = 0.0, r: float = 0.0) -> "Bit":
         self.hpr = (h, p, r)

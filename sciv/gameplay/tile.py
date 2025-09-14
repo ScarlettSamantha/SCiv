@@ -14,7 +14,7 @@ from gameplay.player import Player
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tile_slots import default_slots
+from gameplay.tile_slots import default_slots, city_slots
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
@@ -62,9 +62,7 @@ class Tile(BaseEntity):
     HEMISPHERE_NORTH: int = 0b00000001
     HEMISPHERE_SOUTH: int = 0b00000010
 
-    _prop_slots: Dict[str, Tuple[float, float, float]] = field(
-        default_factory=lambda: {k: (v[0], v[1], float(v[2])) for k, v in default_slots.items()}, repr=False
-    )
+    _prop_slots: Dict[str, Tuple[float, float, float]] | None = field(default_factory=lambda: None, repr=False)
     z_scale: float = 1.65
 
     x: int = 0
@@ -159,7 +157,7 @@ class Tile(BaseEntity):
         self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
 
-        self._prop_slots = {k: (float(v[0]), float(v[1]), float(v[2])) for k, v in default_slots.items()}
+        self._prop_slots = {**default_slots} if self.city is None else {**city_slots}
         self._edges: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = {
             "n": None,
             "ne": None,
@@ -329,6 +327,9 @@ class Tile(BaseEntity):
             )
             if city_ref is not None:
                 self.city = city_ref()
+            self._prop_slots = {**city_slots}
+        else:
+            self._prop_slots = {**default_slots}
 
         self.renderer = TileRenderer(self)
 
@@ -451,7 +452,7 @@ class Tile(BaseEntity):
         return f"tile_{self.x}_{self.y}"
 
     def get_prop_slots(self) -> Dict[str, Tuple[float, float, float]]:
-        return self._prop_slots
+        return city_slots if self.is_city() else default_slots
 
     def get_owner(self) -> Player:
         if self.owner is None:

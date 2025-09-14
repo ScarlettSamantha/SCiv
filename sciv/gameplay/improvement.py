@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from gameplay.resources.core.basic._base import BasicBaseResource
     from gameplay.tile import Tile
     from gameplay.unit import Unit
+    from gameplay.bits import Bit
 
 
 class ImprovementBuildTurnMode(Enum):
@@ -33,6 +34,7 @@ class Improvement(BaseEntity):
     _model_scale: float = 1.0
     _model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     _model_default_offset: Tuple[float, float, float] = (0.0, 0.0, 0.001)  # to rise above the tile
+    _model_preferred_slot: str | None = None
 
     tile_yield_improvement: Yields = Yields.nullYield()
     maintenance_cost: Yields = Yields.nullYield()
@@ -290,3 +292,25 @@ class Improvement(BaseEntity):
 
     def get_tile_yield(self) -> Yields:
         return self.tile_yield
+
+    def as_bit(self) -> "Bit":
+        if self.model is None:
+            raise ValueError("Improvement must have a model to be converted to a Bit.")
+        model_path = self.get_model_path()
+        if model_path is None:
+            raise ValueError("Improvement must have a model to be converted to a Bit.")
+
+        from gameplay.bits import Bit, DisplayMode
+
+        bit = Bit(
+            id=self.tag,
+            model=model_path,
+            preferred_slot=self._model_preferred_slot,
+            display_mode=DisplayMode.CITY_IMPROVEMENT.value,
+            scale=self.get_model_scale(),
+            hpr=self.get_model_hpr(),
+            offset=self.get_model_offset(),
+            default_lighting=True,
+            default_shader=True,
+        )
+        return bit

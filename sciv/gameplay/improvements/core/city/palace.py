@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 class Palace(BaseCityImprovement):
     name = t_("content.improvements.core.city.palace.name")
     description = t_("content.improvements.core.city.palace.description")
+    _model = "cities/palace_stage_1.glb"
+    _model_scale = 0.30
+    _model_preferred_slot = "palace"
     placeable_on_city = True
     placeable_on_condition = True
 

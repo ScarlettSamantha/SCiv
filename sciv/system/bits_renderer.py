@@ -20,17 +20,18 @@ class BitsRenderer:
 
     def render(self) -> None:
         active_bits: Dict[str, "Bit"] = {}
+        self.prop_slots: Dict[str, Tuple[float, float, float]] = self.tile.get_prop_slots()
         for bit in self.tile.get_terrain().get_bits():
             mode: List[DisplayMode] = bit.get_display_mode()
             if bit.is_disabled():
                 continue
-            elif mode == DisplayMode.SHOW_ALWAYS:
+            elif (DisplayMode.SHOW_ALWAYS in mode) or (DisplayMode.CITY_IMPROVEMENT in mode) or (not mode):
                 active_bits[bit.id] = bit
-            elif mode == DisplayMode.HIDE_ON_UNIT and self.tile.units.has_any():
+            elif (DisplayMode.HIDE_ON_UNIT in mode) and self.tile.units.has_any():
                 continue
-            elif mode == DisplayMode.HIDE_ON_RESOURCE and self.tile.resources.has_non_mechanical_resources():
+            elif (DisplayMode.HIDE_ON_RESOURCE in mode) and self.tile.resources.has_non_mechanical_resources():
                 continue
-            elif mode == DisplayMode.HIDE_ON_SELECT and self.tile.is_selected:
+            elif (DisplayMode.HIDE_ON_SELECT in mode) and self.tile.is_selected:
                 continue
             else:
                 active_bits[bit.id] = bit
@@ -120,6 +121,15 @@ class BitsRenderer:
 
         self.tile.renderer.remove_model(bit.id)
 
+    def add_bit(self, bit: "Bit", slot: Optional[str] = None) -> None:
+        if bit.id in self._bit_slot_assignments.values():
+            return
+        chosen = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
+        if not chosen:
+            chosen = self._choose_slot_for(bit)
+        if chosen:
+            self._render_bit(bit, chosen)
+
     def disable_all(self) -> None:
         for bit in self.tile.get_terrain().get_bits():
             if not bit.is_disabled():
@@ -137,6 +147,7 @@ class BitsRenderer:
             self._unrender_slot(slot_name)
         self._bit_slot_assignments.clear()
         self._bit_models.clear()
+        self.prop_slots = self.tile.get_prop_slots()
 
     def on_inspect(self) -> Dict[str, str | None]:
         bits: List["Bit"] = self.tile.get_terrain().get_bits()

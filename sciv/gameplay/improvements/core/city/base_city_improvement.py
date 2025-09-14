@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 
 
 class BaseCityImprovement(Improvement):
+    _model_preferred_slot = "center"
+
     def __init__(self, tile: "Tile", owner: "Player", *args: Any, **kwargs: Any):
         super().__init__(tile=tile, owner=owner, *args, **kwargs)
 

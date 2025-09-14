@@ -400,7 +400,6 @@ class Yields:
     def __ne__(self, other: "Yields") -> bool:  # type: ignore
         return self.total_value() != other.total_value()
 
-    # Reverse arithmetic operators (clone to avoid modifying the left-hand operand)
     def __radd__(self, other: "Yields") -> "Yields":
         return other.clone().add(self)
 
@@ -478,17 +477,12 @@ class Yields:
         ]
         return resources
 
-    # Calculate final yield based on a base yield (self) and optional modifiers.
-    # For each calculatable property, the final yield is:
-    #   final = round((base + additive) * (1 + percentage_add) * (1 + percentage_cum))
-    # This method modifies self in place.
     def calculate(
         self,
         additive: "Yields | None" = None,
         percentage_add: "Yields | None" = None,
         percentage_cum: "Yields | None" = None,
     ) -> None:
-        # Use null yields if modifiers aren't provided.
         additive = additive or Yields.nullYield()
         percentage_add = percentage_add or Yields.nullYield()
         percentage_cum = percentage_cum or Yields.nullYield()
@@ -498,9 +492,7 @@ class Yields:
             add_val = getattr(additive, prop).value
             percentage_add_val = getattr(percentage_add, prop).value
             percentage_cum_val = getattr(percentage_cum, prop).value
-            # Combine values: negative additive will subtract, negative percentages reduce yield.
             final_val = (base_val + add_val) * (1 + percentage_add_val) * (1 + percentage_cum_val)
-            # Round final yield as yields should be integers.
             final_val = round(final_val)
             current = getattr(self, prop)
             setattr(self, prop, type(current)(value=final_val))
@@ -515,22 +507,18 @@ class Yields:
         return a
 
     def only(self, only: List[str]) -> "Yields":
-        # Create a new instance with zeroed yields.
         new_tile_yield: "Yields" = self.nullYield()
 
-        # Update the internal lists to only include the requested properties.
         new_tile_yield._calculatable_properties = [prop for prop in self._calculatable_properties if prop in only]
         new_tile_yield._mechanic_resources = [prop for prop in self._mechanic_resources if prop in only]
         new_tile_yield._calculatable_great_people = [prop for prop in self._calculatable_great_people if prop in only]
 
-        # Copy over the specified properties.
         for prop in only:
             if prop in self._calculatable_properties:
                 setattr(new_tile_yield, prop, copy.deepcopy(getattr(self, prop)))
             elif prop in self._mechanic_resources:
                 setattr(new_tile_yield, prop, copy.deepcopy(getattr(self, prop)))
             elif prop in self._calculatable_great_people:
-                # For great people yields, the actual attribute is prefixed with 'great_person_'.
                 setattr(new_tile_yield, f"great_person_{prop}", copy.deepcopy(getattr(self, f"great_person_{prop}")))
             else:
                 raise ValueError(f"Property {prop} is not recognized")
