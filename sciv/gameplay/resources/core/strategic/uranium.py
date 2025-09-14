@@ -12,6 +12,8 @@ from gameplay.terrain.hills_desert import HillsDesert
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
 from managers.i18n import T_TranslationOrStr, t_
+from gameplay.terrain.hills_forest import HillsForest
+from gameplay.terrain.flat_forest import FlatForest
 
 
 class Uranium(BaseStrategicResource):
@@ -27,9 +29,11 @@ class Uranium(BaseStrategicResource):
         FlatSavanna: 70.0,
         FlatTundra: 70.0,
         FlatScrubland: 30.0,
+        FlatForest: 40.0,
         HillsTundra: 70.0,
         HillsDesert: 70.0,
         HillsSnow: 70.0,
+        HillsForest: 40.0,
     }
     spawn_amount = 3.0
     coverage = 0.7

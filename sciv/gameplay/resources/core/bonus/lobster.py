@@ -21,7 +21,7 @@ class Lobster(BaseBonusResource):
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 10.0, Coast: 90.0, SeaIce: 0.0, Lake: 65.0}
     spawn_amount = 3.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER
-    coverage = 2.3
+    coverage = 3.0
     clusterable = True
     cluster_max_radius = 3
     cluster_dropoff_amount_rate = 1.0
