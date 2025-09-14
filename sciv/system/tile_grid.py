@@ -59,6 +59,11 @@ class TileModelGrid:
 
         self.rebuild(self.tiles)
 
+    def reset(self) -> None:
+        self.dispose()
+        self.root_np = NodePath(PandaNode("tile_model_grid"))
+        self._attached = False
+
     def attach_to_render(self, parent: Optional[NodePath] = None) -> None:
         if parent is None:
             parent = getattr(self.base, "render", None)
