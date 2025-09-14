@@ -77,7 +77,7 @@ class Game(Singleton, DirectObject):
 
         self.unit: UnitManager = UnitManager(base=self.base)
         UnitManager.set_instance(self.unit)
-        self.mesh_grid: Optional[HexGrid] = None
+        self.hex_grid: Optional[HexGrid] = None
         self.game_settings: GameSettings | None = None
 
         self.performance_logger: Optional[PerformanceLogger] = (
@@ -173,11 +173,11 @@ class Game(Singleton, DirectObject):
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
         effects: Dict[str, "Effect"] = self.entities.get_all(EntityType.EFFECT)  # type: ignore
         properties: Dict[str, "Property"] = self.entities.get_all(EntityType.PROPERTY)  # type: ignore
-        self.mesh_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
+        self.hex_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
         Cache.set_showbase_instance(self.base)
-        if self.mesh_grid is None:
+        if self.hex_grid is None:
             raise ValueError("Mesh grid has not been generated yet")
-        self.mesh_grid.load_state()
+        self.hex_grid.load_state()
 
         TileRepository.grid = {(tile.x, tile.y): tile for _, tile in world_tiles.items()}
 
@@ -223,8 +223,8 @@ class Game(Singleton, DirectObject):
 
         self.ui.reset()
 
-        if self.mesh_grid is not None:
-            self.mesh_grid.reset()
+        if self.hex_grid is not None:
+            self.hex_grid.reset()
 
         self.world.reset()
         self.turn.reset()
@@ -382,8 +382,8 @@ class Game(Singleton, DirectObject):
 
         self.active_generator = self.properties.generator(self.properties, self.base)
 
-        if self.mesh_grid is not None:
-            self.mesh_grid.reset()
+        if self.hex_grid is not None:
+            self.hex_grid.reset()
 
         self.ui.map = self.world
 
@@ -547,9 +547,9 @@ class Game(Singleton, DirectObject):
         self.base.destroy()
 
     def get_mesh(self) -> HexGrid:
-        if self.mesh_grid is None:
+        if self.hex_grid is None:
             raise ValueError("Mesh grid has not been generated yet. Call generate_world() first.")
-        return self.mesh_grid
+        return self.hex_grid
 
     def get_world_grid(self) -> TileModelGrid:
         if self.world_tile_grid is None:

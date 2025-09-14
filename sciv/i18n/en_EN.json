@@ -609,7 +609,16 @@
           "deselect": "Deselect",
           "deselect_all": "Deselect all",
           "select_all": "Select all",
-          "confirm": "Confirm"
+          "confirm": "Confirm",
+          "search": "Search",
+          "title": "Title",
+          "cancel": "Cancel",
+          "resources": "Resources",
+          "improvements": "Improvements",
+          "terrain": "Terrain",
+          "any_terrain": "Any terrain",
+          "any_feature": "Any feature",
+          "any_resource": "Any resource"
         },
         "targeting": {
           "targeting": "Targeting",
@@ -748,6 +757,14 @@
           "button": "Set terrain type",
           "label": "Terrain type",
           "set_terrain_type": "Set terrain type"
+        },
+        "search_map": {
+          "title": "Search map",
+          "button": "Search map",
+          "label": "Search",
+          "search_map": "Search map",
+          "no_matches_title": "No matches",
+          "no_matches_message": "No matches found."
         }
       }
     },
@@ -762,6 +779,7 @@
         "lake": "Lake",
         "city": "City",
         "volcano": "Volcano",
+        "wasteland": "Wasteland",
 
         "flatland_grass": "Flat grassland",
         "flatland_plains": "Flat plains",
@@ -1635,6 +1653,14 @@
               "name": "Mechanic",
               "description": "Internal game mechanics resource"
             }
+          },
+          "housing": {
+            "name": "Housing",
+            "description": "A housing resource"
+          },
+          "angre": {
+            "name": "Anger",
+            "description": "An anger resource"
           },
           "corn": {
             "name": "Corn",
