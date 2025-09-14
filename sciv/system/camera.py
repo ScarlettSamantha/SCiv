@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
 from gameplay.city import City  # type: ignore
-from managers.game import debounce
 from managers.input import Input
 from mixins.singleton import Singleton
 from panda3d.core import Camera as PandaCamera
@@ -14,6 +13,7 @@ from panda3d_kivy.core.window import WindowBase  # type: ignore
 
 if TYPE_CHECKING:
     from game import OpenCiv
+    from gameplay.tile import Tile
 
 
 class Camera(Singleton, DirectObject):
@@ -180,7 +180,14 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
 
+        self.accept("game.camera.request.center_on_tile", self._on_center_on_tile)
+
         self.base.taskMgr.add(self.on_window_resize, "checkWindowResizeTask", delay=5.0)  # type: ignore
+
+    def _on_center_on_tile(self, tile: "Tile"):
+        pos = tile.get_renderer().anchor_node.getPos(self.base.render)
+        self.pivot.setPos(pos)
+        self._desired_pivot_pos = self.pivot.getPos()
 
     def set_key(self, key: str, value: Any):
         self.keys[key] = value
@@ -197,14 +204,12 @@ class Camera(Singleton, DirectObject):
     def enable_control(self):
         self.active = True
 
-    @debounce(0.25)
     def disable_zoom(self):
         if self.lock:
             return
         self.logger.debug("Disabling zoom")
         self.zoom_enabled = False
 
-    @debounce(0.25)
     def enable_zoom(self):
         if self.lock:
             return

@@ -5,7 +5,7 @@ from managers.i18n import t_
 
 
 class FlatWasteland(BaseTerrain):
-    _name = t_("world.terrain.flatland_grass")
+    _name = t_("world.terrain.wasteland")
     movement_modifier = 0.5
     water_availability = 0.25
     radatiation = 1.0  # Keeping the attribute name as in the original code

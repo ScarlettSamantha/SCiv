@@ -140,7 +140,7 @@ class Basic(BaseGenerator):
 
         g = game.Game.get_singleton_instance()
         g.model_grid = self.model_grid  # type: ignore[attr-defined]
-        g.mesh_grid = self.model_grid  # type: ignore[attr-defined]
+        g.hex_grid = self.model_grid  # type: ignore[attr-defined]
 
         for tile in hexes:
             tile.recalculate_grid_position(1)
