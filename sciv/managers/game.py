@@ -54,7 +54,7 @@ class Game(Singleton, DirectObject):
         self.game_over: bool = False
         self.game_won: bool = False
         self.base: "OpenCiv" = base
-        self.base.set_background_color(0.075, 0.075, 0.075, 1.0)
+        self.base.set_background_color(0.050, 0.050, 0.050, 1.0)
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")  # type: ignore
 
         self.ages: AgesManager | None = None

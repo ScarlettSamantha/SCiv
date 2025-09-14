@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from panda3d.core import NodePath
 
+from gameplay.bits import DisplayMode
+
 if TYPE_CHECKING:
     from gameplay.bits import Bit
     from gameplay.tile import Tile
@@ -17,7 +19,21 @@ class BitsRenderer:
         self.parent: NodePath = parent if parent else tile.renderer.geometry_node
 
     def render(self) -> None:
-        active_bits: Dict[str, "Bit"] = {b.id: b for b in self.tile.get_terrain().get_bits() if not b.is_disabled()}
+        active_bits: Dict[str, "Bit"] = {}
+        for bit in self.tile.get_terrain().get_bits():
+            mode: List[DisplayMode] = bit.get_display_mode()
+            if bit.is_disabled():
+                continue
+            elif mode == DisplayMode.SHOW_ALWAYS:
+                active_bits[bit.id] = bit
+            elif mode == DisplayMode.HIDE_ON_UNIT and self.tile.units.has_any():
+                continue
+            elif mode == DisplayMode.HIDE_ON_RESOURCE and self.tile.resources.has_non_mechanical_resources():
+                continue
+            elif mode == DisplayMode.HIDE_ON_SELECT and self.tile.is_selected:
+                continue
+            else:
+                active_bits[bit.id] = bit
 
         for slot, bit in list(self._bit_slot_assignments.items()):
             if bit.id not in active_bits:
@@ -43,7 +59,9 @@ class BitsRenderer:
     def disable_bit(self, bit: "Bit") -> None:
         bit.disabled = True
         if bit.id in self._bit_slot_assignments:
-            slot_name = next((name for name, b in self._bit_slot_assignments.items() if b.id == bit.id), None)
+            slot_name: str | None = next(
+                (name for name, b in self._bit_slot_assignments.items() if b.id == bit.id), None
+            )
             if slot_name:
                 self._unrender_slot(slot_name)
                 del self._bit_slot_assignments[slot_name]
@@ -57,8 +75,17 @@ class BitsRenderer:
             if name in self.prop_slots and self._slot_free(name):
                 return name
             return None
-        free = [s for s in self.prop_slots if self._slot_free(s)]
+
+        clear_center_flag = bool(bit.display_mode & DisplayMode.CLEAR_CENTER_SLOT.value)
+
+        free: List[str] = [
+            s for s in self.prop_slots if self._slot_free(s) and not self._is_center_slot_cleared(s, clear_center_flag)
+        ]
+
         return random.choice(free) if free else None
+
+    def _is_center_slot_cleared(self, slot: str, clear_center_flag: bool) -> bool:
+        return slot == "center" and clear_center_flag
 
     def _slot_free(self, slot: str) -> bool:
         return slot not in self._bit_slot_assignments
@@ -109,6 +136,7 @@ class BitsRenderer:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
             self._unrender_slot(slot_name)
         self._bit_slot_assignments.clear()
+        self._bit_models.clear()
 
     def on_inspect(self) -> Dict[str, str | None]:
         bits: List["Bit"] = self.tile.get_terrain().get_bits()
@@ -120,3 +148,9 @@ class BitsRenderer:
             "assigned_slots": str(self._bit_slot_assignments),
             "parent": self.parent.get_name() if self.parent else "None",
         }
+
+    def has_any_resource_override_bits(self) -> bool:
+        for bit in self._bit_slot_assignments.values():
+            if bit.blocks_resource_model():
+                return True
+        return False

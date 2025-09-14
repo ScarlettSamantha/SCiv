@@ -155,12 +155,14 @@ class TileRenderer:
         if self.selector_np is None:
             self._build_selector_quad()
         self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 10)  # type: ignore
+        self.update()
 
     def on_deselect(self) -> None:
         self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
         if self.selector_np is not None:
             self.selector_np.removeNode()
             self.selector_np = None
+        self.update()
 
     def clear_ui(self) -> None:
         for child in self.ui_node.getChildren():
@@ -198,6 +200,9 @@ class TileRenderer:
 
         self.clear_ui()
 
+        # Bits have to be rendered first so they can block resource models if needed.
+        self.bits_renderer.render()
+
         self._draw_improvements()
         self._draw_resource_model()
         self._draw_yield_and_population_icons()
@@ -207,8 +212,6 @@ class TileRenderer:
                 self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
             self._draw_city_nameplate()
             self._draw_city_ui()
-
-        self.bits_renderer.render()
 
         if self.selector_np:
             self.selector_np.reparentTo(self.anchor_node)
@@ -230,6 +233,7 @@ class TileRenderer:
             self.city_ui_node.removeNode()
         self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
         self._draw_city_ui()
+        self.bits_renderer.render()
 
     def _draw_city_ui(self) -> None:
         if not self.tile.city:
@@ -481,7 +485,12 @@ class TileRenderer:
         if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
             return
 
-        if self.tile.is_city() or self.tile.block_resource_model_spawning is True or self.tile.units.has_any():
+        if (
+            self.tile.is_city()
+            or self.tile.block_resource_model_spawning is True
+            or self.tile.units.has_any()
+            or self.bits_renderer.has_any_resource_override_bits()
+        ):
             self.unload_resource_model()
             return
 
@@ -498,7 +507,7 @@ class TileRenderer:
                 hpr=resource.model_hpr,
                 disable_lighting=resource.model_disable_default_lighting,
                 disable_shader=resource.model_disable_default_shader,
-                net_id=self.tile.tag,  # Use the resource icon as a unique identifier
+                net_id=self.tile.tag,
                 parent=self.geometry_node,
                 flatten_model=False,
             )
@@ -515,10 +524,12 @@ class TileRenderer:
     def on_unit_enter(self):
         if self.resource_model:
             self.resource_model.hide()
+        self.update()
 
     def on_unit_leave(self):
         if self.resource_model:
             self.resource_model.show()
+        self.update()
 
     def _draw_yield_and_population_icons(self) -> None:
         if self.base is None:

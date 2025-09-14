@@ -1,6 +1,6 @@
 from typing import Any
 
-from gameplay.bits import Bit
+from gameplay.bits import Bit, DisplayMode
 from gameplay.improvements.core.resources.logging_camp import LoggingCamp
 from gameplay.improvements.core.resources.mine import Mine
 from gameplay.terrain._base_terrain import BaseTerrain
@@ -23,6 +23,11 @@ class HillsForest(BaseTerrain):
 
     def register_bits(self) -> None:
         hill = Bit(
-            "forest_hill.glb", scale=1.30, preferred_slot="center", offset=(0.0, 0.0, -0.05), hpr=(45.0, 0.0, 0.0)
+            "forest_hill.glb",
+            scale=1.30,
+            preferred_slot="center",
+            offset=(0.0, 0.0, -0.05),
+            hpr=(45.0, 0.0, 0.0),
+            display_mode=DisplayMode.OVERRULES_RESOURCE_MODEL.value,
         )
         self.bits.add_bit(hill)

@@ -5,6 +5,15 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 
+class DisplayMode(Enum):
+    SHOW_ALWAYS = 0b00000000
+    HIDE_ON_UNIT = 0b00000001
+    HIDE_ON_RESOURCE = 0b00000010
+    HIDE_ON_SELECT = 0b00000100
+    CLEAR_CENTER_SLOT = 0b00001000
+    OVERRULES_RESOURCE_MODEL = 0b00010000
+
+
 class GroupMode(Enum):
     OR = "or"
     AND = "and"
@@ -33,6 +42,7 @@ class Bit:
         id: Optional[str] = None,
         default_shader: bool = True,
         default_lighting: bool = True,
+        display_mode: int = DisplayMode.SHOW_ALWAYS.value,
     ):
         self.id: str = id or uuid.uuid4().hex
         self.model: str = model if model.__contains__(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
@@ -46,6 +56,7 @@ class Bit:
         self.blocks_resource_model_spawning: bool = blocks_resource_model_spawning
         self.default_shader: bool = default_shader
         self.default_lighting: bool = default_lighting
+        self.display_mode: int = display_mode
 
     def copy(
         self,
@@ -59,6 +70,7 @@ class Bit:
         _copy.scale = scale if scale is not None else self.scale
         _copy.offset = offset if offset is not None else self.offset
         _copy.hpr = hpr if hpr is not None else self.hpr
+        _copy.display_mode = self.display_mode
         return _copy
 
     def dump(self) -> Dict[str, Any]:
@@ -72,6 +84,7 @@ class Bit:
             "disabled": self.disabled,
             "blocks_resource_model_spawning": self.blocks_resource_model_spawning,
             "net_tag": self.net_tag,
+            "display_mode": self.display_mode,
             "cls_ref": f"{self.__module__}.{self.__class__.__name__}",
         }
 
@@ -83,12 +96,32 @@ class Bit:
         self.preferred_slot = data.get("preferred_slot", self.preferred_slot)
         self.allow_auto_scale = data.get("allow_auto_scale", self.allow_auto_scale)
         self.disabled = data.get("disabled", self.disabled)
+        self.display_mode = data.get("display_mode", self.display_mode)
         self.blocks_resource_model_spawning = data.get(
             "blocks_resource_model_spawning",
             self.blocks_resource_model_spawning,
         )
         self.net_tag = data.get("net_tag", self.net_tag)
         return self
+
+    def get_display_mode(self) -> List[DisplayMode]:
+        modes: List[DisplayMode] = []
+        for mode in DisplayMode:
+            if self.display_mode & mode.value:
+                modes.append(mode)
+        return modes
+
+    def show_on_unit(self) -> bool:
+        return not (self.display_mode & DisplayMode.HIDE_ON_UNIT.value)
+
+    def show_on_resource(self) -> bool:
+        return not (self.display_mode & DisplayMode.HIDE_ON_RESOURCE.value)
+
+    def show_on_select(self) -> bool:
+        return not (self.display_mode & DisplayMode.HIDE_ON_SELECT.value)
+
+    def blocks_resource_model(self) -> bool:
+        return bool(self.display_mode & DisplayMode.OVERRULES_RESOURCE_MODEL.value)
 
     def rotate(self, h: float = 0.0, p: float = 0.0, r: float = 0.0) -> "Bit":
         self.hpr = (h, p, r)
@@ -97,10 +130,6 @@ class Bit:
     def scaleBit(self, factor: float) -> "Bit":
         self.scale *= factor
         return self
-
-    def __getstate__(self) -> object:
-        state = self.__dict__.copy()
-        return state
 
     def is_disabled(self) -> bool:
         return self.disabled
@@ -277,6 +306,15 @@ class Bits:
                 sub = random.choice(list(self.groups.values()))
                 result.extend(sub._collect_recursive())
         return result
+
+    def has_bit_active_with_resource_blocking(self) -> bool:
+        for bit in self.bits.values():
+            if not bit.disabled and bit.blocks_resource_model():
+                return True
+        for sub in self.groups.values():
+            if sub.has_bit_active_with_resource_blocking():
+                return True
+        return False
 
     def clear(self) -> None:
         self.bits.clear()

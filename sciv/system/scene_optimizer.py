@@ -17,15 +17,12 @@ class SceneOptimizer:
         lod_np: NodePath = parent.attach_new_node(lod_node)  # type: ignore
         lod_np.set_name("lod_root")  # type: ignore
 
-        # In-range: high detail
         lod_node.add_switch(in_dist, 0.0)  # type: ignore
         high.reparent_to(lod_np)  # type: ignore
 
-        # Mid-range
         lod_node.add_switch(out_dist, in_dist)  # type: ignore
         mid.reparent_to(lod_np)  # type: ignore
 
-        # Far: low detail
         lod_node.add_switch(1000.0, out_dist)  # type: ignore
         low.reparent_to(lod_np)  # type: ignore
 

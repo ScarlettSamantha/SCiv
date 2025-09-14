@@ -16,7 +16,6 @@ class ClassProperty:
     def __set__(self, instance: Any, value: Any) -> None:
         if self.fset is None:
             raise AttributeError("can't set attribute")
-        # Use stored owner from __set_name__
         return self.fset(self.owner, value)
 
     def setter(self, fset: Callable[..., Any]) -> Self:
