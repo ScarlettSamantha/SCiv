@@ -79,6 +79,7 @@ class ui(Singleton, DirectObject):
         self._base = base
         self.registered = False
         self.result = None
+
         if not self.registered:
             self.register()
             self.registered = True

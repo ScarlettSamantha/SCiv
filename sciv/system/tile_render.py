@@ -91,6 +91,7 @@ class TileRenderer:
         self.models: List[NodePath] = []
 
         self.bits_renderer = BitsRenderer(tile, self.geometry_node)
+        self.disable_yield_icons: bool = False
 
         shader_vertex_path: str = str(self.base.base_path / "assets" / "shaders" / "tile_selector.vert.glsl")
         shader_fragment_path: str = str(self.base.base_path / "assets" / "shaders" / "tile_selector.frag.glsl")
@@ -578,49 +579,53 @@ class TileRenderer:
         )
         icon_node.set_shader_input("icon_atlas", atlas_tex)  # type: ignore
 
-        self.tile.calculate()
-        base_yields = self.tile.get_tile_yield()
-        if self.tile.city:
-            slots: List[Union[str, BaseResource, None]] = [
-                self.tile.city.get_population_icon(),
-            ]
+        if not self.disable_yield_icons:
+            self.tile.calculate()
+            base_yields = self.tile.get_tile_yield()
+            if self.tile.city:
+                slots: List[Union[str, BaseResource, None]] = [
+                    self.tile.city.get_population_icon(),
+                ]
+            else:
+                res_list = list(self.tile.resources.flatten().values())
+                slots = [res_list[0] if res_list else None]
+            slots += base_yields.export_basic()
+            slots = slots[:7] + [None] * max(0, 7 - len(slots))
+
+            self.atlas_width, self.atlas_height = self.icon_atlas.atlas_image.size
+            uv_array = PTAFloat.emptyArray(4 * 7)
+            for idx, entry in enumerate(slots):
+                if not entry or (isinstance(entry, BaseResource) and entry.value == 0.0):
+                    continue
+
+                if idx != 0 and isinstance(entry, BaseResource) and entry.value > 0.0:
+                    entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
+
+                path = self._get_icon_virtual_path(entry, idx == 0 and not self.tile.city)
+                if not path:
+                    continue
+
+                pos = self.icon_atlas.get_position_for_virtual_path(path)
+                size = self.icon_atlas.get_dimensions_for_virtual_path(path)
+
+                if not pos or not size:
+                    continue
+
+                x, y = pos
+                w, h = size
+                u0, v1 = x / self.atlas_width, 1.0 - (y / self.atlas_height)
+                u1, v0 = (x + w) / self.atlas_width, 1.0 - ((y + h) / self.atlas_height)
+                base = idx * 4
+                uv_array[base + 0] = u0
+                uv_array[base + 1] = v0
+                uv_array[base + 2] = u1
+                uv_array[base + 3] = v1
+
+            icon_node.set_shader_input("uv_rects", uv_array)  # type: ignore
+            icon_node.set_shader_input("icon_count", 7)  # type: ignore
         else:
-            res_list = list(self.tile.resources.flatten().values())
-            slots = [res_list[0] if res_list else None]
-        slots += base_yields.export_basic()
-        slots = slots[:7] + [None] * max(0, 7 - len(slots))
-
-        self.atlas_width, self.atlas_height = self.icon_atlas.atlas_image.size
-        uv_array = PTAFloat.emptyArray(4 * 7)
-        for idx, entry in enumerate(slots):
-            if not entry or (isinstance(entry, BaseResource) and entry.value == 0.0):
-                continue
-
-            if idx != 0 and isinstance(entry, BaseResource) and entry.value > 0.0:
-                entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
-
-            path = self._get_icon_virtual_path(entry, idx == 0 and not self.tile.city)
-            if not path:
-                continue
-
-            pos = self.icon_atlas.get_position_for_virtual_path(path)
-            size = self.icon_atlas.get_dimensions_for_virtual_path(path)
-
-            if not pos or not size:
-                continue
-
-            x, y = pos
-            w, h = size
-            u0, v1 = x / self.atlas_width, 1.0 - (y / self.atlas_height)
-            u1, v0 = (x + w) / self.atlas_width, 1.0 - ((y + h) / self.atlas_height)
-            base = idx * 4
-            uv_array[base + 0] = u0
-            uv_array[base + 1] = v0
-            uv_array[base + 2] = u1
-            uv_array[base + 3] = v1
-
-        icon_node.set_shader_input("uv_rects", uv_array)  # type: ignore
-        icon_node.set_shader_input("icon_count", 7)  # type: ignore
+            icon_node.set_shader_input("uv_rects", PTAFloat.emptyArray(4 * 7))  # type: ignore
+            icon_node.set_shader_input("icon_count", 0)  # type: ignore
         icon_node.setZ(0.01)
         self.icon_overlay_node = icon_node
 

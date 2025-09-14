@@ -137,6 +137,9 @@ class World(Singleton, DirectObject):
     def get_grid(self) -> Dict[Tuple[int, int], "Tile"]:
         return self.grid
 
+    def get_grid_reference(self) -> weakref.ReferenceType[Dict[Tuple[int, int], "Tile"]]:
+        return weakref.ref(self.grid)
+
     def on_turn_end(self, turn: int):
         for tile in self.map.values():
             if (

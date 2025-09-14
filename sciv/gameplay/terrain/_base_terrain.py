@@ -61,6 +61,7 @@ class BaseTerrain(ABC):
 
         self.bits: Bits = Bits()
         self.active_bits: List[Bit] = []
+        self.chosen_bits: List[Bit] | None = None
 
         self._supports_improvements: List[Type["Improvement"]] = []
 
@@ -135,17 +136,18 @@ class BaseTerrain(ABC):
     def register_bits(self) -> None:
         pass
 
-    def choose_bits(self, group: Optional[str] = None, num: int = 1) -> List["Bit"]:
-        self.active_bits = self.bits.choose()
+    def choose_bits(self, group: Optional[str] = None, num: int | None = None) -> List["Bit"]:
+        if self.chosen_bits is not None:
+            return self.chosen_bits
+
+        self.chosen_bits = self.bits.choose()
+        self.active_bits = self.chosen_bits[:num] if num is not None else self.chosen_bits
+
         return self.active_bits
 
     def get_bits(self, choose_if_empty: bool = True) -> List["Bit"]:
-        if not self.bits:
-            if choose_if_empty:
-                return self.choose_bits()
-            return []
-        if not self.active_bits:
-            return self.choose_bits()
+        if not self.active_bits and choose_if_empty:
+            self.choose_bits()
         return self.active_bits
 
     def model(self) -> T_TranslationOrStr:

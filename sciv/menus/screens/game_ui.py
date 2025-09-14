@@ -112,6 +112,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
 
+        self.showing_tile_yield_icons: bool = True
+
         self.showing_city: Optional[City] = None
 
         self.debug_panels_showing_state: Dict[str, bool] = {
@@ -930,3 +932,21 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.clear_action_bar()
         self.clear_selected_unit()
         self.ignore_all()
+
+    def toggle_tile_yield_icons(self) -> None:
+        self.set_tile_yield_icons(not self.showing_tile_yield_icons)
+        self.showing_tile_yield_icons = not self.showing_tile_yield_icons
+
+    def set_tile_yield_icons(self, show: bool) -> None:
+        from gameplay.repositories.tile import TileRepository
+
+        if self.showing_tile_yield_icons == show:
+            return
+
+        for tile in TileRepository.get_tiles():
+            if show:
+                tile.disable_icons()
+            else:
+                tile.enable_icons()
+
+            tile.render()

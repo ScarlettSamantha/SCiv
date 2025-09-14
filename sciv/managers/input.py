@@ -107,6 +107,7 @@ class Input(Singleton, DirectObject):
             self.accept("f2", self.activate)
             self.accept("f3", self.de_activate)
 
+            self.accept("f5", self.toggle_tile_yield_icons)
             self.accept("f6", self.on_trigger_sentry_message)
             self.accept("f7", self.on_toggle_log)
             self.accept("f8", self.on_debug_actions_toggle)
@@ -152,6 +153,11 @@ class Input(Singleton, DirectObject):
             self._check_long_right_click,
             self._long_press_task_name,
         )
+
+    def toggle_tile_yield_icons(self):
+        if self.game_ui is None:
+            self.game_ui = self.base.ui_manager.get_main_game_ui()
+        self.game_ui.toggle_tile_yield_icons()
 
     def _check_long_right_click(self, task: Task.Task) -> int:
         if self.base.mouseWatcherNode.isButtonDown("mouse3"):  # type: ignore

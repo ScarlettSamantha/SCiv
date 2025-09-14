@@ -36,7 +36,7 @@ class TileRepository:
     def init_grid(cls) -> None:
         from managers.world import World
 
-        cls.grid = World.get_singleton_instance().grid
+        cls.grid = World.get_singleton_instance().get_grid()
 
     @classmethod
     def get_grid(cls) -> Dict[Tuple[int, int], "Tile"]:
@@ -756,3 +756,7 @@ class TileRepository:
     @classmethod
     def tile_list_to_cords(cls, tiles: List["Tile"]) -> List[Tuple[int, int]]:
         return [tile.get_map_cords() for tile in tiles]
+
+    @classmethod
+    def get_tiles(cls) -> List["Tile"]:
+        return list(cls.get_grid().values())

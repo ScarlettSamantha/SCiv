@@ -451,6 +451,14 @@ class Tile(BaseEntity):
     def generate_tag(self) -> str:
         return f"tile_{self.x}_{self.y}"
 
+    def disable_icons(self) -> None:
+        self.renderer.disable_yield_icons = True
+        self.renderer.update()
+
+    def enable_icons(self) -> None:
+        self.renderer.disable_yield_icons = False
+        self.renderer.update()
+
     def get_prop_slots(self) -> Dict[str, Tuple[float, float, float]]:
         return city_slots if self.is_city() else default_slots
 
