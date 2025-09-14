@@ -46,6 +46,9 @@ class Message:
     def get_key(cls) -> str:
         return cls.KEY
 
+    def is_visible(self) -> bool:
+        return self.visible
+
     def register_on_click(self) -> None:
         if self.is_clickable:
             raise NotImplementedError("Subclasses should implement the on_click method.")
@@ -178,6 +181,9 @@ class Message:
         elif isinstance(other, Message):
             return self.get_key() == other.get_key()
         return False
+
+    def on_inspect(self) -> Tuple[Dict[str, Any], Dict[Any, List[Any]]]:
+        return self.dump(), {}
 
 
 class Messenger:
