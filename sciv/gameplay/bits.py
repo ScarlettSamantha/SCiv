@@ -13,6 +13,7 @@ class DisplayMode(Enum):
     CLEAR_CENTER_SLOT = 0b00001000
     OVERRULES_RESOURCE_MODEL = 0b00010000
     CITY_IMPROVEMENT = 0b00100000
+    HIDE_ON_RESOURCE_IMPROVEMENT = 0b01000000
 
 
 class GroupMode(Enum):
@@ -43,7 +44,7 @@ class Bit:
         id: Optional[str] = None,
         default_shader: bool = True,
         default_lighting: bool = True,
-        display_mode: int = DisplayMode.SHOW_ALWAYS.value,
+        display_mode: int = DisplayMode.SHOW_ALWAYS.value ^ DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT.value,
     ):
         self.id: str = id or uuid.uuid4().hex
         self.model: str = model if model.__contains__(self.BASE_PATH) else f"{self.BASE_PATH}{model}"

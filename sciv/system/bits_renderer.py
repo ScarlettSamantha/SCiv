@@ -1,9 +1,8 @@
 import random
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
-
-from panda3d.core import NodePath
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from gameplay.bits import DisplayMode
+from panda3d.core import NodePath
 
 if TYPE_CHECKING:
     from gameplay.bits import Bit
@@ -14,17 +13,17 @@ class BitsRenderer:
     def __init__(self, tile: "Tile", parent: Optional[NodePath] = None) -> None:
         self.tile: "Tile" = tile
         self.prop_slots: Dict[str, Tuple[float, float, float]] = tile.get_prop_slots()
-        self._bit_slot_assignments: Dict[str, "Bit"] = {}  # slot -> bit
-        self._bit_models: Dict[str, NodePath] = {}  # bit.id -> model
+        self._bit_slot_assignments: Dict[str, "Bit"] = {}
+        self._bit_models: Dict[str, NodePath] = {}
         self.parent: NodePath = parent if parent else tile.renderer.geometry_node
 
     def render(self) -> None:
         self.prop_slots = self.tile.get_prop_slots()
 
-        active_bits = self._gather_active_bits()
+        active_bits: Dict[str, "Bit"] = self._gather_active_bits()
 
         new_assignments: Dict[str, "Bit"] = {}
-        used_slots: set[str] = set()
+        used_slots: Set[str] = set()
         remaining: Dict[str, "Bit"] = dict(active_bits)
 
         for slot, bit in list(self._bit_slot_assignments.items()):
@@ -85,7 +84,7 @@ class BitsRenderer:
     def add_bit(self, bit: "Bit", slot: Optional[str] = None) -> None:
         if any(b.id == bit.id for b in self._bit_slot_assignments.values()):
             return
-        chosen = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
+        chosen: str | None = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
         if not chosen:
             chosen = self._choose_slot_for(bit)
         if chosen:
@@ -140,6 +139,8 @@ class BitsRenderer:
             elif (DisplayMode.HIDE_ON_RESOURCE in mode) and self.tile.resources.has_non_mechanical_resources():
                 continue
             elif (DisplayMode.HIDE_ON_SELECT in mode) and self.tile.is_selected:
+                continue
+            elif (DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT in mode) and self.tile.get_improvements().has_any():
                 continue
             else:
                 active_bits[bit.id] = bit
