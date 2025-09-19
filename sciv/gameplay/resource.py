@@ -8,8 +8,10 @@ from gameplay.yields import Yields
 from helpers.class_property import ClassProperty
 from helpers.colors import Tuple3f
 from managers.i18n import T_TranslationOrStr, t_
+from system.bits_renderer import DisplayMode
 
 if TYPE_CHECKING:
+    from gameplay.bits import Bit
     from gameplay.improvement import Improvement
     from gameplay.tile import Tile
     from system.generators.resource_allocator import ResourceAllocator
@@ -139,11 +141,7 @@ class BaseResource(ABC):
     # Has no effect if `clusterable` is None.
     cluster_dropoff_amount_rate: float | Tuple[float, float] = (0.5, 1.0)
 
-    # A resource needs to be improved to be used by a city. This is the improvement that is needed to be built.
-    # This behaves like a or and statement. If a list is provided, the resource will need to be improved by one of the improvements.
     improvement_required: Optional[Type["Improvement"] | List[Type["Improvement"]]] = None
-
-    # The model that will be used to represent the resource in the game.
     model: Optional[str | Tuple[str | None, str | None]] = None
     model_size: float = 1.0
     model_position: Tuple[float, float, float] = (0.0, 0.0, 0.10)
@@ -387,6 +385,27 @@ class BaseResource(ABC):
             self.type = globals().get(type_name, None)
         else:
             self.type = None
+
+    def as_bit(self, land: bool = True) -> "Bit | None":
+        from gameplay.bits import Bit
+
+        model: str | None = self.get_land_model() if land else self.get_water_model()
+
+        if model is None:
+            return None
+
+        return Bit(
+            model=model,
+            scale=self.model_size,
+            offset=self.model_position,
+            hpr=self.model_hpr,
+            default_shader=not self.model_disable_default_shader,
+            default_lighting=not self.model_disable_default_lighting,
+            id=self.key,
+            display_mode=DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT.value
+            ^ DisplayMode.RESOURCE_IMPROVEMENT.value
+            ^ DisplayMode.HIDE_ON_UNIT.value,
+        )
 
 
 mapping: Dict[ResourceType, Type[ResourceTypeBase]] = {

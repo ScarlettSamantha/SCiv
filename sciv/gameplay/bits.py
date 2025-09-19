@@ -14,6 +14,7 @@ class DisplayMode(Enum):
     OVERRULES_RESOURCE_MODEL = 0b00010000
     CITY_IMPROVEMENT = 0b00100000
     HIDE_ON_RESOURCE_IMPROVEMENT = 0b01000000
+    RESOURCE_IMPROVEMENT = 0b10000000
 
 
 class GroupMode(Enum):
@@ -47,7 +48,7 @@ class Bit:
         display_mode: int = DisplayMode.SHOW_ALWAYS.value ^ DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT.value,
     ):
         self.id: str = id or uuid.uuid4().hex
-        self.model: str = model if model.__contains__(self.BASE_PATH) else f"{self.BASE_PATH}{model}"
+        self.model: str = model if model.__contains__("assets") else f"{self.BASE_PATH}{model}"
         self.scale: float = scale
         self.offset: Tuple[float, float, float] = offset
         self.hpr: Tuple[float, float, float] = hpr

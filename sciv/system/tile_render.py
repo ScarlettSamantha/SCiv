@@ -38,11 +38,12 @@ from system.atlas import AtlasGenerator
 from system.bits_renderer import BitsRenderer
 
 if TYPE_CHECKING:
+    from gameplay.bits import Bit
     from gameplay.city import City
+    from gameplay.improvement import Improvement
     from gameplay.improvements.core.city.base_city_improvement import BaseCityImprovement
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from gameplay.improvement import Improvement
 
 
 class TileRenderer:
@@ -73,7 +74,7 @@ class TileRenderer:
         self.geometry_node.set_collide_mask(BitMask32.bit(1))
         self.geometry_node.set_tag(NET_TYPE_FIELD, str(NET_TYPE.GEOM.value))
         self.geometry_node.set_tag(NET_NODE_TAG_ID_FIELD, tile.tag)
-        self.resource_model: Optional[NodePath] = None
+        self.resource_model: Optional["Bit"] = None
 
         self.available_actions: List[str] = []
         self.ui_node: NodePath = self.anchor_node.attachNewNode("ui_group")
@@ -201,13 +202,12 @@ class TileRenderer:
         self.anchor_node.setScale(1)
 
         self.clear_ui()
-
-        # Bits have to be rendered first so they can block resource models if needed.
-        self.bits_renderer.render()
+        self.prop_slots = self.tile.get_prop_slots()
 
         self._draw_improvements()
-        self._draw_resource_model()
         self._draw_yield_and_population_icons()
+
+        self.bits_renderer.render()
 
         if self.tile.city:
             if self.city_ui_node is None:
@@ -498,55 +498,23 @@ class TileRenderer:
                 hpr=improvement.get_model_hpr(),
             )
 
-    def _draw_resource_model(self) -> None:
-        if not (res_list := list(self.tile.resources.flatten_non_mechanic().values())):
-            return
-
-        if (
-            self.tile.is_city()
-            or self.tile.block_resource_model_spawning is True
-            or self.tile.units.has_any()
-            or self.bits_renderer.has_any_resource_override_bits()
-        ):
-            self.unload_resource_model()
-            return
-
-        resource = res_list[0]
-
-        model_def = resource.get_land_model() if self.tile.is_land else resource.get_water_model()
-
-        if model_def:
-            self.resource_model = self.add_model(
-                model_path=model_def,
-                net_type=NET_TYPE.RESOURCE,
-                pos_offset=resource.model_position,
-                scale=resource.model_size,
-                hpr=resource.model_hpr,
-                disable_lighting=resource.model_disable_default_lighting,
-                disable_shader=resource.model_disable_default_shader,
-                net_id=self.tile.tag,
-                parent=self.geometry_node,
-                flatten_model=False,
-            )
-
     def _is_model_drawn(self) -> bool:
         return self.resource_model is not None
 
     def unload_resource_model(self) -> None:
         if self.resource_model is None:
             return
-        self.resource_model.remove_node()
-        self.resource_model = None
+        self.bits_renderer.remove_bit(self.resource_model)
 
     def on_unit_enter(self):
         if self.resource_model:
-            self.resource_model.hide()
-        self.update()
+            self.bits_renderer.remove_bit(self.resource_model)
+        self.render()
 
     def on_unit_leave(self):
-        if self.resource_model:
-            self.resource_model.show()
-        self.update()
+        if self.resource_model is not None:
+            self.bits_renderer.add_bit(self.resource_model)
+        self.render()
 
     def _draw_yield_and_population_icons(self) -> None:
         if self.base is None:
@@ -767,10 +735,10 @@ class TileRenderer:
 
         data: Dict[str, Union[str, int, float]] = {  # Otherwise mypy complains about the type they are all strings
             "loaded_models": ",".join(loaded_models) if loaded_models else "",
-            "resource_model": str(self.resource_model.get_name()) if self.resource_model else "",
-            "resource_model_pos": str(self.resource_model.getPos()) if self.resource_model else str((0.0, 0.0, 0.0)),
-            "resource_model_scale": str(self.resource_model.getScale()) if self.resource_model else 1.0,
-            "resource_model_hpr": str(self.resource_model.getHpr()) if self.resource_model else str((0.0, 0.0, 0.0)),
+            "resource_model": str(self.resource_model.net_tag) if self.resource_model else "",
+            "resource_model_pos": str(self.resource_model.offset) if self.resource_model else str((0.0, 0.0, 0.0)),
+            "resource_model_scale": str(self.resource_model.scale) if self.resource_model else 1.0,
+            "resource_model_hpr": str(self.resource_model.hpr) if self.resource_model else str((0.0, 0.0, 0.0)),
         }
 
         if also_bits and (bits := self.bits_renderer.on_inspect()):

@@ -91,6 +91,14 @@ class BitsRenderer:
             self._render_bit(bit, chosen)
             self._bit_slot_assignments[chosen] = bit
 
+    def remove_bit(self, bit: "Bit") -> None:
+        slot_name: Optional[str] = next(
+            (name for name, b in self._bit_slot_assignments.items() if b.id == bit.id), None
+        )
+        if slot_name:
+            self._unrender_slot(slot_name)
+            self._bit_slot_assignments.pop(slot_name, None)
+
     def disable_all(self) -> None:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
             self._unrender_slot(slot_name)
@@ -127,8 +135,13 @@ class BitsRenderer:
 
     def _gather_active_bits(self) -> Dict[str, "Bit"]:
         active_bits: Dict[str, "Bit"] = {}
+        resource_bits: List["Bit"] = []
+        for resource in self.tile.get_resources():
+            resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
+            if resource_bit:
+                resource_bits.append(resource_bit)
         terrain_bits = self.tile.get_terrain().get_bits()
-        for bit in terrain_bits:
+        for bit in terrain_bits + resource_bits:
             mode: List[DisplayMode] = bit.get_display_mode()
             if bit.is_disabled():
                 continue
@@ -176,9 +189,10 @@ class BitsRenderer:
             self.tile.renderer.remove_model(bit.id)
             self._bit_models.pop(bit.id, None)
 
+        model_path = bit.model
         pos = self.prop_slots[slot_name]
         model: NodePath | None = self.tile.renderer.add_model(
-            model_path=bit.model,
+            model_path=model_path,
             net_type=NET_TYPE.BIT,
             pos_offset=(bit.offset[0] + pos[0], bit.offset[1] + pos[1], bit.offset[2] + pos[2]),
             scale=(bit.scale),
