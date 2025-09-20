@@ -28,7 +28,6 @@ from panda3d.core import WindowProperties  # type: ignore
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
-from system.mesh import HexGrid
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 from system.tile_grid import TileModelGrid
@@ -77,7 +76,7 @@ class Game(Singleton, DirectObject):
 
         self.unit: UnitManager = UnitManager(base=self.base)
         UnitManager.set_instance(self.unit)
-        self.hex_grid: Optional[HexGrid] = None
+        self.tile_hex_grid: Optional[TileModelGrid] = None
         self.game_settings: GameSettings | None = None
 
         self.performance_logger: Optional[PerformanceLogger] = (
@@ -173,17 +172,25 @@ class Game(Singleton, DirectObject):
         units: Dict[str, "Unit"] = self.entities.get_all(EntityType.UNIT)  # type: ignore
         effects: Dict[str, "Effect"] = self.entities.get_all(EntityType.EFFECT)  # type: ignore
         properties: Dict[str, "Property"] = self.entities.get_all(EntityType.PROPERTY)  # type: ignore
-        self.hex_grid = self.entities.get_all(EntityType.WORLD).get("world_grid")  # type: ignore
+
+        size_x = max(tile.x for tile in world_tiles.values()) + 1
+        size_y = max(tile.y for tile in world_tiles.values()) + 1
+
         Cache.set_showbase_instance(self.base)
-        if self.hex_grid is None:
-            raise ValueError("Mesh grid has not been generated yet")
-        self.hex_grid.load_state()
 
         TileRepository.grid = {(tile.x, tile.y): tile for _, tile in world_tiles.items()}
 
         self.players.load(players)
         self.unit.load(units)
         self.world.load(world_tiles)
+
+        self.tile_hex_grid = TileModelGrid(tiles=list(world_tiles.values()), radius=1.0, cols=size_x, rows=size_y)
+        self.tile_hex_grid.load_state()
+        self.tile_hex_grid.attach_to_render()
+        self.tile_hex_grid.collect()
+
+        [tile.render() for tile in world_tiles.values()]
+
         self.ui.map = self.world
         self.camera.recenter()
         self.turn.activate()
@@ -223,8 +230,8 @@ class Game(Singleton, DirectObject):
 
         self.ui.reset()
 
-        if self.hex_grid is not None:
-            self.hex_grid.reset()
+        if self.tile_hex_grid is not None:
+            self.tile_hex_grid.reset()
 
         self.world.reset()
         self.turn.reset()
@@ -382,8 +389,8 @@ class Game(Singleton, DirectObject):
 
         self.active_generator = self.properties.generator(self.properties, self.base)
 
-        if self.hex_grid is not None:
-            self.hex_grid.reset()
+        if self.tile_hex_grid is not None:
+            self.tile_hex_grid.reset()
 
         self.ui.map = self.world
 
@@ -546,10 +553,10 @@ class Game(Singleton, DirectObject):
     def quit_game(self):
         self.base.destroy()
 
-    def get_mesh(self) -> HexGrid:
-        if self.hex_grid is None:
+    def get_mesh(self) -> TileModelGrid:
+        if self.tile_hex_grid is None:
             raise ValueError("Mesh grid has not been generated yet. Call generate_world() first.")
-        return self.hex_grid
+        return self.tile_hex_grid
 
     def get_world_grid(self) -> TileModelGrid:
         if self.world_tile_grid is None:

@@ -2,7 +2,7 @@ import random
 import uuid
 from copy import copy
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 
 class DisplayMode(Enum):
@@ -82,6 +82,7 @@ class Bit:
             "scale": self.scale,
             "offset": self.offset,
             "hpr": self.hpr,
+            "model": self.model,
             "preferred_slot": self.preferred_slot,
             "allow_auto_scale": self.allow_auto_scale,
             "disabled": self.disabled,
@@ -94,6 +95,7 @@ class Bit:
     def load_dump(self, data: Dict[str, Any]) -> "Bit":
         self.id = data.get("id", self.id)
         self.scale = data.get("scale", self.scale)
+        self.model = data.get("model", self.model)
         self.offset = tuple(data.get("offset", self.offset))
         self.hpr = tuple(data.get("hpr", self.hpr))
         self.preferred_slot = data.get("preferred_slot", self.preferred_slot)
@@ -181,12 +183,14 @@ class Bits:
         return result
 
     def load(self, data: Dict[str, Any]) -> "Bits":
-        self.mode = GroupMode[data.get("mode", self.mode.name)]
+        from managers.entity import EntityManager
+
+        self.mode = GroupMode.OR if data.get("mode", "or") == "or" else GroupMode.AND
         self.enabled = data.get("enabled", self.enabled)
         self.empty_probability = data.get("empty_probability", self.empty_probability)
         bits_data = data.get("bits", {})
         for k, v in bits_data.items():
-            bit = Bit(model="")
+            bit = cast("Bit", EntityManager.dynamic_import(v.get("cls_ref", ""))(""))
             bit.load_dump(v)
             self.bits[k] = bit
             if bit.disabled:

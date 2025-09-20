@@ -91,9 +91,6 @@ class World(Singleton, DirectObject):
         for effect in cast(List["Effect"], EntityManager.get_singleton_instance().get_all(EntityType.EFFECT).values()):  # type: ignore
             effect.load_state()
 
-        for tile in self.map.values():
-            tile.render()
-
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0
         self.middle_y = self.rows / 2.0

@@ -2,8 +2,10 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple, Type
 
+from gameplay.repositories.terrain import TerrainRepository
 from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.cache import Cache
+from helpers.paths import PathsHelper
 from panda3d.core import (
     CardMaker,
     LPoint3f,
@@ -12,9 +14,6 @@ from panda3d.core import (
     RigidBodyCombiner,
     TransparencyAttrib,
 )
-
-from gameplay.repositories.terrain import TerrainRepository
-from helpers.paths import PathsHelper
 
 if TYPE_CHECKING:
     from managers.entity import Tile
@@ -210,6 +209,9 @@ class TileModelGrid:
         inst.set_scale(tile.get_terrain().model_scale)
 
         self._tile_to_np[(int(tile.x), int(tile.y))] = inst
+
+    def load_state(self) -> None:
+        self.rebuild(self.tiles)
 
     def _instance_np_for(self, tile_or_index: "Tile | Tuple[int,int] | int") -> Optional[NodePath]:
         if isinstance(tile_or_index, tuple):

@@ -17,7 +17,6 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile_slots import city_slots, default_slots
 from gameplay.yields import Yields
 from helpers.cache import Cache
-from helpers.colors import Tuple4f
 from helpers.maths import scale_value, scaled_pos_z
 from managers.entity import EntityManager, EntityType
 from managers.i18n import T_TranslationOrStr
@@ -28,7 +27,6 @@ from panda3d.core import (
 )
 from system.effects import Effects
 from system.entity import BaseEntity
-from system.mesh import HexGrid
 from system.subsystems.hexgen.edge import Edge
 from system.subsystems.hexgen.enums import Biome, GeoformType, HexFeature
 
@@ -63,7 +61,7 @@ class Tile(BaseEntity):
     HEMISPHERE_SOUTH: int = 0b00000010
 
     _prop_slots: Dict[str, Tuple[float, float, float]] | None = field(default_factory=lambda: None, repr=False)
-    z_scale: float = 1.65
+    z_scale: float = 1.5
 
     x: int = 0
     y: int = 0
@@ -676,12 +674,6 @@ class Tile(BaseEntity):
     def recalculate_grid_position(self, radius: float = 1) -> None:
         px, py = self.compute_hex_center(self.x, self.y, radius)
         self.pos_x, self.pos_y = px, py
-
-    def set_walls_color(self, color: Tuple[float, ...]) -> None:
-        from managers.game import Game
-
-        mesh: HexGrid = Game.get_singleton_instance().get_mesh()
-        mesh.set_wall_color_for_tile(mesh.get_tile_index_from_coords(self.x, self.y), cast(Tuple4f, color))
 
     def render(self, auto_calculate: bool = True) -> None:
         if auto_calculate:
