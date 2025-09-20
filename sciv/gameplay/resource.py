@@ -398,6 +398,7 @@ class BaseResource(ABC):
             model=model,
             scale=self.model_size,
             offset=self.model_position,
+            preferred_slot="resource",
             hpr=self.model_hpr,
             default_shader=not self.model_disable_default_shader,
             default_lighting=not self.model_disable_default_lighting,

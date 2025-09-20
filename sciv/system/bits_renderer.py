@@ -1,5 +1,5 @@
-import random
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from zlib import crc32
 
 from gameplay.bits import DisplayMode
 from panda3d.core import NodePath
@@ -16,6 +16,7 @@ class BitsRenderer:
         self._bit_slot_assignments: Dict[str, "Bit"] = {}
         self._bit_models: Dict[str, NodePath] = {}
         self.parent: NodePath = parent if parent else tile.renderer.geometry_node
+        self._last_slot_by_bit_id: Dict[str, str] = {}
 
     def _unrender_all(self) -> None:
         for slot_name, _ in list(self._bit_slot_assignments.items()):
@@ -24,46 +25,56 @@ class BitsRenderer:
         self._bit_models.clear()
 
     def render(self) -> None:
-        self.prop_slots = self.tile.get_prop_slots()
+        prev_assignments: Dict[str, "Bit"] = dict(self._bit_slot_assignments)
+        for slot_name, bit in prev_assignments.items():
+            self._last_slot_by_bit_id[bit.id] = slot_name
 
-        active_bits: Dict[str, "Bit"] = self._gather_active_bits()
+        self.prop_slots = self.tile.get_prop_slots()
+        active_by_id: Dict[str, "Bit"] = self._gather_active_bits()
 
         new_assignments: Dict[str, "Bit"] = {}
         used_slots: Set[str] = set()
-        remaining: Dict[str, "Bit"] = dict(active_bits)
 
         self._unrender_all()
 
-        for slot, bit in list(self._bit_slot_assignments.items()):
-            if bit.id in active_bits and slot in self.prop_slots and self._slot_allowed(bit, slot):
-                new_assignments[slot] = bit
-                used_slots.add(slot)
-                remaining.pop(bit.id, None)
-            else:
-                self._unrender_slot(slot)
-
-        for bit in list(remaining.values()):
+        for bit_id, bit in list(active_by_id.items()):
             if bit.has_preferred_slot():
                 pref = bit.get_preferred_slot_name()
                 if pref in self.prop_slots and pref not in used_slots and self._slot_allowed(bit, pref):
                     new_assignments[pref] = bit
                     used_slots.add(pref)
-                    remaining.pop(bit.id, None)
+                    active_by_id.pop(bit_id)
 
-        free_slots = [
-            s for s in random.sample(list(self.prop_slots.keys()), len(self.prop_slots)) if s not in used_slots
-        ]
-        for bit in remaining.values():
-            allowed = [s for s in free_slots if self._slot_allowed(bit, s)]
-            if not allowed:
-                continue
-            chosen = allowed[0]
-            new_assignments[chosen] = bit
-            used_slots.add(chosen)
-            free_slots.remove(chosen)
+        for old_slot, old_bit in prev_assignments.items():
+            bit = active_by_id.get(old_bit.id)
+            if (
+                bit is not None
+                and old_slot in self.prop_slots
+                and old_slot not in used_slots
+                and self._slot_allowed(bit, old_slot)
+            ):
+                new_assignments[old_slot] = bit
+                used_slots.add(old_slot)
+                active_by_id.pop(old_bit.id, None)
+
+        for bit_id, bit in list(active_by_id.items()):
+            last = self._last_slot_by_bit_id.get(bit_id)
+            if last and last in self.prop_slots and last not in used_slots and self._slot_allowed(bit, last):
+                new_assignments[last] = bit
+                used_slots.add(last)
+                active_by_id.pop(bit_id)
+
+        for bit_id, bit in list(active_by_id.items()):
+            for s in self._deterministic_slots_for(bit_id):
+                if s not in used_slots and self._slot_allowed(bit, s):
+                    new_assignments[s] = bit
+                    used_slots.add(s)
+                    active_by_id.pop(bit_id, None)
+                    break
 
         for slot, bit in new_assignments.items():
             self._render_bit(bit, slot)
+            self._last_slot_by_bit_id[bit.id] = slot
 
         self._bit_slot_assignments = new_assignments
 
@@ -71,10 +82,15 @@ class BitsRenderer:
         bit.disabled = False
         chosen = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
         if not chosen:
-            chosen = self._choose_slot_for(bit)
+            last = self._last_slot_by_bit_id.get(bit.id)
+            if last and last in self.prop_slots and self._slot_free(last) and self._slot_allowed(bit, last):
+                chosen = last
+            else:
+                chosen = self._choose_slot_for(bit)
         if chosen:
             self._render_bit(bit, chosen)
             self._bit_slot_assignments[chosen] = bit
+            self._last_slot_by_bit_id[bit.id] = chosen
 
     def disable_bit(self, bit: "Bit") -> None:
         bit.disabled = True
@@ -91,12 +107,17 @@ class BitsRenderer:
     def add_bit(self, bit: "Bit", slot: Optional[str] = None) -> None:
         if any(b.id == bit.id for b in self._bit_slot_assignments.values()):
             return
-        chosen: str | None = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
+        chosen: Optional[str] = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
         if not chosen:
-            chosen = self._choose_slot_for(bit)
+            last = self._last_slot_by_bit_id.get(bit.id)
+            if last and last in self.prop_slots and self._slot_free(last) and self._slot_allowed(bit, last):
+                chosen = last
+            else:
+                chosen = self._choose_slot_for(bit)
         if chosen:
             self._render_bit(bit, chosen)
             self._bit_slot_assignments[chosen] = bit
+            self._last_slot_by_bit_id[bit.id] = chosen
 
     def remove_bit(self, bit: "Bit") -> None:
         slot_name: Optional[str] = next(
@@ -131,6 +152,7 @@ class BitsRenderer:
             "terrain_bits": bits_str,
             "loaded_bits": ",".join(loaded_bits),
             "assigned_slots": str(self._bit_slot_assignments),
+            "remembered_slots": str(self._last_slot_by_bit_id),
             "parent": self.parent.get_name() if self.parent else "None",
         }
 
@@ -179,12 +201,19 @@ class BitsRenderer:
         return active_bits
 
     def _slot_allowed(self, bit: "Bit", slot: str) -> bool:
-        clear_center_flag = bool(bit.display_mode & DisplayMode.CLEAR_CENTER_SLOT.value)
+        clear_center_flag = bool(getattr(bit, "display_mode", 0) & getattr(DisplayMode, "CLEAR_CENTER_SLOT").value)
         if slot == "center" and clear_center_flag:
             return False
         if bit.has_preferred_slot():
             return slot == bit.get_preferred_slot_name()
         return True
+
+    def _deterministic_slots_for(self, bit_id: str) -> List[str]:
+        slots = sorted(self.prop_slots.keys())
+        if not slots:
+            return []
+        offset = crc32(bit_id.encode("utf-8")) % len(slots)
+        return slots[offset:] + slots[:offset]
 
     def _choose_slot_for(self, bit: "Bit") -> Optional[str]:
         if bit.has_preferred_slot():
@@ -193,7 +222,11 @@ class BitsRenderer:
                 return name
             return None
 
-        for s in random.sample(list(self.prop_slots.keys()), len(self.prop_slots)):
+        last = self._last_slot_by_bit_id.get(bit.id)
+        if last and last in self.prop_slots and self._slot_free(last) and self._slot_allowed(bit, last):
+            return last
+
+        for s in self._deterministic_slots_for(bit.id):
             if self._slot_free(slot=s) and self._slot_allowed(bit, s):
                 return s
         return None
