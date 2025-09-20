@@ -199,15 +199,13 @@ class TileRenderer:
 
     def render(self) -> None:
         self.anchor_node.setPos(*self.tile.get_cords())
-        self.anchor_node.setScale(1)
+        self.anchor_node.setScale(scale=1)
 
         self.clear_ui()
         self.prop_slots = self.tile.get_prop_slots()
 
         self._draw_improvements()
         self._draw_yield_and_population_icons()
-
-        self.bits_renderer.render()
 
         if self.tile.city:
             if self.city_ui_node is None:
@@ -223,6 +221,7 @@ class TileRenderer:
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
+        self.bits_renderer.render()
 
     def update(self) -> None:
         if not self.tile.city:
@@ -722,8 +721,9 @@ class TileRenderer:
         return node
 
     def remove_model(self, net_id: str) -> None:
-        for model in self.models[:]:
+        for model in self.models:
             model.removeNode()
+            del model
 
     def clear_models(self) -> None:
         for model in self.models:

@@ -14,7 +14,7 @@ from gameplay.player import Player
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource, Resources
 from gameplay.terrain._base_terrain import BaseTerrain
-from gameplay.tile_slots import default_slots, city_slots
+from gameplay.tile_slots import city_slots, default_slots
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
@@ -798,13 +798,17 @@ class Tile(BaseEntity):
         capital: Optional[bool] = None,
     ) -> bool:
         from gameplay.city import City
-        from gameplay.terrain.city import City as CityTerrain
 
         if player is None:
             player = PlayerManager.player()
 
         if capital is None:
             capital = len(player.cities) == 0
+
+        if self.get_owner() != player and (_capital := self.get_owner().capital) is not None:
+            _capital = _capital()
+            if _capital is not None:
+                _capital.de_capitalize()
 
         self.city = City.found_new(
             name=player.civilization.get_city_name(),
@@ -819,17 +823,26 @@ class Tile(BaseEntity):
         self.owner.tiles.add_tile(self)
         self.owner.add_tile(self)
 
-        if self.owner.capital is not None:
-            if (_capital := self.owner.capital()) is not None:
-                _capital.de_capitalize()
-
         self.owner.capital = weakref.ref(self.city)
 
-        self.set_terrain(CityTerrain())
+        self.become_city()
+        self.calculate()
         self.render()
         MessengerGlobal.messenger.send("game.border.refresh")
 
         return True
+
+    def become_city(self) -> None:
+        from gameplay.terrain.city import City as CityTerrain
+
+        if self.city is None:
+            raise ValueError("Tile must have a city to become a city tile.")
+
+        self.tile_terrain = CityTerrain()
+        self._prop_slots = {**city_slots}
+
+        self.city_owner = weakref.ref(self.city)
+        self.city.set_tile(self)
 
     def build(self, improvement: "Improvement") -> Literal[True] | CantBuildReason:
         if not improvement.placeable_on_tiles:

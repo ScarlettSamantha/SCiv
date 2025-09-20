@@ -17,6 +17,12 @@ class BitsRenderer:
         self._bit_models: Dict[str, NodePath] = {}
         self.parent: NodePath = parent if parent else tile.renderer.geometry_node
 
+    def _unrender_all(self) -> None:
+        for slot_name, _ in list(self._bit_slot_assignments.items()):
+            self._unrender_slot(slot_name)
+        self._bit_slot_assignments.clear()
+        self._bit_models.clear()
+
     def render(self) -> None:
         self.prop_slots = self.tile.get_prop_slots()
 
@@ -25,6 +31,8 @@ class BitsRenderer:
         new_assignments: Dict[str, "Bit"] = {}
         used_slots: Set[str] = set()
         remaining: Dict[str, "Bit"] = dict(active_bits)
+
+        self._unrender_all()
 
         for slot, bit in list(self._bit_slot_assignments.items()):
             if bit.id in active_bits and slot in self.prop_slots and self._slot_allowed(bit, slot):
@@ -55,8 +63,7 @@ class BitsRenderer:
             free_slots.remove(chosen)
 
         for slot, bit in new_assignments.items():
-            if self._bit_slot_assignments.get(slot) is not bit:
-                self._render_bit(bit, slot)
+            self._render_bit(bit, slot)
 
         self._bit_slot_assignments = new_assignments
 
@@ -136,16 +143,28 @@ class BitsRenderer:
     def _gather_active_bits(self) -> Dict[str, "Bit"]:
         active_bits: Dict[str, "Bit"] = {}
         resource_bits: List["Bit"] = []
-        for resource in self.tile.get_resources():
-            resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
-            if resource_bit:
-                resource_bits.append(resource_bit)
-        terrain_bits = self.tile.get_terrain().get_bits()
-        for bit in terrain_bits + resource_bits:
+        terrain_bits: List["Bit"] = []
+        city_bits: List["Bit"] = []
+
+        if self.tile.is_city() and self.tile.city:
+            for improvement in self.tile.city.get_improvements():
+                improvement_bit: "Bit | None" = improvement.as_bit()
+                if improvement_bit:
+                    city_bits.append(improvement_bit)
+        else:
+            terrain_bits = self.tile.get_terrain().get_bits()
+            for resource in self.tile.get_resources():
+                resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
+                if resource_bit:
+                    resource_bits.append(resource_bit)
+
+        for bit in terrain_bits + resource_bits + city_bits:
             mode: List[DisplayMode] = bit.get_display_mode()
             if bit.is_disabled():
                 continue
-            elif (DisplayMode.SHOW_ALWAYS in mode) or (DisplayMode.CITY_IMPROVEMENT in mode) or (not mode):
+            elif (DisplayMode.SHOW_ALWAYS in mode and not self.tile.is_city()) or (
+                DisplayMode.CITY_IMPROVEMENT in mode
+            ):
                 active_bits[bit.id] = bit
             elif (DisplayMode.HIDE_ON_UNIT in mode) and self.tile.units.has_any():
                 continue
@@ -175,7 +194,7 @@ class BitsRenderer:
             return None
 
         for s in random.sample(list(self.prop_slots.keys()), len(self.prop_slots)):
-            if self._slot_free(s) and self._slot_allowed(bit, s):
+            if self._slot_free(slot=s) and self._slot_allowed(bit, s):
                 return s
         return None
 
@@ -190,7 +209,12 @@ class BitsRenderer:
             self._bit_models.pop(bit.id, None)
 
         model_path = bit.model
+        if slot_name not in self.prop_slots.keys():
+            self.prop_slots = self.tile.get_prop_slots()
+            if slot_name not in self.prop_slots.keys():
+                slot_name = "center"  # fallback to center if the slot is missing
         pos = self.prop_slots[slot_name]
+
         model: NodePath | None = self.tile.renderer.add_model(
             model_path=model_path,
             net_type=NET_TYPE.BIT,
