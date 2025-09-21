@@ -1,6 +1,6 @@
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from direct.task import Task
 from gameplay.resource import BaseResource
@@ -721,9 +721,13 @@ class TileRenderer:
         return node
 
     def remove_model(self, net_id: str) -> None:
+        remaining: List[NodePath] = []
         for model in self.models:
-            model.removeNode()
-            del model
+            if model.getTag(NET_NODE_TAG_ID_FIELD) == net_id:
+                model.removeNode()
+            else:
+                remaining.append(model)
+        self.models = remaining
 
     def clear_models(self) -> None:
         for model in self.models:
@@ -747,3 +751,13 @@ class TileRenderer:
             data["assigned_slots"] = bits.get("assigned_slots", "") or ""
 
         return data
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "bits_renderer": self.bits_renderer.dump(),
+        }
+
+    def load(self, data: Dict[str, Any]) -> None:
+        bits_renderer_data = data.get("bits_renderer", {})
+        if bits_renderer_data:
+            self.bits_renderer.load(bits_renderer_data)

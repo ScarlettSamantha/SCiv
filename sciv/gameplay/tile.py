@@ -124,8 +124,6 @@ class Tile(BaseEntity):
             gold=0.0, production=1.0, science=0.0, food=1.0, culture=0.0, housing=0.0, mode=Yields.BASE
         )
     )
-
-    visible_sides: Dict[int, bool] = field(default_factory=lambda: {i: True for i in range(6)})
     is_selected: bool = False
 
     def __init__(
@@ -203,7 +201,6 @@ class Tile(BaseEntity):
         if hasattr(self, "_tile_terrain"):
             self.tile_terrain = self._tile_terrain
 
-        self.visible_sides = getattr(self, "visible_sides", {i: True for i in range(6)})
         self.tag = f"tile_{self.x}_{self.y}"
         self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
@@ -219,7 +216,6 @@ class Tile(BaseEntity):
         data = self.__dict__.copy()
         data["_tile_terrain"] = self.tile_terrain.dump()
         data["biome"] = self._biome.id if self._biome else 0
-        data["visible_sides"] = self._calculate_visible_sides()
         data["is"] = self._calculate_is_flags()
         data["_features"] = [feature.value if feature else None for feature in self.features]
         data["_edges"] = {
@@ -233,11 +229,12 @@ class Tile(BaseEntity):
         data["owner"] = self.get_owner().get_tag() if self._owner else None
         data["city"] = self.city.get_tag() if self.city else None
         data["hidden_in_tree"] = self.hidden_in_tree
+        data["renderer_memory"] = self.renderer.dump()
         for key in [
             "_entity_manager",
             "base",
-            "logger",
             "renderer",
+            "logger",
             "tile_yield",
             "is_selected",
             "is_water",
@@ -249,7 +246,6 @@ class Tile(BaseEntity):
             "destroyed",
             "edges",
             "_biome",
-            "visible_sides",
         ]:
             data.pop(key, None)
         return data
@@ -330,6 +326,7 @@ class Tile(BaseEntity):
             self._prop_slots = {**default_slots}
 
         self.renderer = TileRenderer(self)
+        self.renderer.load(getattr(self, "renderer_memory", {}))  # type: ignore
 
         self.tile_yield = Yields.from_dict(getattr(self, "tile_yield", {}))  # type: ignore
 
@@ -490,11 +487,10 @@ class Tile(BaseEntity):
         state["pos_y"] = round(self.pos_y, 4)
         state["pos_z"] = round(self.pos_z, 4)
         state["hpr"] = tuple(round(angle, 4) for angle in self.hpr)
-        state["visible_sides"] = self._calculate_visible_sides()
         state["is"] = self._from_is_flags(state.get("is", 0))
+        state["renderer"] = self.renderer.dump()
         state.pop("base", None)
         state.pop("logger", None)
-        state.pop("renderer", None)
         state.pop("_entity_manager", None)
         state.pop("effects", None)
         state.pop("_addTask", None)
@@ -534,9 +530,6 @@ class Tile(BaseEntity):
         self.is_coast = bool(flags & 16)
         self.is_inland_sea = bool(flags & 32)
 
-    def _calculate_visible_sides(self) -> int:
-        return sum(1 << i for i, v in self.visible_sides.items() if v)
-
     def on_inspect(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         yields = self.tile_yield.on_inspect()
 
@@ -569,7 +562,6 @@ class Tile(BaseEntity):
             "biome": self.biome,
             "units": [unit.tag for unit in self.units.all()],
             "improvements": [improvement.tag for improvement in self._improvements.get_all()],
-            "visible_sides": {side: "true" if edge else "false" for side, edge in self.visible_sides.items()},
             "moisture": self.moisture,
             "temperature": self.temperature,
         }
@@ -585,17 +577,6 @@ class Tile(BaseEntity):
             assert city_owner is not None, "City owner reference is invalid."
             return city_owner
         return None
-
-    def set_visible_sides(self, sides: Dict[int, bool]) -> None:
-        if len(sides) != 6:
-            raise ValueError("visible_sides must be a list of length 6.")
-        self.visible_sides = sides.copy()
-
-    def is_side_visible(self, side_index: int) -> bool:
-        return self.visible_sides[side_index]
-
-    def get_visible_sides(self) -> List[int]:
-        return [i for i, v in enumerate(self.visible_sides) if v]
 
     def get_pos(self) -> Tuple[float, float, float]:
         return self.pos_x, self.pos_y, self.pos_z

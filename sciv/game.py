@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 
 class OpenCiv(ShowBase):
-    def __init__(self):
+    def __init__(self) -> None:
         from helpers.cache import Cache
         from managers.config import ConfigManager
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 from zlib import crc32
 
 from gameplay.bits import DisplayMode
@@ -24,6 +24,9 @@ class BitsRenderer:
         self._bit_slot_assignments.clear()
         self._bit_models.clear()
 
+    def _ordered_ids(self, ids: List[str]) -> List[str]:
+        return sorted(ids, key=lambda s: (0 if s in self._last_slot_by_bit_id else 1, crc32(s.encode("utf-8"))))
+
     def render(self) -> None:
         prev_assignments: Dict[str, "Bit"] = dict(self._bit_slot_assignments)
         for slot_name, bit in prev_assignments.items():
@@ -37,13 +40,15 @@ class BitsRenderer:
 
         self._unrender_all()
 
-        for bit_id, bit in list(active_by_id.items()):
-            if bit.has_preferred_slot():
-                pref = bit.get_preferred_slot_name()
-                if pref in self.prop_slots and pref not in used_slots and self._slot_allowed(bit, pref):
-                    new_assignments[pref] = bit
-                    used_slots.add(pref)
-                    active_by_id.pop(bit_id)
+        for bit_id in self._ordered_ids(list(active_by_id.keys())):
+            bit = active_by_id.get(bit_id)
+            if not bit or not bit.has_preferred_slot():
+                continue
+            pref: str | None = bit.get_preferred_slot_name()
+            if pref in self.prop_slots and pref not in used_slots and self._slot_allowed(bit, pref):
+                new_assignments[pref] = bit
+                used_slots.add(pref)
+                active_by_id.pop(bit_id, None)
 
         for old_slot, old_bit in prev_assignments.items():
             bit = active_by_id.get(old_bit.id)
@@ -57,14 +62,20 @@ class BitsRenderer:
                 used_slots.add(old_slot)
                 active_by_id.pop(old_bit.id, None)
 
-        for bit_id, bit in list(active_by_id.items()):
-            last = self._last_slot_by_bit_id.get(bit_id)
+        for bit_id in self._ordered_ids(list(active_by_id.keys())):
+            bit = active_by_id.get(bit_id)
+            if not bit:
+                continue
+            last: str | None = self._last_slot_by_bit_id.get(bit_id)
             if last and last in self.prop_slots and last not in used_slots and self._slot_allowed(bit, last):
                 new_assignments[last] = bit
                 used_slots.add(last)
-                active_by_id.pop(bit_id)
+                active_by_id.pop(bit_id, None)
 
-        for bit_id, bit in list(active_by_id.items()):
+        for bit_id in self._ordered_ids(list(active_by_id.keys())):
+            bit: "Bit | None" = active_by_id.get(bit_id)
+            if not bit:
+                continue
             for s in self._deterministic_slots_for(bit_id):
                 if s not in used_slots and self._slot_allowed(bit, s):
                     new_assignments[s] = bit
@@ -80,9 +91,9 @@ class BitsRenderer:
 
     def enable_bit(self, bit: "Bit", slot: Optional[str] = None) -> None:
         bit.disabled = False
-        chosen = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
+        chosen: str | None = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
         if not chosen:
-            last = self._last_slot_by_bit_id.get(bit.id)
+            last: str | None = self._last_slot_by_bit_id.get(bit.id)
             if last and last in self.prop_slots and self._slot_free(last) and self._slot_allowed(bit, last):
                 chosen = last
             else:
@@ -109,7 +120,7 @@ class BitsRenderer:
             return
         chosen: Optional[str] = bit.get_preferred_slot_name() if bit.has_preferred_slot() else slot
         if not chosen:
-            last = self._last_slot_by_bit_id.get(bit.id)
+            last: str | None = self._last_slot_by_bit_id.get(bit.id)
             if last and last in self.prop_slots and self._slot_free(last) and self._slot_allowed(bit, last):
                 chosen = last
             else:
@@ -269,3 +280,20 @@ class BitsRenderer:
             return
         self.tile.renderer.remove_model(bit.id)
         self._bit_models.pop(bit.id, None)
+
+    def dump(self) -> Dict[str, Any]:
+        return {
+            "last_slot_by_bit_id": self._last_slot_by_bit_id,
+            "prop_slots": self.prop_slots,
+            "bit_slot_assignments": {k: v.id for k, v in self._bit_slot_assignments.items()},
+        }
+
+    def load(self, data: Dict[str, Any]) -> None:
+        self._last_slot_by_bit_id = data.get("last_slot_by_bit_id", {})
+        self.prop_slots = data.get("prop_slots", self.tile.get_prop_slots())
+        bit_assignments: Dict[str, str] = data.get("bit_slot_assignments", {})
+        self._bit_slot_assignments.clear()
+        for slot, bit_id in bit_assignments.items():
+            bit = self.search_bit(bit_id)
+            if bit:
+                self._bit_slot_assignments[slot] = bit

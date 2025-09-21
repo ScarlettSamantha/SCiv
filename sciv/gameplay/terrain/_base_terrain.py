@@ -81,6 +81,7 @@ class BaseTerrain(ABC):
             "cls_ref": f"{self.__class__.__module__}.{self.__class__.__name__}",
             "fallback_color": self.fallback_color,
             "bits": self.bits.dump(),
+            "chosen_bits": [bit.id for bit in self.chosen_bits] if self.chosen_bits else [],
         }
         return data
 
@@ -112,6 +113,16 @@ class BaseTerrain(ABC):
 
         self.bits = Bits()
         self.bits.load(state.get("bits", {}))
+
+        chosen_ids: List[str] = state.get("chosen_bits", [])
+
+        if chosen_ids:
+            self.active_bits = []
+            for bid in chosen_ids:
+                b = self.bits.search_bit(bid)
+                if b is not None:
+                    self.active_bits.append(b)
+            self.chosen_bits = list(self.active_bits)
 
         for imp in supported_improvements:
             improvement_class: Type["Improvement"] = EntityManager.get_singleton_instance().dynamic_import(imp)

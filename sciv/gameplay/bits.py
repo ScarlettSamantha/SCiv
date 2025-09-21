@@ -53,7 +53,7 @@ class Bit:
         self.offset: Tuple[float, float, float] = offset
         self.hpr: Tuple[float, float, float] = hpr
         self.preferred_slot: Optional[str] = preferred_slot
-        self.net_tag: str = id or uuid.uuid4().hex
+        self.net_tag: str = self.id or uuid.uuid4().hex
         self.allow_auto_scale: bool = allow_auto_scale
         self.disabled: bool = disabled
         self.blocks_resource_model_spawning: bool = blocks_resource_model_spawning
@@ -106,7 +106,7 @@ class Bit:
             "blocks_resource_model_spawning",
             self.blocks_resource_model_spawning,
         )
-        self.net_tag = data.get("net_tag", self.net_tag)
+        self.net_tag = data.get("net_tag", self.id)
         return self
 
     def get_display_mode(self) -> List[DisplayMode]:
@@ -261,9 +261,18 @@ class Bits:
         parts = full_key.split(".")
         self._set_disabled_state(parts, False)
 
-    def search_bit(self, full_key: str) -> Optional[Bit]:
-        parts = full_key.split(".")
-        return self._search_bit_parts(parts)
+    def search_bit(self, full_key: str) -> Optional["Bit"]:
+        if "." in full_key:
+            return self._search_bit_parts(full_key.split("."))
+
+        if full_key in self.bits:
+            return self.bits[full_key]
+
+        for sub in self.groups.values():
+            found = sub.search_bit(full_key)
+            if found is not None:
+                return found
+        return None
 
     def _search_bit_parts(self, parts: List[str]) -> Optional[Bit]:
         if not parts:
