@@ -113,7 +113,8 @@ check-isdev-flag:
     - scripts/check_isdev.py
 
 package-linux:
-  image: ubuntu:24.04          
+  image: ubuntu:24.04
+  stage: package
   rules:
     - if: '$CI_COMMIT_TAG'
       when: on_success
@@ -125,7 +126,7 @@ package-linux:
       when: manual
     - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
       when: manual
-    - when: manual
+    - when: never
   needs:
     - job: check-isdev-flag
       artifacts: false
@@ -133,14 +134,12 @@ package-linux:
     - job: pyright-full-check
       artifacts: false
       optional: true
-  when: manual
   variables:
     DEBIAN_FRONTEND: noninteractive
     PYTHONUNBUFFERED: 1
   cache:
     key: shared-pip-cache
-    paths:
-      - .cache/pip
+    paths: [ .cache/pip ]
     policy: pull-push
   before_script:
     - apt-get update -qq
@@ -152,9 +151,7 @@ package-linux:
     - update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
     - pip3 install --upgrade pip --root-user-action=ignore
     - pip3 install -r requirements.txt --root-user-action=ignore
-  stage: package
-  tags:
-    - linux
+  tags: [linux]
   script:
     - python3 --version
     - ln -sf /usr/local/bin/python3.13 /usr/bin/python3
@@ -167,23 +164,22 @@ package-linux:
     - mkdir -p builds
     - cp dist/*.deb builds/
   artifacts:
-    paths:
-      - builds/*.deb
+    paths: [ builds/*.deb ]
     expire_in: 1 week
 
 package-windows:
   rules:
-    - if: '$CI_COMMIT_TAG'
-      when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^dev-.*$/'
-      when: manual
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
-      when: manual
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
-      when: manual
-    - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
-      when: manual
-    - when: manual
+      - if: '$CI_COMMIT_TAG'
+        when: on_success
+      - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^dev-.*$/'
+        when: manual
+      - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+        when: manual
+      - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
+        when: manual
+      - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
+        when: manual
+      - when: never
   stage: package
   tags: [windows]
   needs:
@@ -261,7 +257,7 @@ upload-rsync:
       when: manual
     - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
       when: manual
-    - when: manual
+    - when: never
   needs:
     - job: package-linux
       artifacts: true

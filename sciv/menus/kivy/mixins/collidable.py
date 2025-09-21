@@ -181,8 +181,8 @@ class CollisionPreventionMixin:
                 ui_top: int = int(ui_y + real_height)  # type: ignore
 
                 cache[element] = (ui_x, ui_y, ui_right, ui_top)
-            except Exception:
-                continue
+            except Exception:  # nosec: B112
+                continue  # nosec: B112
 
         self.ui_geometry_cache = cache
 
