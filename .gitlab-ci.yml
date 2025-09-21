@@ -60,6 +60,16 @@ pyright-diff-check:
         echo "No Python files changed. Skipping pyright."
       fi
 
+block-bad-imports:
+  image: python:3.13
+  stage: verify
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+  before_script: []
+  script:
+    - python3 scripts/check_bad_imports.py
+
 lint-check:
   <<: *default-python-job
   stage: verify
