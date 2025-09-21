@@ -255,8 +255,6 @@ class HexGrid:
                 self.wall_starts.append(None)
                 self.wall_vertex_counts.append(0)
 
-            tile.visible_sides = visible_map
-
         prim.closePrimitive()
         geom = Geom(vdata)
         geom.addPrimitive(prim)

@@ -1,4 +1,6 @@
-default_slots = {
+from typing import Dict
+
+default_slots: Dict[str, tuple[float, float, float]] = {
     "e": (0.435, 0.0, 0.0),
     "ne": (0.345, 0.35, 0.0),
     "nw": (-0.345, 0.35, 0.0),
@@ -16,8 +18,7 @@ grid_offset_negative = 0 - grid_offset
 grid_offset_diagonal = 0.4
 grid_offset_diagonal_negative = 0 - grid_offset_diagonal
 
-# We want the city to be a grid of 3x3 slots, so we add a few more specific slots for city improvements
-city_slots = {
+city_slots: Dict[str, tuple[float, float, float]] = {
     "palace": (0.0, 0.0, 0.0),
     "city_n": (0.0, grid_offset, 0.0),
     "city_s": (0.0, grid_offset_negative, 0.0),

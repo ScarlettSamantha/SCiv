@@ -10,7 +10,7 @@ from rich.console import Console
 
 
 class DebugApp:
-    def __init__(self) -> None:
+    def __init__(self):
         self.console = Console()
         self._actions: Dict[str, Callable[[argparse.Namespace], None]] = {
             "profile": self._profile,

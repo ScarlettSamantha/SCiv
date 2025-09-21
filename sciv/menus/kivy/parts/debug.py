@@ -30,7 +30,6 @@ class DebugPanel(FloatLayout):
         return self.frame
 
     def build_debug_frame(self) -> FloatLayout:
-        # --- Debug Panel (Top-Left Corner) ---
         self.frame = FloatLayout(
             size_hint=(None, None),
             width=300,
@@ -38,9 +37,8 @@ class DebugPanel(FloatLayout):
             pos_hint={"left": 1, "top": 0.975},
         )
 
-        # Background rectangle (canvas.before)
         with self.frame.canvas.before:  # type: ignore
-            Color(0, 0, 0, 0.7)  # Black background with 70% opacity
+            Color(0, 0, 0, 0.7)
             self.rect = Rectangle(size=self.frame.size, pos=self.frame.pos)  # type: ignore
 
         def update_debug_rect(instance: Widget, value: Any):
@@ -49,7 +47,6 @@ class DebugPanel(FloatLayout):
 
         self.frame.bind(size=update_debug_rect, pos=update_debug_rect)  # type: ignore
 
-        # Debug panel label
         self.panel = Label(
             text="Debug Info: None Yet",
             size_hint=(None, None),
@@ -113,7 +110,6 @@ class DebugPanel(FloatLayout):
             "x(col), y(row)": f"{tile.x}, {tile.y}",
             "terrain": terrain_name,
             "altitude": tile.altitude,
-            "visible_sides": ",".join(map(str, tile.visible_sides.values())),
             "model": tile.model(),
             "passable": f"{str(tile.passable)}, {str(tile.passable_without_tech)}",
             "movement_cost": tile.movement_cost,

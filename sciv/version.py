@@ -3,7 +3,7 @@ from importlib.metadata import PackageNotFoundError, version
 try:
     import pkg_resources
 except ImportError:
-    pkg_resources = None
+    pkg_resources = None  # type: ignore
 
 __major__: int = 0
 __minor__: int = 2

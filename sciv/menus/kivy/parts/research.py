@@ -466,7 +466,8 @@ class Research(FloatLayout, DirectObject):
             return  # Already hovered, skip update
 
         self._hovered_tech = tech_cls
-        related = set(tech_cls.requires + tech_cls.unlocks() + [tech_cls])
+        related = set(tech_cls.requires + tech_cls.unlocks())
+        related.add(tech_cls)
 
         for t, btn in self._buttons.items():
             fade_to = 0.85 if t not in related else 0.0
