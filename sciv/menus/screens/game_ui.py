@@ -608,6 +608,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def update_ui_elements(self):
         self.refresh_action_bar()
         self.refresh_targeting_ui()
+        self.refresh_combat_log()
+
+    def refresh_combat_log(self):
+        if self.player_combat_log is not None:
+            self.player_combat_log.update()
 
     def refresh_targeting_ui(self):
         if self.player_attack_info is not None:

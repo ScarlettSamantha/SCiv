@@ -106,8 +106,8 @@ class _CollisionPoller:
 
 
 class CollisionPreventionMixin:
-    tick_rate: float = 0.5
-    ui_geometry_update_interval: float = 1.0
+    tick_rate: float = 0.25
+    ui_geometry_update_interval: float = 2.0
     state_change_cooldown: float = 0.5
 
     def __init__(self, base: "OpenCiv", disable_zoom: bool = False) -> None:

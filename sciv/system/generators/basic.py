@@ -130,8 +130,6 @@ class Basic(BaseGenerator):
         self.model_grid = TileModelGrid(
             tiles=hexes,
             radius=1.0,
-            cols=self.config.width,
-            rows=self.config.height,
             default_model_path="assets/models/terrain/flat_grassland.glb",
         )
 

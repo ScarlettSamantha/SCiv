@@ -682,6 +682,7 @@ class Tile(BaseEntity):
 
     def set_terrain(self, terrain: BaseTerrain) -> None:
         self.tile_terrain = terrain
+        self.get_renderer().rerender_terrain()
 
     def get_terrain(self) -> BaseTerrain:
         return self.tile_terrain

@@ -23,7 +23,7 @@ class TooltipPoller:
         self._widgets: WeakSet["TooltipBehavior"] = weakref.WeakSet()
         self._task_name = "_tooltip__global_mouse_poll"
         self._polling = False
-        self._delay = 1 / 10
+        self._delay = 1 / 5
 
     def register(self, widget: "TooltipBehavior") -> None:
         self._widgets.add(widget)

@@ -18,9 +18,6 @@ from helpers.direct_loading_screen import LoadingScreen
 from helpers.os import WindowsHelper
 from helpers.paths import PathsHelper
 from kivy.config import Config
-
-Config.set("graphics", "maxfps", "200")  # type: ignore
-
 from managers.i18n import I18nManager, set_i18n
 from managers.unit import UnitManager
 from panda3d.core import loadPrcFile
@@ -84,7 +81,7 @@ class OpenCiv(ShowBase):
         ):
             from helpers.debug import Debug
 
-            self.sentry = Debug.init_sentry(sentry_dsn)
+            # self.sentry = Debug.init_sentry(sentry_dsn)
 
         base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
         PathsHelper.base_path = str(base_file_path)

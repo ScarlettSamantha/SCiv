@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from direct.showbase.DirectObject import DirectObject
+from kivy.animation import Animation
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
@@ -31,10 +32,12 @@ class PlayerCombatLog(BoxLayout, DirectObject):
         self.scroll: Optional[ClippingScrollList] = None
         self.bg_rect: Optional[Rectangle] = None
         self.disabled = False
+        self._rendered_entries_index: int = 0
 
         self._expanded_height: float = float(self.height)
         self._compact_height: float = dp(100)
         self._compact_max_entries: int = 100
+        self._mini_max_entries: int = 3
         self._is_compact: bool = True
         self.height = self._compact_height
 
@@ -45,10 +48,15 @@ class PlayerCombatLog(BoxLayout, DirectObject):
 
     def register(self):
         self.accept("ui.update.ui.combat_log.add", self.add_entry)
+        self.accept("ui.update.ui.refresh_combat_log", lambda: self.update())
 
     def build(self):
         if self.is_built:
             return
+
+        self._rendered_entries_index = 0
+        if self.scroll is not None:
+            self.scroll.clear_widgets()
 
         with self.canvas.before:
             Color(0, 0, 0, 0.7)
@@ -90,9 +98,21 @@ class PlayerCombatLog(BoxLayout, DirectObject):
         if not self.scroll:
             return
 
-        self.scroll.clear_widgets()
+        limit = self._mini_max_entries if self._is_compact else self._compact_max_entries
 
-        entries: List[CombatLogEntry] = self._current_entries()
+        if self._rendered_entries_index == len(self.logRef):
+            return
+
+        new_entries = len(self.logRef) - self._rendered_entries_index
+        if new_entries > limit:
+            new_entries = limit
+
+        excess_entries = len(self.scroll.children[0].children) + new_entries - limit
+        if excess_entries > 0:
+            for _ in range(excess_entries):
+                self.scroll.children[0].remove_widget(self.scroll.children[0].children[-1])
+
+        entries: List[CombatLogEntry] = self._current_entries()[-new_entries:]
         for entry in entries:
             ts = entry.timestamp.strftime("%H:%M:%S")
             line = f"[{ts}]: {entry.text}"
@@ -101,6 +121,7 @@ class PlayerCombatLog(BoxLayout, DirectObject):
             lbl.bind(texture_size=lambda inst, size: setattr(inst, "height", size[1]))  # type: ignore
             self.scroll.add_widget(lbl)
 
+        self._rendered_entries_index = len(self.logRef)
         self.scroll.scroll_to_bottom()
 
     def add_entry(self, entry: CombatLogEntry):
@@ -108,8 +129,6 @@ class PlayerCombatLog(BoxLayout, DirectObject):
 
         if not self.is_built or not self.scroll:
             return
-
-        self.update()
 
     def toggle_compact(self):
         self._is_compact = not self._is_compact
@@ -125,6 +144,9 @@ class PlayerCombatLog(BoxLayout, DirectObject):
                     t_("ui.player_ui.combat_log.compact", {"max_entries": self._compact_max_entries})
                 )
 
+        self._rendered_entries_index = 0
+        self.scroll.clear_widgets() if self.scroll else None
+        Animation(height=target_h, d=0.2).start(self)  # type: ignore
         self.update()
 
     def _current_entries(self) -> List[CombatLogEntry]:

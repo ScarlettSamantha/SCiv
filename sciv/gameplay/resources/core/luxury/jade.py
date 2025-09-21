@@ -4,10 +4,9 @@ from gameplay.improvements.core.resources.mine import Mine
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.terrain.flat_desert import FlatDesert
+from gameplay.terrain.hills_desert import HillsDesert
 from managers.i18n import T_TranslationOrStr, t_
-
-from sciv.gameplay.terrain.flat_desert import FlatDesert
-from sciv.gameplay.terrain.hills_desert import HillsDesert
 
 
 class Jade(BaseLuxuryResource):

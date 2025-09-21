@@ -140,6 +140,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.refresh_player_turn_control` (E: manager-ui | L: ui-part-turn-control)
 - `ui.update.ui.refresh_action_bar` (E: unit | L : manager-game-ui )
 - `ui.update.ui.refresh_basic_elements` (E: * | L : game-ui)
+- `ui.update.ui.refresh_combat_log` (E: * | L: player-combat-log-ui)
 
 - `ui.update.ui.combat_log.add` (E: * | L: ui-player-combat-log )
 

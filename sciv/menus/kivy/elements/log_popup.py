@@ -45,13 +45,7 @@ class LogPopup(BasePopup):
         Clock.schedule_once(lambda dt: self.load_all(), 0)  # type: ignore
 
     def on_new_log(self, _datetime: datetime.datetime, level: str, msg: str) -> None:
-        if self.passes_filter(level):
-            self.index += 1
-            if self.index % 2 == 0:
-                background_color: Tuple[float, ...] = Colors.DARK_GRAY
-            else:
-                background_color = Colors.LIGHT_GRAY
-            self._add_line(_datetime, msg, level, background_color)
+        pass
 
     def load_all(self) -> None:
         self.scroll.clear_widgets()
@@ -92,6 +86,7 @@ class LogPopup(BasePopup):
             markup=True,
         )
         self.scroll.add_widget(item)
+
         Clock.schedule_once(lambda dt: self.scroll.scroll_to_bottom(), 0)  # type: ignore
 
     def get_color(self, level: str) -> Tuple[float, float, float, float]:
@@ -107,6 +102,10 @@ class LogPopup(BasePopup):
     def scroll_to_start(self) -> None:
         self.scroll.scroll_to_top()
 
+    def clear_lines(self) -> None:
+        self.scroll.clear_widgets()
+        self.index = 0
+
     def open(self, *args: Any, **kwargs: Any) -> None:
         self.handler.on_log = self.on_new_log
         self.load_all()
@@ -115,6 +114,6 @@ class LogPopup(BasePopup):
         return super().open(*args, **kwargs)
 
     def done(self, *args: Any, **kwargs: Any) -> None:
-        self.scroll.clear_widgets()
+        self.clear_lines()
         self.handler.on_log = None
         super().done(*args, **kwargs)
