@@ -116,8 +116,6 @@ class TileModelGrid:
         if old_np and not old_np.is_empty():
             old_np.remove_node()
         self._ensure_instance_for_tile(tile)
-        tile.calculate()
-        tile.renderer.render()
         self.collect()
 
     def set_tile_tint(

@@ -9,7 +9,7 @@ class City(BaseTerrain):
     _name = t_("world.terrain.city")
     fallback_color = (0, 119, 255)
     movement_modifier = 0.5
-    _model = "assets/models/tiles/town.glb"
+    _model = "assets/models/terrain/city.glb"
     _fallback_color = Colors.t4f_to_t3(Colors.ORANGE)
 
     def __init__(self, *args: Any, **kwargs: Any):

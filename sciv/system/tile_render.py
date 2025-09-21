@@ -16,6 +16,7 @@ from helpers.images import (
 from helpers.os import WindowsHelper
 from helpers.placeholder import Placeholder
 from managers.assets import AssetManager
+from managers.game import Game
 from managers.i18n import I18nManager, T_TranslationOrStr, get_i18n
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 from panda3d.core import (
@@ -62,6 +63,7 @@ class TileRenderer:
     def __init__(self, tile: "Tile") -> None:
         self.tile: Tile = tile
         self.base = Cache.get_showbase_instance()
+        self.game_manager: Game = Game.get_singleton_instance()
         self.atlas_width: int = 0
         self.atlas_height: int = 0
 
@@ -221,7 +223,13 @@ class TileRenderer:
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
+        self.rerender_terrain()
         self.bits_renderer.render()
+
+    def rerender_terrain(self) -> None:
+        if self.game_manager.world_tile_grid is None:
+            return
+        self.game_manager.get_world_grid().update_tile(self.tile)
 
     def update(self) -> None:
         if not self.tile.city:
