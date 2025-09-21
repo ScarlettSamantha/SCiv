@@ -8,6 +8,14 @@ repos:
         language: system
         types: [python]
 
+      # 1b) SCIV import guard
+      - id: block-bad-imports
+        name: Forbid sciv imports
+        entry: python3 scripts/check_bad_imports.py
+        language: system
+        types: [python]
+        pass_filenames: false
+
       # 2) Pyright on changed files
       - id: pyright-diff
         name: Pyright on changed files
@@ -31,7 +39,6 @@ repos:
             if [ -f .git/MERGE_HEAD ]; then
               ruff check .
             else
-              # collect staged .py files
               files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" || true)
               if [ -z "$files" ]; then
                 echo "No staged Python files to lint."

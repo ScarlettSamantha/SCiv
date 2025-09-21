@@ -1,43 +1,42 @@
 from typing import TYPE_CHECKING, Optional, cast
+
+import numpy as np
 from direct.showbase.Loader import Loader
 from direct.task import Task
-from panda3d.core import CardMaker, GeomNode, LVector3, LineSegs, NodePath, Shader, TransparencyAttrib, BitMask32, Vec4
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
-import numpy as np
+from panda3d.core import BitMask32, CardMaker, GeomNode, LineSegs, LVector3, NodePath, Shader, TransparencyAttrib, Vec4
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
+
+    from sciv.game import OpenCiv
 
 
 class UnitRenderer:
     def __init__(self, unit: "Unit", selection_radius: float = 0.75):
         self.unit: "Unit" = unit
-        self.base = Cache.get_showbase_instance()
+        self.base: "OpenCiv" = Cache.get_showbase_instance()
         self.loader = Loader(self.base)
         self.current_model = None
         self.model_cache = None
         self.selection_circle = None
 
-        # shader selection
         self.selection_shader = Shader.load(
             Shader.SL_GLSL,
             vertex="assets/shaders/unit_selection.vert.glsl",
             fragment="assets/shaders/unit_selection.frag.glsl",
         )
 
-        # selection‐quad node & state
         self.selector_np = None
 
         self.selection_enabled = False
         self.selection_radius = selection_radius
 
-        # task to advance shader time
         self.base.taskMgr.add(self._update_selector_task, f"update-unit-selector-{id(self)}")
 
     def _build_selector_quad(self):
-        # make a flat card under the unit
         cm = CardMaker(f"unit_selector_{id(self)}")
         cm.setFrame(-self.selection_radius, self.selection_radius, -self.selection_radius, self.selection_radius)
         self.selector_np = NodePath(cm.generate())
@@ -47,21 +46,18 @@ class UnitRenderer:
         self.selector_np.setHpr(0, -90, 0)
         self.selector_np.setShader(self.selection_shader)
 
-        # initialize shader inputs
         self.selector_np.setShaderInput("borderWidth", 0.1)  # type: ignore
         self.selector_np.setShaderInput("dashFreq", 32.0)  # type: ignore
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  #    type: ignore
         self.selector_np.setShaderInput("color", tuple(self.unit.get_owner().color))  # type: ignore
         self.selector_np.setShaderInput("time", 0.0)  # type: ignore
 
-        # networking tags & picking
         self.selector_np.setTag(NET_TYPE_FIELD, str(NET_TYPE.UNIT.value))
         self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, self.unit.tag)  # type: ignore
         self.selector_np.setCollideMask(BitMask32.bit(1))
 
     def _update_selector_task(self, task: Task.Task):
         if self.selection_enabled and self.selector_np:
-            # update the time uniform
             self.selector_np.setShaderInput("time", task.time)  # type: ignore
         return Task.cont
 
@@ -81,16 +77,13 @@ class UnitRenderer:
         return model
 
     def _configure_model(self, model: NodePath) -> None:
-        # position and scale
         tile = self.unit.get_tile()
         x, y, z = tile.get_cords()[0], tile.get_cords()[1], tile.calculate_z_pos_on_altitude()[2]
         model.setPos(x, y, z)
         model.setHpr(LVector3(*self.unit.model_rotation))
         model.setScale(self.unit.model_size)
-        # collision
         mask = BitMask32.bit(1) if self.unit.collides is True else BitMask32.allOff()
         model.setCollideMask(mask)
-        # network tags
         model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
         model.setTag(NET_NODE_TAG_ID_FIELD, self.unit.tag)
 
@@ -166,10 +159,8 @@ class UnitRenderer:
     def render(self):
         if self.current_model is None:
             self.current_model = self.load_model()
-        # parent model to render
         self.current_model.reparentTo(self.base.render)
 
-        # if selection is on, ensure quad is positioned underneath
         if self.selection_enabled and self.selector_np:
             x, y, z = self.unit.tile.get_cords()  # type: ignore
             self.selector_np.setPos(x, y, z + 0.01)  # type: ignore
