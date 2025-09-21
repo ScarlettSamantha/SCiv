@@ -118,8 +118,6 @@ package-linux:
   rules:
     - if: '$CI_COMMIT_TAG'
       when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^dev-.*$/'
-      when: manual
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
       when: manual
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
@@ -171,8 +169,6 @@ package-windows:
   rules:
       - if: '$CI_COMMIT_TAG'
         when: on_success
-      - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^dev-.*$/'
-        when: manual
       - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
         when: manual
       - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
@@ -249,8 +245,6 @@ upload-rsync:
   rules:
     - if: '$CI_COMMIT_TAG'
       when: on_success
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^dev-.*$/'
-      when: manual
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
       when: manual
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^dev-.*$/ || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
