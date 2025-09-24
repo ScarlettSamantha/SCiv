@@ -223,6 +223,8 @@ class TileRenderer:
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
+
+        self.clear_models()
         if rerender_terrain:
             self.rerender_terrain()
         self.bits_renderer.render()

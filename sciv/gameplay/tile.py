@@ -657,10 +657,10 @@ class Tile(BaseEntity):
         px, py = self.compute_hex_center(self.x, self.y, radius)
         self.pos_x, self.pos_y = px, py
 
-    def render(self, auto_calculate: bool = True) -> None:
+    def render(self, auto_calculate: bool = True, rerender_terrain: bool = False) -> None:
         if auto_calculate:
             self.calculate()  # type: ignore
-        self.renderer.render()
+        self.renderer.render(rerender_terrain=rerender_terrain)
 
     def on_turn_end(self, turn: int) -> None:
         if len(self._improvements) > 0:
@@ -802,7 +802,7 @@ class Tile(BaseEntity):
 
         self.become_city()
         self.calculate()
-        self.render()
+        self.render(rerender_terrain=True)
         MessengerGlobal.messenger.send("game.border.refresh")
 
         return True
