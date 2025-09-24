@@ -618,6 +618,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def refresh_targeting_ui(self):
         if self.player_attack_info is not None:
             self.player_attack_info.update()
+        if self.player_target_info is not None:
+            self.player_target_info.update()
 
     def clear_action_bar(self):
         if self.action_bar is None:

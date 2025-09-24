@@ -336,3 +336,9 @@ class TargetPanel(BoxLayout, DirectObject):
         except Exception:
             pass
         return []
+
+    def update(self) -> None:
+        if self._mode == "unit" and self._unit is not None:
+            self.refresh_from_unit()
+        elif self._mode == "tile" and self._tile is not None:
+            self.refresh_from_tile()
