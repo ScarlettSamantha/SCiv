@@ -350,7 +350,6 @@ class TileRepository:
                 return list(reversed(path))
 
             for neighbor in cls.get_neighbors(current, check_passable=True):
-                # skip occupied tiles
                 if avoid_occupied and neighbor.units.has_any() and neighbor is not goal:
                     continue
 

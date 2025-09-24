@@ -84,6 +84,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.wait_for_next_input_of_user: bool = False
         self.wait_for_action_of_user: Optional[Action] = None
         self.wait_for_action: Optional[Action] = None
+        self.action_waiting_for: Optional[Action] = None
 
         self.debug_panel: Optional[Label] = None
         self.camera_panel: Optional[Label] = None

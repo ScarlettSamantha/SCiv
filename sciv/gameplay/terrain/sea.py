@@ -11,6 +11,7 @@ class Sea(BaseTerrain):
     _fallback_color = Colors.t4f_to_t3(Colors.BLUE)
     _model = "assets/models/terrain/sea.glb"
     model_pos_z_offset = -0.20
+    _movement_modifier = 0.75
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

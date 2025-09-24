@@ -560,7 +560,7 @@ class Unit(BaseEntity, ABC):
         if reason != CantMoveReason.COULD_MOVE:
             return reason
 
-        departing_tile: "Tile" = self.get_tile()  # Start off at our current tile
+        departing_tile: "Tile" = self.get_tile()
         current_tile: "Tile" = self.get_tile()
 
         assert tiles is not None, "Tiles should not be None if reason is COULD_MOVE"

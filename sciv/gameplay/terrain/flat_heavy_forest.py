@@ -11,7 +11,7 @@ from managers.i18n import t_
 
 class FlatHeavyForest(BaseTerrain):
     _name = t_("world.terrain.flatland_heavy_forest")
-    movement_modifier = 0.5
+    _movement_modifier = 1.5
     _model = "assets/models/terrain/flat_forest.glb"
     water_availability = 0.75
     _fallback_color = (91, 128, 64)

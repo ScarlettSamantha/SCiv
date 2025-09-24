@@ -10,7 +10,7 @@ from managers.i18n import t_
 class HillsSnow(BaseTerrain):
     _name = t_("world.terrain.hills_snow")
 
-    movement_modifier = 0.5
+    _movement_modifier = 2.5
     water_availability = 0.25
     _fallback_color = (238, 238, 238)
     _model = "assets/models/terrain/hill_snow.glb"

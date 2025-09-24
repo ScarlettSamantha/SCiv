@@ -7,7 +7,7 @@ from managers.i18n import t_
 
 class FlatTundraSnow(BaseTerrain):
     _name = t_("world.terrain.flatland_tundra_snow")
-    movement_modifier = 1
+    _movement_modifier = 1.25
     water_availability = 0.25
     _fallback_color = (238, 238, 238)
     _model = "assets/models/terrain/flat_snow.glb"

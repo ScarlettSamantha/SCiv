@@ -30,6 +30,7 @@ class BaseTerrain(ABC):
     model_pos_z_offset = -0.05
     model_hpr: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     can_spawn_resources: bool = True
+    _movement_modifier: float = 1.0
     _fallback_color: Tuple[float, float, float] = (0, 119, 255)
 
     _warn_user_before_build: bool = False
@@ -48,7 +49,7 @@ class BaseTerrain(ABC):
         self.user_title: T_TranslationOrStr = ""
         self._texture: T_TranslationOrStr = ""
 
-        self.movement_modifier: float = 1.0  # 1.0 is normal, 0.5 is half speed, etc.
+        self.movement_modifier: float = self._movement_modifier
         self.water_availability: float = 1.0
         self.radiation_level: float = 0.0
 

@@ -6,8 +6,8 @@ from managers.i18n import t_
 
 class FlatIce(BaseTerrain):
     _name = t_("world.terrain.flatland_ice")
-    movement_modifier = 1
-    water_availability = 0.25
+    _movement_modifier = 1
+    water_availability = 1.5
     _fallback_color = (255, 255, 255)
     _model = "assets/models/terrain/flat_iceland.glb"
     model_pos_z_offset = -0.0

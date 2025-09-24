@@ -12,6 +12,7 @@ class Lake(BaseTerrain):
     _model = "assets/models/terrain/lake.glb"
     _fallback_color = (0, 204, 255)
     model_pos_z_offset = -0.20
+    _movement_modifier = 0.75
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -20,6 +21,7 @@ class Lake(BaseTerrain):
         self.movement_modifier = 0.5
 
         self._texture = "lake.png"
+        self.passable = False
         self.tile_yield_base = Yields(food=1)
 
     def register_bits(self) -> None:

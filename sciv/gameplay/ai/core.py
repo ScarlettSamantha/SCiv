@@ -26,34 +26,30 @@ if TYPE_CHECKING:
 
 
 class AI(ABC):
-    UNIT_REAL_VISION_RADIUS: int = 3  # The real vision radius of a unit is how the engine actually sees the world
+    UNIT_REAL_VISION_RADIUS: int = 3
 
     def __init__(self, player: "Player"):
         self._player: weakref.ReferenceType["Player"] = weakref.ref(player)
         self.turn_action_register: Dict[int, List[Callable[..., None]]] = {}
         self.logger: Logger = self.player.logger.getChild(suffix="ai")
         self.logger.debug(f"AI created for player {str(self.player.name)} with personality {self.player.personality}")
-
         self.control_units: weakref.ReferenceType["Units"] = weakref.ref(self.player.units)
         self.control_cities: weakref.ReferenceType["Cities"] = weakref.ref(self.player.cities)
         self.control_tiles: weakref.ReferenceType[PlayerTiles] = weakref.ref(self.player.tiles)
         self.vision: weakref.ReferenceType["Vision"] = weakref.ref(self.player.vision)
-        self.unit_directions: Dict[int, Tuple[int, int]] = {}
-
+        self.unit_directions: Dict[int, Tuple[float, float]] = {}
+        self.unit_recent: Dict[int, List[Tuple[int, int]]] = {}
         self.end_goal: Goals = self.register_end_goal()
         self.goals: Goals = self.register_goals()
-
         self.memory: Memories = Memories()
         self.tasks: Tasks = Tasks()
         self.personality: BasePersonality = self.player.personality
 
     def __getstate__(self) -> Dict[str, Any]:
         data: Dict[str, Any] = self.__dict__.copy()
-
         player: "Player | None" = self._player()
         if player is None:
             raise ValueError("Player reference is None, cannot serialize AI state.")
-
         data.pop("control_units", None)
         data.pop("control_cities", None)
         data.pop("control_tiles", None)
@@ -107,6 +103,7 @@ class AI(ABC):
         self.personality = self.player.personality
         self.turn_action_register = state.get("turn_action_register", {})
         self.unit_directions = state.get("unit_directions", {})
+        self.unit_recent = state.get("unit_recent", {})
 
     def get_logger(self) -> Logger:
         return self.logger
@@ -230,7 +227,6 @@ class AI(ABC):
         targets: Dict[Tuple[int, int], "Tile"] = self.get_target_for_unit(executing_unit)
         if len(targets) == 0:
             return None
-
         for tile in targets.values():
             if tile.units.has_any():
                 target_unit: "Unit | None" = tile.units.first()
@@ -290,42 +286,145 @@ class AI(ABC):
                 if on_tile_visit is not None:
                     on_tile_visit(path_tile)
 
+    def _recent_for(self, uid: int) -> List[Tuple[int, int]]:
+        if uid not in self.unit_recent:
+            self.unit_recent[uid] = []
+        return self.unit_recent[uid]
+
+    def _push_recent(self, uid: int, coord: Tuple[int, int], cap: int = 16) -> None:
+        max_recent_positions: int = cap
+        recent_positions = self._recent_for(uid)
+        recent_positions.append(coord)
+        if len(recent_positions) > max_recent_positions:
+            del recent_positions[0]
+
+    def _move_adjacent(self, unit: "Unit", to: "Tile") -> bool:
+        neighbor_radius: int = 1
+        use_same_ring: bool = True
+        include_diagonals: bool = False
+        current: "Tile" = unit.get_tile()
+        if to in TileRepository.get_neighbors(current, neighbor_radius, use_same_ring, include_diagonals):
+            unit.move(tile=to)
+            return True
+        return False
+
     def _select_wander_tile(self, unit: "Unit") -> Optional["Tile"]:
+        neighbor_radius: int = 1
+        use_same_ring: bool = True
+        include_diagonals: bool = False
+        random_explore_probability: float = 0.12
+        revisit_tile_weight_multiplier: float = 0.3
+        base_weight: float = 1.0
+        alignment_weight: float = 1.0
+        outward_weight: float = 0.7
+        noise_amplitude: float = 0.5
+        minimum_weight: float = 1e-6
+
         current: "Tile" = unit.get_tile()
         neighbors: List["Tile"] = [
             t
-            for t in TileRepository.get_neighbors(current, 1, True, False)
+            for t in TileRepository.get_neighbors(current, neighbor_radius, use_same_ring, include_diagonals)
             if t.is_passable() and not t.units.has_any() and not t.is_lake and not t.is_water
         ]
         if not neighbors:
             return None
 
         uid: int = id(unit)
-        prev_dir: Tuple[int, int] | None = self.unit_directions.get(uid, None)
+        last_direction: Tuple[float, float] | None = self.unit_directions.get(uid, None)
+        recent_positions: List[Tuple[int, int]] = self._recent_for(uid)
 
-        if prev_dir:
-            scored: List[Tuple[int, "Tile"]] = []
-            for t in neighbors:
-                score: int = (t.x - current.x) * prev_dir[0] + (t.y - current.y) * prev_dir[1]
-                scored.append((score, t))
+        if recent_positions:
+            centroid_x = sum(x for x, _ in recent_positions) / float(len(recent_positions))
+            centroid_y = sum(y for _, y in recent_positions) / float(len(recent_positions))
+        else:
+            centroid_x = float(current.x)
+            centroid_y = float(current.y)
 
-            best_score, best_tile = max(scored, key=lambda pair: pair[0])
-            if best_score > 0:
-                return best_tile
+        if random.random() < random_explore_probability:
+            candidate_pool = [t for t in neighbors if (t.x, t.y) not in recent_positions] or neighbors
+            return random.choice(candidate_pool)
 
-        return random.choice(neighbors)
+        weights: List[float] = []
+        distance_from_centroid_current = (current.x - centroid_x) * (current.x - centroid_x) + (
+            current.y - centroid_y
+        ) * (current.y - centroid_y)
+
+        for t in neighbors:
+            step_dx = t.x - current.x
+            step_dy = t.y - current.y
+
+            alignment = step_dx * (last_direction[0] if last_direction else 0.0) + step_dy * (
+                last_direction[1] if last_direction else 0.0
+            )
+            distance_to_centroid_neighbor = (t.x - centroid_x) * (t.x - centroid_x) + (t.y - centroid_y) * (
+                t.y - centroid_y
+            )
+            outward_delta = max(0.0, distance_to_centroid_neighbor - distance_from_centroid_current)
+
+            revisit_multiplier = revisit_tile_weight_multiplier if (t.x, t.y) in recent_positions else 1.0
+
+            weight = base_weight
+            weight += alignment_weight * max(0.0, alignment)
+            weight += outward_weight * outward_delta
+            weight += random.random() * noise_amplitude
+            weight *= revisit_multiplier
+            if weight <= 0.0:
+                weight = minimum_weight
+
+            weights.append(weight)
+
+        return random.choices(neighbors, weights=weights, k=1)[0]
 
     def on_wander(self, unit: "Unit") -> None:
-        start_time: datetime.datetime = datetime.datetime.now()
-        timeout: datetime.timedelta = datetime.timedelta(seconds=2)  # this is a timeout to prevent infinite loops
-        while unit.moves_left > 0 and (datetime.datetime.now() - start_time) < timeout:
-            current: Tile = unit.get_tile()
+        time_budget_ms: int = 250
+        max_steps: int = 16
+        direction_smooth_prev: float = 0.7
+        direction_smooth_new: float = 0.3
+        repetition_check_min_len: int = 8
+        uniqueness_threshold_ratio: float = 0.5
+
+        loop_started_at: datetime.datetime = datetime.datetime.now()
+        time_budget: datetime.timedelta = datetime.timedelta(milliseconds=time_budget_ms)
+        steps_taken: int = 0
+        uid: int = id(unit)
+
+        while (
+            unit.moves_left > 0
+            and steps_taken < max_steps
+            and (datetime.datetime.now() - loop_started_at) < time_budget
+        ):
+            current_tile: Tile = unit.get_tile()
             next_tile: Tile | None = self._select_wander_tile(unit)
             if not next_tile:
                 break
 
-            self.unit_directions[id(unit)] = ((next_tile.x - current.x), (next_tile.y - current.y))
-            self.move_unit(unit=unit, to=next_tile)
+            step_dx = next_tile.x - current_tile.x
+            step_dy = next_tile.y - current_tile.y
+
+            prev_dir: Tuple[float, float] | None = self.unit_directions.get(uid, None)
+            if prev_dir is None:
+                updated_direction = (float(step_dx), float(step_dy))
+            else:
+                updated_direction = (
+                    prev_dir[0] * direction_smooth_prev + step_dx * direction_smooth_new,
+                    prev_dir[1] * direction_smooth_prev + step_dy * direction_smooth_new,
+                )
+
+            self.unit_directions[uid] = updated_direction
+            self._push_recent(uid, (current_tile.x, current_tile.y))
+
+            if not self._move_adjacent(unit, next_tile):
+                self.move_unit(unit=unit, to=next_tile)
+
+            steps_taken += 1
+
+            recent_positions = self._recent_for(uid)
+            if len(recent_positions) >= repetition_check_min_len:
+                unique_count = len(set(recent_positions))
+                threshold = int(len(recent_positions) * uniqueness_threshold_ratio)
+                if unique_count <= threshold:
+                    self.unit_directions[uid] = (0.0, 0.0)
+                    break
 
         new_goal: Goal | None = self.create_goals_for_unit(executing_unit=unit)
         if new_goal:

@@ -13,10 +13,12 @@ class SeaIce(BaseTerrain):
     _fallback_color: Tuple[float, float, float] = Colors.t4f_to_t3(Colors.WHITE)
     _model = "assets/models/terrain/sea.glb"
     model_pos_z_offset = -0.20
+    _movement_modifier = 4.0
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self._texture = "sea_ice.png"
+        self.passable = False
 
     def register_bits(self) -> None:
         self.bits.mode = self.bits.mode.OR

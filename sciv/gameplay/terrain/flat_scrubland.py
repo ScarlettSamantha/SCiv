@@ -9,7 +9,7 @@ from managers.i18n import t_
 
 class FlatScrubland(BaseTerrain):
     _name = t_("world.terrain.flatland_scrubland")
-    movement_modifier = 0.5
+    _movement_modifier = 1.0
     _model = "assets/models/terrain/flat_scrubland.glb"
     model_pos_z_offset = -0.0
     water_availability = 0.75

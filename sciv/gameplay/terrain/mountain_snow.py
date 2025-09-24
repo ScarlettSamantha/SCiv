@@ -11,11 +11,11 @@ class MountainSnow(BaseTerrain):
     _fallback_color = (255, 255, 255)
     can_spawn_resources = False
     _model = "assets/models/terrain/flat_snow.glb"
+    _movement_modifier = 4.0
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-        self.movement_modifier = 3
         self.water_availability = 0
 
         self.passable: bool = False

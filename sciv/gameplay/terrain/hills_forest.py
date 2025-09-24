@@ -9,7 +9,7 @@ from managers.i18n import t_
 
 class HillsForest(BaseTerrain):
     _name = t_("world.terrain.hills_forest")
-    movement_modifier = 0.5
+    _movement_modifier = 2.5
     water_availability = 0.5
     _fallback_color = (91, 128, 64)
     _model = "assets/models/terrain/hill_forest.glb"

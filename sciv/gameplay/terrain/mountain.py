@@ -11,6 +11,7 @@ class Mountain(BaseTerrain):
     model_pos_z_offset = -0.0
     can_spawn_resources = False
     _model = "assets/models/terrain/mountain.glb"
+    _movement_modifier = 4.0
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)

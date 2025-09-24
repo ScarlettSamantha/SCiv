@@ -10,7 +10,7 @@ from managers.i18n import t_
 
 class FlatJungle(BaseTerrain):
     _name = t_("world.terrain.flatland_jungle")
-    movement_modifier = 0.5
+    _movement_modifier = 1.75
     water_availability = 0
     _model = "assets/models/terrain/flat_jungle.glb"
     _fallback_color = (45, 64, 32)
