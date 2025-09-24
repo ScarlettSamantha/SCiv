@@ -1,11 +1,10 @@
 from typing import Any, Dict, Optional, Tuple, Type
 
 from direct.showbase import MessengerGlobal
-
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.improvement import Improvement
 from gameplay.rules import get_game_rules
-from gameplay.tile import Tile, CantBuildReason
+from gameplay.tile import CantBuildReason, Tile
 from gameplay.unit import Unit
 from managers.i18n import t_
 from system.actions import Action
@@ -31,6 +30,12 @@ class BuildAction(BaseUnitAction):
         self.get_return_as_failure_argument = True
         self.building: Optional[Improvement] = None
 
+        self.has_movement_point_left_requirement = True
+        self.movement_point_left_requirement = 0.1
+
+        self.has_movement_point_cost = True
+        self.movement_point_cost = -1.0
+
         self.unit_looses_movement_after_building_rule: bool = (
             get_game_rules().get_unit_looses_movement_after_building_rule()
         )
@@ -42,6 +47,17 @@ class BuildAction(BaseUnitAction):
         return result
 
     def can_build(self, *args: Any, **kwargs: Any) -> bool:
+        if self.movement_point_cost > 0 and self.unit.moves_left < self.movement_point_left_requirement:
+            MessengerGlobal.messenger.send(
+                "ui.request.open.popup",
+                [
+                    "error",
+                    t_("ui.dialogs.unit.build_improvement.not_enough_movement_points.title"),
+                    t_("ui.dialogs.unit.build_improvement.not_enough_movement_points.message"),
+                ],
+            )
+            self._condition_result = CantBuildReason.NOT_ENOUGH_MOVEMENT_POINTS
+            return False
         if len(self.tile.improvements()) > 0:
             MessengerGlobal.messenger.send(
                 "ui.request.open.popup",

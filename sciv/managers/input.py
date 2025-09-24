@@ -125,17 +125,15 @@ class Input(Singleton, DirectObject):
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
 
     def on_right_down(self):
-        if self._right_button_held:
+        if self._right_button_held or self.game_ui is None:
             return
 
         self._right_button_held = True
         self._last_right_click_time = time.time()
         clicked_object: NodePath | None = self.pick_object(dont_select=True)
         self.long_right_click = False
-
+        tile: Optional["Tile"] = None
         if clicked_object and clicked_object.getNetTag(NET_TYPE_FIELD) == NET_TYPE.TILE.value:
-            assert self.game_ui is not None, "Game UI should be initialized."
-
             if self.selected_unit is None:
                 return
 
@@ -144,8 +142,15 @@ class Input(Singleton, DirectObject):
                 self.logger.warning(f"Tile with ID {target} not found.")
                 return
 
-            if not self.game_ui.waiting_for_world_input and self.game_ui.wait_for_action is None:
-                self.game_ui.open_unit_path_renderer(self.selected_unit, tile)
+        if clicked_object and clicked_object.getNetTag(NET_TYPE_FIELD) == NET_TYPE.BIT.value:
+            node_tag = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
+            tile_cords: List[str] = node_tag.split("_")[:2]
+            if (tile := TileRepository.get_tile(*map(lambda s: int(s), tile_cords))) is None:
+                self.logger.warning(f"Tile with ID {node_tag} not found.")
+                return
+
+        if self.game_ui.wait_for_action is None and tile is not None and self.selected_unit is not None:
+            self.game_ui.open_unit_path_renderer(self.selected_unit, tile)
 
         self._long_press_task_name = "input-long-right-click"
         self.base.taskMgr.doMethodLater(
@@ -262,6 +267,8 @@ class Input(Singleton, DirectObject):
             self.game_ui.wait_for_action_of_user = None
             self.unhover_all()
             messenger.send("ui.update.ui.close_player_attack_info")
+        self.game_ui.waiting_for_world_input = False
+        self.game_ui.wait_for_next_input_of_user = False
 
     def on_trigger_sentry_message(self):
         from helpers.debug import Debug
@@ -526,7 +533,8 @@ class Input(Singleton, DirectObject):
 
                     self.game.handle_tile_click(tile)
                     self.selected_tile = tile
-                    self.selected_unit = None
+                    if not self.is_long_right_click():
+                        self.selected_unit = None
                     selected_object = True
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                 else:

@@ -265,7 +265,7 @@ class BitsRenderer:
             pos_offset=(bit.offset[0] + pos[0], bit.offset[1] + pos[1], bit.offset[2] + pos[2]),
             scale=(bit.scale),
             hpr=bit.hpr,
-            net_id=bit.id,
+            net_id=f"{self.tile.x}_{self.tile.y}_{bit.id}",
             disable_lighting=not bit.default_lighting,
             disable_shader=not bit.default_shader,
             parent=self.parent,

@@ -492,6 +492,10 @@
             "unit_cant_build": {
               "title": "Unit can't build (error)",
               "message": "This unit can't build improvements, this is a bug. (Please report this issue)"
+            },
+            "not_enough_movement_points": {
+              "title": "Unit can't build",
+              "message": "This unit does not have enough movement points to build this improvement."
             }
           },
           "combat": {

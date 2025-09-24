@@ -43,9 +43,10 @@ from panda3d.core import (
     TextureStage,
     TransparencyAttrib,
 )
-from system.actions import Action
 from system.effects import Effects
 from system.entity import BaseEntity
+
+from gameplay.actions.unit.base_unit_action import BaseUnitAction
 
 if TYPE_CHECKING:
     from gameplay.improvement import BasicBaseResource
@@ -104,7 +105,7 @@ class Unit(BaseEntity, ABC):
         self.model_rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)  # Default rotation of the model
         self.model_position_offset: Tuple[float, float, float] = (0.0, 0.0, 0.0)
         self.collides: bool = True
-        self.actions: List[Action] = []
+        self.actions: List[BaseUnitAction] = []
 
         self.pos_y: float = 0.0
         self.pos_x: float = 0.0
@@ -475,7 +476,7 @@ class Unit(BaseEntity, ABC):
             return self._model
         return None
 
-    def get_actions(self) -> List[Action]:
+    def get_actions(self) -> List[BaseUnitAction]:
         return self.actions
 
     @classmethod
@@ -620,10 +621,10 @@ class Unit(BaseEntity, ABC):
             self.selection_circle.hide()
             self.remove_task("rotate_selection_circle")  # type: ignore
 
-    def add_action(self, action: Action) -> None:
+    def add_action(self, action: BaseUnitAction) -> None:
         self.actions.append(action)
 
-    def remove_action(self, action: Action) -> None:
+    def remove_action(self, action: BaseUnitAction) -> None:
         self.actions.remove(action)
 
     def unload_model(self) -> None:

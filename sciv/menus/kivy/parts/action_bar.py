@@ -10,6 +10,8 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from system.actions import Action
 
+from gameplay.unit import BaseUnitAction
+
 if TYPE_CHECKING:
     from gameplay.unit import Unit
 
@@ -180,10 +182,13 @@ class PlayerActionBar(BoxLayout):
         if self.current_unit is None or self.prepare_action is None or self.prepare_build_action is None:
             return
 
-        actions: List[Action] = self.current_unit.get_actions()
+        actions: List[BaseUnitAction] = self.current_unit.get_actions()
         for action in actions:
             btn = PanelButton(text=str(action.name))
-            if action.is_disabled:
+            if action.is_disabled or (
+                action.has_movement_point_left_requirement
+                and self.current_unit.moves_left < action.movement_point_left_requirement
+            ):  # type: ignore
                 btn.disabled = True
             if self.current_action is not None and action == self.current_action and not self.current_action.has_run():
                 btn.set_border_color([1.0, 1.0, 1.0, 1.0])

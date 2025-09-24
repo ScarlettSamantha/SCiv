@@ -27,6 +27,9 @@ class WalkAction(BaseUnitAction):
         self.keep_targeting_after_use = True
         self._is_disabled = self.unit.moves_left <= 0
 
+        self.has_movement_point_left_requirement = True
+        self.movement_point_left_requirement = 0.1
+
     def move_wrapper(self, action: Action, executor: Unit, target: T_TARGET) -> CantMoveReason:
         if not isinstance(target, Tile):
             return CantMoveReason.USER_INPUT_ERROR

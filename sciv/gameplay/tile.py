@@ -50,6 +50,7 @@ class CantBuildReason(Enum):
     NOT_CONSTRUCTABLE_BUILDER = 8
     IMPROVEMENT_ALREADY_EXISTS = 9
     IMPROVEMENT_TILE_NOT_PASSABLE = 10
+    NOT_ENOUGH_MOVEMENT_POINTS = 11
 
 
 @dataclass(init=False, eq=False, unsafe_hash=False)

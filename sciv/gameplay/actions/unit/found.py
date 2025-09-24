@@ -2,7 +2,6 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from direct.showbase.MessengerGlobal import messenger
-
 from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.repositories.tile import TileRepository
 from gameplay.rules import GameRules
@@ -29,8 +28,6 @@ class CantFoundReasons(Enum):
 
 class FoundAction(BaseUnitAction):
     def __init__(self, instance: "Settler"):
-        # Dynamically import Settler class to avoid circular import issues
-
         super().__init__(
             name=t_("actions.unit.found_city"),
             action=self.found_action_wrapper,
@@ -45,6 +42,9 @@ class FoundAction(BaseUnitAction):
         self.city_founding_distance_rule = CITY_FOUNDING_DISTANCE_RADIUS_DEFAULT
         self.city_founding_in_own_territory_rule = CITY_FOUNDING_IN_OWN_TERRITORY_DEFAULT
 
+        self.has_movement_point_left_requirement = True
+        self.movement_point_left_requirement = 0.1
+
     def founding_conditions(self, _: Condition) -> bool:
         tile = self.unit.get_tile()
         base = Cache.get_showbase_instance()
@@ -54,15 +54,13 @@ class FoundAction(BaseUnitAction):
         self.city_founding_distance_rule: int = rules.get_city_founding_distance_rule()
         self.city_founding_in_own_territory_rule: bool = rules.get_city_founding_in_own_territory_rule()
 
-        if tile.player is None:  # if the tile is not owned by any player
+        if tile.player is None:
             city_founding_in_own_territory_rule_implementation = True
-        elif tile.player != self.unit.owner:  # if the tile is owned by another player
+        elif tile.player != self.unit.owner:
             city_founding_in_own_territory_rule_implementation = False
-        elif tile.player == self.unit.owner:  # if the tile is owned by the player
-            city_founding_in_own_territory_rule_implementation = (
-                self.city_founding_in_own_territory_rule
-            )  #  if the tile is owned by the player, check the rule
-        else:  # Catch all
+        elif tile.player == self.unit.owner:
+            city_founding_in_own_territory_rule_implementation = self.city_founding_in_own_territory_rule
+        else:
             city_founding_in_own_territory_rule_implementation = False
 
         if tile.is_city() is True:

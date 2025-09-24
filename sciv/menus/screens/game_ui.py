@@ -91,7 +91,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.root_layout: Optional[FloatLayout] = None
 
-        self.action_bar_frame: Optional[PlayerActionBar] = None
+        self.action_bar: Optional[PlayerActionBar] = None
         self.debug_frame: Optional[DebugPanel] = None
         self.stats_frame: Optional[StatsPanel] = None
         self.debug_actions: Optional[DebugActions] = None
@@ -277,9 +277,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         return self.stats_frame
 
     def get_action_bar_frame(self) -> PlayerActionBar:
-        if self.action_bar_frame is None:
+        if self.action_bar is None:
             raise AssertionError("Action bar is not initialized.")
-        return self.action_bar_frame
+        return self.action_bar
 
     def get_debug_actions(self) -> DebugActions:
         if self.debug_actions is None:
@@ -333,13 +333,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
         self.root_layout.add_widget(self.build_player_turn_control())  # type: ignore
 
-        if self.action_bar_frame is None or self.player_turn_control is None:
+        if self.action_bar is None or self.player_turn_control is None:
             raise AssertionError("Action bar, debug panel, or stats panel, player_turn_control is not initialized.")
 
         self.logger.info("Game UI screen built.")
         self.logger.info("Registering non-collidable UI elements.")
 
-        self.register_non_collidable(self.action_bar_frame.frame)  # type: ignore
+        self.register_non_collidable(self.action_bar.frame)  # type: ignore
         self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
 
         self.logger.info("Non-collidable UI elements registered.")
@@ -368,8 +368,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         return self.inspect
 
     def build_action_bar(self) -> GridLayout:
-        self.action_bar_frame = PlayerActionBar(self._base)
-        return self.action_bar_frame.build()
+        self.action_bar = PlayerActionBar(self._base)
+        return self.action_bar.build()
 
     def build_stats_frame(self) -> FloatLayout:
         self.stats_frame = StatsPanel(base=self._base)
@@ -596,10 +596,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             _unit: Optional[Unit] = unit if isinstance(unit, Unit) else None
 
         if _unit is not None:
-            if self.action_bar_frame is None:
+            if self.action_bar is None:
                 raise AssertionError("Action bar frame is not initialized.")
 
-            self.action_bar_frame.generate(
+            self.action_bar.generate(
                 unit=_unit,
                 action_preparer=self.prepare_action,
                 build_action_preparer=self.prepare_build_action,
@@ -620,9 +620,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.player_attack_info.update()
 
     def clear_action_bar(self):
-        if self.action_bar_frame is None:
+        if self.action_bar is None:
             return
-        self.action_bar_frame.clear_buttons()
+        self.action_bar.clear_buttons()
 
     def get_selected_tile(self) -> Optional[Tile]:
         return self.ui_manager.get_selected_tile()
