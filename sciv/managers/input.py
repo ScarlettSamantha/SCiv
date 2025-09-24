@@ -227,9 +227,13 @@ class Input(Singleton, DirectObject):
             self.game_ui.close_unit_path_renderer()
             return
 
-        if NET_TYPE.TILE.value == net_type:
+        if NET_TYPE.TILE.value == net_type or NET_TYPE.BIT.value == net_type:
+            if NET_TYPE.BIT.value == net_type:
+                net_id = net_id.split("_")[:2]
+            else:
+                net_id = net_id.split("_")[-2:]
             if not self.is_long_right_click():
-                tile = TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))
+                tile = TileRepository.get_tile(*map(lambda s: int(s), net_id))
                 if tile is None:
                     self.logger.warning(f"Tile with ID {net_id} not found.")
                 else:
@@ -526,8 +530,12 @@ class Input(Singleton, DirectObject):
                     else:
                         return None
 
-                elif NET_TYPE.TILE.value == net_type:
-                    if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id.split("_")[-2:]))) is None:
+                elif NET_TYPE.TILE.value == net_type or NET_TYPE.BIT.value == net_type:
+                    if NET_TYPE.BIT.value == net_type:
+                        net_id = net_id.split("_")[:2]
+                    else:
+                        net_id = net_id.split("_")[-2:]
+                    if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         return None
 
