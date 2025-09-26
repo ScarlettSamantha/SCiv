@@ -51,14 +51,14 @@ class Basic(BaseGenerator):
             "year_length": 365,
             "day_length": 24,
             "base_temp": 0,
-            "avg_temp": 10,  # 8 is cold 10 is average, 14 is decent, 18 is hot, 22 is very hot
+            "avg_temp": 10,
             "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water],
             "random_seed": self.seed,
-            "roughness": 17,  # <10 huge patches; 18 nice; >24 too rough
+            "roughness": 17,
             "height_range": (0, 240),
-            "pressure": 1,  # bar
+            "pressure": 1,
             "axial_tilt": 18,
             "craters": True,
             "volcanoes": True,
@@ -113,6 +113,8 @@ class Basic(BaseGenerator):
         self.adjust_water_levels()
         end_water_level_adjustment: datetime = datetime.now()
 
+        self._promote_single_sea_between_coasts()
+
         self._desertize_adjacent_tundra()
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
@@ -165,7 +167,7 @@ class Basic(BaseGenerator):
                 (end_water_level_adjustment - start_water_level_adjustment).total_seconds() * 1000, 2
             ),
             "instantiate_tiles": round((end_inst - start_inst).total_seconds() * 1000, 2),
-            "mesh_build": round((end_models - start_models).total_seconds() * 1000, 2),  # kept key for continuity
+            "mesh_build": round((end_models - start_models).total_seconds() * 1000, 2),
             "resources": round((end_res - start_res).total_seconds() * 1000, 2),
             "units": round((end_units - start_units).total_seconds() * 1000, 2),
         }
@@ -352,7 +354,7 @@ class Basic(BaseGenerator):
             g = getattr(hex, "geoform", None)
             if not g:
                 return False
-            max_i = hex.grid.size - 1  # grid is square
+            max_i = hex.grid.size - 1
             for h in g.hexes:
                 if h.x == 0 or h.y == 0 or h.x == max_i or h.y == max_i:
                     return True
@@ -361,7 +363,7 @@ class Basic(BaseGenerator):
         tile.altitude = float(hex.altitude)
         tile.temperature = round(hex.base_temperature[0], 2)
         tile.moisture = float(hex.moisture)
-        tile._biome = hex.biome.list()[0]  # set by classify_terrain  # type: ignore
+        tile._biome = hex.biome.list()[0]  # type: ignore
         if hex.geoform_type is not None:
             tile.geoforms = hex.geoform_type
         tile.features = set(hex.features)
@@ -374,23 +376,18 @@ class Basic(BaseGenerator):
         tile.is_sea = bool(gtype in (GeoformType.sea, GeoformType.ocean))
         tile.is_inland_sea = bool(gtype == GeoformType.sea and not _waterbody_touches_edge())
 
-        # Coast: water-side coastline only (and never true for lakes)
         tile.is_coast = bool(hex.is_coast)
 
         tile.terrain = str(hex.terrain)  # type: ignore
 
-        # Hemisphere
         tile.hemisphere = Tile.HEMISPHERE_NORTH if hex.hemisphere.value == "Northern" else Tile.HEMISPHERE_SOUTH
 
-        # Optional enum text label for UI
         if hex.geoform_type is not None:
             tile.geoforms = hex.geoform_type.list()[0]
 
-        # Resource instance
         if (resource := hex.get_gameplay_resource()) is not None:
             tile.instance_resource(resource)
 
-        # Edges (keep as-is)
         edge_names: List[str] = list(tile.edges.keys())
         if len(edge_names) != 6:
             raise ValueError(f"Hex {hex} has {len(edge_names)} edges, expected 6.")
@@ -409,7 +406,7 @@ class Basic(BaseGenerator):
 
         visited: Set[Tuple[int, int]] = set()
 
-        raw = self.hex_grid.grid  # raw[col][row] => Hex
+        raw = self.hex_grid.grid
 
         def neighbors(c: int, r: int) -> List[Tuple[int, int]]:
             offsets = Tiles.get_directions_per_col(c)
@@ -486,3 +483,37 @@ class Basic(BaseGenerator):
             setattr(tile, "model_scale", tuple(map(float, scale)))
             setattr(tile, "model_hpr", tuple(map(float, hpr)))
             setattr(tile, "model_z_offset", float(z_off))
+
+    def _promote_single_sea_between_coasts(self) -> int:
+        height = self.config.height
+        width = self.config.width
+        raw = self.hex_grid.grid
+        to_promote: List[Tuple[int, int]] = []
+
+        def side_val(s: Any) -> int:
+            try:
+                return int(s.value[0])
+            except Exception:
+                return int(s)
+
+        for c in range(height):
+            for r in range(width):
+                h: "Hex" = raw[c][r]
+                if not h.is_water:
+                    continue
+                terr = getattr(h, "terrain", "")
+                if terr != "Sea":
+                    continue
+                coast_dirs: List[int] = []
+                for s, n in h.neighbors:
+                    if n.is_water and getattr(n, "terrain", "") == "Coast":
+                        coast_dirs.append(side_val(s))
+                opposites: Set[int] = {(d + 3) % 6 for d in coast_dirs}
+                if any(d in opposites for d in coast_dirs):
+                    to_promote.append((c, r))
+
+        for c, r in to_promote:
+            hx: "Hex" = raw[c][r]
+            hx.terrain = "Coast"
+
+        return len(to_promote)
