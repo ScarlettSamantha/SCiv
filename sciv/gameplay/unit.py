@@ -10,6 +10,7 @@ import numpy as np
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
 from direct.task import Task
+from gameplay.actions.unit.base_unit_action import BaseUnitAction
 from gameplay.condition import Conditions
 from gameplay.floating_text import spawn_damage_text, spawn_heal_text
 from gameplay.hover import HoverIndicator
@@ -45,8 +46,6 @@ from panda3d.core import (
 )
 from system.effects import Effects
 from system.entity import BaseEntity
-
-from gameplay.actions.unit.base_unit_action import BaseUnitAction
 
 if TYPE_CHECKING:
     from gameplay.improvement import BasicBaseResource
@@ -569,20 +568,24 @@ class Unit(BaseEntity, ABC):
         for _tile in tiles:
             if (self.moves_left - _tile.movement_cost) < 0:
                 self._move_to_tile(current_tile, departing_tile)
-                MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
+                if self.selection_enabled and self.selection_circle is not None:
+                    MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
                 return CantMoveReason.NO_MOVES
 
             self.moves_left -= _tile.movement_cost
 
             if _tile.is_visisted_by(self) is False:
                 self._move_to_tile(tile=_tile, clear_departing_tile=departing_tile)
-                MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
+                if self.selection_enabled and self.selection_circle is not None:
+                    MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
                 return CantMoveReason.UNIT_TRAPPED_MIDWAY
 
             current_tile = _tile
 
         self._move_to_tile(tile=current_tile, clear_departing_tile=departing_tile)
-        MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
+
+        if self.selection_enabled and self.selection_circle is not None:
+            MessengerGlobal.messenger.send("ui.update.ui.refresh_basic_elements")
         if current_tile == target_tile:
             return CantMoveReason.COULD_MOVE
         return CantMoveReason.NO_MOVES
