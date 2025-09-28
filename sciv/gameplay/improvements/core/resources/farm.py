@@ -14,6 +14,7 @@ class Farm(Improvement):
     _model = "assets/models/tile_improvements/building_home_A_blue.gltf"
     _model_scale = 0.33
     _model_hpr = (45, 0, 0)
+    _model_preferred_slot = "center"
     placeable_on_tiles = True
     maintenance_cost = Yields(gold=1.0)
 

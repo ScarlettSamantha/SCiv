@@ -72,17 +72,6 @@ class BitsRenderer:
                 used_slots.add(last)
                 active_by_id.pop(bit_id, None)
 
-        for bit_id in self._ordered_ids(list(active_by_id.keys())):
-            bit: "Bit | None" = active_by_id.get(bit_id)
-            if not bit:
-                continue
-            for s in self._deterministic_slots_for(bit_id):
-                if s not in used_slots and self._slot_allowed(bit, s):
-                    new_assignments[s] = bit
-                    used_slots.add(s)
-                    active_by_id.pop(bit_id, None)
-                    break
-
         for slot, bit in new_assignments.items():
             self._render_bit(bit, slot)
             self._last_slot_by_bit_id[bit.id] = slot
@@ -177,6 +166,7 @@ class BitsRenderer:
         active_bits: Dict[str, "Bit"] = {}
         resource_bits: List["Bit"] = []
         terrain_bits: List["Bit"] = []
+        improvement_bits: List["Bit"] = []
         city_bits: List["Bit"] = []
 
         if self.tile.is_city() and self.tile.city:
@@ -190,8 +180,12 @@ class BitsRenderer:
                 resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
                 if resource_bit:
                     resource_bits.append(resource_bit)
+            for improvement in self.tile.get_improvements().get_all():
+                improvement_bit: "Bit | None" = improvement.as_bit()
+                if improvement_bit:
+                    improvement_bits.append(improvement_bit)
 
-        for bit in terrain_bits + resource_bits + city_bits:
+        for bit in terrain_bits + resource_bits + city_bits + improvement_bits:
             mode: List[DisplayMode] = bit.get_display_mode()
             if bit.is_disabled():
                 continue

@@ -14,11 +14,11 @@ from system.effects import Effects
 from system.entity import BaseEntity
 
 if TYPE_CHECKING:
+    from gameplay.bits import Bit
     from gameplay.player import Player
     from gameplay.resources.core.basic._base import BasicBaseResource
     from gameplay.tile import Tile
     from gameplay.unit import Unit
-    from gameplay.bits import Bit
 
 
 class ImprovementBuildTurnMode(Enum):
@@ -302,11 +302,16 @@ class Improvement(BaseEntity):
 
         from gameplay.bits import Bit, DisplayMode
 
+        if self.placeable_on_city:
+            display_mode = DisplayMode.CITY_IMPROVEMENT.value
+        else:
+            display_mode = DisplayMode.RESOURCE_IMPROVEMENT.value
+
         bit = Bit(
             id=self.tag,
             model=model_path,
             preferred_slot=self._model_preferred_slot,
-            display_mode=DisplayMode.CITY_IMPROVEMENT.value,
+            display_mode=display_mode,
             scale=self.get_model_scale(),
             hpr=self.get_model_hpr(),
             offset=self.get_model_offset(),

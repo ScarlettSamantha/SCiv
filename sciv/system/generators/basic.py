@@ -290,31 +290,16 @@ class Basic(BaseGenerator):
         raw = self.hex_grid.grid
 
         DESERTS = {"FlatDesert", "HillsDesert"}
-        TUNDRA_FLATS = {"FlatTundra"}
-
-        def neighbors(c: int, r: int):
-            for dc, dr in Tiles.get_directions_per_col(c):
-                nc, nr = c + dc, r + dr
-                if 0 <= nc < height and 0 <= nr < width:
-                    yield nc, nr
-
-        def terrain_at(c: int, r: int) -> str:
-            h = raw[c][r]
-            t = h.terrain
-            if not t:
-                tile = self.world.grid.get((c, r))
-                if tile is not None:
-                    t = tile.get_terrain().get_key()
-            return t or ""
+        TUNDRA = {"FlatTundra"}
 
         to_convert: List[Tuple[int, int]] = []
         for c in range(height):
             for r in range(width):
-                terr = terrain_at(c, r)
-                if terr not in TUNDRA_FLATS:
+                h: "Hex" = raw[c][r]
+                if h.terrain not in TUNDRA:
                     continue
-                for nc, nr in neighbors(c, r):
-                    if terrain_at(nc, nr) in DESERTS:
+                for _, n in h.neighbors:
+                    if n.terrain in DESERTS:
                         to_convert.append((c, r))
                         break
 

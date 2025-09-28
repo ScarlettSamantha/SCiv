@@ -11,9 +11,8 @@ if TYPE_CHECKING:
 
 class FarmEffect(Effect):
     def __init__(self, base_object: "Improvement", player: "Player", *args: Any, **kwargs: Any):
-        super().__init__(player=player, *args, **kwargs)
+        super().__init__(base_object=base_object, player=player, *args, **kwargs)
 
-        self.base_object = base_object
         self.place_method = EffectPlacers.PLACE_ON_IMPROVEMENT
         self.yield_impact = Yields(food=1, mode=Yields.ADDITIVE)
 

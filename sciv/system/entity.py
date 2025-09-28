@@ -370,14 +370,14 @@ class BaseEntity(ABC, DirectObject, Inspectable):
 
         return TileRepository.distance(tile, other_tile)
 
-    def add_effect(self, effect: "Effect") -> None:
+    def add_effect(self, effect: "Effect", execute_on_add: bool = False) -> None:
         from system.effects import Effects
 
         if not hasattr(self, "effects"):
             raise ValueError("This entity does not support effects")
         assert isinstance(self.effects, Effects), "Effects attribute is not of type Effects"  # type: ignore
         effects: Effects = self.effects  # type: ignore
-        effects.add_effect(effect)
+        effects.add_effect(effect, execute_on_add=execute_on_add)
 
     def remove_effect(self, effect: "Effect") -> None:
         from system.effects import Effects

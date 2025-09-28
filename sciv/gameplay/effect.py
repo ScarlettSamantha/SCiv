@@ -1,4 +1,5 @@
 import uuid
+import weakref
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
@@ -29,13 +30,14 @@ class Effect(BaseEntity, ABC, DirectObject):
     icon_border_color = Colors.RED
     visible_to_user: bool = True
 
-    _place_method: "EffectPlacers| None" = None
+    _place_method: "EffectPlacers | None" = None
 
     activate_on_add: bool = True
     effect_types: Tuple["EffectType"] = tuple()  # type: ignore
 
     def __init__(
         self,
+        base_object: BaseEntityType,
         player: "Player | None" = None,
         tile: Optional["Tile"] = None,
         world_effect: bool = False,
@@ -58,14 +60,18 @@ class Effect(BaseEntity, ABC, DirectObject):
         self.improvement: "Improvement | None" = None
         self.unit: "Unit | None" = None
 
+        self.attached_entity_type = self._coerce_entity_type(
+            getattr(base_object, "entity_type_ref", None) if hasattr(base_object, "get_entity_type") else None
+        )
+        self.attached_entity_key: Optional[str] = base_object.get_tag() if hasattr(base_object, "get_tag") else None  # type: ignore
+        self.attached_object_ref: weakref.ReferenceType[BaseEntityType] = weakref.ref(base_object)  # type: ignore
+
         self.place_method: EffectPlacers = (
             self._place_method if self._place_method is not None else EffectPlacers.PLACE_ON_TILE
         )
 
-        self.yield_impact: Yields = Yields.nullYield()  # Will be read on turn change
-        self.maintenance_impact: Yields = (
-            Yields.nullYield()
-        )  # Will be read on turn change for the impact it will have on empire wide maintenance.
+        self.yield_impact: Yields = Yields.nullYield()
+        self.maintenance_impact: Yields = Yields.nullYield()
 
         self.is_timed: bool = False
         self.duration: int = 0
@@ -78,6 +84,24 @@ class Effect(BaseEntity, ABC, DirectObject):
     def __del__(self) -> None:
         if self.is_registered:
             self.unregister()
+
+    @staticmethod
+    def _coerce_entity_type(value: Any):
+        from managers.entity import EntityType
+
+        if isinstance(value, EntityType):
+            return value
+        if value is None:
+            return EntityType.WORLD
+        if isinstance(value, str):
+            try:
+                return EntityType[value]
+            except Exception:
+                try:
+                    return EntityType(value)
+                except Exception:
+                    return EntityType.WORLD
+        return EntityType.WORLD
 
     def dump(self) -> Dict[str, Any]:
         data = {
@@ -101,6 +125,9 @@ class Effect(BaseEntity, ABC, DirectObject):
             "tag": self.tag,
             "_health_left": self.health_left,
             "owner_tag": self.owner.get_tag() if self.owner else None,
+            "hidden_in_tree": self.hidden_in_tree,
+            "attached_entity_type": getattr(self.attached_entity_type, "name", None),
+            "attached_entity_key": self.attached_entity_key,
         }
 
         owner = None
@@ -136,35 +163,53 @@ class Effect(BaseEntity, ABC, DirectObject):
                 raise ValueError(f"Invalid place method: {place_method_name}")
 
         self.yield_impact = Yields.from_dict(self.yield_impact)  # type: ignore
-        self.maintenance_impact = Yields.from_dict(self.maintenance_impact)  # type:ignore
+        self.maintenance_impact = Yields.from_dict(self.maintenance_impact)  # type: ignore
 
-        if hasattr(self, "owner") and self.owner:
-            self.owner = cast("Player", entity_manager.get(EntityType.PLAYER, self.owner_tag))  # type:ignore
+        if not hasattr(self, "_owner") and hasattr(self, "owner_tag"):
+            self._owner = cast("Player", entity_manager.get(EntityType.PLAYER, self.owner_tag))  # type: ignore
         if hasattr(self, "tile") and self.tile:
-            self.tile = cast("Tile", entity_manager.get(EntityType.TILE, self.tile))  # type:ignore
+            self.tile = cast("Tile", entity_manager.get(EntityType.TILE, self.tile))  # type: ignore
         else:
             self.tile = None
-        if hasattr(self, "city") and self.world:
-            self.city = cast("City", entity_manager.get(EntityType.CITY, self.city))  # type:ignore
+        if hasattr(self, "city") and self.city:
+            self.city = cast("City", entity_manager.get(EntityType.CITY, self.city))  # type: ignore
         else:
             self.city = None
         if hasattr(self, "improvement") and self.improvement:
-            self.improvement = cast("Improvement", entity_manager.get(EntityType.IMPROVEMENT, self.improvement))  # type:ignore
+            self.improvement = cast("Improvement", entity_manager.get(EntityType.IMPROVEMENT, self.improvement))  # type: ignore
         else:
             self.improvement = None
         if hasattr(self, "unit") and self.unit:
-            self.unit = cast("Unit", entity_manager.get(EntityType.UNIT, self.unit))  # type:ignore
+            self.unit = cast("Unit", entity_manager.get(EntityType.UNIT, self.unit))  # type: ignore
         else:
             self.unit = None
 
+        self.hidden_in_tree = getattr(self, "hidden_in_tree", False)
         self._health_left = getattr(self, "_health_left", getattr(self, "max_health", 100))
+        self._is_alive = self._health_left > 0
+
+        raw_attached_type = getattr(self, "attached_entity_type", None)
+        self.attached_entity_type = self._coerce_entity_type(raw_attached_type)
+        self.attached_entity_key = getattr(self, "attached_entity_key", None)
+
+        if self.attached_entity_key:
+            obj_ref = cast(
+                BaseEntity,
+                entity_manager.get(self.attached_entity_type, self.attached_entity_key),  # type: ignore
+            )
+            self.attached_object_ref = weakref.ref(obj_ref)  # type: ignore
+            obj_ref.add_effect(self, execute_on_add=False)
+
+        self.world = getattr(self, "world", False)
+
+        self.is_registered = True
+        self.register_events_handlers()
 
     def register(self):
         from managers.entity import EntityManager, EntityType
 
         if self.is_registered:
             return
-
         EntityManager.get_singleton_instance().register(EntityType.EFFECT, self, self.get_tag())
         self.is_registered = True
         self.register_events_handlers()
@@ -200,15 +245,11 @@ class Effect(BaseEntity, ABC, DirectObject):
     ) -> "Effect":
         if effect is None:
             effect = cls(base_object=base_object, player=player)
-
         if auto_register and not effect.is_registered:
             effect.register()
-
         effect.apply(base_object=base_object)
-
         if execute_on_apply:
             effect.on_effect_applied()
-
         return effect
 
     @classmethod
@@ -220,23 +261,18 @@ class Effect(BaseEntity, ABC, DirectObject):
         execute_on_remove: bool = True,
     ) -> None:
         effect.on_remove()
-
         if auto_unregister and effect.is_registered:
             effect.unregister()
-
         base_object.remove_effect(effect)  # type: ignore
-
         effect.on_clear()
 
     def activate(self, execute_on_activate: bool = True) -> None:
         self.active = True
-
         if execute_on_activate:
             self.on_activate()
 
     def deactivate(self, execute_on_deactivate: bool = True) -> None:
         self.active = False
-
         if execute_on_deactivate:
             self.on_deactivate()
 
@@ -244,14 +280,11 @@ class Effect(BaseEntity, ABC, DirectObject):
         from system.effects import EffectType
 
         if self.needs_turn_processing is False or self.active is not True or self.is_expired():
-            return  # If the effect is not active, we don't want to do anything.
-
+            return
         if self.is_timed:
             self.turns_left -= 1
-
         if self.turns_left <= 0:
             self.on_effect_expire()
-
         if EffectType.CITY in self.effect_types:
             self.on_city_turn_end()
         if EffectType.TILE in self.effect_types:
@@ -268,17 +301,17 @@ class Effect(BaseEntity, ABC, DirectObject):
     def is_expired(self) -> bool:
         return self.turns_left <= 0
 
-    def on_city_turn_end(self) -> None: ...  # If the object has a city effect, this will be called on turn end.
-    def on_tile_turn_end(self) -> None: ...  # If the object has a tile effect, this will be called on turn end.
-    def on_player_turn_end(self) -> None: ...  # If the object has a player effect, this will be called on turn end.
-    def on_global_turn_end(self) -> None: ...  # If the object has a global effect, this will be called on turn end.
+    def on_city_turn_end(self) -> None: ...
+    def on_tile_turn_end(self) -> None: ...
+    def on_player_turn_end(self) -> None: ...
+    def on_global_turn_end(self) -> None: ...
     def on_improvement_turn_end(self) -> None: ...
     def on_unit_turn_end(self) -> None: ...
 
     def on_place(self) -> None: ...
-    def on_activate(self) -> None: ...  # Will be called when the effect is activated.
-    def on_deactivate(self) -> None: ...  # Will be called when the effect is deactivated.
-    def on_effect_applied(self) -> None: ...  # Will be called when the effect is applied.
-    def on_effect_expire(self) -> None: ...  # Will be called when the effect expires.
-    def on_clear(self) -> None: ...  # Will be called when a clear has been called on the parent.
-    def on_remove(self) -> None: ...  # Will be called when the effect is removed from the parent.
+    def on_activate(self) -> None: ...
+    def on_deactivate(self) -> None: ...
+    def on_effect_applied(self) -> None: ...
+    def on_effect_expire(self) -> None: ...
+    def on_clear(self) -> None: ...
+    def on_remove(self) -> None: ...

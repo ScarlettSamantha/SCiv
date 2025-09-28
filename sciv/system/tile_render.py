@@ -488,25 +488,18 @@ class TileRenderer:
         self.bits_renderer.add_bit(improvement.as_bit())
 
     def _draw_improvements(self) -> None:
-        if self.tile.is_city():
-            improvements = self.get_city().get_improvements().all()
-            for improvement in improvements:
-                self._render_improvements_as_bit(improvement)
-            return
-
         improvements = self.tile.get_improvements().get_all()
+        if self.is_city():
+            city: "City" = self.get_city()
+            for improvement in city.get_improvements():
+                if improvement not in improvements:
+                    improvements.append(improvement)
 
         for improvement in improvements:  # type: ignore
-            path = improvement.model
+            path: str | None = improvement.model
             if not path:
                 continue
-            self.add_model(
-                model_path=path,
-                net_type=NET_TYPE.IMPROVEMENT,
-                pos_offset=improvement.get_model_offset(),
-                scale=improvement.get_model_scale(),
-                hpr=improvement.get_model_hpr(),
-            )
+            self._render_improvements_as_bit(improvement)
 
     def _is_model_drawn(self) -> bool:
         return self.resource_model is not None
