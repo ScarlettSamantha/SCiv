@@ -4,12 +4,14 @@ from gameplay.improvements.core.resources.mine import Mine
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from managers.i18n import T_TranslationOrStr, t_
+from gameplay.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.hills_desert import HillsDesert
+from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
-from gameplay.terrain.hills_forest import HillsForest
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Diamonds(BaseLuxuryResource):
@@ -20,6 +22,8 @@ class Diamonds(BaseLuxuryResource):
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/luxury/bordered_diamonds.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        FlatGrass: 20.0,
+        FlatForest: 20.0,
         HillsForest: 50.0,
         HillsDesert: 50.0,
         HillsGrass: 50.0,

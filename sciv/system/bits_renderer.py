@@ -40,7 +40,6 @@ class BitsRenderer:
 
         self._unrender_all()
 
-        # pass 1: preferred slot
         for bit_id in self._ordered_ids(list(active_by_id.keys())):
             bit = active_by_id.get(bit_id)
             if not bit:
@@ -51,7 +50,6 @@ class BitsRenderer:
                 used_slots.add(pref)
                 active_by_id.pop(bit_id, None)
 
-        # pass 2: reuse previous slot
         for old_slot, old_bit in prev_assignments.items():
             bit = active_by_id.get(old_bit.id)
             if (
@@ -64,7 +62,6 @@ class BitsRenderer:
                 used_slots.add(old_slot)
                 active_by_id.pop(old_bit.id, None)
 
-        # pass 3: remembered last slot by id
         for bit_id in self._ordered_ids(list(active_by_id.keys())):
             bit = active_by_id.get(bit_id)
             if not bit:
@@ -75,7 +72,6 @@ class BitsRenderer:
                 used_slots.add(last)
                 active_by_id.pop(bit_id, None)
 
-        # pass 4: deterministic fill for anything still unassigned
         for bit_id in self._ordered_ids(list(active_by_id.keys())):
             bit = active_by_id.get(bit_id)
             if not bit:

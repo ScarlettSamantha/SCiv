@@ -4,6 +4,9 @@ from gameplay.improvements.core.resources.mine import Mine
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.bonus.bonus_resource import BaseBonusResource
 from gameplay.terrain._base_terrain import BaseTerrain
+from gameplay.terrain.flat_forest import FlatForest
+from gameplay.terrain.flat_grass import FlatGrass
+from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
 from gameplay.terrain.flat_pine_forest import FlatPineForest
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
@@ -20,6 +23,9 @@ class Tin(BaseBonusResource):
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     icon: str = "assets/icons/resources/core/bonus/hex_border_tin.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
+        FlatForest: 20.0,
+        FlatGrass: 20.0,
+        FlatHeavyForest: 20.0,
         BaseTerrain: 0.0,
         HillsForest: 50.0,
         HillsGrass: 50.0,
