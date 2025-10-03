@@ -45,7 +45,7 @@ class Bit:
         id: Optional[str] = None,
         default_shader: bool = True,
         default_lighting: bool = True,
-        display_mode: int = DisplayMode.SHOW_ALWAYS.value ^ DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT.value,
+        display_mode: int = DisplayMode.SHOW_ALWAYS.value,
     ):
         self.id: str = id or uuid.uuid4().hex
         self.model: str = model if model.__contains__("assets") else f"{self.BASE_PATH}{model}"
@@ -111,8 +111,10 @@ class Bit:
 
     def get_display_mode(self) -> List[DisplayMode]:
         modes: List[DisplayMode] = []
+        if self.display_mode == 0:
+            modes.append(DisplayMode.SHOW_ALWAYS)
         for mode in DisplayMode:
-            if self.display_mode & mode.value:
+            if mode.value != 0 and (self.display_mode & mode.value):
                 modes.append(mode)
         return modes
 

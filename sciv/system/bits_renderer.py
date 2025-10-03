@@ -40,16 +40,18 @@ class BitsRenderer:
 
         self._unrender_all()
 
+        # pass 1: preferred slot
         for bit_id in self._ordered_ids(list(active_by_id.keys())):
             bit = active_by_id.get(bit_id)
-            if not bit or not bit.has_preferred_slot():
+            if not bit:
                 continue
-            pref: str | None = bit.get_preferred_slot_name()
-            if pref in self.prop_slots and pref not in used_slots and self._slot_allowed(bit, pref):
+            pref: Optional[str] = bit.get_preferred_slot_name()
+            if pref and pref in self.prop_slots and pref not in used_slots and self._slot_allowed(bit, pref):
                 new_assignments[pref] = bit
                 used_slots.add(pref)
                 active_by_id.pop(bit_id, None)
 
+        # pass 2: reuse previous slot
         for old_slot, old_bit in prev_assignments.items():
             bit = active_by_id.get(old_bit.id)
             if (
@@ -62,15 +64,28 @@ class BitsRenderer:
                 used_slots.add(old_slot)
                 active_by_id.pop(old_bit.id, None)
 
+        # pass 3: remembered last slot by id
         for bit_id in self._ordered_ids(list(active_by_id.keys())):
             bit = active_by_id.get(bit_id)
             if not bit:
                 continue
-            last: str | None = self._last_slot_by_bit_id.get(bit_id)
+            last: Optional[str] = self._last_slot_by_bit_id.get(bit_id)
             if last and last in self.prop_slots and last not in used_slots and self._slot_allowed(bit, last):
                 new_assignments[last] = bit
                 used_slots.add(last)
                 active_by_id.pop(bit_id, None)
+
+        # pass 4: deterministic fill for anything still unassigned
+        for bit_id in self._ordered_ids(list(active_by_id.keys())):
+            bit = active_by_id.get(bit_id)
+            if not bit:
+                continue
+            for s in self._deterministic_slots_for(bit_id):
+                if s not in used_slots and self._slot_allowed(bit, s):
+                    new_assignments[s] = bit
+                    used_slots.add(s)
+                    active_by_id.pop(bit_id, None)
+                    break
 
         for slot, bit in new_assignments.items():
             self._render_bit(bit, slot)
@@ -206,9 +221,9 @@ class BitsRenderer:
         return active_bits
 
     def _slot_allowed(self, bit: "Bit", slot: str) -> bool:
-        clear_center_flag = bool(getattr(bit, "display_mode", 0) & getattr(DisplayMode, "CLEAR_CENTER_SLOT").value)
-        if slot == "center" and clear_center_flag:
-            return False
+        clear_center_flag = bool(getattr(bit, "display_mode", 0) & DisplayMode.CLEAR_CENTER_SLOT.value)
+        if clear_center_flag:
+            return slot == "center"
         if bit.has_preferred_slot():
             return slot == bit.get_preferred_slot_name()
         return True
@@ -243,14 +258,14 @@ class BitsRenderer:
         from system.tile_render import NET_TYPE
 
         if bit.id in self._bit_models:
-            self.tile.renderer.remove_model(bit.id)
+            self.tile.renderer.remove_model(self._net_id(bit.id))
             self._bit_models.pop(bit.id, None)
 
         model_path = bit.model
         if slot_name not in self.prop_slots.keys():
             self.prop_slots = self.tile.get_prop_slots()
             if slot_name not in self.prop_slots.keys():
-                slot_name = "center"  # fallback to center if the slot is missing
+                slot_name = "center"
         pos = self.prop_slots[slot_name]
 
         model: NodePath | None = self.tile.renderer.add_model(
@@ -259,7 +274,7 @@ class BitsRenderer:
             pos_offset=(bit.offset[0] + pos[0], bit.offset[1] + pos[1], bit.offset[2] + pos[2]),
             scale=(bit.scale),
             hpr=bit.hpr,
-            net_id=f"{self.tile.x}_{self.tile.y}_{bit.id}",
+            net_id=self._net_id(bit.id),
             disable_lighting=not bit.default_lighting,
             disable_shader=not bit.default_shader,
             parent=self.parent,
@@ -268,11 +283,14 @@ class BitsRenderer:
         if model:
             self._bit_models[bit.id] = model
 
+    def _net_id(self, bit_id: str) -> str:
+        return f"{self.tile.x}_{self.tile.y}_{bit_id}"
+
     def _unrender_slot(self, slot_name: str) -> None:
         bit: Optional["Bit"] = self._bit_slot_assignments.get(slot_name)
         if not bit:
             return
-        self.tile.renderer.remove_model(bit.id)
+        self.tile.renderer.remove_model(self._net_id(bit.id))
         self._bit_models.pop(bit.id, None)
 
     def dump(self) -> Dict[str, Any]:
