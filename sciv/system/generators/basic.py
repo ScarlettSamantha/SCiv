@@ -51,7 +51,7 @@ class Basic(BaseGenerator):
             "year_length": 365,
             "day_length": 24,
             "base_temp": 0,
-            "avg_temp": 10,
+            "avg_temp": 12.5,
             "sea_percent": 55,
             "hydrosphere": True,
             "ocean_type": [OceanType.water],

@@ -196,7 +196,9 @@ class Hex:
 
         if 2.5 <= rain <= DESERT_TRANSITION_RAIN_THRESHOLD and 10.0 <= temp <= 40.0:
             return Biome.savanna
-        if 0.0 <= rain <= DESERT_TRANSITION_RAIN_THRESHOLD and 10.0 < temp <= 40.0:
+        if (0.0 <= rain <= DESERT_TRANSITION_RAIN_THRESHOLD and 10.0 < temp <= 40.0) or (
+            0.0 <= rain <= RAIN_FOREST_THRESHOLD and temp > 30.0
+        ):
             return Biome.desert
 
         if 0.0 <= rain and 0.0 < temp <= 10.0:
