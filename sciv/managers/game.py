@@ -219,6 +219,8 @@ class Game(Singleton, DirectObject):
         self.game_active = True
         self.ui.post_game_start()
         self.ui.reset_game_ui()
+        self.base.get_camera().unlock_camera()
+        self.base.get_camera().enable_zoom()
         MessengerGlobal.messenger.send("game.state.load_finished")
 
     def reset_game(self):
