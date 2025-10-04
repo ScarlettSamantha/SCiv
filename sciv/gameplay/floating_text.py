@@ -30,9 +30,9 @@ class FloatingText3D:
         x, y, z = target.get_pos()
         self._target_id = int(uuid.uuid4().int)  # Unique ID for the target to manage text queues
 
-        queue = FloatingText3D._queues.setdefault(self._target_id, [])
-        index = len(queue)
-        start_z = z + FloatingText3D._head_offset + index * FloatingText3D._spacing
+        queue: List[FloatingText3D] = FloatingText3D._queues.setdefault(self._target_id, [])
+        index: int = len(queue)
+        start_z: float = z + FloatingText3D._head_offset + index * FloatingText3D._spacing
 
         start_pos = Vec3(x, y, start_z)
         tn = TextNode("floating_text")
@@ -41,7 +41,6 @@ class FloatingText3D:
         tn.setAlign(TextNode.A_center)
         tn.setTextColor(color)
 
-        # Attach to scene
         self.np = FloatingText3D.default_parent.attachNewNode(tn)
         self.np.setScale(scale)
         effect = BillboardEffect.makeAxis()
@@ -64,9 +63,9 @@ class FloatingText3D:
         if self.np and not self.np.isEmpty():
             self.np.removeNode()
         # Remove from queue
-        queue = FloatingText3D._queues.get(self._target_id, [])
+        queue: List[FloatingText3D] = FloatingText3D._queues.get(self._target_id, [])
         if self in queue:
-            queue.remove(self)
+            queue.remove(self)  # type: ignore
 
 
 def spawn_damage_text(target_np: T_TARGET, amount: float):
