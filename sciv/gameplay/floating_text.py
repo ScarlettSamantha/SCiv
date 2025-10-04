@@ -28,7 +28,7 @@ class FloatingText3D:
             FloatingText3D.default_parent = Cache.get_showbase_instance().render
 
         x, y, z = target.get_pos()
-        self._target_id = int(uuid.UUID(str(id(target))).int & (1 << 32) - 1)
+        self._target_id = int(uuid.UUID(str(id(target))).int & (1 << 32) - 1)  # type: ignore
 
         queue: List[FloatingText3D] = FloatingText3D._queues.setdefault(self._target_id, [])
         index: int = len(queue)
