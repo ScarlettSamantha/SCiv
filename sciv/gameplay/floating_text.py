@@ -1,12 +1,12 @@
 import uuid
-from direct.interval.LerpInterval import LerpPosInterval, LerpColorScaleInterval
-from direct.interval.FunctionInterval import Func
-from direct.interval.IntervalGlobal import Sequence
-from panda3d.core import TextNode, NodePath, Vec3, Vec4, TransparencyAttrib, BillboardEffect
 from typing import Dict, List, Optional
 
+from direct.interval.FunctionInterval import Func
+from direct.interval.IntervalGlobal import Sequence
+from direct.interval.LerpInterval import LerpColorScaleInterval, LerpPosInterval
 from helpers.cache import Cache
 from managers.combat import T_TARGET
+from panda3d.core import BillboardEffect, NodePath, TextNode, TransparencyAttrib, Vec3, Vec4
 
 
 class FloatingText3D:
@@ -28,7 +28,7 @@ class FloatingText3D:
             FloatingText3D.default_parent = Cache.get_showbase_instance().render
 
         x, y, z = target.get_pos()
-        self._target_id = uuid.uuid4().int  # Unique ID for the target to manage text queues
+        self._target_id = int(uuid.uuid4().int)  # Unique ID for the target to manage text queues
 
         queue = FloatingText3D._queues.setdefault(self._target_id, [])
         index = len(queue)
