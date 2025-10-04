@@ -352,9 +352,6 @@ class Player(BaseEntity):
     def get_effects(self) -> Effects:
         return self.effects
 
-    def add_effect(self, effect: Effect) -> None:
-        self.effects.add_effect(effect)
-
     def remove_effect(self, effect: Effect) -> None:
         self.effects.remove_effect(effect)
 
