@@ -19,7 +19,7 @@ else:
     __build__: str = ""
 
 __version__: str = f"{__major__}.{__minor__}.{__patch__}{__pre_release__}{__build__}"
-__version_name__ = "Proof of Concept"
+__version_name__ = "Proof of Concept - rc1"
 
 
 def get_package_version(package_name: str) -> str:
