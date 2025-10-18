@@ -848,8 +848,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.inspect = None
         self.unlock_input()
 
+    def close_before_fullscreen(self):
+        if self.player_target_info:
+            self.close_target_panel()
+
     def open_research(self):
         if self.research is None:
+            self.close_before_fullscreen()
+
             self.research = self.build_research()
             self.register_non_collidable(self.research)
             assert self.root_layout is not None, "Root layout is not initialized."
@@ -858,6 +864,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def open_civics(self):
         if self.civics is None:
+            self.close_before_fullscreen()
+
             self.civics = self.build_civics()
             self.register_non_collidable(self.civics)
             assert self.root_layout is not None, "Root layout is not initialized."
