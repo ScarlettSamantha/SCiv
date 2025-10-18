@@ -8,7 +8,6 @@ from kivy.clock import Clock
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
-
 from managers.entity import EntityManager
 from managers.player import PlayerManager
 from menus.kivy.elements.button_value import ButtonValue
@@ -35,7 +34,6 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.base: "OpenCiv" = base
         self.manager = self.base.ui_manager
 
-        # Use (1, 1) so the layout expands to fill the entire popup
         self.main_layout = GridLayout(orientation="lr-tb", rows=3, cols=2, spacing=10, size_hint=(1, 1))
 
         self.scroll_view: Optional[ClippingScrollList] = None
@@ -98,7 +96,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         if self.name_input is None:
             return
 
-        self.name_input.text = str(PlayerManager.player().name)
+        self.name_input.text = f"{str(PlayerManager.player().name)} - {self.base.game_manager_instance.turn.turn}"
 
     def rebuild_right_info_panel(self):
         if self.title_label is None:
@@ -112,7 +110,6 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
 
         self.scroll_view.clear_widgets()
 
-        # Gather save game items with datetime.
         save_games_with_dt: List[tuple[datetime, str, Dict[Any, Any]]] = []
         for save_game in self.get_save_games():
             save_game_data = self.get_save_game(save_game)
@@ -123,7 +120,6 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
             save_date_time: datetime = datetime.fromisoformat(save_time)
             save_games_with_dt.append((save_date_time, save_game, save_game_data))
 
-        # Sort by datetime descending (newest first).
         save_games_with_dt.sort(key=lambda item: item[0], reverse=True)
 
         for save_date_time, save_game, _ in save_games_with_dt:
@@ -167,10 +163,8 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.name_input.text = item_value
 
     def build_right_info_panel(self):
-        # We'll make the right panel 0.4 to fill the remainder
         self.details_layout = GridLayout(cols=1, spacing=5, size_hint=(0.35, 1))
 
-        # Example labels
         self.title_label = Label(text="", size_hint=(1, None), height=40, font_size="18sp")
 
         self.details_layout.add_widget(self.title_label)  # type: ignore
@@ -237,7 +231,7 @@ class SavePopup(Popup, CollisionPreventionMixin, DirectObject):
         self.dismiss()  # type: ignore
         self.unregister_non_collidable(self)
         self.ignore("escape")
-        MessengerGlobal.messenger.send("system.input.camera_unlock")  # unlock first
+        MessengerGlobal.messenger.send("system.input.camera_unlock")
         MessengerGlobal.messenger.send("system.input.enable_zoom")
         MessengerGlobal.messenger.send("system.input.enable_control")
         MessengerGlobal.messenger.send("system.input.raycaster_on")
