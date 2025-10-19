@@ -696,6 +696,19 @@
           "improvements": "Improvements: {improvements}",
           "owner": "Owner: {owner}",
           "yields": "Yields: {yields}"
+        },
+        "technology_tree": {
+          "title": "Technology Tree",
+          "technology_tree": "Technology Tree",
+          "legenda": {
+            "available": "Available",
+            "unavailable": "Unavailable",
+            "researched": "Researched",
+            "green": "Green",
+            "red": "Effects",
+            "yellow": "Units",
+            "blue": "Buildings"
+          }
         }
       },
       "messages": {

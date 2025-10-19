@@ -199,7 +199,7 @@ class Core(TechTree):
         mathematics.requires = [currency]
 
         ship_building.requires = [celestial_navigation]
-        construction.requires = [wheel, horseback_riding]
+        construction.requires = [wheel]
         engineering.requires = [construction, mathematics, wheel]
         irrigation.requires = [calendar]
 
@@ -220,13 +220,14 @@ class Core(TechTree):
         cartography.requires = [buttress]
         mass_production.requires = [military_tactics, education]
         banking.requires = [education]
-        gunpowder.requires = [stirrups, education]
+        gunpowder.requires = [education, military_engineering]
         printing.requires = [machinery]
 
         square_rigging.requires = [cartography]
         astronomy.requires = [education]
         metal_casting.requires = [gunpowder]
         siege_tactics.requires = [castles]
+        economics.requires = [banking]
 
         industrialisation.requires = [mass_production, square_rigging]
         scientific_theory.requires = [astronomy, banking, metal_casting]
@@ -235,7 +236,6 @@ class Core(TechTree):
 
         steam_power.requires = [industrialisation]
         sanitation.requires = [scientific_theory]
-        economics.requires = [banking, metal_casting, scientific_theory]
         rifling.requires = [ballistics, military_science]
 
         flight.requires = [industrialisation]
@@ -261,11 +261,11 @@ class Core(TechTree):
         telecommunications.requires = [computers]
         satellites.requires = [rocketry, advanced_flight]
         guidance_systems.requires = [rocketry, advanced_ballistics]
-        lasers.requires = [nuclear_fusion, advanced_ballistics]
+        lasers.requires = [nuclear_fusion]
         composites.requires = [synthetic_materials]
         stealth_technology.requires = [synthetic_materials]
 
-        robotics.requires = [computers, satellites, guidance_systems, lasers]
+        robotics.requires = [satellites, guidance_systems, lasers]
         nuclear_fission.requires = [lasers]
         nanotechnology.requires = [composites]
 
@@ -291,7 +291,7 @@ class Core(TechTree):
         engineering.contributes_to = [machinery]
         mathematics.contributes_to = [engineering, military_tactics, education]
         ship_building.contributes_to = [buttress]
-        horseback_riding.contributes_to = [construction, stirrups]
+        horseback_riding.contributes_to = [stirrups]
         iron_working.contributes_to = [castles]
 
         apprenticeship.contributes_to = []
@@ -300,20 +300,20 @@ class Core(TechTree):
         machinery.contributes_to = [printing]
         stirrups.contributes_to = [gunpowder]
         castles.contributes_to = [siege_tactics]
-        military_engineering.contributes_to = []
+        military_engineering.contributes_to = [gunpowder]
         military_tactics.contributes_to = [mass_production]
 
         banking.contributes_to = [scientific_theory, economics]
         chemistry.contributes_to = [rocketry]
         composites.contributes_to = [nanotechnology]
         gunpowder.contributes_to = [metal_casting]
-        scientific_theory.contributes_to = [sanitation, economics]
+        scientific_theory.contributes_to = [sanitation]
         cartography.contributes_to = [square_rigging]
         mass_production.contributes_to = [industrialisation]
         printing.contributes_to = [military_science]
         square_rigging.contributes_to = [industrialisation]
         astronomy.contributes_to = [scientific_theory]
-        metal_casting.contributes_to = [scientific_theory, ballistics, economics]
+        metal_casting.contributes_to = [scientific_theory, ballistics]
         siege_tactics.contributes_to = [military_science]
 
         industrialisation.contributes_to = [steam_power, flight]
@@ -339,11 +339,11 @@ class Core(TechTree):
 
         advanced_flight.contributes_to = [satellites]
         rocketry.contributes_to = [nuclear_fusion, satellites, guidance_systems]
-        advanced_ballistics.contributes_to = [nuclear_fusion, guidance_systems, lasers]
+        advanced_ballistics.contributes_to = [guidance_systems, lasers]
         combined_arms.contributes_to = [nuclear_fusion]
         plastics.contributes_to = [synthetic_materials]
 
-        computers.contributes_to = [telecommunications, robotics]
+        computers.contributes_to = [telecommunications]
         nuclear_fission.contributes_to = []
         nanotechnology.contributes_to = []
         nuclear_fusion.contributes_to = [lasers]
