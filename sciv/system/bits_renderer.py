@@ -191,6 +191,7 @@ class BitsRenderer:
                 resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
                 if resource_bit:
                     resource_bits.append(resource_bit)
+
             for improvement in self.tile.get_improvements().get_all():
                 improvement_bit: "Bit | None" = improvement.as_bit()
                 if improvement_bit:
