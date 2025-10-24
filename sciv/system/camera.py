@@ -1,7 +1,8 @@
 from logging import Logger
 from math import cos, pi, sin
-from typing import TYPE_CHECKING, Any, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple
 
+from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.task import Task
 from gameplay.city import City  # type: ignore
@@ -18,7 +19,6 @@ if TYPE_CHECKING:
 
 class Camera(Singleton, DirectObject):
     """
-
     Modified camera controller:
       - Left-drag => rotate around pivot (with a threshold)
       - Right-drag => pan/move
@@ -34,42 +34,34 @@ class Camera(Singleton, DirectObject):
         self.mouseWatcherNode: MouseWatcher = self.base.mouseWatcherNode  # type: ignore
         self.logger: Logger = self.base.logger.engine.getChild("camera")
 
-        # Field-of-View parameters
         self.fov: float = 70.0
 
-        # Zoom parameters
         self.zoom: float = 20.0
         self.min_zoom: float = 2.0
         self.max_zoom: float = 50.0
         self.zoom_speed: float = 2.0
+        self.scroll_tick_rate: float = 0.1
 
         self.zoom_enabled: bool = True
         self.lock: bool = False
 
-        # Fixed pitch at 45 degrees
         self.pitch: float = 45.0
 
-        # Pivot rotation (yaw)
         self.yaw: float = 0.0
         self._update_yaw_trig()
 
-        # Pan & rotate speeds
         self.pan_speed: float = 20.0
-        self.rotate_speed: float = 60.0  # degrees/sec
+        self.rotate_speed: float = 60.0
 
-        # Optional target NodePath to center on
         self.target: Optional[NodePath] = None
 
-        # Window dimensions & aspect
         self.win_x: int = self.base.win.getXSize()  # type: ignore
         self.win_y: int = self.base.win.getYSize()  # type: ignore
         self._aspect_ratio: float = self.win_x / self.win_y if self.win_y else 1.0
 
-        # Create pivot node
         self.pivot = self.base.render.attachNewNode("cameraPivot")  # type: ignore
         self.reset_pivot_position()
 
-        # Attach the camera to this pivot
         self.base.camera.reparentTo(self.pivot)  # type: ignore
         self.update_camera_position()
 
@@ -85,8 +77,7 @@ class Camera(Singleton, DirectObject):
         self.update_interval: float = 0.05
         self._time_since_last_flush: float = 0.0
 
-        # Track key & drag states
-        self.keys = {
+        self.keys: Dict[str, bool] = {
             "up": False,
             "down": False,
             "left": False,
@@ -97,7 +88,12 @@ class Camera(Singleton, DirectObject):
         self.left_dragging = False
         self.right_dragging = False
         self.last_mouse_pos: Tuple[float, float] = (0.0, 0.0)
-        self.drag_threshold = 40  # pixels to trigger rotation
+        self.drag_threshold = 40
+
+        self._scrolling: bool = False
+        self._since_last_scroll: float = 0.0
+        self.scroll_end_timeout: float = max(self.scroll_tick_rate * 3.0, 0.25)
+        self._scroll_tick_task_name: str = "cameraScrollTickTask"
 
         self.setup_controls()
 
@@ -116,24 +112,19 @@ class Camera(Singleton, DirectObject):
         self.pivot.setPos(0, 0, 0)  # type: ignore
         self.base.camera.setPos(0, 0, 0)  # type: ignore
         self.base.camera.setHpr(0, 0, 0)  # type: ignore
-
-        # Reset lens FOV and aspect
         lens = self.get_lens()
         lens.setFov(self.fov)
         lens.setAspectRatio(self._aspect_ratio)
         self.base.cam.node().setLens(lens)
-
         self.yaw = 0.0
         self._update_yaw_trig()
         self.zoom = 20.0
-
         self._desired_pivot_pos = self.pivot.getPos()  # type: ignore
         self._desired_yaw = self.yaw
         self._desired_zoom = self.zoom
         self.update_camera_position()
 
     def base_camera(self) -> NodePath | PandaCamera:
-        """Return the camera node."""
         return self.base.camera  # type: ignore
 
     def getPos(self) -> LPoint3f:
@@ -143,7 +134,6 @@ class Camera(Singleton, DirectObject):
         return self.base_camera().getHpr(self.base.render)  # type: ignore
 
     def setup_controls(self):
-        # WASD / arrows
         for key, name in [
             ("arrow_up", "up"),
             ("w", "up"),
@@ -156,32 +146,24 @@ class Camera(Singleton, DirectObject):
         ]:
             self.accept(key, self.set_key, [name, True])
             self.accept(f"{key}-up", self.set_key, [name, False])
-
-        # Q/E rotation
         self.accept("q", self.set_key, ["rotate_left", True])
         self.accept("q-up", self.set_key, ["rotate_left", False])
         self.accept("e", self.set_key, ["rotate_right", True])
         self.accept("e-up", self.set_key, ["rotate_right", False])
-
         self.accept("wheel_up", self.zoom_in)
         self.accept("wheel_down", self.zoom_out)
-
         self.accept("r", self.recenter)
-
         self.accept("mouse1", self.start_left_drag)
         self.accept("mouse1-up", self.stop_left_drag)
         self.accept("mouse3", self.start_right_drag)
         self.accept("mouse3-up", self.stop_right_drag)
-
         self.accept("system.input.disable_zoom", self.disable_zoom)
         self.accept("system.input.enable_zoom", self.enable_zoom)
         self.accept("system.input.disable_control", self.disable_control)
         self.accept("system.input.enable_control", self.enable_control)
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
-
         self.accept("game.camera.request.center_on_tile", self._on_center_on_tile)
-
         self.base.taskMgr.add(self.on_window_resize, "checkWindowResizeTask", delay=5.0)  # type: ignore
 
     def _on_center_on_tile(self, tile: "Tile"):
@@ -210,31 +192,53 @@ class Camera(Singleton, DirectObject):
         self.logger.debug("Disabling zoom")
         self.zoom_enabled = False
 
+    def zoom_factor(self) -> float:
+        return (self.zoom - self.min_zoom) / (self.max_zoom - self.min_zoom)
+
     def enable_zoom(self):
         if self.lock:
             return
         self.logger.debug("Enabling zoom")
         self.zoom_enabled = True
 
+    def _notify_scrolled(self):
+        self._scrolling = True
+        self._since_last_scroll = 0.0
+        if not self.base.taskMgr.hasTaskNamed(self._scroll_tick_task_name):  # type: ignore
+            self.base.taskMgr.doMethodLater(self.scroll_tick_rate, self._scroll_tick, self._scroll_tick_task_name)  # type: ignore
+
+    def on_scroll_tick(self) -> None:
+        MessengerGlobal.messenger.send("system.camera.zoom_ticked")
+
+    def on_scroll_end(self) -> None:
+        MessengerGlobal.messenger.send("system.camera.zoom_ended")
+
+    def _scroll_tick(self, task: Task.Task) -> Literal[1]:
+        if not self._scrolling:
+            return Task.done  # type: ignore
+        self.on_scroll_tick()
+        task.delayTime = self.scroll_tick_rate  # type: ignore
+        return Task.again  # type: ignore
+
     def zoom_in(self):
         if not self.zoom_enabled:
             return
         self._desired_zoom = max(self.min_zoom, self._desired_zoom - self.zoom_speed)
+        self._notify_scrolled()
 
     def zoom_out(self):
         if not self.zoom_enabled:
             return
         self._desired_zoom = min(self.max_zoom, self._desired_zoom + self.zoom_speed)
+        self._notify_scrolled()
 
     def on_window_resize(self, _: WindowBase | None) -> Literal[1]:  # type: ignore
         self.win_x = self.base.win.getXSize()  # type: ignore
         self.win_y = self.base.win.getYSize()  # type: ignore
         self._aspect_ratio = self.win_x / self.win_y if self.win_y else 1.0  #   type: ignore
-
         lens = self.get_lens()
         lens.setAspectRatio(self._aspect_ratio)  # type: ignore
         self.base.cam.node().setLens(lens)
-
         return 1
 
     def update_camera_position(self):
@@ -264,17 +268,14 @@ class Camera(Singleton, DirectObject):
                 center = (pos[0], pos[1], 0)
             else:
                 self.logger.debug(f"Recentered on unit at {center} but no tile found.")
-
         elif (tile := self.input.selected_tile) is not None:
             pos = tile.get_pos()  # type: ignore
             center = (pos[0], pos[1], 0)
-
         elif player.capital is not None:
             capital: City | None = player.capital()
             assert capital is not None, "Player has no capital to recenter on."
             capital_pos = capital.get_pos()
             center = (capital_pos[0], capital_pos[1], 0)
-
         elif units := player.get_all_units():
             unit = list(units)[0]  # type: ignore
             if unit is not None and unit.tile is not None:  # type: ignore
@@ -315,7 +316,6 @@ class Camera(Singleton, DirectObject):
         self.right_dragging = False
 
     def _sample_input(self, dt: float):
-        # pan with keys
         forward = (self._sin_yaw, -self._cos_yaw)
         right = (self._cos_yaw, self._sin_yaw)
         px, py, pz = self._desired_pivot_pos  # type: ignore
@@ -333,13 +333,11 @@ class Camera(Singleton, DirectObject):
             px += right[0] * self.pan_speed * dt  # type: ignore
             py += right[1] * self.pan_speed * dt  # type: ignore
 
-        # rotation keys
         if self.keys["rotate_left"]:
             self._desired_yaw += self.rotate_speed * dt
         if self.keys["rotate_right"]:
             self._desired_yaw -= self.rotate_speed * dt
 
-        # dragging deltas
         if self.mouseWatcherNode.hasMouse():
             md = self.mouseWatcherNode.getMouse()
             x, y = md.getX(), md.getY()
@@ -349,7 +347,6 @@ class Camera(Singleton, DirectObject):
             if self.left_dragging and abs(dx) >= self.drag_threshold:
                 self._desired_yaw -= dx * 0.1
             elif self.right_dragging:
-                # screen px to world units
                 delta_px_x = dx * self.win_x / 2
                 delta_px_y = dy * self.win_y / 2
                 pan_factor = 0.015 * (self._desired_zoom / 25)
@@ -373,6 +370,14 @@ class Camera(Singleton, DirectObject):
         dt: float = self.base.clock.getDt()  # type: ignore
 
         self._sample_input(dt)  # type: ignore
+
+        if self._scrolling:
+            self._since_last_scroll += dt
+            if self._since_last_scroll >= float(self.scroll_end_timeout):
+                self._scrolling = False
+                self.on_scroll_end()
+                if self.base.taskMgr.hasTaskNamed(self._scroll_tick_task_name):  # type: ignore
+                    self.base.taskMgr.remove(self._scroll_tick_task_name)  # type: ignore
 
         self._time_since_last_flush += dt
         if self._time_since_last_flush >= float(self.update_interval):  # type: ignore
