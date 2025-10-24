@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
-from gameplay.age import T_TranslationOrStrOrNone
 from gameplay.tech import Tech, TechTree
 from helpers.cache import Cache
 from helpers.colors import Colors
@@ -203,9 +202,9 @@ class ResearchButton(TooltippedButton):
 
             border_color = getattr(tech_type, "icon_border_color", (1, 1, 1, 1))
 
-            if isinstance(src, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
+            if isinstance(src, (T_TranslationOrStr)):
                 src = str(self.atlas.get_real_path_for_virtual_path(str(src)))
-            if isinstance(tip, (T_TranslationOrStrOrNone, T_TranslationOrStr)):
+            if isinstance(tip, (T_TranslationOrStr)):
                 tip = str(self.atlas.get_real_path_for_virtual_path(str(tip)))
 
             if WindowsHelper.is_windows():
