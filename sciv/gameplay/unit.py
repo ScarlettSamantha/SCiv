@@ -251,7 +251,7 @@ class Unit(BaseEntity, ABC):
             self.unit_icons.set_depth_test(True)  # type: ignore
             self.unit_icons.setTwoSided(two_sided=True)  # type: ignore
 
-            self.unit_icons.set_bin("transparent", 90)  # type: ignore
+            self.unit_icons.set_bin("fixed", 90)  # type: ignore
 
             self.unit_icons.set_shader(  # type: ignore
                 sha=Shader.load(  # type: ignore
@@ -267,6 +267,7 @@ class Unit(BaseEntity, ABC):
             self.healthbar_np = self.unit_icons.attachNewNode("healthbar")
             self.healthbar_np.setPos(0, 0, 0.75)
             self.healthbar_np.setScale(1.25, 1, 1.5)
+            self.healthbar_np.setBin("fixed", 90)
 
             cm = CardMaker("healthbar_quad")
             cm.setFrame(left=-0.625, right=0.625, bottom=-0.1125, top=0.1125)
