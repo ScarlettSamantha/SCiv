@@ -412,7 +412,7 @@ class TileRenderer:
         fg: NodePath[PandaNode] = bar_group.attachNewNode(cm_fg.generate())
         fg.setColor(*fill_color)
         fg.setTransparency(TransparencyAttrib.M_alpha)
-        fg.setBin("fixed", 60)
+        fg.setBin("fixed", 90)
         fg.setDepthTest(False)
 
         if icon_texture:
@@ -427,8 +427,8 @@ class TileRenderer:
             icon_np.setTexture(icon_texture)
             icon_np.setColor(1, 1, 1, 1)
             icon_np.setTransparency(TransparencyAttrib.M_alpha)
-            icon_np.setBin("fixed", 65)
-            icon_np.setDepthTest(False)
+            icon_np.setBin("fixed", 90)
+            icon_np.setDepthTest(True)
 
             icon_np.setPos(icon_offset_x, 0, 0)
             icon_np.setScale(*icon_size)
@@ -440,7 +440,7 @@ class TileRenderer:
             tn_np: NodePath[TextNode] = bar_group.attachNewNode(tn)
             tn_np.setScale(text_scale)
             tn_np.setPos(0, 0, text_offset_z)
-            tn_np.setBin("fixed", 70)
+            tn_np.setBin("fixed", 90)
             tn_np.setDepthTest(False)
 
         if name.startswith("health_"):
@@ -661,7 +661,7 @@ class TileRenderer:
         node.setTransparency(TransparencyAttrib.M_alpha)
         node.setPos(0, 0, 2.0)
         node.setScale(0.75)
-        node.setBin("fixed", 50)
+        node.setBin("fixed", 90)
         node.setTwoSided(True)
         node.setAntialias(AntialiasAttrib.MAuto)
         node.setBillboardAxis()
