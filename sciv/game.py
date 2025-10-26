@@ -118,10 +118,6 @@ class OpenCiv(ShowBase):
         Cache.set_i18n_instance(self.i18n)
         set_i18n(self.i18n)
 
-        loading_screen.next_stage("Generating assets")
-        self.engine_logger.info("Generating non-static assets")
-        self.generate_non_static_assets()
-
         from managers.game import Game
         from managers.world import World
 
@@ -161,6 +157,10 @@ class OpenCiv(ShowBase):
         self.asset_manager: AssetManager = AssetManager()
         AssetManager.set_singleton_instance(self.asset_manager)
         self.asset_manager.set_base(self)
+
+        loading_screen.next_stage("Generating assets")
+        self.engine_logger.info("Generating non-static assets")
+        self.generate_non_static_assets()
 
         loading_screen.next_stage("Setting up lights")
         self.engine_logger.info("Setting up lights")
