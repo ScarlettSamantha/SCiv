@@ -16,7 +16,7 @@ class Gold(BaseLuxuryResource):
     description: T_TranslationOrStr = t_("content.resources.core.gold.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/luxury/bordered_gold.png"
+    icon: str = "assets/icons/default/resources/core/luxury/bordered_gold.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         HillsGrass: 100.0,

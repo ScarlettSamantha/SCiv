@@ -16,7 +16,7 @@ class Gems(BaseLuxuryResource):
     description: T_TranslationOrStr = t_("content.resources.core.gems.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/luxury/hex_border_gems.png"
+    icon: str = "assets/icons/default/resources/core/luxury/hex_border_gems.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 15.0
     spawn_amount = 5.0
     improvement_required = [Mine]

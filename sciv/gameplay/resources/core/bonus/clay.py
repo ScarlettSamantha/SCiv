@@ -15,7 +15,7 @@ class Clay(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.clay.name")
     description: T_TranslationOrStr = t_("content.resources.core.clay.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_clay.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_clay.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatGrass: 100.0,

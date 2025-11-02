@@ -16,7 +16,7 @@ class Seaweed(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.seaweed.name")
     description: T_TranslationOrStr = t_("content.resources.core.seaweed.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_seaweed.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_seaweed.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {Sea: 30.0, Coast: 90.0, SeaIce: 0.0}
     spawn_amount = 3.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER

@@ -4,13 +4,13 @@ from gameplay.improvements.core.resources.farm import Farm
 from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.luxury.luxury_resource import BaseLuxuryResource
 from gameplay.terrain._base_terrain import BaseTerrain
-from managers.i18n import T_TranslationOrStr, t_
 from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_grass import FlatGrass
 from gameplay.terrain.flat_heavy_forest import FlatHeavyForest
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_grass import HillsGrass
+from managers.i18n import T_TranslationOrStr, t_
 
 
 class Silk(BaseLuxuryResource):
@@ -19,7 +19,7 @@ class Silk(BaseLuxuryResource):
     description: T_TranslationOrStr = t_("content.resources.core.silk.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/luxury/hex_border_silk.png"
+    icon: str = "assets/icons/default/resources/core/luxury/hex_border_silk.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 60.0,
         HillsGrass: 60.0,

@@ -14,7 +14,7 @@ class Corn(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.corn.name")
     description: T_TranslationOrStr = t_("content.resources.core.corn.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/bordered_corn.png"
+    icon: str = "assets/icons/default/resources/core/bonus/bordered_corn.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 95.0,

@@ -18,7 +18,7 @@ class Hardwood(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.hardwood.name")
     description: T_TranslationOrStr = t_("content.resources.core.hardwood.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_hardwood.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_hardwood.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatForest: 70.0,

@@ -18,7 +18,7 @@ class Deer(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.deer.name")
     description: T_TranslationOrStr = t_("content.resources.core.deer.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_deer.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_deer.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,

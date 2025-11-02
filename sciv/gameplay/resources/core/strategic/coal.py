@@ -19,7 +19,7 @@ class Coal(BaseStrategicResource):
     description: T_TranslationOrStr = t_("content.resources.core.coal.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/strategic/bordered_coal.png"
+    icon: str = "assets/icons/default/resources/core/strategic/bordered_coal.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatScrubland: 70.0,

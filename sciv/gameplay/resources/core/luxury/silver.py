@@ -20,7 +20,7 @@ class Silver(BaseLuxuryResource):
     description: T_TranslationOrStr = t_("content.resources.core.silver.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/luxury/hex_border_silver.png"
+    icon: str = "assets/icons/default/resources/core/luxury/hex_border_silver.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatDesert: 70.0,

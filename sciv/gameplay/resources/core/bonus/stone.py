@@ -16,7 +16,7 @@ class Stone(BaseBonusResource):
     description: T_TranslationOrStr = t_("content.resources.core.stone.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/bonus/hex_border_stone.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_stone.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 100
     coverage = 0.4
     spawn_amount = 5.0

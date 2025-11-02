@@ -15,7 +15,7 @@ class Pearls(BaseLuxuryResource):
     name: T_TranslationOrStr = t_("content.resources.core.pearls.name")
     description: T_TranslationOrStr = t_("content.resources.core.pearls.description")
     _color = (1.0, 1.0, 0.0)
-    icon: str = "assets/icons/resources/core/luxury/bordered_pearls.png"
+    icon: str = "assets/icons/default/resources/core/luxury/bordered_pearls.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {BaseTerrain: 0.0, Sea: 20.0, Coast: 90.0, Lake: 50.0}
     coverage = 2.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.WATER

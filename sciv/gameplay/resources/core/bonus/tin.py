@@ -21,7 +21,7 @@ class Tin(BaseBonusResource):
     description: T_TranslationOrStr = t_("content.resources.core.tin.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/bonus/hex_border_tin.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_tin.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatForest: 20.0,
         FlatGrass: 20.0,

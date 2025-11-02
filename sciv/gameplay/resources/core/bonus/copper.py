@@ -12,7 +12,7 @@ class Copper(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.copper.name")
     description: T_TranslationOrStr = t_("content.resources.core.copper.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_copper.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_copper.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 5.0
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_amount = 5.0

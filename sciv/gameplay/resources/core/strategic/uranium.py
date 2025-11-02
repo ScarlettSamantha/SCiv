@@ -5,15 +5,15 @@ from gameplay.resource import ResourceSpawnablePlace
 from gameplay.resources.core.strategic.strategic_resource import BaseStrategicResource
 from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.terrain.flat_desert import FlatDesert
+from gameplay.terrain.flat_forest import FlatForest
 from gameplay.terrain.flat_savanna import FlatSavanna
 from gameplay.terrain.flat_scrubland import FlatScrubland
 from gameplay.terrain.flat_tundra import FlatTundra
 from gameplay.terrain.hills_desert import HillsDesert
+from gameplay.terrain.hills_forest import HillsForest
 from gameplay.terrain.hills_snow import HillsSnow
 from gameplay.terrain.hills_tundra import HillsTundra
 from managers.i18n import T_TranslationOrStr, t_
-from gameplay.terrain.hills_forest import HillsForest
-from gameplay.terrain.flat_forest import FlatForest
 
 
 class Uranium(BaseStrategicResource):
@@ -22,7 +22,7 @@ class Uranium(BaseStrategicResource):
     description: T_TranslationOrStr = t_("content.resources.core.uranium.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/strategic/bordered_uranium.png"
+    icon: str = "assets/icons/default/resources/core/strategic/bordered_uranium.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatDesert: 70.0,

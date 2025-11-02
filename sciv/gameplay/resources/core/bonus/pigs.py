@@ -17,7 +17,7 @@ class Pigs(BaseBonusResource):
     description: T_TranslationOrStr = t_("content.resources.core.pigs.description")
     _color = (1.0, 0.0, 1.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/bonus/hex_border_pigs.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_pigs.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         FlatForest: 40.0,

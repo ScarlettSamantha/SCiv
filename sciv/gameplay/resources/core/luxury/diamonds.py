@@ -20,7 +20,7 @@ class Diamonds(BaseLuxuryResource):
     description: T_TranslationOrStr = t_("content.resources.core.diamonds.description")
     _color = (1.0, 1.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/luxury/bordered_diamonds.png"
+    icon: str = "assets/icons/default/resources/core/luxury/bordered_diamonds.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 20.0,
         FlatForest: 20.0,

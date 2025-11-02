@@ -15,7 +15,7 @@ class Whales(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.whales.name")
     description: T_TranslationOrStr = t_("content.resources.core.whales.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_whales2.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_whales2.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {SeaIce: 0.0, Sea: 100.0, Coast: 40.0}
     coverage = 0.9
     spawn_amount = 5.0

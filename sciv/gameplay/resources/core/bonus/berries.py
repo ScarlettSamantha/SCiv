@@ -16,7 +16,7 @@ class Berries(BaseBonusResource):
     name: T_TranslationOrStr = t_("content.resources.core.berries.name")
     description: T_TranslationOrStr = t_("content.resources.core.berries.description")
     _color = (1.0, 0.0, 1.0)
-    icon: str = "assets/icons/resources/core/bonus/hex_border_berries.png"
+    icon: str = "assets/icons/default/resources/core/bonus/hex_border_berries.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 70.0,
         FlatForest: 60.0,

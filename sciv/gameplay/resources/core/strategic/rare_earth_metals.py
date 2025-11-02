@@ -21,7 +21,7 @@ class RareEarthMetals(BaseStrategicResource):
     name: T_TranslationOrStr = t_("content.resources.core.rare_earth_metals.name")
     description: T_TranslationOrStr = t_("content.resources.core.rare_earth_metals.description")
     _color = (1.0, 0.0, 0.0)
-    icon: str = "resources/core/strategic/bordered_rare_earth_metals.png"
+    icon: str = "assets/icons/default/resources/core/strategic/bordered_rare_earth_metals.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,

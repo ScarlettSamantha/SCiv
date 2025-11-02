@@ -25,7 +25,7 @@ class Oil(BaseStrategicResource):
         FlatSavanna: 70.0,
         FlatDesert: 70.0,
     }
-    icon: str = "assets/icons/resources/core/strategic/bordered_oil.png"
+    icon: str = "assets/icons/default/resources/core/strategic/bordered_oil.png"
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.BOTH
     spawn_amount = 3.5
     model = ("assets/models/resources/oil_barrel.glb", None)

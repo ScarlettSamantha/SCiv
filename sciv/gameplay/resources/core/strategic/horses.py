@@ -19,7 +19,7 @@ class Horses(BaseStrategicResource):
     description: T_TranslationOrStr = t_("content.resources.core.horses.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/strategic/bordered_horse.png"
+    icon: str = "assets/icons/default/resources/core/strategic/bordered_horse.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         FlatGrass: 60.0,
         FlatScrubland: 80.0,

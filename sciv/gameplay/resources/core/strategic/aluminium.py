@@ -21,7 +21,7 @@ class Aluminium(BaseStrategicResource):
     description: T_TranslationOrStr = t_("content.resources.core.aluminium.description")
     _color = (1.0, 0.0, 0.0)
     spawn_type: ResourceSpawnablePlace = ResourceSpawnablePlace.LAND
-    icon: str = "assets/icons/resources/core/strategic/bordered_rare_earth_rods.png"
+    icon: str = "assets/icons/default/resources/core/strategic/bordered_rare_earth_rods.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = {
         BaseTerrain: 0.0,
         HillsForest: 100.0,
