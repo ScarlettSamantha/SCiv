@@ -1,12 +1,11 @@
 from typing import TYPE_CHECKING, Any
 
+from gameplay.city import EntityType
 from gameplay.condition import Conditions, ResearchCondition
 from gameplay.promotion import Promotion, PromotionTree
 from gameplay.units.core.classes.civilian._base import CoreCivilianBaseClass
 from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
-
-from gameplay.city import EntityType
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -69,7 +68,7 @@ class Settler(CoreCivilianBaseClass):
     key = "core.unit.class.settler"
     name = t_("content.units.core.units.civilian.settler.name")
     description = t_("content.units.core.units.civilian.settler.description")
-    icon = "units/settler.png"
+    icon = "assets/icons/default/units/settler.png"
     promotion_tree = SettlerPromotionTree
     model_size = 0.50
 

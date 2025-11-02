@@ -35,7 +35,7 @@ class ClubMan(CoreMilitaryBaseClass):
     key = "core.unit.class.clubman"
     name = t_("content.units.core.units.military.clubman.name")
     description = t_("content.units.core.units.military.clubman.description")
-    icon = "units/clubman.png"
+    icon = "assets/icons/default/units/clubman.png"
     model_size = 0.33
 
     attack_points = 1

@@ -19,7 +19,7 @@ class Slinger(RangedUnit):
     key = "core.unit.class.slinger"
     name = t_("content.units.core.units.military.slinger.name")
     description = t_("content.units.core.units.military.slinger.description")
-    icon = "units/ancient_slinger.png"
+    icon = "assets/icons/default/units/ancient_slinger.png"
     model_size: float = 0.33
 
     attack_points: float = 1.0

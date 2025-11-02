@@ -123,7 +123,7 @@ class Builder(CoreCivilianBaseClass):
     key = "core.unit.class.builder"
     name = t_("content.units.core.units.civilian.builder.name")
     description = t_("content.units.core.units.civilian.builder.description")
-    icon = "units/builder_ancient.png"
+    icon = "assets/icons/default/units/builder_ancient.png"
     model_size = 0.35
 
     def __init__(self, *args: Any, **kwargs: Any):
