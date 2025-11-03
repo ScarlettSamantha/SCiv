@@ -46,14 +46,14 @@ class BaseButton(SelfResizableButton):
 
 
 class ResearchButton(BaseButton):
-    placeholder: str = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(Science.icon))
+    placeholder: str = Science.icon
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
 
 class CultureButton(BaseButton):
-    placeholder: str = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(Culture.icon))
+    placeholder: str = Culture.icon
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
@@ -112,7 +112,7 @@ class TopBar(BoxLayout, DirectObject):
 
     def _update_rect(self, *_):
         self.rect.size = self.size  # type: ignore
-        self.rect.pos = self.pos  # type: ignore
+        self.rect.pos = self.pos
 
     def register(self):
         self.accept("ui.update.ui.refresh_top_bar", self.update)
@@ -142,7 +142,7 @@ class TopBar(BoxLayout, DirectObject):
 
         gold_path = Gold.icon
         faith_path = Faith.icon
-        turn_path = "assets/icons/turn.png"
+        turn_path = "assets/icons/default/turn.png"
 
         self.gold_label = ImageLabel(
             text="Gold: 0",
@@ -178,7 +178,6 @@ class TopBar(BoxLayout, DirectObject):
         return self
 
     def update(self):
-        """Refresh labels with new values."""
         try:
             player = PlayerManager.session_player()
             turn = Turn.get_singleton_instance().turn

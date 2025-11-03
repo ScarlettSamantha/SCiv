@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import Iterable, List, Optional, Tuple
 
 import PIL.Image
@@ -80,11 +81,15 @@ def draw_text_on_image(
     outline_color: Tuple[int, int, int, int] = (255, 255, 255, 255),
     outline_width: int = 1,
 ) -> bool:
+    from helpers.cache import Cache
+
+    assets = Cache.get_asset_archive()
+
     if isinstance(base_image, str):
-        base_image = Image.open(base_image).convert("RGBA")
+        base_image = Image.open(BytesIO(assets.read_bytes(base_image))).convert("RGBA")
 
     if isinstance(font_path, str):
-        font = ImageFont.truetype(font_path, font_size)
+        font = ImageFont.truetype(BytesIO(assets.read_bytes("assets/fonts/Washington.ttf")), font_size)
     else:
         font = font_path
 

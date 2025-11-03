@@ -19,6 +19,7 @@ class Civic:
     unlocks: List[Type["Civic"]] = []
     unlocks_entities: List[Type[BaseEntity]] = []
     base_cost: int = 10
+    icon: str | None = None
 
     def __init__(
         self,
@@ -82,7 +83,7 @@ class Civic:
     def is_requires_completed(self) -> bool:
         if not self.requires or self.key not in self.requires:
             return True
-        return self.requires[self.key]()  # Call is evaluation
+        return self.requires[self.key]()
 
     @classmethod
     def get_requirements(cls) -> List[Type["Civic"]]:

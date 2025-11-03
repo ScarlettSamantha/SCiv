@@ -103,7 +103,7 @@ class _PanelBackground(Widget):
         self._c2.rgba = self.inner_color  # type: ignore
 
     def _update_rects(self, *_: Any) -> None:
-        self._border.pos = self.pos  # type: ignore
+        self._border.pos = self.pos
         self._border.size = self.size
         px = float(self.border_px)  # type: ignore
         self._inner.pos = (self.x + px, self.y + px)  # type: ignore

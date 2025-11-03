@@ -6,7 +6,6 @@ from direct.showbase.DirectObject import DirectObject
 from gameplay.civic import Civic, CivicSubtree, CivicTree
 from gameplay.civics.core.tree.core import CoreCivicTree
 from helpers.cache import Cache
-from helpers.os import WindowsHelper
 from helpers.placeholder import Placeholder
 from kivy.graphics import Color, Line, Rectangle, Triangle  # type: ignore
 from kivy.uix.anchorlayout import AnchorLayout  # NEW
@@ -20,6 +19,8 @@ from kivy.uix.widget import Widget
 from managers.player import PlayerManager
 from menus.kivy.elements.horizontal_scroll import HorizontalScrollView
 from menus.kivy.elements.tooltip import TooltipBehavior
+
+from system.asset_archive import P3DAssetArchive
 
 if TYPE_CHECKING:
     from gameplay.player import Player
@@ -36,27 +37,19 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
     ):
         TooltipBehavior.__init__(self, **kwargs)
         super().__init__(size_hint=(None, None), size=(icon_px + 4, icon_px + 4), **kwargs)  # type: ignore
-        player: "Player" = PlayerManager.session_player()  # type: ignore
-        self.on_click = on_click
-        self.civic = civic
+        player: "Player" = PlayerManager.session_player()
+        self.on_click: Callable[[CivicNode], None] | None = on_click
+        self.civic: Type[Civic] = civic
         _civic = civic(player)
         self.atlas = Cache.get_icon_atlas()
-
-        icon_src = str(
-            self.atlas.get_real_path_for_virtual_path(
-                getattr(_civic, "icon_path", Placeholder.getPlaceholderImagePathSmallIcon())
-            )
-        )
-
-        if WindowsHelper.is_windows():
-            icon_src = WindowsHelper.unix_to_win32_path(icon_src)
+        self.assets: P3DAssetArchive = Cache.get_asset_archive()
 
         name = str(getattr(_civic, "name", ""))
         description = str(getattr(_civic, "description", ""))
         cost = _civic.get_cost()
 
-        unlocks = civic.get_unlocks()
-        requires = civic.get_requirements()
+        unlocks: List[Type[Civic]] = civic.get_unlocks()
+        requires: List[Type[Civic]] = civic.get_requirements()
 
         def civic_name_list(cls_list: List[Type[Civic]]) -> str:
             return "\n".join(f"• {getattr(_cls(player), 'name', str(_cls))}" for _cls in cls_list)
@@ -81,20 +74,21 @@ class CivicNode(ButtonBehavior, AnchorLayout, TooltipBehavior):
         tooltip_parts.append(f"[b]Cost:[/b] {cost}")
         self.tooltip_text = "\n".join(tooltip_parts)
         self.tooltip_markup = True
-        self.tooltip_image_source = icon_src
+        self.icon: Image = self.assets.get_kivy_image_object(
+            _civic.icon if _civic.icon else Placeholder.getPlaceholderImagePathSmallIcon(), size=(icon_px, icon_px)
+        )
         self.tooltip_multiline = True
 
         with self.canvas.before:
             self.bg_color = Color(0.3, 0.3, 0.3, 1)
-            self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
+            self.bg_rect = Rectangle(pos=self.pos, size=self.size)
+
         self.bind(pos=self._update_rect, size=self._update_rect)
         self.bind(on_release=self._on_click)
-
-        self.icon = Image(source=icon_src, size_hint=(None, None), size=(icon_px, icon_px))
         self.add_widget(self.icon)
 
     def _update_rect(self, *args: Any):
-        self.bg_rect.pos = self.pos  # type: ignore
+        self.bg_rect.pos = self.pos
         self.bg_rect.size = self.size
 
     def _update_label(self, instance: Label, size: Tuple[int, int]) -> None:
@@ -150,7 +144,7 @@ class SubtreeCard(BoxLayout):
 
         rows_box = BoxLayout(
             orientation="vertical",
-            size_hint=(1, None),  # full width
+            size_hint=(1, None),
             spacing=row_spacing,
         )
 
@@ -186,7 +180,7 @@ class SubtreeCard(BoxLayout):
         return tiers
 
     def _update_rect(self, *args: Any):
-        self.bg_rect.pos = self.pos  # type: ignore
+        self.bg_rect.pos = self.pos
         self.bg_rect.size = self.size
 
     def _update_label(self, instance: Label, size: Tuple[int, int]) -> None:
@@ -387,7 +381,7 @@ class Civics(FloatLayout, DirectObject):
                         Triangle(points=[dst[0], dst[1], *p1, *p2])
 
     def _update_rect(self, *args: Any) -> None:
-        self._bg_rect.pos = self.pos  # type: ignore
+        self._bg_rect.pos = self.pos
         self._bg_rect.size = self.size
 
     def destroy(self) -> None:

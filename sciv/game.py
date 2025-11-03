@@ -95,7 +95,7 @@ class OpenCiv(ShowBase):
             WindowsHelper.load_dll(str(self.base_path / "libs/win-amd64/glew32.dll"))
 
         loading_screen = LoadingScreen(
-            self, [str(self.base_path / "assets" / "logo.png")], 15, on_continue=self.on_loading_screen_continue
+            self, [str(self.base_path / "logo.png")], 15, on_continue=self.on_loading_screen_continue
         )
         loading_screen.next_stage("Loading OpenCiv")
         simplepbr.init()
@@ -262,15 +262,7 @@ class OpenCiv(ShowBase):
                 self.engine_logger.info("Icon atlas exists, skipping generation loading cache")
                 icon_generator.load_caches()
 
-            if not terrain_atlas.exists():
-                self.engine_logger.info("Terrain atlas does not exist, generating assets")
-                terrain_atlas.run(force=force)
-            else:
-                self.engine_logger.info("Terrain atlas exists, skipping generation loading cache")
-                terrain_atlas.load_caches()
-
         Cache.set_icon_atlas(icon_generator)
-        Cache.set_terrain_atlas(terrain_atlas)
 
     def get_base_path(self) -> pathlib.Path:
         return self.base_path

@@ -2,13 +2,12 @@ from typing import Any
 
 from gameplay.messages.info import InfoMessage
 from helpers.cache import Cache
-from kivy.uix.image import Image
 from managers.i18n import t_
 
 
 class PlayerNotResearchingMessage(InfoMessage):
     key: str = "player_not_researching"
-    icon: Image | None = Cache.get_icon_atlas().get_kivy_image("ui_alert.png")
+    icon = Cache.get_asset_archive().get_kivy_image_object("assets/icons/default/ui_alert.png")
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(

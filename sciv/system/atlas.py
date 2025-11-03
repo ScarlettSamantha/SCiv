@@ -61,10 +61,6 @@ class AtlasGenerator:
         return self._p3d_texture_cache  # type: ignore
 
     def load_caches(self) -> None:
-        """
-        Load the atlas texture and mapping from cache files.
-        This is used to avoid rebuilding the atlas if it already exists.
-        """
         if not self._cache_file.exists():
             raise FileNotFoundError(f"Cache file does not exist: {self._cache_file}")
 
@@ -209,7 +205,6 @@ class AtlasGenerator:
             if not data:
                 raise ValueError("Cache file is empty or invalid.")
 
-        # Deserialize the cache file into a Texture object
         self._p3d_texture_cache = Texture.decode_from_bam_stream(data)  # type: ignore
         self._p3d_texture_cache.set_loaded_from_txo(True)  # type: ignore
 

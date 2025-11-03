@@ -1,7 +1,10 @@
-from typing import Any, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
+from gameplay.ai.goal import Goals
+from gameplay.ai.memory import Memories
+from gameplay.player import Player
 from kivy.graphics import Color, RoundedRectangle  # type: ignore
 from kivy.metrics import dp  # type: ignore
 from kivy.uix.boxlayout import BoxLayout
@@ -9,8 +12,6 @@ from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-
-from gameplay.player import Player
 
 
 class PlayerInfo(FloatLayout, DirectObject):
@@ -21,7 +22,7 @@ class PlayerInfo(FloatLayout, DirectObject):
         self.player: Optional[Player] = None
         self._is_build = False
 
-        self.size_hint = (0.9, 0.9)  # type: ignore
+        self.size_hint = (0.9, 0.9)
         self.pos_hint = {"center_x": 0.5, "center_y": 0.5}
         with self.canvas.before:  # type: ignore
             Color(0, 0, 0, 0.7)
@@ -39,7 +40,7 @@ class PlayerInfo(FloatLayout, DirectObject):
         self._overlay.size = self.size  # type: ignore
 
     def register(self) -> None:
-        self.accept("ui.update.ui.show_player_info", self.show_popup)  # type: ignore
+        self.accept("ui.update.ui.show_player_info", self.show_popup)
         self.accept("ui.update.ui.hide_player_info", self.hide_popup)  # type: ignore
 
     def set_player(self, player: Player) -> None:
@@ -101,18 +102,18 @@ class PlayerInfo(FloatLayout, DirectObject):
         self.refresh()
 
     def _row(self, title: str, value: Any) -> BoxLayout:
-        """Build a single row with title/value labels."""
         w = BoxLayout(orientation="horizontal", size_hint_y=None, height=dp(30))
         a = Label(text=title, size_hint=(0.3, 1), halign="left", valign="middle")
         b = Label(text=str(value), size_hint=(0.7, 1), halign="left", valign="middle")
+
         for lbl in (a, b):
             lbl.bind(size=lambda inst, val: setattr(inst, "text_size", (inst.width, inst.height)))  # type: ignore
+
         w.add_widget(a)
         w.add_widget(b)
         return w
 
-    def _populate_list_panel(self, panel: BoxLayout, items: Sequence[Tuple[str, Any]]) -> None:
-        """Clear a panel and fill it with a scrollable list of rows."""
+    def _populate_list_panel(self, panel: BoxLayout, items: List[str | Tuple[str, Any | str]]) -> None:
         panel.clear_widgets()
         scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False, do_scroll_y=True)
         container = BoxLayout(orientation="vertical", size_hint=(1, None), spacing=5)
@@ -128,7 +129,7 @@ class PlayerInfo(FloatLayout, DirectObject):
         if not self._is_build or not self.player:
             return
 
-        left_items = [
+        left_items: List[str | Tuple[str, Any | str]] = [
             ("Name:", self.player.civilization.name),
             ("Player ID:", self.player.id),
             ("Intro:", self.player.introduction),
@@ -149,13 +150,13 @@ class PlayerInfo(FloatLayout, DirectObject):
         ]
         self._populate_list_panel(self.left_panel, left_items)
 
-        memories = self.player.get_ai().get_memories()
-        memories_list = [f"Memory: {str(memory)}" for memory in memories]
+        memories: Memories = self.player.get_ai().get_memories()
+        memories_list: List[str] = [f"Memory: {str(memory)}" for memory in memories]
 
-        goals = self.player.get_ai().get_goals()
-        goals_list = [f"Goal: {str(goal)}" for goal in goals]
+        goals: Goals = self.player.get_ai().get_goals()
+        goals_list: List[str] = [f"Goal: {str(goal)}" for goal in goals]
 
-        top_items = (
+        top_items: List[str | Tuple[str, Any | str]] = (
             [
                 ("Wins:", getattr(self.player, "wins", "N/A")),
                 ("Losses:", getattr(self.player, "losses", "N/A")),
@@ -165,7 +166,7 @@ class PlayerInfo(FloatLayout, DirectObject):
         )
         self._populate_list_panel(self.top_right, top_items)  # type: ignore
 
-        bottom_items = [
+        bottom_items: List[str | Tuple[str, Any | str]] = [
             ("Score:", getattr(self.player, "score", "N/A")),
             ("Rank:", getattr(self.player, "rank", "N/A")),
         ]

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from gameplay.rules import GameRules
     from managers.game import GameSettings
     from managers.i18n import I18nManager
+    from system.asset_archive import P3DAssetArchive
     from system.atlas import AtlasGenerator
 
     from sciv.game import OpenCiv
@@ -21,6 +22,7 @@ class Cache:
     _core_logger: Optional[LogManager] = None
     _i18n_instance: Optional["I18nManager"] = None
     _game_settings: Optional["GameSettings"] = None
+    _asset_archive: Optional["P3DAssetArchive"] = None
 
     @classmethod
     def set_showbase_instance(cls, instance: "OpenCiv"):
@@ -100,3 +102,14 @@ class Cache:
     def set_game_settings(cls, settings: "GameSettings"):
         assert settings is not None, "Game settings instance cannot be not None."
         cls._game_settings = settings
+
+    @classmethod
+    def get_asset_archive(cls) -> "P3DAssetArchive":
+        if cls._asset_archive is None:
+            raise AssertionError("Asset archive instance is not set.")
+        return cls._asset_archive
+
+    @classmethod
+    def set_asset_archive(cls, archive: "P3DAssetArchive"):
+        assert archive is not None, "Asset archive instance cannot be not None."
+        cls._asset_archive = archive

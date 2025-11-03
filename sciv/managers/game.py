@@ -25,6 +25,7 @@ from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
 from panda3d.core import WindowProperties  # type: ignore
+from system.asset_archive import P3DAssetArchive
 from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.basic import Basic
@@ -57,6 +58,12 @@ class Game(Singleton, DirectObject):
         self.logger: Logger = self.base.logger.engine.getChild("manager.game")  # type: ignore
 
         self.ages: AgesManager | None = None
+
+        self.asset_archive: P3DAssetArchive = P3DAssetArchive.mount_only(
+            self.base.base_path / "assets.mf", mount_point="/", prefix="assets", priority=0
+        )
+
+        Cache.set_asset_archive(self.asset_archive)
 
         self.ui: ui = ui.get_singleton_instance()
         self.world: World = World.get_singleton_instance()

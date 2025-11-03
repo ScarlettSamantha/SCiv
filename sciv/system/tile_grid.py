@@ -15,6 +15,8 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
+from system.asset_archive import P3DAssetArchive
+
 if TYPE_CHECKING:
     from managers.entity import Tile
 
@@ -45,6 +47,7 @@ class TileModelGrid:
         self.base = Cache.get_showbase_instance()
         TerrainRepository.load(str(PathsHelper.get_terrain_dir()))
         self.terrain_available: Set[Type["BaseTerrain"]] = TerrainRepository.get_all()
+        self.asset_archive: P3DAssetArchive = Cache.get_asset_archive()
 
         self.root_np: NodePath = NodePath(PandaNode("tile_model_grid"))
         self._attached = False

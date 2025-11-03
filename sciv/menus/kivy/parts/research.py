@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from gameplay.tech import Tech, TechTree
-from helpers.cache import Cache
 from helpers.colors import Colors
 from helpers.optimizations import throttle
 from helpers.os import WindowsHelper
@@ -38,7 +37,7 @@ class _ColorChip(Widget):
         self.bind(pos=self._sync, size=self._sync)  # type: ignore
 
     def _sync(self, *a: Any):
-        self._r.pos = self.pos  # type: ignore
+        self._r.pos = self.pos
         self._r.size = self.size  # type: ignore
 
 
@@ -66,7 +65,7 @@ class LegendFrame(BoxLayout):
         self.bind(minimum_width=lambda _w, w: setattr(self, "width", w))  # type: ignore
 
     def _sync(self, *a: Any):
-        self._bg.pos = self.pos  # type: ignore
+        self._bg.pos = self.pos
         self._bg.size = self.size  # type: ignore
 
 
@@ -85,7 +84,6 @@ class ResearchButton(TooltippedButton):
         self.value: Type[Tech] = value
         self.is_researching = PlayerManager.session_player().tech.is_researching(self.value)
         self.cost = value.tech_points_required
-        self.atlas = Cache.get_icon_atlas()
 
         if self.is_researching:
             self._cost_text: str = f"{str(PlayerManager.session_player().tech.current_science)}/{str(self.cost)}"
@@ -116,11 +114,7 @@ class ResearchButton(TooltippedButton):
             padding=(dp(2), 0, 0, 0),
         )
 
-        tech_icon_src = str(
-            self.atlas.get_real_path_for_virtual_path(
-                getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
-            )
-        )
+        tech_icon_src = getattr(value, "icon", Placeholder.getPlaceholderImagePathSmallIcon())
 
         if WindowsHelper.is_windows():
             tech_icon_src = WindowsHelper.unix_to_win32_path(tech_icon_src)
@@ -183,7 +177,7 @@ class ResearchButton(TooltippedButton):
         self._fade_color.a = self.fade_alpha
 
     def _update_fade_rect(self, *args: Any):
-        self._fade_rect.pos = self.pos  # type: ignore
+        self._fade_rect.pos = self.pos
         self._fade_rect.size = self.size
 
     def _on_primary_text(self, _, new: str):
@@ -203,9 +197,9 @@ class ResearchButton(TooltippedButton):
             border_color = getattr(tech_type, "icon_border_color", (1, 1, 1, 1))
 
             if isinstance(src, (T_TranslationOrStr)):
-                src = str(self.atlas.get_real_path_for_virtual_path(str(src)))
+                src = str(str(src))
             if isinstance(tip, (T_TranslationOrStr)):
-                tip = str(self.atlas.get_real_path_for_virtual_path(str(tip)))
+                tip = str(tip)
 
             if WindowsHelper.is_windows():
                 src = WindowsHelper.unix_to_win32_path(src)

@@ -160,35 +160,35 @@ class CityUI(BoxLayout, DirectObject):
         footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
         self.gold_label = ImageLabel(
             text="Gold: ?",
-            img_source="assets/icons/resources/core/basic/gold.png",
+            img_source="assets/icons/default/resources/core/basic/gold.png",
             size_hint=(1, None),
             height=30,
             font_size=12,
         )
         self.production_label = ImageLabel(
             text="Production: ?",
-            img_source="assets/icons/resources/core/basic/production.png",
+            img_source="assets/icons/default/resources/core/basic/production.png",
             size_hint=(1, None),
             height=30,
             font_size=12,
         )
         self.food_label = ImageLabel(
             text="Food: ?",
-            img_source="assets/icons/resources/core/basic/food.png",
+            img_source="assets/icons/default/resources/core/basic/food.png",
             size_hint=(1, None),
             height=30,
             font_size=12,
         )
         self.science_label = ImageLabel(
             text="Science: ?",
-            img_source="assets/icons/resources/core/basic/science.png",
+            img_source="assets/icons/default/resources/core/basic/science.png",
             size_hint=(1, None),
             height=30,
             font_size=12,
         )
         self.culture_label = ImageLabel(
             text="Culture: ?",
-            img_source="assets/icons/resources/core/basic/culture.png",
+            img_source="assets/icons/default/resources/core/basic/culture.png",
             size_hint=(1, None),
             height=30,
             font_size=12,

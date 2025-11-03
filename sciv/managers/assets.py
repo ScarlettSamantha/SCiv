@@ -1,29 +1,29 @@
+import os
+from io import BytesIO
 from logging import Logger
 from os import path
-import os
 from os.path import exists
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from zlib import crc32
 
 from direct.gui.OnscreenImage import OnscreenImage
-from kivy.core.image import Image as CoreImage
-from kivy.resources import resource_find  # type: ignore
-from kivy.uix.image import Image as KivyImage
-from panda3d.core import NodePath, TextFont, Texture
-from PIL import Image, ImageFont
-from PIL import Image as PILImage
-from PIL import ImageFont as PILImageFont
-
 from gameplay.resources.core.basic.culture import Culture
 from gameplay.resources.core.basic.faith import Faith
 from gameplay.resources.core.basic.food import Food
 from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.production import Production
 from gameplay.resources.core.basic.science import Science
-
 from helpers.images import draw_text_on_image
-from mixins.singleton import Singleton
 from helpers.os import WindowsHelper
+from kivy.core.image import Image as CoreImage
+from kivy.resources import resource_find  # type: ignore
+from kivy.uix.image import Image as KivyImage
+from mixins.singleton import Singleton
+from panda3d.core import NodePath, TextFont, Texture
+from PIL import Image, ImageFont
+from PIL import Image as PILImage
+from PIL import ImageFont as PILImageFont
+from system.asset_archive import P3DAssetArchive
 
 if TYPE_CHECKING:
     from sciv.game import OpenCiv
@@ -172,9 +172,6 @@ class AssetManager(Singleton):
     def load_kivy_image(
         cls, path: str, size_hint_y: Optional[int] = None, height: Optional[int] = None, use_cache: bool = True
     ) -> KivyImage:
-        if WindowsHelper.is_windows():
-            path = WindowsHelper.win32_to_unix_path(path)
-
         resolved_path: str = resource_find(path)  # type: ignore
         if not resolved_path or not isinstance(resolved_path, str):  # type: ignore
             raise FileNotFoundError(f"Could not resolve path for Kivy image: {path}")
@@ -246,8 +243,11 @@ class AssetManager(Singleton):
     @classmethod
     def generate_static_assets(cls, tile_set: str = "default"):
         def generate_static_resource_icons():
+            from helpers.cache import Cache
             from helpers.images import create_stacked_horizontal_images
             from helpers.paths import PathsHelper
+
+            assets: P3DAssetArchive = Cache.get_asset_archive()
 
             basic_resources = Gold, Production, Food, Faith, Science, Culture
             for resource in basic_resources:
@@ -260,13 +260,12 @@ class AssetManager(Singleton):
                 icon_path = f"{base_path}{resource_instance.icon}"
                 if not icon_path:
                     continue
-
                 output_path: str = f"{PathsHelper.get_data_dir()}/assets/generated/icons/resources/core/basic/"
 
                 if not path.exists(path.dirname(output_path)):
                     os.makedirs(path.dirname(output_path), exist_ok=True)
 
-                image = Image.open(icon_path).convert("RGBA")
+                image = Image.open(BytesIO(assets.read_bytes(icon_path))).convert("RGBA")
                 font_size = 32
                 text_vertical_offset = 0
                 text_horizontal_offset = 0
@@ -275,11 +274,12 @@ class AssetManager(Singleton):
                 for i in range(1, 6):
                     stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
                     stacked_image.save(f"{output_path}/{str(resource_instance.name).lower()}_{i}.png")
+                    stacked_image.save(f"{output_path}/{str(resource_instance.name).lower()}_{i}.png")
 
                 for i in range(6, 50):
                     img_width, img_height = image.size
 
-                    font = ImageFont.truetype("assets/fonts/Washington.ttf", font_size)
+                    font = ImageFont.truetype(BytesIO(assets.read_bytes("assets/fonts/Washington.ttf")), font_size)
 
                     bbox = font.getbbox(str(i))
                     text_width = bbox[2] - bbox[0]
@@ -302,10 +302,12 @@ class AssetManager(Singleton):
                     )
 
         def generate_static_population_icons():
-            from PIL import Image
-
+            from helpers.cache import Cache
             from helpers.images import draw_text_on_image
             from helpers.paths import PathsHelper
+            from PIL import Image
+
+            assets: P3DAssetArchive = Cache.get_asset_archive()
 
             base_icon: str = f"assets/icons/{tile_set}/resources/core/basic/populationx128.png"
             output_path: str = (
@@ -314,11 +316,10 @@ class AssetManager(Singleton):
             font_size: int = 46
             text_vertical_offset = 32
             text_color: Tuple[float, float, float, float] = (0, 0, 0, 1)
-            font = ImageFont.truetype("assets/fonts/Washington.ttf", font_size)
+            font = ImageFont.truetype(BytesIO(assets.read_bytes("assets/fonts/Washington.ttf")), font_size)
 
             for i in range(1, 50):
-                # Open the base image to measure size
-                img = Image.open(base_icon).convert("RGBA")
+                img = Image.open(BytesIO(assets.read_bytes(base_icon))).convert("RGBA")
                 img_width, img_height = img.size
 
                 text = str(i)

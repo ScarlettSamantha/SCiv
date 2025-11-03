@@ -8,17 +8,17 @@ from gameplay.terrain._base_terrain import BaseTerrain
 from gameplay.tile import Tile
 from gameplay.unit import Unit
 from gameplay.yields import Yields
+from helpers.cache import Cache
 from helpers.colors import Colors
-from helpers.paths import PathsHelper
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
-from managers.assets import AssetManager
 from managers.entity import EntityType
 from managers.i18n import t_
+from panda3d.core import Texture
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile as TileType
@@ -184,7 +184,7 @@ class TargetPanel(BoxLayout, DirectObject):
 
     def _on_resize_move(self, *_: Any) -> None:
         if self._bg_rect is not None:
-            self._bg_rect.pos = self.pos  # type: ignore
+            self._bg_rect.pos = self.pos
             self._bg_rect.size = self.size  # type: ignore
 
     def _clear(self) -> None:
@@ -216,15 +216,9 @@ class TargetPanel(BoxLayout, DirectObject):
     def _set_icon_from_attr(self, icon_any: Any) -> None:
         self.icon.opacity = 0.0
         if isinstance(icon_any, str) and icon_any:
-            try:
-                img = AssetManager.load_kivy_image(f"{PathsHelper.get_base_path()}/assets/icons/default/{icon_any}")
-                if hasattr(img, "texture") and img.texture is not None:
-                    self.icon.texture = img.texture
-                elif hasattr(img, "source"):
-                    self.icon.source = img.source  # type: ignore
-                self.icon.opacity = 1.0
-            except Exception:
-                pass
+            img: Texture = Cache.get_asset_archive().get_kivy_image_texture(icon_any, size_hint_y=56, height=56)
+            self.icon.texture = img
+            self.icon.opacity = 1.0
 
     def _rebuild_stats_unit(self, unit: "UnitType") -> None:
         self.stats.clear_widgets()

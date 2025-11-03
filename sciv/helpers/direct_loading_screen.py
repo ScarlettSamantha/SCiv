@@ -4,9 +4,8 @@ from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 from direct.gui.DirectGui import DirectButton, DirectWaitBar, OnscreenImage, OnscreenText
 from direct.interval.LerpInterval import LerpFunc
 from direct.task.Task import Task
-from panda3d.core import CardMaker, NodePath, TextNode, TransparencyAttrib
-
 from helpers.os import WindowsHelper
+from panda3d.core import CardMaker, NodePath, TextNode, TransparencyAttrib
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -59,7 +58,6 @@ class LoadingScreen:
             scale=0.07,
             fg=(1, 1, 1, 1),
             align=TextNode.ACenter,  # type: ignore
-            font=self.base.loader.loadFont(font_path),
             mayChange=True,
         )
 

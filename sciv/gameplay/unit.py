@@ -220,9 +220,7 @@ class Unit(BaseEntity, ABC):
         self.model.setTag(NET_TYPE_FIELD, NET_TYPE.UNIT.value)
 
         if self.icon is not None:
-            texture: Texture | None = Cache.get_icon_atlas().get_panda3d_texture_by_virtual_path(str(self.icon))
-            if texture is None:
-                raise ValueError(f"Icon texture for unit {self.key} not found at path: {self.icon}")
+            texture: Texture = self.base.loader.loadTexture(texturePath=str(self.icon))
 
             cm = CardMaker("marker_quad")
             cm.set_frame(-0.5, 0.5, -0.5, 0.5)

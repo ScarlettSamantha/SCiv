@@ -2,12 +2,9 @@ from typing import Any, Optional, Tuple
 
 from kivy.metrics import dp  # type: ignore
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-
-from helpers.cache import Cache
-from helpers.os import WindowsHelper
+from menus.kivy.elements.image import image_widget_from_vfs
 
 
 class ImageLabel(BoxLayout):
@@ -27,23 +24,13 @@ class ImageLabel(BoxLayout):
     ):
         super().__init__(orientation="horizontal", spacing=spacing, size_hint_x=None, **kwargs)
 
-        self._text = text  # internal storage
+        self._text = text
         self.width = width if width else dp(550)
         self.size_hint_y = None
         self.height = max(image_size[1], dp(30))
 
-        path = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(img_source))
-
-        if not path:
-            raise ValueError(f"Image source '{img_source}' not found in icon atlas.")
-
-        if WindowsHelper.is_windows():
-            # Convert to Unix path if not on Windows
-            path = WindowsHelper.unix_to_win32_path(path)
-
-        # Image with fixed width
-        self.img = Image(
-            source=path,
+        self.img = image_widget_from_vfs(
+            virtual_path=img_source,
             size_hint_x=None,
             width=image_size[0],
             size_hint_y=None,
@@ -54,11 +41,10 @@ class ImageLabel(BoxLayout):
         )
         self.add_widget(self.img)
 
-        # Label fills rest
         self.label = Label(
             text=text,
             font_size=font_size,
-            size_hint_x=1,  # TAKE REMAINING SPACE
+            size_hint_x=1,
             valign="middle",
             halign="left",
             color=text_color,

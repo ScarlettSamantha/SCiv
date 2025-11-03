@@ -6,14 +6,15 @@ from gameplay.player import Player
 from helpers.cache import Cache
 from helpers.colors import Colors
 from kivy.graphics import Color, Rectangle
-from kivy.input import MotionEvent  #  type:ignore
+from kivy.input import MotionEvent  # type:ignore
+from kivy.metrics import dp  # type: ignore
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from managers.player import PlayerManager
-from panda3d.core import GraphicsWindow, WindowProperties  # type:ignore  # Import GraphicsWindow
+from panda3d.core import GraphicsWindow  # type:ignore
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -26,9 +27,10 @@ class PlayerList(FloatLayout, DirectObject):
         self.players: Optional[List[Player]] = None
         self.is_build: bool = False
         self.window: "GraphicsWindow" = self.base.win  # type: ignore
-        self.window_properties: WindowProperties = self.window.properties  # type: ignore
-        self.background_image = Cache.get_icon_atlas().get_coreimage_by_virtual_path("player_portrait.png")
-        self.size_hint_x = None
+        self.background_image = Cache.get_asset_archive().get_kivy_image_object(
+            "assets/icons/default/player_portrait.png"
+        )
+        self.window_properties = self.window.get_properties()  # type: ignore
         self.size_hint_y = 0.1
 
         self.grid = GridLayout(
@@ -64,8 +66,7 @@ class PlayerList(FloatLayout, DirectObject):
         else:
             raise ValueError("Padding must be a tuple of 4 integers or a single integer.")
 
-        total_w: int = total_w + left + right
-
+        total_w = total_w + left + right
         total_h: int = self.grid.height
 
         self.grid.width = total_w
@@ -93,42 +94,44 @@ class PlayerList(FloatLayout, DirectObject):
     def _generate_player_widget(self, player: Player) -> FloatLayout:
         container = FloatLayout(
             size_hint=(None, None),
-            size=(self.background_image.size[0], self.background_image.size[1]),  # type: ignore
+            size=(dp(120), dp(164)),
         )
 
+        pad_x = dp(12)
+        pad_y = dp(10)
         bg_texture = self.background_image.texture  # type: ignore
         with container.canvas.before:  # type: ignore
-            Color(1, 1, 1, 1)  # Full white, no tint
-            bg_rect = Rectangle(texture=bg_texture, pos=(0, 0), size=container.size)  # type: ignore
+            Color(1, 1, 1, 1)
+            bg_rect = Rectangle(
+                texture=bg_texture,
+                pos=(container.x + pad_x, container.y + pad_y),
+                size=(container.width - 2 * pad_x, container.height - 2 * pad_y),
+            )
 
         def update_bg(instance: Widget, value: Any):
-            bg_rect.pos = instance.pos  # type: ignore
-            bg_rect.size = instance.size
+            bg_rect.pos = (instance.x + pad_x, instance.y + pad_y)  # type: ignore
+            bg_rect.size = (instance.width - 2 * pad_x, instance.height - 2 * pad_y)  # type: ignore
 
         container.bind(pos=update_bg, size=update_bg)
+        update_bg(container, None)  # type: ignore
 
         icon = Image(
-            source=player.icon,
+            texture=Cache.get_asset_archive().get_kivy_image_texture(str(player.icon)),
             size_hint=(None, None),
-            size=(48, 48),
+            size=(dp(48), dp(48)),
             pos_hint={"center_x": 0.5, "top": 0.975},
         )
 
         name = Label(
             text=f"[color={Colors.to_hex(player.color)}]{player.civilization.name}[/color]",
             size_hint=(None, None),
-            size=(100, 30),
+            size=(dp(100), dp(30)),
             pos_hint={"center_x": 0.5, "top": 0.675},
             halign="center",
             valign="middle",
             markup=True,
         )
         name.bind(size=lambda instance, value: setattr(instance, "text_size", value))  # type: ignore
-
-        self.grid.width = (len(self.players) - 2) * (100 + 20)  # type: ignore
-        self.grid.height = 200 + 20
-        self.width = self.grid.width
-        self.height = self.grid.height
 
         container.add_widget(icon)
         container.add_widget(name)

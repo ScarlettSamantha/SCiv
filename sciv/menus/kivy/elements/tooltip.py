@@ -84,7 +84,9 @@ class TooltipLabel(BoxLayout):
 
         if image_source:
             if isinstance(image_source, str):
-                self.icon = Image(source=image_source, size_hint=(None, None), size=(dp(20), dp(20)))
+                self.icon = Cache.get_asset_archive().get_kivy_image_object(
+                    image_source, size_hint=(None, None), size=(dp(20), dp(20))
+                )
             else:
                 self.icon = image_source
             self.icon.pos_hint = {"x": 0, "top": 1}
@@ -294,6 +296,10 @@ class TooltippedImage(Image, TooltipBehavior):
     def __init__(self, **kwargs: Any):
         border_size = kwargs.pop("border_size", None)
         border_color = kwargs.pop("border_color", None)
+        source = kwargs.pop("source")
+        texture = Cache.get_asset_archive().get_kivy_image_texture(source) if source else None
+        if texture:
+            kwargs["texture"] = texture
 
         self.tooltip_multiline = bool(kwargs.pop("tooltip_multiline", True))
         self.tooltip_markup = bool(kwargs.pop("tooltip_markup", False))

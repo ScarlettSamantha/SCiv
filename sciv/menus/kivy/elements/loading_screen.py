@@ -126,7 +126,7 @@ class LoadingScreen(FloatLayout):
         instance.height = int(size[1])
 
     def _update_bg(self, *args: Any):
-        self.bg_rect.pos = self.pos  # type: ignore
+        self.bg_rect.pos = self.pos
         self.bg_rect.size = self.size
 
     def _update_fade(self, *args: Any):

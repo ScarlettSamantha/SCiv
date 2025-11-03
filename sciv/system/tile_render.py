@@ -24,6 +24,7 @@ from panda3d.core import (
     BitMask32,
     CardMaker,
     ColorBlendAttrib,
+    Filename,
     NodePath,
     PandaNode,
     PTAFloat,
@@ -35,6 +36,7 @@ from panda3d.core import (
 )
 from PIL import Image
 from PIL.ImageFont import FreeTypeFont
+from system.asset_archive import P3DAssetArchive
 from system.atlas import AtlasGenerator
 from system.bits_renderer import BitsRenderer
 
@@ -91,6 +93,7 @@ class TileRenderer:
         self.icon_overlay_node: Optional[NodePath] = None
         self.unit_markers_node: Optional[NodePath] = None
         self.city_nameplate_node: Optional[NodePath] = None
+        self.main_resource_icon_node: Optional[NodePath] = None
         self.models: List[NodePath] = []
 
         self.bits_renderer = BitsRenderer(tile, self.geometry_node)
@@ -107,9 +110,12 @@ class TileRenderer:
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
 
+        self.assets: P3DAssetArchive = Cache.get_asset_archive()
+
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
         size = 1.0
+
         cm.setFrame(-size, size, -size, size)
         cm.setUvRange((0, 0), (1, 1))
 
@@ -121,11 +127,8 @@ class TileRenderer:
         self.selector_np.hide()
 
         self.selector_np.setShader(self.selector_shader)
-
-        self.selector_np.setShaderInput("borderWidth", 0.03)  #  type: ignore
-        self.selector_np.setShaderInput(  # type: ignore
-            "hexRadius", math.sqrt(3) / 2.05
-        )  # type: ignore
+        self.selector_np.setShaderInput("borderWidth", 0.03)  # type: ignore
+        self.selector_np.setShaderInput("hexRadius", math.sqrt(3) / 2.05)  # type: ignore
         self.selector_np.setShaderInput("dashFreq", 18.0)  # type: ignore
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
         self.selector_np.setShaderInput("color", Colors.MAGENTA)  # type: ignore
@@ -138,8 +141,7 @@ class TileRenderer:
     def _update_selector_task(self, task: Task.Task) -> Task.Task:
         if not self.selector_enabled or self.selector_np is None:
             return Task.cont  # type: ignore
-
-        self.selector_np.setShaderInput("time", task.time)  #    type: ignore
+        self.selector_np.setShaderInput("time", task.time)  # type: ignore
         return Task.cont  # type: ignore
 
     def toggle_tile_selector(self, enable: bool) -> None:
@@ -182,6 +184,10 @@ class TileRenderer:
             self.city_ui_node.removeNode()
         self.city_ui_node = None
 
+        if self.main_resource_icon_node is not None:
+            self.main_resource_icon_node.removeNode()
+
+        self.main_resource_icon_node = None
         self.healthbar_node = None
         self.build_queue_node = None
         self.population_node = None
@@ -193,7 +199,6 @@ class TileRenderer:
         if self.selector_np is not None:
             self.selector_np.removeNode()
             self.selector_np = None
-
         self.anchor_node.removeNode()
         self.geometry_node.removeNode()
         self.clear_models()
@@ -218,13 +223,11 @@ class TileRenderer:
         if self.selector_np:
             self.selector_np.reparentTo(self.anchor_node)
 
-        # self.geometry_node.flatten_medium()
-
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
-
         self.clear_models()
+
         if rerender_terrain:
             self.rerender_terrain()
         self.bits_renderer.render()
@@ -349,20 +352,18 @@ class TileRenderer:
                 text_offset_z=-0.015,
                 billboard=True,
             )
-
         icons = city.icons
         z = 1.2
         start_x = -0.7
         spacing = 0.2
         for idx, _icon in enumerate(icons):
             tex: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(str(_icon))
-
             assert tex is not None, f"Icon texture for {self.tile.get_tag()} not found."
-
             cm = CardMaker(f"action_icon_{city.name}_{idx}")
-            size = 0.12
 
+            size = 0.12
             cm.setFrame(-size, size, -size, size)
+
             icon: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
             icon.setTexture(tex)
             icon.setPos(start_x + idx * spacing, 0, z)
@@ -419,17 +420,19 @@ class TileRenderer:
             cm_icon = CardMaker(f"{name}_icon")
             s = height
             cm_icon.setFrame(-s, s, -s, s)
+
             icon_np: NodePath[PandaNode] = bar_group.attachNewNode(cm_icon.generate())
 
             icon_texture.setFormat(Texture.F_srgb_alpha)
             icon_texture.setMinfilter(SamplerState.FT_linear)
             icon_texture.setMagfilter(SamplerState.FT_linear)
+
             icon_np.setTexture(icon_texture)
             icon_np.setColor(1, 1, 1, 1)
             icon_np.setTransparency(TransparencyAttrib.M_alpha)
             icon_np.setBin("fixed", 90)
-            icon_np.setDepthTest(True)
 
+            icon_np.setDepthTest(True)
             icon_np.setPos(icon_offset_x, 0, 0)
             icon_np.setScale(*icon_size)
 
@@ -453,6 +456,7 @@ class TileRenderer:
     def _draw_terrain_overlay(self) -> None:
         cm = CardMaker(f"terrain_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
+
         overlay: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
         overlay.setTransparency(TransparencyAttrib.M_alpha)
         overlay.setAttrib(ColorBlendAttrib.makeOff())
@@ -471,10 +475,9 @@ class TileRenderer:
         if texture is None:
             self.tile.logger.error(f"Terrain texture not found for tile {self.tile.get_tag()}.")
             return
+
         texture.set_format(Texture.F_srgb_alpha)
-
         overlay.setTexture(texture, 1)
-
         self.terrain_overlay_node = overlay
 
     def is_city(self) -> bool:
@@ -519,13 +522,58 @@ class TileRenderer:
             self.bits_renderer.add_bit(self.resource_model)
         self.render()
 
+    def _load_texture_direct(self, path: str) -> Texture:
+        if self.base is None:
+            raise RuntimeError("Base instance is not available.")
+
+        tex: Texture = self.base.loader.loadTexture(Filename(path))
+
+        tex.setFormat(Texture.F_srgb_alpha)
+        tex.setMinfilter(SamplerState.FT_linear)
+        tex.setMagfilter(SamplerState.FT_linear)
+        tex.setWrapU(Texture.WM_clamp)
+        tex.setWrapV(Texture.WM_clamp)
+        return tex
+
+    def _draw_main_resource_icon(self, res: Union[BaseResource, str]) -> None:
+        if isinstance(res, BaseResource):
+            if getattr(res, "value", 0) == 0:
+                return
+            icon_path = str(res.icon) if hasattr(res, "icon") else None
+        else:
+            icon_path = str(res)
+        if not icon_path:
+            return
+
+        tex: Texture = self._load_texture_direct(icon_path)
+
+        cm = CardMaker(f"main_resource_icon_{self.tile.get_tag()}")
+        s = 0.22
+        cm.setFrame(-s, s, -s, s)
+
+        np: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
+        np.setTexture(tex)
+        np.setTransparency(TransparencyAttrib.M_alpha)
+        np.setDepthTest(False)
+        np.setBin("fixed", 85)
+        np.setHpr(0, -90, 0)
+        np.setScale(0.75)
+        np.setShaderOff(1)
+
+        pos = self.ICON_SLOT_POSITIONS["n"]
+        np.setPos(pos[0], pos[1], pos[2] + 0.01)
+
+        self.main_resource_icon_node = np
+
     def _draw_yield_and_population_icons(self) -> None:
         if self.base is None:
             return
 
         cm = CardMaker(f"icon_overlay_{self.tile.get_tag()}")
+
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
         cm.setHasUvs(True)
+
         icon_node = self.ui_node.attachNewNode(cm.generate())
         icon_node.setTransparency(TransparencyAttrib.M_alpha)
         icon_node.setAttrib(ColorBlendAttrib.makeOff())
@@ -553,13 +601,16 @@ class TileRenderer:
         if not self.disable_yield_icons:
             self.tile.calculate()
             base_yields = self.tile.get_tile_yield()
+            slots: List[Union[str, BaseResource, None]]
             if self.tile.city:
-                slots: List[Union[str, BaseResource, None]] = [
-                    self.tile.city.get_population_icon(),
-                ]
+                slots = [self.tile.city.get_population_icon()]
             else:
-                res_list = list(self.tile.resources.flatten().values())
-                slots = [res_list[0] if res_list else None]
+                res_list: List[BaseResource] = list(self.tile.resources.flatten().values())
+                main_res: Optional[Union[str, BaseResource]] = res_list[0] if res_list else None
+                if main_res is not None:
+                    self._draw_main_resource_icon(main_res)
+                slots = [None]
+
             slots += base_yields.export_basic()
             slots = slots[:7] + [None] * max(0, 7 - len(slots))
 
@@ -567,19 +618,40 @@ class TileRenderer:
             uv_array = PTAFloat.emptyArray(4 * 7)
             for idx, entry in enumerate(slots):
                 if not entry or (isinstance(entry, BaseResource) and entry.value == 0.0):
+                    base = idx * 4
+                    uv_array[base + 0] = 0.0
+                    uv_array[base + 1] = 0.0
+                    uv_array[base + 2] = 0.0
+                    uv_array[base + 3] = 0.0
                     continue
 
                 if idx != 0 and isinstance(entry, BaseResource) and entry.value > 0.0:
                     entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
+                if idx == 0 and not self.tile.city:
+                    base = idx * 4
+                    uv_array[base + 0] = 0.0
+                    uv_array[base + 1] = 0.0
+                    uv_array[base + 2] = 0.0
+                    uv_array[base + 3] = 0.0
+                    continue
 
                 path = self._get_icon_virtual_path(entry, idx == 0 and not self.tile.city)
                 if not path:
+                    base = idx * 4
+                    uv_array[base + 0] = 0.0
+                    uv_array[base + 1] = 0.0
+                    uv_array[base + 2] = 0.0
+                    uv_array[base + 3] = 0.0
                     continue
 
                 pos = self.icon_atlas.get_position_for_virtual_path(path)
                 size = self.icon_atlas.get_dimensions_for_virtual_path(path)
-
                 if not pos or not size:
+                    base = idx * 4
+                    uv_array[base + 0] = 0.0
+                    uv_array[base + 1] = 0.0
+                    uv_array[base + 2] = 0.0
+                    uv_array[base + 3] = 0.0
                     continue
 
                 x, y = pos
@@ -597,6 +669,7 @@ class TileRenderer:
         else:
             icon_node.set_shader_input("uv_rects", PTAFloat.emptyArray(4 * 7))  # type: ignore
             icon_node.set_shader_input("icon_count", 0)  # type: ignore
+
         icon_node.setZ(0.01)
         self.icon_overlay_node = icon_node
 
@@ -616,21 +689,32 @@ class TileRenderer:
     def _draw_city_nameplate(self) -> None:
         if not self.tile.city:
             return
-        atlas: AtlasGenerator = self.icon_atlas
 
-        path_left: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_left.png")
-        path_mid: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_middle.png")
-        path_right: Path | None | str = atlas.get_real_path_for_virtual_path("city_plate_right.png")
+        PLATE_PX_H = 192
+        FONT_PX = max(48, int(PLATE_PX_H * 0.52))
+        PAD_X = int(PLATE_PX_H * 0.10)
+        PAD_Y = int(PLATE_PX_H * 0.06)
+        TEXT_OFF_Y = int(PLATE_PX_H * 0.12)
+        STAR_OFF_Y = TEXT_OFF_Y
+        STAR_OFF_X = -int(PLATE_PX_H * 0.10)
 
-        if WindowsHelper.is_windows():
-            path_left = WindowsHelper.unix_to_win32_path(str(path_left))
-            path_mid = WindowsHelper.unix_to_win32_path(str(path_mid))
-            path_right = WindowsHelper.unix_to_win32_path(str(path_right))
+        path_left: str = "assets/icons/default/city_plate_left.png"
+        path_mid: str = "assets/icons/default/city_plate_middle.png"
+        path_right: str = "assets/icons/default/city_plate_right.png"
 
-        left: Image.Image = AssetManager.load_pil_image(str(path_left))
-        mid: Image.Image = AssetManager.load_pil_image(str(path_mid))
-        right: Image.Image = AssetManager.load_pil_image(str(path_right))
-        font: FreeTypeFont = AssetManager.load_pil_font("assets/fonts/Washington.ttf", size=224)
+        left: Image.Image = self.assets.get_panda3d_image(path_left)
+        mid: Image.Image = self.assets.get_panda3d_image(path_mid)
+        right: Image.Image = self.assets.get_panda3d_image(path_right)
+
+        def _hfit(img: Image.Image, h: int) -> Image.Image:
+            w = max(1, int(img.width * (h / img.height)))
+            return img.resize((w, h), Image.LANCZOS)  # type: ignore
+
+        left = _hfit(left, PLATE_PX_H)
+        mid = _hfit(mid, PLATE_PX_H)
+        right = _hfit(right, PLATE_PX_H)
+
+        font: FreeTypeFont = self.assets.get_freetype_font("assets/fonts/Washington.ttf", FONT_PX)
 
         plate: Image.Image = generate_city_nameplate(
             left_img=left,
@@ -639,32 +723,37 @@ class TileRenderer:
             city_name=str(self.tile.city.name),
             is_capital=self.tile.city.is_capital,
             font=font,
-            padding=(20, 8),
-            text_offset_y=32,
-            star_img=atlas.get_pil_image_by_virtual_path("capital_icon.png"),
-            star_offset_y=32,
-            star_offset_x=-16,
+            padding=(PAD_X, PAD_Y),
+            text_offset_y=TEXT_OFF_Y,
+            star_img=self.assets.get_panda3d_image("assets/icons/default/capital_star.png"),
+            star_offset_y=STAR_OFF_Y,
+            star_offset_x=STAR_OFF_X,
             text_color=normalize_color_to_bytes(self.tile.get_owner().color),  # type: ignore[call-arg]
         )
-        plate = plate.transpose(
-            Image.FLIP_TOP_BOTTOM  # type: ignore[no-untyped-call]
-        )  # Flip for Panda3D's coordinate system # type: ignore[no-untyped-call]
+
+        plate = plate.transpose(Image.FLIP_TOP_BOTTOM)  # type: ignore[no-untyped-call]
         tex = pil_image_to_panda3d_texture(plate)
 
-        cm = CardMaker(f"city_nameplate_{self.tile.get_tag()}")
+        MODEL_W = 2.5
+        TARGET_WORLD_W = 0.75
+
         ar = plate.width / plate.height
-        w = 2.5
-        h = w / ar
-        cm.setFrame(-w / 2, w / 2, -h / 2, h / 2)
+        h = MODEL_W / ar
+
+        cm = CardMaker(f"city_nameplate_{self.tile.get_tag()}")
+        cm.setFrame(-MODEL_W / 2, MODEL_W / 2, -h / 2, h / 2)
+
         node: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
         node.setTexture(tex)
         node.setTransparency(TransparencyAttrib.M_alpha)
         node.setPos(0, 0, 2.0)
-        node.setScale(0.75)
         node.setBin("fixed", 90)
         node.setTwoSided(True)
         node.setAntialias(AntialiasAttrib.MAuto)
         node.setBillboardAxis()
+
+        node.setScale(TARGET_WORLD_W / MODEL_W)
+
         self.city_nameplate_node = node
 
     def add_model(
@@ -740,8 +829,7 @@ class TileRenderer:
 
     def on_inspect(self, also_bits: bool = True) -> Dict[str, Union[str, int, float]]:
         loaded_models: List[str] = [str(model) for model in self.models]
-
-        data: Dict[str, Union[str, int, float]] = {  # Otherwise mypy complains about the type they are all strings
+        data: Dict[str, Union[str, int, float]] = {
             "loaded_models": ",".join(loaded_models) if loaded_models else "",
             "resource_model": str(self.resource_model.net_tag) if self.resource_model else "",
             "resource_model_pos": str(self.resource_model.offset) if self.resource_model else str((0.0, 0.0, 0.0)),

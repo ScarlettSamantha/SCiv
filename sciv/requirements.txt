@@ -1,4 +1,5 @@
-panda3d
+panda3d==1.10.15
+panda3d-tools==1.10.15
 panda3d_kivy
 types-panda3d
 pytest # for testing - dev
