@@ -9,7 +9,7 @@ class Food(BasicBaseResource):
     key: str = "resource.core.basic.food"
     name: T_TranslationOrStr = t_("content.resources.core.food.name")
     description: T_TranslationOrStr = t_("content.resources.core.food.description")
-    icon: str = "resources/core/basic/food.png"
+    icon: str = "assets/icons/default/resources/core/basic/food.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 

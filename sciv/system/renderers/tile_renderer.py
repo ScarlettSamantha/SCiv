@@ -229,7 +229,7 @@ class TileRenderer:
             font=font,
             padding=(PAD_X, PAD_Y),
             text_offset_y=TEXT_OFF_Y,
-            star_img=self.assets.get_panda3d_image("assets/icons/default/capital_star.png"),
+            star_img=self.assets.get_panda3d_image("assets/icons/default/capital_icon.png"),
             star_offset_y=STAR_OFF_Y,
             star_offset_x=STAR_OFF_X,
             text_color=cast(Tuple4f, normalize_color_to_bytes(self.tile.get_owner().color)),

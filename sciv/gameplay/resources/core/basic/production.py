@@ -9,7 +9,7 @@ class Production(BasicBaseResource):
     key: str = "resource.core.basic.production"
     name: T_TranslationOrStr = t_("content.resources.core.production.name")
     description: T_TranslationOrStr = t_("content.resources.core.production.description")
-    icon: str = "resources/core/basic/production.png"
+    icon: str = "assets/icons/default/resources/core/basic/production.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 

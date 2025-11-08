@@ -9,7 +9,7 @@ class Gold(BasicBaseResource):
     key: str = "resource.core.basic.gold"
     name: T_TranslationOrStr = t_("content.resources.core.gold.name")
     description: T_TranslationOrStr = t_("content.resources.core.gold.description")
-    icon: str = "resources/core/basic/gold.png"
+    icon: str = "assets/icons/default/resources/core/basic/gold.png"
     spawn_chance: float | Dict[Type[BaseTerrain], float] = 0
     spawn_amount = 0
 

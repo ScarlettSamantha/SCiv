@@ -219,15 +219,19 @@ class TileRendererSystem:
             if not entry or (isinstance(entry, BaseResource) and getattr(entry, "value", 0.0) == 0.0):
                 uv_rects.append((0.0, 0.0, 0.0, 0.0))
                 continue
+
             if idx_slot != 0 and isinstance(entry, BaseResource) and getattr(entry, "value", 0.0) > 0.0:
                 entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
+
             if isinstance(entry, BaseResource):
                 path = _norm(entry.icon) if hasattr(entry, "icon") else ""
             else:
                 path = _norm(entry)
+
             if not path:
                 uv_rects.append((0.0, 0.0, 0.0, 0.0))
                 continue
+
             pos = self.icon_atlas.get_position_for_virtual_path(path)
             size = self.icon_atlas.get_dimensions_for_virtual_path(path)
             if not pos or not size:

@@ -555,7 +555,7 @@ class City(BaseEntity, DirectObject.DirectObject):
         return self._improvements
 
     def get_population_icon(self) -> str:
-        return f"core/basic/populationx128_{str(self.population)}.png"
+        return f"assets/generated/icons/resources/core/basic/populationx128_{str(self.population)}.png"
 
     @classmethod
     def found_new(

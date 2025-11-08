@@ -278,7 +278,7 @@ class AssetManager(Singleton):
             return None
 
         def generate_static_resource_icons():
-            out_dir = f"{PathsHelper.get_data_dir()}/assets/generated/icons/resources/core/basic"
+            out_dir = f"{PathsHelper.get_data_dir()}/assets/generated/icons/default/resources/core/basic"
             if not path.exists(out_dir):
                 os.makedirs(out_dir, exist_ok=True)
 
@@ -315,40 +315,43 @@ class AssetManager(Singleton):
                         outline_width=1,
                     )
 
-            def generate_static_population_icons():
-                from helpers.paths import PathsHelper
+        def generate_static_population_icons():
+            from helpers.paths import PathsHelper
 
-                out_tpl = (
-                    PathsHelper.get_data_dir() + "/assets/generated/icons/resources/core/basic/populationx128_{num}.png"
+            out_tpl = (
+                PathsHelper.get_data_dir() + "/assets/generated/icons/resources/core/basic/populationx128_{num}.png"
+            )
+
+            font_bytes = _read_bytes("assets/fonts/Washington.ttf")
+            font = ImageFont.truetype(BytesIO(font_bytes), 46)
+
+            img = Image.open(
+                BytesIO(_read_bytes("assets/icons/default/resources/core/basic/populationx128.png"))
+            ).convert("RGBA")
+
+            if not path.exists(path.dirname(out_tpl)):
+                os.makedirs(path.dirname(out_tpl), exist_ok=True)
+
+            for i in range(1, 50):
+                img_w, img_h = img.size
+                text = str(i)
+                bbox = font.getbbox(text)
+                text_w = bbox[2] - bbox[0]
+                text_h = bbox[3] - bbox[1]
+                pos_x = (img_w - text_w) / 2
+                pos_y = ((img_h - text_h) / 2) + 32
+                draw_text_on_image(
+                    base_image=img.copy(),
+                    text_entries=[(text, (pos_x, pos_y))],
+                    font_path=font,
+                    font_size=46,
+                    text_color=(0, 0, 0, 1),
+                    save=True,
+                    save_path=out_tpl.format(num=i),
+                    outline=True,
+                    outline_color=(0, 0, 0, 255),
+                    outline_width=1,
                 )
-                base_icon_vp = f"assets/icons/{tile_set}/resources/core/basic/populationx128.png"
-                if not _first_existing_icon("resources/core/basic/populationx128.png"):
-                    base_icon_vp = "assets/icons/default/resources/core/basic/populationx128.png"
 
-                font_bytes = _read_bytes("assets/fonts/Washington.ttf")
-                font = ImageFont.truetype(BytesIO(font_bytes), 46)
-
-                for i in range(1, 50):
-                    img = Image.open(BytesIO(_read_bytes(base_icon_vp))).convert("RGBA")
-                    img_w, img_h = img.size
-                    text = str(i)
-                    bbox = font.getbbox(text)
-                    text_w = bbox[2] - bbox[0]
-                    text_h = bbox[3] - bbox[1]
-                    pos_x = (img_w - text_w) / 2
-                    pos_y = ((img_h - text_h) / 2) + 32
-                    draw_text_on_image(
-                        base_image=img,
-                        text_entries=[(text, (pos_x, pos_y))],
-                        font_path=font,
-                        font_size=46,
-                        text_color=(0, 0, 0, 1),
-                        save=True,
-                        save_path=out_tpl.format(num=i),
-                        outline=True,
-                        outline_color=(0, 0, 0, 255),
-                        outline_width=1,
-                    )
-
-            generate_static_resource_icons()
-            generate_static_population_icons()
+        generate_static_resource_icons()
+        generate_static_population_icons()

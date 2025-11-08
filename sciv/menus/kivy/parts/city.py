@@ -1,6 +1,6 @@
 import weakref
 from math import floor
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -194,7 +194,11 @@ class CityUI(BoxLayout, DirectObject):
             font_size=12,
         )
         self.border_label = ImageLabel(
-            text="Border: ?", img_source="assets/icons/border_growth.png", size_hint=(1, None), height=30, font_size=12
+            text="Border: ?",
+            img_source="assets/icons/default/border_growth.png",
+            size_hint=(1, None),
+            height=30,
+            font_size=12,
         )
         footer.add_widget(self.gold_label)
         footer.add_widget(self.production_label)
@@ -239,12 +243,14 @@ class CityUI(BoxLayout, DirectObject):
         )
 
         if city.is_building and city.building is not None:
-            req_list = list(city.resource_required_amount.props(True).values())
-            got_list = list(city.resource_collected.props(True).values())
+            req_list: List[Any] = list(city.resource_required_amount.props(True).values())
+            got_list: List[Any] = list(city.resource_collected.props(True).values())
+
             if len(req_list) == 0:
                 self.logger.error("Resource required is None or empty.")
                 raise AssertionError("Resource required is None or empty.")
-            got = 0.0 if len(got_list) == 0 else got_list[0].value
+
+            got: float | Any = 0.0 if len(got_list) == 0 else got_list[0].value
             req = req_list[0].value
             building = city.get_building()
             self.current_button.text = str(
@@ -269,7 +275,6 @@ class CityUI(BoxLayout, DirectObject):
         self.improvement_list_scroll._apply_clipping()  # type: ignore
         self.improvement_list_scroll.scroll_to_top()  # type: ignore
 
-        # world visuals
         city.get_tile().get_renderer().update()
 
     def _fill_buildables(self, city: City) -> None:
@@ -284,7 +289,6 @@ class CityUI(BoxLayout, DirectObject):
         def fmt(instance: BaseCityImprovement | CivilianBaseClass | MilitaryBaseClass) -> str:
             return f"{str(instance.name)} ({str(instance.resource_needed.name)}: {str(instance.amount_resource_needed.get_prop('production').value)})"
 
-        # Improvements
         for class_name, class_ref in ImprovementsRepository.get_all_city_improvements().items():
             instance: BaseCityImprovement = class_ref(city.get_tile(), city.owner)  # type: ignore
             if not instance.conditions.are_met():  # type: ignore
@@ -300,14 +304,16 @@ class CityUI(BoxLayout, DirectObject):
             self.buildable_buttons[class_name] = btn
             self.button_container.add_widget(btn)
 
-        # Units
         for class_name, class_ref in UnitRepository.get_all_buildable_units().items():
             instance: CivilianBaseClass | MilitaryBaseClass = class_ref(city.get_tile(), city.owner)  # type: ignore
             if not instance.build_conditions.are_met():
                 continue
+
             instance.is_being_build = True
+
             btn = ButtonValue(text=fmt(instance), value=instance, size_hint=(1, None), height=50)
             btn.bind(on_press=lambda b: self.on_unit_build_button_click(b))  # type: ignore
+
             self.buildable_units[class_name] = instance
             self.buildable_buttons[class_name] = btn
             self.button_container.add_widget(btn)
@@ -318,6 +324,7 @@ class CityUI(BoxLayout, DirectObject):
     def on_build_button_click(self, instance: ButtonValue):
         if self.city is None:
             return
+
         self.logger.debug(f"Requesting to build improvement: {instance.value} in city: {self.city.name}")
         MessengerGlobal.messenger.send(
             f"game.gameplay.city.request_start_building_improvement_{self.city.tag}", [self.city, instance.value]
@@ -326,6 +333,7 @@ class CityUI(BoxLayout, DirectObject):
     def on_unit_build_button_click(self, instance: ButtonValue):
         if self.city is None:
             return
+
         self.logger.debug(f"Requesting to build unit: {instance.value} in city: {self.city.name}")
         MessengerGlobal.messenger.send(
             f"game.gameplay.city.request_start_building_unit_{self.city.tag}", [self.city, instance.value]

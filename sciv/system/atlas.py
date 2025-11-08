@@ -3,12 +3,12 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from helpers.cache import Cache
 from helpers.os import WindowsHelper
 from helpers.paths import PathsHelper
 from kivy.core.image import Image as CoreImage
 from kivy.core.image import Texture as KivyTexture  # type: ignore
 from kivy.uix.image import Image as KivyImage
-from managers.assets import AssetManager
 from panda3d.core import Filename, PNMImage, StringStream, Texture, VirtualFileSystem  # type: ignore
 from PIL import Image
 from system.asset_archive import P3DAssetArchive  # type: ignore
@@ -52,6 +52,8 @@ class AtlasGenerator:
             self.multifile_mode = self._mf_path.suffix.lower() == ".mf" and self._mf_path.exists()
 
     def pre_run(self) -> None:
+        from managers.assets import AssetManager
+
         AssetManager.get_singleton_instance().generate_static_assets()
         self._generated_root = Path(PathsHelper.get_data_dir()) / "assets" / "generated"
         self._refresh_mf_mode()
@@ -77,13 +79,11 @@ class AtlasGenerator:
                 self._generate_panda3d_texture()
             else:
                 self._load_cached_textures()
-
         return self._p3d_texture_cache  # type: ignore
 
     def load_caches(self) -> None:
         if not self._cache_file.exists():
             raise FileNotFoundError(f"Cache file does not exist: {self._cache_file}")
-
         self._load_cached_textures()
         self._load_individual_textures()
         self._manifest_cache = self._load_output_mapping()
@@ -97,13 +97,10 @@ class AtlasGenerator:
     def remove(self) -> None:
         if self.exists():
             self.clear()
-
         self.output_image.unlink(missing_ok=True)
         self.output_mapping.unlink(missing_ok=True)
-
         for file in self._cache_file.parent.glob("*.txo"):
             file.unlink(missing_ok=True)
-
         self._manifest_cache = None
         self._atlas_image_cache = None
         self._p3d_texture_cache = None
@@ -149,16 +146,12 @@ class AtlasGenerator:
     def _load_individual_textures(self) -> None:
         if not self._cache_file.parent.exists():
             raise FileNotFoundError(f"Cache directory does not exist: {self._cache_file.parent}")
-
         for cache_file in self._cache_file.parent.glob("*.txo"):
             if cache_file == self._cache_file:
                 continue
-
             data: bytes = cache_file.read_bytes()
-
             if not data:
                 raise ValueError(f"Cache file {cache_file} is empty or invalid.")
-
             tex: Texture = Texture.decode_from_bam_stream(data)  # type: ignore
             tex.set_loaded_from_txo(True)  # type: ignore
             self._individual_texture_cache[cache_file.stem] = tex  # type: ignore
@@ -166,11 +159,9 @@ class AtlasGenerator:
     def get_pil_image_by_virtual_path(self, virtual_path: str) -> Optional[Image.Image]:
         if WindowsHelper.is_windows():
             virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
-
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
         if not entry:
             return None
-
         atlas: Image.Image = self.atlas_image
         box: Tuple[int, int, int, int] = (
             entry["atlas_x"],
@@ -187,18 +178,14 @@ class AtlasGenerator:
         atlas.save(buf, format="PNG")
         buf.seek(0)
         pnm = PNMImage()
-
         if not pnm.read(StringStream(buf.read())):
             raise RuntimeError("PNMImage.read failed")
-
         tex = Texture()
         tex.load(pnm)
-
         if hasattr(tex, "encodeToBamStream"):
             bam_bytes: bytes = tex.encodeToBamStream()  # type: ignore
         else:
             bam_bytes = tex.encode_to_bam_stream()  # type: ignore
-
         self._cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._cache_file.write_bytes(bam_bytes)
         tex.setFormat(Texture.F_srgb_alpha)
@@ -207,37 +194,30 @@ class AtlasGenerator:
         tex.setWrapU(Texture.WM_clamp)
         tex.setWrapV(Texture.WM_clamp)
         self._p3d_texture_cache = tex
-
         return self._p3d_texture_cache
 
     def _load_cached_textures(self) -> None:
         if not self._cache_file.exists():
             raise FileNotFoundError(f"Cache file does not exist: {self._cache_file}")
-
         data: bytes = self._cache_file.read_bytes()
-
         if not data:
             raise ValueError("Cache file is empty or invalid.")
-
         self._p3d_texture_cache = Texture.decode_from_bam_stream(data)  # type: ignore
         self._p3d_texture_cache.set_loaded_from_txo(True)  # type: ignore
 
     def _dump_cached_textures(self) -> None:
         if self._p3d_texture_cache is None:
             raise ValueError("No texture to dump to cache.")
-
         if hasattr(self._p3d_texture_cache, "encode_to_bam_stream"):
             bam_bytes: bytes = self._p3d_texture_cache.encode_to_bam_stream()  # type: ignore
         else:
             bam_bytes = self._p3d_texture_cache.encodeToBamStream()  # type: ignore
-
         self._cache_file.parent.mkdir(parents=True, exist_ok=True)
         self._cache_file.write_bytes(bam_bytes)
 
     def _load_output_mapping(self) -> Dict[str, Dict[str, Any] | Any]:
         if not self.output_mapping.exists():
             raise FileNotFoundError(f"Output mapping file does not exist: {self.output_mapping}")
-
         with open(self.output_mapping, "r") as f:
             return json.load(f)
 
@@ -249,7 +229,6 @@ class AtlasGenerator:
     def load(self) -> None:
         if not self.exists():
             raise FileNotFoundError(f"Atlas files do not exist: {self.output_image}, {self.output_mapping}")
-
         self.clear()
         self._manifest_cache = self._load_output_mapping()
         self._atlas_image_cache = self._load_output_image()
@@ -282,11 +261,9 @@ class AtlasGenerator:
         out: List[Path] = []
         if not self._generated_root or not self._generated_root.exists():
             return out
-
         for p in sorted(self._generated_root.rglob("*.png")):
             if p.is_file():
                 out.append(p)
-
         return out
 
     def _latest_generated_mtime(self) -> float:
@@ -303,22 +280,41 @@ class AtlasGenerator:
     def _read_png_from_multifile(self, virtual_path: str) -> bytes:
         if P3DAssetArchive and self._archive:
             return self._archive.read_bytes(virtual_path)  # type: ignore
-
         vfs: VirtualFileSystem = VirtualFileSystem.getGlobalPtr()
         data = vfs.readFile(Filename(virtual_path), False)  # type: ignore
-
         if isinstance(data, (bytes, bytearray)):
             return bytes(data)
-
         if isinstance(data, str):
             return data.encode("utf-8")
-
         mv: memoryview[Any] = memoryview(data)  # type: ignore
         return mv.tobytes()
 
-    def run(self, force: bool = False) -> None:
-        from helpers.paths import PathsHelper
+    def _first_existing_icon(self, icon_rel: str, tile_set: str = "default") -> Optional[str]:
+        assets: P3DAssetArchive = Cache.get_asset_archive()
+        ic = icon_rel.lstrip("/")
+        cand: List[str] = []
+        if ic.startswith("assets/"):
+            cand.append(ic)
 
+        seen: Set[str] = set()
+        for c in cand:
+            if c in seen:
+                continue
+            seen.add(c)
+            try:
+                assets.read_bytes(c)
+                return c
+            except Exception:
+                continue
+        return None
+
+    def _normalize_generated_virtual_path(self, pth: Path) -> str:
+        data_root: Path = Path(PathsHelper.get_data_dir()).resolve()
+        if pth.is_relative_to(data_root):  # type: ignore
+            return pth.relative_to(data_root).as_posix()
+        return pth.as_posix()
+
+    def run(self, force: bool = False) -> None:
         self.pre_run()
         self._generated_root = Path(PathsHelper.get_data_dir()) / "assets" / "generated"
         self._refresh_mf_mode()
@@ -334,7 +330,6 @@ class AtlasGenerator:
             gen_mtime: float = max((p.stat().st_mtime for p in gen_paths), default=0.0)
             mf_mtime: float = self._mf_path.stat().st_mtime if self._mf_path and self._mf_path.exists() else 0.0
             input_mtime: float = max(fs_mtime, gen_mtime, mf_mtime)
-
             atlas_mtime: float = self.output_image.stat().st_mtime
             manifest_mtime: float = self.output_mapping.stat().st_mtime
             if atlas_mtime > input_mtime and manifest_mtime > input_mtime:
@@ -352,10 +347,8 @@ class AtlasGenerator:
         if not mf_pngs and not gen_pngs and not fs_icons:
             self.output_image.parent.mkdir(parents=True, exist_ok=True)
             Image.new("RGBA", (1, 1), (0, 0, 0, 0)).save(self.output_image)
-
             with open(self.output_mapping, "w") as f:
                 json.dump({}, f, indent=4)
-
             self.load()
             return
 
@@ -372,12 +365,11 @@ class AtlasGenerator:
             if kind == "mf":
                 vkey: str = s
             else:
-                if self._generated_root and p and p.is_relative_to(self._generated_root.parent):  # type: ignore
-                    vkey = p.relative_to(self._generated_root.parent).as_posix()  # type: ignore
+                if self._generated_root and p:
+                    vkey = self._normalize_generated_virtual_path(p)
                 else:
                     base_dir: Optional[Path] = next((d for d in self.input if p and d in p.parents), None)
                     vkey = p.relative_to(base_dir).as_posix() if base_dir and p else s  # type: ignore
-
             if vkey not in uniq:
                 uniq[vkey] = (kind, s, p)
 
@@ -419,14 +411,12 @@ class AtlasGenerator:
             if kind == "mf":
                 virtual_path = src
                 full_path: str = f"{self._mf_path.as_posix()}#{src}" if self._mf_path else src
-
             else:
-                if self._generated_root and pth and pth.is_relative_to(self._generated_root.parent):  # type: ignore
-                    virtual_path: str = pth.relative_to(self._generated_root.parent).as_posix()  # type: ignore
+                if self._generated_root and pth:
+                    virtual_path = self._normalize_generated_virtual_path(pth)
                 else:
                     base_dir = next((d for d in self.input if pth and d in pth.parents), None)
                     virtual_path = pth.relative_to(base_dir).as_posix() if base_dir and pth else src  # type: ignore
-
                 full_path = pth.as_posix() if pth else src  # type: ignore
 
             if WindowsHelper.is_windows():
@@ -487,36 +477,21 @@ class AtlasGenerator:
     def lookup_by_virtual_path(self, virtual_path: str) -> Optional[Dict[str, Any]]:
         if self.manifest is None:
             return None
-
         q = virtual_path.replace("\\", "/").lstrip("/")
 
         if q in self.manifest:
             return self.manifest[q]  # type: ignore
 
-        prefixes = ("assets/icons/", "assets/generated/icons/", "icons/", "resources/")
-        candidates: Set[str] = {q}
-        for pref in prefixes:
-            if q.startswith(pref):
-                candidates.add(q[len(pref) :])
-            else:
-                candidates.add(pref + q)
+        q_generated = q.replace("assets/", "assets/generated/")
+        if q_generated in self.manifest:
+            return self.manifest[q_generated]  # type: ignore
 
-        for k, entry in self.manifest.items():  # type: ignore
-            evp = str(entry.get("virtual_path", k)).replace("\\", "/").lstrip("/")
-            if evp == q or evp in candidates:
-                return self.lookup_by_key(k)
-
-            if any(evp.endswith("/" + cand) or cand.endswith("/" + evp) for cand in candidates):
-                return self.lookup_by_key(k)
-
-        return None
+        raise ValueError(f"Virtual path {virtual_path} not found in manifest.")
 
     def get_kivy_image(self, key: str) -> Optional[KivyImage]:
         entry: Dict[str, Any] | None = self.lookup_by_key(key)
-
         if not entry:
             return None
-
         atlas: Image.Image = self.atlas_image
         box: Tuple[int, int, int, int] = (
             entry["atlas_x"],
@@ -524,13 +499,10 @@ class AtlasGenerator:
             entry["atlas_x"] + entry["width"],
             entry["atlas_y"] + entry["height"],
         )
-
         cropped: Image.Image = atlas.crop(box)
         buf = BytesIO()
-
         cropped.save(buf, format="PNG")
         buf.seek(0)
-
         kivy_tex: KivyTexture = CoreImage(buf, ext="png").texture  # type: ignore
         return KivyImage(texture=kivy_tex)  # type: ignore
 
@@ -538,7 +510,6 @@ class AtlasGenerator:
         entry: Dict[str, Any] | None = self.lookup_by_key(key)
         if not entry:
             return None
-
         atlas: Image.Image = self.atlas_image
         box: Tuple[int, int, int, int] = (
             entry["atlas_x"],
@@ -556,108 +527,83 @@ class AtlasGenerator:
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
         if not entry:
             return None
-
         if self.manifest is None:
             return None
-
         key = next((k for k, v in self.manifest.items() if v == entry), None)
         if key:
             return self.get_coreimage_by_key(key)
-
         return None
 
     def get_panda3d_texture_by_key(self, key: str) -> Texture:  # type: ignore
         if key in self._individual_texture_cache:
             return self._individual_texture_cache[key]
-
         entry: Dict[str, Any] | None = self.lookup_by_key(key)
-
         if not entry:
             raise ValueError(f"Key {key} not found in manifest.")
-
         sub_texture: Texture = self._generate_panda3d_sub_texture(
             entry["atlas_x"],
             entry["atlas_y"],
             entry["width"],
             entry["height"],
         )
-
         self._individual_texture_cache[key] = sub_texture
         return self._individual_texture_cache[key]
 
     def get_panda3d_texture_by_virtual_path(self, virtual_path: str) -> Optional[Texture]:  # type: ignore
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
-
         if not entry:
             return None
-
         key: str | None = next((k for k, v in self.manifest.items() if v == entry), None)  # type: ignore
         if not key:
             return None
-
         return self.get_panda3d_texture_by_key(key)  # type: ignore
 
     def get_index_for_virtual_path(self, virtual_path: str) -> Optional[int]:
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
-
         if entry:
             return entry.get("index")
-
         return None
 
     def get_key_for_virtual_path(self, key: str) -> Optional[str]:
         entry: Dict[str, Any] | None = self.lookup_by_key(key)
-
         if entry:
             return entry.get("virtual_path")
-
         return None
 
     def get_position_for_virtual_path(self, virtual_path: str) -> Optional[Tuple[int, int]]:
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
-
         if entry:
             return entry["atlas_x"], entry["atlas_y"]
-
         return None
 
     def get_dimensions_for_virtual_path(self, virtual_path: str) -> Optional[Tuple[int, int]]:
         if WindowsHelper.is_windows():
             virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
-
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
-
         if entry:
             return entry["width"], entry["height"]
-
         return None
 
     def get_dimensions_for_key(self, key: str) -> Optional[Tuple[int, int]]:
         entry: Dict[str, Any] | None = self.lookup_by_key(key)
-
         if entry:
             return entry["width"], entry["height"]
-
         return None
 
     def get_real_path_for_virtual_path(self, virtual_path: str) -> Optional[Path]:
         if WindowsHelper.is_windows():
             virtual_path = WindowsHelper.win32_to_unix_path(virtual_path)
-
         entry: Dict[str, Any] | None = self.lookup_by_virtual_path(virtual_path)
         if entry:
             full_path: Any | None = entry.get("full_path")
             if full_path:
                 return Path(full_path)
-
         return None
 
     def get_dimensions_for_index(self, index: int) -> Optional[Tuple[int, int]]:
         if self.manifest is None:
             return None
-
         for entry in self.manifest.values():
             if entry["index"] == index:
                 return entry["width"], entry["height"]
-
         return None

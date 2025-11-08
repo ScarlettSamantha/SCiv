@@ -1,12 +1,12 @@
 class Icons:
     @staticmethod
     def population_icon_gaining() -> str:
-        return "ui_city_population_gain.png"
+        return "assets/icons/default/ui_city_population_gain.png"
 
     @staticmethod
     def population_icon_losing() -> str:
-        return "ui_city_population_loss.png"
+        return "assets/icons/default/ui_city_population_loss.png"
 
     @staticmethod
     def population_icon() -> str:
-        return "ui_city_population.png"
+        return "assets/icons/default/ui_city_population.png"
