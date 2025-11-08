@@ -158,8 +158,7 @@ def normalize_to_byte(value: float) -> int:
     return max(0, min(255, int(round(value * 255))))
 
 
-def normalize_color_to_bytes(color: tuple[float, ...]) -> tuple[int, ...]:
-    """Convert a tuple of normalized floats to a tuple of byte values."""
+def normalize_color_to_bytes(color: tuple[float, ...] | Tuple4f) -> tuple[int, ...]:
     return tuple(normalize_to_byte(c) for c in color)
 
 
