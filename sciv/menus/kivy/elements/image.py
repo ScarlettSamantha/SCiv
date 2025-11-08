@@ -18,7 +18,10 @@ def image_widget_from_vfs(virtual_path: str, **kwargs: Any) -> Image:
 
 
 def image_widget_from_encoded(data: bytes, ext: str, **kwargs: Any) -> Image:
-    ci = CoreImage(BytesIO(data), ext=ext.lstrip(".").lower())
+    try:
+        ci = CoreImage(BytesIO(data), ext=ext.lstrip(".").lower())
+    except Exception as e:
+        raise RuntimeError(f"Failed to load image from encoded data with extension '{ext}': {e}") from e
     return Image(texture=ci.texture, **kwargs)
 
 
