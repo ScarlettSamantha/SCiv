@@ -60,6 +60,7 @@ class TileRenderer:
 
     def __init__(self, tile: "Tile") -> None:
         self.tile: Tile = tile
+
         self.base = Cache.get_showbase_instance()
         self.game_manager: Game = Game.get_singleton_instance()
 
@@ -68,14 +69,13 @@ class TileRenderer:
         self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
 
         self.geometry_node: NodePath = self.anchor_node.attachNewNode("geometry_group")
-        self.anchor_node.reparentTo(self.base.render)
         self.geometry_node.set_collide_mask(BitMask32.bit(1))
         self.geometry_node.set_tag(NET_TYPE_FIELD, str(NET_TYPE.GEOM.value))
         self.geometry_node.set_tag(NET_NODE_TAG_ID_FIELD, tile.tag)
         self.resource_model: Optional["Bit"] = None
 
         self.available_actions: List[str] = []
-        self.ui_node: NodePath = self.anchor_node.attachNewNode("ui_group")
+        self.ui_node: Optional[NodePath] = None
 
         self.city_ui_node: Optional[NodePath] = None
         self.healthbar_node: Optional[NodePath] = None
@@ -106,6 +106,18 @@ class TileRenderer:
         self.assets: P3DAssetArchive = Cache.get_asset_archive()
 
         TileRendererSystem.get().register_tile(self.tile)
+
+    def _ensure_ui_node(self) -> NodePath:
+        if self.ui_node is None:
+            self.ui_node = self.anchor_node.attachNewNode("ui_group")
+        return self.ui_node
+
+    def _drop_ui_node_if_empty(self) -> None:
+        if self.ui_node is None:
+            return
+        if len(self.ui_node.getChildren()) == 0:
+            self.ui_node.removeNode()
+            self.ui_node = None
 
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
@@ -163,8 +175,11 @@ class TileRenderer:
         self.update()
 
     def clear_ui(self) -> None:
-        for child in self.ui_node.getChildren():
-            child.removeNode()
+        if self.ui_node is not None:
+            for child in self.ui_node.getChildren():
+                child.removeNode()
+            self.ui_node.removeNode()
+        self.ui_node = None
         self.terrain_overlay_node = None
         self.unit_markers_node = None
         self.city_nameplate_node = None
@@ -246,7 +261,8 @@ class TileRenderer:
         cm = CardMaker(f"city_nameplate_{self.tile.get_tag()}")
         cm.setFrame(-MODEL_W / 2, MODEL_W / 2, -h / 2, h / 2)
 
-        node: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
+        parent = self._ensure_ui_node()
+        node: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
         node.setTexture(tex)
         node.setTransparency(TransparencyAttrib.M_alpha)
         node.setPos(0, 0, 2.0)
@@ -267,7 +283,7 @@ class TileRenderer:
         TileRendererSystem.get().sync_tile(self.tile)
         if self.tile.city:
             if self.city_ui_node is None:
-                self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+                self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
             self._draw_city_nameplate()
             self._draw_city_ui()
         if self.selector_np:
@@ -290,11 +306,12 @@ class TileRenderer:
             if self.city_ui_node is not None:
                 self.city_ui_node.removeNode()
                 self.city_ui_node = None
+            self._drop_ui_node_if_empty()
             TileRendererSystem.get().sync_tile(self.tile)
             return
         if self.city_ui_node is not None:
             self.city_ui_node.removeNode()
-        self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+        self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
         self._draw_improvements()
         self._draw_city_ui()
         TileRendererSystem.get().sync_tile(self.tile)
@@ -303,7 +320,7 @@ class TileRenderer:
         if not self.tile.city:
             return
         if self.city_ui_node is None:
-            self.city_ui_node = self.ui_node.attachNewNode("city_ui_group")
+            self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
         parent: NodePath = self.city_ui_node
         i18n: I18nManager = get_i18n()
         city: "City" = self.tile.city
@@ -475,7 +492,8 @@ class TileRenderer:
     def _draw_terrain_overlay(self) -> None:
         cm = CardMaker(f"terrain_overlay_{self.tile.get_tag()}")
         cm.setFrame(-1.0, 1.0, -1.0, 1.0)
-        overlay: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
+        parent = self._ensure_ui_node()
+        overlay: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
         overlay.setTransparency(TransparencyAttrib.M_alpha)
         overlay.setAttrib(ColorBlendAttrib.makeOff())
         overlay.setBin("fixed", 40)
@@ -560,7 +578,8 @@ class TileRenderer:
         cm = CardMaker(f"main_resource_icon_{self.tile.get_tag()}")
         s = 0.22
         cm.setFrame(-s, s, -s, s)
-        np: NodePath[PandaNode] = self.ui_node.attachNewNode(cm.generate())
+        parent = self._ensure_ui_node()
+        np: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
         np.setTexture(tex)
         np.setTransparency(TransparencyAttrib.M_alpha)
         np.setDepthTest(False)

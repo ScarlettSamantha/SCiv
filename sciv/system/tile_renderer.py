@@ -54,6 +54,11 @@ class TileRendererSystem:
         self._geom_node: Optional[GeomNode] = None
         self._geom_np: Optional[NodePath] = None
         self._vdata: Optional[GeomVertexData] = None
+        self._capacity: int = 0
+        self._bulk: bool = False
+
+        self._wps: Optional[GeomVertexWriter] = None
+        self._wuv: List[GeomVertexWriter] = []
 
         self._atlas_tex: Texture = self.icon_atlas.get_panda3d_texture()
         self._atlas_tex.setWrapU(Texture.WM_clamp)
@@ -61,6 +66,8 @@ class TileRendererSystem:
         self._atlas_tex.setFormat(Texture.F_srgb_alpha)
         self._atlas_tex.setMinfilter(SamplerState.FT_linear)
         self._atlas_tex.setMagfilter(SamplerState.FT_linear)
+
+        self._atlas_w, self._atlas_h = self.icon_atlas.atlas_image.size
 
         self._setup_shader()
 
@@ -74,13 +81,23 @@ class TileRendererSystem:
         self.node.set_shader_input("u_ring_radius", 0.90 * half_w)  # type: ignore
         self.node.set_shader_input("u_icon_half", 0.22 * half_w)  # type: ignore
 
+    def begin_bulk(self) -> None:
+        self._bulk = True
+
+    def end_bulk(self) -> None:
+        self._bulk = False
+        self._ensure_capacity(len(self._tiles))
+        for t in self._tiles:
+            if t is not None:
+                self.sync_tile(t)
+
     def register_tiles(self, tiles: List[T_TileRef]) -> None:
         for t in tiles:
             tag = t.tag
             if tag not in self._tile_index:
                 self._tile_index[tag] = len(self._tiles)
                 self._tiles.append(t)
-        self._build_or_resize(len(self._tiles))
+        self._ensure_capacity(len(self._tiles))
         for t in tiles:
             self.sync_tile(t)
 
@@ -91,8 +108,9 @@ class TileRendererSystem:
             return
         self._tile_index[tag] = len(self._tiles)
         self._tiles.append(tile)
-        self._build_or_resize(len(self._tiles))
-        self.sync_tile(tile)
+        if not self._bulk:
+            self._ensure_capacity(len(self._tiles))
+            self.sync_tile(tile)
 
     def remove_tile(self, tile: T_TileRef) -> None:
         tag = tile.tag
@@ -111,6 +129,31 @@ class TileRendererSystem:
             self.register_tile(tile)
             return
         self._write_instance_row(idx, tile)
+
+    def _next_capacity(self, target: int) -> int:
+        cap = self._capacity if self._capacity > 0 else 4
+        while cap < target:
+            cap *= 2
+        return cap
+
+    def _ensure_capacity(self, target: int) -> None:
+        rebuilt = False
+        if self._vdata is None or target > self._capacity:
+            cap = self._next_capacity(target)
+            self._build_or_resize(cap)
+            rebuilt = True
+        if self._geom_np is not None:
+            self._geom_np.set_instance_count(target)
+        if rebuilt:
+            for t in self._tiles:
+                if t is not None:
+                    self.sync_tile(t)
+
+    def _init_writers(self) -> None:
+        if self._vdata is None:
+            return
+        self._wps = GeomVertexWriter(self._vdata, "i_pos_scale")
+        self._wuv = [GeomVertexWriter(self._vdata, f"i_uv{s}") for s in range(self.ICON_SLOTS)]
 
     def _build_or_resize(self, instances: int) -> None:
         vfmt0 = GeomVertexArrayFormat()
@@ -168,20 +211,28 @@ class TileRendererSystem:
 
         self._geom_np.node().setBounds(OmniBoundingVolume())
         self._geom_np.node().setFinal(True)
+        self._capacity = instances
+        self._init_writers()
 
     def _write_instance_clear(self, idx: int) -> None:
         if self._vdata is None:
             return
-        for name in ("i_uv0", "i_uv1", "i_uv2", "i_uv3", "i_uv4", "i_uv5", "i_uv6"):
-            w = GeomVertexWriter(self._vdata, name)
+        if self._wps is None or not self._wuv:
+            self._init_writers()
+        if self._wps is None or not self._wuv:
+            return
+        for w in self._wuv:
             w.setRow(idx)
             w.setData4f(0.0, 0.0, 0.0, 0.0)
-        wps = GeomVertexWriter(self._vdata, "i_pos_scale")
-        wps.setRow(idx)
-        wps.setData4f(0.0, 0.0, 0.0, 0.0)
+        self._wps.setRow(idx)
+        self._wps.setData4f(0.0, 0.0, 0.0, 0.0)
 
     def _write_instance_row(self, idx: int, tile: T_TileRef) -> None:
         if self._vdata is None:
+            return
+        if self._wps is None or not self._wuv:
+            self._init_writers()
+        if self._wps is None or not self._wuv:
             return
 
         px, py, pz = tile.get_cords()
@@ -191,9 +242,8 @@ class TileRendererSystem:
         cx = px + half_w + half_w * self.CENTER_OFF_X
         cy = py + half_h + half_h * self.CENTER_OFF_Y
 
-        wps = GeomVertexWriter(self._vdata, "i_pos_scale")
-        wps.setRow(idx)
-        wps.setData4f(float(cx), float(cy), float(pz + 0.01), half_w)
+        self._wps.setRow(idx)
+        self._wps.setData4f(float(cx), float(cy), float(pz + 0.01), half_w)
 
         slots: List[Union[str, BaseResource, None]]
         tile.calculate()
@@ -208,8 +258,6 @@ class TileRendererSystem:
 
         slots += base_yields.export_basic()
         slots = slots[: self.ICON_SLOTS] + [None] * max(0, self.ICON_SLOTS - len(slots))
-
-        atlas_w, atlas_h = self.icon_atlas.atlas_image.size
 
         def _norm(p: str) -> str:
             return p.replace("\\", "/").lstrip("/")
@@ -239,18 +287,16 @@ class TileRendererSystem:
                 continue
             x, y = pos
             w, h = size
-            u0 = float(x) / float(atlas_w)
-            v0 = 1.0 - float(y + h) / float(atlas_h)
-            u1 = float(x + w) / float(atlas_w)
-            v1 = 1.0 - float(y) / float(atlas_h)
+            u0 = float(x) / float(self._atlas_w)
+            v0 = 1.0 - float(y + h) / float(self._atlas_h)
+            u1 = float(x + w) / float(self._atlas_w)
+            v1 = 1.0 - float(y) / float(self._atlas_h)
             uv_rects.append((u0, v0, u1, v1))
 
         for s in range(self.ICON_SLOTS):
-            name = f"i_uv{s}"
-            w = GeomVertexWriter(self._vdata, name)
-            w.setRow(idx)
             u0, v0, u1, v1 = uv_rects[s]
-            w.setData4f(u0, v0, u1, v1)
+            self._wuv[s].setRow(idx)
+            self._wuv[s].setData4f(u0, v0, u1, v1)
 
     def set_all_disabled(self, disabled: bool) -> None:
         if self._vdata is None:
