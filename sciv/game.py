@@ -25,7 +25,11 @@ from panda3d_kivy import monkey  # type: ignore
 
 Config.set("modules", "inspector", "")  # type: ignore
 Config.set("graphics", "gl_backend", "angle_sdl2")  # type: ignore
-
+Config.set("kivy", "kivy_clock", "free_all")  # type: ignore
+Config.set("kivy", "exit_on_escape", "0")  # type: ignore
+Config.set("kivy", "desktop", "1")  # type: ignore
+Config.set("graphics", "maxfps", 160)  # type: ignore
+Config.set("graphics", "verify_gl_main_thread", "false")  # type: ignore
 monkey.patch_kivy()  # attach Kivy to the Panda3D window # type: ignore
 
 loadPrcFile("config.prc")  # Load the Panda3D configuration file
