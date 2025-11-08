@@ -55,7 +55,7 @@ class CantBuildReason(Enum):
 
 @dataclass(init=False, eq=False, unsafe_hash=False)
 class Tile(BaseEntity):
-    from system.tile_render import TileRenderer
+    from system.renderers.tile_renderer import TileRenderer
 
     HEMISPHERE_UNKNOWN: int = 0b00000000
     HEMISPHERE_NORTH: int = 0b00000001
@@ -149,7 +149,7 @@ class Tile(BaseEntity):
         self.__post_init__()
 
     def __post_init__(self) -> None:
-        from system.tile_render import TileRenderer
+        from system.renderers.tile_renderer import TileRenderer
 
         self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
@@ -205,12 +205,13 @@ class Tile(BaseEntity):
         self.tag = f"tile_{self.x}_{self.y}"
         self._entity_manager = EntityManager.get_singleton_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")
-        self.renderer = TileRenderer(self)
+
         self.effects = Effects(self)
 
         self.block_resource_model_spawning = False
         self.needs_tile_proecessing = True
 
+        self.renderer = TileRenderer(self)  # Keep 2nd last before registering otherwise it cannot use all properties.
         self._entity_manager.register(EntityType.TILE, self, self.tag)
 
     def dump(self) -> Dict[str, Any]:
@@ -255,7 +256,7 @@ class Tile(BaseEntity):
         return True  # Tiles are always "alive"
 
     def load_state(self) -> None:
-        from system.tile_render import TileRenderer
+        from system.renderers.tile_renderer import TileRenderer
 
         self.base = Cache.get_showbase_instance()
         self.logger = self.base.logger.gameplay.getChild("map.tile")

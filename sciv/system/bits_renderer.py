@@ -252,7 +252,7 @@ class BitsRenderer:
         return slot not in self._bit_slot_assignments
 
     def _render_bit(self, bit: "Bit", slot_name: str) -> None:
-        from system.tile_render import NET_TYPE
+        from system.renderers.tile_renderer import NET_TYPE
 
         if bit.id in self._bit_models:
             self.tile.renderer.remove_model(self._net_id(bit.id))

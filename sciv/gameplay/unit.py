@@ -188,7 +188,7 @@ class Unit(BaseEntity, ABC):
         return (self.pos_x, self.pos_y, self.pos_z)
 
     def load_model(self) -> NodePath | None:
-        from system.tile_render import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
+        from system.renderers.tile_renderer import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 
         if self.model is not None:
             return self.model

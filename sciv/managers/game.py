@@ -32,6 +32,7 @@ from system.generators.basic import Basic
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 from system.tile_grid import TileModelGrid
+from system.tile_renderer import TileRendererSystem
 
 if TYPE_CHECKING:
     from gameplay.age import Age
@@ -195,6 +196,8 @@ class Game(Singleton, DirectObject):
         self.tile_hex_grid.load_state()
         self.tile_hex_grid.attach_to_render()
         self.tile_hex_grid.collect()
+
+        TileRendererSystem.get().register_tiles(list(world_tiles.values()))
 
         [tile.render() for tile in world_tiles.values()]
 
@@ -493,6 +496,8 @@ class Game(Singleton, DirectObject):
             raise ValueError("There is no generator")
 
         self.world_tile_grid = self.active_generator.model_grid
+
+        TileRendererSystem.get().register_tiles(list(self.world.grid.values()))
 
         self.logger.info("Setting up field")
         self.render_field()
