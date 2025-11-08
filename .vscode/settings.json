@@ -250,5 +250,12 @@
     "[jsonc]": {
         "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
     },
-    "python.createEnvironment.contentButton": "show"
+    "python.createEnvironment.contentButton": "show",
+    "python-envs.pythonProjects": [
+        {
+            "path": "",
+            "envManager": "ms-python.python:pyenv",
+            "packageManager": "ms-python.python:pip"
+        }
+    ]
 }
