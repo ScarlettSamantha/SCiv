@@ -1,10 +1,10 @@
 from typing import Any, Optional, Tuple
 
+from helpers.cache import Cache
 from kivy.metrics import dp  # type: ignore
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-from menus.kivy.elements.image import image_widget_from_vfs
 
 
 class ImageLabel(BoxLayout):
@@ -29,7 +29,7 @@ class ImageLabel(BoxLayout):
         self.size_hint_y = None
         self.height = max(image_size[1], dp(30))
 
-        self.img = image_widget_from_vfs(
+        self.img = Cache.get_asset_archive().get_kivy_image_object(
             virtual_path=img_source,
             size_hint_x=None,
             width=image_size[0],
