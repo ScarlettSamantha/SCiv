@@ -27,6 +27,7 @@ from panda3d.core import (
     Filename,
     NodePath,
     PandaNode,
+    PointerToArray_float,
     PTAFloat,
     SamplerState,
     Shader,
@@ -583,7 +584,7 @@ class TileRenderer:
         icon_node.setHpr(0, -90, 0)
         icon_node.setScale(0.75)
 
-        atlas_tex = self.icon_atlas.get_panda3d_texture()
+        atlas_tex: Texture = self.icon_atlas.get_panda3d_texture()
         atlas_tex.setWrapU(Texture.WM_clamp)
         atlas_tex.setWrapV(Texture.WM_clamp)
         atlas_tex.setFormat(Texture.F_srgb_alpha)
@@ -615,7 +616,7 @@ class TileRenderer:
             slots = slots[:7] + [None] * max(0, 7 - len(slots))
 
             self.atlas_width, self.atlas_height = self.icon_atlas.atlas_image.size
-            uv_array = PTAFloat.emptyArray(4 * 7)
+            uv_array: PointerToArray_float = PTAFloat.emptyArray(4 * 7)
             for idx, entry in enumerate(slots):
                 if not entry or (isinstance(entry, BaseResource) and entry.value == 0.0):
                     base = idx * 4
@@ -678,12 +679,19 @@ class TileRenderer:
         entry: Union[str, BaseResource],
         is_resource_slot: bool,
     ) -> Optional[str]:
+        def _norm(p: str) -> str:
+            p = p.replace("\\", "/")
+            return p.lstrip("/")
+
         if isinstance(entry, str):
-            return entry.replace("resources/", "")
-        if hasattr(entry, "icon"):
-            return entry.icon.replace("assets/icons/", "")
+            return _norm(entry)
+
         if hasattr(entry, "get_numeric_icon") and getattr(entry, "value", 0) > 0:
-            return entry.get_numeric_icon().replace("resources/", "")
+            return _norm(entry.get_numeric_icon())
+
+        if hasattr(entry, "icon"):
+            return _norm(entry.icon)
+
         return None
 
     def _draw_city_nameplate(self) -> None:

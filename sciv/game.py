@@ -216,17 +216,14 @@ class OpenCiv(ShowBase):
         from helpers.cache import Cache
         from helpers.debug import Debug
         from helpers.paths import PathsHelper
-        from managers.config import ConfigManager
         from system.atlas import AtlasGenerator
 
-        icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
-        terrain_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "tile-set-tiles"), "default")
+        # icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
         base_path = pathlib.Path(PathsHelper.get_data_dir()) / "assets" / "generated"
 
         icon_generator = AtlasGenerator(
-            input_dir=[
-                pathlib.Path(__file__).parent / "assets" / "icons" / icon_tile_set,
-                base_path / "icons" / "resources",
+            input=[
+                pathlib.Path(__file__).parent / "assets.mf",
             ],
             output_image=base_path / "generated" / "icons" / "atlas.png",
             output_mapping=base_path / "generated" / "icons" / "mapping.json",
@@ -234,26 +231,13 @@ class OpenCiv(ShowBase):
                 self.config_manager.get_by_key(("assets", "icon_resolution_x")),
                 self.config_manager.get_by_key(("assets", "icon_resolution_y")),
             ),
-            max_icons=512,
-            atlas_columns=16,
-        )
-
-        terrain_atlas = AtlasGenerator(
-            input_dir=pathlib.Path(__file__).parent / "assets" / "terrain" / terrain_tile_set,
-            output_image=base_path / "terrain" / "atlas.png",
-            output_mapping=base_path / "terrain" / "mapping.json",
-            icon_size=(
-                self.config_manager.get_by_key(("assets", "terrain_resolution_x")),
-                self.config_manager.get_by_key(("assets", "terrain_resolution_y")),
-            ),
-            max_icons=128,
+            max_icons=1024,
             atlas_columns=16,
         )
 
         if force or Debug.system_asset_generation():
             self.engine_logger.info("Forcing asset generation")
             icon_generator.run(force=force)
-            terrain_atlas.run(force=force)
         else:
             if not icon_generator.exists():
                 self.engine_logger.info("Icon atlas does not exist, generating assets")

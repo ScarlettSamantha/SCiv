@@ -3,7 +3,7 @@ from io import BytesIO
 from logging import Logger
 from os import path
 from os.path import exists
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 from zlib import crc32
 
 from direct.gui.OnscreenImage import OnscreenImage
@@ -242,111 +242,113 @@ class AssetManager(Singleton):
 
     @classmethod
     def generate_static_assets(cls, tile_set: str = "default"):
-        def generate_static_resource_icons():
-            from helpers.cache import Cache
-            from helpers.images import create_stacked_horizontal_images
-            from helpers.paths import PathsHelper
+        from helpers.cache import Cache
+        from helpers.images import create_stacked_horizontal_images
+        from helpers.paths import PathsHelper
 
-            assets: P3DAssetArchive = Cache.get_asset_archive()
+        assets: P3DAssetArchive = Cache.get_asset_archive()
 
-            basic_resources = Gold, Production, Food, Faith, Science, Culture
-            for resource in basic_resources:
-                resource_instance = resource()
-                base_path = (
-                    f"assets/icons/{tile_set}/"
-                    if resource_instance.icon.startswith("resources")
-                    else f"assets/icons/{tile_set}/resources/"
-                )
-                icon_path = f"{base_path}{resource_instance.icon}"
-                if not icon_path:
+        def _read_bytes(vp: str) -> bytes:
+            return assets.read_bytes(vp)
+
+        def _first_existing_icon(icon_rel: str) -> Optional[str]:
+            cand: List[str] = []
+            ic = icon_rel.lstrip("/")
+            if ic.startswith("assets/"):
+                cand.append(ic)
+            cand.extend(
+                [
+                    f"assets/icons/{tile_set}/{ic}",
+                    f"assets/icons/{tile_set}/resources/{ic}",
+                    f"assets/icons/default/{ic}",
+                    f"assets/icons/default/resources/{ic}",
+                    f"assets/{ic}" if not ic.startswith("assets/") else ic,
+                ]
+            )
+            seen: Set[str] = set()
+            for c in cand:
+                if c in seen:
                     continue
-                output_path: str = f"{PathsHelper.get_data_dir()}/assets/generated/icons/resources/core/basic/"
+                seen.add(c)
+                try:
+                    _read_bytes(c)
+                    return c
+                except Exception:
+                    continue
+            return None
 
-                if not path.exists(path.dirname(output_path)):
-                    os.makedirs(path.dirname(output_path), exist_ok=True)
+        def generate_static_resource_icons():
+            out_dir = f"{PathsHelper.get_data_dir()}/assets/generated/icons/resources/core/basic"
+            if not path.exists(out_dir):
+                os.makedirs(out_dir, exist_ok=True)
 
-                image = Image.open(BytesIO(assets.read_bytes(icon_path))).convert("RGBA")
-                font_size = 32
-                text_vertical_offset = 0
-                text_horizontal_offset = 0
+            basic_resources = (Gold, Production, Food, Faith, Science, Culture)
+            for R in basic_resources:
+                r = R()
+                icon_vp = _first_existing_icon(r.icon)
+                if not icon_vp:
+                    continue
 
-                # Create a stacked horizontal image with the icon
+                base_img = Image.open(BytesIO(_read_bytes(icon_vp))).convert("RGBA")
                 for i in range(1, 6):
-                    stacked_image = create_stacked_horizontal_images([image] * i, offset=(17, 0))
-                    stacked_image.save(f"{output_path}/{str(resource_instance.name).lower()}_{i}.png")
-                    stacked_image.save(f"{output_path}/{str(resource_instance.name).lower()}_{i}.png")
+                    stacked = create_stacked_horizontal_images([base_img] * i, offset=(17, 0))
+                    stacked.save(f"{out_dir}/{str(r.name).lower()}_{i}.png")
 
+                font_bytes = _read_bytes("assets/fonts/Washington.ttf")
                 for i in range(6, 50):
-                    img_width, img_height = image.size
-
-                    font = ImageFont.truetype(BytesIO(assets.read_bytes("assets/fonts/Washington.ttf")), font_size)
-
+                    img_width, img_height = base_img.size
+                    font = ImageFont.truetype(BytesIO(font_bytes), 46)
                     bbox = font.getbbox(str(i))
                     text_width = bbox[2] - bbox[0]
                     text_height = bbox[3] - bbox[1]
-
-                    pos_x = (img_width - text_width) / 4 + text_horizontal_offset
-                    pos_y = ((img_height - text_height) / 4) + text_vertical_offset
-                    center_pos = (int(pos_x), int(pos_y))
-
+                    pos_x = (img_width - text_width) / 4
+                    pos_y = (img_height - text_height) / 4
                     draw_text_on_image(
-                        image,
-                        [(str(i), center_pos)],
-                        font_path="assets/fonts/Washington.ttf",
+                        base_img.copy(),
+                        [(str(i), (int(pos_x), int(pos_y)))],
+                        font,
                         font_size=46,
                         save=True,
-                        save_path=f"{output_path}{str(resource_instance.name).lower()}_{i}.png",
+                        save_path=f"{out_dir}/{str(r.name).lower()}_{i}.png",
                         outline=True,
                         outline_color=(0, 0, 0, 255),
                         outline_width=1,
                     )
 
-        def generate_static_population_icons():
-            from helpers.cache import Cache
-            from helpers.images import draw_text_on_image
-            from helpers.paths import PathsHelper
-            from PIL import Image
+            def generate_static_population_icons():
+                from helpers.paths import PathsHelper
 
-            assets: P3DAssetArchive = Cache.get_asset_archive()
-
-            base_icon: str = f"assets/icons/{tile_set}/resources/core/basic/populationx128.png"
-            output_path: str = (
-                PathsHelper.get_data_dir() + "/assets/generated/icons/resources/core/basic/populationx128_{num}.png"
-            )
-            font_size: int = 46
-            text_vertical_offset = 32
-            text_color: Tuple[float, float, float, float] = (0, 0, 0, 1)
-            font = ImageFont.truetype(BytesIO(assets.read_bytes("assets/fonts/Washington.ttf")), font_size)
-
-            for i in range(1, 50):
-                img = Image.open(BytesIO(assets.read_bytes(base_icon))).convert("RGBA")
-                img_width, img_height = img.size
-
-                text = str(i)
-
-                # Get text bounding box
-                bbox = font.getbbox(text)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-
-                # Calculate center position
-                pos_x = (img_width - text_width) / 2
-                pos_y = ((img_height - text_height) / 2) + text_vertical_offset
-                center_pos = (pos_x, pos_y)
-
-                # Draw the text centered
-                draw_text_on_image(
-                    base_icon,
-                    [(text, center_pos)],  # type: ignore
-                    font,
-                    font_size=font_size,
-                    text_color=text_color,
-                    save=True,
-                    save_path=output_path.format(num=i),
-                    outline=True,
-                    outline_color=(0, 0, 0, 255),
-                    outline_width=1,
+                out_tpl = (
+                    PathsHelper.get_data_dir() + "/assets/generated/icons/resources/core/basic/populationx128_{num}.png"
                 )
+                base_icon_vp = f"assets/icons/{tile_set}/resources/core/basic/populationx128.png"
+                if not _first_existing_icon("resources/core/basic/populationx128.png"):
+                    base_icon_vp = "assets/icons/default/resources/core/basic/populationx128.png"
 
-        generate_static_resource_icons()
-        generate_static_population_icons()
+                font_bytes = _read_bytes("assets/fonts/Washington.ttf")
+                font = ImageFont.truetype(BytesIO(font_bytes), 46)
+
+                for i in range(1, 50):
+                    img = Image.open(BytesIO(_read_bytes(base_icon_vp))).convert("RGBA")
+                    img_w, img_h = img.size
+                    text = str(i)
+                    bbox = font.getbbox(text)
+                    text_w = bbox[2] - bbox[0]
+                    text_h = bbox[3] - bbox[1]
+                    pos_x = (img_w - text_w) / 2
+                    pos_y = ((img_h - text_h) / 2) + 32
+                    draw_text_on_image(
+                        base_image=img,
+                        text_entries=[(text, (pos_x, pos_y))],
+                        font_path=font,
+                        font_size=46,
+                        text_color=(0, 0, 0, 1),
+                        save=True,
+                        save_path=out_tpl.format(num=i),
+                        outline=True,
+                        outline_color=(0, 0, 0, 255),
+                        outline_width=1,
+                    )
+
+            generate_static_resource_icons()
+            generate_static_population_icons()

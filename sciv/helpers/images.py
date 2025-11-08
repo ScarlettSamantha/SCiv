@@ -25,36 +25,28 @@ def generate_city_nameplate(
 ) -> Image.Image:
     draw = ImageDraw.Draw(middle_img)
 
-    # Load text
     text = city_name
 
-    # Measure text size
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
 
-    # Star size if needed
     star_width = star_img.width if (is_capital and star_img is not None) else 0
     star_padding = 10 if star_width > 0 else 0  # padding between star and text
 
-    # Total width = star + gap + text
     content_width = text_width + star_width + star_padding
 
-    # Total image width = left + middle + right
     total_width: int = int(left_img.width + content_width + 2 * padding[0] + right_img.width)
     total_height: int = max(left_img.height, middle_img.height, right_img.height)
 
-    # Create final plate
     final_img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
 
-    # Paste parts
     final_img.paste(left_img, (0, (total_height - left_img.height) // 2))
     middle_width = int(content_width + 2 * padding[0])
     stretched_middle = middle_img.resize((middle_width, middle_img.height))
     final_img.paste(stretched_middle, (left_img.width, (total_height - middle_img.height) // 2))
     final_img.paste(right_img, (left_img.width + middle_width, (total_height - right_img.height) // 2))
 
-    # Draw
     text_x = left_img.width + padding[0] + (star_width + star_padding)
     text_y = (total_height - text_height) // 2 - text_offset_y
 
@@ -71,7 +63,7 @@ def generate_city_nameplate(
 
 def draw_text_on_image(
     base_image: Image.Image | str,
-    text_entries: list[tuple[str, tuple[int, int]]],
+    text_entries: List[tuple[str, tuple[int | float, int | float]]],
     font_path: str | ImageFont.FreeTypeFont,
     font_size: int = 16,
     text_color: Tuple[int, int, int, int] = (255, 255, 255, 255),
@@ -103,20 +95,16 @@ def draw_text_on_image(
         x, y = position
 
         if outline:
-            # Draw the outline
             for dx in range(-outline_width, outline_width + 1):
                 for dy in range(-outline_width, outline_width + 1):
                     if dx == 0 and dy == 0:
                         continue
                     draw_outline.text((x + dx, y + dy), text, font=font, fill=outline_color)
 
-        # Draw the main text on text layer
         draw_text.text(position, text, font=font, fill=text_color)
 
-    # First combine the outline and text layers
     combined = Image.alpha_composite(outline_layer, text_layer)
 
-    # Composite final onto base image
     base_image = Image.alpha_composite(base_image, combined)
 
     if save:
@@ -126,13 +114,6 @@ def draw_text_on_image(
 
 
 def create_stacked_horizontal_images(images: List[Image.Image], offset: Tuple[int, int] = (10, 0)) -> Image.Image:
-    """
-    Stack images horizontally with true layering: earlier images appear behind later ones.
-
-    :param images: List of PIL Image objects to stack.
-    :param offset: Tuple (x_offset, y_offset) for each subsequent image.
-    :return: Combined PIL Image with stacked layout.
-    """
     if not images:
         raise ValueError("No images provided")
 
@@ -152,10 +133,8 @@ def create_stacked_horizontal_images(images: List[Image.Image], offset: Tuple[in
 
 
 def pil_image_to_panda3d_texture(pil_img: Image.Image) -> Texture:
-    """Convert a PIL Image (RGBA) to a Panda3D Texture directly in memory."""
     pil_img = pil_img.convert("RGBA")
 
-    # --- Swap R and B to fix Panda3D's channel order expectation ---
     r, g, b, a = pil_img.split()
     pil_img = Image.merge("RGBA", (b, g, r, a))
 
