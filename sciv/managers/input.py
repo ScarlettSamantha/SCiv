@@ -227,15 +227,16 @@ class Input(Singleton, DirectObject):
             self.game_ui.close_unit_path_renderer()
             return
 
-        if NET_TYPE.TILE.value == net_type or NET_TYPE.BIT.value == net_type:
+        if net_type in (NET_TYPE.TILE.value, NET_TYPE.BIT.value, NET_TYPE.GEOM.value):
             if NET_TYPE.BIT.value == net_type:
-                net_id = net_id.split("_")[:2]
+                _net_id: List[str] = net_id.split("_")[:2]  # type: ignore
             else:
-                net_id = net_id.split("_")[-2:]
+                _net_id = net_id.split("_")[-2:]  # type: ignore
+
             if not self.is_long_right_click():
-                tile = TileRepository.get_tile(*map(lambda s: int(s), net_id))
+                tile: "Tile | None" = TileRepository.get_tile(*map(lambda s: int(s), _net_id))
                 if tile is None:
-                    self.logger.warning(f"Tile with ID {net_id} not found.")
+                    self.logger.warning(f"Tile with ID {_net_id} not found.")
                 else:
                     if (
                         self.game_ui.wait_for_next_input_of_user is False
@@ -338,15 +339,15 @@ class Input(Singleton, DirectObject):
         self.map = World.get_singleton_instance()
         self.unit_manager = UnitManager.get_singleton_instance()
 
-    def inject_into_camera(self):
+    def inject_into_camera(self) -> None:
+        self._pick_mask = BitMask32.bit(1)
         self.picker = CollisionTraverser()
         self.pq = CollisionHandlerQueue()
 
         picker_node = CollisionNode("inputSystemMouseRayCollisionNode")
         self.pickerRay = CollisionRay()
         picker_node.addSolid(self.pickerRay)  # type: ignore
-
-        picker_node.setFromCollideMask(BitMask32.bit(1))  # type: ignore
+        picker_node.setFromCollideMask(self._pick_mask)  # type: ignore
 
         self.pickerNP: NodePath[CollisionNode] = self.base.camera.attachNewNode(picker_node)  # type: ignore
         self.picker.addCollider(self.pickerNP, self.pq)  # type: ignore
@@ -403,7 +404,7 @@ class Input(Singleton, DirectObject):
             return task.cont  # mouse didn't move significantly
 
         self._last_mouse_pos = current_pos
-
+        self.pq.clearEntries()
         self.pickerRay.setFromLens(self.base.camNode, *current_pos)  # type: ignore
         self.picker.traverse(self.base.render)  # type: ignore
 
@@ -501,6 +502,7 @@ class Input(Singleton, DirectObject):
             return
 
         mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
+        self.pq.clearEntries()
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())  # type: ignore
         self.picker.traverse(self.base.render)  # type: ignore
         assert self.game is not None, "Game instance should be initialized."
@@ -530,7 +532,7 @@ class Input(Singleton, DirectObject):
                     else:
                         return None
 
-                elif NET_TYPE.TILE.value == net_type or NET_TYPE.BIT.value == net_type:
+                elif net_type in (NET_TYPE.TILE.value, NET_TYPE.BIT.value, NET_TYPE.GEOM.value):
                     if NET_TYPE.BIT.value == net_type:
                         net_id = net_id.split("_")[:2]
                     else:

@@ -3,10 +3,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 from direct.task import Task
-from gameplay.resource import BaseResource
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
-from helpers.debug import Debug
 from helpers.icons import Icons
 from helpers.images import generate_city_nameplate, normalize_color_to_bytes, pil_image_to_panda3d_texture
 from helpers.os import WindowsHelper
@@ -19,7 +17,6 @@ from panda3d.core import (
     AntialiasAttrib,
     BitMask32,
     CardMaker,
-    ColorBlendAttrib,
     Filename,
     NodePath,
     PandaNode,
@@ -65,13 +62,17 @@ class TileRenderer:
         self.game_manager: Game = Game.get_singleton_instance()
 
         self.anchor_node: NodePath = NodePath(f"tile_{tile.x}_{tile.y}_anchor")
+        self.anchor_node.setCollideMask(BitMask32.bit(1))
+        self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
+        self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, tile.tag)
         self.anchor_node.reparentTo(self.base.render)
         self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
 
         self.geometry_node: NodePath = self.anchor_node.attachNewNode("geometry_group")
-        self.geometry_node.set_collide_mask(BitMask32.bit(1))
-        self.geometry_node.set_tag(NET_TYPE_FIELD, str(NET_TYPE.GEOM.value))
-        self.geometry_node.set_tag(NET_NODE_TAG_ID_FIELD, tile.tag)
+        self.geometry_node.setCollideMask(BitMask32.bit(1))
+        self.geometry_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.GEOM.value))
+        self.geometry_node.setTag(NET_NODE_TAG_ID_FIELD, tile.tag)
+
         self.resource_model: Optional["Bit"] = None
 
         self.available_actions: List[str] = []
@@ -99,7 +100,9 @@ class TileRenderer:
             shader_vertex_path = WindowsHelper.win32_to_unix_path(shader_vertex_path)
             shader_fragment_path = WindowsHelper.win32_to_unix_path(shader_fragment_path)
 
-        self.selector_shader = Shader.load(Shader.SL_GLSL, vertex=shader_vertex_path, fragment=shader_fragment_path)
+        self.selector_shader: Shader = Shader.load(
+            Shader.SL_GLSL, vertex=shader_vertex_path, fragment=shader_fragment_path
+        )
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
 
@@ -115,6 +118,7 @@ class TileRenderer:
     def _drop_ui_node_if_empty(self) -> None:
         if self.ui_node is None:
             return
+
         if len(self.ui_node.getChildren()) == 0:
             self.ui_node.removeNode()
             self.ui_node = None
@@ -122,14 +126,18 @@ class TileRenderer:
     def _build_selector_quad(self) -> None:
         cm = CardMaker(f"tile_selector_{self.tile.x}_{self.tile.y}")
         size = 1.0
+
         cm.setFrame(-size, size, -size, size)
         cm.setUvRange((0, 0), (1, 1))
+
         self.selector_np = self.anchor_node.attachNewNode(cm.generate())
         self.selector_np.setHpr(0, -90, 0)
         self.selector_np.setTransparency(TransparencyAttrib.M_alpha)
         self.selector_np.setBin("fixed", 70)
         self.selector_np.setDepthWrite(False)
+
         self.selector_np.hide()
+
         self.selector_np.setShader(self.selector_shader)
         self.selector_np.setShaderInput("borderWidth", 0.03)  # type: ignore
         self.selector_np.setShaderInput("hexRadius", math.sqrt(3) / 2.05)  # type: ignore
@@ -137,13 +145,16 @@ class TileRenderer:
         self.selector_np.setShaderInput("pulseSpeed", 2.0)  # type: ignore
         self.selector_np.setShaderInput("color", Colors.MAGENTA)  # type: ignore
         self.selector_np.setShaderInput("time", 0.0)  # type: ignore
+
         self.selector_np.setTag(NET_NODE_TAG_ID_FIELD, str(self.tile.tag))
         self.selector_np.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
+
         self.selector_np.setCollideMask(BitMask32.bit(1))
 
     def _update_selector_task(self, task: Task.Task) -> Task.Task:
         if not self.selector_enabled or self.selector_np is None:
             return Task.cont  # type: ignore
+
         self.selector_np.setShaderInput("time", task.time)  # type: ignore
         return Task.cont  # type: ignore
 
@@ -164,6 +175,7 @@ class TileRenderer:
     def on_select(self) -> None:
         if self.selector_np is None:
             self._build_selector_quad()
+
         self.base.taskMgr.add(self._update_selector_task, f"update-selector-{self.tile.tag}", delay=1 / 10)  # type: ignore
         self.update()
 
@@ -172,6 +184,7 @@ class TileRenderer:
         if self.selector_np is not None:
             self.selector_np.removeNode()
             self.selector_np = None
+
         self.update()
 
     def clear_ui(self) -> None:
@@ -179,15 +192,19 @@ class TileRenderer:
             for child in self.ui_node.getChildren():
                 child.removeNode()
             self.ui_node.removeNode()
+
         self.ui_node = None
         self.terrain_overlay_node = None
         self.unit_markers_node = None
         self.city_nameplate_node = None
+
         if self.city_ui_node is not None:
             self.city_ui_node.removeNode()
+
         self.city_ui_node = None
         if self.main_resource_icon_node is not None:
             self.main_resource_icon_node.removeNode()
+
         self.main_resource_icon_node = None
         self.healthbar_node = None
         self.build_queue_node = None
@@ -197,9 +214,11 @@ class TileRenderer:
     def destroy(self) -> None:
         self.clear_ui()
         self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
+
         if self.selector_np is not None:
             self.selector_np.removeNode()
             self.selector_np = None
+
         self.anchor_node.removeNode()
         self.geometry_node.removeNode()
         self.clear_models()
@@ -281,19 +300,24 @@ class TileRenderer:
         self.prop_slots = self.tile.get_prop_slots()
         self._draw_improvements()
         TileRendererSystem.get().sync_tile(self.tile)
+
         if self.tile.city:
             if self.city_ui_node is None:
                 self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
             self._draw_city_nameplate()
             self._draw_city_ui()
+
         if self.selector_np:
             self.selector_np.reparentTo(self.anchor_node)
+
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
         self.anchor_node.setCollideMask(BitMask32.bit(1))
         self.clear_models()
+
         if rerender_terrain:
             self.rerender_terrain()
+
         self.bits_renderer.render()
 
     def rerender_terrain(self) -> None:
@@ -306,11 +330,14 @@ class TileRenderer:
             if self.city_ui_node is not None:
                 self.city_ui_node.removeNode()
                 self.city_ui_node = None
+
             self._drop_ui_node_if_empty()
             TileRendererSystem.get().sync_tile(self.tile)
             return
+
         if self.city_ui_node is not None:
             self.city_ui_node.removeNode()
+
         self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
         self._draw_improvements()
         self._draw_city_ui()
@@ -319,8 +346,10 @@ class TileRenderer:
     def _draw_city_ui(self) -> None:
         if not self.tile.city:
             return
+
         if self.city_ui_node is None:
             self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
+
         parent: NodePath = self.city_ui_node
         i18n: I18nManager = get_i18n()
         city: "City" = self.tile.city
@@ -338,14 +367,17 @@ class TileRenderer:
             text_offset_z=-0.015,
             billboard=True,
         )
+
         icon_path = (
             Icons.population_icon_gaining() if city.calculate_food_surplus() >= 0 else Icons.population_icon_losing()
         )
         population_icon: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(icon_path)
+
         if population_icon is not None:
             population_icon.setWrapU(Texture.WM_clamp)
             population_icon.set_format(Texture.F_srgb_alpha)
             population_icon.set_minfilter(SamplerState.FT_linear)
+
         population_gain_loss_text: T_TranslationOrStr = i18n.lookup(
             key="ui.player_ui.city.population_bar_label",
             formatting_parameters={
@@ -371,11 +403,13 @@ class TileRenderer:
             text_offset_z=-0.015,
             billboard=True,
         )
+
         if city.is_building and city.building is not None:
             item: BaseCityImprovement | Unit | None = city.building
             icon_tex: Texture | None = self.icon_atlas.get_panda3d_texture_by_virtual_path(
                 str(item.icon) if item.icon is not None else Placeholder.getPlaceholderImagePathSmallIcon()
             )
+
             assert icon_tex is not None, f"Icon texture for {item.icon} not found."
             icon_tex.setWrapU(Texture.WM_clamp)
             icon_tex.setWrapV(Texture.WM_clamp)
@@ -390,6 +424,7 @@ class TileRenderer:
                     "resources_required": round(city.resource_required_amount.production.value, 0),
                 },
             )
+
             self._draw_generic_bar(
                 parent=parent,
                 name=f"build_{city.name}",
@@ -406,6 +441,7 @@ class TileRenderer:
                 text_offset_z=-0.015,
                 billboard=True,
             )
+
         icons = city.icons
         z = 1.2
         start_x = -0.7
@@ -450,6 +486,7 @@ class TileRenderer:
         bar_group.setPos(0, 0, center_z)
         if billboard:
             bar_group.setBillboardAxis()
+
         cm_bg = CardMaker(f"{name}_bg")
         cm_bg.setFrame(-width / 2, width / 2, -height / 2, height / 2)
         bg: NodePath[PandaNode] = bar_group.attachNewNode(cm_bg.generate())
@@ -457,13 +494,16 @@ class TileRenderer:
         bg.setTransparency(TransparencyAttrib.M_alpha)
         bg.setBin("fixed", 50)
         fill_w = width * max(0.0, min(1.0, percentage))
+
         cm_fg = CardMaker(f"{name}_fill")
         cm_fg.setFrame(-width / 2, -width / 2 + fill_w, -height / 2, height / 2)
         fg: NodePath[PandaNode] = bar_group.attachNewNode(cm_fg.generate())
+
         fg.setColor(*fill_color)
         fg.setTransparency(TransparencyAttrib.M_alpha)
         fg.setBin("fixed", 90)
         fg.setDepthTest(False)
+
         if icon_texture:
             cm_icon = CardMaker(f"{name}_icon")
             s = height
@@ -479,6 +519,7 @@ class TileRenderer:
             icon_np.setDepthTest(True)
             icon_np.setPos(icon_offset_x, 0, 0)
             icon_np.setScale(*icon_size)
+
         if text:
             tn = TextNode(f"{name}_text")
             tn.setText(text)
@@ -488,30 +529,6 @@ class TileRenderer:
             tn_np.setPos(0, 0, text_offset_z)
             tn_np.setBin("fixed", 90)
             tn_np.setDepthTest(False)
-
-    def _draw_terrain_overlay(self) -> None:
-        cm = CardMaker(f"terrain_overlay_{self.tile.get_tag()}")
-        cm.setFrame(-1.0, 1.0, -1.0, 1.0)
-        parent = self._ensure_ui_node()
-        overlay: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
-        overlay.setTransparency(TransparencyAttrib.M_alpha)
-        overlay.setAttrib(ColorBlendAttrib.makeOff())
-        overlay.setBin("fixed", 40)
-        overlay.setDepthTest(True)
-        overlay.setDepthWrite(False)
-        overlay.setHpr(0, -90, 0)
-        overlay.setScale(1.0)
-        overlay.setZ(0.001)
-        overlay.setShaderOff()
-        texture: Texture | None = Cache.get_terrain_atlas().get_panda3d_texture_by_virtual_path(
-            str(self.tile.tile_terrain.texture())
-        )
-        if texture is None:
-            self.tile.logger.error(f"Terrain texture not found for tile {self.tile.get_tag()}.")
-            return
-        texture.set_format(Texture.F_srgb_alpha)
-        overlay.setTexture(texture, 1)
-        self.terrain_overlay_node = overlay
 
     def is_city(self) -> bool:
         return self.tile.city is not None
@@ -530,10 +547,12 @@ class TileRenderer:
             for improvement in city.get_improvements():
                 if improvement not in improvements:
                     improvements.append(improvement)
+
         for improvement in improvements:  # type: ignore
             path: str | None = improvement.model
             if not path:
                 continue
+
             self._render_improvements_as_bit(improvement)
 
     def _is_model_drawn(self) -> bool:
@@ -542,21 +561,25 @@ class TileRenderer:
     def unload_resource_model(self) -> None:
         if self.resource_model is None:
             return
+
         self.bits_renderer.remove_bit(self.resource_model)
 
     def on_unit_enter(self) -> None:
         if self.resource_model:
             self.bits_renderer.remove_bit(self.resource_model)
+
         self.render()
 
     def on_unit_leave(self) -> None:
         if self.resource_model is not None:
             self.bits_renderer.add_bit(self.resource_model)
+
         self.render()
 
     def _load_texture_direct(self, path: str) -> Texture:
         if self.base is None:
             raise RuntimeError("Base instance is not available.")
+
         tex: Texture = self.base.loader.loadTexture(Filename(path))
         tex.setFormat(Texture.F_srgb_alpha)
         tex.setMinfilter(SamplerState.FT_linear)
@@ -564,32 +587,6 @@ class TileRenderer:
         tex.setWrapU(Texture.WM_clamp)
         tex.setWrapV(Texture.WM_clamp)
         return tex
-
-    def _draw_main_resource_icon(self, res: Union[BaseResource, str]) -> None:
-        if isinstance(res, BaseResource):
-            if getattr(res, "value", 0) == 0:
-                return
-            icon_path = str(res.icon) if hasattr(res, "icon") else None
-        else:
-            icon_path = str(res)
-        if not icon_path:
-            return
-        tex: Texture = self._load_texture_direct(icon_path)
-        cm = CardMaker(f"main_resource_icon_{self.tile.get_tag()}")
-        s = 0.22
-        cm.setFrame(-s, s, -s, s)
-        parent = self._ensure_ui_node()
-        np: NodePath[PandaNode] = parent.attachNewNode(cm.generate())
-        np.setTexture(tex)
-        np.setTransparency(TransparencyAttrib.M_alpha)
-        np.setDepthTest(False)
-        np.setBin("fixed", 85)
-        np.setHpr(0, -90, 0)
-        np.setScale(0.75)
-        np.setShaderOff(1)
-        pos = self.ICON_SLOT_POSITIONS["n"]
-        np.setPos(pos[0], pos[1], pos[2] + 0.01)
-        self.main_resource_icon_node = np
 
     def add_model(
         self,
@@ -606,18 +603,21 @@ class TileRenderer:
     ) -> Optional[NodePath]:
         if self.base is None:
             raise ValueError("TileRenderer base is not initialized.")
+
         full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
         self.last_result = None
         model_tpl: NodePath = AssetManager.load_model(full_path)
         if not model_tpl:
             self.tile.logger.error(f"Model {full_path} could not be loaded.")
             return None
+
         if parent is None:
             x = self.tile.pos_x + pos_offset[0]
             y = self.tile.pos_y + pos_offset[1]
             z = self.tile.pos_z + pos_offset[2]
         else:
             x, y, z = pos_offset
+
         node: NodePath = model_tpl.instanceTo(self.geometry_node)
         node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
         node.setPos(x, y, z)
@@ -625,18 +625,19 @@ class TileRenderer:
         node.setHpr(*hpr)
         node.setCollideMask(BitMask32.bit(1))
         node.setTag(NET_TYPE_FIELD, str(net_type.value))
+
         if disable_lighting:
             node.setLightOff()
         if disable_shader:
             node.setShaderOff()
+
         if net_id is not None:
             node.setTag(NET_NODE_TAG_ID_FIELD, net_id)
         else:
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
+
         self.models.append(node)
         self.last_result = node
-        if Debug.world_spawning():
-            self.tile.logger.debug(f"Added model {model_path} to tile {self.tile.tag} at ({x},{y},{z}) scale {scale}.")
         return node
 
     def remove_model(self, net_id: str) -> None:
@@ -646,6 +647,7 @@ class TileRenderer:
                 model.removeNode()
             else:
                 remaining.append(model)
+
         self.models = remaining
 
     def clear_models(self) -> None:
@@ -662,10 +664,12 @@ class TileRenderer:
             "resource_model_scale": str(self.resource_model.scale) if self.resource_model else 1.0,
             "resource_model_hpr": str(self.resource_model.hpr) if self.resource_model else str((0.0, 0.0, 0.0)),
         }
+
         if also_bits and (bits := self.bits_renderer.on_inspect()):
             data["terrain_bits"] = bits.get("terrain_bits", "") or ""
             data["loaded_bits"] = bits.get("loaded_bits", "") or ""
             data["assigned_slots"] = bits.get("assigned_slots", "") or ""
+
         return data
 
     def dump(self) -> Dict[str, Any]:

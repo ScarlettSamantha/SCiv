@@ -208,9 +208,9 @@ class TileRendererSystem:
         self.node.getChildren().detach()
         self._geom_np = self.node.attachNewNode(self._geom_node)
         self._geom_np.set_instance_count(instances)
-
         self._geom_np.node().setBounds(OmniBoundingVolume())
         self._geom_np.node().setFinal(True)
+
         self._capacity = instances
         self._init_writers()
 
