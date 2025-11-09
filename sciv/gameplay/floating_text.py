@@ -1,4 +1,3 @@
-import uuid
 from typing import Dict, List, Optional
 
 from direct.interval.FunctionInterval import Func
@@ -28,7 +27,11 @@ class FloatingText3D:
             FloatingText3D.default_parent = Cache.get_showbase_instance().render
 
         x, y, z = target.get_pos()
-        self._target_id = int(uuid.UUID(str(id(target))).int & (1 << 32) - 1)  # type: ignore
+        id: str | None = target.id
+
+        assert id is not None, "Target entity must have an ID"
+
+        self._target_id: int = int.from_bytes(id.encode(), byteorder="big") & 0xFFFFFFFF
 
         queue: List[FloatingText3D] = FloatingText3D._queues.setdefault(self._target_id, [])
         index: int = len(queue)

@@ -59,7 +59,8 @@ class BaseEntity(ABC, DirectObject, Inspectable):
         Inspectable.__init__(self, *args, **kwargs)
         from gameplay.tile import Tile
 
-        self.tag: str = str(uuid4().hex)
+        self.id = uuid4().hex
+        self.tag: str = str(self.id)
         self.entity_key: Optional[str] = None
         self.entity_type_ref: Optional[str] = None
         self.is_registered: bool = False
