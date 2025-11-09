@@ -2,8 +2,8 @@ from math import sin
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from direct.showbase.DirectObject import DirectObject
+from helpers.cache import Cache
 from helpers.colors import Colors
-from helpers.paths import PathsHelper
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
@@ -12,7 +12,6 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
-from managers.assets import AssetManager
 from managers.i18n import t_
 
 if TYPE_CHECKING:
@@ -175,6 +174,8 @@ class _UnitSide(BoxLayout):
         super().__init__(**kwargs)
         self.direction = direction
 
+        self.assets = Cache.get_asset_archive()
+
         row = BoxLayout(orientation="horizontal", spacing=dp(8), size_hint=(1, None), height=dp(64))
         self.add_widget(row)
 
@@ -248,15 +249,8 @@ class _UnitSide(BoxLayout):
         self.bar.predicted_loss = 0.0
 
         icon_any = getattr(unit, "icon", None)
-        if isinstance(icon_any, str):
-            img: Image = AssetManager.load_kivy_image(f"{PathsHelper.get_base_path()}/assets/icons/default/{icon_any}")
-            try:
-                if hasattr(img, "texture") and img.texture is not None:
-                    self.icon.texture = img.texture
-                elif hasattr(img, "source"):
-                    self.icon.source = img.source  # type: ignore
-            except Exception:
-                pass
+        if isinstance(icon_any, str) and icon_any:
+            self.icon.texture = self.assets.get_kivy_image_texture(icon_any)
             self.icon.opacity = 1.0
         else:
             self.icon.opacity = 0.0
