@@ -1,7 +1,7 @@
 import time
 from enum import Enum
 from logging import Logger
-from typing import TYPE_CHECKING, Any, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple
 
 from direct.interval.IntervalGlobal import Func, Sequence, Wait
 from direct.showbase import MessengerGlobal
@@ -20,6 +20,7 @@ from panda3d.core import (
     CollisionNode,
     CollisionRay,
     CollisionTraverser,
+    LPoint2f,
     NodePath,
     Vec3,
     WindowProperties,
@@ -138,6 +139,7 @@ class Input(Singleton, DirectObject):
                 return
 
             target: str = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
+
             if (tile := TileRepository.get_tile(*map(lambda s: int(s), target.split("_")[-2:]))) is None:
                 self.logger.warning(f"Tile with ID {target} not found.")
                 return
@@ -145,6 +147,7 @@ class Input(Singleton, DirectObject):
         if clicked_object and clicked_object.getNetTag(NET_TYPE_FIELD) == NET_TYPE.BIT.value:
             node_tag = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
             tile_cords: List[str] = node_tag.split("_")[:2]
+
             if (tile := TileRepository.get_tile(*map(lambda s: int(s), tile_cords))) is None:
                 self.logger.warning(f"Tile with ID {node_tag} not found.")
                 return
@@ -221,7 +224,7 @@ class Input(Singleton, DirectObject):
             return
 
         net_type: str = clicked_object.getNetTag(NET_TYPE_FIELD)  # type: ignore
-        net_id = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
+        net_id: str = clicked_object.getNetTag(NET_NODE_TAG_ID_FIELD)
 
         if self.selected_unit is None:
             self.game_ui.close_unit_path_renderer()
@@ -272,6 +275,7 @@ class Input(Singleton, DirectObject):
             self.game_ui.wait_for_action_of_user = None
             self.unhover_all()
             messenger.send("ui.update.ui.close_player_attack_info")
+
         self.game_ui.waiting_for_world_input = False
         self.game_ui.wait_for_next_input_of_user = False
 
@@ -301,7 +305,7 @@ class Input(Singleton, DirectObject):
             self.logger.warning("No selected tile/unit to render.")
             return
 
-        selected_entity = self.selected_tile if self.selected_tile else None
+        selected_entity: "Tile | None" = self.selected_tile if self.selected_tile else None
 
         if selected_entity is not None and hasattr(selected_entity, "tag"):
             self.logger.info(f"Rendering selected entity: {selected_entity.tag}")
@@ -340,7 +344,7 @@ class Input(Singleton, DirectObject):
         self.unit_manager = UnitManager.get_singleton_instance()
 
     def inject_into_camera(self) -> None:
-        self._pick_mask = BitMask32.bit(1)
+        self._pick_mask: BitMask32 = BitMask32.bit(1)
         self.picker = CollisionTraverser()
         self.pq = CollisionHandlerQueue()
 
@@ -375,6 +379,7 @@ class Input(Singleton, DirectObject):
     def hide_targeting(self):
         if self.ranged_targeting is None:
             return
+
         self.ranged_targeting.hide()
         self.ranged_targeting.destroy()
         self.ranged_targeting = None
@@ -396,8 +401,9 @@ class Input(Singleton, DirectObject):
 
         assert self.game_ui is not None, "Game UI should be initialized."
 
-        mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
-        current_pos = (mpos.getX(), mpos.getY())  # type: ignore
+        mpos: LPoint2f = self.base.mouseWatcherNode.getMouse()  # type: ignore
+        current_pos: Tuple[float, float] = (mpos.getX(), mpos.getY())  # type: ignore
+
         if self._last_mouse_pos is not None and all(
             abs(self._last_mouse_pos[i] - current_pos[i]) < 0.001 for i in range(2)
         ):
@@ -447,10 +453,12 @@ class Input(Singleton, DirectObject):
                 if NET_TYPE.UNIT.value == net_type:
                     if self.hovered_unit_id == net_id:
                         break
+
                     self.unhover_all()
                     if (unit := self.unit_manager.find_unit(net_id)) is None:
                         self.logger.warning(f"Unit with ID {net_id} not found.")
                         return task.cont
+
                     if (
                         self.game_ui.wait_for_action_of_user
                         and self.game_ui.wait_for_action_of_user.targeting_unit_action
@@ -479,17 +487,19 @@ class Input(Singleton, DirectObject):
         if self.hovered_tile_id is not None:
             messenger.send("system.input.user.tile_unhovered", [self.hovered_tile_id])
             self.hovered_tile_id = None
+
         if self.hovered_unit_id is not None:
             if (unit := UnitManager.get_singleton_instance().find_unit(self.hovered_unit_id)) is not None:
                 unit.unhover()
                 self.hovered_unit_id = None
+
         self.hide_targeting()
 
     def run_analyze(self):
         self.base.render.analyze()  # type: ignore
 
     def pick_object(self, dont_select: bool = False) -> NodePath | None:
-        now = time.time()
+        now: float = time.time()
         if now - self._last_pick_time < self.pick_timeout:
             return None
 
@@ -501,7 +511,7 @@ class Input(Singleton, DirectObject):
             self.logger.warning("No mouse in window, cannot pick.")
             return
 
-        mpos = self.base.mouseWatcherNode.getMouse()  # type: ignore
+        mpos: LPoint2f = self.base.mouseWatcherNode.getMouse()  # type: ignore
         self.pq.clearEntries()
         self.pickerRay.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())  # type: ignore
         self.picker.traverse(self.base.render)  # type: ignore
@@ -514,7 +524,7 @@ class Input(Singleton, DirectObject):
             for entry in self.pq.getEntries():
                 picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
-                net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
+                net_id: str = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
                 if not net_type:
                     continue
@@ -537,17 +547,20 @@ class Input(Singleton, DirectObject):
 
                 elif net_type in (NET_TYPE.TILE.value, NET_TYPE.BIT.value, NET_TYPE.GEOM.value):
                     if NET_TYPE.BIT.value == net_type:
-                        net_id = net_id.split("_")[:2]
+                        _net_id: List[str] = net_id.split("_")[:2]
                     else:
-                        net_id = net_id.split("_")[-2:]
-                    if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id))) is None:
+                        _net_id = net_id.split("_")[-2:]
+
+                    if (tile := TileRepository.get_tile(*map(lambda s: int(s), _net_id))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
                         continue
 
                     self.game.handle_tile_click(tile)
                     self.selected_tile = tile
+
                     if not self.is_long_right_click():
                         self.selected_unit = None
+
                     selected_object = True
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                 else:
