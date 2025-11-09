@@ -12,8 +12,9 @@ class SelfResizableButton(ButtonBehavior, BoxLayout):
     text = StringProperty("")
     image_source = StringProperty("")
     markup = BooleanProperty(False)
+    placeholder: str = ""
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, image: Image | None = None, **kwargs: Any):
         if "background_color" in kwargs:
             kwargs.pop("background_color")  # type: ignore
         super().__init__(orientation="horizontal", spacing=6, padding=4, **kwargs)  # type: ignore
@@ -31,7 +32,7 @@ class SelfResizableButton(ButtonBehavior, BoxLayout):
         self.image_widget.bind(texture_size=self._update_image_size)  # type: ignore
 
         self._update_text(self, self.text)
-        self._update_image(self, self.image_source)
+        self._update_image(self, self.image_source if self.image_source else self.placeholder)
         self._update_markup(self, self.markup)
 
     def _update_text(self, instance: Widget, value: str) -> None:

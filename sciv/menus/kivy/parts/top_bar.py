@@ -10,11 +10,11 @@ from gameplay.resources.core.basic.gold import Gold
 from gameplay.resources.core.basic.science import Science
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
-from helpers.os import WindowsHelper
 from helpers.placeholder import Placeholder
 from kivy.graphics import Color, Rectangle
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from managers.ages import AgesManager
 from managers.player import PlayerManager
@@ -30,30 +30,24 @@ class BaseButton(SelfResizableButton):
     placeholder: str = Placeholder.getPlaceholderImagePathSmallIcon()
 
     def _update_image(self, instance: Widget, value: str) -> None:
-        if value:
-            self.image_widget.source = value
-            self.image_widget.opacity = 1
-        else:
-            placeholder_path = str(Cache.get_icon_atlas().get_real_path_for_virtual_path(self.placeholder))
-
-            if WindowsHelper.is_windows():
-                placeholder_path = WindowsHelper.unix_to_win32_path(placeholder_path)
-
-            self.image_widget.source = placeholder_path
-            self.image_widget.opacity = 0
-            self.image_widget.width = 0
+        self.image_widget: Image = Cache.get_asset_archive().get_kivy_image_object(
+            virtual_path=value if value else self.placeholder,
+            size_hint=(0, 1),
+            allow_stretch=True,
+            keep_ratio=True,
+        )
         self._update_size()
 
 
 class ResearchButton(BaseButton):
-    placeholder: str = Science.icon
+    image_source: str = Science.icon
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
 
 class CultureButton(BaseButton):
-    placeholder: str = Culture.icon
+    image_source: str = Culture.icon
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
