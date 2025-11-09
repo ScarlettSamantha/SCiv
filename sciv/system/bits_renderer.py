@@ -35,6 +35,14 @@ class BitsRenderer:
         self.prop_slots = self.tile.get_prop_slots()
         active_by_id: Dict[str, "Bit"] = self._gather_active_bits()
 
+        blockers: Dict[str, "Bit"] = {
+            bid: b
+            for bid, b in active_by_id.items()
+            if bool(getattr(b, "display_mode", 0) & DisplayMode.RESOURCE_IMPROVEMENT.value)
+        }
+        if blockers:
+            active_by_id = blockers
+
         new_assignments: Dict[str, "Bit"] = {}
         used_slots: Set[str] = set()
 

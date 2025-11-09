@@ -2,7 +2,7 @@ from typing import Any
 
 from gameplay.condition import Conditions, ResearchCondition
 from gameplay.improvement import Improvement
-from gameplay.techs.construction import Construction
+from gameplay.techs.bronze_working import BronzeWorking
 from gameplay.yields import Yields
 from managers.i18n import t_
 
@@ -16,8 +16,8 @@ class LoggingCamp(Improvement):
     _model_hpr = (45, 0, 0)
     tile_yield_improvement = Yields(production=1.0, gold=1.0, mode=Yields.ADDITIVE)
 
-    placeable_on_condition = Conditions(ResearchCondition(Construction, None))
-    visible_condition = Conditions(ResearchCondition(Construction, None))
+    placeable_on_condition = Conditions(ResearchCondition(BronzeWorking, None))
+    visible_condition = Conditions(ResearchCondition(BronzeWorking, None))
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(
