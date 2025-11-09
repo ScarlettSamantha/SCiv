@@ -41,7 +41,6 @@ class Heightmap:
         return self.grid[x][y]
 
     def _adjust(self, xa: int, ya: int, x: int, y: int, xb: int, yb: int):
-        """Fix the sides of the map"""
         if self.grid[x][y] == 0:
             d = math.fabs(xa - xb) + math.fabs(ya - yb)
             ROUGHNESS: int = self.params.get("roughness", 18)
@@ -60,7 +59,6 @@ class Heightmap:
             self.grid[x][y] = c
 
     def _subdivide(self, x1: int, y1: int, x2: int, y2: int):
-        """subdivide the heightmap iterate"""
         if not ((x2 - x1 < 2.0) and (y2 - y1 < 2.0)):
             x = int((x1 + x2) / 2)
             y = int((y1 + y2) / 2)

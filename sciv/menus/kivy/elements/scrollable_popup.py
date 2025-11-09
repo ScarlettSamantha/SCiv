@@ -62,7 +62,6 @@ class ScrollablePopup(Popup):
         self.content = layout
 
     def select_item(self, item: str, on_select: Callable[[str, Optional[Any]], None], value: Optional[Any] = None):
-        """Update selection and close popup"""
         if value is None:
             on_select(item, None)
         else:
@@ -70,9 +69,7 @@ class ScrollablePopup(Popup):
         self.dismiss()  # type: ignore
 
     def add_child(self, child: Widget):
-        """Add a child widget to the popup"""
         self.content.add_widget(child)
 
     def remove_child(self, child: Widget):
-        """Remove a child widget from the popup"""
         self.content.remove_widget(child)

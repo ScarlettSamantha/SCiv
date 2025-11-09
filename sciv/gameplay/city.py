@@ -389,21 +389,18 @@ class City(BaseEntity, DirectObject.DirectObject):
             self.logger.debug(f"City {self.name} has finished building improvement.")
 
     def _process_food(self) -> None:
-        """Process food consumption and production to manage population changes."""
         self.new_population_food_required = Yields(
             food=population_curve(self.population, self.FOOD_EXPONENT, self.FOOD_BASE_REQUIREMENT)
         )
         food_surplus = Yields(food=self.calculate_food_surplus())
 
         if food_surplus.food.value < 0:
-            # When the total food (storage + surplus) is negative, population starves.
             if (self.food_collected + food_surplus) <= Yields.nullYield():
                 self.starve_population()
                 self.get_tile().render()
             else:
                 self.food_collected -= food_surplus
         elif food_surplus.food.value > 0:
-            # If food storage plus surplus meets/exceeds the required food, grow population.
             food_stored: Yields = self.food_collected.only(["food"])
             if (food_stored + food_surplus) >= self.new_population_food_required:
                 self.grow_population()
@@ -463,7 +460,6 @@ class City(BaseEntity, DirectObject.DirectObject):
                 self.border_growth_cost = (5 * (len(self.owned_tiles) - 7)) + (5 * (radius - 1))
                 return
 
-        # If no tile is found in any radius
         self.border_growth_next_tile = None
 
     def on_border_growth(self):
@@ -545,9 +541,7 @@ class City(BaseEntity, DirectObject.DirectObject):
     def starve_population(self):
         self.population -= 1
         self.new_population_food_required = Yields(food=population_curve(self.population))
-        self.food_collected = (
-            self.new_population_food_required - Yields(food=1)
-        )  # We take the requirement for the lower population and subtract 1 this is to prevent the city from starving again next turn.
+        self.food_collected = self.new_population_food_required - Yields(food=1)
         MessengerGlobal.messenger.send("game.gameplay.city.population_starve", [self])
         MessengerGlobal.messenger.send("ui.update.ui.refresh_city_ui", [self])
 

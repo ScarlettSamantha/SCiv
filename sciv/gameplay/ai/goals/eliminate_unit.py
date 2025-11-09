@@ -11,10 +11,6 @@ if TYPE_CHECKING:
 
 
 class EliminateUnit(Goal):
-    """
-    EliminateUnit is a goal that represents the AI's objective to eliminate a specific unit.
-    """
-
     name = "Eliminate Unit Goal"
     description = "Eliminate a specific unit"
     for_unit = True

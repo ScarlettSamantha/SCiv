@@ -17,11 +17,6 @@ if TYPE_CHECKING:
 
 
 class NatureAI(AI):
-    """
-    NatureAI is a subclass of AI that represents the AI that controls the nature of the game.
-    It manages nature events and the world over time.
-    """
-
     def __init__(self, player: "Player"):
         super().__init__(player)
         # cache of passable, non-city, neighbor-empty tiles for spawning threats
@@ -161,13 +156,6 @@ class NatureAI(AI):
         self.register_fixed_turn_events()
 
     def _build_spawn_tile_cache(self) -> None:
-        """
-        Efficiently populate the cache with all valid tiles for threat spawning.
-        A valid tile:
-        - Is passable land
-        - Is not a city
-        - Itself and all tiles within radius-2 have no cities/units
-        """
         all_land: List["Tile"] = TileRepository.search_passable_land()
         # Index all city and unit tiles for O(1) lookup
         city_tiles = {tile for tile in all_land if tile.is_city()}
@@ -193,10 +181,6 @@ class NatureAI(AI):
         self._spawn_cache_from_turn = Turn.get_singleton_instance().get_turn()
 
     def _spawn_initial_threat(self) -> None:
-        """
-        Spawn one BarbarianLion for every 120 cached tiles,
-        sampling without replacement to avoid duplicates.
-        """
         if not self._spawn_tiles_cache:
             return
 

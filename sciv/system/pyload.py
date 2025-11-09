@@ -55,22 +55,14 @@ class PyFileProcessor:
         return self._extract_classes(file, file_content)
 
     def _is_regex_pattern(self, pattern: str) -> bool:
-        """
-        Detects if the provided string pattern is a regex pattern.
-        """
         return pattern.endswith("$")
 
     def _matches_pattern(self, file: str, name_pattern: Union[str, Callable[[str], bool]]) -> bool:
-        """
-        Checks if the file matches the specified name pattern.
-        Supports both string patterns and callable functions.
-        """
         file_name = os.path.basename(file)
         if isinstance(name_pattern, Callable):
             return re.match(r"^(?!_).*.py$", file_name) is not None and name_pattern(file)
 
         if self._is_regex_pattern(name_pattern):
-            # Strip the leading 'r' and the quotes from the regex pattern
             regex_pattern = name_pattern
             try:
                 return (
@@ -86,10 +78,6 @@ class PyFileProcessor:
             return re.match(r"^(?!_).*.py$", file_name) is not None and fnmatch.fnmatch(file_name, name_pattern)
 
     def _read_file(self, file: str) -> Optional[str]:
-        """
-        Reads the content of the file and returns it as a string.
-        Returns None if an IOError occurs.
-        """
         try:
             with open(file, "r") as f:
                 return f.read()
@@ -101,33 +89,28 @@ class PyFileProcessor:
             return None
 
     def _filter_classes(self, classes: Dict[str, Type[Any]]) -> Dict[str, Type[Any]]:
-        """
-        Filters the classes based on the provided criteria.
-        """
-        # If base_classes is a callable, skip filtering at this stage.
         if callable(self.base_classes):
             return classes
 
         filtered_classes: Dict[str, Type[Any]] = {}
 
         def _filter_class(_class: Type[Any], allowed: Union[List[Type[Any]], Type[Any], str, None]) -> bool:
-            # Check if no base classes are provided
             if allowed is None:
                 return True
 
-            # Check if allowed is a list of types
             if isinstance(allowed, list):
                 for allowed_class in allowed:
                     if issubclass(_class, allowed_class):
                         return True
-            # Check if allowed is a string representing a class name
+
             elif isinstance(allowed, str):
                 if _class.__name__ == allowed or any(base.__name__ == allowed for base in _class.__bases__):
                     return True
-            # Check if allowed is an inspect class
+
             elif inspect.isclass(allowed):
                 if issubclass(_class, allowed):
                     return True
+
                 for base in _class.__bases__:
                     if base == allowed or base.__name__ == allowed.__name__:
                         return True
@@ -136,6 +119,7 @@ class PyFileProcessor:
                 LogManager.get_singleton_instance().engine.debug(
                     f"Skipping class: {_class.__name__} due to base class mismatch {allowed}"
                 )
+
             return False
 
         for class_name, _class in classes.items():
@@ -145,10 +129,6 @@ class PyFileProcessor:
         return filtered_classes
 
     def _extract_classes(self, file: str, file_content: str) -> Dict[str, Type[Any]]:
-        """
-        Parses the file content to extract class definitions.
-        Uses GenericClassVisitor to find classes and loads them.
-        """
         loaded_classes: Dict[str, Type[Any]] = {}
         try:
             tree = ast.parse(file_content)
@@ -164,10 +144,6 @@ class PyFileProcessor:
     def _load_classes_from_visitor(
         self, visitor: GenericClassVisitor, file: str, package: Optional[str] = None
     ) -> Dict[str, Type[Any]]:
-        """
-        Loads classes from the visitor's results using either full import
-        if `package` is set, or fallback to spec_from_file_location otherwise.
-        """
         loaded: Dict[str, Type[Any]] = {}
 
         if package:
@@ -175,7 +151,6 @@ class PyFileProcessor:
             mod_path = f"{package}.{rel_path.replace(os.sep, '.')}"
             module = importlib.import_module(mod_path)
         else:
-            # fallback to file-based loading
             spec = importlib.util.spec_from_file_location(os.path.splitext(os.path.basename(file))[0], file)
             if not spec or not spec.loader:
                 LogManager.get_singleton_instance().engine.error(f"Loader not found for file {file}")
@@ -193,16 +168,6 @@ class PyFileProcessor:
 
 
 class PyLoad:
-    """
-    Loads and returns classes from Python files in the given directory based on the provided criteria.
-
-    :param directory: Directory to search for Python files.
-    :param name_pattern: File name pattern to match Python files.
-    :param base_classes: Base class or list of base classes to match subclasses.
-    :param properties: List of tuples containing class property names and values to match.
-    :return: Dictionary of class names and their corresponding types.
-    """
-
     def __init__(
         self,
         directory: Union[str, List[str]],
@@ -212,16 +177,15 @@ class PyLoad:
         package: Optional[str] = None,
     ):
         self.directory: Union[str, List[str]] = directory
-        # Determine the base package by splitting the path two levels up
         if isinstance(directory, str):
             base_path = os.path.abspath(directory)
         else:
             base_path = os.path.abspath(directory[0])
+
         split_path = base_path.split(os.sep)
 
         self.package = package if package is not None else ".".join(split_path[-2:])
 
-        # Use the path difference as the package
         self.name_pattern: Union[str, Callable[[str], bool]] = name_pattern
         self.base_classes: Union[Type[Any], List[Type[Any]], Callable[[str, str], bool]] = base_classes
         self.properties: Optional[Tuple[str, str]] = properties
@@ -257,6 +221,5 @@ class PyLoad:
                     continue
                 loaded.update(self._process_folder(path))
             elif os.path.isfile(path):
-                # pass along self.package so processor can full-import
                 loaded.update(self.processor.process_file(path, self.name_pattern))
         return loaded

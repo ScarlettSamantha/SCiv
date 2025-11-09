@@ -35,10 +35,6 @@ class RiverSegment:
 
     @property
     def size(self) -> int:
-        """
-        Gets the size of the rest of the river
-        :return: Number
-        """
         count = 1
         river = self
         while river.next is not None:
@@ -47,10 +43,6 @@ class RiverSegment:
         return count
 
     def __eq__(self, other: object) -> bool:
-        """
-        :param other: RiverSegment
-        :return: True if both edges are equal
-        """
         if not isinstance(other, RiverSegment):
             return NotImplemented
         return self.edge == other.edge  # type: bool

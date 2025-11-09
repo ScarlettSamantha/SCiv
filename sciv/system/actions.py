@@ -5,16 +5,6 @@ from managers.combat import T_TARGET
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone
 from managers.log import LogManager
 
-"""Action system will provide a generic way to handle actions in the game. This will be used for units, buildings, and other game objects that can perform actions.
-
-Actions cannot be stateful, they are meant to be stateless and only perform an action when called. They can have conditions to check if they can be run or not.
-They can have properties that can be used to determine if they can be run or not. or while they are active have a state. but they should not be used to store state.
-They wont be registered in the entity manager, they will be used as a one-off action. and therefore also not be saved to the save file.
-
-Raises:
-    ValueError: If the action has no callable action to run.
-"""
-
 
 class Action:
     debug_action: bool = False
@@ -128,7 +118,6 @@ class Action:
         self.action_result = self.action(self, **self.action_kwargs)
 
         if self.success_condition is not None:
-            """We test for true as the system works that you can return anything that is not False to be a success and that will be passed to the on_success callback."""
             self.logger.info(f"Checking success condition for action: {self.name}")
             if self.success_condition(self, self.action_args, self.action_kwargs):
                 if self.on_success is not None:

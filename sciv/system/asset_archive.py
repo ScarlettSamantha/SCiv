@@ -1,22 +1,25 @@
+import os
 from io import BytesIO
 from os import PathLike
 from pathlib import Path
-from typing import Any, Iterable, List, Optional, Set, Tuple, cast
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Set, Tuple, cast
 
-from helpers.os import WindowsHelper
-from kivy.uix.image import Image
 from panda3d.core import (  # type: ignore
     Filename,
     Loader,
     Multifile,
     NodePath,
     PandaNode,
+    Shader,
     Texture,
     VirtualFileSystem,
     loadPrcFileData,
 )
 from PIL.ImageFile import ImageFile
 from PIL.ImageFont import FreeTypeFont
+
+if TYPE_CHECKING:
+    from kivy.uix.image import Image
 
 _SAFE_TEXT_EXTS: Set[str] = {
     ".txt",
@@ -91,10 +94,8 @@ class P3DAssetArchive:
         skip_hidden: bool = True,
         skip_no_ext: bool = True,
         password: Optional[str] = None,
+        follow_symlinks: bool = True,
     ):
-        from helpers.cache import Cache
-
-        self.base = Cache.get_showbase_instance()
         self.archive_path = Path(archive_path)
         self.mount_point = mount_point.rstrip("/") or "/"
         self.prefix = (prefix or "").strip("/")
@@ -107,16 +108,18 @@ class P3DAssetArchive:
             self.base_dirs = [input_dirs]
         else:
             self.base_dirs = []
+        print(f"Base dirs: {self.base_dirs}")
 
-        self.include_exts: Set[str] = (
-            {e.lower() if e.startswith(".") else f".{e.lower()}" for e in include_exts}
-            if include_exts
-            else set(_SAFE_DEFAULT_INCLUDE)
-        )
+        if include_exts is None:
+            self.include_exts: Optional[Set[str]] = None
+        else:
+            self.include_exts = {e.lower() if e.startswith(".") else f".{e.lower()}" for e in include_exts}
 
         self.exclude_globs: List[str] = exclude_globs or []
         self.skip_hidden: bool = skip_hidden
         self.skip_no_ext: bool = skip_no_ext
+        self.follow_symlinks: bool = follow_symlinks
+
         self._mounted = False
         _register_ext_tables(_SAFE_TEXT_EXTS, _SAFE_BINARY_EXTS)
         self.vfs: VirtualFileSystem = VirtualFileSystem.getGlobalPtr()
@@ -129,9 +132,7 @@ class P3DAssetArchive:
         self.archive_path.unlink(missing_ok=True)
 
     def build(self, force: bool = False) -> None:
-        if self.archive_path.exists() and not force:
-            return
-
+        print(f"Building asset archive at: {self.archive_path}")
         files: List[Tuple[str, Path]] = self._gather_files()
         mf = Multifile()
         mf.openWrite(multifile_name=str(self.archive_path))
@@ -212,8 +213,13 @@ class P3DAssetArchive:
         ci = CoreImage(BytesIO(data), ext=ext)
         return cast(Texture, ci.texture)  # type: ignore
 
-    def get_kivy_image_object(self, virtual_path: str, **kwargs: Any) -> Image:
+    def get_kivy_image_object(self, virtual_path: str, **kwargs: Any) -> "Image":
+        from kivy.uix.image import Image
+
         return Image(texture=self.get_kivy_image_texture(virtual_path), **kwargs)
+
+    def get_shader(self, frag: str, vert: str) -> Shader:
+        return Shader.load(lang=Shader.SL_GLSL, fragment=frag, vertex=vert)
 
     def read_text(self, virtual_path: str, encoding: str = "utf-8") -> Optional[str]:
         bytes = self.vfs.read_file(virtual_path, True)  # type: ignore
@@ -236,7 +242,9 @@ class P3DAssetArchive:
             self.mount(mf_path, priority=priority)
 
     def get_model(self, virtual_path: str) -> "NodePath":
-        loader: Loader = self.base.loader  # type: ignore
+        from helpers.cache import Cache
+
+        loader: Loader = Cache.get_showbase_instance().loader  # type: ignore
 
         model_tpl: "NodePath[PandaNode] | None" = loader.loadModel(virtual_path)  # type: ignore
 
@@ -260,34 +268,43 @@ class P3DAssetArchive:
 
     def _gather_files(self) -> List[Tuple[str, Path]]:
         results: List[Tuple[str, Path]] = []
+        print(f"Gathering files from base dirs: {self.base_dirs}")
         for base in self.base_dirs:
+            print(f"Scanning base dir: {base}")
             b = Path(base)
             if not b.exists():
+                print(f"Base dir does not exist: {b}")
                 continue
 
-            for p in sorted(b.rglob("*")):
-                if not p.is_file():
-                    continue
+            for root, dirs, files in os.walk(b, followlinks=self.follow_symlinks):
+                root_path = Path(root)
 
-                if self.skip_hidden and p.name.startswith("."):
-                    continue
+                if self.skip_hidden:
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
 
-                if self.skip_no_ext and p.suffix == "":
-                    continue
+                for fname in files:
+                    print(f"Checking file: {fname}")
+                    if self.skip_hidden and fname.startswith("."):
+                        continue
+                    p = root_path / fname
+                    if not p.is_file():
+                        continue
 
-                if self.include_exts and p.suffix.lower() not in self.include_exts:
-                    continue
+                    if self.skip_no_ext and not p.suffix:
+                        continue
 
-                if any(p.match(g) or str(p).endswith(g) for g in self.exclude_globs):
-                    continue
+                    if self.include_exts is not None:
+                        suffixes: List[str] = [s.lower() for s in p.suffixes]
+                        if not any(s in self.include_exts for s in suffixes):
+                            continue
 
-                rel = p.relative_to(b).as_posix()
-                vp = f"{self.prefix}/{rel}" if self.prefix else rel
+                    if any(p.match(g) or str(p).endswith(g) for g in self.exclude_globs):
+                        continue
 
-                if WindowsHelper.is_windows():
-                    vp = WindowsHelper.win32_to_unix_path(vp)
+                    rel = p.relative_to(b).as_posix()
+                    vp = f"{self.prefix}/{rel}" if self.prefix else rel
+                    results.append((vp, p))
 
-                results.append((vp, p))
         return results
 
     def _candidate_filenames(self, vp: str) -> List[Filename]:

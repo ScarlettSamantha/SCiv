@@ -83,7 +83,6 @@ class GameConfigMenu(Screen):
         self.container.add_widget(self.players_label)
         self.container.add_widget(self.players)
 
-        # Civilization Selection with Extra Padding Below
         self.civilization_section = BoxLayout(orientation="vertical", size_hint=(1, None), spacing=5, padding=(0, 0.2))
 
         self.civilization_section.add_widget(Label(text="Civilization"))
@@ -103,8 +102,7 @@ class GameConfigMenu(Screen):
 
         self.container.add_widget(self.size_section)
 
-        # Adding extra spacing before Back and Start buttons
-        self.container.add_widget(Widget(size_hint_y=None, height=20))  # Adds extra padding
+        self.container.add_widget(Widget(size_hint_y=None, height=20))
 
         self.dev_mode = CheckBox(size_hint=(1, None), height=50)
         self.container.add_widget(Label(text="Developer Mode"))
@@ -116,7 +114,6 @@ class GameConfigMenu(Screen):
         self.back.on_press = self.back_to_main_menu
         self.button_container.add_widget(self.back)
 
-        # Spacer Widget to push "Start" to the right
         self.button_container.add_widget(Widget(size_hint_x=1))
 
         self.start = Button(text="Start", size_hint=(None, None), height=50, width=200)
@@ -143,6 +140,7 @@ class GameConfigMenu(Screen):
                     "120x180 (Large 4:3)": (120, 180),
                     "150x150 (Large)": (150, 150),
                     "200x200 (Dont use)": (200, 200),
+                    "250x250 (Dont use)": (250, 250),
                 },
             )
         self.size_popup.open()
@@ -156,12 +154,10 @@ class GameConfigMenu(Screen):
         self.civ_popup.open()
 
     def select_size(self, size: str, _value: Tuple[int, int]):
-        """Updates the resolution selection button"""
         self.selected_size = _value
         self.size_popup_button.text = size  # type: ignore
 
     def select_civilization(self, civilization: str, _value: Type[BaseCivilization]):
-        """Updates the civilization selection button"""
         self.selected_civilization = _value
         self.dropdown_button.text = civilization
 
@@ -177,7 +173,7 @@ class GameConfigMenu(Screen):
         from kivy.clock import Clock
 
         if self.selected_size is None:
-            self.update_selected_size()  # To ensure the size is up to date
+            self.update_selected_size()
 
         size: Tuple[int, int] = self.selected_size  # type: ignore
 

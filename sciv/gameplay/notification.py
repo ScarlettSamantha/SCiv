@@ -177,11 +177,9 @@ class Notification:
             return cls.conditions.are_met()
 
     def on_trigger(self) -> None:
-        """Override this method to define what happens when the notification is triggered."""
         pass
 
     def on_dismiss(self) -> None:
-        """Override this method to define what happens when the notification is dismissed."""
         pass
 
     @classmethod

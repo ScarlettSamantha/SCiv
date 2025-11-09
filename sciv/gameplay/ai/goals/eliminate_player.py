@@ -8,10 +8,6 @@ if TYPE_CHECKING:
 
 
 class EliminatePlayer(Goal):
-    """
-    EliminatePlayer is a goal that represents the AI's objective to eliminate a specific player.
-    """
-
     name = "Eliminate Player Goal"
     description = "Eliminate a specific player"
 

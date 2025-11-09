@@ -4,13 +4,6 @@ from direct.interval.IntervalGlobal import Func, Sequence, Wait
 
 from system.actions import Action
 
-"""
-Base class for timed actions.
-
-This version uses Python’s threading.Timer to schedule a callback after a delay.
-It won’t block the main thread in the meantime.
-"""
-
 
 class BaseTimedAction(Action):
     def __init__(
@@ -36,22 +29,18 @@ class BaseTimedAction(Action):
         self.logger = self.logger.getChild("timed").getChild(str(self.name))
 
     def _timed_callback(self, *args: Any, **kwargs: Any) -> None:
-        """Invoked by the timer after the delay."""
         self._logger.info(f"Action {self.name} has been completed and the callback has been invoked.")
         if self._on_callback is not None:
-            # Pass our parent's run() so that the callback can chain it when ready.
             self._on_callback(self, super().run, *args, **kwargs)
         else:
             super().run()
 
     def _run_invoke(self, *args: Any, **kwargs: Any) -> None:
-        """Called right before setting up the timer (useful for immediate side effects)."""
         if self._on_invoke is not None:
             self._logger.info(f"Invoking action {self.name}.")
             self._on_invoke(self, *args, **kwargs)
 
     def run(self) -> None:
-        """Starts the timed action in a non-blocking fashion."""
         self._run_invoke()
         self._logger.info(f"Starting timer for action {self.name} with a delay of {self._delay} seconds.")
         self.sequence = Sequence(Wait(self._delay), Func(self._timed_callback))  # type: ignore

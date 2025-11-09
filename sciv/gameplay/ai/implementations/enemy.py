@@ -8,11 +8,6 @@ if TYPE_CHECKING:
 
 
 class EnemyAI(AI):
-    """
-    EnemyAI is a subclass of AI that represents the AI that controls the enemy players.
-    It will manage the other players' units, cities, tiles, goals, memory, tasks, and personality.
-    """
-
     def __init__(self, player: "Player"):
         super().__init__(player)
 

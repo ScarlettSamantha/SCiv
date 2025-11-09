@@ -15,10 +15,6 @@ T = TypeVar("T", bound="SuperEnum")
 
 
 class SuperEnum(Enum):
-    """
-    Enum with dynamic fields. Each value is a tuple mapped to __keys__.
-    """
-
     __keys__: ClassVar[List[str]] = []
 
     def __init__(self, *args: Any):

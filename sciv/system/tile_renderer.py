@@ -15,11 +15,12 @@ from panda3d.core import (
     NodePath,
     OmniBoundingVolume,
     SamplerState,
-    Shader,
     Texture,
     TransparencyAttrib,
 )
 from system.atlas import AtlasGenerator
+
+from system.asset_archive import P3DAssetArchive
 
 T_TileRef = Any  # type: ignore
 
@@ -59,6 +60,8 @@ class TileRendererSystem:
         self._capacity: int = 0
         self._bulk: bool = False
 
+        self.assets: P3DAssetArchive = Cache.get_asset_archive()
+
         self._wps: Optional[GeomVertexWriter] = None
         self._wuv: List[GeomVertexWriter] = []
 
@@ -74,9 +77,9 @@ class TileRendererSystem:
         self._setup_shader()
 
     def _setup_shader(self) -> None:
-        vs = self.base.base_path / "../assets/shaders/tile_icons_instanced.vert.glsl"
-        fs = self.base.base_path / "../assets/shaders/tile_icons_instanced.frag.glsl"
-        self.node.setShader(Shader.load(Shader.SL_GLSL, str(vs), str(fs)))
+        vs = "assets/shaders/tile_icons_instanced.vert.glsl"
+        fs = "assets/shaders/tile_icons_instanced.frag.glsl"
+        self.node.setShader(self.assets.get_shader(str(fs), str(vs)))
         self.node.set_shader_input("icon_atlas", self._atlas_tex)  # type: ignore
         self.node.set_shader_input("u_aniso", (1.0, 0.8660254037844386))  # type: ignore
         half_w = self.TILE_SCALE * 0.5

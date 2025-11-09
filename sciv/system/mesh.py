@@ -308,10 +308,6 @@ class HexGrid:
             raise ValueError(f"Tile at coordinates ({x}, {y}) not found.")
 
     def get_wall_record(self, tile_index: int) -> Optional[Tuple[int, int]]:
-        """
-        Return (start_row, vertex_count) for that tile’s wall in the merged Geom.
-        If that tile had no wall (height <= 0), returns None.
-        """
         if tile_index < 0 or tile_index >= len(self.centers):
             raise IndexError(f"tile_index {tile_index} out of range")
 
@@ -322,38 +318,25 @@ class HexGrid:
         return (start, count)
 
     def set_wall_color_for_tile(self, tile_index: int, new_color: Tuple4f) -> None:
-        """
-        Overwrite the vertex‐colors for the wall of a single hex (by tile_index).
-        If that tile has no wall (height ≤ 0), this does nothing.
-        """
-        # Make sure walls exist
         if not self.walls_np:
             return
 
-        # Look up the record we stored during build_merged_hex_walls()
         record = self.get_wall_record(tile_index)
         if record is None:
             return  # this tile had no wall
 
         start_row, vertex_count = record
 
-        # Grab the GeomVertexData from the existing merged node
         geom_node: GeomNode = self.walls_np.node()  # type: ignore
         geom = geom_node.modifyGeom(0)  # type: ignore
         vdata = geom.modifyVertexData()  # type: ignore
-
-        # Prepare a writer on the "color" column (c4f)
         cw = GeomVertexWriter(vdata, "color")
 
-        # Overwrite only the rows [start_row .. start_row + vertex_count)
         for row in range(start_row, start_row + vertex_count):
             cw.setRow(row)
             cw.setData4f(*new_color)
 
     def get_all_wall_records(self) -> List[Tuple[int, int, int]]:
-        """
-        Return a list of (tile_index, start_row, vertex_count) for every tile that actually has walls.
-        """
         records: List[Tuple[int, int, int]] = []
         for i, start in enumerate(self.wall_starts):
             if start is not None and self.wall_vertex_counts[i] > 0:
@@ -361,7 +344,6 @@ class HexGrid:
         return records
 
     def build_nodes(self):
-        # build mesh
         self.grid_np = self.build_geom_node()
         self.grid_np.reparentTo(self.root_np)  # type: ignore
 
@@ -372,7 +354,7 @@ class HexGrid:
 
     def generate_hex_uvs(self):
         self._hex_uvs = []
-        # flat-top orientation: start at -30°, step 60°
+
         for i in range(6):
             ang = math.radians(60 * i - 30)
             u = (math.cos(ang) + 1.0) * 0.5
@@ -389,9 +371,8 @@ class HexGrid:
         prim: GeomTriangles = GeomTriangles(Geom.UHStatic)
         prim.make_indexed()  # type: ignore
 
-        # helper for flat-top spacing
         horizontal_spacing, vert = self.get_hex_spacing(self.radius)
-        # choose coords list
+
         coords: List[Tuple[float, float, float]] = (
             [(t.x, t.y, t.calculate_z_pos_on_altitude()[2]) for t in self.tiles]
             if self.tiles
@@ -400,14 +381,12 @@ class HexGrid:
 
         vert_idx = 0
         for _, (col, row, z) in enumerate(coords):
-            # world center
             cx: float = col * horizontal_spacing
             cy: float = row * vert + (vert * 0.5 if (col % 2) else 0.0)
-            # build the 7 verts: 6 corners + center
+
             hverts: List[Tuple[float, float, float]] = self.create_flat_top_hexagon_vertices(self.radius, (cx, cy, z))
-            # emit them
+
             for _, (x, y, zv) in enumerate(hverts):
-                # map into atlas cell
                 vw.addData3f(x, y, zv)
                 nw.addData3f(0, 0, 1)
             vert_idx += 7
@@ -432,10 +411,11 @@ class HexGrid:
         cw = GeomVertexWriter(vdata, "color")
         start = self.hex_starts[tile_index]
         count = 7
+
         for vi in range(start, start + count):
             cw.setRow(vi)
             cw.setData4f(*color + (1.0,))  # type: ignore
-        # (Optional) read back for debugging
+
         reader = GeomVertexReader(vdata, "color")
         reader.setRow(start)
         print(f"Vertex {start} new color:", reader.getData4f())

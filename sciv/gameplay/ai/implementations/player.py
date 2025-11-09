@@ -8,11 +8,6 @@ if TYPE_CHECKING:
 
 
 class PlayerAI(AI):
-    """
-    PlayerAI is a subclass of AI that represents the AI that helps the player by optionally auto managing things.
-    It can manage the player's units, cities, tiles, goals, memory, tasks, and personality.
-    """
-
     def __init__(self, player: "Player"):
         super().__init__(player)
 

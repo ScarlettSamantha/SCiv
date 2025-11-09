@@ -74,10 +74,6 @@ class ConfigManager(Singleton):
         )
 
     def get_by_key(self, key: Tuple[str, ...], default: Optional[Any] = None, *args: Any) -> Any:
-        """
-        Get a value from the config by key.
-        Example: get_by_key("window", "win-size") -> [1280, 720]
-        """
         data = self.config_data
         for k in key:
             if k in data:
@@ -90,10 +86,6 @@ class ConfigManager(Singleton):
         return self.config_data
 
     def get_default(self, key: Tuple[str, ...], default: Any) -> Any:
-        """
-        Get a value from the config by a single key.
-        Example: get("window") -> {"win-size": [1280, 720], ...}
-        """
         data = self.config_data
         for k in key:
             data = data.get(k, {})

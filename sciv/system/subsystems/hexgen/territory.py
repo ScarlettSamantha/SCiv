@@ -23,7 +23,6 @@ class Territory:
 
     @property
     def frontier(self) -> list[Any]:
-        """Gets a list of hexes that border this territory that are unowned"""
         frontier: List["Hex"] = []
         for m in self.last_added:
             frontier.extend([h for h in m.surrounding if h.is_owned is False])
@@ -38,7 +37,6 @@ class Territory:
 
     @property
     def neighbors(self) -> set[Any]:
-        """Returns a set of Territories this territory is next to"""
         terr: set["Territory"] = set()
         for h in self.members:
             terr.update(
@@ -64,7 +62,6 @@ class Territory:
 
     @property
     def biomes(self) -> List[Dict[str, Any]]:
-        """Gets a list of biomes and percents"""
         b: Dict[str, Dict[str, Any]] = {}
         for h in self.members:
             if h.biome.name in b:
@@ -88,12 +85,6 @@ class Territory:
         return "<Territory ID: {}>".format(self.id)
 
     def find_groups(self):
-        """
-        Calculates the contiguous groups of hexes in this territory
-        :return:
-        """
-        # print("Territory {}: Members: {}".format(self.id, len(self.members)))
-
         def find_unmarked():
             while True:
                 found = random.choice(self.members)
@@ -112,7 +103,6 @@ class Territory:
                 for s in sh.map_surrounding
                 if s.is_land and s.territory is not None and s.territory == self and s.marked is False
             ]
-            # print("\t\tStep into HEX: {}, {} -> Found: {}".format(sh.x, sh.y, len(sur)))
             for h in sur:
                 step(h, group)
 
@@ -121,13 +111,11 @@ class Territory:
 
         groups: List[List["Hex"]] = []
         while num_marked() < len(self.members):
-            # print("\t{} < {}".format(num_marked(), len(self.members)))
             group: List["Hex"] = []
             sh = find_unmarked()
             step(sh, group)
             groups.append(group)
 
-        # print(groups)
         result: List[Dict[str, Any]] = []
         for g in groups:
             mx_s = [h.x for h in g]

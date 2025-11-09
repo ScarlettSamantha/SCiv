@@ -8,8 +8,6 @@ if TYPE_CHECKING:
 
 
 class Geoform:
-    """A landmass or water feature"""
-
     def __init__(self, hexes: set["Hex"], geotype: "GeoformType"):
         self.type: "GeoformType" = geotype  # GeoformType
         self.hexes: Set["Hex"] = hexes  # set
@@ -22,13 +20,9 @@ class Geoform:
             h.geoform = self
 
     def to_dict(self) -> dict[str, str | int]:
-        """Dictionary representation"""
         return {"id": self.id.hex, "type": self.type.name, "size": self.size}
 
     def neighbor_of_type(self, other_type: "GeoformType") -> list["Geoform"]:
-        """
-        Returns all neighbors of a given type
-        """
         result: List["Geoform"] = []
         for n in self.neighbors:
             if n.type is other_type:
@@ -42,21 +36,15 @@ class Geoform:
         return result
 
     def merge(self, other: "Geoform") -> None:
-        """Merge another Geoform into this one"""
-        # add their hexes to mine
         self.hexes.update(other.hexes)
         self.size += len(other.hexes)
-        # set their hexes to me
         for h in other.hexes:
             h.geoform = self
-        # empty their hexes
         other.hexes = set()
         other.size = 0
-        # mark them to be deleted
         other.to_delete = True
 
     def is_geotype(self, geotype: "GeoformType") -> bool:
-        """Is this geoform this type?"""
         return self.type is geotype
 
     def __eq__(self, other: object) -> bool:

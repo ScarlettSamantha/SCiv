@@ -46,7 +46,6 @@ class AssetManager(Singleton):
 
     @classmethod
     def reset(cls) -> None:
-        """Reset the asset manager caches."""
         cls.texture_cache.clear()
         cls.font_cache.clear()
         cls.model_cache.clear()
@@ -131,10 +130,8 @@ class AssetManager(Singleton):
             raise ValueError(f"Failed to load model from {path}")
 
         if use_cache:
-            # Cache the original model
             cls.model_cache[cache_key] = model
 
-        # Return the original model since it's not coming from the cache
         return model
 
     @classmethod
@@ -204,7 +201,6 @@ class AssetManager(Singleton):
 
     @classmethod
     def load_pil_image(cls, path: str, use_cache: bool = True) -> PILImage.Image:
-        """Load a PIL image directly from assets."""
         if use_cache and path in cls.pil_image_cache:
             pil_image = cls.pil_image_cache.get(path, None)
             if pil_image is None:
@@ -223,7 +219,6 @@ class AssetManager(Singleton):
 
     @classmethod
     def load_pil_font(cls, path: str, size: int = 24, use_cache: bool = True) -> PILImageFont.FreeTypeFont:
-        """Load a PIL font (truetype) directly from assets."""
         key: Tuple[str, str] = (path, str(size))
         if use_cache and key in cls.pil_font_cache:
             pil_font = cls.pil_font_cache.get(key, None)

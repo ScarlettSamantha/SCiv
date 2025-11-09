@@ -11,10 +11,6 @@ class ModelHelper:
 
     @classmethod
     def reset(cls):
-        """
-        Reset the position cache to clear any cached slot positions.
-        This is useful if the radius or slot radius changes.
-        """
         cls._position_cache.clear()
         cls.asset_manager_cache = AssetManager.get_singleton_instance()
         cls.asset_manager_cache.reset()
@@ -58,13 +54,6 @@ class ModelHelper:
 
     @classmethod
     def compute_uniform_scale(cls, size: Vec3, target_bounds: tuple[float, float, float, float]) -> float:
-        """
-        Calculate a uniform scale factor so that an object of given size fits within target bounds.
-
-        :param size: Vec3 representing current (width, depth, height)
-        :param target_bounds: (min_x, max_x, min_y, max_y) defining the target rectangle in the X-Y plane
-        :return: Uniform scale factor
-        """
         min_x, max_x, min_y, max_y = target_bounds
         target_width = max_x - min_x
         target_depth = max_y - min_y
@@ -76,12 +65,6 @@ class ModelHelper:
 
     @classmethod
     def get_size(cls, node: NodePath) -> Vec3:
-        """
-        Compute the size (width, depth, height) of a NodePath's tight AA BB.
-
-        :param node: The NodePath whose size to compute
-        :return: Vec3 representing (width, depth, height)
-        """
         bounds = node.getTightBounds()
         if not bounds or len(bounds) != 2:
             raise ValueError("Invalid bounds returned from getTightBounds")
@@ -90,22 +73,11 @@ class ModelHelper:
 
     @classmethod
     def scale_to_bounds(cls, node: NodePath, target_bounds: tuple[float, float, float, float]) -> NodePath:
-        """
-        Uniformly scale and recenter a NodePath so it fits within the specified X-Y rectangle.
-
-        :param node: The NodePath to scale and recenter
-        :param target_bounds: (min_x, max_x, min_y, max_y)
-        :return: The same NodePath, scaled and re-centered
-        """
-
-        # 1) Assess current bounds
         size = cls.get_size(node)
 
-        # 2) Compute scale
         uniform_scale = cls.compute_uniform_scale(size, target_bounds)
         node.setScale(uniform_scale)
 
-        # 3) Recenter within its own local space
         bounds = node.getTightBounds()
         if not bounds or len(bounds) != 2:
             raise ValueError("Invalid bounds returned from getTightBounds")

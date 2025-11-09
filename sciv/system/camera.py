@@ -18,16 +18,6 @@ if TYPE_CHECKING:
 
 
 class Camera(Singleton, DirectObject):
-    """
-    Modified camera controller:
-      - Left-drag => rotate around pivot (with a threshold)
-      - Right-drag => pan/move
-      - Q/E => rotate around pivot by rotation_speed
-      - Mouse wheel => zoom
-      - R => recenter
-      - WASD/arrow keys => optional panning
-    """
-
     def __init__(self, base: "OpenCiv"):
         self.base: "OpenCiv" = base
         self.active = True

@@ -48,10 +48,6 @@ class CombatOutcome(NamedTuple):
 
 @dataclass
 class CombatStats:
-    """
-    Holds all numeric parameters affecting combat.
-    """
-
     melee_attack: float
     ranged_attack: float
     melee_defense: float

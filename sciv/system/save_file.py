@@ -120,8 +120,6 @@ class BaseSaver(ABC):
     def get_saved_meta_data(self) -> Dict[str, Any]: ...
 
     def compress_and_inject_data(self, data: bytes) -> bytes:
-        """Compress data using gzip if enabled."""
-
         if self.inject_metadata:
             self.register_modifications_metadata()
         if self.compression_enabled:
@@ -129,7 +127,6 @@ class BaseSaver(ABC):
         return data
 
     def decompress_data(self, data: bytes) -> bytes:
-        """Decompress data if compression is enabled."""
         if self.compression_enabled:
             return gzip.decompress(data)
         return data

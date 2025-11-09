@@ -549,11 +549,9 @@ class Resources:
         self.__dict__.update(state)
 
     def __len__(self) -> int:
-        """This is the true len for check if there is anything in the resources"""
         return len(self.flatten())
 
     def len(self) -> int:
-        """This is the len that checks if there is anything actually valuable in the resources and non mechanic resources."""
         return len(self.flatten([ResourceType.BONUS, ResourceType.LUXURY, ResourceType.STRATEGIC]))
 
     def __str__(self) -> str:

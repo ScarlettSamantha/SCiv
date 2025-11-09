@@ -9,10 +9,6 @@ if TYPE_CHECKING:
 
 class Edge:
     def __init__(self, side: str, one: "Hex", two: "Hex", up: "Hex", down: "Hex"):
-        """
-        One and Two are Hexes on both sides.
-        Up is the Hex up-slope of the edge and Down is the Hex down-slope
-        """
         self.side: str = side
         self.one: "Hex" = one
         self.two: "Hex" = two
@@ -59,12 +55,6 @@ class Edge:
                 return EdgeDirection.south_east
 
     def __eq__(self, other: object) -> bool:
-        """
-        :param other: object
-        :return: True if both edges are equal to each other
-
-        Eg: A Hex's south-east is equal to the bottom-left's north-west
-        """
         if not isinstance(other, Edge):
             return NotImplemented
         return other.one == self.two or (self.one == other.one and self.two == other.two)

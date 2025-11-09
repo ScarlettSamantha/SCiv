@@ -18,9 +18,6 @@ class DebugApp:
         }
 
     def _profile(self, args: argparse.Namespace) -> None:
-        """
-        Run py-spy to profile the target application.
-        """
         output = args.output_file
         cmd = f"py-spy record -t --format=speedscope -o {output} ./main.py"
 
@@ -34,15 +31,11 @@ class DebugApp:
             self.console.print(f"[bold green]Done![/] Profile saved to [underline]{output}[/]")
 
     def _clear_cache(self, args: argparse.Namespace) -> None:
-        """
-        Clear all files and subdirectories under assets/generated.
-        """
         cache_dir = Path("assets/generated")
         if not cache_dir.exists():
             self.console.print(f"[yellow]No cache directory found at[/] {cache_dir}")
             return
 
-        # Remove everything inside cache_dir
         for item in cache_dir.iterdir():
             if item.is_dir():
                 shutil.rmtree(item)

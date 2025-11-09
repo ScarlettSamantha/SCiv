@@ -26,6 +26,7 @@ def _parse_paths(vals: List[str]) -> List[Path]:
 
 
 def main() -> int:
+    print("Packaging assets into Panda3D multifile archive...")
     p = argparse.ArgumentParser(prog="package_assets", add_help=True)
     p.add_argument("-i", "--input", action="append", required=False, default=["assets"])
     p.add_argument("-o", "--output", required=False, default="assets.mf")
@@ -41,6 +42,9 @@ def main() -> int:
     args = p.parse_args()
 
     input_dirs: List[Path] = _parse_paths(args.input)
+
+    print(f"Input dirs: {input_dirs}")
+
     output: Path = Path(args.output).resolve()
     include_exts: Set[str] | None = _parse_exts(args.include_exts)
     archive = P3DAssetArchive(
@@ -52,6 +56,7 @@ def main() -> int:
         include_exts=include_exts,
         exclude_globs=args.exclude,
     )
+    archive.build()
 
     entries: List[str] = archive.list()
 

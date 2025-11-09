@@ -154,7 +154,6 @@ def pil_image_to_panda3d_texture(pil_img: Image.Image) -> Texture:
 
 
 def normalize_to_byte(value: float) -> int:
-    """Convert a normalized float (0.0–1.0) to a byte value (0–255)."""
     return max(0, min(255, int(round(value * 255))))
 
 

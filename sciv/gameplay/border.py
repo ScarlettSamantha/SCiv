@@ -79,43 +79,25 @@ class Borders(DirectObject, Singleton):
             path_hex_border_frag,
         )
 
-        # create a threaded TaskChain named "borders"
         self.base.taskMgr.setupTaskChain("borders", numThreads=1)
-
-        # listen for async-mask completion
         self.accept("borders.task_done", self._on_task_done)
 
-        # initial build + event hooks
         self.setup_borders()
         self.register()
 
     def register(self) -> None:
-        # update time uniform on main chain
         Cache.get_showbase_instance().taskMgr.add(self.update_border_times, "update_border_shader_times", delay=5)
         self.accept("game.border.refresh", self.refresh)
 
     def setup_borders(self) -> None:
         self.reset()
 
-        # - - This was creating so many nodes that it was causing performance issues - -
-        # world-mask stays sync (optional to thread similarly)
-        # self.hex_border_tex = self.generate_world_border_mask(
-        #    map_size=(self.map_width, self.map_height),
-        #    hex_radius_px=50,
-        # )
-
-        # clear old textures
         for tex in self.border_textures.values():
             tex.release_all()
         self.border_textures.clear()
 
-        # kick off async player-mask builds
         for p in PlayerManager.all().values():
             self._enqueue_player(p)
-
-        # - - This was creating so many nodes that it was causing performance issues - -
-        # draw world outlines
-        # self.apply_shader_to_hexes(self.generate_world_border_nodes())
 
     def refresh(self, *args: Any) -> None:
         self.reset()
@@ -154,7 +136,6 @@ class Borders(DirectObject, Singleton):
         owned: Set[Tuple[int, int]],
         growing: Set[Tuple[int, int]],
     ) -> bool:
-        """Runs off-thread: builds PNMImage and sends it back on 'borders.task_done'."""
         mask = PNMImage(self.map_width, self.map_height, 3)
         mask.fill(0)
         for x, y in owned:
@@ -169,14 +150,12 @@ class Borders(DirectObject, Singleton):
         return Task.done  # type: ignore
 
     def _on_task_done(self, player_id: str, mask: PNMImage) -> None:
-        """Main-thread: convert mask → Texture, rebuild hexes, fire UI update."""
         tex = Texture(f"border_mask_{player_id}")
         tex.load(mask)
         tex.set_magfilter(Texture.FT_nearest)
         tex.set_minfilter(Texture.FT_nearest)
         self.border_textures[player_id] = tex
 
-        # replace that player’s hex nodes
         for node in self.border_nodes.get(player_id, []):
             node.remove_node()
         player = PlayerManager.all()[int(player_id)]
@@ -190,7 +169,6 @@ class Borders(DirectObject, Singleton):
         hex_radius_px: int = 50,
         bg_color: Tuple[int, int, int] = (0, 0, 0),
     ) -> Texture:
-        # collect all owned/growing tiles into self.player_tiles
         cols, rows = map_size
         player_tiles: Set[Tuple[int, int]] = set()
         for player in PlayerManager.all().values():
@@ -198,7 +176,6 @@ class Borders(DirectObject, Singleton):
             player_tiles.update(tiles_p)
         self.player_tiles = player_tiles
 
-        # compute image dimensions
         r = hex_radius_px
         w = 2 * r
         h = int(math.sqrt(3) * r)
@@ -207,10 +184,8 @@ class Borders(DirectObject, Singleton):
         img_w = horizontal * (cols - 1) + w
         img_h = vert * rows + r
 
-        # build PIL image entirely in memory
         img = Image.new("RGB", (img_w, img_h), bg_color)
 
-        # convert PIL → PNMImage via an in-memory buffer
         pnm = PNMImage()
         with io.BytesIO() as buf:
             img.save(buf, format="PNG")
@@ -307,7 +282,6 @@ class Borders(DirectObject, Singleton):
     def _get_world_edge_mask(self, x: int, y: int) -> int:
         from managers.world import World
 
-        """bit i is set if neighbor in direction i is a different terrain."""
         mask = 0
         grid = World.get_singleton_instance().get_grid()
         here = grid[(x, y)].terrain_type  # type: ignore

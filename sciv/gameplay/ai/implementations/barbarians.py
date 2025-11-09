@@ -8,11 +8,6 @@ if TYPE_CHECKING:
 
 
 class BarbariansAI(AI):
-    """
-    Barbarians is a subclass of AI that represents the AI that controls the barbarian players.
-    It will manage the barbarian units, goals, memory, tasks.
-    """
-
     def __init__(self, player: "Player"):
         super().__init__(player)
 

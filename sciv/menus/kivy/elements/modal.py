@@ -74,8 +74,6 @@ class OutlineButton(Button):
 
 
 class _PanelBackground(Widget):
-    """Draws a black border and dark gray inner background behind content."""
-
     border_px: NumericProperty | int = NumericProperty(4)  #  type: ignore
     border_color: ListProperty | List[int] = ListProperty([0, 0, 0, 1])  # type: ignore
     inner_color: ListProperty | List[float] = ListProperty([0.15, 0.15, 0.15, 1])  # type: ignore

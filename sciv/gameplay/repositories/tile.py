@@ -63,20 +63,12 @@ class TileRepository:
 
     @classmethod
     def precompute_neighbors(cls, max_radius: int) -> None:
-        """Call once at game-load to fill caches up to `max_radius`."""
         for tile in cls.get_grid().values():
             for r in range(1, max_radius + 1):
                 cls.get_neighbors(tile, radius=r)
 
     @classmethod
     def get_tile(cls, x: int, y: int) -> Optional["Tile"]:
-        """
-        Retrieve the tile at the given (x, y) coordinate from the world's grid.
-
-        :param x: x-coordinate
-        :param y: y-coordinate
-        :return: The Tile at (x, y) if it exists; otherwise, None.
-        """
         _tile = cls.get_grid().get((x, y))
         if _tile:
             return _tile
@@ -84,13 +76,6 @@ class TileRepository:
 
     @classmethod
     def search(cls, callback: Callable[["Tile"], bool]) -> List["Tile"]:
-        """
-        Search for a tile in the grid using a callback function.
-
-        :param tile: The starting tile.
-        :param callback: A function that takes a tile and returns True if it matches the search criteria.
-        :return: The first tile that matches the criteria, or None if no match is found.
-        """
         tiles: List["Tile"] = []
         for _tile in cls.get_grid().values():
             if callback(_tile):
@@ -99,11 +84,6 @@ class TileRepository:
 
     @classmethod
     def search_passable_land(cls) -> List["Tile"]:
-        """
-        Search for all passable land tiles in the grid.
-
-        :return: A list of passable land tiles.
-        """
         return cls.search(lambda tile: tile.is_passable())
 
     @classmethod
@@ -112,21 +92,12 @@ class TileRepository:
 
     @classmethod
     def is_near_map_edge(cls, map_dimensions: Tuple[int, int], tile: "Tile", threshold: int = 3) -> bool:
-        """Returns True if the tile is too close to the edge of the map."""
         x, y = tile.get_map_cords()
         map_width, map_height = map_dimensions
         return x < threshold or y < threshold or x >= map_width - threshold or y >= map_height - threshold
 
     @classmethod
     def get_tiles_in_radius_from_cords(cls, x: int, y: int, radius: int) -> List["Tile"]:
-        r"""
-        Retrieves all tiles within a given hexagonal radius from the specified coordinates.
-
-        :param x: The x-coordinate of the origin tile.
-        :param y: The y-coordinate of the origin tile.
-        :param radius: The radius (in hex steps) to search.
-        :return: List of Tile objects within the specified radius.
-        """
         tile = cls.get_tile(x, y)
         if tile is None:
             return []
