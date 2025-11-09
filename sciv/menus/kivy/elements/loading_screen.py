@@ -14,6 +14,9 @@ from kivy.uix.label import Label
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.widget import Widget
 
+from helpers.cache import Cache
+from system.asset_archive import P3DAssetArchive
+
 
 class LoadingScreen(FloatLayout):
     total_steps = NumericProperty(1)
@@ -31,14 +34,16 @@ class LoadingScreen(FloatLayout):
         super().__init__(**kwargs)
         self.on_complete = on_complete
 
+        self.assets: P3DAssetArchive = Cache.get_asset_archive()
+
         with self.canvas.before:  # type: ignore
             Color(0, 0, 0, 1)
             self.bg_rect = Rectangle(pos=self.pos, size=self.size)  # type: ignore
 
         self.bind(pos=self._update_bg, size=self._update_bg)  # type: ignore
 
-        self.bg_image = Image(
-            source=random.choice(self.loading_screen_images),
+        self.bg_image = self.assets.get_kivy_image_object(
+            virtual_path=random.choice(self.loading_screen_images),
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(1, 1),
