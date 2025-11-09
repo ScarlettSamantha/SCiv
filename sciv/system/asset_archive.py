@@ -5,7 +5,15 @@ from typing import Any, Iterable, List, Optional, Set, Tuple, cast
 
 from helpers.os import WindowsHelper
 from kivy.uix.image import Image
-from panda3d.core import Filename, Multifile, Texture, VirtualFileSystem, loadPrcFileData  # type: ignore
+from panda3d.core import (  # type: ignore
+    Filename,
+    Multifile,
+    NodePath,
+    PandaNode,
+    Texture,
+    VirtualFileSystem,
+    loadPrcFileData,
+)
 from PIL.ImageFile import ImageFile
 from PIL.ImageFont import FreeTypeFont
 
@@ -83,6 +91,9 @@ class P3DAssetArchive:
         skip_no_ext: bool = True,
         password: Optional[str] = None,
     ):
+        from helpers.cache import Cache
+
+        self.base = Cache.get_showbase_instance()
         self.archive_path = Path(archive_path)
         self.mount_point = mount_point.rstrip("/") or "/"
         self.prefix = (prefix or "").strip("/")
@@ -203,6 +214,16 @@ class P3DAssetArchive:
         self.build(force=force)
         if auto_mount:
             self.mount(mf_path, priority=priority)
+
+    def get_model(self, virtual_path: str) -> "NodePath":
+        loader = self.base.loader
+
+        model_tpl: "NodePath[PandaNode] | None" = loader.loadModel(virtual_path)
+
+        if not model_tpl:
+            raise FileNotFoundError(f"Model not found in asset archive: {virtual_path}")
+
+        return model_tpl
 
     @classmethod
     def mount_only(

@@ -1,5 +1,4 @@
 import math
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 from direct.task import Task
@@ -9,7 +8,6 @@ from helpers.icons import Icons
 from helpers.images import generate_city_nameplate, normalize_color_to_bytes, pil_image_to_panda3d_texture
 from helpers.os import WindowsHelper
 from helpers.placeholder import Placeholder
-from managers.assets import AssetManager
 from managers.game import Game
 from managers.i18n import I18nManager, T_TranslationOrStr, get_i18n
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
@@ -625,9 +623,9 @@ class TileRenderer:
         if self.base is None:
             raise ValueError("TileRenderer base is not initialized.")
 
-        full_path = str(Path(self.base.get_base_path()).joinpath(model_path).absolute())
+        full_path = model_path
         self.last_result = None
-        model_tpl: NodePath = AssetManager.load_model(full_path)
+        model_tpl: NodePath = self.assets.get_model(full_path)
         if not model_tpl:
             self.tile.logger.error(f"Model {full_path} could not be loaded.")
             return None
