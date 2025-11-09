@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Self
+from typing import TYPE_CHECKING, Any, Dict, List, Self, Type
 
 if TYPE_CHECKING:
     from gameplay.resource import BaseResource
@@ -47,6 +49,30 @@ class Yields:
         "holy",
     ]
 
+    _RES_CACHE: Dict[str, Type["BaseResource"]] | None = None
+
+    @classmethod
+    def _res_cache(cls) -> Dict[str, Type["BaseResource"]]:
+        if cls._RES_CACHE is None:
+            from gameplay.resources.core.basic.culture import Culture  # type: ignore
+            from gameplay.resources.core.basic.faith import Faith  # type: ignore
+            from gameplay.resources.core.basic.food import Food  # type: ignore
+            from gameplay.resources.core.basic.gold import Gold  # type: ignore
+            from gameplay.resources.core.basic.housing import Housing  # type: ignore
+            from gameplay.resources.core.basic.production import Production  # type: ignore
+            from gameplay.resources.core.basic.science import Science  # type: ignore
+
+            cls._RES_CACHE = {
+                "gold": Gold,
+                "production": Production,
+                "science": Science,
+                "food": Food,
+                "culture": Culture,
+                "housing": Housing,
+                "faith": Faith,
+            }
+        return cls._RES_CACHE
+
     def __init__(
         self,
         name: str | None = None,
@@ -87,19 +113,18 @@ class Yields:
 
     def __getstate__(self) -> object:
         state = self.__dict__.copy()
-
         for prop in self.calculatable_properties() + self.mechanic_resources():
-            prop = f"_{prop}"
-            if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
-                del state[prop]
+            key = f"_{prop}"
+            if key in state and (state[key] is None or state[key] == 0.0):
+                del state[key]
         for prop in self._calculatable_great_people:
-            prop = f"_great_person_{prop}"
-            if hasattr(self, prop) and getattr(self, prop) is None or getattr(self, prop) == 0.0:
-                del state[prop]
+            key = f"_great_person_{prop}"
+            if key in state and (state[key] is None or state[key] == 0.0):
+                del state[key]
         return state
 
     def get_copy(self) -> "Yields":
-        new_instance = Yields(
+        return Yields(
             name=self._name,
             gold=self._gold,
             production=self._production,
@@ -110,23 +135,23 @@ class Yields:
             faith=self._faith,
             mode=self.mode,
         )
-        return new_instance
 
     def dump(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
-        for key, prop in self.__dict__.items():
-            if prop is None or prop == 0.0:
-                del state[key]
+        for key, val in list(self.__dict__.items()):
+            if val is None or val == 0.0:
+                state.pop(key, None)
         return state
 
     def load_state(self, state: Dict[str, Any]) -> None:
         self._name = state.get("_name", None)
         self.mode = state.get("mode", self.ADDITIVE)
-
-        for prop in self.calculatable_properties() + self.mechanic_resources() + self._calculatable_great_people:
-            prop = f"_{prop}"
-            if prop not in state:
-                setattr(self, prop, 0.0)
+        for prop in self.calculatable_properties():
+            setattr(self, f"_{prop}", state.get(f"_{prop}", 0.0))
+        for prop in self.mechanic_resources():
+            setattr(self, f"_{prop}", state.get(f"_{prop}", 0.0))
+        for prop in self._calculatable_great_people:
+            setattr(self, f"_great_person_{prop}", state.get(f"_great_person_{prop}", 0.0))
 
     @property
     def name(self) -> None | str:
@@ -138,129 +163,115 @@ class Yields:
 
     @property
     def gold(self) -> "BaseResource":
-        from gameplay.resources.core.basic.gold import Gold
-
-        return Gold(value=self._gold)
+        cls = self._res_cache()["gold"]
+        return cls(value=self._gold)
 
     @gold.setter
     def gold(self, value: "float | Yields | Gold") -> None:
-        from gameplay.resources.core.basic.gold import Gold
-
-        if isinstance(value, Gold):
-            self._gold = value.value
-        elif isinstance(value, (int, float)):
-            self._gold = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._gold = value.gold.value
+        if isinstance(value, Yields):
+            self._gold = value._gold
+        elif hasattr(value, "value"):
+            self._gold = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._gold = value  # type: ignore[assignment]
 
     @property
     def production(self) -> "BaseResource":
-        from gameplay.resources.core.basic.production import Production
-
-        return Production(value=self._production)
+        cls = self._res_cache()["production"]
+        return cls(value=self._production)
 
     @production.setter
     def production(self, value: "float | Yields | Production") -> None:
-        from gameplay.resources.core.basic.production import Production
-
-        if isinstance(value, Production):
-            self._production = value.value
-        elif isinstance(value, (int, float)):
-            self._production = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._production = value.production.value
+        if isinstance(value, Yields):
+            self._production = value._production
+        elif hasattr(value, "value"):
+            self._production = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._production = value  # type: ignore[assignment]
 
     @property
     def science(self) -> "BaseResource":
-        from gameplay.resources.core.basic.science import Science
-
-        return Science(value=self._science)
+        cls = self._res_cache()["science"]
+        return cls(value=self._science)
 
     @science.setter
     def science(self, value: "float | Yields | Science") -> None:
-        from gameplay.resources.core.basic.science import Science
-
-        if isinstance(value, Science):
-            self._science = value.value
-        elif isinstance(value, (int, float)):
-            self._science = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._science = value.science.value
+        if isinstance(value, Yields):
+            self._science = value._science
+        elif hasattr(value, "value"):
+            self._science = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._science = value  # type: ignore[assignment]
 
     @property
     def food(self) -> "BaseResource":
-        from gameplay.resources.core.basic.food import Food
-
-        return Food(value=self._food)
+        cls = self._res_cache()["food"]
+        return cls(value=self._food)
 
     @food.setter
     def food(self, value: "float | Yields | Food") -> None:
-        from gameplay.resources.core.basic.food import Food
-
-        if isinstance(value, Food):
-            self._food = value.value
-        elif isinstance(value, (int, float)):
-            self._food = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._food = value.food.value
+        if isinstance(value, Yields):
+            self._food = value._food
+        elif hasattr(value, "value"):
+            self._food = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._food = value  # type: ignore[assignment]
 
     @property
     def culture(self) -> "BaseResource":
-        from gameplay.resources.core.basic.culture import Culture
-
-        return Culture(value=self._culture)
+        cls = self._res_cache()["culture"]
+        return cls(value=self._culture)
 
     @culture.setter
     def culture(self, value: "float | Yields | Culture") -> None:
-        from gameplay.resources.core.basic.culture import Culture
-
-        if isinstance(value, Culture):
-            self._culture = value.value
-        elif isinstance(value, (int, float)):
-            self._culture = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._culture = value.culture.value
+        if isinstance(value, Yields):
+            self._culture = value._culture
+        elif hasattr(value, "value"):
+            self._culture = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._culture = value  # type: ignore[assignment]
 
     @property
     def housing(self) -> "BaseResource":
-        from gameplay.resources.core.basic.housing import Housing
-
-        return Housing(value=self._housing)
+        cls = self._res_cache()["housing"]
+        return cls(value=self._housing)
 
     @housing.setter
     def housing(self, value: "float | Yields | Housing") -> None:
-        from gameplay.resources.core.basic.housing import Housing
-
-        if isinstance(value, Housing):
-            self._housing = value.value
-        elif isinstance(value, (int, float)):
-            self._housing = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._housing = value.housing.value
+        if isinstance(value, Yields):
+            self._housing = value._housing
+        elif hasattr(value, "value"):
+            self._housing = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._housing = value  # type: ignore[assignment]
 
     @property
     def faith(self) -> "BaseResource":
-        from gameplay.resources.core.basic.faith import Faith
-
-        return Faith(value=self._faith)
+        cls = self._res_cache()["faith"]
+        return cls(value=self._faith)
 
     @faith.setter
     def faith(self, value: "float | Yields | Faith") -> None:
-        from gameplay.resources.core.basic.faith import Faith
-
-        if isinstance(value, Faith):
-            self._faith = value.value
-        elif isinstance(value, (int, float)):
-            self._faith = value
-        elif isinstance(value, Yields):  # type: ignore
-            self._faith = value.faith.value
+        if isinstance(value, Yields):
+            self._faith = value._faith
+        elif hasattr(value, "value"):
+            self._faith = getattr(value, "value")  # type: ignore[attr-defined]
+        else:
+            self._faith = value  # type: ignore[assignment]
 
     def clone(self) -> "Yields":
-        # Create a deep copy of the TileYield instance.
         return copy.deepcopy(self)
 
     def total_value(self) -> int:
-        return sum(getattr(self, prop).value for prop in self.calculatable_properties())
+        return int(
+            float(self._gold)
+            + float(self._production)
+            + float(self._science)
+            + float(self._food)
+            + float(self._culture)
+            + float(self._housing)
+            + float(self._faith)
+        )
 
     def __repr__(self) -> str:
         return (
@@ -282,102 +293,31 @@ class Yields:
         return self.divide(tile_yield=b)
 
     def add(self, tile_yield: "Yields") -> Self:
-        # Process simple calculatable properties
         for prop in self.calculatable_properties():
-            current = getattr(self, prop)
-            addition = getattr(tile_yield, prop)
-            new_val = current + addition
-            setattr(self, prop, new_val)
-
-        # Process mechanic resources similarly
-        # for prop in self.mechanic_resources():
-        # current = getattr(self, prop)
-        # addition = getattr(tile_yield, prop)
-        # new_val = current.value + addition.value
-        # setattr(self, prop, type(current)(value=new_val))
-
-        # Process great people yields
-        # for prop in self.calculatable_great_people():
-        # current = getattr(self, f"great_person_{prop}")
-        # addition = getattr(tile_yield, f"great_person_{prop}")
-        # new_val = current.value + addition.value
-        # setattr(self, f"great_person_{prop}", type(current)(value=new_val))
-
+            setattr(self, f"_{prop}", float(getattr(self, f"_{prop}")) + float(getattr(tile_yield, f"_{prop}")))
         return self
 
     def multiply(self, tile_yield: "Yields") -> Self:
-        # Multiply calculatable properties
         for prop in self.calculatable_properties():
-            multiplicative = getattr(tile_yield, prop)
-            if multiplicative.value in {0.0, 1.0, -1.0}:
+            m = float(getattr(tile_yield, f"_{prop}"))
+            if m in {0.0, 1.0, -1.0}:
                 continue
-            current = getattr(self, prop)
-            new_val = current.value * multiplicative.value
-            setattr(self, prop, type(current)(value=new_val))
-
-        """Multiply mechanic resources
-        for prop in self.mechanic_resources():
-            multiplicative = getattr(tile_yield, prop)
-            current = getattr(self, prop)
-            new_val = current.value * multiplicative.value
-            setattr(self, prop, type(current)(value=new_val))
-
-        # Multiply great people yields
-        for prop in self.calculatable_great_people():
-            multiplicative = getattr(tile_yield, f"great_person_{prop}")
-            current = getattr(self, f"great_person_{prop}")
-            new_val = current.value * multiplicative.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
-
+            cur = float(getattr(self, f"_{prop}"))
+            setattr(self, f"_{prop}", cur * m)
         return self
 
     def subtract(self, tile_yield: "Yields") -> Self:
-        # Process simple calculatable properties
         for prop in self.calculatable_properties():
-            current = getattr(self, prop)
-            subtraction = getattr(tile_yield, prop)
-            new_val = current.value - subtraction.value
-            setattr(self, prop, type(current)(value=new_val))
-        # Process mechanic resources similarly
-        """ for prop in self.mechanic_resources():
-            current = getattr(self, prop)
-            subtraction = getattr(tile_yield, prop)
-            new_val = current.value - subtraction.value
-            setattr(self, prop, type(current)(value=new_val))
-        # Process great people yields
-        for prop in self.calculatable_great_people():
-            current = getattr(self, f"great_person_{prop}")
-            subtraction = getattr(tile_yield, f"great_person_{prop}")
-            new_val = current.value - subtraction.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
+            setattr(self, f"_{prop}", float(getattr(self, f"_{prop}")) - float(getattr(tile_yield, f"_{prop}")))
         return self
 
     def divide(self, tile_yield: "Yields") -> Self:
-        # Process simple calculatable properties
         for prop in self.calculatable_properties():
-            divisor = getattr(tile_yield, prop)
-            # Skip division for values that don't modify the yield or could be zero.
-            if divisor.value in {0.0, 1.0, -1.0}:
+            d = float(getattr(tile_yield, f"_{prop}"))
+            if d in {0.0, 1.0, -1.0}:
                 continue
-            current = getattr(self, prop)
-            new_val = current.value / divisor.value
-            setattr(self, prop, type(current)(value=new_val))
-        """ # Process mechanic resources similarly
-        for prop in self.mechanic_resources():
-            divisor = getattr(tile_yield, prop)
-            if divisor.value in {0.0, 1.0, -1.0}:
-                continue
-            current = getattr(self, prop)
-            new_val = current.value / divisor.value
-            setattr(self, prop, type(current)(value=new_val))
-        # Process great people yields
-        for prop in self.calculatable_great_people():
-            divisor = getattr(tile_yield, f"great_person_{prop}")
-            if divisor.value in {0.0, 1.0, -1.0}:
-                continue
-            current = getattr(self, f"great_person_{prop}")
-            new_val = current.value / divisor.value
-            setattr(self, f"great_person_{prop}", type(current)(value=new_val))"""
+            cur = float(getattr(self, f"_{prop}"))
+            setattr(self, f"_{prop}", cur / d)
         return self
 
     def __eq__(self, other: "Yields | object") -> bool:
@@ -412,8 +352,8 @@ class Yields:
     def __rtruediv__(self, other: "Yields") -> "Yields":
         return other.clone().divide(self)
 
-    def set_prop(self, name: str, value: Any):
-        if name in self.calculatable_great_people() + self.calculatable_properties():
+    def set_prop(self, name: str, value: Any) -> None:
+        if name not in self.calculatable_great_people() + self.calculatable_properties():
             raise ValueError(f"cannot set property[{name}] as it does not exist or is accessible")
         setattr(self, name, value)
 
@@ -445,17 +385,18 @@ class Yields:
         }
 
     def on_inspect(self, basic: bool = False) -> Dict[str, str]:
-        data = {
-            "gold": str(self.gold.value),
-            "production": str(self.production.value),
-            "science": str(self.science.value),
-            "food": str(self.food.value),
-            "culture": str(self.culture.value),
-            "housing": str(self.housing.value),
-            "faith": str(self.faith.value),
+        data: Dict[str, str] = {
+            "gold": str(float(self._gold)),
+            "production": str(float(self._production)),
+            "science": str(float(self._science)),
+            "food": str(float(self._food)),
+            "culture": str(float(self._culture)),
+            "housing": str(float(self._housing)),
+            "faith": str(float(self._faith)),
         }
         if basic is True:
             return data
+
         data.update(
             {
                 "contentment": str(self._contentment),
@@ -467,15 +408,7 @@ class Yields:
         return data
 
     def export_basic(self) -> List["BaseResource"]:
-        resources: List["BaseResource"] = [
-            self.gold,
-            self.production,
-            self.food,
-            self.science,
-            self.culture,
-            self.faith,
-        ]
-        return resources
+        return [self.gold, self.production, self.food, self.science, self.culture, self.faith]
 
     def calculate(
         self,
@@ -483,43 +416,35 @@ class Yields:
         percentage_add: "Yields | None" = None,
         percentage_cum: "Yields | None" = None,
     ) -> None:
-        additive = additive or Yields.nullYield()
-        percentage_add = percentage_add or Yields.nullYield()
-        percentage_cum = percentage_cum or Yields.nullYield()
-
         for prop in self.calculatable_properties():
-            base_val = getattr(self, prop).value
-            add_val = getattr(additive, prop).value
-            percentage_add_val = getattr(percentage_add, prop).value
-            percentage_cum_val = getattr(percentage_cum, prop).value
-            final_val = (base_val + add_val) * (1 + percentage_add_val) * (1 + percentage_cum_val)
-            final_val = round(final_val)
-            current = getattr(self, prop)
-            setattr(self, prop, type(current)(value=final_val))
+            base_val = float(getattr(self, f"_{prop}"))
+            add_val = float(getattr(additive, f"_{prop}")) if isinstance(additive, Yields) else 0.0
+            pad = float(getattr(percentage_add, f"_{prop}")) if isinstance(percentage_add, Yields) else 0.0
+            pcum = float(getattr(percentage_cum, f"_{prop}")) if isinstance(percentage_cum, Yields) else 0.0
+            final_val = round((base_val + add_val) * (1.0 + pad) * (1.0 + pcum))
+            setattr(self, f"_{prop}", final_val)
 
     def props(self, only_non_nul: bool = False) -> Dict[str, Any]:
         a: Dict[str, Any] = {}
         for item in self.calculatable_properties():
-            attr = getattr(self, item)
-            if only_non_nul and attr.value == 0.0:
+            if only_non_nul and float(getattr(self, f"_{item}")) == 0.0:
                 continue
-            a[item] = attr
+            a[item] = getattr(self, item)
         return a
 
     def only(self, only: List[str]) -> "Yields":
         new_tile_yield: "Yields" = self.nullYield()
-
         new_tile_yield._calculatable_properties = [prop for prop in self._calculatable_properties if prop in only]
         new_tile_yield._mechanic_resources = [prop for prop in self._mechanic_resources if prop in only]
         new_tile_yield._calculatable_great_people = [prop for prop in self._calculatable_great_people if prop in only]
-
         for prop in only:
             if prop in self._calculatable_properties:
-                setattr(new_tile_yield, prop, copy.deepcopy(getattr(self, prop)))
+                setattr(new_tile_yield, f"_{prop}", float(getattr(self, f"_{prop}")))
             elif prop in self._mechanic_resources:
-                setattr(new_tile_yield, prop, copy.deepcopy(getattr(self, prop)))
+                setattr(new_tile_yield, f"_{prop}", float(getattr(self, f"_{prop}")))
             elif prop in self._calculatable_great_people:
-                setattr(new_tile_yield, f"great_person_{prop}", copy.deepcopy(getattr(self, f"great_person_{prop}")))
+                gp = f"_great_person_{prop}"
+                setattr(new_tile_yield, gp, float(getattr(self, gp)))
             else:
                 raise ValueError(f"Property {prop} is not recognized")
         return new_tile_yield
@@ -550,24 +475,37 @@ class Yields:
 
     def __str__(self) -> str:
         return (
-            f"g:{self.gold.value}|p:{self.production.value}|s:{self.science.value}|"
-            f"f:{self.food.value}|c:{self.culture.value}|h:{self.housing.value}|fa:{self.faith.value}"
+            f"g:{float(self._gold)}|p:{float(self._production)}|s:{float(self._science)}|"
+            f"f:{float(self._food)}|c:{float(self._culture)}|h:{float(self._housing)}|fa:{float(self._faith)}"
         )
 
     def __len__(self) -> int:
-        total = 0
-        for property in self.calculatable_properties():
-            total += getattr(self, property)
+        total = 0.0
+        for prop in self.calculatable_properties():
+            total += float(getattr(self, f"_{prop}"))
         return int(total)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Yields":
         instance = cls()
         for key, value in data.items():
-            if hasattr(instance, key):
+            if key == "mode":
+                instance.mode = int(value)
+                continue
+            if key == "_name" or key == "name":
+                instance._name = value
+                continue
+            if key in instance._calculatable_properties:
+                setattr(instance, f"_{key}", float(value))
+                continue
+            if key in instance._mechanic_resources:
+                setattr(instance, f"_{key}", float(value))
+                continue
+            if key.startswith("great_person_"):
+                setattr(instance, f"_{key}", float(value))
+                continue
+            if key.startswith("_") and hasattr(instance, key):
                 setattr(instance, key, value)
-            elif hasattr(instance, f"_{key}"):
-                setattr(instance, f"_{key}", value)
-            else:
-                raise ValueError(f"Property {key} does not exist in Yields class.")
+                continue
+            raise ValueError(f"Property {key} does not exist in Yields class.")
         return instance
