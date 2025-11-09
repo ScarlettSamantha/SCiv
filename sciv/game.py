@@ -222,7 +222,6 @@ class OpenCiv(ShowBase):
         from helpers.paths import PathsHelper
         from system.atlas import AtlasGenerator
 
-        # icon_tile_set = ConfigManager.get_singleton_instance().get_default(("assets", "icon-tile-set"), "default")
         base_path = pathlib.Path(PathsHelper.get_data_dir()) / "assets" / "generated"
 
         icon_generator = AtlasGenerator(

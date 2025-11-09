@@ -5,6 +5,7 @@ from pathlib import Path
 from subprocess import CompletedProcess  # nosec B404
 from typing import Optional
 
+from helpers.icons import Icons
 from system.vars import APPLICATION_NAME
 
 
@@ -49,26 +50,53 @@ class LinuxHelper(AbstractOsHelper):
 
     @classmethod
     def generate_application_registration(cls) -> None:
-        from pathlib import Path
-
-        if (path := (Path.home() / ".local/share/applications/openciv.desktop")).exists():
-            return
-
-        import io
+        import shutil
+        import subprocess  # nosec
+        import sys
 
         from helpers.paths import PathsHelper
 
-        text = f"""[Desktop Entry]
-Name=OpenCiv
-Exec=/usr/bin/python3 {(PathsHelper.get_base_path() / "../run.py").resolve()}
-Icon={(PathsHelper.get_base_path() / "assets/logo_compact.png").resolve()}
-Type=Application
-StartupWMClass=openciv
-Categories=Game;
-Terminal=false
-"""
-        with io.open(path.resolve(), "w", encoding="utf-8") as file:
-            file.write(text)
+        desktop_dir: Path = Path.home() / ".local" / "share" / "applications"
+        desktop_dir.mkdir(parents=True, exist_ok=True)
+        path: Path = desktop_dir / "openciv.desktop"
+
+        if path.exists():
+            return
+
+        base_path: Path = PathsHelper.get_base_path().resolve()
+        icon_candidate: Path = (base_path / Icons.logo_icon()).resolve()
+        icon_path: Path = (
+            icon_candidate.with_suffix(".png") if icon_candidate.with_suffix(".png").exists() else icon_candidate
+        )
+
+        run_py: Path = (base_path / "../run.py").resolve()
+        exec_cmd: str = f'"{sys.executable}" "{run_py}"'
+
+        text: str = (
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Name=OpenCiv\n"
+            f"Exec={exec_cmd}\n"
+            f"Path={base_path}\n"
+            f"Icon={icon_path}\n"
+            "Terminal=false\n"
+            "NoDisplay=false\n"
+            "Categories=Game;\n"
+            "StartupNotify=true\n"
+        )
+        path.write_text(text, encoding="utf-8")
+        path.chmod(0o644)
+
+        validator: str | None = shutil.which("desktop-file-validate")
+        if validator:
+            try:
+                subprocess.run([validator, str(path)], check=True, capture_output=True, text=True)  # nosec
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"desktop-file-validate failed: {e.stderr or e.stdout}")
+
+        kb = shutil.which("kbuildsycoca6") or shutil.which("kbuildsycoca5")
+        if kb:
+            subprocess.run([kb, "--noincremental"], check=False)  # nosec
 
     @classmethod
     def get_cache_dir(cls) -> str:

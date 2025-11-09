@@ -42,3 +42,7 @@ class Icons:
 
             return [rnd.choice(screens)]
         return screens
+
+    @staticmethod
+    def logo_icon() -> str:
+        return "logo_icon.png"
