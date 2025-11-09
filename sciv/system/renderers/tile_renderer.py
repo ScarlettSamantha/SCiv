@@ -105,10 +105,31 @@ class TileRenderer:
         )
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
+        self.click_overlay_np: Optional[NodePath] = None
 
         self.assets: P3DAssetArchive = Cache.get_asset_archive()
 
         TileRendererSystem.get().register_tile(self.tile)
+        self._ensure_click_overlay()
+
+    def _ensure_click_overlay(self) -> None:
+        if self.click_overlay_np is not None:
+            return
+
+        cm = CardMaker(f"tile_click_overlay_{self.tile.x}_{self.tile.y}")
+        size = 1.0
+        cm.setFrame(-size, size, -size, size)
+
+        self.click_overlay_np = self.anchor_node.attachNewNode(cm.generate())
+        self.click_overlay_np.setHpr(0, -90, 0)
+        self.click_overlay_np.setPos(0, 0, 0.005)
+        self.click_overlay_np.setTransparency(TransparencyAttrib.M_alpha)
+        self.click_overlay_np.setDepthWrite(False)
+        self.click_overlay_np.setBin("fixed", 5)
+        self.click_overlay_np.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
+        self.click_overlay_np.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
+        self.click_overlay_np.setCollideMask(BitMask32.bit(1))
+        self.click_overlay_np.hide()
 
     def _ensure_ui_node(self) -> NodePath:
         if self.ui_node is None:

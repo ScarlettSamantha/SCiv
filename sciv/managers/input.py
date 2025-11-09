@@ -495,7 +495,7 @@ class Input(Singleton, DirectObject):
 
         self._last_pick_time = now
         if not self.active:
-            return  # Input is disabled
+            return
 
         if not self.base.mouseWatcherNode.hasMouse():  # type: ignore
             self.logger.warning("No mouse in window, cannot pick.")
@@ -508,13 +508,16 @@ class Input(Singleton, DirectObject):
         assert self.game is not None, "Game instance should be initialized."
         assert self.unit_manager is not None, "UnitManager instance should be initialized."
 
-        if self.pq.getNumEntries() > 0:  # type: ignore
-            self.pq.sortEntries()  # type: ignore
+        if self.pq.getNumEntries() > 0:
+            self.pq.sortEntries()
 
             for entry in self.pq.getEntries():
                 picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
+
+                if not net_type:
+                    continue
 
                 if dont_select:
                     return picked_obj
@@ -523,14 +526,14 @@ class Input(Singleton, DirectObject):
                 if net_type in (NET_TYPE.MODEL.value, NET_TYPE.UNIT.value):
                     if (unit := self.unit_manager.find_unit(net_id)) is None:
                         self.logger.warning(f"Unit with ID {net_id} not found.")
-                        return None
+                        continue
                     messenger.send("system.input.user.unit_clicked", [net_id])
                     if self.game.handle_unit_click(unit):
                         selected_object = True
                         self.selected_tile = None
                         self.selected_unit = unit
                     else:
-                        return None
+                        continue
 
                 elif net_type in (NET_TYPE.TILE.value, NET_TYPE.BIT.value, NET_TYPE.GEOM.value):
                     if NET_TYPE.BIT.value == net_type:
@@ -539,7 +542,7 @@ class Input(Singleton, DirectObject):
                         net_id = net_id.split("_")[-2:]
                     if (tile := TileRepository.get_tile(*map(lambda s: int(s), net_id))) is None:
                         self.logger.warning(f"Tile with ID {net_id} not found.")
-                        return None
+                        continue
 
                     self.game.handle_tile_click(tile)
                     self.selected_tile = tile
@@ -548,10 +551,10 @@ class Input(Singleton, DirectObject):
                     selected_object = True
                     messenger.send("system.input.user.tile_clicked", [tile.tag])
                 else:
-                    self.selected_tile = None
+                    continue
 
                 if selected_object:
-                    return picked_obj  # type: ignore
+                    return picked_obj
 
             return None
         else:

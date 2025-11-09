@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from gameplay.resource import BaseResource
 from helpers.cache import Cache
 from panda3d.core import (
+    BitMask32,
     ColorBlendAttrib,
     Geom,
     GeomNode,
@@ -48,6 +49,7 @@ class TileRendererSystem:
         self.node.setDepthTest(False)
         self.node.setDepthWrite(False)
         self.node.setScale(1.0)
+        self.node.setCollideMask(BitMask32.allOff())
 
         self._tiles: List[Optional[T_TileRef]] = []
         self._tile_index: Dict[str, int] = {}
@@ -206,10 +208,12 @@ class TileRendererSystem:
         self._geom_node.addGeom(geom)
 
         self.node.getChildren().detach()
+
         self._geom_np = self.node.attachNewNode(self._geom_node)
         self._geom_np.set_instance_count(instances)
         self._geom_np.node().setBounds(OmniBoundingVolume())
         self._geom_np.node().setFinal(True)
+        self._geom_np.setCollideMask(BitMask32.allOff())
 
         self._capacity = instances
         self._init_writers()
