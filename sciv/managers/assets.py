@@ -256,15 +256,7 @@ class AssetManager(Singleton):
             ic = icon_rel.lstrip("/")
             if ic.startswith("assets/"):
                 cand.append(ic)
-            cand.extend(
-                [
-                    f"assets/icons/{tile_set}/{ic}",
-                    f"assets/icons/{tile_set}/resources/{ic}",
-                    f"assets/icons/default/{ic}",
-                    f"assets/icons/default/resources/{ic}",
-                    f"assets/{ic}" if not ic.startswith("assets/") else ic,
-                ]
-            )
+
             seen: Set[str] = set()
             for c in cand:
                 if c in seen:
