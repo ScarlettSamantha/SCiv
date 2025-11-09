@@ -1,6 +1,6 @@
-import random
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
+from helpers.cache import Cache
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle, RoundedRectangle  # type: ignore
 from kivy.metrics import dp  # type: ignore
@@ -13,9 +13,9 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.widget import Widget
-
-from helpers.cache import Cache
 from system.asset_archive import P3DAssetArchive
+
+from helpers.icons import Icons
 
 
 class LoadingScreen(FloatLayout):
@@ -24,11 +24,7 @@ class LoadingScreen(FloatLayout):
     step_message = StringProperty("Loading...")
     show_continue = BooleanProperty(False)
 
-    loading_screen_images: Tuple[str, ...] = (
-        "assets/loading_screens/1.png",
-        "assets/loading_screens/2.png",
-        "assets/loading_screens/3.png",
-    )
+    loading_screen_image: List[str] = Icons.loading_screens(True)
 
     def __init__(self, on_complete: Callable[..., None], **kwargs: Any):
         super().__init__(**kwargs)
@@ -43,7 +39,7 @@ class LoadingScreen(FloatLayout):
         self.bind(pos=self._update_bg, size=self._update_bg)  # type: ignore
 
         self.bg_image = self.assets.get_kivy_image_object(
-            virtual_path=random.choice(self.loading_screen_images),
+            virtual_path=self.loading_screen_image[0],
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(1, 1),
@@ -63,8 +59,8 @@ class LoadingScreen(FloatLayout):
         overlay_box.add_widget(self.left_overlay)
 
         center_stack = BoxLayout(orientation="vertical", size_hint=(0.6, 1), padding=dp(10))
-        self.logo_image = Image(
-            source="assets/logo_512.png",
+        self.logo_image = self.assets.get_kivy_image_object(
+            virtual_path=Icons.game_logo_512(),
             size_hint=(None, None),
             size=(dp(256), dp(256)),
             pos_hint={"top": 1, "center_x": 0.5},
@@ -80,6 +76,7 @@ class LoadingScreen(FloatLayout):
             self.right_frame = RoundedRectangle(  # type: ignore
                 radius=[dp(8)], pos=self.right_overlay.pos, size=self.right_overlay.size
             )
+
         self.right_overlay.bind(pos=self._update_right_frame, size=self._update_right_frame)  # type: ignore
 
         self.right_content_container = AnchorLayout(
@@ -168,8 +165,10 @@ class LoadingScreen(FloatLayout):
 
     def next_step(self, message: Optional[str] = None):
         self.current_step += 1
+
         if message:
             self.step_message = message
+
         self._update_ui()
 
     def add_to_right_overlay(self, widget: Widget):
