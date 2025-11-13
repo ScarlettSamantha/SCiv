@@ -782,6 +782,14 @@
           "search_map": "Search map",
           "no_matches_title": "No matches",
           "no_matches_message": "No matches found."
+        },
+        "finish_production": {
+          "button": "Finish production",
+          "finish_production": "Finish production"
+        },
+        "finish_research": {
+          "button": "Finish research",
+          "finish_research": "Finish research"
         }
       }
     },

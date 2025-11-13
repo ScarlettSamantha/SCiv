@@ -389,6 +389,13 @@ class City(BaseEntity, DirectObject.DirectObject):
             self.building = None
             self.logger.debug(f"City {self.name} has finished building improvement.")
 
+    def finish_production(self) -> None:
+        if not self.is_building or self.building is None:
+            return
+
+        required_amount: float | int = self.resource_required_amount.only(["production"]).production.value
+        self.resource_collected = Yields(production=required_amount)
+
     def _process_food(self) -> None:
         self.new_population_food_required = Yields(
             food=population_curve(self.population, self.FOOD_EXPONENT, self.FOOD_BASE_REQUIREMENT)
