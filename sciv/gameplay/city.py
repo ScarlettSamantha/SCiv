@@ -56,6 +56,7 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         self.border_growth_points: int = 0
         self.border_growth_cost: int = 10 * len(self.owned_tiles) + 10
+        self.border_growth_rate: float = 1.5
         self.border_growth_next_tile: Optional[ReferenceType[Tile]] = None
 
         self.tax_level: float = 0.0
@@ -434,8 +435,9 @@ class City(BaseEntity, DirectObject.DirectObject):
         self.owned_tiles.remove(tile)
 
     def recalculate_border_growth_cost(self) -> int:
-        # @TODO This is a placeholder for the actual border growth cost calculation.
-        self.border_growth_cost = 10 * len(self.owned_tiles) + 10
+        owned: int = len(self.owned_tiles)
+        base_cost = 15
+        self.border_growth_cost = max(base_cost, int(base_cost * (self.border_growth_rate**owned)))
         return self.border_growth_cost
 
     def recalculate_border_growth_next_tile(self):
@@ -457,7 +459,7 @@ class City(BaseEntity, DirectObject.DirectObject):
                     self.border_growth_next_tile = ref(resource_tiles[randint(0, len(resource_tiles) - 1)])
                 else:
                     self.border_growth_next_tile = ref(available_tiles[randint(0, len(available_tiles) - 1)])
-                self.border_growth_cost = (5 * (len(self.owned_tiles) - 7)) + (5 * (radius - 1))
+                self.recalculate_border_growth_cost()
                 return
 
         self.border_growth_next_tile = None
