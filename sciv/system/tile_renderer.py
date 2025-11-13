@@ -18,9 +18,8 @@ from panda3d.core import (
     Texture,
     TransparencyAttrib,
 )
-from system.atlas import AtlasGenerator
-
 from system.asset_archive import P3DAssetArchive
+from system.atlas import AtlasGenerator
 
 T_TileRef = Any  # type: ignore
 
@@ -74,6 +73,11 @@ class TileRendererSystem:
 
         self._atlas_w, self._atlas_h = self.icon_atlas.atlas_image.size
 
+        self._half_w: float = self.TILE_SCALE * 0.5
+        self._half_h: float = self._half_w * 0.8660254037844386
+
+        self._uv_cache: Dict[str, Tuple[float, float, float, float]] = {}
+
         self._setup_shader()
 
     def _setup_shader(self) -> None:
@@ -82,9 +86,8 @@ class TileRendererSystem:
         self.node.setShader(self.assets.get_shader(str(fs), str(vs)))
         self.node.set_shader_input("icon_atlas", self._atlas_tex)  # type: ignore
         self.node.set_shader_input("u_aniso", (1.0, 0.8660254037844386))  # type: ignore
-        half_w = self.TILE_SCALE * 0.5
-        self.node.set_shader_input("u_ring_radius", 0.90 * half_w)  # type: ignore
-        self.node.set_shader_input("u_icon_half", 0.22 * half_w)  # type: ignore
+        self.node.set_shader_input("u_ring_radius", 0.90 * self._half_w)  # type: ignore
+        self.node.set_shader_input("u_icon_half", 0.22 * self._half_w)  # type: ignore
 
     def begin_bulk(self) -> None:
         self._bulk = True
@@ -142,17 +145,13 @@ class TileRendererSystem:
         return cap
 
     def _ensure_capacity(self, target: int) -> None:
-        rebuilt = False
+        if target <= 0:
+            return
         if self._vdata is None or target > self._capacity:
             cap = self._next_capacity(target)
             self._build_or_resize(cap)
-            rebuilt = True
         if self._geom_np is not None:
             self._geom_np.set_instance_count(target)
-        if rebuilt:
-            for t in self._tiles:
-                if t is not None:
-                    self.sync_tile(t)
 
     def _init_writers(self) -> None:
         if self._vdata is None:
@@ -161,6 +160,12 @@ class TileRendererSystem:
         self._wuv = [GeomVertexWriter(self._vdata, f"i_uv{s}") for s in range(self.ICON_SLOTS)]
 
     def _build_or_resize(self, instances: int) -> None:
+        if self._vdata is not None and self._geom_node is not None and self._geom_np is not None:
+            self._vdata.modifyArray(1).setNumRows(instances)
+            self._capacity = instances
+            self._init_writers()
+            return
+
         vfmt0 = GeomVertexArrayFormat()
         vfmt0.addColumn("vertex", 3, Geom.NTFloat32, Geom.CPoint)
         vfmt0.addColumn("texcoord", 2, Geom.NTFloat32, Geom.CTexcoord)
@@ -234,6 +239,32 @@ class TileRendererSystem:
         self._wps.setRow(idx)
         self._wps.setData4f(0.0, 0.0, 0.0, 0.0)
 
+    def _get_uv_rect(self, path: str) -> Tuple[float, float, float, float]:
+        if not path:
+            return 0.0, 0.0, 0.0, 0.0
+        cached = self._uv_cache.get(path)
+        if cached is not None:
+            return cached
+        pos = self.icon_atlas.get_position_for_virtual_path(path)
+        size = self.icon_atlas.get_dimensions_for_virtual_path(path)
+
+        if not pos or not size:
+            rect = (0.0, 0.0, 0.0, 0.0)
+            self._uv_cache[path] = rect
+            return rect
+
+        x, y = pos
+        w, h = size
+
+        u0 = float(x) / float(self._atlas_w)
+        v0 = 1.0 - float(y + h) / float(self._atlas_h)
+        u1 = float(x + w) / float(self._atlas_w)
+        v1 = 1.0 - float(y) / float(self._atlas_h)
+
+        rect = (u0, v0, u1, v1)
+        self._uv_cache[path] = rect
+        return rect
+
     def _write_instance_row(self, idx: int, tile: T_TileRef) -> None:
         if self._vdata is None:
             return
@@ -243,14 +274,12 @@ class TileRendererSystem:
             return
 
         px, py, pz = tile.get_cords()
-        half_w = self.TILE_SCALE * 0.5
-        half_h = half_w * 0.8660254037844386
 
-        cx = px + half_w + half_w * self.CENTER_OFF_X
-        cy = py + half_h + half_h * self.CENTER_OFF_Y
+        cx = px + self._half_w + self._half_w * self.CENTER_OFF_X
+        cy = py + self._half_h + self._half_h * self.CENTER_OFF_Y
 
         self._wps.setRow(idx)
-        self._wps.setData4f(float(cx), float(cy), float(pz + 0.01), half_w)
+        self._wps.setData4f(float(cx), float(cy), float(pz + 0.01), self._half_w)
 
         slots: List[Union[str, BaseResource, None]]
         tile.calculate()
@@ -269,41 +298,32 @@ class TileRendererSystem:
         def _norm(p: str) -> str:
             return p.replace("\\", "/").lstrip("/")
 
-        uv_rects: List[Tuple[float, float, float, float]] = []
         for idx_slot, entry in enumerate(slots):
             if not entry or (isinstance(entry, BaseResource) and getattr(entry, "value", 0.0) == 0.0):
-                uv_rects.append((0.0, 0.0, 0.0, 0.0))
-                continue
-
-            if idx_slot != 0 and isinstance(entry, BaseResource) and getattr(entry, "value", 0.0) > 0.0:
-                entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
-
-            if isinstance(entry, BaseResource):
-                path = _norm(entry.icon) if hasattr(entry, "icon") else ""
+                u0 = 0.0
+                v0 = 0.0
+                u1 = 0.0
+                v1 = 0.0
             else:
-                path = _norm(entry)
+                if idx_slot != 0 and isinstance(entry, BaseResource) and getattr(entry, "value", 0.0) > 0.0:
+                    entry = entry.get_numeric_icon() if hasattr(entry, "get_numeric_icon") else entry.icon
 
-            if not path:
-                uv_rects.append((0.0, 0.0, 0.0, 0.0))
-                continue
+                if isinstance(entry, BaseResource):
+                    path = _norm(entry.icon) if hasattr(entry, "icon") else ""
+                else:
+                    path = _norm(entry)
 
-            pos = self.icon_atlas.get_position_for_virtual_path(path)
-            size = self.icon_atlas.get_dimensions_for_virtual_path(path)
-            if not pos or not size:
-                uv_rects.append((0.0, 0.0, 0.0, 0.0))
-                continue
-            x, y = pos
-            w, h = size
-            u0 = float(x) / float(self._atlas_w)
-            v0 = 1.0 - float(y + h) / float(self._atlas_h)
-            u1 = float(x + w) / float(self._atlas_w)
-            v1 = 1.0 - float(y) / float(self._atlas_h)
-            uv_rects.append((u0, v0, u1, v1))
+                if not path:
+                    u0 = 0.0
+                    v0 = 0.0
+                    u1 = 0.0
+                    v1 = 0.0
+                else:
+                    u0, v0, u1, v1 = self._get_uv_rect(path)
 
-        for s in range(self.ICON_SLOTS):
-            u0, v0, u1, v1 = uv_rects[s]
-            self._wuv[s].setRow(idx)
-            self._wuv[s].setData4f(u0, v0, u1, v1)
+            w = self._wuv[idx_slot]
+            w.setRow(idx)
+            w.setData4f(u0, v0, u1, v1)
 
     def set_all_disabled(self, disabled: bool) -> None:
         if self._vdata is None:
