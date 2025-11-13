@@ -10,14 +10,10 @@ if TYPE_CHECKING:
     from system.generators.basic import Hex
 from system.subsystems.hexgen.enums import HexEdge
 
-# -------------------- Memoization --------------------
-
 F = TypeVar("F", bound=Callable[..., Any])
 
 
 class memoized(Generic[F]):
-    """Decorator. Caches a function's return value each time it is called."""
-
     def __init__(self, func: F):
         self.func = func
         self.cache: Dict[Tuple[Any, ...], Any] = {}
@@ -37,11 +33,7 @@ class memoized(Generic[F]):
         return functools.partial(self.__call__, obj)
 
 
-# -------------------- Utility Functions --------------------
-
-
 def latitude_to_number(latitude: int, map_size: int) -> float:
-    """Converts latitude in degrees to a normalized grid position."""
     return (map_size / 2) - ((latitude / 90) * (map_size / 2))
 
 

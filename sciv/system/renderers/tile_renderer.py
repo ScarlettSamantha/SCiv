@@ -28,7 +28,7 @@ from PIL import Image
 from PIL.ImageFont import FreeTypeFont
 from system.asset_archive import P3DAssetArchive
 from system.atlas import AtlasGenerator
-from system.bits_renderer import BitsRenderer
+from system.renderers.bits_renderer import BitsRenderer
 from system.tile_renderer import TileRendererSystem
 
 if TYPE_CHECKING:

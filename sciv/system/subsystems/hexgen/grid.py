@@ -1,9 +1,9 @@
 import math
-import numpy as np
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
-from system.subsystems.hexgen.hex import Hex
+import numpy as np
 from system.subsystems.hexgen.heightmap import Heightmap
+from system.subsystems.hexgen.hex import Hex
 
 
 class GridBoundsException(Exception):
@@ -44,20 +44,15 @@ class Grid:
         return self.params.get("size", 100)
 
     def get(self, x: int, y: int) -> Hex | None:
-        """
-        Returns the Hex at (x, y) or None if out of bounds.
-        """
         return self.find_hex(x, y)
 
     def find_hex(self, x: int, y: int) -> Hex:
-        """Finds a hex at (x, y) coordinates."""
         try:
             return self.grid[x][y]
         except IndexError:
             raise GridBoundsException(f"Invalid coordinates {x}, {y}")
 
     def calculate(self) -> None:
-        # Run through the grid, calculate the edges, compute averages
         alt: float = 0.0
         hexes: List[Hex] = []
         for y, row in enumerate(self.grid):
@@ -82,10 +77,10 @@ class Grid:
         def lerp(a, b, t):
             return a + (b - a) * t
 
-        def cube_lerp(a, b, t):
+        def cube_lerp(a: int, b: int, t: int) -> tuple[Any, Any, Any]:
             return (lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t))
 
-        def cube_round(cube):
+        def cube_round(cube) -> Tuple[int, int, int]:
             rx = round(cube[0])
             ry = round(cube[1])
             rz = round(cube[2])

@@ -8,7 +8,7 @@ from gameplay.yields import Yields
 from helpers.class_property import ClassProperty
 from helpers.colors import Tuple3f
 from managers.i18n import T_TranslationOrStr, t_
-from system.bits_renderer import DisplayMode
+from system.renderers.bits_renderer import DisplayMode
 
 if TYPE_CHECKING:
     from gameplay.bits import Bit
