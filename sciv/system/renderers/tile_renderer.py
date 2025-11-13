@@ -53,6 +53,11 @@ class TileRenderer:
         "nw": (-0.375, 0.35, 0),
     }
 
+    CHUNK_SIZE_X: int = 32
+    CHUNK_SIZE_Y: int = 32
+    _world_root: Optional[NodePath] = None
+    _chunk_roots: Dict[Tuple[int, int], NodePath] = {}
+
     def __init__(self, tile: "Tile") -> None:
         self.tile: Tile = tile
 
@@ -63,7 +68,11 @@ class TileRenderer:
         self.anchor_node.setCollideMask(BitMask32.bit(1))
         self.anchor_node.setTag(NET_TYPE_FIELD, str(NET_TYPE.TILE.value))
         self.anchor_node.setTag(NET_NODE_TAG_ID_FIELD, tile.tag)
-        self.anchor_node.reparentTo(self.base.render)
+
+        world_root: NodePath = self._get_world_root(self.base.render)
+        chunk_root: NodePath = self._get_chunk_root(world_root, tile.x, tile.y)
+        self.anchor_node.reparentTo(chunk_root)
+
         self.icon_atlas: AtlasGenerator = Cache.get_icon_atlas()
 
         self.geometry_node: NodePath = self.anchor_node.attachNewNode("geometry_group")
@@ -109,6 +118,27 @@ class TileRenderer:
 
         TileRendererSystem.get().register_tile(self.tile)
         self._ensure_click_overlay()
+
+    @classmethod
+    def _get_world_root(cls, render: NodePath) -> NodePath:
+        if cls._world_root is None or cls._world_root.is_empty():
+            cls._world_root = render.attachNewNode("world_root")
+            cls._world_root.setCollideMask(BitMask32.allOff())
+        return cls._world_root
+
+    @classmethod
+    def _get_chunk_root(cls, world_root: NodePath, tile_x: int, tile_y: int) -> NodePath:
+        cx = tile_x // cls.CHUNK_SIZE_X
+        cy = tile_y // cls.CHUNK_SIZE_Y
+        key: Tuple[int, int] = (cx, cy)
+        node = cls._chunk_roots.get(key)
+        if node is not None and not node.is_empty():
+            return node
+
+        node = world_root.attachNewNode(f"chunk_{cx}_{cy}")
+        node.setCollideMask(BitMask32.allOff())
+        cls._chunk_roots[key] = node
+        return node
 
     def _ensure_click_overlay(self) -> None:
         if self.click_overlay_np is not None:
@@ -630,15 +660,15 @@ class TileRenderer:
             self.tile.logger.error(f"Model {full_path} could not be loaded.")
             return None
 
+        parent_np: NodePath
         if parent is None:
-            x = self.tile.pos_x + pos_offset[0]
-            y = self.tile.pos_y + pos_offset[1]
-            z = self.tile.pos_z + pos_offset[2]
+            parent_np = self.geometry_node
         else:
-            x, y, z = pos_offset
+            parent_np = parent
 
-        node: NodePath = model_tpl.instanceTo(self.geometry_node)
-        node.reparentTo(self.base.render if parent is None else parent)  # type: ignore
+        x, y, z = pos_offset
+
+        node: NodePath = model_tpl.instanceTo(parent_np)
         node.setPos(x, y, z)
         node.setScale(max(0.01, scale))
         node.setHpr(*hpr)
@@ -654,6 +684,10 @@ class TileRenderer:
             node.setTag(NET_NODE_TAG_ID_FIELD, net_id)
         else:
             node.setTag(NET_NODE_TAG_ID_FIELD, self.tile.tag)
+
+        if flatten_model:
+            node.clearModelNodes()
+            node.flattenStrong()
 
         self.models.append(node)
         self.last_result = node
