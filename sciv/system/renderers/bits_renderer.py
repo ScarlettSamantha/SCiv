@@ -205,24 +205,28 @@ class BitsRenderer:
                 if improvement_bit:
                     improvement_bits.append(improvement_bit)
 
+        has_units: bool = self.tile.units.has_any()
+        has_resources: bool = self.tile.resources.has_non_mechanical_resources()
+        has_improvements: bool = self.tile.get_improvements().has_any()
+        is_selected: bool = self.tile.is_selected
+
         for bit in terrain_bits + resource_bits + city_bits + improvement_bits:
-            mode: List[DisplayMode] = bit.get_display_mode()
             if bit.is_disabled():
                 continue
-            elif (DisplayMode.SHOW_ALWAYS in mode and not self.tile.is_city()) or (
-                DisplayMode.CITY_IMPROVEMENT in mode
-            ):
-                active_bits[bit.id] = bit
-            elif (DisplayMode.HIDE_ON_UNIT in mode) and self.tile.units.has_any():
+
+            modes: List[DisplayMode] = bit.get_display_mode()
+
+            if DisplayMode.HIDE_ON_UNIT in modes and has_units:
                 continue
-            elif (DisplayMode.HIDE_ON_RESOURCE in mode) and self.tile.resources.has_non_mechanical_resources():
+            if DisplayMode.HIDE_ON_RESOURCE in modes and has_resources:
                 continue
-            elif (DisplayMode.HIDE_ON_SELECT in mode) and self.tile.is_selected:
+            if DisplayMode.HIDE_ON_SELECT in modes and is_selected:
                 continue
-            elif (DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT in mode) and self.tile.get_improvements().has_any():
+            if DisplayMode.HIDE_ON_RESOURCE_IMPROVEMENT in modes and has_improvements:
                 continue
-            else:
-                active_bits[bit.id] = bit
+
+            active_bits[bit.id] = bit
+
         return active_bits
 
     def _slot_allowed(self, bit: "Bit", slot: str) -> bool:
