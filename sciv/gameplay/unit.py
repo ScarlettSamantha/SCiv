@@ -110,8 +110,8 @@ class Unit(BaseEntity, ABC):
         self.pos_x: float = 0.0
         self.pos_z: float = 0.0
 
-        self.max_moves: int = 2
-        self.moves_left: int | float = 2.0
+        self.max_moves: int = 3
+        self.moves_left: int | float = 3.0
 
         self.model: Optional[NodePath] = None
 
