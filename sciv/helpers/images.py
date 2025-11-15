@@ -99,9 +99,9 @@ def draw_text_on_image(
                 for dy in range(-outline_width, outline_width + 1):
                     if dx == 0 and dy == 0:
                         continue
-                    draw_outline.text((x + dx, y + dy), text, font=font, fill=outline_color)
+                    draw_outline.text((x + dx, y + dy), text, font=font, fill=outline_color)  # type: ignore
 
-        draw_text.text(position, text, font=font, fill=text_color)
+        draw_text.text(position, text, font=font, fill=text_color)  # type: ignore
 
     combined = Image.alpha_composite(outline_layer, text_layer)
 
@@ -139,7 +139,7 @@ def pil_image_to_panda3d_texture(pil_img: Image.Image) -> Texture:
     pil_img = Image.merge("RGBA", (b, g, r, a))
 
     width, height = pil_img.size
-    raw_data = pil_img.tobytes()
+    raw_data: bytes = pil_img.tobytes()  # type: ignore
 
     tex = Texture()
     tex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_rgba)  # type: ignore
