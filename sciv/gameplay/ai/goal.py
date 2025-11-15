@@ -6,7 +6,6 @@ from exceptions.ai import AIException
 from managers.entity import EntityManager, EntityType
 from system.entity import BaseEntity
 from system.game_settings import GameSettings
-from system.mesh import HexGrid
 
 if TYPE_CHECKING:
     from gameplay._units import Unit
@@ -99,7 +98,7 @@ class Goal:
         assert _player is not None, f"Player with tag {player_tag} reference is None, cannot load state"
         instance.parent_ai = ref(parent_ai)
 
-        search_results: Tuple[EntityType, BaseEntity | HexGrid | GameSettings | Property] | None = (
+        search_results: Tuple[EntityType, BaseEntity | GameSettings | Property] | None = (
             EntityManager.get_singleton_instance().search_key(key=target_tag)
         )
 
