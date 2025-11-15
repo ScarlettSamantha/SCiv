@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class SpawnUnit(DebugAction):
     key = "actions.debug.spawn_unit"
     debug_action = True
+    category = "Unit"
 
     def __init__(self):
         super().__init__(

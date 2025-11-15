@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class KillAction(DebugAction):
     key = "actions.debug.kill"
     debug_action = True
+    category = "Unit"
 
     def __init__(self):
         super().__init__(

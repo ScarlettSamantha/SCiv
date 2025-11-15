@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 class SearchMap(DebugAction):
     key = "actions.debug.search_map"
     debug_action = True
+    category = "Map"
 
     def __init__(self) -> None:
         super().__init__(

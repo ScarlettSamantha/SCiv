@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class SetTerrainType(DebugAction):
     key = "actions.debug.set_terrain_type"
     debug_action = True
+    category = "Map"
 
     def __init__(self):
         super().__init__(

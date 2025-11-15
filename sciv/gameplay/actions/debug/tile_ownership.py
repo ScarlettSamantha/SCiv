@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class TileOwnership(DebugAction):
     key = "actions.debug.tile_ownership"
     debug_action = True
+    category = "Map"
 
     def __init__(self):
         super().__init__(

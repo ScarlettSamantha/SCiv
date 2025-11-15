@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 class FinishResearch(DebugAction):
     key = "actions.debug.finish_research"
     debug_action = True
+    category = "City"
 
     def __init__(self):
         super().__init__(

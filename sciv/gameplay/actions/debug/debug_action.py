@@ -7,6 +7,7 @@ from system.actions import Action
 class DebugAction(Action):
     key = "actions.debug.base"
     debug_action = True
+    category: str | None = None
 
     def __init__(
         self,

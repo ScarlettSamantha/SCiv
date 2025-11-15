@@ -7,6 +7,7 @@ from managers.i18n import Translation
 class AddMessage(DebugAction):
     key = "actions.debug.add_message"
     debug_action = True
+    category = "Messages"
 
     def __init__(self):
         super().__init__(

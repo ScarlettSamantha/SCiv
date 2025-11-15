@@ -8,6 +8,7 @@ from managers.combat import T_TARGET
 class HealAction(DebugAction):
     key = "actions.debug.heal"
     debug_action = True
+    category = "Unit"
 
     def __init__(self):
         super().__init__(

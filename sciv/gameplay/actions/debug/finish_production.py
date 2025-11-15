@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class FinishProduction(DebugAction):
     key = "actions.debug.finish_production"
     debug_action = True
+    category = "City"
 
     def __init__(self):
         super().__init__(

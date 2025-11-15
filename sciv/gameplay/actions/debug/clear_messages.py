@@ -7,6 +7,7 @@ from gameplay.actions.debug.debug_action import DebugAction
 class ClearMessages(DebugAction):
     key = "actions.debug.clear_messages"
     debug_action = True
+    category = "Messages"
 
     def __init__(self):
         super().__init__(
