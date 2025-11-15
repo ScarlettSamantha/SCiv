@@ -77,9 +77,6 @@ class World(Singleton, DirectObject):
         self.logger.info(f"World size is {self.cols}x{self.rows}")
         TileRepository.grid = self.grid
 
-        for tile in self.map.values():
-            tile.load_state()
-
         for improvement in cast(
             List["Improvement"], EntityManager.get_singleton_instance().get_all(EntityType.IMPROVEMENT).values()
         ):  # type: ignore
@@ -90,6 +87,9 @@ class World(Singleton, DirectObject):
 
         for effect in cast(List["Effect"], EntityManager.get_singleton_instance().get_all(EntityType.EFFECT).values()):  # type: ignore
             effect.load_state()
+
+        for tile in self.map.values():
+            tile.load_state()
 
     def calculate_middle(self):
         self.middle_x = self.cols / 2.0

@@ -67,6 +67,7 @@ class ImprovementsSet:
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
+        from gameplay.improvement import Improvement
         from managers.entity import EntityManager
 
         entity_manager: EntityManager = EntityManager.get_singleton_instance()
@@ -74,6 +75,10 @@ class ImprovementsSet:
         _improvements: List[str] = state.get("improvements", [])
         for improvement in _improvements:
             improvement_instance: "Improvement | None" = entity_manager.get_improvement(improvement)
+
+            assert isinstance(improvement_instance, Improvement), (
+                f"Improvement {improvement} is not of type Improvement"
+            )
 
             assert improvement_instance is not None, f"Improvement {improvement} not found in entity manager"
             self.add(improvement_instance)

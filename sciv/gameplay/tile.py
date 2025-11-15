@@ -330,7 +330,7 @@ class Tile(BaseEntity):
         self.renderer = TileRenderer(self)
         self.renderer.load(getattr(self, "renderer_memory", {}))  # type: ignore
 
-        self.tile_yield = Yields.from_dict(getattr(self, "tile_yield", {}))  # type: ignore
+        self.tile_yield = getattr(self, "tile_yield", {})  # type: ignore
 
     def calculate(self):
         new_yield = Yields.nullYield()

@@ -124,9 +124,13 @@ class Improvement(BaseEntity):
         self.tile_yield_improvement = Yields.from_dict(getattr(self, "tile_yield_improvement", {}))
         self._maintenance_cost = Yields.from_dict(getattr(self, "_maintenance_cost", {}))
 
+        owner_key = getattr(self, "owner", None)
+        if isinstance(owner_key, Dict):
+            owner_key = owner_key.get("__ref__")  # type: ignore
+
         self.owner = cast(
             ReferenceType["Player"],
-            EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, getattr(self, "owner", None)),  # type:ignore
+            EntityManager.get_singleton_instance().get_ref_weak(EntityType.PLAYER, owner_key),  # type:ignore
         )
         self.tile = cast(ReferenceType["Tile"], entity_manager.get_ref_weak(EntityType.TILE, getattr(self, "tile_tag")))  # type:ignore
 
