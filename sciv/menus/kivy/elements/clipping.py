@@ -73,27 +73,40 @@ class ClippingScrollList(ScrollView):
             self._visible_start = -1
             self._visible_end = -1
             return
+
         self._container.do_layout()  # type: ignore
+
         items: List[Tuple[float, float, Widget]] = []
         for child in self._container.children:
             bottom_position = float(child.y)
             top_position = bottom_position + float(child.height)
             items.append((bottom_position, top_position, child))
+
         items.sort(key=lambda it: it[0])
         self._indexed = items
         self._bottoms = [it[0] for it in items]
         self._tops = [it[1] for it in items]
-        for _, _, ch in items:
-            ch.opacity = 0
-        self._visible_start = -1
-        self._visible_end = -1
+
+        length = len(items)
+        if length == 0:
+            self._visible_start = -1
+            self._visible_end = -1
+        else:
+            if self._visible_start == -1 or self._visible_end == -1:
+                self._visible_start = 0
+                self._visible_end = length - 1
+                for _, _, ch in items:
+                    ch.opacity = 1
+            else:
+                self._visible_start = max(0, min(self._visible_start, length - 1))
+                self._visible_end = max(self._visible_start, min(self._visible_end, length - 1))
+
         self._apply_clipping()
 
     def add_widget(self, widget: Widget, *args: Any, **kwargs: Any):
         if widget is self._container:
             super().add_widget(widget, *args, **kwargs)
         else:
-            widget.opacity = 0
             self._container.add_widget(widget)
             self._schedule_reindex()
 
@@ -168,9 +181,11 @@ class ClippingScrollList(ScrollView):
     def _apply_clipping(self, *args: Any):
         if not self._indexed:
             return
+
         self._container.do_layout()  # type: ignore
         content_h = float(self._container.height)
         view_h = float(self.height)
+
         self.do_scroll_y = content_h > view_h
         if not self.do_scroll_y:
             if self._visible_start != 0 or self._visible_end != len(self._indexed) - 1:
@@ -179,16 +194,21 @@ class ClippingScrollList(ScrollView):
                 self._visible_start = 0
                 self._visible_end = len(self._indexed) - 1
             return
+
         v_bottom = (content_h - view_h) * float(self.scroll_y)
         v_top = v_bottom + view_h
+
         start = bisect_right(self._tops, v_bottom)
         end = bisect_left(self._bottoms, v_top) - 1
+
         if end < start:
             new_s, new_e = -1, -1
         else:
             new_s, new_e = start, end
+
         if new_s == self._visible_start and new_e == self._visible_end:
             return
+
         if self._visible_start != -1:
             a = self._visible_start
             b = self._visible_end
@@ -202,6 +222,7 @@ class ClippingScrollList(ScrollView):
                     self._indexed[i][2].opacity = 0
                 for i in range(inter_e + 1, b + 1):
                     self._indexed[i][2].opacity = 0
+
         if new_s != -1:
             if self._visible_start == -1:
                 for i in range(new_s, new_e + 1):
@@ -215,6 +236,7 @@ class ClippingScrollList(ScrollView):
                 if new_e > b:
                     for i in range(max(b + 1, new_s), new_e + 1):
                         self._indexed[i][2].opacity = 1
+
         self._visible_start = new_s
         self._visible_end = new_e
 
@@ -261,25 +283,38 @@ class HorizontalClippingScrollList(ScrollView):
             self._visible_start = -1
             self._visible_end = -1
             return
+
         self._container.do_layout()  # type: ignore
+
         items: List[Tuple[float, float, Widget]] = []
         for child in self._container.children:
             left_coordinate = float(child.x)
             right_coordinate = left_coordinate + float(child.width)
             items.append((left_coordinate, right_coordinate, child))
+
         items.sort(key=lambda it: it[0])
         self._indexed = items
         self._lefts = [it[0] for it in items]
         self._rights = [it[1] for it in items]
-        for _, _, ch in items:
-            ch.opacity = 0
-        self._visible_start = -1
-        self._visible_end = -1
+
+        length = len(items)
+        if length == 0:
+            self._visible_start = -1
+            self._visible_end = -1
+        else:
+            if self._visible_start == -1 or self._visible_end == -1:
+                self._visible_start = 0
+                self._visible_end = length - 1
+                for _, _, ch in items:
+                    ch.opacity = 1
+            else:
+                self._visible_start = max(0, min(self._visible_start, length - 1))
+                self._visible_end = max(self._visible_start, min(self._visible_end, length - 1))
+
         self._apply_clipping()
 
     def add_widget(self, widget: Widget, *args: Any, **kwargs: Any):
         if widget != self._container:
-            widget.opacity = 0
             self._container.add_widget(widget)
             self._schedule_reindex()
         else:
@@ -328,9 +363,12 @@ class HorizontalClippingScrollList(ScrollView):
     def _apply_clipping(self, *args: Any):
         if not self._indexed:
             return
+
         self._container.do_layout()  # type: ignore
+
         content_w = float(self._container.width)  # type: ignore
         view_w = float(self.width)  # type: ignore
+
         self.do_scroll_x = content_w > view_w  # type: ignore
         if not self.do_scroll_x:
             if self._visible_start != 0 or self._visible_end != len(self._indexed) - 1:
@@ -339,16 +377,21 @@ class HorizontalClippingScrollList(ScrollView):
                 self._visible_start = 0
                 self._visible_end = len(self._indexed) - 1
             return
+
         v_left = (content_w - view_w) * float(self.scroll_x)
         v_right = v_left + view_w
+
         start = bisect_right(self._rights, v_left)
         end = bisect_left(self._lefts, v_right) - 1
+
         if end < start:
             new_s, new_e = -1, -1
         else:
             new_s, new_e = start, end
+
         if new_s == self._visible_start and new_e == self._visible_end:
             return
+
         if self._visible_start != -1:
             a = self._visible_start
             b = self._visible_end
@@ -362,6 +405,7 @@ class HorizontalClippingScrollList(ScrollView):
                     self._indexed[i][2].opacity = 0
                 for i in range(inter_e + 1, b + 1):
                     self._indexed[i][2].opacity = 0
+
         if new_s != -1:
             if self._visible_start == -1:
                 for i in range(new_s, new_e + 1):
@@ -375,5 +419,6 @@ class HorizontalClippingScrollList(ScrollView):
                 if new_e > b:
                     for i in range(max(b + 1, new_s), new_e + 1):
                         self._indexed[i][2].opacity = 1
+
         self._visible_start = new_s
         self._visible_end = new_e
