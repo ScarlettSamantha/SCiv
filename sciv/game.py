@@ -98,8 +98,12 @@ class OpenCiv(ShowBase):
         if WindowsHelper.is_windows():
             WindowsHelper.load_dll(str(self.base_path / "libs/win-amd64/glew32.dll"))
 
+        self.i18n = I18nManager(str(base_file_path / "i18n"), self.config_manager.get_language(), True)
+        Cache.set_i18n_instance(self.i18n)
+        set_i18n(self.i18n)
+
         loading_screen = LoadingScreen(
-            self, [str(self.base_path / "logo.png")], 15, on_continue=self.on_loading_screen_continue
+            self, [str(self.base_path / "logo.png")], 14, on_continue=self.on_loading_screen_continue
         )
         loading_screen.next_stage("Loading OpenCiv")
         simplepbr.init()
@@ -114,13 +118,6 @@ class OpenCiv(ShowBase):
 
         loading_screen.next_stage("Loading Messenger")
         self.messenger: Messenger = Messenger()
-
-        loading_screen.next_stage(f"Loading translations for {self.config_manager.get_language()}")
-        self.engine_logger.info("Setting up i18n")
-
-        self.i18n = I18nManager(str(base_file_path / "i18n"), self.config_manager.get_language(), True)
-        Cache.set_i18n_instance(self.i18n)
-        set_i18n(self.i18n)
 
         from managers.game import Game
         from managers.world import World
