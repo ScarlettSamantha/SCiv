@@ -667,6 +667,28 @@
           "main_menu": "Main Menu",
           "quit": "Quit"
         },
+        "game_config": {
+          "title": "Game Configuration",
+          "sub_title": "Set players, map size and rules before starting a new game.",
+          "player": "Player",
+          "civilization": "Civilization",
+          "civilizations": "Civilizations",
+          "leader": "Leader",
+          "add_button": "+",
+          "remove_button": "-",
+          "game_options": "Game Options",
+          "map_size": "Map Size",
+          "developer_mode": "Developer Mode",
+          "no_barbarians": "No Barbarians",
+          "no_teams": "No Teams",
+          "game_rules": "Game Rules",
+          "configure_rules": "Configure Rules",
+          "back_button": "Back",
+          "start_game_button": "Start Game",
+          "random": "Random",
+          "map_sizes": "Map Sizes",
+          "leaders": "Leaders"
+        },
         "combat_log": {
           "combat_log": "Combat Log",
           "expand": "Expand",

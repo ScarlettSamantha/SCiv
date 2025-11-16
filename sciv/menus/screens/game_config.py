@@ -19,6 +19,7 @@ from kivy.uix.popup import Popup  # type: ignore
 from kivy.uix.screenmanager import Screen  # type: ignore
 from kivy.uix.textinput import TextInput  # type: ignore
 from kivy.uix.widget import Widget  # type: ignore
+from managers.i18n import Translation
 from menus.kivy.elements.button_value import ButtonValue  # type: ignore
 from menus.kivy.elements.scrollable_popup import ScrollablePopup  # type: ignore
 from panda3d.core import Texture
@@ -121,7 +122,7 @@ class GameConfigMenu(Screen):
         )
 
         self.title_label = Label(
-            text="[b]Game Configuration[/b]",
+            text=f"[b]{str(Translation('ui.player_ui.game_config.title'))}[/b]",
             font_size="32sp",
             size_hint=(1.0, None),
             height=dp(48),
@@ -130,7 +131,7 @@ class GameConfigMenu(Screen):
             valign="middle",
         )
         subtitle_label = Label(
-            text="Set players, map size and rules before starting",
+            text=str(Translation("ui.player_ui.game_config.sub_title")),
             font_size="16sp",
             size_hint=(1.0, None),
             height=dp(32),
@@ -182,7 +183,7 @@ class GameConfigMenu(Screen):
         self.players_label.bind(size=_update_players_label_size)  # type: ignore
 
         self.add_player_button = Button(
-            text="+",
+            text=str(Translation("ui.player_ui.game_config.add_button")),
             size_hint=(None, None),
             width=dp(40),
             height=dp(40),
@@ -211,7 +212,7 @@ class GameConfigMenu(Screen):
         )
 
         player_header = Label(
-            text="Player",
+            text=str(Translation("ui.player_ui.game_config.player")),
             size_hint=(0.25, 1.0),
             font_size="16sp",
         )
@@ -220,12 +221,12 @@ class GameConfigMenu(Screen):
             width=dp(40),
         )
         civ_header = Label(
-            text="Civilization",
+            text=str(Translation("ui.player_ui.game_config.civilization")),
             size_hint=(0.3, 1.0),
             font_size="16sp",
         )
         leader_header = Label(
-            text="Leader",
+            text=str(Translation("ui.player_ui.game_config.leader")),
             size_hint=(0.3, 1.0),
             font_size="16sp",
         )
@@ -254,7 +255,7 @@ class GameConfigMenu(Screen):
         )
 
         options_title = Label(
-            text="[b]Game Options[/b]",
+            text=f"[b]{str(Translation('ui.player_ui.game_config.game_options'))}[/b]",
             size_hint=(1.0, None),
             height=dp(40),
             font_size="24sp",
@@ -276,7 +277,7 @@ class GameConfigMenu(Screen):
             padding=(0, dp(4), 0, 0),
         )
         size_label = Label(
-            text="Map Size",
+            text=str(Translation("ui.player_ui.game_config.map_size")),
             size_hint=(1.0, None),
             height=dp(24),
             font_size="16sp",
@@ -309,7 +310,7 @@ class GameConfigMenu(Screen):
         )
 
         dev_label = Label(
-            text="Developer Mode",
+            text=str(Translation("ui.player_ui.game_config.developer_mode")),
             size_hint=(1.0, 1.0),
             halign="left",
             valign="middle",
@@ -337,7 +338,7 @@ class GameConfigMenu(Screen):
         )
 
         barb_label = Label(
-            text="No Barbarians",
+            text=str(Translation("ui.player_ui.game_config.no_barbarians")),
             size_hint=(1.0, 1.0),
             halign="left",
             valign="middle",
@@ -365,7 +366,7 @@ class GameConfigMenu(Screen):
         )
 
         teams_label = Label(
-            text="No Teams",
+            text=str(Translation("ui.player_ui.game_config.no_teams")),
             size_hint=(1.0, 1.0),
             halign="left",
             valign="middle",
@@ -393,7 +394,7 @@ class GameConfigMenu(Screen):
         )
 
         rules_label = Label(
-            text="Game Rules",
+            text=str(Translation("ui.player_ui.game_config.game_rules")),
             size_hint=(1.0, 1.0),
             halign="left",
             valign="middle",
@@ -405,7 +406,7 @@ class GameConfigMenu(Screen):
         rules_label.bind(size=_update_rules_label)  # type: ignore
 
         rules_button = Button(
-            text="Configure…",
+            text=str(Translation("ui.player_ui.game_config.configure_rules")),
             size_hint=(None, None),
             width=dp(160),
             height=dp(40),
@@ -445,13 +446,13 @@ class GameConfigMenu(Screen):
             button.disabled_color = (0.7, 0.7, 0.7, 0.6)  # type: ignore
             return button
 
-        self.back = create_menu_button("Back")
+        self.back = create_menu_button(str(Translation("ui.player_ui.game_config.back_button")))
         self.back.on_press = self.back_to_main_menu
         self.button_container.add_widget(self.back)
 
         self.button_container.add_widget(Widget(size_hint_x=1.0))
 
-        self.start = create_menu_button("Start")
+        self.start = create_menu_button(str(Translation("ui.player_ui.game_config.start_game_button")))
         self.start.on_press = self.start_game
         self.button_container.add_widget(self.start)
 
@@ -504,7 +505,7 @@ class GameConfigMenu(Screen):
         )
 
         civ_button = Button(
-            text="Random",
+            text=str(Translation("ui.player_ui.game_config.random")),
             size_hint=(0.3, 1.0),
             background_normal="",
             background_down="",
@@ -515,7 +516,7 @@ class GameConfigMenu(Screen):
         civ_button.bind(on_release=lambda _instance, r=row: self.open_civilization_popup_for_row(r))  # type: ignore
 
         leader_button = Button(
-            text="Random",
+            text=str(Translation("ui.player_ui.game_config.random")),
             size_hint=(0.3, 1.0),
             background_normal="",
             background_down="",
@@ -526,7 +527,7 @@ class GameConfigMenu(Screen):
         leader_button.bind(on_release=lambda _instance, r=row: self.open_leader_popup_for_row(r))  # type: ignore
 
         remove_button = Button(
-            text="x",
+            text=str(Translation("ui.player_ui.game_config.remove_button")),
             size_hint=(0.15, 1.0),
             background_normal="",
             background_down="",
@@ -601,7 +602,7 @@ class GameConfigMenu(Screen):
     def open_size_popup(self, _instance: Button) -> None:
         if self.size_popup is None:
             self.size_popup = ScrollablePopup(
-                "Map sizes",
+                title=str(Translation("ui.player_ui.game_config.map_size")),
                 on_select=self.select_size,  # type: ignore
                 items={
                     "10x10 (Testing)": (10, 10),
@@ -626,10 +627,12 @@ class GameConfigMenu(Screen):
     def open_civilization_popup(self, _instance: Optional[Button]) -> None:
         if self.civ_popup is None:
             kv_values: Dict[str, Type[civilization.Civilization]] = {}
+
             for civ in Civilization.all():
                 kv_values[str(civ.name)] = civ
+
             self.civ_popup = ScrollablePopup(  # type: ignore
-                "Civilizations",
+                str(Translation("ui.player_ui.game_config.civilizations")),
                 kv_values,
                 self.select_civilization,  # type: ignore
             )
@@ -659,7 +662,7 @@ class GameConfigMenu(Screen):
             items[str(_leader.get_name())] = leader
 
         self.leader_popup = ScrollablePopup(  # type: ignore
-            "Leaders",
+            str(Translation("ui.player_ui.game_config.leaders")),
             items,
             self.select_leader,  # type: ignore
         )
@@ -689,7 +692,7 @@ class GameConfigMenu(Screen):
 
                 data["selected_leader"] = None
                 leader_dropdown: Button = data["leader_dropdown"]
-                leader_dropdown.text = "Random"
+                leader_dropdown.text = str(Translation("ui.player_ui.game_config.random"))
 
                 if self.player_rows and data is self.player_rows[0]:
                     self.selected_civilization = value
@@ -746,7 +749,7 @@ class GameConfigMenu(Screen):
         label.bind(size=_update_label)  # type: ignore
 
         minus_button = Button(
-            text="-",
+            text=str(Translation("ui.player_ui.game_config.remove_button")),
             size_hint=(None, 1.0),
             width=dp(40),
             background_normal="",
@@ -767,7 +770,7 @@ class GameConfigMenu(Screen):
         )
 
         plus_button = Button(
-            text="+",
+            text=str(Translation("ui.player_ui.game_config.add_button")),
             size_hint=(None, 1.0),
             width=dp(40),
             background_normal="",
@@ -779,15 +782,20 @@ class GameConfigMenu(Screen):
         def apply_value(raw_value: str) -> None:
             if raw_value == "":
                 return
+
             try:
                 value_int = int(raw_value)
             except ValueError:
                 value_int = int(self.rules_state.get(key, min_value))
+
             if value_int < min_value:
                 value_int = min_value
+
             if value_int > max_value:
                 value_int = max_value
+
             self.rules_state[key] = value_int
+
             if input_field.text != str(value_int):
                 input_field.text = str(value_int)
 
@@ -901,7 +909,7 @@ class GameConfigMenu(Screen):
         button_row.add_widget(Widget(size_hint_x=1.0))
 
         close_button = Button(
-            text="Close",
+            text=str(Translation("ui.player_ui.game_config.close_button")),
             size_hint=(None, None),
             width=dp(160),
             height=dp(40),
@@ -916,7 +924,7 @@ class GameConfigMenu(Screen):
         content.add_widget(button_row)
 
         popup = Popup(
-            title="Game Rules",
+            title=str(Translation("ui.player_ui.game_config.game_rules")),
             content=content,
             size_hint=(0.6, 0.7),
         )
