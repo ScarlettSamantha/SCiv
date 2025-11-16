@@ -709,6 +709,18 @@
             "yellow": "Units",
             "blue": "Buildings"
           }
+        },
+        "main_menu": {
+          "title": "SCIV",
+          "continue": "Continue",
+          "under_title": "A turn-based strategy game",
+          "quick_start": "Quick Start",
+          "new_game": "New Game",
+          "load_game": "Load Game",
+          "options": "Options",
+          "credits": "Credits",
+          "view_source": "View Source",
+          "quit": "Quit"
         }
       },
       "messages": {

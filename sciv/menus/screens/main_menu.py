@@ -12,6 +12,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.widget import Widget
+from managers.i18n import Translation
 from menus.kivy.elements.clickable_label import ClickableLabel
 
 
@@ -82,7 +83,7 @@ class MainMenuScreen(Screen):
         )
 
         title_label = Label(
-            text="[b]SCIV[/b]",
+            text="[b]%s[/b]" % str(Translation("ui.player_ui.main_menu.title")),
             font_size="42sp",
             size_hint=(1.0, None),
             height=dp(54),
@@ -92,7 +93,7 @@ class MainMenuScreen(Screen):
         )
 
         subtitle_label = Label(
-            text="4X strategy in development",
+            text=str(Translation("ui.player_ui.main_menu.under_title")),
             font_size="18sp",
             size_hint=(1.0, None),
             height=dp(32),
@@ -132,31 +133,31 @@ class MainMenuScreen(Screen):
             return button
 
         if Debug.is_debug():
-            self.quick_start_button = create_menu_button("Quick Start")
+            self.quick_start_button = create_menu_button(str(Translation("ui.player_ui.main_menu.quick_start")))
             self.quick_start_button.background_color = (0.32, 0.24, 0.12, 1.0)
             self.quick_start_button.bind(on_release=self.quick_start)
             container.add_widget(self.quick_start_button)
 
-        self.continue_button = create_menu_button("Continue")
+        self.continue_button = create_menu_button(str(Translation("ui.player_ui.main_menu.continue")))
         self.continue_button.disabled = True
         self.continue_button.bind(on_release=self.hide)
 
-        self.new_button = create_menu_button("New Game")
+        self.new_button = create_menu_button(str(Translation("ui.player_ui.main_menu.new_game")))
         self.new_button.bind(on_release=self.switch_to_game_config_screen)
 
-        self.load_button = create_menu_button("Load Game")
+        self.load_button = create_menu_button(str(Translation("ui.player_ui.main_menu.load_game")))
         self.load_button.bind(on_release=self.switch_to_load_screen)
 
-        self.options_button = create_menu_button("Options")
+        self.options_button = create_menu_button(str(Translation("ui.player_ui.main_menu.options")))
         self.options_button.bind(on_release=self.to_config_screen)
 
-        self.credit_button = create_menu_button("Credits")
+        self.credit_button = create_menu_button(str(Translation("ui.player_ui.main_menu.credits")))
         self.credit_button.disabled = True
 
-        self.code_button = create_menu_button("View Source")
+        self.code_button = create_menu_button(str(Translation("ui.player_ui.main_menu.view_source")))
         self.code_button.bind(on_release=self.open_browser_to_code)
 
-        self.exit_button = create_menu_button("Exit")
+        self.exit_button = create_menu_button(str(Translation("ui.player_ui.main_menu.quit")))
         self.exit_button.bind(on_press=self.exit)
 
         container.add_widget(self.continue_button)
