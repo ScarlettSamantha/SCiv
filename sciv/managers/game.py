@@ -421,7 +421,13 @@ class Game(Singleton, DirectObject):
         if players is None:
             raise ValueError("No players were setup")
 
-    def on_game_start(self, map_size: str | Tuple[int, int], civilization: Type[Civilization], num_players: int):
+    def on_game_start(
+        self,
+        map_size: str | Tuple[int, int],
+        civilization: Type[Civilization],
+        num_players: int,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> None:
         if self.properties is None:
             raise AssertionError("Game properties not set")
         self.logger.info("Game start requested")
@@ -431,15 +437,17 @@ class Game(Singleton, DirectObject):
         self.properties.width = int(map_size.split("x")[0]) if isinstance(map_size, str) else map_size[0]
         self.properties.height = int(map_size.split("x")[1]) if isinstance(map_size, str) else map_size[1]
 
+        if config is not None:
+            setattr(self.properties, "start_config", config)
+
         self.game_active = True
         self.logger.info(f"Game start requested with {self.properties}")
         messenger.send("ui.request.loading_screen", [civilization])
 
-        def delay_start(*args: Any):
+        def delay_start(*args: Any) -> None:
             self.logger.info("Delaying game start to allow loading screen to show")
             self._try_game_start()
 
-        # Start the game after a short delay to allow the loading screen to show
         self.base.taskMgr.doMethodLater(0.5, delay_start, "delayedGameStart")
 
     def _try_game_start(self):

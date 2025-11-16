@@ -31,6 +31,7 @@ class Basic(BaseGenerator):
     def __init__(self, config: "GameSettings", base: "OpenCiv"):
         super().__init__(config, base=base)
         self.config: "GameSettings" = config
+        self.start_config = getattr(config, "start_config", {})
 
         self.seed: Optional[int] = config.seed if config.seed is not None else None
         self.generate_seed = self.seed is None

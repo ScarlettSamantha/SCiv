@@ -963,16 +963,53 @@ class GameConfigMenu(Screen):
 
         size: Tuple[int, int] = self.selected_size  # type: ignore
 
-        if self.selected_civilization is None:
-            civ: Type[BaseCivilization] = Civilization.random(1)  # type: ignore
-        else:
-            civ = self.selected_civilization
+        players_config: List[Dict[str, Any]] = []
+        civ_for_local: Optional[Type[BaseCivilization]] = None
 
-        self.player_count = len(self.player_rows)
+        for index, data in enumerate(self.player_rows):
+            civ_cls: Optional[Type[BaseCivilization]] = data.get("selected_civ")
+            leader_cls: Optional[Type[BaseLeader]] = data.get("selected_leader")
+
+            if civ_cls is None:
+                civ_cls = Civilization.random(1)  # type: ignore
+
+            if index == 0:
+                civ_for_local = civ_cls
+
+            players_config.append(
+                {
+                    "civilization": civ_cls,
+                    "leader": leader_cls,
+                    "is_human": index == 0,
+                }
+            )
+
+        if civ_for_local is None:
+            civ_for_local = Civilization.random(1)  # type: ignore
+
+        civ: Type[BaseCivilization] | None = civ_for_local
+
+        assert civ is not None, "No civilization selected for local player"
+
+        self.player_count = len(players_config)
         players: int = int(self.player_count)
 
+        options: Dict[str, Any] = {
+            "dev_mode": bool(self.dev_mode.active) if self.dev_mode is not None else False,
+            "no_barbarians": bool(self.no_barbarians.active) if self.no_barbarians is not None else False,
+            "no_teams": bool(self.no_teams.active) if self.no_teams is not None else False,
+        }
+
+        rules: Dict[str, Any] = dict(self.rules_state)
+
+        start_config: Dict[str, Any] = {
+            "options": options,
+            "rules": rules,
+            "players": players_config,
+        }
+
         def send_start_signal(*_args: Any) -> None:
-            messenger.send("system.game.start_load", [size, civ, players])
+            messenger.send("system.game.start_load", [size, civ, players, start_config])
 
         Clock.schedule_once(send_start_signal, 0.01)  # type: ignore
 

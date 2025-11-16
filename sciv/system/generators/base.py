@@ -142,23 +142,115 @@ class BaseGenerator(ABC):
         player.set_ai(ai)
 
     def setup_players(self, player_civilization: Type[Civilization]) -> List["Player"] | None:
-        players: List[Player] = []
+        players: List["Player"] = []
         civs_ingame: List[Type[Civilization]] = []
 
-        for i in range(self.config.num_enemies + 3):  # +1 for the player
-            if i == 0:  # Player
+        start_config: Any = getattr(self.config, "start_config", None)
+        raw_players: Any = start_config.get("players") if isinstance(start_config, Dict) else None  # type: ignore
+        config_players: List[Dict[str, Any]] = raw_players if isinstance(raw_players, list) else []  # type: ignore
+
+        if config_players:
+            human_entries: List[Dict[str, Any]] = [p for p in config_players if bool(p.get("is_human"))]
+            local_entry: Dict[str, Any] = human_entries[0] if human_entries else config_players[0]
+
+            self.config.num_enemies = max(0, len(config_players) - 1)
+
+            ordered_entries: List[Tuple[Optional[Dict[str, Any]], bool, bool, bool]] = []
+
+            ordered_entries.append((local_entry, True, False, False))
+
+            nature_civ_cls: Type[Civilization] = CivilizationRepository.get("nature")  # type: ignore
+            barb_civ_cls: Type[Civilization] = CivilizationRepository.get("barbarians")
+
+            ordered_entries.append(({"civilization": nature_civ_cls, "leader": None}, False, True, False))
+            ordered_entries.append(({"civilization": barb_civ_cls, "leader": None}, False, False, True))
+
+            remaining_entries: List[Dict[str, Any]] = [p for p in config_players if p is not local_entry]
+            for entry in remaining_entries:
+                ordered_entries.append((entry, False, False, False))
+
+            for i, (entry, is_player, is_nature, is_barbarian) in enumerate(ordered_entries):
+                civ_cls: Optional[Type[Civilization]] = None
+                leader_cls: Optional[Type[Leader]] = None
+
+                if entry is not None:
+                    civ_val: Any = entry.get("civilization")
+                    if isinstance(civ_val, type) and issubclass(civ_val, Civilization):
+                        civ_cls = civ_val
+                    elif isinstance(civ_val, str):
+                        civ_cls = CivilizationRepository.get(civ_val)  # type: ignore
+
+                    leader_val: Any = entry.get("leader")
+                    if leader_val is not None and isinstance(leader_val, type) and issubclass(leader_val, Leader):
+                        leader_cls = leader_val
+
+                if civ_cls is None:
+                    if is_player:
+                        civ_cls = player_civilization
+                    else:
+                        while True:
+                            candidate: Type[Civilization] = CivilizationRepository.random(exclude=True)  # type: ignore
+                            assert issubclass(candidate, Civilization), (
+                                "CivilizationRepository.random() returned an instance it should be a class."
+                            )
+                            if candidate not in civs_ingame:
+                                civ_cls = candidate
+                                break
+
+                civs_ingame.append(civ_cls)  # type: ignore[arg-type]
+
+                chosen_personality: Type[BasePersonality] = PersonalityRepository.random()  # type: ignore
+                if isinstance(chosen_personality, list):
+                    raise AssertionError(
+                        "PersonalityRepository.random() returned a list it should be one. as parameter is 1"
+                    )
+
+                civ = civ_cls()  # type: ignore[call-arg]
+                leader: Optional[Leader] = leader_cls() if leader_cls is not None else None
+
+                player: "Player" = self.generate_player(
+                    personality=chosen_personality(),
+                    civilization=civ,
+                    leader=leader,
+                    turn_order=i,
+                    is_player=is_player,
+                    is_nature=is_nature,
+                    is_barbarian=is_barbarian,
+                )
+                player.id = str(i)
+
+                players.append(player)
+
+                player_manager = PlayerManager()
+                player_manager.set_singleton_instance(player_manager)
+                if player.turn_order == 0:
+                    player_manager.add(player, True)
+                elif player.is_nature:
+                    player_manager.set_nature(player)
+                elif player.is_barbarian:
+                    player_manager.set_barbarian(player)
+                else:
+                    player_manager.add(player, False)
+
+            return players
+
+        players: List["Player"] = []
+        civs_ingame = []
+
+        for i in range(self.config.num_enemies + 3):
+            if i == 0:
                 chosen_civilization: Type[Civilization] = player_civilization
                 civs_ingame.append(chosen_civilization)
-            elif i == 1:  # Nature
-                chosen_civilization: Type[Civilization] = CivilizationRepository.get("nature")  # type: ignore
+            elif i == 1:
+                chosen_civilization = CivilizationRepository.get("nature")  # type: ignore
                 civs_ingame.append(chosen_civilization)
-            elif i == 2:  # Barbarians
-                chosen_civilization: Type[Civilization] = CivilizationRepository.get("barbarians")
+            elif i == 2:
+                chosen_civilization = CivilizationRepository.get("barbarians")
                 civs_ingame.append(chosen_civilization)
-            else:  # AI
-                chosen_civilization: Type[Civilization] = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
+            else:
+                chosen_civilization = CivilizationRepository.random(exclude=True)  # type: ignore
                 while True:
-                    chosen_civilization = CivilizationRepository.random(exclude=True)  # type: ignore #due to the num argument is 1 it will always return a single instance not a list of instances.
+                    chosen_civilization = CivilizationRepository.random(exclude=True)  # type: ignore
                     assert issubclass(chosen_civilization, Civilization), (
                         "CivilizationRepository.random() returned an instance it should be a class."
                     )
@@ -172,7 +264,7 @@ class BaseGenerator(ABC):
                     if already_ingame is False:
                         break
 
-            chosen_personality: Type[BasePersonality] = PersonalityRepository.random()  # type: ignore # due to the num argument is 1 it will always return a single instance not a list of instances.
+            chosen_personality: Type[BasePersonality] = PersonalityRepository.random()  # type: ignore
 
             if isinstance(chosen_civilization, list):
                 raise AssertionError(
@@ -189,7 +281,7 @@ class BaseGenerator(ABC):
             else:
                 civ = CivilizationRepository.get(chosen_civilization)()
 
-            player: Player = self.generate_player(
+            player: "Player" = self.generate_player(
                 personality=chosen_personality(),
                 civilization=civ,
                 leader=None,

@@ -11,9 +11,9 @@ class Leader:
 
     def __init__(
         self,
-        key: Optional[str],
-        name: T_TranslationOrStrOrNone,
-        description: T_TranslationOrStrOrNone,
+        key: Optional[str] = None,
+        name: T_TranslationOrStrOrNone = None,
+        description: T_TranslationOrStrOrNone = None,
         icon: Optional[str] = None,
     ) -> None:
         from system.effects import Effects
