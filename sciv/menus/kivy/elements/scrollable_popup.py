@@ -1,14 +1,14 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from kivy.uix.widget import Widget
-from kivy.properties import ReferenceListProperty
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.popup import Popup
-from kivy.uix.scrollview import ScrollView
-
-from menus.kivy.elements.button_value import ButtonValue
+from kivy.graphics import Color, Rectangle  # type: ignore
+from kivy.metrics import dp  # type: ignore
+from kivy.uix.boxlayout import BoxLayout  # type: ignore
+from kivy.uix.button import Button  # type: ignore
+from kivy.uix.gridlayout import GridLayout  # type: ignore
+from kivy.uix.popup import Popup  # type: ignore
+from kivy.uix.scrollview import ScrollView  # type: ignore
+from kivy.uix.widget import Widget  # type: ignore
+from menus.kivy.elements.button_value import ButtonValue  # type: ignore
 
 
 class ScrollablePopup(Popup):
@@ -21,55 +21,127 @@ class ScrollablePopup(Popup):
         button_height: int = 50,
         popup_size: Tuple[float, float] = (0.6, 0.6),
         **kwargs: Any,
-    ):
+    ) -> None:
         super().__init__(**kwargs)  # type: ignore
-        self.title: str = title
-        self.size_hint: ReferenceListProperty[Tuple[float, float]] | Tuple[float, float] = popup_size
 
-        layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
+        self.title = title
+        self.size_hint = popup_size
 
-        # Scrollable list container (constrained height)
-        scroll_view = ScrollView(height=400, smooth_scroll_end=10, pos=(500, 200))
-        scroll_view._update_effect_y_bounds()  # type: ignore # Limited height for scrolling
+        root = BoxLayout(
+            orientation="vertical",
+            padding=(dp(24), dp(20)),
+            spacing=dp(12),
+        )
 
-        list_layout = GridLayout(cols=cols, size_hint_y=None, spacing=5, padding=[5, 5], height=100)
-        list_layout.bind(minimum_height=list_layout.setter("height"))  # type: ignore # Adjust dynamically
+        with root.canvas.before:  # type: ignore
+            Color(0.08, 0.08, 0.12, 0.95)
+            bg_rect = Rectangle(size=root.size, pos=root.pos)  # type: ignore
+
+        def _update_bg(instance: Widget, _value: Any) -> None:
+            bg_rect.size = instance.size  # type: ignore
+            bg_rect.pos = instance.pos  # type: ignore
+
+        root.bind(size=_update_bg, pos=_update_bg)  # type: ignore
+
+        scroll_view = ScrollView(
+            size_hint=(1.0, 1.0),
+            do_scroll_x=False,
+            bar_width=dp(8),
+        )
+
+        list_layout = GridLayout(
+            cols=cols,
+            size_hint_y=None,
+            spacing=(dp(8), dp(8)),
+            padding=(dp(8), dp(8)),
+            row_force_default=True,
+            row_default_height=dp(button_height),
+        )
+        list_layout.bind(minimum_height=list_layout.setter("height"))  # type: ignore
 
         ref_bound_button = Button if isinstance(items, list) else ButtonValue
         has_values = isinstance(items, dict)
 
-        # Populate with options
         if not has_values:
-            for item in items:
-                btn = ref_bound_button(text=item, size_hint_y=None, height=button_height)
-                btn.bind(on_release=lambda btn: self.select_item(btn.text, on_select))  # type: ignore
+            for text in items:  # type: ignore[assignment]
+                btn = ref_bound_button(
+                    text=text,
+                    size_hint_y=None,
+                    height=dp(button_height),
+                    background_normal="",
+                    background_down="",
+                    background_color=(0.18, 0.2, 0.26, 1.0),
+                    color=(1.0, 1.0, 1.0, 1.0),
+                )
+                btn.bind(
+                    on_release=lambda _btn, txt=text: self.select_item(txt, on_select)  # type: ignore
+                )
                 list_layout.add_widget(btn)
         else:
-            for text, value in items.items():
-                btn = ref_bound_button(text=text, value=value, size_hint_y=None, height=button_height)
-                btn.bind(on_release=lambda btn: self.select_item(btn.text, on_select, btn.value))  # type: ignore
+            for text, value in items.items():  # type: ignore[union-attr]
+                btn = ref_bound_button(
+                    text=text,
+                    value=value,
+                    size_hint_y=None,
+                    height=dp(button_height),
+                    background_normal="",
+                    background_down="",
+                    background_color=(0.18, 0.2, 0.26, 1.0),
+                    color=(1.0, 1.0, 1.0, 1.0),
+                )
+                btn.bind(
+                    on_release=lambda _btn, txt=text, val=value: self.select_item(  # type: ignore
+                        txt,
+                        on_select,
+                        val,
+                    )
+                )
                 list_layout.add_widget(btn)
 
         scroll_view.add_widget(list_layout)  # type: ignore
 
-        # Close button with padding
-        close_button = Button(text="Close", size_hint=(1, None), height=button_height)
+        button_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1.0, None),
+            height=dp(button_height + 8),
+            spacing=dp(10),
+        )
+
+        button_row.add_widget(Widget(size_hint_x=1.0))
+
+        close_button = Button(
+            text="Close",
+            size_hint=(None, None),
+            width=dp(160),
+            height=dp(button_height),
+            background_normal="",
+            background_down="",
+            background_color=(0.18, 0.2, 0.26, 1.0),
+            color=(1.0, 1.0, 1.0, 1.0),
+        )
         close_button.bind(on_release=self.dismiss)  # type: ignore
 
-        layout.add_widget(scroll_view)
-        layout.add_widget(close_button)
+        button_row.add_widget(close_button)
 
-        self.content = layout
+        root.add_widget(scroll_view)
+        root.add_widget(button_row)
 
-    def select_item(self, item: str, on_select: Callable[[str, Optional[Any]], None], value: Optional[Any] = None):
+        self.content = root
+
+    def select_item(
+        self,
+        item: str,
+        on_select: Callable[[str, Optional[Any]], None],
+        value: Optional[Any] = None,
+    ) -> None:
         if value is None:
             on_select(item, None)
         else:
             on_select(item, value)
         self.dismiss()  # type: ignore
 
-    def add_child(self, child: Widget):
+    def add_child(self, child: Widget) -> None:
         self.content.add_widget(child)
 
-    def remove_child(self, child: Widget):
+    def remove_child(self, child: Widget) -> None:
         self.content.remove_widget(child)

@@ -1,17 +1,47 @@
 from random import choice
 from typing import List, Type
+
+from gameplay.civilization import Civilization as BaseCivilization
 from gameplay.leader import Leader as LeaderBaseObject
 from system.pyload import PyLoad
 
 
 class Leader:
+    leader_cache: List[Type[LeaderBaseObject]] = []
+
+    @classmethod
+    def _load_cache(cls) -> None:
+        if not cls.leader_cache:
+            cls.leader_cache = list(
+                PyLoad.load_classes(directory="gameplay/leaders", base_classes=LeaderBaseObject).values()
+            )
+
     @classmethod
     def all(cls) -> List[Type[LeaderBaseObject]]:
-        classes = PyLoad.load_classes("gameplay/leaders", base_classes=LeaderBaseObject)
-        for key, _class in classes.items():
-            if _class == LeaderBaseObject:
-                del classes[key]
-        return list(classes.values())
+        if not cls.leader_cache:
+            cls._load_cache()
+        return cls.leader_cache
+
+    @classmethod
+    def for_civilization(cls, civ_cls: Type[BaseCivilization]) -> List[Type[LeaderBaseObject]]:
+        cls._load_cache()
+
+        civ_instance: BaseCivilization = civ_cls()  # type: ignore[call-arg]
+        civ_leaders = getattr(civ_instance, "leaders", None)
+
+        leaders_for_civ: List[Type[LeaderBaseObject]] = []
+
+        if civ_leaders:
+            for leader_obj in civ_leaders:
+                leaders_for_civ.append(type(leader_obj))  # type: ignore
+            return leaders_for_civ
+
+        for leader_cls in cls.leader_cache:
+            leader_civ = getattr(leader_cls, "civilization", None)
+            if leader_civ is civ_cls:
+                leaders_for_civ.append(leader_cls)
+
+        return leaders_for_civ
 
     @classmethod
     def random(cls, num: int = 1, unique: bool = False) -> Type[LeaderBaseObject] | List[Type[LeaderBaseObject]]:

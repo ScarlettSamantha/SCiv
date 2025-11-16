@@ -1123,6 +1123,10 @@
           "kublai": {
             "name": "Kublai Khan",
             "description": "Founder of Yuan Dynasty"
+          },
+          "wu_zetian": {
+            "name": "Wu Zetian",
+            "description": "First and only female Chinese emperor"
           }
         }
       },

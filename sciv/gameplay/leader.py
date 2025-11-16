@@ -1,9 +1,14 @@
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 from managers.i18n import T_TranslationOrStr, T_TranslationOrStrOrNone, Translation, get_i18n
 
+if TYPE_CHECKING:
+    from gameplay.civilization import Civilization
+
 
 class Leader:
+    civilization: Type["Civilization"] | None = None
+
     def __init__(
         self,
         key: Optional[str],
@@ -19,6 +24,9 @@ class Leader:
         self.description: T_TranslationOrStr = description if description is not None else ""
 
         self._effects: Effects = Effects(self)
+
+    def get_name(self) -> str:
+        return str(self.name)
 
     def dump(self) -> Dict[str, Any]:
         return {
