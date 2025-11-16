@@ -28,3 +28,4 @@ pyuac # for windows admin privileges - dev
 xdg # for path handling on linux - not dev not needed on windows
 orjson # for fast JSON serialization - game saving
 mypy-extensions # for mypy extensions - dev
+Faker # for generating random names
