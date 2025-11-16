@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Literal
+from typing import Any, Dict, Literal
 
 
 class GameRules(ABC):
@@ -37,6 +37,10 @@ class GameRules(ABC):
             "allow_friendly_fire": cls.get_allow_friendly_fire_rule(),
         }
 
+    @classmethod
+    @abstractmethod
+    def get_rule_definitions(cls) -> Dict[str, Dict[str, Any]]: ...
+
 
 class SCIVRules(GameRules):
     @classmethod
@@ -62,6 +66,52 @@ class SCIVRules(GameRules):
     @classmethod
     def get_allow_friendly_fire_rule(cls) -> bool | Literal[True]:
         return True
+
+    @classmethod
+    def get_rules(cls) -> Dict[str, Any]:
+        return {
+            "city_founding_distance": cls.get_city_founding_distance_rule(),
+            "city_founding_in_own_territory": cls.get_city_founding_in_own_territory_rule(),
+            "unit_looses_movement_after_building": cls.get_unit_looses_movement_after_building_rule(),
+            "nature_enemy_spawn": cls.get_nature_enemy_spawn_rule(),
+            "nature_enemy_spawn_grace_period": cls.get_nature_enemy_spawn_grace_period(),
+            "allow_friendly_fire": cls.get_allow_friendly_fire_rule(),
+        }
+
+    @classmethod
+    def get_rule_definitions(cls) -> Dict[str, Dict[str, Any]]:
+        return {
+            "city_founding_distance": {
+                "label": "City founding minimum distance",
+                "type": "int",
+                "min": 1,
+                "max": 6,
+                "step": 1,
+            },
+            "nature_enemy_spawn_grace_period": {
+                "label": "Barbarian spawn grace period (turns)",
+                "type": "int",
+                "min": 0,
+                "max": 50,
+                "step": 1,
+            },
+            "city_founding_in_own_territory": {
+                "label": "Require founding in own territory",
+                "type": "bool",
+            },
+            "unit_looses_movement_after_building": {
+                "label": "Unit loses movement after building",
+                "type": "bool",
+            },
+            "nature_enemy_spawn": {
+                "label": "Enable barbarians / nature enemies",
+                "type": "bool",
+            },
+            "allow_friendly_fire": {
+                "label": "Allow friendly fire",
+                "type": "bool",
+            },
+        }
 
 
 global active_game_rules

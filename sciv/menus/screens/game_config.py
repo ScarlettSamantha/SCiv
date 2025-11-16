@@ -5,6 +5,7 @@ from gameplay.civilization import Civilization as BaseCivilization
 from gameplay.leader import Leader as BaseLeader
 from gameplay.repositories.civilization import Civilization
 from gameplay.repositories.leader import Leader as LeaderRepository
+from gameplay.rules import GameRules, get_game_rules
 from helpers.cache import Cache
 from kivy.graphics import Color, Rectangle  # type: ignore
 from kivy.metrics import dp  # type: ignore
@@ -66,16 +67,14 @@ class GameConfigMenu(Screen):
         self._background_rect: Optional[Rectangle] = None
 
         self.rules_popup: Optional[Popup] = None
-        self.rules_state: Dict[str, Any] = {
-            "city_founding_distance": 2,
-            "city_founding_in_own_territory": True,
-            "unit_looses_movement_after_building": True,
-            "nature_enemy_spawn": True,
-            "nature_enemy_spawn_grace_period": 5,
-            "allow_friendly_fire": True,
-        }
+        self.rules_state: Dict[str, Any] = {}
         self.rules_checkboxes: Dict[str, CheckBox] = {}
         self.rules_int_inputs: Dict[str, TextInput] = {}
+        self.rule_definitions: Dict[str, Dict[str, Any]] = {}
+
+        rules_obj: GameRules = get_game_rules()
+        self.rules_state = dict(rules_obj.get_rules())
+        self.rule_definitions = rules_obj.get_rule_definitions()
 
         self.add_widget(self.build_screen())
 
@@ -841,62 +840,56 @@ class GameConfigMenu(Screen):
 
         content.bind(size=_update_content_rect, pos=_update_content_rect)  # type: ignore
 
-        distance_row = self._build_int_rule_row(
-            key="city_founding_distance",
-            label_text="City founding minimum distance",
-            min_value=1,
-            max_value=6,
-            step=1,
-        )
-        content.add_widget(distance_row)
+        for key, meta in self.rule_definitions.items():
+            rule_type = meta.get("type")
+            label_text = meta.get("label") or key.replace("_", " ").capitalize()
 
-        grace_row = self._build_int_rule_row(
-            key="nature_enemy_spawn_grace_period",
-            label_text="Barbarian spawn grace period (turns)",
-            min_value=0,
-            max_value=50,
-            step=1,
-        )
-        content.add_widget(grace_row)
+            if rule_type == "int":
+                min_value = int(meta.get("min", 0))
+                max_value = int(meta.get("max", 100))
+                step = int(meta.get("step", 1))
+                row = self._build_int_rule_row(
+                    key=key,
+                    label_text=label_text,
+                    min_value=min_value,
+                    max_value=max_value,
+                    step=step,
+                )
+                content.add_widget(row)
+            elif rule_type == "bool":
+                row = BoxLayout(
+                    orientation="horizontal",
+                    size_hint=(1.0, None),
+                    height=dp(40),
+                    spacing=dp(10),
+                )
 
-        bool_rules = [
-            ("city_founding_in_own_territory", "Require founding in own territory"),
-            ("unit_looses_movement_after_building", "Unit loses movement after building"),
-            ("nature_enemy_spawn", "Enable barbarians / nature enemies"),
-            ("allow_friendly_fire", "Allow friendly fire"),
-        ]
+                label = Label(
+                    text=label_text,
+                    size_hint=(1.0, 1.0),
+                    halign="left",
+                    valign="middle",
+                )
 
-        for key, label_text in bool_rules:
-            row = BoxLayout(
-                orientation="horizontal",
-                size_hint=(1.0, None),
-                height=dp(40),
-                spacing=dp(10),
-            )
-            label = Label(
-                text=label_text,
-                size_hint=(1.0, 1.0),
-                halign="left",
-                valign="middle",
-            )
+                def _update_bool_label(instance: Label, _value: Any) -> None:
+                    instance.text_size = instance.size  # type: ignore
 
-            def _update_bool_label(instance: Label, _value: Any) -> None:
-                instance.text_size = instance.size  # type: ignore
+                label.bind(size=_update_bool_label)  # type: ignore
 
-            label.bind(size=_update_bool_label)  # type: ignore
+                checkbox = CheckBox(
+                    size_hint=(None, None),
+                    size=(dp(28), dp(28)),
+                )
+                checkbox.active = bool(self.rules_state.get(key, False))
+                checkbox.bind(
+                    active=lambda _instance, value, k=key: self._on_rule_checkbox_change(k, value)  # type: ignore
+                )
 
-            checkbox = CheckBox(
-                size_hint=(None, None),
-                size=(dp(28), dp(28)),
-            )
-            checkbox.active = bool(self.rules_state.get(key, False))
-            checkbox.bind(active=lambda _instance, value, k=key: self._on_rule_checkbox_change(k, value))  # type: ignore
+                row.add_widget(label)
+                row.add_widget(checkbox)
+                content.add_widget(row)
 
-            row.add_widget(label)
-            row.add_widget(checkbox)
-            content.add_widget(row)
-
-            self.rules_checkboxes[key] = checkbox
+                self.rules_checkboxes[key] = checkbox
 
         button_row = BoxLayout(
             orientation="horizontal",
