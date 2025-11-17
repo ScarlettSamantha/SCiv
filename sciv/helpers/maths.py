@@ -1,7 +1,6 @@
 import math
 
-from panda3d.core import Vec3
-from pandac.PandaModules import LVector3f
+from panda3d.core import LVector3f, Vec3
 
 
 def scale_value(

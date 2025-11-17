@@ -13,7 +13,7 @@ from panda3d.core import (
 from panda3d.core import (
     LVector3f as Vec3,
 )
-from pandac.PandaModules import LQuaternionf, LVector3f
+from panda3d.core import LQuaternionf, LVector3f
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
