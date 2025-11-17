@@ -14,6 +14,7 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.widget import Widget
 from managers.i18n import Translation
 from menus.kivy.elements.clickable_label import ClickableLabel
+from menus.kivy.elements.menu_styled import DarkPanel, PrimaryButton  # type: ignore
 
 
 class MainMenuScreen(Screen):
@@ -31,7 +32,6 @@ class MainMenuScreen(Screen):
         self.code_button: Optional[Button] = None
         self.exit_button: Optional[Button] = None
         self._background_rect: Optional[Rectangle] = None
-        self._panel_rect: Optional[Rectangle] = None
 
         self.add_widget(self.build_screen())
 
@@ -55,24 +55,13 @@ class MainMenuScreen(Screen):
 
         float_layout.bind(size=update_background, pos=update_background)  # type: ignore
 
-        container = BoxLayout(
+        container = DarkPanel(
             orientation="vertical",
             size_hint=(0.4, 0.7),
             pos_hint={"center_x": 0.5, "center_y": 0.5},
             padding=(dp(32), dp(28)),
             spacing=dp(16),
         )
-
-        with container.canvas.before:  # type: ignore
-            Color(0.08, 0.08, 0.12, 0.9)
-            self._panel_rect = Rectangle(size=container.size, pos=container.pos)  # type: ignore
-
-        def update_panel(instance: Widget, _: Any) -> None:
-            if self._panel_rect is not None:
-                self._panel_rect.size = instance.size
-                self._panel_rect.pos = instance.pos
-
-        container.bind(size=update_panel, pos=update_panel)  # type: ignore
 
         header = BoxLayout(
             orientation="vertical",
@@ -117,19 +106,14 @@ class MainMenuScreen(Screen):
         button_width = dp(400)
 
         def create_menu_button(text: str) -> Button:
-            button = Button(
+            button = PrimaryButton(
                 text=text,
                 size_hint=(1.0, None),
                 height=dp(48),
                 width=button_width,
                 font_size="20sp",
-                background_normal="",
-                background_down="",
-                background_color=(0.18, 0.2, 0.26, 1.0),
-                color=(1.0, 1.0, 1.0, 1.0),
             )
             button.pos_hint = {"center_x": 0.5}
-            button.disabled_color = (0.7, 0.7, 0.7, 0.6)  # type: ignore
             return button
 
         if Debug.is_debug():

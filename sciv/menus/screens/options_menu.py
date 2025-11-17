@@ -20,6 +20,14 @@ from managers.config import (
     WINDOW_MODE_WINDOW,
     ConfigManager,
 )
+from menus.kivy.elements.menu_styled import (  # type: ignore
+    DarkPanel,
+    LeftAlignedLabel,
+    MenuCheckbox,
+    SecondaryButton,
+    SectionLabel,
+    TitleLabel,
+)
 
 
 class OptionsScreen(Screen):
@@ -88,7 +96,6 @@ class OptionsScreen(Screen):
 
         self.content_area: BoxLayout
         self._tab_buttons: Dict[str, Button] = {}
-        self._bg_rect: Rectangle
         self._panel_container: BoxLayout
         self._root_bg_rect: Rectangle
         self.current_tab: str = "General"
@@ -100,16 +107,13 @@ class OptionsScreen(Screen):
         self.add_widget(self.build_screen())
 
     def _make_version_label(self) -> Label:
-        label = Label(
+        label = LeftAlignedLabel(
             text=self.version_text,
             color=(0.8, 0.8, 0.8, 1),
             font_size="13sp",
             size_hint=(1, None),
             height=dp(28),
-            halign="left",
-            valign="middle",
         )
-        label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
         return label
 
     def build_screen(self) -> FloatLayout:
@@ -124,22 +128,13 @@ class OptionsScreen(Screen):
             size=lambda inst, val: self._update_root_bg(inst, val),  # type: ignore
         )
 
-        self._panel_container = BoxLayout(
+        self._panel_container = DarkPanel(
             orientation="vertical",
             size_hint=(0.8, 0.8),
             pos_hint={"center_x": 0.5, "center_y": 0.5},
             padding=(dp(32), dp(24)),
             spacing=dp(16),
         )
-
-        with self._panel_container.canvas.before:  # type: ignore
-            Color(0.08, 0.08, 0.12, 0.9)
-            self._bg_rect = Rectangle(
-                pos=self._panel_container.pos,
-                size=self._panel_container.size,
-            )  # type: ignore
-
-        self._panel_container.bind(pos=self._update_bg, size=self._update_bg)
 
         header = BoxLayout(
             orientation="horizontal",
@@ -148,38 +143,27 @@ class OptionsScreen(Screen):
             padding=(dp(16), dp(10)),
             spacing=dp(10),
         )
-        title_label = Label(
+        title_label = TitleLabel(
             text="[b]Settings[/b]",
-            font_size="32sp",
-            markup=True,
-            halign="left",
-            valign="middle",
             size_hint_x=0.7,
         )
-        title_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         header_right = BoxLayout(
             orientation="horizontal",
             size_hint_x=0.3,
             spacing=dp(10),
         )
-        version_short = Label(
+        version_short = LeftAlignedLabel(
             text=f"{self.version}",
             font_size="14sp",
             color=(0.8, 0.8, 0.8, 1),
             halign="right",
-            valign="middle",
         )
-        version_short.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        btn_back = Button(
+        btn_back = SecondaryButton(
             text="Back",
             size_hint=(None, 1),
             width=dp(110),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
             font_size="16sp",
         )
         btn_back.bind(on_release=self.on_back)  # type: ignore
@@ -249,10 +233,6 @@ class OptionsScreen(Screen):
         self._root_bg_rect.pos = instance.pos
         self._root_bg_rect.size = instance.size
 
-    def _update_bg(self, instance: Widget, _value: Tuple[float, float]) -> None:
-        self._bg_rect.pos = instance.pos
-        self._bg_rect.size = instance.size
-
     def _set_tab_styles(self, active_name: str) -> None:
         for name, btn in self._tab_buttons.items():
             btn.background_normal = ""  # type: ignore
@@ -286,16 +266,13 @@ class OptionsScreen(Screen):
             spacing=dp(18),
         )
 
-        caption = Label(
+        caption = SectionLabel(
             text="[b]General[/b]",
-            font_size="18sp",
             markup=True,
+            font_size="18sp",
             size_hint=(1, None),
             height=dp(32),
-            halign="left",
-            valign="middle",
         )
-        caption.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
         layout.add_widget(caption)
 
         rows = BoxLayout(
@@ -309,14 +286,11 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        language_label = Label(
+        language_label = LeftAlignedLabel(
             text="Language (restart needed)",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        language_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         self.language_spinner = Spinner(
             text=self.LANGUAGES.get(self.config_ref.get_language(), "English (en_EN)"),
@@ -337,16 +311,13 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        fps_label = Label(
+        fps_label = LeftAlignedLabel(
             text="FPS Counter",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        fps_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        self.fps_checkbox = CheckBox(size_hint=(None, None), size=(dp(28), dp(28)))
+        self.fps_checkbox = MenuCheckbox()
         self.fps_checkbox.bind(active=self._on_fps_toggle)  # type: ignore
 
         fps_row.add_widget(fps_label)
@@ -359,16 +330,13 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        mouse_label = Label(
+        mouse_label = LeftAlignedLabel(
             text="Mouse Lock (restart/refocus needed)",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        mouse_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        self.mouse_checkbox = CheckBox(size_hint=(None, None), size=(dp(28), dp(28)))
+        self.mouse_checkbox = MenuCheckbox()
         self.mouse_checkbox.active = self.config_ref.get_by_key(("ui", "mouse_lock"), False)
         self.mouse_checkbox.bind(active=self._on_mouse_lock_toggle)  # type: ignore
 
@@ -382,19 +350,14 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        confirm_label = Label(
+        confirm_label = LeftAlignedLabel(
             text="Confirm Before Exit",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        confirm_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         confirm_default = bool(getattr(self.base, "confirm_exit", True))
-        self.confirm_exit_checkbox = CheckBox(
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
+        self.confirm_exit_checkbox = MenuCheckbox(
             active=confirm_default,
         )
         self.confirm_exit_checkbox.bind(active=self._on_confirm_exit_toggle)  # type: ignore
@@ -412,16 +375,13 @@ class OptionsScreen(Screen):
             spacing=dp(18),
         )
 
-        caption = Label(
+        caption = SectionLabel(
             text="[b]Video[/b]",
-            font_size="18sp",
             markup=True,
+            font_size="18sp",
             size_hint=(1, None),
             height=dp(32),
-            halign="left",
-            valign="middle",
         )
-        caption.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
         layout.add_widget(caption)
 
         rows = BoxLayout(
@@ -435,14 +395,11 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        resolution_label = Label(
+        resolution_label = LeftAlignedLabel(
             text="Resolution",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        resolution_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         resolution_options = list(self.RESOLUTIONS.keys())
         current_resolution = self.config_ref.get_resolution()
@@ -465,14 +422,11 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        refresh_label = Label(
+        refresh_label = LeftAlignedLabel(
             text="Refresh Rate (Hz)",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        refresh_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         slider_box = BoxLayout(
             orientation="horizontal",
@@ -503,16 +457,13 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        vsync_label = Label(
+        vsync_label = LeftAlignedLabel(
             text="Enable VSync",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        vsync_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        self.vsync_checkbox = CheckBox(size_hint=(None, None), size=(dp(28), dp(28)))
+        self.vsync_checkbox = MenuCheckbox()
         self.vsync_checkbox.bind(active=self._on_vsync_toggle)  # type: ignore
 
         vsync_row.add_widget(vsync_label)
@@ -529,14 +480,11 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        window_label = Label(
+        window_label = LeftAlignedLabel(
             text="Window Mode",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        window_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         current_display_mode = self.config_ref.get_screen_mode()
         self.window_mode_spinner = Spinner(
@@ -561,16 +509,13 @@ class OptionsScreen(Screen):
             spacing=dp(18),
         )
 
-        caption = Label(
+        caption = SectionLabel(
             text="[b]Developer[/b]",
-            font_size="18sp",
             markup=True,
+            font_size="18sp",
             size_hint=(1, None),
             height=dp(32),
-            halign="left",
-            valign="middle",
         )
-        caption.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
         layout.add_widget(caption)
 
         rows = BoxLayout(
@@ -584,16 +529,13 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        dev_label = Label(
+        dev_label = LeftAlignedLabel(
             text="Developer Mode",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        dev_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        self.dev_checkbox = CheckBox(size_hint=(None, None), size=(dp(28), dp(28)))
+        self.dev_checkbox = MenuCheckbox()
         self.dev_checkbox.bind(active=self._on_developer_mode_toggle)  # type: ignore
 
         dev_row.add_widget(dev_label)
@@ -606,16 +548,13 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        cheat_label = Label(
+        cheat_label = LeftAlignedLabel(
             text="Cheat Menu",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        cheat_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        self.cheat_checkbox = CheckBox(size_hint=(None, None), size=(dp(28), dp(28)))
+        self.cheat_checkbox = MenuCheckbox()
         cheat_row.add_widget(cheat_label)
         cheat_row.add_widget(self.cheat_checkbox)
         rows.add_widget(cheat_row)
@@ -626,20 +565,15 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        debug_master_label = Label(
+        debug_master_label = LeftAlignedLabel(
             text="Debug Enable",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        debug_master_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         master = self.config_ref.get_by_key(("debug", "enable"), False)
-        self.debug_enable_checkbox = CheckBox(
+        self.debug_enable_checkbox = MenuCheckbox(
             active=master,
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
         )
 
         debug_master_row.add_widget(debug_master_label)
@@ -670,14 +604,11 @@ class OptionsScreen(Screen):
             cb.bind(active=lambda inst, val, k=key: self.toggle_debug_flag(k, bool(val)))  # type: ignore
             self.debug_checkboxes[key] = cb
 
-            lbl = Label(
+            lbl = LeftAlignedLabel(
                 text=key.replace("_", " ").title(),
                 color=(1, 1, 1, 1),
                 font_size="14sp",
-                halign="left",
-                valign="middle",
             )
-            lbl.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
             cell.add_widget(cb)
             cell.add_widget(lbl)
@@ -691,21 +622,16 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        ai_label = Label(
+        ai_label = LeftAlignedLabel(
             text="Disable AI Turn Processing",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        ai_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         ai_off = self.config_ref.get_by_key(("debug", "disable_ai_turn_processing"), False)
-        self.disable_ai_checkbox = CheckBox(
+        self.disable_ai_checkbox = MenuCheckbox(
             active=ai_off,
             disabled=not master,
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
         )
 
         ai_row.add_widget(ai_label)
@@ -721,20 +647,15 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        sentry_enable_label = Label(
+        sentry_enable_label = LeftAlignedLabel(
             text="Sentry Enable",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        sentry_enable_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
-        self.sentry_enable_checkbox = CheckBox(
+        self.sentry_enable_checkbox = MenuCheckbox(
             active=sentry_en,
             disabled=not master,
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
         )
 
         sentry_enable_row.add_widget(sentry_enable_label)
@@ -747,14 +668,11 @@ class OptionsScreen(Screen):
             height=dp(40),
             spacing=dp(12),
         )
-        sentry_dsn_label = Label(
+        sentry_dsn_label = LeftAlignedLabel(
             text="Sentry DSN",
             font_size="16sp",
             size_hint_x=0.6,
-            halign="left",
-            valign="middle",
         )
-        sentry_dsn_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
 
         dsn = sentry_conf.get("dsn", "")
         self.sentry_dsn_input = TextInput(

@@ -22,6 +22,18 @@ from kivy.uix.widget import Widget  # type: ignore
 from managers.i18n import Translation
 from menus.kivy.elements.button_value import ButtonValue  # type: ignore
 from menus.kivy.elements.scrollable_popup import ScrollablePopup  # type: ignore
+from menus.kivy.elements.menu_styled import (  # type: ignore
+    DangerButton,
+    DarkPanel,
+    IconButton,
+    LeftAlignedLabel,
+    MenuCheckbox,
+    PrimaryButton,
+    SecondaryButton,
+    SectionLabel,
+    SubtitleLabel,
+    TitleLabel,
+)
 from panda3d.core import Texture
 
 
@@ -94,24 +106,13 @@ class GameConfigMenu(Screen):
 
         float_layout.bind(size=update_background, pos=update_background)  # type: ignore
 
-        self.container = BoxLayout(
+        self.container = DarkPanel(
             orientation="vertical",
             size_hint=(0.8, 0.85),
             pos_hint={"center_x": 0.5, "center_y": 0.5},
             padding=(dp(32), dp(28)),
             spacing=dp(20),
         )
-
-        with self.container.canvas.before:  # type: ignore
-            Color(0.08, 0.08, 0.12, 0.9)
-            self.rect = Rectangle(size=self.container.size, pos=self.container.pos)  # type: ignore
-
-        def update_rect(instance: Widget, _value: Any) -> None:
-            if self.rect is not None:
-                self.rect.size = instance.size  # type: ignore
-                self.rect.pos = instance.pos  # type: ignore
-
-        self.container.bind(size=update_rect, pos=update_rect)  # type: ignore
 
         header = BoxLayout(
             orientation="vertical",
@@ -121,30 +122,16 @@ class GameConfigMenu(Screen):
             padding=(0, 0, 0, dp(4)),
         )
 
-        self.title_label = Label(
+        self.title_label = TitleLabel(
             text=f"[b]{str(Translation('ui.player_ui.game_config.title'))}[/b]",
-            font_size="32sp",
             size_hint=(1.0, None),
             height=dp(48),
-            markup=True,
-            halign="left",
-            valign="middle",
         )
-        subtitle_label = Label(
+        subtitle_label = SubtitleLabel(
             text=str(Translation("ui.player_ui.game_config.sub_title")),
-            font_size="16sp",
             size_hint=(1.0, None),
             height=dp(32),
-            color=(0.75, 0.75, 0.8, 1.0),
-            halign="left",
-            valign="middle",
         )
-
-        def _update_header_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        self.title_label.bind(size=_update_header_label)  # type: ignore
-        subtitle_label.bind(size=_update_header_label)  # type: ignore
 
         header.add_widget(self.title_label)
         header.add_widget(subtitle_label)
@@ -169,29 +156,14 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        self.players_label = Label(
+        self.players_label = LeftAlignedLabel(
             text="Players: 0",
             size_hint=(1.0, 1.0),
             font_size="16sp",
-            halign="left",
-            valign="middle",
         )
 
-        def _update_players_label_size(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        self.players_label.bind(size=_update_players_label_size)  # type: ignore
-
-        self.add_player_button = Button(
+        self.add_player_button = IconButton(
             text=str(Translation("ui.player_ui.game_config.add_button")),
-            size_hint=(None, None),
-            width=dp(40),
-            height=dp(40),
-            background_normal="",
-            background_down="",
-            background_color=(0.32, 0.24, 0.12, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
-            font_size="20sp",
         )
         self.add_player_button.bind(on_release=lambda _instance: self.add_player_row())  # type: ignore
 
@@ -211,24 +183,21 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        player_header = Label(
+        player_header = SectionLabel(
             text=str(Translation("ui.player_ui.game_config.player")),
             size_hint=(0.25, 1.0),
-            font_size="16sp",
         )
         icon_header_spacer = Widget(
             size_hint=(None, 1.0),
             width=dp(40),
         )
-        civ_header = Label(
+        civ_header = SectionLabel(
             text=str(Translation("ui.player_ui.game_config.civilization")),
             size_hint=(0.3, 1.0),
-            font_size="16sp",
         )
-        leader_header = Label(
+        leader_header = SectionLabel(
             text=str(Translation("ui.player_ui.game_config.leader")),
             size_hint=(0.3, 1.0),
-            font_size="16sp",
         )
         remove_header = Label(
             text="",
@@ -254,20 +223,14 @@ class GameConfigMenu(Screen):
             size_hint=(0.5, 1.0),
         )
 
-        options_title = Label(
+        options_title = SectionLabel(
             text=f"[b]{str(Translation('ui.player_ui.game_config.game_options'))}[/b]",
             size_hint=(1.0, None),
             height=dp(40),
             font_size="24sp",
             markup=True,
-            halign="left",
-            valign="middle",
         )
 
-        def _update_options_title_size(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        options_title.bind(size=_update_options_title_size)  # type: ignore
         self.options_panel.add_widget(options_title)
 
         self.size_section = BoxLayout(
@@ -276,19 +239,11 @@ class GameConfigMenu(Screen):
             spacing=dp(5),
             padding=(0, dp(4), 0, 0),
         )
-        size_label = Label(
+        size_label = SectionLabel(
             text=str(Translation("ui.player_ui.game_config.map_size")),
             size_hint=(1.0, None),
             height=dp(24),
-            font_size="16sp",
-            halign="left",
-            valign="middle",
         )
-
-        def _update_size_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        size_label.bind(size=_update_size_label)  # type: ignore
         self.size_section.add_widget(size_label)
 
         self.size_popup_button = ButtonValue(
@@ -309,22 +264,12 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        dev_label = Label(
+        dev_label = LeftAlignedLabel(
             text=str(Translation("ui.player_ui.game_config.developer_mode")),
             size_hint=(1.0, 1.0),
-            halign="left",
-            valign="middle",
         )
 
-        def _update_dev_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        dev_label.bind(size=_update_dev_label)  # type: ignore
-
-        self.dev_mode = CheckBox(
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
-        )
+        self.dev_mode = MenuCheckbox()
 
         dev_row.add_widget(dev_label)
         dev_row.add_widget(self.dev_mode)
@@ -337,22 +282,12 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        barb_label = Label(
+        barb_label = LeftAlignedLabel(
             text=str(Translation("ui.player_ui.game_config.no_barbarians")),
             size_hint=(1.0, 1.0),
-            halign="left",
-            valign="middle",
         )
 
-        def _update_barb_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        barb_label.bind(size=_update_barb_label)  # type: ignore
-
-        self.no_barbarians = CheckBox(
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
-        )
+        self.no_barbarians = MenuCheckbox()
 
         barb_row.add_widget(barb_label)
         barb_row.add_widget(self.no_barbarians)
@@ -365,22 +300,12 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        teams_label = Label(
+        teams_label = LeftAlignedLabel(
             text=str(Translation("ui.player_ui.game_config.no_teams")),
             size_hint=(1.0, 1.0),
-            halign="left",
-            valign="middle",
         )
 
-        def _update_teams_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        teams_label.bind(size=_update_teams_label)  # type: ignore
-
-        self.no_teams = CheckBox(
-            size_hint=(None, None),
-            size=(dp(28), dp(28)),
-        )
+        self.no_teams = MenuCheckbox()
 
         teams_row.add_widget(teams_label)
         teams_row.add_widget(self.no_teams)
@@ -393,27 +318,16 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        rules_label = Label(
+        rules_label = LeftAlignedLabel(
             text=str(Translation("ui.player_ui.game_config.game_rules")),
             size_hint=(1.0, 1.0),
-            halign="left",
-            valign="middle",
         )
 
-        def _update_rules_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        rules_label.bind(size=_update_rules_label)  # type: ignore
-
-        rules_button = Button(
+        rules_button = SecondaryButton(
             text=str(Translation("ui.player_ui.game_config.configure_rules")),
             size_hint=(None, None),
             width=dp(160),
             height=dp(40),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
             font_size="16sp",
         )
         rules_button.bind(on_release=self.open_rules_popup)  # type: ignore
@@ -432,19 +346,7 @@ class GameConfigMenu(Screen):
         )
 
         def create_menu_button(text: str) -> Button:
-            button = Button(
-                text=text,
-                size_hint=(None, None),
-                height=dp(48),
-                width=dp(200),
-                font_size="18sp",
-                background_normal="",
-                background_down="",
-                background_color=(0.18, 0.2, 0.26, 1.0),
-                color=(1.0, 1.0, 1.0, 1.0),
-            )
-            button.disabled_color = (0.7, 0.7, 0.7, 0.6)  # type: ignore
-            return button
+            return PrimaryButton(text=text)
 
         self.back = create_menu_button(str(Translation("ui.player_ui.game_config.back_button")))
         self.back.on_press = self.back_to_main_menu
@@ -482,18 +384,11 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        label = Label(
+        label = LeftAlignedLabel(
             text=f"Player {index}",
             size_hint=(0.25, 1.0),
             font_size="16sp",
-            halign="left",
-            valign="middle",
         )
-
-        def _update_player_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        label.bind(size=_update_player_label)  # type: ignore
 
         civ_icon = Image(
             source="",
@@ -504,36 +399,22 @@ class GameConfigMenu(Screen):
             opacity=0.0,
         )
 
-        civ_button = Button(
+        civ_button = SecondaryButton(
             text=str(Translation("ui.player_ui.game_config.random")),
             size_hint=(0.3, 1.0),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
             font_size="16sp",
         )
         civ_button.bind(on_release=lambda _instance, r=row: self.open_civilization_popup_for_row(r))  # type: ignore
 
-        leader_button = Button(
+        leader_button = SecondaryButton(
             text=str(Translation("ui.player_ui.game_config.random")),
             size_hint=(0.3, 1.0),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
             font_size="16sp",
         )
         leader_button.bind(on_release=lambda _instance, r=row: self.open_leader_popup_for_row(r))  # type: ignore
 
-        remove_button = Button(
+        remove_button = DangerButton(
             text=str(Translation("ui.player_ui.game_config.remove_button")),
-            size_hint=(0.15, 1.0),
-            background_normal="",
-            background_down="",
-            background_color=(0.32, 0.18, 0.18, 1.0),
-            color=(1.0, 0.8, 0.8, 1.0),
-            font_size="16sp",
         )
         remove_button.bind(on_release=lambda _instance, r=row: self.remove_player_row(r))  # type: ignore
 
@@ -736,26 +617,15 @@ class GameConfigMenu(Screen):
             spacing=dp(10),
         )
 
-        label = Label(
+        label = LeftAlignedLabel(
             text=label_text,
             size_hint=(0.6, 1.0),
-            halign="left",
-            valign="middle",
         )
 
-        def _update_label(instance: Label, _value: Any) -> None:
-            instance.text_size = instance.size  # type: ignore
-
-        label.bind(size=_update_label)  # type: ignore
-
-        minus_button = Button(
+        minus_button = SecondaryButton(
             text=str(Translation("ui.player_ui.game_config.remove_button")),
             size_hint=(None, 1.0),
             width=dp(40),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
         )
 
         current_value = int(self.rules_state.get(key, min_value))
@@ -769,14 +639,10 @@ class GameConfigMenu(Screen):
             width=dp(60),
         )
 
-        plus_button = Button(
+        plus_button = SecondaryButton(
             text=str(Translation("ui.player_ui.game_config.add_button")),
             size_hint=(None, 1.0),
             width=dp(40),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
         )
 
         def apply_value(raw_value: str) -> None:
@@ -832,21 +698,11 @@ class GameConfigMenu(Screen):
         return row
 
     def _build_rules_popup(self) -> Popup:
-        content = BoxLayout(
+        content = DarkPanel(
             orientation="vertical",
             padding=(dp(24), dp(20)),
             spacing=dp(12),
         )
-
-        with content.canvas.before:  # type: ignore
-            Color(0.08, 0.08, 0.12, 0.95)
-            bg_rect = Rectangle(size=content.size, pos=content.pos)  # type: ignore
-
-        def _update_content_rect(instance: Widget, _value: Any) -> None:
-            bg_rect.size = instance.size  # type: ignore
-            bg_rect.pos = instance.pos  # type: ignore
-
-        content.bind(size=_update_content_rect, pos=_update_content_rect)  # type: ignore
 
         for key, meta in self.rule_definitions.items():
             rule_type = meta.get("type")
@@ -872,22 +728,12 @@ class GameConfigMenu(Screen):
                     spacing=dp(10),
                 )
 
-                label = Label(
+                label = LeftAlignedLabel(
                     text=label_text,
                     size_hint=(1.0, 1.0),
-                    halign="left",
-                    valign="middle",
                 )
 
-                def _update_bool_label(instance: Label, _value: Any) -> None:
-                    instance.text_size = instance.size  # type: ignore
-
-                label.bind(size=_update_bool_label)  # type: ignore
-
-                checkbox = CheckBox(
-                    size_hint=(None, None),
-                    size=(dp(28), dp(28)),
-                )
+                checkbox = MenuCheckbox()
                 checkbox.active = bool(self.rules_state.get(key, False))
                 checkbox.bind(
                     active=lambda _instance, value, k=key: self._on_rule_checkbox_change(k, value)  # type: ignore
@@ -908,15 +754,11 @@ class GameConfigMenu(Screen):
 
         button_row.add_widget(Widget(size_hint_x=1.0))
 
-        close_button = Button(
+        close_button = SecondaryButton(
             text=str(Translation("ui.player_ui.game_config.close_button")),
             size_hint=(None, None),
             width=dp(160),
             height=dp(40),
-            background_normal="",
-            background_down="",
-            background_color=(0.18, 0.2, 0.26, 1.0),
-            color=(1.0, 1.0, 1.0, 1.0),
         )
         close_button.bind(on_release=lambda *_: self.rules_popup.dismiss() if self.rules_popup is not None else None)  # type: ignore
 
