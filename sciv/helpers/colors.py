@@ -13,8 +13,6 @@ class Colors:
 
     RESTORE: Tuple4f = (1, 1, 1, 1)
 
-    # Basic colors
-
     AQUA: Tuple4f = (0, 1, 1, 1)
     RED: Tuple4f = (1, 0, 0, 1)
     GREEN: Tuple4f = (0, 1, 0, 1)
@@ -71,7 +69,6 @@ class Colors:
         LIGHT_GREEN,
     ]
 
-    # Pastel color constants
     PASTEL_PINK: Tuple4f = (1.0, 0.8, 0.8, 1)
     PASTEL_GREEN: Tuple4f = (0.8, 1.0, 0.8, 1)
     PASTEL_BLUE: Tuple4f = (0.8, 0.8, 1.0, 1)
@@ -86,21 +83,46 @@ class Colors:
     PASTEL_KHAKI: Tuple4f = (0.85, 0.85, 0.7, 1)
 
     PASTELS: List[Tuple4f] = [
-        PASTEL_PINK,  # soft warm
-        PASTEL_BLUE,  # soft cool
-        PASTEL_LIME,  # muted green
-        PASTEL_MAGENTA,  # soft bright pink
-        PASTEL_SKY,  # soft cyan-blue
-        PASTEL_PEACH,  # orangey-light
-        PASTEL_LAVENDER,  # pale purple
-        PASTEL_GREEN,  # light natural
-        PASTEL_KHAKI,  # warm beige
-        PASTEL_CYAN,  # soft aqua
-        PASTEL_YELLOW,  # soft yellow
-        PASTEL_SILVER,  # soft neutral
+        PASTEL_PINK,
+        PASTEL_BLUE,
+        PASTEL_LIME,
+        PASTEL_MAGENTA,
+        PASTEL_SKY,
+        PASTEL_PEACH,
+        PASTEL_LAVENDER,
+        PASTEL_GREEN,
+        PASTEL_KHAKI,
+        PASTEL_CYAN,
+        PASTEL_YELLOW,
+        PASTEL_SILVER,
     ]
 
     ALL: List[Tuple4f] = COLORS + PASTELS
+
+    UI_BACKGROUND: Tuple4f = (0.02, 0.03, 0.07, 1.0)
+    UI_BACKGROUND_PANEL: Tuple4f = (0.07, 0.09, 0.14, 0.98)
+    UI_BACKGROUND_PANEL_ALT: Tuple4f = (0.09, 0.11, 0.17, 0.98)
+
+    UI_ACCENT_PRIMARY: Tuple4f = (0.26, 0.53, 0.94, 1.0)
+    UI_ACCENT_PRIMARY_SOFT: Tuple4f = (0.20, 0.33, 0.60, 1.0)
+    UI_ACCENT_SECONDARY: Tuple4f = (0.29, 0.76, 0.76, 1.0)
+    UI_ACCENT_DANGER: Tuple4f = (0.80, 0.30, 0.34, 1.0)
+    UI_ACCENT_DANGER_HOVER: Tuple4f = (0.87, 0.38, 0.42, 1.0)
+
+    UI_TEXT: Tuple4f = (0.93, 0.96, 1.0, 1.0)
+    UI_TEXT_SUBTLE: Tuple4f = (0.78, 0.84, 0.96, 1.0)
+    UI_TEXT_MUTED: Tuple4f = (0.60, 0.66, 0.84, 1.0)
+
+    UI_BORDER: Tuple4f = (0.23, 0.28, 0.42, 1.0)
+    UI_BORDER_SOFT: Tuple4f = (0.15, 0.19, 0.30, 1.0)
+
+    UI_BUTTON_PRIMARY_DISABLED: Tuple4f = (0.16, 0.18, 0.24, 1.0)
+    UI_BUTTON_SECONDARY: Tuple4f = (0.16, 0.18, 0.25, 1.0)
+    UI_BUTTON_SECONDARY_DISABLED: Tuple4f = (0.12, 0.13, 0.18, 1.0)
+    UI_BUTTON_DANGER_DISABLED: Tuple4f = (0.35, 0.18, 0.20, 1.0)
+    UI_BUTTON_ICON_DISABLED: Tuple4f = (0.20, 0.23, 0.32, 1.0)
+
+    UI_INPUT_BACKGROUND: Tuple4f = (0.06, 0.07, 0.12, 1.0)
 
     @classmethod
     def random(cls, set: str = "all") -> Tuple4f:
@@ -211,12 +233,11 @@ class Colors:
         import webcolors
 
         if rgba.__len__() == 4:
-            rgb: Tuple[int, int, int] = rgba[:3]  # type: ignore # Ignore the alpha channel for color matching
+            rgb: Tuple[int, int, int] = rgba[:3]  # type: ignore
         else:
             rgb: Tuple[int, int, int, int] = rgba
         try:
-            # Get the closest color name directly
-            closest_name = webcolors.rgb_to_name(rgb)  # type: ignore ,This is a known issue with the library. It works.
+            closest_name = webcolors.rgb_to_name(rgb)  # type: ignore
         except ValueError:
             from helpers.colors import Colors
 

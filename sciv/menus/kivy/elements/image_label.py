@@ -1,10 +1,9 @@
 from typing import Any, Optional, Tuple
 
 from helpers.cache import Cache
-from kivy.metrics import dp  # type: ignore
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.widget import Widget
+from menus.kivy.elements.styled import LeftAlignedLabel
 
 
 class ImageLabel(BoxLayout):
@@ -18,16 +17,33 @@ class ImageLabel(BoxLayout):
         keep_ratio: bool = True,
         img_y_offset: float = 0.025,
         img_x_offset: float = 0,
-        font_size: int = 16,
-        text_color: Tuple[float, float, float, float] = (1, 1, 1, 1),
+        font_size: Any = 16,
+        text_color: Optional[Tuple[float, float, float, float]] = None,
         **kwargs: Any,
     ):
-        super().__init__(orientation="horizontal", spacing=spacing, size_hint_x=None, **kwargs)
+        explicit_color = kwargs.pop("color", None)
+        if text_color is None and explicit_color is not None:
+            text_color = explicit_color  # type: ignore
+
+        if "orientation" not in kwargs:
+            kwargs["orientation"] = "horizontal"
+        if "spacing" not in kwargs:
+            kwargs["spacing"] = spacing
+        if "size_hint_x" not in kwargs:
+            kwargs["size_hint_x"] = None
+
+        super().__init__(**kwargs)
 
         self._text = text
-        self.width = width if width else dp(550)
-        self.size_hint_y = None
-        self.height = max(image_size[1], dp(30))
+
+        if width is not None:
+            self.width = dp(width)  # type: ignore
+
+        if self.size_hint_y is None:
+            self.size_hint_y = None  # type: ignore
+
+        if not getattr(self, "height", None):
+            self.height = max(image_size[1], dp(30))  # type: ignore
 
         self.img = Cache.get_asset_archive().get_kivy_image_object(
             virtual_path=img_source,
@@ -41,33 +57,32 @@ class ImageLabel(BoxLayout):
         )
         self.add_widget(self.img)
 
-        self.label = Label(
+        self.label = LeftAlignedLabel(
             text=text,
             font_size=font_size,
             size_hint_x=1,
             valign="middle",
             halign="left",
-            color=text_color,
             shorten=False,
             shorten_from="right",
         )
-        self.label.bind(size=self._update_text_size)  # type: ignore
-        self.add_widget(self.label)
 
-    def _update_text_size(self, instance: Widget, value: Tuple[float, float]):
-        instance.text_size = (instance.width, None)  # type: ignore
+        if text_color is not None:
+            self.label.color = text_color  # type: ignore
+
+        self.add_widget(self.label)
 
     @property
     def text(self) -> str:
         return self._text
 
     @text.setter
-    def text(self, value: str):
+    def text(self, value: str) -> None:
         self._text = value
         self.label.text = value
 
-    def set_text(self, text: str):
-        self.text = text  # Redirect to property
+    def set_text(self, text: str) -> None:
+        self.text = text
 
-    def set_image(self, img_source: str):
-        self.img.source = img_source
+    def set_image(self, img_source: str) -> None:
+        self.img.source = img_source  # type: ignore

@@ -23,6 +23,14 @@ from managers.i18n import t_
 from menus.kivy.elements.button_value import ButtonValue
 from menus.kivy.elements.clipping import ClippingScrollList
 from menus.kivy.elements.image_label import ImageLabel
+from menus.kivy.elements.styled import (
+    LeftAlignedLabel,
+    MutedLabel,
+    SecondaryButton,
+    SectionLabel,
+    TitleLabel,
+)
+from menus.kivy.theme import CIV_THEME
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -30,7 +38,7 @@ if TYPE_CHECKING:
 
 
 class CityUI(BoxLayout, DirectObject):
-    bg_rgba = ListProperty([0.0, 0.0, 0.0, 0.7])
+    bg_rgba = ListProperty(list(CIV_THEME.palette.background_panel_alt))
 
     def __init__(
         self,
@@ -47,6 +55,8 @@ class CityUI(BoxLayout, DirectObject):
         kwargs.setdefault("width", dp(400))
         kwargs.setdefault("height", dp(835))
         kwargs.setdefault("orientation", "vertical")
+        kwargs.setdefault("spacing", dp(8))
+        kwargs.setdefault("padding", (dp(10), dp(8), dp(10), dp(8)))
 
         super().__init__(**kwargs)  # type: ignore
 
@@ -92,14 +102,14 @@ class CityUI(BoxLayout, DirectObject):
 
         self.register()
 
-    def _update_bg_rect(self, *_):
+    def _update_bg_rect(self, *_: Any) -> None:
         self._bg_rect.size = self.size
         self._bg_rect.pos = self.pos
 
-    def _on_bg_rgba(self, *_):
+    def _on_bg_rgba(self, *_: Any) -> None:
         self._bg_color_instr.rgba = self.bg_rgba  # type: ignore
 
-    def register(self):
+    def register(self) -> None:
         self.accept("game.gameplay.city.starts_building_improvement", self.on_city_start_building_improvement)
         self.accept("game.gameplay.city.starts_building_unit", self.on_city_start_building_improvement)
         self.accept("game.gameplay.city.finish_building_improvement", self.on_city_finish_building_improvement)
@@ -111,21 +121,53 @@ class CityUI(BoxLayout, DirectObject):
             raise RuntimeError("CityUI screen reference is None.")
         return screen
 
-    def set_city(self, city: City):
+    def set_city(self, city: City) -> None:
         self.city = city
-        Clock.schedule_once(lambda *_: self.rebuild(city), 0)  # schedule on next frame # type: ignore
+        Clock.schedule_once(lambda *_: self.rebuild(city), 0)  # type: ignore
 
-    def rebuild(self, city: City):
+    def rebuild(self, city: City) -> None:
         self.clear_widgets()
 
-        self.city_label = Label(text=str(city.name), size_hint=(1, None), height=50, bold=True, font_size=24)
+        # Header / city name
+        self.city_label = TitleLabel(
+            text=str(city.name),
+            size_hint=(1, None),
+            height=dp(40),
+        )
         self.add_widget(self.city_label)
 
-        stats = GridLayout(orientation="lr-tb", size_hint=(1, None), height=100, spacing=0, rows=2, cols=2)
-        self.population_label = Label(text="Pop: ?", size_hint=(1, None), height=30, font_size=12)
-        self.tiles_label = Label(text="Tiles: ?", size_hint=(1, None), height=30, font_size=12)
-        self.player_label = Label(text="Owner: ?", size_hint=(1, None), height=30, font_size=12)
-        self.is_capital_label = Label(text="Capital: ?", size_hint=(1, None), height=30, font_size=12)
+        stats = GridLayout(
+            orientation="lr-tb",
+            size_hint=(1, None),
+            height=dp(90),
+            spacing=dp(4),
+            rows=2,
+            cols=2,
+        )
+        self.population_label = LeftAlignedLabel(
+            text="Pop: ?",
+            size_hint=(1, None),
+            height=dp(24),
+            font_size="14sp",
+        )
+        self.tiles_label = LeftAlignedLabel(
+            text="Tiles: ?",
+            size_hint=(1, None),
+            height=dp(24),
+            font_size="14sp",
+        )
+        self.player_label = LeftAlignedLabel(
+            text="Owner: ?",
+            size_hint=(1, None),
+            height=dp(24),
+            font_size="14sp",
+        )
+        self.is_capital_label = LeftAlignedLabel(
+            text="Capital: ?",
+            size_hint=(1, None),
+            height=dp(24),
+            font_size="14sp",
+        )
 
         stats.add_widget(self.population_label)
         stats.add_widget(self.tiles_label)
@@ -133,73 +175,121 @@ class CityUI(BoxLayout, DirectObject):
         stats.add_widget(self.is_capital_label)
         self.add_widget(stats)
 
-        current_layout = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40, spacing=5)
-        current_label = Label(
-            text=str(t_("ui.player_ui.city.current_button_label")), size_hint=(0.3, None), height=30, font_size=16
+        current_layout = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(40),
+            spacing=dp(8),
         )
-        self.current_button = Button(text="?", size_hint=(0.65, None), height=30)
-        self.current_button.bind(on_press=self.on_cancel_current_build_btn_click)
+        current_label = LeftAlignedLabel(
+            text=str(t_("ui.player_ui.city.current_button_label")),
+            size_hint=(0.35, None),
+            height=dp(32),
+            font_size="16sp",
+        )
+        self.current_button = SecondaryButton(
+            text="?",
+            size_hint=(0.65, None),
+        )
+        self.current_button.bind(on_press=self.on_cancel_current_build_btn_click)  # type: ignore
         current_layout.add_widget(current_label)
         current_layout.add_widget(self.current_button)
         self.add_widget(current_layout)
 
-        actions_label = Label(
-            text=str(t_("ui.player_ui.city.actions_label")), size_hint=(1, None), height=30, font_size=16
+        actions_label = SectionLabel(
+            text=str(t_("ui.player_ui.city.actions_label")),
+            size_hint=(1, None),
+            height=dp(30),
         )
         self.add_widget(actions_label)
 
-        self.button_container = ClippingScrollList(size_hint=(1, None), height=400)
+        self.button_container = ClippingScrollList(
+            size_hint=(1, None),
+            height=dp(320),
+        )
         self.add_widget(self.button_container)
 
-        improvements_lbl = Label(text="Improvements", size_hint=(1, None), height=30, font_size=16)
+        improvements_lbl = SectionLabel(
+            text="Improvements",
+            size_hint=(1, None),
+            height=dp(28),
+        )
         self.add_widget(improvements_lbl)
 
-        self.improvement_list_scroll = ClippingScrollList(size_hint=(1, None), height=dp(100), cols=3)
+        self.improvement_list_scroll = ClippingScrollList(
+            size_hint=(1, None),
+            height=dp(100),
+            cols=3,
+        )
         self.add_widget(self.improvement_list_scroll)
 
-        footer = GridLayout(orientation="lr-tb", size_hint=(1, None), height=80, spacing=10, cols=3, rows=2)
+        footer = GridLayout(
+            orientation="lr-tb",
+            size_hint=(1, None),
+            height=dp(80),
+            width=self.width - dp(20),
+            spacing=dp(6),
+            cols=3,
+            rows=2,
+        )
+        text_color = CIV_THEME.palette.text
+        column_width = (self.width - dp(value=10) - dp(12)) / 3
+
         self.gold_label = ImageLabel(
             text="Gold: ?",
             img_source="assets/icons/default/resources/core/basic/gold.png",
             size_hint=(1, None),
-            height=30,
-            font_size=12,
+            width=dp(column_width),
+            height=dp(24),
+            font_size="14sp",
+            color=text_color,
         )
         self.production_label = ImageLabel(
             text="Production: ?",
             img_source="assets/icons/default/resources/core/basic/production.png",
             size_hint=(1, None),
-            height=30,
-            font_size=12,
+            width=dp(column_width),
+            height=dp(24),
+            font_size="14sp",
+            color=text_color,
         )
         self.food_label = ImageLabel(
             text="Food: ?",
             img_source="assets/icons/default/resources/core/basic/food.png",
             size_hint=(1, None),
-            height=30,
-            font_size=12,
+            width=dp(column_width),
+            height=dp(24),
+            font_size="14sp",
+            color=text_color,
         )
         self.science_label = ImageLabel(
             text="Science: ?",
             img_source="assets/icons/default/resources/core/basic/science.png",
             size_hint=(1, None),
-            height=30,
-            font_size=12,
+            width=dp(column_width),
+            height=dp(24),
+            font_size="14sp",
+            color=text_color,
         )
         self.culture_label = ImageLabel(
             text="Culture: ?",
             img_source="assets/icons/default/resources/core/basic/culture.png",
             size_hint=(1, None),
-            height=30,
-            font_size=12,
+            width=dp(column_width),
+            height=dp(24),
+            font_size="14sp",
+            color=text_color,
         )
         self.border_label = ImageLabel(
             text="Border: ?",
             img_source="assets/icons/default/border_growth.png",
             size_hint=(1, None),
-            height=30,
-            font_size=12,
+            width=dp(column_width),
+            height=dp(24),
+            font_size="14sp",
+            color=text_color,
         )
+
         footer.add_widget(self.gold_label)
         footer.add_widget(self.production_label)
         footer.add_widget(self.food_label)
@@ -208,6 +298,7 @@ class CityUI(BoxLayout, DirectObject):
         footer.add_widget(self.border_label)
         self.add_widget(footer)
 
+        # Populate labels from city
         food_collected = str(floor(city.food_collected.food.value))
         food_required = str(floor(city.new_population_food_required.food.value))
         self.population_label.text = str(
@@ -270,7 +361,12 @@ class CityUI(BoxLayout, DirectObject):
 
         for imp in city._improvements:  # type: ignore
             self.improvement_list_scroll.add_widget(
-                Label(text=str(imp.name), size_hint_y=None, height=30, font_size=12)
+                MutedLabel(
+                    text=str(imp.name),
+                    size_hint=(1, None),
+                    height=dp(22),
+                    font_size="13sp",
+                )
             )
         self.improvement_list_scroll._apply_clipping()  # type: ignore
         self.improvement_list_scroll.scroll_to_top()  # type: ignore
@@ -298,7 +394,12 @@ class CityUI(BoxLayout, DirectObject):
             if any(i.__class__.__name__ == instance.__class__.__name__ for i in city.get_improvements()):
                 continue
 
-            btn = ButtonValue(text=fmt(instance), value=instance, size_hint=(1, None), height=50)
+            btn = ButtonValue(
+                text=fmt(instance),
+                value=instance,
+                size_hint=(1, None),
+                height=dp(40),
+            )
             btn.bind(on_press=lambda b: self.on_build_button_click(b))  # type: ignore
             self.buildable_improvements[class_name] = instance  # type: ignore
             self.buildable_buttons[class_name] = btn
@@ -311,7 +412,12 @@ class CityUI(BoxLayout, DirectObject):
 
             instance.is_being_build = True
 
-            btn = ButtonValue(text=fmt(instance), value=instance, size_hint=(1, None), height=50)
+            btn = ButtonValue(
+                text=fmt(instance),
+                value=instance,
+                size_hint=(1, None),
+                height=dp(40),
+            )
             btn.bind(on_press=lambda b: self.on_unit_build_button_click(b))  # type: ignore
 
             self.buildable_units[class_name] = instance
@@ -321,7 +427,7 @@ class CityUI(BoxLayout, DirectObject):
         self.button_container._apply_clipping()  # type: ignore
         self.button_container.scroll_to_top()
 
-    def on_build_button_click(self, instance: ButtonValue):
+    def on_build_button_click(self, instance: ButtonValue) -> None:
         if self.city is None:
             return
 
@@ -330,7 +436,7 @@ class CityUI(BoxLayout, DirectObject):
             f"game.gameplay.city.request_start_building_improvement_{self.city.tag}", [self.city, instance.value]
         )
 
-    def on_unit_build_button_click(self, instance: ButtonValue):
+    def on_unit_build_button_click(self, instance: ButtonValue) -> None:
         if self.city is None:
             return
 
@@ -339,23 +445,23 @@ class CityUI(BoxLayout, DirectObject):
             f"game.gameplay.city.request_start_building_unit_{self.city.tag}", [self.city, instance.value]
         )
 
-    def on_city_start_building_improvement(self, city: City, improvement: BaseCityImprovement):
+    def on_city_start_building_improvement(self, city: City, improvement: BaseCityImprovement) -> None:
         if city == self.city:
             self.rebuild(city)
 
-    def on_city_finish_building_improvement(self, city: City, improvement: BaseCityImprovement):
+    def on_city_finish_building_improvement(self, city: City, improvement: BaseCityImprovement) -> None:
         if city == self.city:
             self.rebuild(city)
 
-    def on_end_turn_process(self, turn: int):
+    def on_end_turn_process(self, turn: int) -> None:
         if self.city is not None:
             self.rebuild(self.city)
 
-    def on_cancel_current_build(self, city: City):
+    def on_cancel_current_build(self, city: City) -> None:
         if city == self.city:
             self.rebuild(city)
 
-    def on_cancel_current_build_btn_click(self, instance: Button):
+    def on_cancel_current_build_btn_click(self, instance: Button) -> None:
         if self.city is None:
             raise AssertionError("City is None")
         self.logger.debug(f"Requesting to cancel current build in city: {self.city.name}")
@@ -363,7 +469,7 @@ class CityUI(BoxLayout, DirectObject):
             f"game.gameplay.city.request_cancel_building_improvement_{self.city.tag}", [self.city]
         )
 
-    def show(self, city: Optional[City] = None):
+    def show(self, city: Optional[City] = None) -> None:
         self.logger.debug("Showing City UI")
         if city is not None:
             self.city = city
@@ -375,7 +481,7 @@ class CityUI(BoxLayout, DirectObject):
         self.hidden = False
         self.get_screen().register_non_collidable(self)
 
-    def hide(self, auto_forget: bool = True):
+    def hide(self, auto_forget: bool = True) -> None:
         if self.hidden:
             if self.should_log:
                 self.logger.debug("City UI is already hidden, skipping hide operation.")

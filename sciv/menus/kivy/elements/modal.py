@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from helpers.paths import PathsHelper  # type: ignore
 from kivy.graphics import Color, Line, Rectangle
-from kivy.metrics import dp, sp  # type: ignore
+from kivy.metrics import dp  # type: ignore
 from kivy.properties import ListProperty, NumericProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -31,7 +31,7 @@ class OutlineButton(Button):
         self.bold = False
         self.markup = False
 
-        self.font_size = kwargs.pop("font_size", sp(12))
+        self.font_size = kwargs.pop("font_size", dp(12))
 
         self.outline_width = 0.5  # type: ignore
 
