@@ -220,6 +220,7 @@ The current minimap contract is:
 - treat minimap coordinate work as a combined transform problem: `_world_to_texture_point()`, `_world_to_canvas()`, `_canvas_to_world()`, the texture row write order, and the crop region math must all agree on the same world-space orientation or the map will look rotated/flipped even when it is using the correct tile data
 - derive a lightweight empire-border overlay directly from tile ownership adjacency so the minimap shows territorial outlines without needing a second render pass
 - overlay city markers and a subtle camera footprint polygon projected from the active lens onto the camera pivot's height plane so the minimap view marker tracks the live camera more faithfully on uneven terrain
+- sanitize and segment that camera footprint polygon before drawing, because repeated or near-collinear frustum intersections at specific camera angles can otherwise trigger pathological Kivy polyline artifacts that spill outside the minimap
 - overlay a small selected-tile reticle that stays intentionally subdued at full-map zoom and becomes easier to notice after zooming the minimap in
 - support preset minimap zoom levels, with wheel input or on-panel zoom buttons changing the crop around the live camera footprint while keeping the same texture-backed rendering path
 - expose an absolute-mode toggle that pins the minimap to the fully zoomed-out world view and ignores minimap zoom changes until the mode is disabled

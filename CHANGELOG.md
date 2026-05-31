@@ -36,6 +36,7 @@
 - 💄 Made the worldgen viewer batch overview resize preview cards and thumbnails to keep a responsive three-across layout.
 - 💄 Made the new-game setup screen keep its right-side options in a scrollable panel so generator-heavy setups no longer spill off the top.
 - 🐛 Fixed minimap terrain colors so legacy byte-scale terrain fallback colors no longer clip to white.
+- 💄 Fixed the minimap camera-footprint preview so degenerate rotation angles no longer glitch across the full screen.
 
 ### Engine
 

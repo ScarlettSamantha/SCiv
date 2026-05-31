@@ -334,21 +334,21 @@ class Minimap(FloatLayout, DirectObject):
             self._viewport_world_polygon = viewport_polygon
             self._viewport_world_bounds = self._polygon_bounds(viewport_polygon)
             if viewport_polygon is not None:
-                clipped_polygon = self._clip_polygon_to_view(viewport_polygon)
+                clipped_polygon = self._normalize_polygon(self._clip_polygon_to_view(viewport_polygon))
                 if len(clipped_polygon) >= 3:
-                    canvas_points: list[float] = []
+                    canvas_polygon: list[tuple[float, float]] = []
                     for point_x, point_y in clipped_polygon:
                         canvas_pos = self._world_to_canvas_raw(point_x, point_y)
                         if canvas_pos is None:
                             continue
-                        canvas_points.extend([canvas_pos[0], canvas_pos[1]])
+                        canvas_polygon.append(canvas_pos)
 
-                    if len(canvas_points) >= 6:
-                        outline_points = canvas_points + canvas_points[:2]
+                    canvas_polygon = self._normalize_polygon(canvas_polygon)
+                    if len(canvas_polygon) >= 3 and self._polygon_area(canvas_polygon) >= 1.0:
                         Color(0.0, 0.0, 0.0, 0.28)
-                        Line(points=outline_points, width=self.viewport_border_width + 1.0)
+                        self._draw_polygon_outline(canvas_polygon, self.viewport_border_width + 1.0)
                         Color(accent[0], accent[1], accent[2], self.viewport_line_alpha)
-                        Line(points=outline_points, width=self.viewport_border_width)
+                        self._draw_polygon_outline(canvas_polygon, self.viewport_border_width)
 
             if self.camera is not None:
                 pivot = self.camera.pivot.getPos()
@@ -890,10 +890,78 @@ class Minimap(FloatLayout, DirectObject):
             clamped_y = min(max(float(intersection.getY()), self._world_min_y), self._world_max_y)
             intersections.append((clamped_x, clamped_y))
 
+        intersections = self._normalize_polygon(intersections)
         if len(intersections) < 3:
             return None
 
         return intersections
+
+    def _normalize_polygon(
+        self,
+        polygon: Sequence[tuple[float, float]] | None,
+    ) -> list[tuple[float, float]]:
+        if polygon is None:
+            return []
+
+        ordered_points: list[tuple[float, float]] = []
+        for raw_x, raw_y in polygon:
+            point = (float(raw_x), float(raw_y))
+            if ordered_points and hypot(point[0] - ordered_points[-1][0], point[1] - ordered_points[-1][1]) <= 1e-4:
+                continue
+            ordered_points.append(point)
+
+        if len(ordered_points) > 1 and hypot(
+            ordered_points[0][0] - ordered_points[-1][0],
+            ordered_points[0][1] - ordered_points[-1][1],
+        ) <= 1e-4:
+            ordered_points.pop()
+
+        if len(ordered_points) < 3:
+            return []
+
+        simplified: list[tuple[float, float]] = []
+        point_count = len(ordered_points)
+        for index, current in enumerate(ordered_points):
+            previous = ordered_points[index - 1]
+            nxt = ordered_points[(index + 1) % point_count]
+
+            if hypot(current[0] - previous[0], current[1] - previous[1]) <= 1e-4:
+                continue
+
+            cross = abs(
+                (current[0] - previous[0]) * (nxt[1] - current[1])
+                - (current[1] - previous[1]) * (nxt[0] - current[0])
+            )
+            if cross <= 1e-4 and hypot(nxt[0] - previous[0], nxt[1] - previous[1]) > 1e-4:
+                continue
+
+            simplified.append(current)
+
+        if len(simplified) < 3 or self._polygon_area(simplified) <= 1e-4:
+            return []
+        return simplified
+
+    def _polygon_area(self, polygon: Sequence[tuple[float, float]]) -> float:
+        if len(polygon) < 3:
+            return 0.0
+
+        points = list(polygon)
+        twice_area = 0.0
+        for current, nxt in zip(points, points[1:] + points[:1]):
+            twice_area += current[0] * nxt[1] - nxt[0] * current[1]
+        return abs(twice_area) * 0.5
+
+    def _draw_polygon_outline(self, polygon: Sequence[tuple[float, float]], width: float) -> None:
+        if len(polygon) < 3:
+            return
+
+        points = list(polygon)
+        outline_points: list[float] = []
+        for current_x, current_y in points:
+            outline_points.extend([current_x, current_y])
+
+        outline_points.extend([points[0][0], points[0][1]])
+        Line(points=outline_points, width=width, joint='bevel')
 
     def _polygon_bounds(
         self,
