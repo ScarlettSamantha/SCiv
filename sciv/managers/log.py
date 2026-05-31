@@ -4,8 +4,17 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Tuple
 
 from helpers.collection import BoundedStack
-from kivy.clock import Clock
 from mixins.singleton import Singleton
+
+try:
+    from kivy.clock import Clock
+except ModuleNotFoundError:
+    class _FallbackClock:
+        @staticmethod
+        def schedule_once(callback: Callable[[float], None], timeout: float = 0.0) -> None:
+            callback(timeout)
+
+    Clock = _FallbackClock()
 
 
 class UILogHandler(logging.Handler):

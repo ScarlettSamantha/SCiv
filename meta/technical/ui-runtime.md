@@ -42,10 +42,10 @@ flowchart TD
 | Screen name | Class | Purpose |
 | --- | --- | --- |
 | `main_menu` | `MainMenuScreen` | First live screen after `system.main.ready`; offers new game, load, options, source link, and quit. |
-| `game_config_screen` | `GameConfigMenu` | Collects map size, player civilization/leader picks, boolean options, and rules before starting a new game. |
+| `game_config_screen` | `GameConfigMenu` | Collects map size, player civilization/leader picks, generator selection, generator options, boolean options, and rules before starting a new game. |
 | `loading_screen` | `Loading` | Shows civilization flavor text and loading progress/continue UI while a new game is being prepared. |
 | `game_ui` | `GameUIScreen` | Main in-session HUD: action bar, turn controls, top bar, city UI, targeting panels, logs, and fullscreen overlays. |
-| `options_screen` | `OptionsScreen` | Registered in the screen manager, but outside the main gameplay/UI-runtime contract documented here. |
+| `options_screen` | `OptionsScreen` | Shared settings screen used by both the main menu and the in-game pause popup; when opened from pause, `Back` returns to `game_ui` and reopens the pause popup. |
 | `pause_menu` | `PauseScreen` wrapping `PauseMenu` | Screen-backed popup for the escape menu. |
 | `save_load_screen` | `SaveLoadScreen` | Thin host screen that opens `SavePopup` and `LoadPopup`. |
 
@@ -120,12 +120,13 @@ The initial wrapped widget set is intentionally narrow and focused on fixed-posi
 - action bar
 - turn control
 - combat log
-- player list
 - minimap
 - stats panel
 - debug panel
 - debug actions overlay
 - inspect overlay
+
+`PlayerList` opts out of the shared layout-debug wrapper and keeps a native anchored HUD placement path. Its portrait strip is attached directly to the `GameUIScreen` and recomputes its upper-right anchor from the live parent size whenever the screen or strip geometry changes, which keeps it in the upper HUD lane without depending on saved debug coordinates or startup-time window snapshots.
 
 This is not yet the contract for fullscreen or modal surfaces such as research, civics, save/load, or the pause stack.
 
@@ -154,9 +155,19 @@ When the user starts a game, it assembles:
 
 - map size
 - per-player civilization and leader choices
+- generator selection
+- generator-specific setup options declared by the selected generator class
 - simple boolean options such as developer mode / barbarians / teams
 - current editable `GameRules` values
-- a `start_config` payload containing `options`, `rules`, and `players`
+- a `start_config` payload containing `options`, `rules`, `players`, and `generator`
+
+The current generator-selection contract is intentionally data-driven:
+
+- `GeneratorRepository` provides the list of concrete generator classes shown in the setup screen
+- `GameConfigMenu` now preselects `Dynamic Worlds` when that generator is available, while still leaving the other registered generators selectable through the same popup
+- each generator class can declare its own setup-screen fields through `BaseGenerator.get_setup_fields()`
+- `GameConfigMenu` sanitizes those options through the selected generator before sending `system.game.start_load`
+- `Game.on_game_start()` applies the chosen generator class and sanitized options to `GameSettings` before world generation begins
 
 It then schedules `system.game.start_load` with:
 
@@ -206,7 +217,7 @@ The current minimap contract is:
 - treat minimap coordinate work as a combined transform problem: `_world_to_texture_point()`, `_world_to_canvas()`, `_canvas_to_world()`, the texture row write order, and the crop region math must all agree on the same world-space orientation or the map will look rotated/flipped even when it is using the correct tile data
 - derive a lightweight empire-border overlay directly from tile ownership adjacency so the minimap shows territorial outlines without needing a second render pass
 - overlay city markers and a subtle camera footprint polygon projected from the active lens onto the camera pivot's height plane so the minimap view marker tracks the live camera more faithfully on uneven terrain
-- overlay a tiny selected-tile debug reticle so the currently selected tile remains visible on the minimap even when the world is heavily zoomed out
+- overlay a small selected-tile reticle that stays intentionally subdued at full-map zoom and becomes easier to notice after zooming the minimap in
 - support preset minimap zoom levels, with wheel input or on-panel zoom buttons changing the crop around the live camera footprint while keeping the same texture-backed rendering path
 - expose an absolute-mode toggle that pins the minimap to the fully zoomed-out world view and ignores minimap zoom changes until the mode is disabled
 - listen to `game.gameplay.tiles.ownership_changed` and `unit.action.found_city.success` so ownership and city-state changes trigger minimap rebuilds
@@ -312,9 +323,11 @@ This is used for overlays that should temporarily stop normal map interaction.
 - `GameUIScreen.build_screen()` and `GameUIScreen.on_game_start()` now keep persistent HUD pieces such as the minimap idempotent, because the new-game and load paths can both touch those entry points more than once.
 - The HUD layout-debug registry is also expected to stay idempotent across those same entry points. Saved widget positions should restore when `game_ui` is rebuilt instead of assuming the old widget instances survive.
 - The active escape-menu flow is `GameUIScreen.on_escape()` -> `ui.update.ui.show_pause` -> `PauseMenu.open()`. The older `ui.get_escape_menu()` helper still exists and does call `Game.pause()/unpause()`, but it is not the current screen-driven pause path.
+- `PauseMenu.open_options()` now dismisses the popup and routes into the shared `options_screen`; `OptionsScreen` keeps a small return-target state so `Back` returns either to `main_menu` or back into `game_ui` and reopens pause depending on who launched it.
+- The Developer tab on `OptionsScreen` now also owns the raw world-generation export controls. Those settings write to `debug.world_generation_export` and are shared by both the live runtime export hook and the standalone `scripts/export_worldgen.py` batch helper.
 - `SavePopup.close_popup()` returns to `game_ui` by calling `ui.manager.set_screen("game_ui")`, while `LoadPopup.close_popup()` emits `ui.update.ui.hide_load` and lets the UI manager restore the previous screen. Similar surfaces, slightly different exit paths.
 - `MainMenuScreen.continue` is present but currently disabled.
-- The debug quick-start button bypasses most of `GameConfigMenu` and goes straight to `system.game.start_load`.
+- The debug quick-start button still bypasses most of `GameConfigMenu`, but it now sends a minimal `start_config` payload that defaults to `Dynamic Worlds` and that generator's default options instead of silently falling back to `Basic`.
 
 ## Files to inspect when changing UI runtime
 

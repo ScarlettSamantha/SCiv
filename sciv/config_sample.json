@@ -54,6 +54,11 @@
       "system_entity_graph": false,
       "system_performance_logging": false
     },
+    "world_generation_export": {
+      "enabled": false,
+      "output_dir": "sciv/debugging/worldgen",
+      "offline_batch_count": 4
+    },
     "disable_ai_turn_processing": false,
     "sentry": {
       "enable": false,

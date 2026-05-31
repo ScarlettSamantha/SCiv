@@ -196,6 +196,8 @@ These are used by the UI manager to control some debug actions these may disappe
 - `system.camera.zoom_ended` (E: system-camera | L: ui-part-minimap)
 
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
+
+	Implementation note: `screen-game-config` now uses this event to send the selected map size, local civilization, player count, and a `start_config` payload that can include generator selection plus generator-specific setup options.
 - `system.game.player_game_over` (E: Lose | L: manager-game)
 - `system.game.opponent_game_over` (E: Lose | L: manager-ui )
 

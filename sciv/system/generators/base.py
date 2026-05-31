@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
@@ -16,6 +17,9 @@ from gameplay.techs.trees.core import Core
 from managers.i18n import T_TranslationOrStrOrNone, get_i18n, t_
 from managers.player import PlayerManager
 from system.game_settings import GameSettings
+from system.generators import terrain_conversion as _terrain_conversion
+
+WorldParams = _terrain_conversion.WorldParams
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -25,36 +29,13 @@ if TYPE_CHECKING:
     from system.tile_grid import TileModelGrid
 
 
-class WorldParams:
-    (
-        arctic,  # id 1 | 'a' | 'Arctic'
-        tundra,  # id 2 | 'u' | 'Tundra'
-        alpine_tundra,  # id 3 | 'p' | 'Alpine Tundra'
-        desert,  # id 4 | 'd' | 'Desert'
-        scrubland,  # id 5 | 's' | 'Scrubland'
-        savanna,  # id 6 | 'S' | 'Savanna'
-        grasslands,  # id 7 | 'g' | 'Grasslands'
-        boreal_forest,  # id 8 | 'b' | 'Boreal Forest'
-        temperate_forest,  # id 9 | 't' | 'Temperate Forest'
-        temperate_rainforest,  # id 10 | 'T' | 'Temperate Rainforest'
-        tropical_forest,  # id 11 | 'r' | 'Tropical Forest'
-        tropical_rainforest,  # id 12 | 'R' | 'Tropical Rainforest'
-        wasteland,  # id 13 | 'w' | 'Wasteland'
-    ) = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
-
-    desert_temperature_threshold = 17
-    grass_temperature_upper_threshold = 30
-    grass_temperature_lower_threshold = 10
-    forest_lower_threshold = 5.0
-    moisture_threshold_mangrove_jungle = 16
-    moisture_threshold_heavy_forest = 10
-    moisture_threshold_tundra_snow_lower = 2
-    moisture_threshold_grassland_lower = 4
-    light_jungle_temperature_threshold = 30
-    cold_forrest_temperature_threshold = 8
-    scrubland_temperature_threshold = 4
-    flat_to_hills_threshold = 170
-    hills_to_mountains_threshold = 217
+@dataclass(frozen=True, slots=True)
+class GeneratorSetupField:
+    key: str
+    label: str
+    default: Any
+    choices: tuple[tuple[str, Any], ...]
+    description: str | None = None
 
 
 class BaseGenerator(ABC):
@@ -67,6 +48,7 @@ class BaseGenerator(ABC):
         self.config: GameSettings = config
         self.base: "OpenCiv" = base
         self.world: World = World.get_singleton_instance()
+        self.setup_options: Dict[str, Any] = self.sanitize_setup_options(getattr(self.config, "generator_options", {}))
         self.world_generation_stats: Dict[str, Any] = {}
         self.model_grid: Optional[TileModelGrid] = None
         self.debug_dump_data: Dict[str, Dict[str, Any]] = {
@@ -79,6 +61,29 @@ class BaseGenerator(ABC):
             "tiles": {},
         }
         self.grid: Dict[Tuple[int, int], "Tile"] = {}
+
+    @classmethod
+    def get_setup_fields(cls) -> tuple[GeneratorSetupField, ...]:
+        return ()
+
+    @classmethod
+    def get_default_setup_options(cls) -> Dict[str, Any]:
+        return {field.key: field.default for field in cls.get_setup_fields()}
+
+    @classmethod
+    def sanitize_setup_options(cls, raw_options: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        sanitized: Dict[str, Any] = cls.get_default_setup_options()
+
+        if not raw_options:
+            return sanitized
+
+        for field in cls.get_setup_fields():
+            allowed_values = {value for _, value in field.choices}
+            candidate = raw_options.get(field.key, field.default)
+            if candidate in allowed_values:
+                sanitized[field.key] = candidate
+
+        return sanitized
 
     @abstractmethod
     def generate(self) -> bool: ...

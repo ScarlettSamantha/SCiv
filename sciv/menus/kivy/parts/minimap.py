@@ -379,7 +379,7 @@ class Minimap(FloatLayout, DirectObject):
 
         if selected_tile is None or not hasattr(selected_tile, 'pos_x') or not hasattr(selected_tile, 'pos_y'):
             return None
-        return cast(Tile, selected_tile)
+        return cast("Tile", selected_tile)
 
     def _draw_selected_tile_marker(self, accent: tuple[float, float, float, float]) -> None:
         selected_tile = self._get_selected_tile()
@@ -391,21 +391,30 @@ class Minimap(FloatLayout, DirectObject):
             return
 
         marker_x, marker_y = canvas_pos
-        outer_radius = float(dp(4.1))
-        inner_radius = float(dp(1.45))
-        crosshair_radius = outer_radius + float(dp(1.3))
+        zoom_factor = self._current_zoom_factor()
+        zoom_visibility = max(0.0, min(1.0, (zoom_factor - 1.0) / 1.8))
+        outer_radius = float(dp(2.6 + zoom_visibility * 0.7))
+        inner_radius = float(dp(0.9 + zoom_visibility * 0.3))
 
-        Color(0.0, 0.0, 0.0, 0.58)
-        Line(circle=(marker_x, marker_y, outer_radius + 0.9), width=1.8)
+        Color(0.0, 0.0, 0.0, 0.36 + zoom_visibility * 0.18)
+        Line(circle=(marker_x, marker_y, outer_radius + 0.55), width=1.0 + zoom_visibility * 0.25)
 
-        Color(1.0, 0.97, 0.88, 0.96)
-        Line(circle=(marker_x, marker_y, outer_radius), width=1.05)
+        Color(1.0, 0.97, 0.88, 0.72 + zoom_visibility * 0.18)
+        Line(circle=(marker_x, marker_y, outer_radius), width=0.75 + zoom_visibility * 0.2)
 
-        Color(accent[0], accent[1], accent[2], 0.92)
-        Line(points=(marker_x - crosshair_radius, marker_y, marker_x + crosshair_radius, marker_y), width=0.9)
-        Line(points=(marker_x, marker_y - crosshair_radius, marker_x, marker_y + crosshair_radius), width=0.9)
+        if zoom_factor >= 2.4:
+            crosshair_radius = outer_radius + float(dp(0.75 + zoom_visibility * 0.55))
+            Color(accent[0], accent[1], accent[2], 0.42 + zoom_visibility * 0.22)
+            Line(
+                points=(marker_x - crosshair_radius, marker_y, marker_x + crosshair_radius, marker_y),
+                width=0.58 + zoom_visibility * 0.16,
+            )
+            Line(
+                points=(marker_x, marker_y - crosshair_radius, marker_x, marker_y + crosshair_radius),
+                width=0.58 + zoom_visibility * 0.16,
+            )
 
-        Color(1.0, 1.0, 1.0, 0.98)
+        Color(1.0, 1.0, 1.0, 0.82 + zoom_visibility * 0.14)
         Ellipse(
             pos=(marker_x - inner_radius, marker_y - inner_radius),
             size=(inner_radius * 2.0, inner_radius * 2.0),

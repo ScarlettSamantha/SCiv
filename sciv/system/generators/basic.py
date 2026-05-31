@@ -1,19 +1,26 @@
 import weakref
 from datetime import datetime
 from random import randrange
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from zlib import crc32
 
 from direct.showbase import MessengerGlobal
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
-from helpers.tiles import Tiles
 from managers import game
 from managers.entity import EntityManager
-from system.generators.base import BaseGenerator, WorldParams
+from system.generators.map_params import build_basic_map_params
+from system.generators.base import BaseGenerator
 from system.generators.resource_allocator import ResourceAllocator
+from system.generators.terrain_conversion import (
+    adjust_water_levels as adjust_shared_water_levels,
+    classify_hex_terrain,
+    classify_visible_hexes as classify_shared_visible_hexes,
+    desertize_adjacent_tundra as desertize_shared_adjacent_tundra,
+    promote_single_sea_between_coasts as promote_shared_single_sea_between_coasts,
+)
 from system.pyload import PyLoad
-from system.subsystems.hexgen.enums import GeoformType, HexFeature, MapType, OceanType
+from system.subsystems.hexgen.enums import GeoformType
 from system.tile_grid import TileModelGrid
 
 if TYPE_CHECKING:
@@ -45,31 +52,10 @@ class Basic(BaseGenerator):
         self.world_generation_stats: Dict[str, Any] = {}
         self.number_of_tiles: int = self.config.width * self.config.height
 
-        self.map_params = {
-            "map_type": MapType.terran,
-            "surface_pressure": 1013.25,
-            "size": max(self.config.width, self.config.height),
-            "year_length": 365,
-            "day_length": 24,
-            "base_temp": 0,
-            "avg_temp": 12.5,
-            "sea_percent": 55,
-            "hydrosphere": True,
-            "ocean_type": [OceanType.water],
-            "random_seed": self.seed,
-            "roughness": 17,
-            "height_range": (0, 240),
-            "pressure": 1,
-            "axial_tilt": 18,
-            "craters": True,
-            "volcanoes": True,
-            "volcano_area_size": 1,
-            "num_volcanoes": max(1, self.number_of_tiles // 2000),
-            "num_rivers": self.number_of_tiles // 400,
-            "num_territories": self.number_of_tiles // 300,
-            "lake_to_sea_tiles": 100,
-            "sea_to_ocean_tiles": 150,
-        }
+        self.map_params = self.build_map_params()
+
+    def build_map_params(self) -> Dict[str, Any]:
+        return build_basic_map_params(self.config.width, self.config.height, seed=self.seed)
 
     def randomize_seed(self) -> int:
         time = str(crc32(str(int(datetime.now().timestamp() * 1000)).encode()))[:-3]
@@ -94,29 +80,18 @@ class Basic(BaseGenerator):
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Generating map..."])
         start_time = datetime.now()
-        self.hexgen_map = MapGen(self.map_params, debug=True)
+        self.hexgen_map = MapGen(self.map_params, debug=False)
         self.hex_grid: Grid = self.hexgen_map.hex_grid
         end_hexgen_time = datetime.now()
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Converting map..."])
         start_conversion = datetime.now()
-        for col in range(self.config.height):
-            for row in range(self.config.width):
-                hex_tile: "Hex" = self.hex_grid.grid[col][row]  # type: ignore
-                x = col * self.world.col_spacing
-                y = row * self.world.row_spacing + (self.world.row_spacing * 0.5 if col % 2 else 0)
-                terrain = self.classify_terrain(hex_tile)
-                hex_tile.terrain = terrain
-                hex_tile.render_pos = (x, y)
+        self.prepare_hexes_for_tile_instantiation()
         end_conversion = datetime.now()
 
         start_water_level_adjustment: datetime = datetime.now()
-        self.adjust_water_levels()
+        self.finalize_hexes_for_tile_instantiation()
         end_water_level_adjustment: datetime = datetime.now()
-
-        self._promote_single_sea_between_coasts()
-
-        self._desertize_adjacent_tundra()
 
         MessengerGlobal.messenger.send("ui.loading.next_step", ["Instantiating tiles..."])
         start_inst = datetime.now()
@@ -187,127 +162,32 @@ class Basic(BaseGenerator):
         return True
 
     def classify_terrain(self, hex_tile: "Hex") -> str:
-        biome_id: int = int(
-            getattr(hex_tile, "biome_id", getattr(getattr(hex_tile, "biome", None), "id", WorldParams.grasslands))
+        return classify_hex_terrain(hex_tile)
+
+    def _render_position_for_coord(self, col: int, row: int) -> tuple[float, float]:
+        x = col * self.world.col_spacing
+        y = row * self.world.row_spacing + (self.world.row_spacing * 0.5 if col % 2 else 0)
+        return x, y
+
+    def prepare_hexes_for_tile_instantiation(self) -> None:
+        classify_shared_visible_hexes(
+            self.hex_grid.grid,
+            width=self.config.width,
+            height=self.config.height,
+            render_position_resolver=self._render_position_for_coord,
         )
 
-        hex_temp = float(hex_tile.temperature[0])
-        hex_temp_i = int(round(hex_temp))
-        moisture_like = float(hex_tile.moisture)
-
-        geotype = getattr(hex_tile, "geoform_type", None)
-        hex_alt: int = int(hex_tile.altitude)
-
-        if HexFeature.volcano in hex_tile.features:
-            return "Volcano"
-
-        if hex_tile.is_water:
-            if geotype == GeoformType.lake:
-                return "Lake"
-            if hex_tile.is_coast:
-                return "Coast"
-            if geotype in (GeoformType.sea, GeoformType.ocean) and hex_tile.temperature[0] < -1:
-                return "SeaIce"
-            return "Sea"
-
-        if hex_tile.altitude > WorldParams.hills_to_mountains_threshold:
-            return "MountainSnow" if hex_temp_i < -2 else "Mountain"
-
-        if hex_alt > WorldParams.flat_to_hills_threshold:
-            if biome_id not in (WorldParams.scrubland, WorldParams.savanna, WorldParams.desert) and hex_temp_i < 0:
-                return "HillsSnow"
-            elif biome_id in (WorldParams.savanna, WorldParams.desert):
-                return "HillsDesert"
-            elif (
-                biome_id in (WorldParams.grasslands, WorldParams.scrubland)
-                and WorldParams.forest_lower_threshold <= hex_temp <= WorldParams.grass_temperature_upper_threshold
-                and moisture_like < WorldParams.forest_lower_threshold
-            ):
-                return "HillsGrassland"
-            elif (
-                biome_id
-                in (
-                    WorldParams.grasslands,
-                    WorldParams.tropical_forest,
-                    WorldParams.temperate_rainforest,
-                    WorldParams.temperate_forest,
-                    WorldParams.boreal_forest,
-                    WorldParams.scrubland,
-                )
-                and moisture_like >= WorldParams.forest_lower_threshold
-            ):
-                return "HillsForest"
-            elif hex_temp < WorldParams.forest_lower_threshold and biome_id not in (
-                WorldParams.scrubland,
-                WorldParams.savanna,
-                WorldParams.desert,
-            ):
-                return "HillsTundra"
-
-        if biome_id == WorldParams.tropical_forest:
-            return "FlatLightJungle"
-
-        if biome_id == WorldParams.temperate_rainforest:
-            return "FlatJungle"
-
-        if biome_id == WorldParams.grasslands:
-            return "FlatGrass"
-
-        if biome_id == WorldParams.desert:
-            return "FlatDesert"
-
-        if biome_id == WorldParams.temperate_forest:
-            if moisture_like < WorldParams.moisture_threshold_heavy_forest:
-                return "FlatForest"
-            else:
-                return "FlatHeavyForest"
-
-        if biome_id == WorldParams.boreal_forest:
-            return "FlatPineForest"
-
-        if biome_id == WorldParams.tropical_rainforest:
-            return "FlatForest"
-
-        if biome_id == WorldParams.savanna:
-            return "FlatSavanna"
-
-        if biome_id == WorldParams.scrubland:
-            return "FlatScrubland"
-
-        if biome_id == WorldParams.arctic:
-            return "FlatIce"
-
-        if biome_id == WorldParams.alpine_tundra:
-            return "FlatTundraSnow"
-
-        if biome_id == WorldParams.tundra:
-            return "FlatTundra"
-
-        raise ValueError(f"Could not classify terrain for hex {hex_tile} with biome id {biome_id}")
+    def finalize_hexes_for_tile_instantiation(self) -> None:
+        self.adjust_water_levels()
+        self._promote_single_sea_between_coasts()
+        self._desertize_adjacent_tundra()
 
     def _desertize_adjacent_tundra(self) -> int:
-        height = self.config.height
-        width = self.config.width
-        raw = self.hex_grid.grid
-
-        DESERTS = {"FlatDesert", "HillsDesert"}
-        TUNDRA = {"FlatTundra"}
-
-        to_convert: List[Tuple[int, int]] = []
-        for c in range(height):
-            for r in range(width):
-                h: "Hex" = raw[c][r]
-                if h.terrain not in TUNDRA:
-                    continue
-                for _, n in h.neighbors:
-                    if n.terrain in DESERTS:
-                        to_convert.append((c, r))
-                        break
-
-        for c, r in to_convert:
-            self.hex_grid.grid[c][r].terrain = "FlatDesert"
-
-        return len(to_convert)
+        return desertize_shared_adjacent_tundra(
+            self.hex_grid.grid,
+            width=self.config.width,
+            height=self.config.height,
+        )
 
     def instantiate_tiles(self):
         for col in range(self.config.height):
@@ -387,57 +267,11 @@ class Basic(BaseGenerator):
         return tile
 
     def adjust_water_levels(self) -> None:
-        height = self.config.height
-        width = self.config.width
-
-        visited: Set[Tuple[int, int]] = set()
-
-        raw = self.hex_grid.grid
-
-        def neighbors(c: int, r: int) -> List[Tuple[int, int]]:
-            offsets = Tiles.get_directions_per_col(c)
-            result: List[Tuple[int, int]] = []
-            for dc, dr in offsets:
-                nc, nr = c + dc, r + dr
-                if 0 <= nc < height and 0 <= nr < width:
-                    result.append((nc, nr))
-            return result
-
-        for col in range(height):
-            for row in range(width):
-                hex_tile = raw[col][row]
-                if not hex_tile.is_water or (col, row) in visited:
-                    continue
-
-                queue = [(col, row)]
-                visited.add((col, row))
-                water_cluster = [(col, row)]
-                idx = 0
-                while idx < len(queue):
-                    c0, r0 = queue[idx]
-                    idx += 1
-                    for nc, nr in neighbors(c0, r0):
-                        neighbor_hex = raw[nc][nr]
-                        if neighbor_hex.is_water and (nc, nr) not in visited:
-                            visited.add((nc, nr))
-                            queue.append((nc, nr))
-                            water_cluster.append((nc, nr))
-
-                border_altitudes: List[float] = []
-                for wc, wr in water_cluster:
-                    for nc, nr in neighbors(wc, wr):
-                        neighbor_hex = raw[nc][nr]
-                        if neighbor_hex.is_land:
-                            border_altitudes.append(neighbor_hex.altitude)
-
-                if not border_altitudes:
-                    continue
-
-                min_adj_land = min(border_altitudes)
-                water_level = min_adj_land - 1
-
-                for wc, wr in water_cluster:
-                    raw[wc][wr].altitude = water_level
+        adjust_shared_water_levels(
+            self.hex_grid.grid,
+            width=self.config.width,
+            height=self.config.height,
+        )
 
     def get_all_resources(self) -> List[Type[BaseResource]]:
         from gameplay.repositories.resources import ResourceRepository
@@ -471,35 +305,8 @@ class Basic(BaseGenerator):
             setattr(tile, "model_z_offset", float(z_off))
 
     def _promote_single_sea_between_coasts(self) -> int:
-        height = self.config.height
-        width = self.config.width
-        raw = self.hex_grid.grid
-        to_promote: List[Tuple[int, int]] = []
-
-        def side_val(s: Any) -> int:
-            try:
-                return int(s.value[0])
-            except Exception:
-                return int(s)
-
-        for c in range(height):
-            for r in range(width):
-                h: "Hex" = raw[c][r]
-                if not h.is_water:
-                    continue
-                terr = getattr(h, "terrain", "")
-                if terr != "Sea":
-                    continue
-                coast_dirs: List[int] = []
-                for s, n in h.neighbors:
-                    if n.is_water and getattr(n, "terrain", "") == "Coast":
-                        coast_dirs.append(side_val(s))
-                opposites: Set[int] = {(d + 3) % 6 for d in coast_dirs}
-                if any(d in opposites for d in coast_dirs):
-                    to_promote.append((c, r))
-
-        for c, r in to_promote:
-            hx: "Hex" = raw[c][r]
-            hx.terrain = "Coast"
-
-        return len(to_promote)
+        return promote_shared_single_sea_between_coasts(
+            self.hex_grid.grid,
+            width=self.config.width,
+            height=self.config.height,
+        )

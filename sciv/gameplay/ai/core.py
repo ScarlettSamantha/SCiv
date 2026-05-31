@@ -19,10 +19,12 @@ from managers.player import PlayerManager
 from managers.turn import Turn
 
 if TYPE_CHECKING:
+    from gameplay.founding.site_recommendation import TileRecommendation
     from gameplay.player import Player
     from gameplay.tile import Tile
     from gameplay.unit import Unit
     from gameplay.vision import Vision
+    from gameplay.units.core.classes.civilian.settler import Settler
 
 
 class AI(ABC):
@@ -285,6 +287,17 @@ class AI(ABC):
                 unit.move(tile=path_tile)
                 if on_tile_visit is not None:
                     on_tile_visit(path_tile)
+
+    def get_settler_recommendations(
+        self,
+        settler: "Settler",
+        search_radius: int = 8,
+        limit: int = 5,
+    ) -> List["TileRecommendation"]:
+        return settler.get_founding_recommendations(search_radius=search_radius, limit=limit)
+
+    def get_best_settler_site(self, settler: "Settler", search_radius: int = 8) -> "Tile | None":
+        return settler.get_best_founding_tile(search_radius=search_radius)
 
     def _recent_for(self, uid: int) -> List[Tuple[int, int]]:
         if uid not in self.unit_recent:

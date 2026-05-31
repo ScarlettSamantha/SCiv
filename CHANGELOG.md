@@ -4,9 +4,14 @@
 
 ### Added
 
+- ✨ Added raw world-generation JSON exports, repo-local export settings in Options, and an offline batch helper for generating multiple debug worlds.
+
 ### Changed
 
 ### Fixed
+
+- 🐛 Fixed the in-game pause-menu options button so it opens settings and returns to the pause menu on Back.
+- 🐛 Fixed offline worldgen previews so standalone exports handle shrubland biomes, keep post-conversion terrain labels, synthesize runtime tile dumps for the viewer, render ocean water with waterbody colors instead of desert biome colors, and label ocean/coast hexes by finalized terrain instead of raw climate biome text.
 
 ### AI
 
@@ -15,10 +20,31 @@
 - 🐛 Fixed the minimap startup crash by restoring viewport centroid calculation during initial camera-follow bounds setup.
 - 💄 Added initial draggable HUD layout-debug settings and persisted positioning for core gameplay widgets.
 - 💄 Extended layout debug dragging to debug overlays and modal popups, with an on-drag stats panel for position and size tuning.
+- 💄 Added a selectable Dynamic Worlds map generator with generator-specific setup options in game setup.
+- 💄 Made the minimap selected-tile marker subtler and easier to read when zoomed in.
+- 🐛 Kept the gameplay player list on its native anchored HUD path to avoid the bottom-left layout-debug regression.
+- 💄 Defaulted the new-game config screen and debug quick-start path to Dynamic Worlds while keeping Basic selectable.
+- 💄 Added a dedicated Rivers overview in the worldgen viewer with stronger channel rendering and hydrology stats.
+- 💄 Added Dynamic Worlds controls for river amount, river length bias, and tributary density in both new-game setup and worldgen viewer previews.
+- 💄 Added terrain/resource texture and model previews to the worldgen viewer inspector while keeping preview metadata off the Kivy-heavy import path.
+- 💄 Expanded the worldgen viewer's river diagnostics with network counts, braid/connector categories, top systems, and richer selected-hex river details.
+- 💄 Moved worldgen viewer preview generation onto a background worker with a staged progress bar and added a Random seed button beside the seed field.
+- 💄 Cleaned up the standalone worldgen viewer menu bar with shorter grouped View submenus and shorter top-level actions.
 
 ### Engine
 
+- ⚙️ Biased river source selection farther inland so generated river chains trend longer before falling back to closer sources.
+- ⚙️ Bounded Dynamic Worlds river-network branching so braided rivers generate promptly while still producing connector and split/rejoin channels.
+- ⚙️ Added a Dynamic Worlds option that can force all main ocean basins to connect through carved straits before rivers and geoforms run.
+
 ### Mechanics
+
+- ✨ Improved Dynamic Worlds start placement scoring and fixed the map generator selector to show only real generators.
+- ✨ Extracted reusable settlement tile scoring for Dynamic Worlds, settler recommendations, and future settler AI while adding script-aware coastline polish.
+- ✨ Expanded Dynamic Worlds with named landmasses, biome styles, named biome regions and rivers, plus improved river source spacing.
+- ✨ Reworked Dynamic Worlds to use its own heightmap-shaped generation path with stronger landmass and biome profile differences.
+- ✨ Added Dynamic Worlds channel carving, inland seas, tributary river growth, river valleys, and stronger biome-belt shaping.
+- 🎮 Smoothed Dynamic Worlds landmass shaping, reduced mountain-heavy maps, and shared the runtime conversion prep path between Basic and Dynamic.
 
 ### Content
 
@@ -37,4 +63,11 @@
 - 🔧 Extended the changelog helper with gitmoji, ticket refs, and release/tag commands.
 - 👷 Renamed the helper to changelog.py, added category presets and utility commands, and synced version metadata.
 - 🔧 Unified the project-index tooling under scripts/index.py with generate, browse, query, stats, and doctor commands.
+- 🔧 Added a standalone-safe PyQt6 worldgen viewer with flat-top odd-q rendering, a dynamic legend, top menu/toolbar actions, and direct in-app generator previews.
+- 🔧 Extracted shared pure-Python terrain conversion helpers so live and offline worldgen reuse the same classification and cleanup rules without requiring Kivy.
+- 👷 Added overlay coverage percentages, runtime-scope breakdowns, and inspector jump/copy helpers to the PyQt6 worldgen viewer.
+- 👷 Added legend-hover map highlighting to matching categories in the PyQt6 worldgen viewer.
+- 👷 Added View-menu sidebar section toggles and a scrollable left rail to the PyQt6 worldgen viewer.
+- 🔧 Made the worldgen viewer legend derive biome and runtime terrain entries from the loaded dump so variants like Hills Tundra appear correctly.
+- 👷 Added offline resource allocation and a Resources overlay to the standalone worldgen viewer.
 

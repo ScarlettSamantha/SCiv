@@ -146,8 +146,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player = PlayerManager.session_player()
         if not self._is_attached(self.player_list):
             self.build_player_list()
-        elif (wrapper := self.layout_debug_widgets.get("player_list")) is not None:
-            self.register_non_collidable(wrapper)
+        elif self.player_list is not None:
+            self.register_non_collidable(self.player_list)
 
         if not self._is_attached(self.player_combat_log):
             self.build_combat_log()
@@ -178,8 +178,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             if (wrapper := self.layout_debug_widgets.get("combat_log")) is not None:
                 self.register_non_collidable(wrapper)
         if self.player_list is not None:
-            if (wrapper := self.layout_debug_widgets.get("player_list")) is not None:
-                self.register_non_collidable(wrapper)
+            self.register_non_collidable(self.player_list)
         if self.minimap is not None:
             self.register_non_collidable(self.minimap)  # type: ignore
         self.apply_layout_debug_settings()
@@ -582,14 +581,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         return self.civics
 
     def build_player_list(self) -> PlayerList:
+        old_wrapper = self.layout_debug_widgets.pop("player_list", None)
+        if old_wrapper is not None:
+            self.unregister_non_collidable(old_wrapper)
+            old_parent = getattr(old_wrapper, "parent", None)
+            if old_parent is not None:
+                old_parent.remove_widget(old_wrapper)
+
         self.player_list = PlayerList(base=self._base)
         self.player_list.build()
-        wrapper = self._register_layout_debug_widget(
-            "player_list",
-            self.player_list,
-            default_position=(float(self.player_list.x), float(self.player_list.y)),
-        )
-        self.add_widget(wrapper)
+        self.add_widget(self.player_list)
+        self.register_non_collidable(self.player_list)
         return self.player_list
 
     def build_player_info(self) -> PlayerInfo:

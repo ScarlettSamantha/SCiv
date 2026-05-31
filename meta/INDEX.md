@@ -85,6 +85,7 @@
 | File | Purpose |
 | --- | --- |
 | [Documentation Audit](documentation-audit.md) | Reconnaissance report highlighting under-documented subsystems and explicit open questions found in code. |
+| [Dynamic Worlds Plan](plans/dynamic_worlds.md) | Research-backed roadmap for evolving `Dynamic Worlds` with Civ-inspired pipeline, climate, and balance phases. |
 | [Todo](todo.md) | Backlog and planned improvements. |
 | [Known Bugs](../known_bugs.md) | Known rough edges and currently tracked issues. |
 | [Changelog](../CHANGELOG.md) | Project changelog maintained through the root helper-driven workflow. |

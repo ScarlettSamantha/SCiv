@@ -95,6 +95,9 @@ class OptionsScreen(Screen):
         self.ui_layout_drag_checkbox: CheckBox
         self.ui_layout_overlay_checkbox: CheckBox
         self.ui_layout_reset_button: Button
+        self.worldgen_export_checkbox: CheckBox
+        self.worldgen_export_dir_input: TextInput
+        self.worldgen_export_batch_spinner: Spinner
         self.sentry_dsn_input: TextInput
         self.debug_checkboxes: Dict[str, CheckBox] = {}
 
@@ -103,6 +106,8 @@ class OptionsScreen(Screen):
         self._panel_container: BoxLayout
         self._root_bg_rect: Rectangle
         self.current_tab: str = "General"
+        self._return_screen_name: str = "main_menu"
+        self._reopen_pause_menu_on_back: bool = False
 
         self._build_general_tab()
         self._build_video_tab()
@@ -260,9 +265,20 @@ class OptionsScreen(Screen):
 
         self._set_tab_styles(name)
 
+    def configure_return_target(self, screen_name: str, reopen_pause_menu: bool = False) -> None:
+        self._return_screen_name = screen_name or "main_menu"
+        self._reopen_pause_menu_on_back = reopen_pause_menu
+
     def on_back(self, *args: Any) -> None:
-        if self.manager:
-            self.manager.current = "main_menu"
+        if self.manager is None:
+            return
+
+        self.manager.current = self._return_screen_name
+
+        if self._reopen_pause_menu_on_back:
+            messenger.send("ui.update.ui.show_pause")
+
+        self.configure_return_target("main_menu")
 
     def _build_general_tab(self) -> None:
         layout = BoxLayout(
@@ -689,6 +705,88 @@ class OptionsScreen(Screen):
 
         rows.add_widget(grid)
 
+        export_title = SectionLabel(
+            text="[b]World Generation Exports[/b]",
+            markup=True,
+            font_size="16sp",
+            size_hint=(1, None),
+            height=dp(28),
+        )
+        rows.add_widget(export_title)
+
+        export_enable_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(40),
+            spacing=dp(12),
+        )
+        export_enable_label = LeftAlignedLabel(
+            text="Export Raw Generated Worlds",
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+
+        self.worldgen_export_checkbox = MenuCheckbox(
+            active=self.config_ref.get_world_generation_export_enabled(),
+            disabled=not master,
+        )
+        self.worldgen_export_checkbox.bind(active=self._on_world_generation_export_toggle)  # type: ignore
+
+        export_enable_row.add_widget(export_enable_label)
+        export_enable_row.add_widget(self.worldgen_export_checkbox)
+        rows.add_widget(export_enable_row)
+
+        export_dir_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(40),
+            spacing=dp(12),
+        )
+        export_dir_label = LeftAlignedLabel(
+            text="Export Folder",
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+
+        self.worldgen_export_dir_input = TextInput(
+            text=self.config_ref.get_world_generation_export_dir(),
+            multiline=False,
+            disabled=not master,
+            size_hint=(1, None),
+            height=dp(40),
+        )
+        self.worldgen_export_dir_input.bind(focus=self._on_world_generation_export_dir_focus)  # type: ignore
+
+        export_dir_row.add_widget(export_dir_label)
+        export_dir_row.add_widget(self.worldgen_export_dir_input)
+        rows.add_widget(export_dir_row)
+
+        export_batch_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(40),
+            spacing=dp(12),
+        )
+        export_batch_label = LeftAlignedLabel(
+            text="Offline Batch Count",
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+
+        self.worldgen_export_batch_spinner = Spinner(
+            text=str(self.config_ref.get_world_generation_export_batch_count()),
+            values=[str(value) for value in range(1, 13)],
+            size_hint=(None, None),
+            width=dp(140),
+            height=dp(40),
+            disabled=not master,
+        )
+        self.worldgen_export_batch_spinner.bind(text=self._on_world_generation_export_batch_select)  # type: ignore
+
+        export_batch_row.add_widget(export_batch_label)
+        export_batch_row.add_widget(self.worldgen_export_batch_spinner)
+        rows.add_widget(export_batch_row)
+
         ai_row = BoxLayout(
             orientation="horizontal",
             size_hint=(1, None),
@@ -805,8 +903,29 @@ class OptionsScreen(Screen):
         self.ui_layout_drag_checkbox.disabled = not active
         self.ui_layout_overlay_checkbox.disabled = not active
         self.ui_layout_reset_button.disabled = not active
+        self.worldgen_export_checkbox.disabled = not active
+        self.worldgen_export_dir_input.disabled = not active
+        self.worldgen_export_batch_spinner.disabled = not active
         self.sentry_dsn_input.disabled = not active or not self.sentry_enable_checkbox.active
         self._notify_layout_debug_changed()
+
+    def _on_world_generation_export_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        self.config_ref.set_world_generation_export_enabled(active)
+
+    def _on_world_generation_export_dir_focus(self, text_input: TextInput, focused: bool) -> None:
+        if focused:
+            return
+
+        self.config_ref.set_world_generation_export_dir(text_input.text)
+        text_input.text = self.config_ref.get_world_generation_export_dir()
+
+    def _on_world_generation_export_batch_select(self, spinner: Spinner, text: str) -> None:
+        if not text.isdigit():
+            spinner.text = str(self.config_ref.get_world_generation_export_batch_count())
+            return
+
+        self.config_ref.set_world_generation_export_batch_count(int(text))
+        spinner.text = str(self.config_ref.get_world_generation_export_batch_count())
 
     def _on_ui_layout_drag_toggle(self, checkbox: CheckBox, active: bool) -> None:
         self.config_ref.set_ui_layout_drag_enabled(active)

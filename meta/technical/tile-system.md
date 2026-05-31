@@ -66,6 +66,12 @@ Each tile stores the worldgen-derived environment that gameplay uses later:
 - `is_water`, `is_land`, `is_sea`, `is_lake`, `is_coast`, `is_inland_sea`
 - `edges` pointing at hexgen `Edge` objects via weak references
 
+When `Dynamic Worlds` is the active generator, tiles may also carry extra world-label metadata added after the shared generation pipeline finishes, such as:
+
+- `landmass_name`, `landmass_type`, `landmass_size`
+- `biome_region_name`, `biome_region_type`, `biome_region_size`
+- `river_names`, `primary_river_name`, `river_count`
+
 `tile_terrain` also controls default passability, movement cost modifiers, yields, terrain bits, and the terrain model path used by the renderer stack.
 
 ### Gameplay contents and ownership
@@ -93,6 +99,8 @@ A tile owns or references its local gameplay contents:
 5. store the tile in `World.map` and `World.grid`
 
 `Tile.__post_init__()` then creates the tile-local `Effects`, creates a `TileRenderer`, and registers the tile with `EntityManager`.
+
+`Dynamic Worlds` now keeps that shared `Basic.instantiate_tiles()` handoff intact and applies its optional naming metadata afterward by walking the finished `World.grid`. That keeps the baseline generator boundary stable while still letting Dynamic-specific map labels live on runtime tiles.
 
 After that point, the authoritative runtime collections are:
 
@@ -181,3 +189,4 @@ On load, `Tile.load_state()` reconstructs terrain, resources, improvements, effe
 - `World.on_turn_end()` only calls `tile.on_turn_end()` for tiles that are interesting enough to process: owned, occupied, improved, effected, city-backed, or marked with `needs_tile_proecessing`.
 - The `needs_tile_proecessing` field name is misspelled in current code and is part of the active runtime contract.
 - Tiles keep weak references to hexgen `Edge` objects after generation; those edges are worldgen artifacts, not `EntityManager` entities.
+- `Tile.dump()` and `__getstate__()` both start from `self.__dict__.copy()`, so generator-attached runtime metadata such as Dynamic world labels persists automatically unless a later change explicitly strips it.

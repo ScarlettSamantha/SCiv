@@ -201,7 +201,22 @@ class MainMenuScreen(Screen):
         return float_layout
 
     def quick_start(self, _: Optional[Button] = None) -> None:
-        MessengerGlobal.messenger.send("system.game.start_load", [(25, 25), Civilization.random(num=1), 3])
+        from system.generators.dynamic import Dynamic
+
+        start_config = {
+            "options": {},
+            "rules": {},
+            "players": [],
+            "generator": {
+                "class": Dynamic,
+                "name": str(getattr(Dynamic, "NAME", Dynamic.__name__)),
+                "options": Dynamic.get_default_setup_options(),
+            },
+        }
+        MessengerGlobal.messenger.send(
+            "system.game.start_load",
+            [(25, 25), Civilization.random(num=1), 3, start_config],
+        )
 
     def _on_label_click(self, *args: Any, **kwargs: Any) -> None:
         from helpers.debug import Debug
@@ -210,6 +225,10 @@ class MainMenuScreen(Screen):
         Debug.open_data_folder()
 
     def to_config_screen(self, _: Any) -> None:
+        from menus.screens.options_menu import OptionsScreen
+
+        options_screen: OptionsScreen = self.manager.get_screen("options_screen")  # type: ignore
+        options_screen.configure_return_target("main_menu")
         self.manager.current = "options_screen"
 
     def to_game_screen(self, _: Optional[Button] = None) -> None:

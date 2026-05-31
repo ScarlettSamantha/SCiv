@@ -13,6 +13,7 @@ from kivy.uix.boxlayout import BoxLayout  # type: ignore
 from kivy.uix.button import Button  # type: ignore
 from kivy.uix.checkbox import CheckBox  # type: ignore
 from kivy.uix.floatlayout import FloatLayout  # type: ignore
+from kivy.uix.gridlayout import GridLayout  # type: ignore
 from kivy.uix.image import Image  # type: ignore
 from kivy.uix.label import Label  # type: ignore
 from kivy.uix.popup import Popup  # type: ignore
@@ -35,6 +36,9 @@ from menus.kivy.elements.menu_styled import (  # type: ignore
     TitleLabel,
 )
 from panda3d.core import Texture
+from gameplay.repositories.generators import GeneratorRepository
+from system.generators.base import BaseGenerator, GeneratorSetupField
+from system.generators.basic import Basic
 
 
 class GameConfigMenu(Screen):
@@ -66,10 +70,16 @@ class GameConfigMenu(Screen):
         self.size_section: Optional[BoxLayout] = None
         self.size_popup: Optional[ScrollablePopup] = None
         self.size_popup_button: Optional[Button] = None
+        self.generator_section: Optional[BoxLayout] = None
+        self.generator_popup_button: Optional[ButtonValue] = None
+        self.generator_popup: Optional[ScrollablePopup] = None
+        self.generator_description_label: Optional[Label] = None
+        self.generator_options_container: Optional[GridLayout] = None
 
         self.selected_size: Optional[Tuple[int, int]] = None
         self.selected_civilization: Optional[Type[BaseCivilization]] = None
         self.selected_leader: Optional[Type[BaseLeader]] = None
+        self.selected_generator: Optional[Type[BaseGenerator]] = None
 
         self.player_rows: List[Dict[str, Any]] = []
         self.active_civ_row: Optional[BoxLayout] = None
@@ -84,6 +94,8 @@ class GameConfigMenu(Screen):
         self.rules_checkboxes: Dict[str, CheckBox] = {}
         self.rules_int_inputs: Dict[str, TextInput] = {}
         self.rule_definitions: Dict[str, Dict[str, Any]] = {}
+        self.generator_option_values: Dict[str, Any] = {}
+        self.generator_option_buttons: Dict[str, ButtonValue] = {}
 
         rules_obj: GameRules = get_game_rules()
         self.rules_state = dict(rules_obj.get_rules())
@@ -256,6 +268,48 @@ class GameConfigMenu(Screen):
         self.size_section.add_widget(self.size_popup_button)
 
         self.options_panel.add_widget(self.size_section)
+
+        self.generator_section = BoxLayout(
+            orientation="vertical",
+            size_hint=(1.0, None),
+            spacing=dp(5),
+            padding=(0, dp(4), 0, 0),
+        )
+
+        generator_label = SectionLabel(
+            text="Map generator",
+            size_hint=(1.0, None),
+            height=dp(24),
+        )
+        self.generator_section.add_widget(generator_label)
+
+        self.generator_popup_button = ButtonValue(
+            text=str(getattr(Basic, "NAME", "Basic")),
+            value=Basic,
+            size_hint=(1.0, None),
+            height=dp(48),
+        )
+        self.generator_popup_button.bind(on_release=self.open_generator_popup)  # type: ignore
+        self.generator_section.add_widget(self.generator_popup_button)
+
+        self.generator_description_label = SubtitleLabel(
+            text=str(getattr(Basic, "DESCRIPTION", "")),
+            size_hint=(1.0, None),
+            height=dp(36),
+        )
+        self.generator_section.add_widget(self.generator_description_label)
+
+        self.generator_options_container = GridLayout(
+            cols=1,
+            size_hint=(1.0, None),
+            spacing=dp(8),
+            padding=(0, dp(6), 0, 0),
+        )
+        self.generator_options_container.bind(minimum_height=self.generator_options_container.setter("height"))  # type: ignore
+        self.generator_section.add_widget(self.generator_options_container)
+
+        self.options_panel.add_widget(self.generator_section)
+        self._initialize_generator_selection()
 
         dev_row = BoxLayout(
             orientation="horizontal",
@@ -554,6 +608,130 @@ class GameConfigMenu(Screen):
         if self.size_popup_button is not None:
             self.size_popup_button.text = size
 
+    def _initialize_generator_selection(self) -> None:
+        GeneratorRepository.cache_refresh()
+        generators = GeneratorRepository.all()
+        if not generators:
+            self.apply_selected_generator(Basic)
+            return
+
+        default_generator = next(
+            (
+                generator
+                for generator in generators
+                if str(getattr(generator, "NAME", generator.__name__)).lower() == "dynamic worlds"
+            ),
+            next((generator for generator in generators if generator is Basic), generators[0]),
+        )
+        self.apply_selected_generator(default_generator)
+
+    def open_generator_popup(self, _instance: Button) -> None:
+        GeneratorRepository.cache_refresh()
+        items: Dict[str, Type[BaseGenerator]] = {
+            str(getattr(generator, "NAME", generator.__name__)): generator for generator in GeneratorRepository.all()
+        }
+        self.generator_popup = ScrollablePopup(
+            title="Map generator",
+            items=items,
+            on_select=self.select_generator,  # type: ignore[arg-type]
+            cols=2,
+        )
+        self.generator_popup.open()
+
+    def select_generator(self, generator_name: str, value: Type[BaseGenerator] | None) -> None:
+        generator_cls = value or Basic
+        self.apply_selected_generator(generator_cls, generator_name)
+
+    def apply_selected_generator(
+        self,
+        generator_cls: Type[BaseGenerator],
+        display_name: Optional[str] = None,
+    ) -> None:
+        previous_generator = self.selected_generator
+        self.selected_generator = generator_cls
+
+        if previous_generator is generator_cls:
+            self.generator_option_values = generator_cls.sanitize_setup_options(self.generator_option_values)
+        else:
+            self.generator_option_values = generator_cls.get_default_setup_options()
+
+        if self.generator_popup_button is not None:
+            self.generator_popup_button.text = display_name or str(getattr(generator_cls, "NAME", generator_cls.__name__))
+            self.generator_popup_button.set_value(generator_cls)
+
+        if self.generator_description_label is not None:
+            self.generator_description_label.text = str(getattr(generator_cls, "DESCRIPTION", ""))
+
+        self._rebuild_generator_options()
+
+    def _rebuild_generator_options(self) -> None:
+        if self.generator_options_container is None or self.selected_generator is None:
+            return
+
+        self.generator_options_container.clear_widgets()
+        self.generator_option_buttons = {}
+
+        fields = self.selected_generator.get_setup_fields()
+        if not fields:
+            return
+
+        for field in fields:
+            row = BoxLayout(
+                orientation="vertical",
+                size_hint=(1.0, None),
+                height=dp(72),
+                spacing=dp(4),
+            )
+
+            label = SectionLabel(
+                text=field.label,
+                size_hint=(1.0, None),
+                height=dp(20),
+            )
+
+            current_value = self.generator_option_values.get(field.key, field.default)
+            button = ButtonValue(
+                text=self._generator_option_text(field, current_value),
+                value=current_value,
+                size_hint=(1.0, None),
+                height=dp(44),
+            )
+            button.bind(on_release=lambda _instance, setup_field=field: self.open_generator_option_popup(setup_field))  # type: ignore
+
+            row.add_widget(label)
+            row.add_widget(button)
+            self.generator_options_container.add_widget(row)
+
+            self.generator_option_buttons[field.key] = button
+
+    def _generator_option_text(self, field: GeneratorSetupField, value: Any) -> str:
+        for label, option_value in field.choices:
+            if option_value == value:
+                return label
+        return str(field.default)
+
+    def open_generator_option_popup(self, field: GeneratorSetupField) -> None:
+        items = {label: value for label, value in field.choices}
+        popup = ScrollablePopup(
+            title=field.label,
+            items=items,
+            on_select=lambda label, value, setup_field=field: self.select_generator_option(  # type: ignore[arg-type]
+                setup_field,
+                label,
+                value,
+            ),
+            cols=2,
+        )
+        popup.open()
+
+    def select_generator_option(self, field: GeneratorSetupField, label: str, value: Any) -> None:
+        self.generator_option_values[field.key] = value
+
+        button = self.generator_option_buttons.get(field.key)
+        if button is not None:
+            button.text = label
+            button.set_value(value)
+
     def select_civilization(self, civilization_name: str, value: Type[BaseCivilization]) -> None:
         if self.active_civ_row is not None:
             data = self._find_player_row_data(self.active_civ_row)
@@ -845,10 +1023,18 @@ class GameConfigMenu(Screen):
 
         rules: Dict[str, Any] = dict(self.rules_state)
 
+        generator_cls: Type[BaseGenerator] = self.selected_generator or Basic
+        generator_options: Dict[str, Any] = generator_cls.sanitize_setup_options(self.generator_option_values)
+
         start_config: Dict[str, Any] = {
             "options": options,
             "rules": rules,
             "players": players_config,
+            "generator": {
+                "class": generator_cls,
+                "name": str(getattr(generator_cls, "NAME", generator_cls.__name__)),
+                "options": generator_options,
+            },
         }
 
         def send_start_signal(*_args: Any) -> None:

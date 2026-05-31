@@ -60,6 +60,7 @@ cleanup_paths = ["build", "sciv/assets/generated", "sciv/logs/", "sciv/saves/"]
 [tool.poetry]
 authors = ["Scarlett Samantha Verheul <scarlett.verheul@gmail.com>"]
 dependencies.python = "^3.14"
+dependencies.PyQt6 = "*"
 description = "A Python project for Civ-like game"
 license = "GNU General Public License v3 (GPLv3)"
 name = "SCiv"

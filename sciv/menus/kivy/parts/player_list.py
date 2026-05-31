@@ -5,6 +5,7 @@ from direct.showbase.DirectObject import DirectObject
 from gameplay.player import Player
 from helpers.cache import Cache
 from helpers.colors import Colors
+from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.input import MotionEvent  # type:ignore
 from kivy.metrics import dp  # type: ignore
@@ -14,7 +15,6 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from managers.player import PlayerManager
-from panda3d.core import GraphicsWindow  # type:ignore
 
 if TYPE_CHECKING:
     from game import OpenCiv
@@ -26,11 +26,13 @@ class PlayerList(FloatLayout, DirectObject):
         self.base: "OpenCiv" = base
         self.players: Optional[List[Player]] = None
         self.is_build: bool = False
-        self.window: "GraphicsWindow" = self.base.win  # type: ignore
+        self._anchor_x_ratio: float = 0.80
+        self._anchor_top_ratio: float = 0.985
+        self._bound_parent: Widget | None = None
+        self._anchor_refresh = Clock.create_trigger(self._refresh_anchor_position, 0)
         self.background_image = Cache.get_asset_archive().get_kivy_image_object(
             "assets/icons/default/player_portrait.png"
         )
-        self.window_properties = self.window.get_properties()  # type: ignore
         self.size_hint = (None, None)
         self.pos_hint = {}
 
@@ -47,7 +49,42 @@ class PlayerList(FloatLayout, DirectObject):
         self.add_widget(self.grid)
 
         self.grid.bind(size=self.update_position)
+        self.bind(parent=self._on_parent_changed, size=self._on_size_changed)  # type: ignore[arg-type]
         self.disabled = True
+
+    def _on_parent_changed(self, _instance: Widget, parent: Widget | None) -> None:
+        if self._bound_parent is not None:
+            self._bound_parent.unbind(size=self._schedule_anchor_refresh, pos=self._schedule_anchor_refresh)  # type: ignore[arg-type]
+
+        self._bound_parent = parent
+
+        if parent is not None:
+            parent.bind(size=self._schedule_anchor_refresh, pos=self._schedule_anchor_refresh)  # type: ignore[arg-type]
+
+        self._schedule_anchor_refresh()
+
+    def _on_size_changed(self, *_args: Any) -> None:
+        self._schedule_anchor_refresh()
+
+    def _schedule_anchor_refresh(self, *_args: Any) -> None:
+        self._anchor_refresh()
+
+    def _refresh_anchor_position(self, _dt: float) -> None:
+        self.pos = self.get_anchor_position()
+
+    def get_anchor_position(self) -> tuple[float, float]:
+        parent = self.parent
+        if parent is None:
+            parent_width = float(self.base.win.getXSize())  # type: ignore[attr-defined]
+            parent_height = float(self.base.win.getYSize())  # type: ignore[attr-defined]
+        else:
+            parent_width = float(getattr(parent, "width", 0.0) or 0.0)
+            parent_height = float(getattr(parent, "height", 0.0) or 0.0)
+
+        anchor_x = parent_width * self._anchor_x_ratio - float(self.width)
+        anchor_y = parent_height * self._anchor_top_ratio - float(self.height)
+
+        return (max(0.0, anchor_x), max(0.0, anchor_y))
 
     def update_position(self, *args: Any):
         if not self.players or not self.grid.children:
@@ -75,11 +112,8 @@ class PlayerList(FloatLayout, DirectObject):
         self.width = self.grid.width
         self.height = self.grid.height
 
-        win_w: int = self.window_properties.get_x_size()
-        win_h: int = self.window_properties.get_y_size()
-
-        self.pos = (win_w * 0.80 - self.width, win_h * 0.985 - self.height)
         self.grid.pos = (0, 0)
+        self._schedule_anchor_refresh()
 
     def build(self) -> None:
         self.players = list(PlayerManager.all().values())
@@ -91,6 +125,7 @@ class PlayerList(FloatLayout, DirectObject):
             self.grid.add_widget(widget)
 
         self.update_position()
+        self._schedule_anchor_refresh()
         self.is_build = True
 
     def _generate_player_widget(self, player: Player) -> FloatLayout:

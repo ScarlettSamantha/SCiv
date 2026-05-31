@@ -195,6 +195,11 @@
       "description": "Repository documentation."
     },
     {
+      "path": "meta/plans/dynamic_worlds.md",
+      "category": "project",
+      "description": "Repository documentation."
+    },
+    {
       "path": "meta/todo.md",
       "category": "project",
       "description": "Project backlog and improvement list."
@@ -1255,7 +1260,7 @@
       "path": "sciv/managers",
       "description": "Singleton-backed orchestration for game flow, UI, entities, players, and turns.",
       "module_count": 25,
-      "line_count": 5265,
+      "line_count": 5321,
       "key_modules": [
         {
           "path": "sciv/managers/game.py",
@@ -1313,7 +1318,7 @@
             "system.vars",
             "typing"
           ],
-          "line_count": 586,
+          "line_count": 599,
           "parse_error": null
         },
         {
@@ -1467,7 +1472,7 @@
             "system.notification",
             "typing"
           ],
-          "line_count": 508,
+          "line_count": 502,
           "parse_error": null
         },
         {
@@ -1827,7 +1832,7 @@
             "panda3d.core",
             "typing"
           ],
-          "line_count": 323,
+          "line_count": 363,
           "parse_error": null
         },
         {
@@ -1952,7 +1957,7 @@
             "system.vars",
             "typing"
           ],
-          "line_count": 586,
+          "line_count": 599,
           "parse_error": null
         },
         {
@@ -2056,7 +2061,7 @@
             "system.vars",
             "typing"
           ],
-          "line_count": 140,
+          "line_count": 149,
           "parse_error": null
         },
         {
@@ -2226,7 +2231,7 @@
             "system.notification",
             "typing"
           ],
-          "line_count": 508,
+          "line_count": 502,
           "parse_error": null
         },
         {
@@ -2288,8 +2293,8 @@
     {
       "path": "sciv/gameplay",
       "description": "Domain model for players, tiles, cities, units, rules, effects, and other mechanics.",
-      "module_count": 647,
-      "line_count": 26224,
+      "module_count": 650,
+      "line_count": 26713,
       "key_modules": [
         {
           "path": "sciv/gameplay/player.py",
@@ -3063,7 +3068,7 @@
             "system.requires",
             "typing"
           ],
-          "line_count": 179,
+          "line_count": 185,
           "parse_error": null
         },
         {
@@ -3299,12 +3304,14 @@
             "gameplay.ai.memory",
             "gameplay.ai.task",
             "gameplay.cities",
+            "gameplay.founding.site_recommendation",
             "gameplay.personalities.base",
             "gameplay.player",
             "gameplay.player_tiles",
             "gameplay.repositories.tile",
             "gameplay.tile",
             "gameplay.unit",
+            "gameplay.units.core.classes.civilian.settler",
             "gameplay.vision",
             "helpers.cache",
             "logging",
@@ -3316,7 +3323,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 437,
+          "line_count": 450,
           "parse_error": null
         },
         {
@@ -6914,6 +6921,77 @@
           "parse_error": null
         },
         {
+          "path": "sciv/gameplay/founding/__init__.py",
+          "module": "sciv.gameplay.founding",
+          "area": "sciv/gameplay",
+          "summary": "Founding-related scoring and recommendation helpers.",
+          "classes": [],
+          "functions": [],
+          "imports": [],
+          "line_count": 1,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/gameplay/founding/site_recommendation.py",
+          "module": "sciv.gameplay.founding.site_recommendation",
+          "area": "sciv/gameplay",
+          "summary": "Gameplay module for site recommendation.",
+          "classes": [
+            "TileRecommendation"
+          ],
+          "functions": [
+            "_get_map_dimensions",
+            "_resolve_founding_rules",
+            "can_found_city_on_tile",
+            "find_best_founding_tile",
+            "format_founding_recommendations",
+            "recommend_founding_tiles"
+          ],
+          "imports": [
+            "dataclasses",
+            "gameplay.founding.site_scoring",
+            "gameplay.player",
+            "gameplay.repositories.tile",
+            "gameplay.tile",
+            "gameplay.unit",
+            "helpers.cache",
+            "typing"
+          ],
+          "line_count": 141,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/gameplay/founding/site_scoring.py",
+          "module": "sciv.gameplay.founding.site_scoring",
+          "area": "sciv/gameplay",
+          "summary": "Gameplay module for site scoring.",
+          "classes": [
+            "TileScoringProfile"
+          ],
+          "functions": [
+            "_get_map_dimensions",
+            "_has_coastal_access",
+            "_has_feature",
+            "_has_river_edge",
+            "_matches_geoform",
+            "_yield_score",
+            "get_active_map_script",
+            "rank_tiles",
+            "resolve_tile_scoring_profile",
+            "score_tile"
+          ],
+          "imports": [
+            "dataclasses",
+            "gameplay.repositories.tile",
+            "gameplay.tile",
+            "helpers.cache",
+            "system.subsystems.hexgen.enums",
+            "typing"
+          ],
+          "line_count": 261,
+          "parse_error": null
+        },
+        {
           "path": "sciv/gameplay/government.py",
           "module": "sciv.gameplay.government",
           "area": "sciv/gameplay",
@@ -9632,12 +9710,13 @@
           ],
           "functions": [],
           "imports": [
+            "inspect",
             "random",
             "system.generators.base",
             "system.pyload",
             "typing"
           ],
-          "line_count": 33,
+          "line_count": 73,
           "parse_error": null
         },
         {
@@ -14117,6 +14196,7 @@
             "gameplay.actions.unit.found",
             "gameplay.city",
             "gameplay.condition",
+            "gameplay.founding.site_recommendation",
             "gameplay.player",
             "gameplay.promotion",
             "gameplay.techs.pottery",
@@ -14126,7 +14206,7 @@
             "system.requires",
             "typing"
           ],
-          "line_count": 98,
+          "line_count": 125,
           "parse_error": null
         },
         {
@@ -14781,8 +14861,8 @@
     {
       "path": "sciv/system",
       "description": "Engine-facing systems such as rendering, save/load helpers, generators, and effects.",
-      "module_count": 38,
-      "line_count": 8785,
+      "module_count": 51,
+      "line_count": 12601,
       "key_modules": [
         {
           "path": "sciv/system/entity.py",
@@ -14917,13 +14997,14 @@
             "gameplay.repositories.tile",
             "gameplay.resource",
             "gameplay.tile",
-            "helpers.tiles",
             "managers",
             "managers.entity",
             "random",
             "system.game_settings",
             "system.generators.base",
+            "system.generators.map_params",
             "system.generators.resource_allocator",
+            "system.generators.terrain_conversion",
             "system.pyload",
             "system.subsystems.hexgen.enums",
             "system.subsystems.hexgen.grid",
@@ -14934,7 +15015,7 @@
             "weakref",
             "zlib"
           ],
-          "line_count": 505,
+          "line_count": 312,
           "parse_error": null
         },
         {
@@ -15089,7 +15170,6 @@
             "gameplay.civilizations.rome",
             "managers.entity",
             "system.generators.base",
-            "system.generators.basic",
             "typing"
           ],
           "line_count": 58,
@@ -15295,7 +15375,6 @@
             "gameplay.civilizations.rome",
             "managers.entity",
             "system.generators.base",
-            "system.generators.basic",
             "typing"
           ],
           "line_count": 58,
@@ -15308,11 +15387,12 @@
           "summary": "System module for base.",
           "classes": [
             "BaseGenerator",
-            "WorldParams"
+            "GeneratorSetupField"
           ],
           "functions": [],
           "imports": [
             "abc",
+            "dataclasses",
             "datetime",
             "game",
             "gameplay.ai.implementations.barbarians",
@@ -15339,10 +15419,11 @@
             "managers.world",
             "random",
             "system.game_settings",
+            "system.generators",
             "system.tile_grid",
             "typing"
           ],
-          "line_count": 400,
+          "line_count": 405,
           "parse_error": null
         },
         {
@@ -15362,13 +15443,14 @@
             "gameplay.repositories.tile",
             "gameplay.resource",
             "gameplay.tile",
-            "helpers.tiles",
             "managers",
             "managers.entity",
             "random",
             "system.game_settings",
             "system.generators.base",
+            "system.generators.map_params",
             "system.generators.resource_allocator",
+            "system.generators.terrain_conversion",
             "system.pyload",
             "system.subsystems.hexgen.enums",
             "system.subsystems.hexgen.grid",
@@ -15379,7 +15461,350 @@
             "weakref",
             "zlib"
           ],
-          "line_count": 505,
+          "line_count": 312,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/debug_export.py",
+          "module": "sciv.system.generators.debug_export",
+          "area": "sciv/system",
+          "summary": "System module for debug export.",
+          "classes": [],
+          "functions": [
+            "_build_named_regions",
+            "_build_river_hex_index",
+            "_build_summary",
+            "_coord_key",
+            "_is_visible",
+            "_serialize_geoform",
+            "_serialize_hex",
+            "_serialize_named_region",
+            "_serialize_rivers",
+            "_serialize_territory",
+            "build_generator_export_payload",
+            "build_raw_world_payload",
+            "default_worldgen_export_dir",
+            "json_compatible",
+            "resolve_worldgen_export_dir",
+            "write_worldgen_export"
+          ],
+          "imports": [
+            "datetime",
+            "enum",
+            "gzip",
+            "helpers.paths",
+            "math",
+            "numpy",
+            "orjson",
+            "pathlib",
+            "system.generators.base",
+            "system.generators.dynamic_worlds.biomes",
+            "system.generators.dynamic_worlds.landmasses",
+            "system.generators.dynamic_worlds.rivers",
+            "system.subsystems.hexgen.geoform",
+            "system.subsystems.hexgen.hex",
+            "system.subsystems.hexgen.mapgen",
+            "system.subsystems.hexgen.river",
+            "system.subsystems.hexgen.territory",
+            "typing",
+            "uuid"
+          ],
+          "line_count": 488,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic.py",
+          "module": "sciv.system.generators.dynamic",
+          "area": "sciv/system",
+          "summary": "System module for dynamic.",
+          "classes": [
+            "Dynamic"
+          ],
+          "functions": [],
+          "imports": [
+            "datetime",
+            "direct.showbase",
+            "gameplay.founding.site_scoring",
+            "gameplay.repositories.tile",
+            "gameplay.tile",
+            "gameplay.units.core.classes.civilian.settler",
+            "gameplay.units.core.classes.military.club_man",
+            "managers",
+            "managers.entity",
+            "managers.player",
+            "system.generators.base",
+            "system.generators.basic",
+            "system.generators.dynamic_worlds",
+            "system.generators.dynamic_worlds.coastline",
+            "system.generators.dynamic_worlds.mapgen",
+            "system.generators.resource_allocator",
+            "system.tile_grid",
+            "typing"
+          ],
+          "line_count": 459,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/__init__.py",
+          "module": "sciv.system.generators.dynamic_worlds",
+          "area": "sciv/system",
+          "summary": "Package module for sciv/system/generators/dynamic_worlds.",
+          "classes": [],
+          "functions": [],
+          "imports": [
+            "system.generators.dynamic_worlds.biomes",
+            "system.generators.dynamic_worlds.landmasses",
+            "system.generators.dynamic_worlds.mapgen",
+            "system.generators.dynamic_worlds.profiles",
+            "system.generators.dynamic_worlds.rivers"
+          ],
+          "line_count": 42,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/biomes.py",
+          "module": "sciv.system.generators.dynamic_worlds.biomes",
+          "area": "sciv/system",
+          "summary": "System module for biomes.",
+          "classes": [],
+          "functions": [
+            "_estimate_rain_shadow",
+            "apply_biome_region_names",
+            "apply_biome_style_profile",
+            "build_named_biome_regions"
+          ],
+          "imports": [
+            "collections",
+            "collections.abc",
+            "gameplay.tile",
+            "system.generators.dynamic_worlds.models",
+            "system.generators.dynamic_worlds.names",
+            "system.subsystems.hexgen.enums",
+            "system.subsystems.hexgen.grid",
+            "system.subsystems.hexgen.hex",
+            "typing",
+            "uuid"
+          ],
+          "line_count": 202,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/coastline.py",
+          "module": "sciv.system.generators.dynamic_worlds.coastline",
+          "area": "sciv/system",
+          "summary": "System module for coastline.",
+          "classes": [],
+          "functions": [
+            "apply_scripted_coastline_polish"
+          ],
+          "imports": [
+            "system.subsystems.hexgen.enums",
+            "system.subsystems.hexgen.grid",
+            "system.subsystems.hexgen.hex",
+            "typing"
+          ],
+          "line_count": 56,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/landmasses.py",
+          "module": "sciv.system.generators.dynamic_worlds.landmasses",
+          "area": "sciv/system",
+          "summary": "System module for landmasses.",
+          "classes": [],
+          "functions": [
+            "_apply_basin_cut",
+            "_apply_curve_cut",
+            "_blob_field",
+            "_build_landmass_mask",
+            "_carve_channels",
+            "_carve_inland_seas",
+            "_channel_curve_points",
+            "_compress_mountain_peaks",
+            "_geoform_title",
+            "_grid_axes",
+            "_normalized_axes",
+            "_random_blob_specs",
+            "_refresh_heightmap_stats",
+            "_smooth_heightmap",
+            "_wave_field",
+            "apply_landmass_heightmap_profile",
+            "apply_landmass_names",
+            "build_named_landmasses"
+          ],
+          "imports": [
+            "collections.abc",
+            "gameplay.tile",
+            "math",
+            "numpy",
+            "random",
+            "system.generators.dynamic_worlds.models",
+            "system.generators.dynamic_worlds.names",
+            "system.subsystems.hexgen.enums",
+            "system.subsystems.hexgen.geoform",
+            "system.subsystems.hexgen.heightmap",
+            "typing"
+          ],
+          "line_count": 428,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/mapgen.py",
+          "module": "sciv.system.generators.dynamic_worlds.mapgen",
+          "area": "sciv/system",
+          "summary": "System module for mapgen.",
+          "classes": [
+            "DynamicMapGen"
+          ],
+          "functions": [],
+          "imports": [
+            "helpers.debug",
+            "sys",
+            "system.generators.dynamic_worlds.biomes",
+            "system.generators.dynamic_worlds.landmasses",
+            "system.generators.dynamic_worlds.rivers",
+            "system.subsystems.hexgen.geoform",
+            "system.subsystems.hexgen.grid",
+            "system.subsystems.hexgen.heightmap",
+            "system.subsystems.hexgen.hex",
+            "system.subsystems.hexgen.mapgen",
+            "system.subsystems.hexgen.river",
+            "system.subsystems.hexgen.territory",
+            "typing"
+          ],
+          "line_count": 137,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/models.py",
+          "module": "sciv.system.generators.dynamic_worlds.models",
+          "area": "sciv/system",
+          "summary": "System module for models.",
+          "classes": [
+            "DynamicOptionProfile",
+            "NamedBiomeRegion",
+            "NamedLandmass",
+            "NamedRiver"
+          ],
+          "functions": [],
+          "imports": [
+            "dataclasses",
+            "typing"
+          ],
+          "line_count": 69,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/names.py",
+          "module": "sciv.system.generators.dynamic_worlds.names",
+          "area": "sciv/system",
+          "summary": "System module for names.",
+          "classes": [],
+          "functions": [
+            "_build_root",
+            "_unique_name",
+            "build_seeded_rng",
+            "generate_biome_region_name",
+            "generate_landmass_name",
+            "generate_river_name"
+          ],
+          "imports": [
+            "random",
+            "system.subsystems.hexgen.enums",
+            "typing"
+          ],
+          "line_count": 141,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/profiles.py",
+          "module": "sciv.system.generators.dynamic_worlds.profiles",
+          "area": "sciv/system",
+          "summary": "System module for profiles.",
+          "classes": [],
+          "functions": [
+            "_clamp_float",
+            "_clamp_int",
+            "biome_style_choices",
+            "build_dynamic_map_params",
+            "get_biome_style_profile_name",
+            "get_dynamic_tile_scoring_profile",
+            "get_landmass_profile_name",
+            "landmass_choices",
+            "ocean_connectivity_choices",
+            "river_amount_choices",
+            "river_length_choices",
+            "river_network_choices",
+            "tributary_choices"
+          ],
+          "imports": [
+            "dataclasses",
+            "gameplay.founding.site_scoring",
+            "system.generators.dynamic_worlds.models",
+            "typing"
+          ],
+          "line_count": 621,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/dynamic_worlds/rivers.py",
+          "module": "sciv.system.generators.dynamic_worlds.rivers",
+          "area": "sciv/system",
+          "summary": "System module for rivers.",
+          "classes": [],
+          "functions": [
+            "_apply_chain_metadata",
+            "_candidate_branch_path",
+            "_carve_river_valleys",
+            "_chain_hexes",
+            "_chain_segments",
+            "_commit_branch_path",
+            "_count_new_path_edges",
+            "_grow_distributaries",
+            "_grow_river_connectors",
+            "_grow_tributaries",
+            "_path_is_viable",
+            "_resolve_mouth_coord",
+            "_river_hex_network_index",
+            "_river_network_id",
+            "_sample_indices",
+            "_set_segment_metadata",
+            "_straight_line_hex_path",
+            "_trace_tributary",
+            "apply_dynamic_river_profile",
+            "apply_river_names",
+            "build_named_rivers"
+          ],
+          "imports": [
+            "collections.abc",
+            "gameplay.tile",
+            "numpy",
+            "system.generators.dynamic_worlds.models",
+            "system.generators.dynamic_worlds.names",
+            "system.subsystems.hexgen.edge",
+            "system.subsystems.hexgen.enums",
+            "system.subsystems.hexgen.hex",
+            "system.subsystems.hexgen.mapgen",
+            "system.subsystems.hexgen.river",
+            "typing"
+          ],
+          "line_count": 798,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/map_params.py",
+          "module": "sciv.system.generators.map_params",
+          "area": "sciv/system",
+          "summary": "System module for map params.",
+          "classes": [],
+          "functions": [
+            "build_basic_map_params"
+          ],
+          "imports": [
+            "system.subsystems.hexgen.enums",
+            "typing"
+          ],
+          "line_count": 34,
           "parse_error": null
         },
         {
@@ -15400,6 +15825,31 @@
             "typing"
           ],
           "line_count": 242,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/generators/terrain_conversion.py",
+          "module": "sciv.system.generators.terrain_conversion",
+          "area": "sciv/system",
+          "summary": "System module for terrain conversion.",
+          "classes": [
+            "WorldParams"
+          ],
+          "functions": [
+            "adjust_water_levels",
+            "biome_id_for_hex",
+            "classify_hex_terrain",
+            "classify_visible_hexes",
+            "desertize_adjacent_tundra",
+            "promote_single_sea_between_coasts"
+          ],
+          "imports": [
+            "collections.abc",
+            "helpers.tiles",
+            "system.subsystems.hexgen.enums",
+            "typing"
+          ],
+          "line_count": 285,
           "parse_error": null
         },
         {
@@ -15742,7 +16192,7 @@
             "random",
             "typing"
           ],
-          "line_count": 82,
+          "line_count": 84,
           "parse_error": null
         },
         {
@@ -15795,7 +16245,7 @@
             "system.subsystems.hexgen.util",
             "typing"
           ],
-          "line_count": 949,
+          "line_count": 1191,
           "parse_error": null
         },
         {
@@ -15985,7 +16435,7 @@
       "path": "sciv/menus",
       "description": "Kivy application and screen/widget layers.",
       "module_count": 55,
-      "line_count": 15230,
+      "line_count": 15626,
       "key_modules": [
         {
           "path": "sciv/menus/kivy/core.py",
@@ -16086,7 +16536,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 1174,
+          "line_count": 1180,
           "parse_error": null
         },
         {
@@ -16287,7 +16737,7 @@
             "kivy.uix.widget",
             "typing"
           ],
-          "line_count": 293,
+          "line_count": 309,
           "parse_error": null
         }
       ],
@@ -16517,7 +16967,7 @@
             "kivy.uix.widget",
             "typing"
           ],
-          "line_count": 293,
+          "line_count": 309,
           "parse_error": null
         },
         {
@@ -17234,7 +17684,7 @@
             "system.camera",
             "typing"
           ],
-          "line_count": 1628,
+          "line_count": 1637,
           "parse_error": null
         },
         {
@@ -17339,6 +17789,7 @@
             "gameplay.player",
             "helpers.cache",
             "helpers.colors",
+            "kivy.clock",
             "kivy.graphics",
             "kivy.input",
             "kivy.metrics",
@@ -17348,10 +17799,9 @@
             "kivy.uix.label",
             "kivy.uix.widget",
             "managers.player",
-            "panda3d.core",
             "typing"
           ],
-          "line_count": 165,
+          "line_count": 200,
           "parse_error": null
         },
         {
@@ -17619,6 +18069,7 @@
             "gameplay.civilization",
             "gameplay.leader",
             "gameplay.repositories.civilization",
+            "gameplay.repositories.generators",
             "gameplay.repositories.leader",
             "gameplay.rules",
             "helpers.cache",
@@ -17629,6 +18080,7 @@
             "kivy.uix.button",
             "kivy.uix.checkbox",
             "kivy.uix.floatlayout",
+            "kivy.uix.gridlayout",
             "kivy.uix.image",
             "kivy.uix.label",
             "kivy.uix.popup",
@@ -17640,9 +18092,11 @@
             "menus.kivy.elements.menu_styled",
             "menus.kivy.elements.scrollable_popup",
             "panda3d.core",
+            "system.generators.base",
+            "system.generators.basic",
             "typing"
           ],
-          "line_count": 860,
+          "line_count": 1046,
           "parse_error": null
         },
         {
@@ -17717,7 +18171,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 1174,
+          "line_count": 1180,
           "parse_error": null
         },
         {
@@ -17767,11 +18221,13 @@
             "managers.i18n",
             "menus.kivy.elements.clickable_label",
             "menus.kivy.elements.menu_styled",
+            "menus.screens.options_menu",
+            "system.generators.dynamic",
             "system.vars",
             "typing",
             "webbrowser"
           ],
-          "line_count": 242,
+          "line_count": 261,
           "parse_error": null
         },
         {
@@ -17804,7 +18260,7 @@
             "menus.kivy.elements.menu_styled",
             "typing"
           ],
-          "line_count": 850,
+          "line_count": 969,
           "parse_error": null
         },
         {
@@ -17830,9 +18286,10 @@
             "kivy.uix.widget",
             "managers.i18n",
             "menus.kivy.mixins.collidable",
+            "menus.screens.options_menu",
             "typing"
           ],
-          "line_count": 156,
+          "line_count": 162,
           "parse_error": null
         },
         {
@@ -17860,7 +18317,7 @@
       "path": "sciv/helpers",
       "description": "Stateless utilities and runtime helper functions.",
       "module_count": 19,
-      "line_count": 2238,
+      "line_count": 2265,
       "key_modules": [
         {
           "path": "sciv/helpers/__init__.py",
@@ -17984,10 +18441,11 @@
             "subprocess",
             "sys",
             "system.generators.base",
+            "system.generators.debug_export",
             "system.vars",
             "typing"
           ],
-          "line_count": 671,
+          "line_count": 698,
           "parse_error": null
         },
         {
@@ -18234,10 +18692,11 @@
             "subprocess",
             "sys",
             "system.generators.base",
+            "system.generators.debug_export",
             "system.vars",
             "typing"
           ],
-          "line_count": 671,
+          "line_count": 698,
           "parse_error": null
         },
         {
@@ -19235,8 +19694,8 @@
     {
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
-      "module_count": 8,
-      "line_count": 2388,
+      "module_count": 13,
+      "line_count": 6690,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -19411,6 +19870,28 @@
           "parse_error": null
         },
         {
+          "path": "scripts/export_worldgen.py",
+          "module": "scripts.export_worldgen",
+          "area": "scripts",
+          "summary": "Generate raw SCiv worldgen debug exports without launching the full game runtime.",
+          "classes": [],
+          "functions": [
+            "main",
+            "parse_args",
+            "parse_option_pairs",
+            "resolve_batch_count"
+          ],
+          "imports": [
+            "argparse",
+            "datetime",
+            "pathlib",
+            "typing",
+            "worldgen_generation_support"
+          ],
+          "line_count": 169,
+          "parse_error": null
+        },
+        {
           "path": "scripts/inspector_tester.py",
           "module": "scripts.inspector_tester",
           "area": "scripts",
@@ -19468,6 +19949,191 @@
             "kivy.uix.popup"
           ],
           "line_count": 40,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_asset_preview_support.py",
+          "module": "scripts.worldgen_asset_preview_support",
+          "area": "scripts",
+          "summary": "Asset preview helpers for the standalone worldgen viewer.",
+          "classes": [
+            "AssetPreviewInfo",
+            "_ModelPreviewRenderer"
+          ],
+          "functions": [
+            "_assignment_target_name",
+            "_assignment_value",
+            "_extract_class_metadata_from_def",
+            "_float_value",
+            "_get_model_preview_renderer",
+            "_literal_value",
+            "_model_preview_cache_key",
+            "_module_file_from_module_path",
+            "_module_name_from_path",
+            "_normalize_identifier",
+            "_parse_class_metadata",
+            "_parse_module",
+            "_resolve_model_path",
+            "_resolve_repo_asset_path",
+            "_resolve_resource_model_path",
+            "_resolve_terrain_texture_paths",
+            "_resource_metadata_by_key",
+            "_self_attribute_name",
+            "_string_or_none",
+            "_terrain_previews_by_key",
+            "_vector3",
+            "format_asset_preview_metadata",
+            "preview_path_text",
+            "render_model_preview_image",
+            "resolve_resource_asset_preview",
+            "resolve_terrain_asset_preview"
+          ],
+          "imports": [
+            "ast",
+            "dataclasses",
+            "direct.showbase.ShowBase",
+            "functools",
+            "hashlib",
+            "panda3d.core",
+            "pathlib",
+            "tempfile",
+            "worldgen_generation_support",
+            "worldgen_viewer_support"
+          ],
+          "line_count": 554,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_generation_support.py",
+          "module": "scripts.worldgen_generation_support",
+          "area": "scripts",
+          "summary": "Shared offline world-generation helpers for export and preview tooling.",
+          "classes": [
+            "OfflineGeneratorSpec",
+            "OfflineOptionSpec",
+            "_FallbackConfigManager",
+            "_OfflineRuntimeTileProxy"
+          ],
+          "functions": [
+            "_allocate_offline_resources",
+            "_build_dynamic_runtime_region_maps",
+            "_build_offline_resource_grid",
+            "_build_offline_runtime_tiles",
+            "_load_fallback_config_manager",
+            "_load_ocean_connectivity_choices",
+            "_load_offline_terrain_instances",
+            "_load_profile_choices",
+            "_load_river_choices",
+            "_prepare_offline_hexes_for_export",
+            "_report_progress",
+            "_serialize_runtime_resource_key",
+            "_temporary_working_directory",
+            "_terrain_name_to_runtime_key",
+            "build_world",
+            "ensure_offline_worldgen_bootstrap",
+            "generate_random_seed",
+            "generate_world_payload",
+            "get_config_manager",
+            "get_offline_generators",
+            "json_ready",
+            "list_offline_generators",
+            "resolve_offline_generator",
+            "write_world_payload"
+          ],
+          "imports": [
+            "contextlib",
+            "dataclasses",
+            "gameplay.repositories.resources",
+            "gameplay.resource",
+            "importlib",
+            "json",
+            "managers.config",
+            "managers.log",
+            "os",
+            "pathlib",
+            "random",
+            "sys",
+            "system.generators.debug_export",
+            "system.generators.dynamic_worlds.biomes",
+            "system.generators.dynamic_worlds.coastline",
+            "system.generators.dynamic_worlds.landmasses",
+            "system.generators.dynamic_worlds.mapgen",
+            "system.generators.dynamic_worlds.profiles",
+            "system.generators.dynamic_worlds.rivers",
+            "system.generators.map_params",
+            "system.generators.resource_allocator",
+            "system.generators.terrain_conversion",
+            "system.subsystems.hexgen.enums",
+            "system.subsystems.hexgen.mapgen",
+            "typing"
+          ],
+          "line_count": 824,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer.py",
+          "module": "scripts.worldgen_viewer",
+          "area": "scripts",
+          "summary": "Repository utility script for worldgen viewer.",
+          "classes": [
+            "AssetPreviewGroupWidget",
+            "HexItem",
+            "LegendEntrySpec",
+            "LegendEntryWidget",
+            "MapView",
+            "PreviewGenerationRequest",
+            "PreviewGenerationWorker",
+            "PreviewSurfaceWidget",
+            "WorldgenViewerWindow"
+          ],
+          "functions": [
+            "_altitude_bucket_label",
+            "_altitude_color",
+            "_blend",
+            "_build_generated_label_text",
+            "_coord_from_between_value",
+            "_edge_points_for_side",
+            "_heightmap_sealevel",
+            "_hex_center",
+            "_hex_polygon",
+            "_moisture_bucket_label",
+            "_moisture_color",
+            "_neighbor_coord_for_side",
+            "_overlay_water_label",
+            "_resource_color",
+            "_resource_label",
+            "_river_line",
+            "_river_role_label",
+            "_river_segment_key",
+            "_runtime_resource_key",
+            "_runtime_terrain_color",
+            "_runtime_terrain_key",
+            "_runtime_terrain_label",
+            "_runtime_terrain_land_color",
+            "_stable_color",
+            "_title_from_identifier",
+            "_water_color_for_record",
+            "_water_color_from_kind",
+            "build_arg_parser",
+            "main"
+          ],
+          "imports": [
+            "PyQt6.QtCore",
+            "PyQt6.QtGui",
+            "PyQt6.QtWidgets",
+            "argparse",
+            "collections",
+            "dataclasses",
+            "hashlib",
+            "math",
+            "pathlib",
+            "sys",
+            "typing",
+            "worldgen_asset_preview_support",
+            "worldgen_generation_support",
+            "worldgen_viewer_support"
+          ],
+          "line_count": 2233,
           "parse_error": null
         }
       ],
@@ -19554,6 +20220,28 @@
             "sys"
           ],
           "line_count": 35,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/export_worldgen.py",
+          "module": "scripts.export_worldgen",
+          "area": "scripts",
+          "summary": "Generate raw SCiv worldgen debug exports without launching the full game runtime.",
+          "classes": [],
+          "functions": [
+            "main",
+            "parse_args",
+            "parse_option_pairs",
+            "resolve_batch_count"
+          ],
+          "imports": [
+            "argparse",
+            "datetime",
+            "pathlib",
+            "typing",
+            "worldgen_generation_support"
+          ],
+          "line_count": 169,
           "parse_error": null
         },
         {
@@ -19702,6 +20390,237 @@
             "kivy.uix.popup"
           ],
           "line_count": 40,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_asset_preview_support.py",
+          "module": "scripts.worldgen_asset_preview_support",
+          "area": "scripts",
+          "summary": "Asset preview helpers for the standalone worldgen viewer.",
+          "classes": [
+            "AssetPreviewInfo",
+            "_ModelPreviewRenderer"
+          ],
+          "functions": [
+            "_assignment_target_name",
+            "_assignment_value",
+            "_extract_class_metadata_from_def",
+            "_float_value",
+            "_get_model_preview_renderer",
+            "_literal_value",
+            "_model_preview_cache_key",
+            "_module_file_from_module_path",
+            "_module_name_from_path",
+            "_normalize_identifier",
+            "_parse_class_metadata",
+            "_parse_module",
+            "_resolve_model_path",
+            "_resolve_repo_asset_path",
+            "_resolve_resource_model_path",
+            "_resolve_terrain_texture_paths",
+            "_resource_metadata_by_key",
+            "_self_attribute_name",
+            "_string_or_none",
+            "_terrain_previews_by_key",
+            "_vector3",
+            "format_asset_preview_metadata",
+            "preview_path_text",
+            "render_model_preview_image",
+            "resolve_resource_asset_preview",
+            "resolve_terrain_asset_preview"
+          ],
+          "imports": [
+            "ast",
+            "dataclasses",
+            "direct.showbase.ShowBase",
+            "functools",
+            "hashlib",
+            "panda3d.core",
+            "pathlib",
+            "tempfile",
+            "worldgen_generation_support",
+            "worldgen_viewer_support"
+          ],
+          "line_count": 554,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_generation_support.py",
+          "module": "scripts.worldgen_generation_support",
+          "area": "scripts",
+          "summary": "Shared offline world-generation helpers for export and preview tooling.",
+          "classes": [
+            "OfflineGeneratorSpec",
+            "OfflineOptionSpec",
+            "_FallbackConfigManager",
+            "_OfflineRuntimeTileProxy"
+          ],
+          "functions": [
+            "_allocate_offline_resources",
+            "_build_dynamic_runtime_region_maps",
+            "_build_offline_resource_grid",
+            "_build_offline_runtime_tiles",
+            "_load_fallback_config_manager",
+            "_load_ocean_connectivity_choices",
+            "_load_offline_terrain_instances",
+            "_load_profile_choices",
+            "_load_river_choices",
+            "_prepare_offline_hexes_for_export",
+            "_report_progress",
+            "_serialize_runtime_resource_key",
+            "_temporary_working_directory",
+            "_terrain_name_to_runtime_key",
+            "build_world",
+            "ensure_offline_worldgen_bootstrap",
+            "generate_random_seed",
+            "generate_world_payload",
+            "get_config_manager",
+            "get_offline_generators",
+            "json_ready",
+            "list_offline_generators",
+            "resolve_offline_generator",
+            "write_world_payload"
+          ],
+          "imports": [
+            "contextlib",
+            "dataclasses",
+            "gameplay.repositories.resources",
+            "gameplay.resource",
+            "importlib",
+            "json",
+            "managers.config",
+            "managers.log",
+            "os",
+            "pathlib",
+            "random",
+            "sys",
+            "system.generators.debug_export",
+            "system.generators.dynamic_worlds.biomes",
+            "system.generators.dynamic_worlds.coastline",
+            "system.generators.dynamic_worlds.landmasses",
+            "system.generators.dynamic_worlds.mapgen",
+            "system.generators.dynamic_worlds.profiles",
+            "system.generators.dynamic_worlds.rivers",
+            "system.generators.map_params",
+            "system.generators.resource_allocator",
+            "system.generators.terrain_conversion",
+            "system.subsystems.hexgen.enums",
+            "system.subsystems.hexgen.mapgen",
+            "typing"
+          ],
+          "line_count": 824,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer.py",
+          "module": "scripts.worldgen_viewer",
+          "area": "scripts",
+          "summary": "Repository utility script for worldgen viewer.",
+          "classes": [
+            "AssetPreviewGroupWidget",
+            "HexItem",
+            "LegendEntrySpec",
+            "LegendEntryWidget",
+            "MapView",
+            "PreviewGenerationRequest",
+            "PreviewGenerationWorker",
+            "PreviewSurfaceWidget",
+            "WorldgenViewerWindow"
+          ],
+          "functions": [
+            "_altitude_bucket_label",
+            "_altitude_color",
+            "_blend",
+            "_build_generated_label_text",
+            "_coord_from_between_value",
+            "_edge_points_for_side",
+            "_heightmap_sealevel",
+            "_hex_center",
+            "_hex_polygon",
+            "_moisture_bucket_label",
+            "_moisture_color",
+            "_neighbor_coord_for_side",
+            "_overlay_water_label",
+            "_resource_color",
+            "_resource_label",
+            "_river_line",
+            "_river_role_label",
+            "_river_segment_key",
+            "_runtime_resource_key",
+            "_runtime_terrain_color",
+            "_runtime_terrain_key",
+            "_runtime_terrain_label",
+            "_runtime_terrain_land_color",
+            "_stable_color",
+            "_title_from_identifier",
+            "_water_color_for_record",
+            "_water_color_from_kind",
+            "build_arg_parser",
+            "main"
+          ],
+          "imports": [
+            "PyQt6.QtCore",
+            "PyQt6.QtGui",
+            "PyQt6.QtWidgets",
+            "argparse",
+            "collections",
+            "dataclasses",
+            "hashlib",
+            "math",
+            "pathlib",
+            "sys",
+            "typing",
+            "worldgen_asset_preview_support",
+            "worldgen_generation_support",
+            "worldgen_viewer_support"
+          ],
+          "line_count": 2233,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_support.py",
+          "module": "scripts.worldgen_viewer_support",
+          "area": "scripts",
+          "summary": "Repository utility script for worldgen viewer support.",
+          "classes": [
+            "HexRecord",
+            "ManifestEntry",
+            "NamedRegionRecord",
+            "WorldgenDump"
+          ],
+          "functions": [
+            "_coord_from_key",
+            "_coord_tuple",
+            "_dict_value",
+            "_format_runtime_terrain_text",
+            "_optional_nested_str",
+            "_optional_str",
+            "_runtime_flag",
+            "_terrain_display_name",
+            "describe_hex_classification",
+            "format_dump_summary",
+            "format_hex_details",
+            "format_hex_tooltip",
+            "load_json_document",
+            "load_manifest",
+            "load_worldgen_dump",
+            "load_worldgen_payload",
+            "resource_display_category",
+            "resource_display_name",
+            "resource_display_text",
+            "river_branch_kinds_for_record",
+            "river_network_ids_for_record",
+            "river_role_label",
+            "terrain_display_name"
+          ],
+          "imports": [
+            "dataclasses",
+            "gzip",
+            "json",
+            "pathlib",
+            "typing"
+          ],
+          "line_count": 522,
           "parse_error": null
         }
       ]

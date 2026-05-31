@@ -46,7 +46,10 @@ class Debug:
 
     _system_info: Optional[Dict[str, Any]] = None
 
-    config_instance_ref = ConfigManager.get_singleton_instance()
+    try:
+        config_instance_ref = ConfigManager.get_singleton_instance()
+    except ValueError:
+        config_instance_ref = ConfigManager()
     debug: bool = config_instance_ref.get_debug_mode()
     debug_modes: Dict[Debugs, bool] = {
         Debugs.WORLD_GENERATION: config_instance_ref.get_by_key(
@@ -113,6 +116,17 @@ class Debug:
         return cls._check_with_override(
             Debugs.WORLD_GENERATION,
             override,
+        )
+
+    @classmethod
+    def should_export_world_generation(cls) -> bool:
+        config = ConfigManager.get_singleton_instance()
+        return bool(
+            config.get_debug_mode()
+            and (
+                config.get_world_generation_export_enabled()
+                or config.get_debug_flag(Debugs.WORLD_GENERATION.value)
+            )
         )
 
     @classmethod
@@ -514,17 +528,23 @@ class Debug:
 
     @classmethod
     def dump_map_generation_data(cls, generator: "BaseGenerator", tiles: List["Tile"]) -> None:
-        json_data: bytes = json.dumps(cls.dump_map(generator.debug_dump_data, tiles))
-        debug_dir: str = str(Path(PathsHelper.get_debug_dir()) / "map_dumps")
+        from system.generators.debug_export import build_generator_export_payload, write_worldgen_export
+
+        config = ConfigManager.get_singleton_instance()
+        tile_dump = {f"{tile.x}, {tile.y}": cls.debug_dump_tile(tile) for tile in tiles}
+        payload = build_generator_export_payload(generator, runtime_tiles=tile_dump)
+
         timestamp: str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        generator_slug = re.sub(r"[^a-z0-9]+", "_", str(getattr(generator, "NAME", generator.__class__.__name__)).lower()).strip("_")
+        seed = getattr(generator, "seed", getattr(getattr(generator, "config", None), "seed", None))
+        seed_suffix = f"_seed_{seed}" if seed is not None else ""
 
-        if not Path(debug_dir).exists():
-            Path(debug_dir).mkdir(parents=True, exist_ok=True)
-
-        file_path: str = f"{debug_dir}/map_{timestamp}.json"
-        fp: gzip.GzipFile = gzip.open(file_path + ".gz", "wb")
-        fp.write(json_data)
-        fp.close()
+        file_path = write_worldgen_export(
+            payload,
+            export_dir=config.get_world_generation_export_dir(),
+            file_stem=f"runtime_{generator_slug}_{timestamp}{seed_suffix}",
+        )
+        logging.info("World generation export written to %s", file_path)
 
     @classmethod
     def dump_map(cls, data: Dict[str, Any], tiles: List["Tile"]) -> Dict[str, Any]:
@@ -538,6 +558,7 @@ class Debug:
 
         resources: List[BaseResource] = list(tile.resources.flatten_non_mechanic().values())
         resource: BaseResource | None = resources[0] if len(resources) > 0 else None
+        geoform = getattr(tile, "geoforms", None)
         data: Dict[str, Any] = {
             "x": tile.x,
             "y": tile.y,
@@ -550,9 +571,15 @@ class Debug:
             "is_coast": tile.is_coast,
             "is_sea": tile.is_sea,
             "is_lake": tile.is_lake,
-            "geoform_type": tile.geoforms,
+            "geoform_type": getattr(geoform, "name", str(geoform) if geoform is not None else None),
             "features": [str(f) for f in tile.features],
             "resource": resource.key if resource else None,
+            "landmass_name": getattr(tile, "landmass_name", None),
+            "landmass_type": getattr(tile, "landmass_type", None),
+            "biome_region_name": getattr(tile, "biome_region_name", None),
+            "biome_region_type": getattr(tile, "biome_region_type", None),
+            "river_names": list(getattr(tile, "river_names", [])),
+            "primary_river_name": getattr(tile, "primary_river_name", None),
         }
         return data
 

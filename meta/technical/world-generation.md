@@ -11,7 +11,9 @@ This document covers SCiv's **new-game** world generation path: how a start-game
 - This page covers the **new-game generation path**, not save/load restoration.
 - [`Game.load()`](../../sciv/managers/game.py) restores persisted entities and bypasses generator code.
 - [`World.generate()`](../../sciv/managers/world.py) only configures world dimensions and spacing. It does **not** instantiate gameplay tiles by itself. The runtime world-container contract lives in [World System](world-system.md).
-- The default generator is [`Basic`](../../sciv/system/generators/basic.py), which bridges the lower-level hexgen pipeline into gameplay tiles.
+- [`Basic`](../../sciv/system/generators/basic.py) remains the baseline generator implementation that bridges the lower-level hexgen pipeline into gameplay tiles.
+- SCiv also ships [`Dynamic`](../../sciv/system/generators/dynamic.py), a separate preset-driven generator that layers map-script and climate options on top of the same hexgen pipeline.
+- The pregame config screen and the debug quick-start path currently default to [`Dynamic`](../../sciv/system/generators/dynamic.py), while keeping `Basic` available as an explicit selector choice.
 
 ## Ownership snapshot
 
@@ -21,6 +23,7 @@ This document covers SCiv's **new-game** world generation path: how a start-game
 | World runtime container | [`sciv/managers/world.py`](../../sciv/managers/world.py) | Owns map dimensions, world spacing, the authoritative gameplay tile grid, and world-level lookup helpers. |
 | Generator contract | [`sciv/system/generators/base.py`](../../sciv/system/generators/base.py) | Defines the generator API, shared player setup, debug metadata, and starting-unit placement helpers. |
 | Default generator implementation | [`sciv/system/generators/basic.py`](../../sciv/system/generators/basic.py) | Runs hexgen, converts raw hexes into gameplay tiles, assigns models, allocates resources, and places starting units. |
+| Preset-driven generator implementation | [`sciv/system/generators/dynamic.py`](../../sciv/system/generators/dynamic.py), [`sciv/system/generators/dynamic_worlds/`](../../sciv/system/generators/dynamic_worlds) | Extends the basic pipeline with selectable landmass and biome presets, script-aware coastline polish, named world metadata, and Dynamic-specific post-processing while still reusing the shared basic conversion flow. |
 | Raw terrain pipeline | [`sciv/system/subsystems/hexgen/`](../../sciv/system/subsystems/hexgen) | Produces the temporary hex grid, height/temperature/moisture data, rivers, territories, geoforms, and terrain classification inputs. |
 | Post-conversion population | [`sciv/system/generators/resource_allocator.py`](../../sciv/system/generators/resource_allocator.py) | Places bonus/luxury/strategic resources across the generated gameplay tile grid. |
 
@@ -63,14 +66,15 @@ flowchart TD
 - the requested map size
 - the local player's civilization
 - the configured player count
-- a `start_config` payload containing pregame options, rules, and per-player civ/leader selections
+- a `start_config` payload containing pregame options, rules, per-player civ/leader selections, and generator configuration
 
 [`Game.on_game_start()`](../../sciv/managers/game.py) then:
 
 1. updates `GameSettings` with width, height, civilization, and player count
-2. stores `start_config` if present
-3. sends `ui.request.loading_screen`
-4. schedules `_try_game_start()` after a short delay so the loading screen can appear first
+2. selects the requested generator class and sanitizes any generator-specific setup options from `start_config`
+3. stores `start_config` if present
+4. sends `ui.request.loading_screen`
+5. schedules `_try_game_start()` after a short delay so the loading screen can appear first
 
 ### 2. Pre-generation setup in `Game._try_game_start()`
 
@@ -120,14 +124,44 @@ Its main responsibilities are:
 - `randomize_seed()` — choose and persist a generation seed
 - `generate_player()` / `setup_players()` — create human, AI, nature, and barbarian players
 - `place_starting_units()` — place starting units on the final gameplay tile grid
+- `get_setup_fields()` / `sanitize_setup_options()` — declare and validate generator-specific setup-screen options
 - `model_grid` — expose the generated `TileModelGrid` used by the live runtime
 - `world_generation_stats` and `debug_dump_data` — hold generation metadata for inspection/debugging
 
 The default implementation is [`Basic`](../../sciv/system/generators/basic.py), whose declared purpose is “Generates a hex-based map using HexGen.”
 
+The preset-driven implementation is [`Dynamic`](../../sciv/system/generators/dynamic.py), which reuses the same runtime pipeline but exposes UI-selectable presets for:
+
+- landmass style
+- biome style
+- world age
+- temperature
+- humidity
+- sea level
+- ocean connectivity
+- river amount
+- river length bias
+- tributary density
+- river network style
+
+`Dynamic` no longer delegates its full world build to `Basic.generate()`. It now builds its raw hex world through [`sciv/system/generators/dynamic_worlds/mapgen.py`](../../sciv/system/generators/dynamic_worlds/mapgen.py), which reshapes the heightmap by landmass preset before hexgen finishes and then applies an extra biome-style moisture pass before tile conversion.
+
+That Dynamic-specific raw builder now also performs additional world-shaping work that `Basic` does not:
+
+- carves preset-driven channels and inland seas directly into the heightmap
+- can optionally carve low-cost straits that connect all edge-touching ocean basins before rivers and geoforms are computed
+- smooths those carved heightmaps and compresses the highest peaks per landmass profile so Dynamic maps avoid harsh seam lines and overly mountain-heavy interiors
+- grows extra tributary river sources for stronger river networks on suitable landmasses
+- adds bounded split/rejoin distributaries plus river-to-river connector branches so major rivers can braid or link up without the viewer/export path stalling on large searches
+- lowers land along river systems into shallow valleys before terrain conversion
+- pushes biome moisture more strongly by latitude belts, coastality, rivers, and rain shadow
+
+In addition to parameter presets, `Dynamic` now uses its own starting-location heuristic after resources are allocated so different map scripts produce more reliable early-game starts.
+That start heuristic now reuses the shared gameplay settlement scorer under [`sciv/gameplay/founding/`](../../sciv/gameplay/founding), which also powers settler-site recommendations outside the generator path.
+
 ## `Basic.generate()` pipeline
 
-`Basic.generate()` is the current authoritative new-game generation pipeline.
+`Basic.generate()` is the current authoritative new-game generation pipeline, and `Dynamic` now reuses its shared conversion-prep helpers instead of keeping a second copy of the visible-area classification loop.
 
 ### Phase 1: Raw hexgen map
 
@@ -159,6 +193,8 @@ After raw classification, `Basic` performs several generator-side cleanup passes
 - `_desertize_adjacent_tundra()` — converts certain tundra tiles adjacent to desert into desert
 
 These are generator conversion rules, not general gameplay rules.
+
+`Dynamic` now layers an extra script-aware coastline polish pass on top of the baseline sea-to-coast promotion. That pass currently lives in [`sciv/system/generators/dynamic_worlds/coastline.py`](../../sciv/system/generators/dynamic_worlds/coastline.py) and makes archipelago/fractal-style maps keep more shallow coastal water around islands, peninsulas, bays, and straits.
 
 ### Phase 4: Gameplay tile instantiation
 
@@ -222,6 +258,35 @@ For each normal player, the generator currently places:
 
 - a `Settler`
 - an adjacent `ClubMan` when a valid companion tile exists
+
+`Basic` still uses the shared baseline heuristic. `Dynamic` now overrides this phase with script-aware scoring that prefers stronger opening rings by weighing:
+
+- first- and second-ring food and production
+- coastal access, with stronger coastal preference on archipelago-style scripts
+- river adjacency and nearby freshwater edges
+- nearby resource density and expansion room
+- reduced preference for mountain-choked or deep-water-fringed starts
+- distance from the map edge, with a relaxed fallback pass if spacing is too strict
+
+The shared scoring logic now lives outside the generator in [`sciv/gameplay/founding/site_scoring.py`](../../sciv/gameplay/founding/site_scoring.py). `Dynamic` provides its landmass- and biome-style-specific weighting through [`sciv/system/generators/dynamic_worlds/profiles.py`](../../sciv/system/generators/dynamic_worlds/profiles.py) rather than keeping that logic embedded directly in `dynamic.py`.
+
+`Dynamic.generate()` now uses its own raw generation path instead of calling `Basic.generate()` directly. The current split is:
+
+- [`sciv/system/generators/dynamic_worlds/mapgen.py`](../../sciv/system/generators/dynamic_worlds/mapgen.py) for Dynamic-specific heightmap shaping and biome-style moisture shaping
+- [`sciv/system/generators/dynamic_worlds/landmasses.py`](../../sciv/system/generators/dynamic_worlds/landmasses.py) for landmass masks plus preset-driven channel and inland-sea carving
+- [`sciv/system/generators/dynamic_worlds/rivers.py`](../../sciv/system/generators/dynamic_worlds/rivers.py) for tributary growth, bounded connector/distributary side channels, river naming, and river-valley shaping
+- [`sciv/system/generators/dynamic_worlds/biomes.py`](../../sciv/system/generators/dynamic_worlds/biomes.py) for named biome regions and stronger biome-belt/rain-shadow moisture shaping
+- shared `Basic` helpers for terrain classification, tile instantiation, terrain-model setup, resource allocation, and the common conversion boundary into gameplay tiles
+- Dynamic-specific metadata and starting-unit logic layered after those shared conversion helpers
+
+After that Dynamic-specific world build finishes, `Dynamic` also performs a metadata pass over the visible gameplay rectangle. That pass:
+
+- names visible landmasses from the existing hexgen geoforms
+- groups contiguous visible land tiles by biome into named biome regions
+- names visible river systems from the generated river-source chains
+- copies those labels onto the final gameplay `Tile` objects and records summary metadata in `world_generation_stats`
+
+`world_generation_stats` for Dynamic worlds now also includes a `dynamic_generation` section that records the Dynamic-only shaping counts such as carved channels, inland seas, tributaries added, connector/distributary branches added, valley segments touched, and the average biome moisture delta applied during biome shaping.
 
 ### Phase 8: Stats, metadata, and completion
 
@@ -317,7 +382,29 @@ This is the handoff point from world generation to the live playable runtime.
 There are two main generation-debug outputs today:
 
 - `world_generation_stats` metadata written through `EntityManager`
-- `Debug.dump_map_generation_data()` which writes a gzipped JSON map dump when world-generation debug dumping is enabled
+- `Debug.dump_map_generation_data()` which now writes a richer gzipped raw-world export when debug dumping is enabled
+
+The raw export path is now shared between the live runtime and an offline helper under [`sciv/system/generators/debug_export.py`](../../sciv/system/generators/debug_export.py).
+
+By default, the export writes into the repo-local, gitignored folder `sciv/debugging/worldgen/`.
+
+When triggered from the live game, the export currently includes:
+
+- generator name, class path, seed, setup options, and sanitized map params
+- requested runtime dimensions plus the full square raw hex-grid size
+- the raw heightmap grid and sea-level summary
+- every raw hex with biome, moisture, coast/inland flags, geoform id/type, territory id, neighbor coords, and river-segment membership
+- geoforms, territories, river chains, and generated landmass/biome/river naming data
+- the final runtime tile dump with terrain/resource flags plus copied Dynamic naming metadata when present
+- any recorded `world_generation_stats` and legacy debug payload metadata
+
+`OptionsScreen` now exposes a dedicated Developer-tab setting block for this export path under `debug.world_generation_export`, including:
+
+- an enable toggle for runtime post-generation exports
+- the export folder path
+- the default offline batch count used by the standalone helper
+
+Runtime export compatibility is intentionally loose: the old `debug.debugs.world_generation` flag still enables dumping when debug mode is on, but the richer export format and repo-local output folder are now the preferred path.
 
 The per-tile debug dump includes:
 
@@ -331,15 +418,51 @@ The per-tile debug dump includes:
 - features
 - visible resource assignment
 
+For offline iteration, [`scripts/export_worldgen.py`](../../scripts/export_worldgen.py) can generate the same raw export structure without launching the playable runtime. The helper currently supports:
+
+- `CivLike` raw hexgen exports
+- `Dynamic Worlds` raw exports with `--option key=value` overrides for preset fields such as `map_script`, `biome_style`, `world_age`, `temperature`, `humidity`, and `sea_level`
+- batch generation with per-world exports plus a compressed batch manifest
+- the same default repo-local export folder and offline batch-count setting used by the Developer-tab options surface
+
+Those exports can now be inspected through the standalone [`scripts/worldgen_viewer.py`](../../scripts/worldgen_viewer.py) desktop tool. The viewer uses PyQt6, accepts either a single `.json` / `.json.gz` export or a batch manifest, renders the raw grid as SCiv's flat-top odd-q layout, and exposes overlay toggles for rivers plus landmass/biome/river labels. It also supports base-layer switches for biome, altitude, moisture, geoform, territory ownership, a dedicated river/hydrology overview, runtime terrain, runtime resources, and runtime visibility so raw-shaping changes can be reviewed without starting the full game runtime. The current viewer also reports per-layer overlay coverage percentages, lets that breakdown target either the runtime-visible rectangle or the full raw dump, highlights matching tiles on the map when the user hovers a compatible legend entry, exposes left-sidebar section toggles through the top-level `View` menu, keeps the left rail vertically scrollable instead of compressing every panel into the available height, and includes small inspector helpers for jumping to coordinates, centering or clearing the current selection, and copying the current inspector text. River mode now classifies tiles into headwaters, braids, connector branches, ordinary channels, confluences, mouths, and non-river land/water backgrounds while also keeping a stronger glow-backed river line overlay visible so hydrology is easier to read in both the dedicated overview and the normal map layers. Its overlay summary now reports river-chain and river-network counts, branch-category tile totals, and top named systems instead of only percentages, and the selected-hex inspector includes river role plus branch-type details.
+
+The viewer is no longer limited to opening existing dumps. It can now drive the same offline generator registry used by the export helper directly inside the UI, with width, height, seed, and generator-specific preset controls. For `Dynamic Worlds`, those shared controls now include hydrology tuning for river amount, river length bias, tributary density, river-network style, and optional forced main-ocean connectivity in addition to the existing landmass/climate presets. Preview generation now runs on a background Qt worker thread so the standalone UI stays responsive while a staged progress bar advances through the shared offline build/export steps, and the seed row includes an explicit randomize button next to the spinbox for quickly locking in a fresh seed before generating. That shared generation path now lives in [`scripts/worldgen_generation_support.py`](../../scripts/worldgen_generation_support.py), which centralizes the offline bootstrap, generator specs, option sanitization, payload building, and coarse progress reporting used by both tools.
+
+That shared offline helper now also applies the visible-area terrain-classification and cleanup passes that the live generator performs before gameplay-tile instantiation. In practice that means offline previews and exports now populate `raw.hexes[*].terrain` with the same `Sea` / `Coast` / land-terrain labels the live conversion step would assign, including Dynamic's extra coastline polish where appropriate.
+
+Those common conversion rules now live in [`sciv/system/generators/terrain_conversion.py`](../../sciv/system/generators/terrain_conversion.py), a pure-Python helper module that intentionally avoids Kivy, Panda3D, entity-registration, and other runtime-only dependencies. `Basic` delegates its terrain classification plus baseline cleanup passes there, and the standalone export/viewer path imports the same helpers directly so offline previews no longer maintain their own parallel copy of the conversion logic. `Dynamic` still layers its script-aware coastline polish on top of that shared baseline rather than replacing it.
+
+After those cleanup passes finish, the standalone path now also synthesizes a visible-rectangle `runtime.tiles` dump from the post-conversion terrain state instead of leaving the viewer to infer runtime terrain from raw biomes alone. That gives the PyQt viewer finalized terrain keys, water/land/coast flags, and Dynamic naming metadata without having to boot Panda3D, entity registration, or live gameplay `Tile` objects just to inspect a preview.
+
+The offline helper now also runs the shared [`ResourceAllocator`](../../sciv/system/generators/resource_allocator.py) over a lightweight visible-rectangle proxy grid that mirrors the live generator's terrain/resource compatibility checks closely enough for export and viewer inspection. In practice that means fresh offline exports now populate runtime resource keys in `runtime.tiles` and also copy those keys back onto the matching visible raw hexes for easier inspection and parity debugging in the viewer.
+
+This synthesized runtime section still stops short of full live tile instantiation: starting-unit placement, render attachment, entity registration, and other post-instantiation work remain exclusive to the live in-game generation path.
+
+The viewer UI now also keeps a dynamic legend in sync with the active base layer and exposes the primary file/generation/view actions through a top menu/toolbar instead of burying them only in the side panel. Its right-side hex inspector can now show terrain texture previews plus terrain/resource model thumbnails for the selected tile, so exported worlds can be inspected against the actual shipped assets instead of only text fields. That asset-preview path lives in [`scripts/worldgen_asset_preview_support.py`](../../scripts/worldgen_asset_preview_support.py): it source-parses gameplay terrain/resource class metadata to resolve texture, icon, model, and transform data without importing the heavy runtime classes, and then uses a small Panda3D offscreen render path for cached model thumbnails. Biome mode intentionally renders water with waterbody colors instead of the underlying raw climate biome because ocean hexes still carry climate metadata internally. The biome and runtime-terrain legends are now generated from the categories actually present in the loaded dump instead of a short fixed list, so terrain variants such as snow hills, tundra hills, pine forests, and other runtime subtypes appear in the legend when they are on the map. The standalone viewer/export support intentionally tolerates missing Kivy imports in the local environment so raw dump inspection and offline preview generation do not require the full runtime UI stack just to start.
+
 ## Observed current implementation notes
 
 These describe the **current code path**, not necessarily the long-term design target.
 
-- `GameSettings.__init__()` currently stores `Basic` as `self.generator`, even though a `generator` constructor parameter exists.
-- `Basic` currently calls `MapGen(..., debug=True)`, so hexgen debug timing/logging is always enabled from that path.
+- `GameSettings.__init__()` now respects the passed generator class and stores generator-specific setup options separately in `self.generator_options`.
+- `Game.on_game_start()` now accepts generator metadata from `start_config`, so setup-screen selection decides which generator class `Game.generate_world()` instantiates.
+- `GameConfigMenu` now preselects `Dynamic Worlds`, and the main-menu debug quick start now sends a minimal `start_config` payload that also defaults to `Dynamic Worlds`, so the richer generator path is used unless the player explicitly switches back to `Basic`.
+- `GeneratorRepository` now loads concrete generators from `sciv/system/generators`, which is what powers setup-screen generator selection.
+- `GeneratorRepository` now filters selector entries to concrete `BaseGenerator` subclasses, and the setup UI refreshes that cache when opening the generator picker so stale helper classes do not leak into the popup.
+- `Dynamic` is a separate preset-driven generator; it now uses its own Dynamic-specific raw map builder, changes hexgen parameter presets, reshapes the heightmap by landmass profile, smooths those preset-driven landmass cuts before final stats are derived, compresses the highest elevations to keep mountain density playable, carves preset-driven channels and inland seas, applies a biome-style moisture pass with stronger latitude/rain-shadow shaping, can grow extra tributaries, bounded connector/distributary side channels, and river valleys, adds a script-aware coastline polish pass, applies named landmass/biome/river metadata, and overrides starting-unit placement with script-aware start scoring.
+- `Dynamic.get_setup_fields()` now also exposes hydrology controls for river amount, river length bias, tributary density, river-network style, and optional forced main-ocean connectivity; `build_dynamic_map_params()` folds those into `num_rivers`, `river_source_spacing`, `river_source_min_distance`, `tributary_factor`, the bounded connector/distributary parameters that drive split/rejoin river behavior, and a raw-hexgen `force_connected_oceans` flag, so the same knobs are available in the new-game config UI and the standalone viewer/export path.
+- When `force_connected_oceans` is enabled, `MapGen` now links separate edge-touching water basins with low-cost carved straits before river, territory, and geoform generation, so the final world keeps one connected main ocean instead of several disconnected edge seas.
+- The same settlement scoring surface is now available to runtime settler recommendation code, so generator start placement and in-game city-site guidance can stay aligned.
+- `MapGen` now injects its seeded RNG into `Heightmap`, so heightmap creation follows the same generation seed instead of using ambient module-level randomness.
+- `MapGen._generate_rivers()` now supports both `river_source_spacing` and `river_source_min_distance`, which space the top drainage-picked river sources apart, bias the first source pass farther inland, and rank candidates by drainage plus distance-to-water before falling back to closer candidates when needed.
+- `Basic` no longer forces `MapGen(..., debug=True)`; debug output follows the normal debug controls again.
+- `Basic.build_map_params()` now delegates to a shared helper in [`sciv/system/generators/map_params.py`](../../sciv/system/generators/map_params.py), which keeps the offline exporter aligned with the live generator's raw-hex settings.
+- `Basic` terrain classification plus the baseline water/coast/tundra cleanup rules now delegate to the pure helper module [`sciv/system/generators/terrain_conversion.py`](../../sciv/system/generators/terrain_conversion.py), which the offline export path also imports directly so live and standalone conversion stay aligned.
 - `Basic.map_params["size"]` is `max(width, height)`, so hexgen builds a square raw grid before `Basic` converts only the configured rectangular output area.
 - `World.generator`, `Game.choose_generator()`, and `GeneratorRepository` exist, but the default new-game path ultimately instantiates `self.properties.generator(...)` in `Game.generate_world()`.
 - Gameplay tiles still keep weak references to hexgen `Edge` objects after conversion.
+- Dynamic world naming still runs on the final gameplay rectangle, but `Dynamic` no longer depends on `Basic.generate()` to create that raw world first; it now only reuses the later shared conversion/runtime helpers.
 
 ## Files to inspect when changing world generation
 

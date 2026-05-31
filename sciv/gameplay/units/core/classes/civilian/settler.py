@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 from gameplay.city import EntityType
 from gameplay.condition import Conditions, ResearchCondition
@@ -8,6 +8,7 @@ from managers.i18n import t_
 from system.requires import RequiresPromotionTreeUnlocked
 
 if TYPE_CHECKING:
+    from gameplay.founding.site_recommendation import TileRecommendation
     from gameplay.player import Player
     from gameplay.tile import Tile
 
@@ -92,6 +93,32 @@ class Settler(CoreCivilianBaseClass):
         from gameplay.actions.unit.found import FoundAction
 
         self.actions.append(FoundAction(self))
+
+    def get_founding_recommendations(self, search_radius: int = 8, limit: int = 5) -> List["TileRecommendation"]:
+        from gameplay.founding.site_recommendation import recommend_founding_tiles
+
+        return recommend_founding_tiles(
+            self.get_tile(),
+            self.get_owner(),
+            ignore_occupying_unit=self,
+            search_radius=search_radius,
+            limit=limit,
+        )
+
+    def get_best_founding_tile(self, search_radius: int = 8) -> "Tile | None":
+        from gameplay.founding.site_recommendation import find_best_founding_tile
+
+        return find_best_founding_tile(
+            self.get_tile(),
+            self.get_owner(),
+            ignore_occupying_unit=self,
+            search_radius=search_radius,
+        )
+
+    def get_founding_recommendation_summary(self, search_radius: int = 8, limit: int = 3) -> str:
+        from gameplay.founding.site_recommendation import format_founding_recommendations
+
+        return format_founding_recommendations(self.get_founding_recommendations(search_radius=search_radius, limit=limit))
 
     @classmethod
     def on_tooltip(cls) -> str:

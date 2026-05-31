@@ -5,8 +5,8 @@
 
 ## Snapshot
 
-- Indexed Python modules: `825`
-- Indexed documentation files: `46`
+- Indexed Python modules: `846`
+- Indexed documentation files: `47`
 - Runtime areas: `11`
 - Machine-readable manifest: [`meta/generated/project-index.json`](generated/project-index.json)
 
@@ -61,6 +61,7 @@
 | [README.md](../README.md) | root | Project overview and how to run the game. |
 | [known_bugs.md](../known_bugs.md) | root | Known issues and currently tracked rough edges. |
 | [meta/documentation-audit.md](documentation-audit.md) | project | Repository documentation. |
+| [meta/plans/dynamic_worlds.md](plans/dynamic_worlds.md) | project | Repository documentation. |
 | [meta/todo.md](todo.md) | project | Project backlog and improvement list. |
 | [meta/technical/actions.md](technical/actions.md) | technical | One-shot runtime actions, targeting, and callback flow. |
 | [meta/technical/agent-workflow.md](technical/agent-workflow.md) | technical | Preferred workflow for SCiv-specialized coding agents and repo-local documentation discipline. |
@@ -148,7 +149,7 @@ Core package bootstrap, application host, configuration, and top-level resources
 Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 
 - Modules indexed: `25`
-- Indexed lines: `5265`
+- Indexed lines: `5321`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -169,8 +170,8 @@ Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 
 Domain model for players, tiles, cities, units, rules, effects, and other mechanics.
 
-- Modules indexed: `647`
-- Indexed lines: `26224`
+- Modules indexed: `650`
+- Indexed lines: `26713`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -191,8 +192,8 @@ Domain model for players, tiles, cities, units, rules, effects, and other mechan
 
 Engine-facing systems such as rendering, save/load helpers, generators, and effects.
 
-- Modules indexed: `38`
-- Indexed lines: `8785`
+- Modules indexed: `51`
+- Indexed lines: `12601`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -214,7 +215,7 @@ Engine-facing systems such as rendering, save/load helpers, generators, and effe
 Kivy application and screen/widget layers.
 
 - Modules indexed: `55`
-- Indexed lines: `15230`
+- Indexed lines: `15626`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -236,7 +237,7 @@ Kivy application and screen/widget layers.
 Stateless utilities and runtime helper functions.
 
 - Modules indexed: `19`
-- Indexed lines: `2238`
+- Indexed lines: `2265`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -307,8 +308,8 @@ World-adjacent package resources.
 
 Developer utilities and repository automation scripts.
 
-- Modules indexed: `8`
-- Indexed lines: `2388`
+- Modules indexed: `13`
+- Indexed lines: `6690`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -317,6 +318,10 @@ Developer utilities and repository automation scripts.
 | [scripts/bad_models.py](../scripts/bad_models.py) | classes: `ModelScanApp`; functions: `check_for_zero_scale_nodes`, `find_model_files` | Repository utility script for bad models. |
 | [scripts/build_windows.py](../scripts/build_windows.py) | functions: `cleanup_build`, `main` | Repository utility script for build windows. |
 | [scripts/check_isdev.py](../scripts/check_isdev.py) | functions: `main` | Repository utility script for check isdev. |
+| [scripts/export_worldgen.py](../scripts/export_worldgen.py) | functions: `main`, `parse_args`, `parse_option_pairs`, `resolve_batch_count` | Generate raw SCiv worldgen debug exports without launching the full game runtime. |
 | [scripts/inspector_tester.py](../scripts/inspector_tester.py) | classes: `KivyApp`, `PandaKivyIntegration`; functions: `main` | Repository utility script for inspector tester. |
 | [scripts/test_item.py](../scripts/test_item.py) | classes: `TestApp`, `TestWidget` | Repository utility script for test item. |
 | [scripts/ui_panda_modal.py](../scripts/ui_panda_modal.py) | classes: `DraggableModalPopup`, `ModalPopup`, `PopupDraggableMixin` | Repository utility script for ui panda modal. |
+| [scripts/worldgen_asset_preview_support.py](../scripts/worldgen_asset_preview_support.py) | classes: `AssetPreviewInfo`, `_ModelPreviewRenderer`; functions: `_assignment_target_name`, `_assignment_value`, `_extract_class_metadata_from_def`, `_float_value` +22 more | Asset preview helpers for the standalone worldgen viewer. |
+| [scripts/worldgen_generation_support.py](../scripts/worldgen_generation_support.py) | classes: `OfflineGeneratorSpec`, `OfflineOptionSpec`, `_FallbackConfigManager`, `_OfflineRuntimeTileProxy`; functions: `_allocate_offline_resources`, `_build_dynamic_runtime_region_maps`, `_build_offline_resource_grid`, `_build_offline_runtime_tiles` +20 more | Shared offline world-generation helpers for export and preview tooling. |
+| [scripts/worldgen_viewer.py](../scripts/worldgen_viewer.py) | classes: `AssetPreviewGroupWidget`, `HexItem`, `LegendEntrySpec`, `LegendEntryWidget` +5 more; functions: `_altitude_bucket_label`, `_altitude_color`, `_blend`, `_build_generated_label_text` +25 more | Repository utility script for worldgen viewer. |

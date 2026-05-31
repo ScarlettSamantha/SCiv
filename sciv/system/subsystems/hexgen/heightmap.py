@@ -8,14 +8,16 @@ import numpy as np
 class Heightmap:
     def __init__(self, params: Dict[str, Any], debug: bool = False):
         self.params = params
+        rng_candidate: Any = params.get("_rng")
+        self.rng: random.Random = rng_candidate if isinstance(rng_candidate, random.Random) else random.Random()
 
         # start making the heightmap
         self.size: int = params.get("size", 100)
         self.grid: np.ndarray[Any, Any] = np.zeros((self.size, self.size), dtype=np.float64)
-        self.grid[0][0] = random.randint(0, 255)
-        self.grid[self.size - 1][0] = random.randint(0, 255)
-        self.grid[0][self.size - 1] = random.randint(0, 255)
-        self.grid[self.size - 1][self.size - 1] = random.randint(0, 255)
+        self.grid[0][0] = self.rng.randint(0, 255)
+        self.grid[self.size - 1][0] = self.rng.randint(0, 255)
+        self.grid[0][self.size - 1] = self.rng.randint(0, 255)
+        self.grid[self.size - 1][self.size - 1] = self.rng.randint(0, 255)
         self._subdivide(0, 0, self.size - 1, self.size - 1)
 
         # compute average and record top height
@@ -44,7 +46,7 @@ class Heightmap:
         if self.grid[x][y] == 0:
             d = math.fabs(xa - xb) + math.fabs(ya - yb)
             ROUGHNESS: int = self.params.get("roughness", 18)
-            v = (self.grid[xa][ya] + self.grid[xb][yb]) / 2.0 + (random.random() - 0.5) * d * ROUGHNESS
+            v = (self.grid[xa][ya] + self.grid[xb][yb]) / 2.0 + (self.rng.random() - 0.5) * d * ROUGHNESS
             c = int(math.fabs(v) % 257)
             if y == 0:
                 self.grid[x][self.size - 1] = c

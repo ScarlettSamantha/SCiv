@@ -34,6 +34,7 @@ class FoundAction(BaseUnitAction):
             condition=self.founding_conditions,  # type: ignore
             on_success=self.on_success,  # type: ignore
             on_failure=self.on_failure,  # type: ignore
+            description=self._recommendation_description(instance),
         )
         self.unit: "Settler" = instance
         self.tile: "Tile | None" = instance.get_tile()
@@ -45,9 +46,14 @@ class FoundAction(BaseUnitAction):
         self.has_movement_point_left_requirement = True
         self.movement_point_left_requirement = 0.1
 
+    def _recommendation_description(self, settler: "Settler") -> str:
+        return settler.get_founding_recommendation_summary(search_radius=8, limit=3)
+
     def founding_conditions(self, _: Condition) -> bool:
         tile = self.unit.get_tile()
         base = Cache.get_showbase_instance()
+
+        self.description = self._recommendation_description(self.unit)
 
         rules: GameRules = base.game_manager_instance.rules  # type: ignore # We check above that the base instance is not None
 

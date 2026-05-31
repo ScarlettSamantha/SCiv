@@ -207,11 +207,20 @@ class DraggableLayoutWrapper(FloatLayout):
     def get_window_size(self) -> tuple[float, float]:
         return (float(self._base.win.getXSize()), float(self._base.win.getYSize()))  # type: ignore[attr-defined]
 
+    def _get_clamp_bounds(self) -> tuple[float, float]:
+        window_width, window_height = self.get_window_size()
+        if self.parent is None:
+            return (window_width, window_height)
+
+        parent_width = float(getattr(self.parent, "width", 0.0) or 0.0)
+        parent_height = float(getattr(self.parent, "height", 0.0) or 0.0)
+
+        return (max(window_width, parent_width), max(window_height, parent_height))
+
     def clamp_to_parent_bounds(self) -> None:
-        parent_width = float(self.parent.width) if self.parent is not None else self.get_window_size()[0]
-        parent_height = float(self.parent.height) if self.parent is not None else self.get_window_size()[1]
-        clamped_x = clamp(float(self.x), 0.0, max(0.0, parent_width - float(self.width)))
-        clamped_y = clamp(float(self.y), 0.0, max(0.0, parent_height - float(self.height)))
+        clamp_width, clamp_height = self._get_clamp_bounds()
+        clamped_x = clamp(float(self.x), 0.0, max(0.0, clamp_width - float(self.width)))
+        clamped_y = clamp(float(self.y), 0.0, max(0.0, clamp_height - float(self.height)))
         self.pos = (clamped_x, clamped_y)
 
     def _on_wrapper_geometry_changed(self, *_args: Any) -> None:
@@ -226,6 +235,7 @@ class DraggableLayoutWrapper(FloatLayout):
 
     def _sync_content_geometry(self) -> None:
         self.size = self.content.size
+        self.content.pos_hint = {}
         self.content.pos = self.pos
 
     def _bind_overlay_text_size(self, instance: Label, value: tuple[float, float]) -> None:

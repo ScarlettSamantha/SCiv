@@ -21,17 +21,17 @@ class GameSettings:
         difficulty: int = 0,
         seed: Optional[int] = None,
     ):
-        from system.generators.basic import Basic
-
         self.width: int = width
         self.height: int = height
         self.player: Type[Civilization] = player
         self.enemies: Optional[List[Any]] = enemies
-        self.generator: Type["BaseGenerator"] = Basic
+        self.generator: Type["BaseGenerator"] = generator
+        self.generator_options: Dict[str, Any] = generator.get_default_setup_options()
         self.difficulty: int = difficulty
         self.num_enemies: int = num_enemies
         self.seed: Optional[int] = seed
         self.age: "Age | None" = None
+        self.start_config: Dict[str, Any] = {}
 
     def __getstate__(self) -> object:
         return self.__dict__.copy()

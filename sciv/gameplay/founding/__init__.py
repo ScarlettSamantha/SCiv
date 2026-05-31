@@ -1,0 +1,1 @@
+"""Founding-related scoring and recommendation helpers."""

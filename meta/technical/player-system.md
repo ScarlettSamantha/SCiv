@@ -212,6 +212,8 @@ The AI layer is wired up for all player roles, but the implementations are not e
 
 So the player system already has a stable role/AI contract, but only part of it is fully behavior-rich right now.
 
+The shared AI base now also exposes settler-site helper methods backed by the shared founding recommendation/scoring module. That gives future AI implementations a common way to ask for recommended city sites without duplicating the generator's settlement heuristics, even though the default human/enemy/barbarian AI turn bodies are still mostly no-op today.
+
 ## Common lookup surface
 
 The most-used `PlayerManager` helpers are:

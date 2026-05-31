@@ -4,7 +4,15 @@ from itertools import count
 from typing import Any, Callable, Deque, Dict, List, Set, Tuple
 
 import numpy as np
-from helpers.debug import Debug as DebugHelper
+
+try:
+    from helpers.debug import Debug as DebugHelper
+except Exception:
+    class DebugHelper:
+        @staticmethod
+        def world_generation(override: bool | None = None) -> bool:
+            return bool(override) if override is not None else False
+
 from system.subsystems.hexgen.enums import (
     GeoformType,
     HexFeature,
@@ -60,6 +68,9 @@ default_params: Dict[str, Any] = {
     "pole_temp": -20.0,
     "lake_to_sea_tiles": 100,
     "sea_to_ocean_tiles": 150,
+    "river_source_spacing": 6,
+    "river_source_min_distance": 3,
+    "force_connected_oceans": False,
 }
 
 
@@ -75,6 +86,15 @@ class MapGen:
             self.heightmap = Heightmap(self.params, self.debug)
 
         self.hex_grid: Grid = Grid(self.heightmap, self.params)
+        self.ocean_connection_stats: Dict[str, int] = {
+            "initial_edge_oceans": 0,
+            "channels_carved": 0,
+            "tiles_carved": 0,
+            "final_edge_oceans": 0,
+        }
+        if bool(self.params.get("force_connected_oceans", False)):
+            with Timer("Connecting main oceans", self.debug):
+                self.ocean_connection_stats = self._connect_main_oceans()
         if self.debug:
             print("\tAverage Height: {}".format(self.hex_grid.average_height))
             print("\tHighest Height: {}".format(self.hex_grid.highest_height))
@@ -140,6 +160,185 @@ class MapGen:
                 self._apply_moisture()
 
         self._integrity_checks()
+
+    def _connect_main_oceans(self) -> Dict[str, int]:
+        components = self._edge_water_components()
+        initial_components = len(components)
+        channels_carved = 0
+        tiles_carved = 0
+
+        while len(components) > 1:
+            main_component = max(components, key=len)
+            other_components = [component for component in components if component is not main_component]
+            path = self._lowest_cost_ocean_connection_path(main_component, other_components)
+            if path is None:
+                break
+
+            carved_tiles = self._carve_ocean_connection_path(path)
+            if carved_tiles <= 0:
+                break
+
+            channels_carved += 1
+            tiles_carved += carved_tiles
+            components = self._edge_water_components()
+
+        if channels_carved > 0:
+            self._refresh_height_data_after_ocean_carving()
+
+        return {
+            "initial_edge_oceans": initial_components,
+            "channels_carved": channels_carved,
+            "tiles_carved": tiles_carved,
+            "final_edge_oceans": len(components),
+        }
+
+    def _edge_water_components(self) -> List[Set[Hex]]:
+        from collections import deque
+
+        visited: Set[Hex] = set()
+        components: List[Set[Hex]] = []
+
+        for start_hex in self.hex_grid.hexes:
+            if not start_hex.is_water or start_hex in visited:
+                continue
+
+            component: Set[Hex] = set()
+            queue: Deque[Hex] = deque([start_hex])
+            visited.add(start_hex)
+            touches_edge = False
+
+            while queue:
+                current = queue.popleft()
+                component.add(current)
+                if self._hex_touches_world_edge(current):
+                    touches_edge = True
+
+                for _, neighbor in current.neighbors:
+                    if neighbor.is_water and neighbor not in visited:
+                        visited.add(neighbor)
+                        queue.append(neighbor)
+
+            if touches_edge:
+                components.append(component)
+
+        components.sort(key=len, reverse=True)
+        return components
+
+    def _hex_touches_world_edge(self, hex_tile: Hex) -> bool:
+        max_index = self.hex_grid.size - 1
+        return hex_tile.x == 0 or hex_tile.y == 0 or hex_tile.x == max_index or hex_tile.y == max_index
+
+    def _lowest_cost_ocean_connection_path(
+        self,
+        source_component: Set[Hex],
+        target_components: List[Set[Hex]],
+    ) -> List[Hex] | None:
+        import heapq
+
+        target_hexes = {hex_tile for component in target_components for hex_tile in component}
+        if not target_hexes:
+            return None
+
+        frontier: List[Tuple[float, int, Hex]] = []
+        costs: Dict[Hex, float] = {}
+        parents: Dict[Hex, Hex | None] = {}
+        tie_breaker = count()
+
+        for source_hex in source_component:
+            costs[source_hex] = 0.0
+            parents[source_hex] = None
+            heapq.heappush(frontier, (0.0, next(tie_breaker), source_hex))
+
+        while frontier:
+            current_cost, _index, current = heapq.heappop(frontier)
+            if current_cost > costs.get(current, float("inf")):
+                continue
+
+            if current in target_hexes and current not in source_component:
+                return self._reconstruct_hex_path(parents, current)
+
+            for _, neighbor in current.neighbors:
+                if neighbor.is_water and neighbor not in source_component and neighbor not in target_hexes:
+                    continue
+
+                next_cost = current_cost + self._ocean_connection_step_cost(
+                    neighbor,
+                    source_hexes=source_component,
+                    target_hexes=target_hexes,
+                )
+                if next_cost >= costs.get(neighbor, float("inf")):
+                    continue
+
+                costs[neighbor] = next_cost
+                parents[neighbor] = current
+                heapq.heappush(frontier, (next_cost, next(tie_breaker), neighbor))
+
+        return None
+
+    @staticmethod
+    def _reconstruct_hex_path(parents: Dict[Hex, Hex | None], end_hex: Hex) -> List[Hex]:
+        path: List[Hex] = []
+        current: Hex | None = end_hex
+
+        while current is not None:
+            path.append(current)
+            current = parents.get(current)
+
+        path.reverse()
+        return path
+
+    def _ocean_connection_step_cost(
+        self,
+        hex_tile: Hex,
+        *,
+        source_hexes: Set[Hex],
+        target_hexes: Set[Hex],
+    ) -> float:
+        if hex_tile in source_hexes or hex_tile in target_hexes:
+            return 0.0
+
+        elevation_above_sea = max(0.0, float(hex_tile.altitude) - float(self.hex_grid.sealevel))
+        ruggedness = self._local_ruggedness(hex_tile)
+        coastal_neighbors = sum(1 for _, neighbor in hex_tile.neighbors if neighbor.is_water)
+
+        cost = 1.0 + elevation_above_sea / 8.0 + ruggedness / 42.0
+        if coastal_neighbors > 0:
+            cost *= 0.68
+        if elevation_above_sea > 36.0:
+            cost += 3.0
+        if elevation_above_sea > 72.0:
+            cost += 7.0
+        if elevation_above_sea > 108.0:
+            cost += 18.0
+        return cost
+
+    def _carve_ocean_connection_path(self, path: List[Hex]) -> int:
+        carved_tiles = 0
+        new_water_level = np.float64(float(self.hex_grid.sealevel) - 1.0)
+
+        for hex_tile in path:
+            if hex_tile.is_water:
+                continue
+
+            if float(hex_tile.altitude) <= float(new_water_level):
+                continue
+
+            hex_tile.altitude = new_water_level
+            self.heightmap.grid[hex_tile.x][hex_tile.y] = new_water_level
+            carved_tiles += 1
+
+        return carved_tiles
+
+    def _refresh_height_data_after_ocean_carving(self) -> None:
+        self.heightmap.highest_height = int(np.max(self.heightmap.grid))
+        self.heightmap.lowest_height = int(np.min(self.heightmap.grid))
+        self.heightmap.average_height = int(float(np.mean(self.heightmap.grid)))
+
+        self.hex_grid.average_height = self.heightmap.average_height
+        self.hex_grid.highest_height = self.heightmap.highest_height
+        self.hex_grid.lowest_height = self.heightmap.lowest_height
+        self.hex_grid.calculate()
+        self.hex_grid.num_ocean_hexes = sum(1 for hex_tile in self.hex_grid.hexes if hex_tile.is_water)
 
     def _apply_moisture(self) -> None:
         import math
@@ -430,6 +629,7 @@ class MapGen:
     def _seed_rngs(self) -> None:
         seed = self.params.get("random_seed")
         self.rng = random.Random(seed)
+        self.params["_rng"] = self.rng
         try:
             import numpy as _np
 
@@ -444,17 +644,59 @@ class MapGen:
             self.rivers_sources = []
             return
 
+        source_spacing = max(0, int(self.params.get("river_source_spacing", 0)))
+        source_min_distance = max(
+            2,
+            int(self.params.get("river_source_min_distance", max(2, round(source_spacing * 0.5) or 2))),
+        )
+
         if self.debug:
-            print(f"Making {num_rivers} rivers (drainage-based)")
+            print(
+                f"Making {num_rivers} rivers (drainage-based, spacing={source_spacing}, min_source_distance={source_min_distance})"
+            )
 
         filled_alt: Dict[Hex, float] = self._priority_flood_filled_alt()
         flow_dir: Dict[Hex, float] = self._compute_flow_dir(filled_alt)
         acc: Dict[Hex, float] = self._flow_accumulation(flow_dir)
 
         margin: float = max(10.0, (self.hex_grid.sealevel if hasattr(self.hex_grid, "sealevel") else 0) + 10.0)
-        candidates: List[Hex] = [h for h in self.hex_grid.hexes if h.is_inland and float(h.altitude) > margin]
-        candidates.sort(key=lambda h: (acc.get(h, 0.0), float(h.altitude)), reverse=True)
-        sources: List[Hex] = candidates[: min(num_rivers, len(candidates))]
+        all_candidates: List[Hex] = [h for h in self.hex_grid.hexes if h.is_inland and float(h.altitude) > margin]
+        preferred_candidates = [
+            h for h in all_candidates if float(getattr(h, "distance", 0.0)) >= float(source_min_distance)
+        ]
+        fallback_candidates = [h for h in all_candidates if h not in preferred_candidates]
+
+        def _river_source_sort_key(hex_tile: Hex) -> tuple[float, float, float]:
+            return (
+                float(acc.get(hex_tile, 0.0)),
+                float(getattr(hex_tile, "distance", 0.0)),
+                float(hex_tile.altitude),
+            )
+
+        preferred_candidates.sort(key=_river_source_sort_key, reverse=True)
+        fallback_candidates.sort(key=_river_source_sort_key, reverse=True)
+        candidates = [*preferred_candidates, *fallback_candidates]
+        target_sources = min(num_rivers, len(candidates))
+        sources: List[Hex] = []
+
+        for candidate in candidates:
+            if source_spacing > 0 and any(
+                self.hex_distance((candidate.x, candidate.y), (other.x, other.y)) < source_spacing
+                for other in sources
+            ):
+                continue
+
+            sources.append(candidate)
+            if len(sources) >= target_sources:
+                break
+
+        if len(sources) < target_sources:
+            for candidate in candidates:
+                if candidate in sources:
+                    continue
+                sources.append(candidate)
+                if len(sources) >= target_sources:
+                    break
 
         self.rivers.clear()
         self.rivers_sources = []

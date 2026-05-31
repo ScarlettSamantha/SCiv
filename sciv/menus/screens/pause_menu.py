@@ -108,7 +108,13 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
         messenger.send("ui.update.ui.show_load")
 
     def open_options(self, instance: Widget):
-        print("Opening options...")  # @TODO: Implement this method
+        from menus.screens.options_menu import OptionsScreen
+
+        options_screen: OptionsScreen = self._base.ui_manager.get_screen("options_screen")  # type: ignore
+        options_screen.configure_return_target("game_ui", reopen_pause_menu=True)
+
+        self.dismiss()
+        self._base.ui_manager.set_screen("options_screen")
 
     def return_to_main_menu(self, instance: Widget):
         messenger.send("ui.request_main_menu")

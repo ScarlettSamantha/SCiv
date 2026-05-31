@@ -19,6 +19,7 @@ class ConfigManager(Singleton):
     config_data: Dict[str, Any] = {}
     config_file = "config.json"
     config_sample_file = "config_sample.json"
+    world_generation_export_default_dir = "sciv/debugging/worldgen"
 
     def __setup__(self, *args: Any, **kwargs: Any) -> None:
         self.config_file = self.get_config_file_location()
@@ -254,6 +255,45 @@ class ConfigManager(Singleton):
             ("debug", "enable"),
             self.get_by_key(("debug", "enabled"), self.get_by_key(("debug", "enable_debug"), False)),
         )
+
+    @staticmethod
+    def _sanitize_positive_int(value: Any, default: int) -> int:
+        try:
+            return max(1, int(value))
+        except (TypeError, ValueError):
+            return default
+
+    def get_world_generation_export_enabled(self) -> bool:
+        return bool(self.get_by_key(("debug", "world_generation_export", "enabled"), False))
+
+    def set_world_generation_export_enabled(self, enabled: bool, auto_save: bool = True) -> None:
+        self.set_by_key(bool(enabled), "debug", "world_generation_export", "enabled")
+        if auto_save:
+            self.save_config()
+
+    def get_world_generation_export_dir(self) -> str:
+        configured = self.get_by_key(
+            ("debug", "world_generation_export", "output_dir"),
+            self.world_generation_export_default_dir,
+        )
+        if not isinstance(configured, str) or not configured.strip():
+            return self.world_generation_export_default_dir
+        return configured.strip()
+
+    def set_world_generation_export_dir(self, output_dir: str, auto_save: bool = True) -> None:
+        sanitized = output_dir.strip() if isinstance(output_dir, str) and output_dir.strip() else self.world_generation_export_default_dir
+        self.set_by_key(sanitized, "debug", "world_generation_export", "output_dir")
+        if auto_save:
+            self.save_config()
+
+    def get_world_generation_export_batch_count(self) -> int:
+        configured = self.get_by_key(("debug", "world_generation_export", "offline_batch_count"), 4)
+        return self._sanitize_positive_int(configured, 4)
+
+    def set_world_generation_export_batch_count(self, count: int, auto_save: bool = True) -> None:
+        self.set_by_key(self._sanitize_positive_int(count, 4), "debug", "world_generation_export", "offline_batch_count")
+        if auto_save:
+            self.save_config()
 
     def get_ui_layout_drag_enabled(self) -> bool:
         return self.get_by_key(("debug", "ui_layout", "drag_enabled"), False)

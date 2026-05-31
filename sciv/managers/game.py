@@ -1,6 +1,6 @@
 from datetime import datetime
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -28,6 +28,7 @@ from panda3d.core import WindowProperties  # type: ignore
 from system.asset_archive import P3DAssetArchive
 from system.camera import Camera
 from system.game_settings import GameSettings
+from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
@@ -41,8 +42,6 @@ if TYPE_CHECKING:
     from gameplay.tile import Tile
     from gameplay.unit import Unit
     from managers.entity import Property
-    from system.generators.base import BaseGenerator
-
     from sciv.game import OpenCiv
 
 
@@ -362,7 +361,7 @@ class Game(Singleton, DirectObject):
         from gameplay.repositories.generators import GeneratorRepository
 
         if random:
-            generator_cls: Type["BaseGenerator"] | List[Type["BaseGenerator"]] = GeneratorRepository.random(
+            generator_candidate: Type["BaseGenerator"] | List[Type["BaseGenerator"]] = GeneratorRepository.random(
                 1
             )  # returns a class
         else:
@@ -371,17 +370,12 @@ class Game(Singleton, DirectObject):
             if len(generators_cls) == 0:
                 raise AssertionError("No generators found")
 
-            # Default to the first generator if no name is specified
-            for candidate in generators_cls:
-                if candidate.NAME == name:
-                    generator_cls = candidate
-                    break
+            if name is None:
+                generator_candidate = generators_cls[0]
+            else:
+                generator_candidate = GeneratorRepository.get(name)
 
-        try:
-            if generator_cls is None or not issubclass(generator_cls, "BaseGenerator"):  # type: ignore
-                raise AssertionError("No valid generator found")
-        except NameError:
-            raise AssertionError("No valid generator found")
+        generator_cls: Type[BaseGenerator] = generator_candidate[0] if isinstance(generator_candidate, list) else generator_candidate
 
         if self.properties is None:
             raise AssertionError("Game properties not set")
@@ -437,8 +431,27 @@ class Game(Singleton, DirectObject):
         self.properties.width = int(map_size.split("x")[0]) if isinstance(map_size, str) else map_size[0]
         self.properties.height = int(map_size.split("x")[1]) if isinstance(map_size, str) else map_size[1]
 
-        if config is not None:
-            setattr(self.properties, "start_config", config)
+        generator_cls: Type[BaseGenerator] = self.properties.generator
+        generator_options: Dict[str, Any] = generator_cls.get_default_setup_options()
+
+        self.properties.start_config = config or {}
+
+        if isinstance(config, dict):
+            generator_config = config.get("generator")
+            if isinstance(generator_config, dict):
+                generator_payload = cast(Dict[str, Any], generator_config)
+
+                raw_generator_cls: Any = generator_payload.get("class")
+                if isinstance(raw_generator_cls, type) and issubclass(raw_generator_cls, BaseGenerator):
+                    generator_cls = raw_generator_cls
+
+                raw_generator_options: Any = generator_payload.get("options")
+                if isinstance(raw_generator_options, dict):
+                    generator_options_payload = cast(Dict[str, Any], raw_generator_options)
+                    generator_options = generator_cls.sanitize_setup_options(generator_options_payload)
+
+        self.properties.generator = generator_cls
+        self.properties.generator_options = generator_options
 
         self.game_active = True
         self.logger.info(f"Game start requested with {self.properties}")
@@ -541,7 +554,7 @@ class Game(Singleton, DirectObject):
         if self.performance_logger is not None:
             self.performance_logger.activate()
 
-        if Debug.world_generation():
+        if Debug.should_export_world_generation():
             Debug.dump_map_generation_data(generator=self.active_generator, tiles=list(self.world.map.values()))
 
         self.logger.info("Game start complete")
