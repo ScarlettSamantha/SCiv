@@ -19,6 +19,7 @@ class ClippingScrollList(ScrollView):
         smooth_scroll_speed: float = 0.15,
         invert_scroll: bool = False,
         start_at_bottom: bool = False,
+        hide_partially_visible: bool = False,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -27,6 +28,7 @@ class ClippingScrollList(ScrollView):
         self.smooth_scroll_speed: float = smooth_scroll_speed
         self.invert_scroll: bool = invert_scroll
         self.start_at_bottom: bool = start_at_bottom
+        self.hide_partially_visible: bool = hide_partially_visible
         self.scroll_step_size = 30
         self.bar_width = 12
         self.bar_color: List[int] = [1, 1, 1, 1]
@@ -198,8 +200,12 @@ class ClippingScrollList(ScrollView):
         v_bottom = (content_h - view_h) * float(self.scroll_y)
         v_top = v_bottom + view_h
 
-        start = bisect_right(self._tops, v_bottom)
-        end = bisect_left(self._bottoms, v_top) - 1
+        if self.hide_partially_visible:
+            start = bisect_left(self._bottoms, v_bottom)
+            end = bisect_right(self._tops, v_top) - 1
+        else:
+            start = bisect_right(self._tops, v_bottom)
+            end = bisect_left(self._bottoms, v_top) - 1
 
         if end < start:
             new_s, new_e = -1, -1

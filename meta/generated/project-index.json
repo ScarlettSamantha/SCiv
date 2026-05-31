@@ -16435,7 +16435,7 @@
       "path": "sciv/menus",
       "description": "Kivy application and screen/widget layers.",
       "module_count": 55,
-      "line_count": 15626,
+      "line_count": 15648,
       "key_modules": [
         {
           "path": "sciv/menus/kivy/core.py",
@@ -16629,7 +16629,7 @@
             "kivy.uix.widget",
             "typing"
           ],
-          "line_count": 424,
+          "line_count": 430,
           "parse_error": null
         },
         {
@@ -16859,7 +16859,7 @@
             "kivy.uix.widget",
             "typing"
           ],
-          "line_count": 424,
+          "line_count": 430,
           "parse_error": null
         },
         {
@@ -18080,7 +18080,6 @@
             "kivy.uix.button",
             "kivy.uix.checkbox",
             "kivy.uix.floatlayout",
-            "kivy.uix.gridlayout",
             "kivy.uix.image",
             "kivy.uix.label",
             "kivy.uix.popup",
@@ -18089,6 +18088,7 @@
             "kivy.uix.widget",
             "managers.i18n",
             "menus.kivy.elements.button_value",
+            "menus.kivy.elements.clipping",
             "menus.kivy.elements.menu_styled",
             "menus.kivy.elements.scrollable_popup",
             "panda3d.core",
@@ -18096,7 +18096,7 @@
             "system.generators.basic",
             "typing"
           ],
-          "line_count": 1046,
+          "line_count": 1062,
           "parse_error": null
         },
         {
@@ -19695,7 +19695,7 @@
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
       "module_count": 20,
-      "line_count": 7325,
+      "line_count": 7320,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -20585,7 +20585,7 @@
             "worldgen_viewer_tool.palette",
             "worldgen_viewer_tool.widgets.legend"
           ],
-          "line_count": 2333,
+          "line_count": 2328,
           "parse_error": null
         },
         {

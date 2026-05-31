@@ -13,7 +13,6 @@ from kivy.uix.boxlayout import BoxLayout  # type: ignore
 from kivy.uix.button import Button  # type: ignore
 from kivy.uix.checkbox import CheckBox  # type: ignore
 from kivy.uix.floatlayout import FloatLayout  # type: ignore
-from kivy.uix.gridlayout import GridLayout  # type: ignore
 from kivy.uix.image import Image  # type: ignore
 from kivy.uix.label import Label  # type: ignore
 from kivy.uix.popup import Popup  # type: ignore
@@ -22,6 +21,7 @@ from kivy.uix.textinput import TextInput  # type: ignore
 from kivy.uix.widget import Widget  # type: ignore
 from managers.i18n import Translation
 from menus.kivy.elements.button_value import ButtonValue  # type: ignore
+from menus.kivy.elements.clipping import ClippingScrollList  # type: ignore
 from menus.kivy.elements.scrollable_popup import ScrollablePopup  # type: ignore
 from menus.kivy.elements.menu_styled import (  # type: ignore
     DangerButton,
@@ -50,7 +50,12 @@ class GameConfigMenu(Screen):
 
         self.player_panel: Optional[BoxLayout] = None
         self.options_panel: Optional[BoxLayout] = None
+        self.options_scroll: Optional[ClippingScrollList] = None
         self.player_list_container: Optional[BoxLayout] = None
+        self.dev_row: Optional[BoxLayout] = None
+        self.barb_row: Optional[BoxLayout] = None
+        self.teams_row: Optional[BoxLayout] = None
+        self.rules_row: Optional[BoxLayout] = None
 
         self.title_label: Optional[Label] = None
         self.civ_popup: Optional[Popup] = None
@@ -74,7 +79,7 @@ class GameConfigMenu(Screen):
         self.generator_popup_button: Optional[ButtonValue] = None
         self.generator_popup: Optional[ScrollablePopup] = None
         self.generator_description_label: Optional[Label] = None
-        self.generator_options_container: Optional[GridLayout] = None
+        self.generator_option_rows: List[BoxLayout] = []
 
         self.selected_size: Optional[Tuple[int, int]] = None
         self.selected_civilization: Optional[Type[BaseCivilization]] = None
@@ -245,12 +250,20 @@ class GameConfigMenu(Screen):
 
         self.options_panel.add_widget(options_title)
 
+        self.options_scroll = ClippingScrollList(
+            size_hint=(1.0, 1.0),
+            hide_partially_visible=True,
+        )
+        self.options_scroll.bar_width = 0
+        self.options_panel.add_widget(self.options_scroll)
+
         self.size_section = BoxLayout(
             orientation="vertical",
             size_hint=(1.0, None),
             spacing=dp(5),
             padding=(0, dp(4), 0, 0),
         )
+        self.size_section.bind(minimum_height=self.size_section.setter("height"))  # type: ignore
         size_label = SectionLabel(
             text=str(Translation("ui.player_ui.game_config.map_size")),
             size_hint=(1.0, None),
@@ -267,14 +280,13 @@ class GameConfigMenu(Screen):
         self.size_popup_button.bind(on_release=self.open_size_popup)  # type: ignore
         self.size_section.add_widget(self.size_popup_button)
 
-        self.options_panel.add_widget(self.size_section)
-
         self.generator_section = BoxLayout(
             orientation="vertical",
             size_hint=(1.0, None),
             spacing=dp(5),
             padding=(0, dp(4), 0, 0),
         )
+        self.generator_section.bind(minimum_height=self.generator_section.setter("height"))  # type: ignore
 
         generator_label = SectionLabel(
             text="Map generator",
@@ -299,19 +311,7 @@ class GameConfigMenu(Screen):
         )
         self.generator_section.add_widget(self.generator_description_label)
 
-        self.generator_options_container = GridLayout(
-            cols=1,
-            size_hint=(1.0, None),
-            spacing=dp(8),
-            padding=(0, dp(6), 0, 0),
-        )
-        self.generator_options_container.bind(minimum_height=self.generator_options_container.setter("height"))  # type: ignore
-        self.generator_section.add_widget(self.generator_options_container)
-
-        self.options_panel.add_widget(self.generator_section)
-        self._initialize_generator_selection()
-
-        dev_row = BoxLayout(
+        self.dev_row = BoxLayout(
             orientation="horizontal",
             size_hint=(1.0, None),
             height=dp(40),
@@ -325,11 +325,10 @@ class GameConfigMenu(Screen):
 
         self.dev_mode = MenuCheckbox()
 
-        dev_row.add_widget(dev_label)
-        dev_row.add_widget(self.dev_mode)
-        self.options_panel.add_widget(dev_row)
+        self.dev_row.add_widget(dev_label)
+        self.dev_row.add_widget(self.dev_mode)
 
-        barb_row = BoxLayout(
+        self.barb_row = BoxLayout(
             orientation="horizontal",
             size_hint=(1.0, None),
             height=dp(40),
@@ -343,11 +342,10 @@ class GameConfigMenu(Screen):
 
         self.no_barbarians = MenuCheckbox()
 
-        barb_row.add_widget(barb_label)
-        barb_row.add_widget(self.no_barbarians)
-        self.options_panel.add_widget(barb_row)
+        self.barb_row.add_widget(barb_label)
+        self.barb_row.add_widget(self.no_barbarians)
 
-        teams_row = BoxLayout(
+        self.teams_row = BoxLayout(
             orientation="horizontal",
             size_hint=(1.0, None),
             height=dp(40),
@@ -361,11 +359,10 @@ class GameConfigMenu(Screen):
 
         self.no_teams = MenuCheckbox()
 
-        teams_row.add_widget(teams_label)
-        teams_row.add_widget(self.no_teams)
-        self.options_panel.add_widget(teams_row)
+        self.teams_row.add_widget(teams_label)
+        self.teams_row.add_widget(self.no_teams)
 
-        rules_row = BoxLayout(
+        self.rules_row = BoxLayout(
             orientation="horizontal",
             size_hint=(1.0, None),
             height=dp(40),
@@ -386,11 +383,10 @@ class GameConfigMenu(Screen):
         )
         rules_button.bind(on_release=self.open_rules_popup)  # type: ignore
 
-        rules_row.add_widget(rules_label)
-        rules_row.add_widget(rules_button)
-        self.options_panel.add_widget(rules_row)
+        self.rules_row.add_widget(rules_label)
+        self.rules_row.add_widget(rules_button)
 
-        self.options_panel.add_widget(Widget(size_hint_y=1.0))
+        self._initialize_generator_selection()
 
         self.button_container = BoxLayout(
             size_hint=(1.0, None),
@@ -665,16 +661,13 @@ class GameConfigMenu(Screen):
         self._rebuild_generator_options()
 
     def _rebuild_generator_options(self) -> None:
-        if self.generator_options_container is None or self.selected_generator is None:
+        if self.selected_generator is None:
             return
 
-        self.generator_options_container.clear_widgets()
+        self.generator_option_rows = []
         self.generator_option_buttons = {}
 
         fields = self.selected_generator.get_setup_fields()
-        if not fields:
-            return
-
         for field in fields:
             row = BoxLayout(
                 orientation="vertical",
@@ -700,9 +693,32 @@ class GameConfigMenu(Screen):
 
             row.add_widget(label)
             row.add_widget(button)
-            self.generator_options_container.add_widget(row)
+            self.generator_option_rows.append(row)
 
             self.generator_option_buttons[field.key] = button
+
+        self._rebuild_options_scroll_content()
+
+    def _rebuild_options_scroll_content(self) -> None:
+        if self.options_scroll is None:
+            return
+
+        self.options_scroll.clear_widgets()
+
+        widgets: List[Widget] = []
+        if self.size_section is not None:
+            widgets.append(self.size_section)
+        if self.generator_section is not None:
+            widgets.append(self.generator_section)
+
+        widgets.extend(self.generator_option_rows)
+
+        for row in (self.dev_row, self.barb_row, self.teams_row, self.rules_row):
+            if row is not None:
+                widgets.append(row)
+
+        for widget in widgets:
+            self.options_scroll.add_widget(widget)
 
     def _generator_option_text(self, field: GeneratorSetupField, value: Any) -> str:
         for label, option_value in field.choices:

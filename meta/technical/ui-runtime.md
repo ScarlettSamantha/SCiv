@@ -169,6 +169,8 @@ The current generator-selection contract is intentionally data-driven:
 - `GameConfigMenu` sanitizes those options through the selected generator before sending `system.game.start_load`
 - `Game.on_game_start()` applies the chosen generator class and sanitized options to `GameSettings` before world generation begins
 
+The setup screen's right-hand options column now keeps the start/back footer pinned while the option rows above it live inside a reusable `ClippingScrollList`. That lets generator-heavy setups scroll inside the panel instead of pushing option widgets past the top of the visible screen, and the config screen now asks that shared list to hide rows as soon as they start crossing the panel edge so they do not overlap the `Game Options` title or footer lane.
+
 It then schedules `system.game.start_load` with:
 
 - `size`

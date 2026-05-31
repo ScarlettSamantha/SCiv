@@ -34,6 +34,7 @@
 - 💄 Added multi-world generation batches to the worldgen viewer with a clickable overview grid and back-to-overview navigation.
 - 💄 Added process-backed multi-world generation and a right-panel world switcher to the worldgen viewer batch flow.
 - 💄 Made the worldgen viewer batch overview resize preview cards and thumbnails to keep a responsive three-across layout.
+- 💄 Made the new-game setup screen keep its right-side options in a scrollable panel so generator-heavy setups no longer spill off the top.
 
 ### Engine
 

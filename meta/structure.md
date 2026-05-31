@@ -215,7 +215,7 @@ Engine-facing systems such as rendering, save/load helpers, generators, and effe
 Kivy application and screen/widget layers.
 
 - Modules indexed: `55`
-- Indexed lines: `15626`
+- Indexed lines: `15648`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -309,7 +309,7 @@ World-adjacent package resources.
 Developer utilities and repository automation scripts.
 
 - Modules indexed: `20`
-- Indexed lines: `7325`
+- Indexed lines: `7320`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
