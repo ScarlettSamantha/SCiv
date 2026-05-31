@@ -1,6 +1,12 @@
 # Signals
 
-This document is about the signals that are send in the application and where they are send and listened to and to keep naming somewhat consistent.
+> Back to [Documentation Index](../INDEX.md)
+>
+> Related: [Architecture](architecture.md) | [Startup Flow](startup.md) | [Turn Processing](turns.md)
+>
+> This catalog is curated by hand. If a signal here disagrees with the code, treat the code as authoritative and update this file in the same change.
+
+This document is about the signals that are sent in the application, where they are sent and listened to, and how naming is kept somewhat consistent.
 
 ## Keys
 
@@ -69,27 +75,28 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `game.camera.request.center_on_tile` (E: action-search-map | L: system-camera)
 
-- `game.gameplay.tiles.ownership_change` (E: manager-world | L: base-tile)
+- `game.gameplay.tiles.ownership_changed` (E: manager-world | L: base-tile)
 - `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
 
 - `game.gameplay.unit.build_improvement_success` (E: action-build)
 - `game.gameplay.unit.build_improvement_failure` (E: action-build)
 
-- `game.gameplay.city.request_cancel_building_improvement_{tag}` (E:E ui-part-city | L: city)
+- `game.gameplay.city.request_cancel_building_improvement_{tag}` (E: ui-part-city | L: city)
 - `game.gameplay.city.request_start_building_improvement_{tag}` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.canceled_production` (E: city | L: ui-part-city)
 - `game.gameplay.city.border_growth` (E: city)
 
-- `game.gameplay.city.request_start_building_unit` (E: ui-part-city | L: city)
-- `game.gameplay.city.starts_building_unit` (E: ui-part-city | L: city)
-- `game.gameplay.city.finishes_building_unit` (E: ui-part-city | L: city)
+- `game.gameplay.city.request_start_building_unit_{tag}` (E: ui-part-city | L: city)
+- `game.gameplay.city.starts_building_unit` (E: city | L: ui-part-city)
+- `game.gameplay.city.finish_building_unit` (E: city | L: ui-part-city)
 
-- `game.gameplay.city.population_grow` (E: city)
+- `game.gameplay.city.grows_population` (E: city)
 - `game.gameplay.city.population_starve` (E: city | L: manager-ui)
 - `game.gameplay.city.requests_tile` (E: city | L: manager-world)
 - `game.gameplay.city.gets_tile_ownership` (E: manager-world | L:city)
+- `game.gameplay.city.gets_tile_ownership_{city.tag}` (E: manager-world | L: city)
 
 - `game.gameplay.research.request_start_research_session_player` (E: part-ui-research | L: player)
 - `game.gameplay.research.player_queue_added_research` (E: managers-tech | L: )
@@ -171,6 +178,8 @@ These are used by the UI manager to control some debug actions these may disappe
 - `system.input.raycaster_off` (L: manager-input)
 - `system.input.raycaster_on` (L: manager-input)
 - `system.input.raycaster_on_delay` (L: manager-input)
+
+	Implementation note: `manager-input` toggles a camera-attached Panda3D `CollisionRay` for world picking. Keep its `CollisionNode` from-only by clearing the `into` mask with `BitMask32.allOff()`, because fresh Panda3D `CollisionNode`s default to a nonzero `into` mask and can trigger `Invalid attempt to detect collision from CollisionRay into CollisionRay!` when the raycaster is active.
 
 - `system.input.disable_zoom` (E: collision-mixin | L: camera)
 - `system.input.enable_zoom` (E: collision-mixin | L: camera)

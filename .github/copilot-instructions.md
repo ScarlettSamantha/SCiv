@@ -1,0 +1,67 @@
+# Copilot Instructions for SCiv
+
+Use Git-tracked project docs as the primary source of repository knowledge.
+
+## Role of this file
+
+- This is SCiv's single always-on instruction entrypoint.
+- Keep durable project knowledge in `meta/`; keep routing logic thin here.
+- Do not duplicate this file with `AGENTS.md` unless the repository intentionally migrates to that format.
+
+## Start here
+
+1. Read [`meta/INDEX.md`](../meta/INDEX.md) for the documentation map.
+2. Use [`meta/structure.md`](../meta/structure.md) for the generated human-readable project map.
+3. Use [`meta/generated/project-index.json`](../meta/generated/project-index.json) for machine-readable navigation when locating code, and prefer the `sciv-project-index` skill/helper for targeted lookups against that manifest.
+4. If the task is ambiguous, cross-cutting, or starts in an unfamiliar subsystem, use the `sciv-orientation` skill before implementation.
+
+## Guarded areas
+
+| If work touches                                                                                                                    | Read first                                                                                                                                                                                                                                                                                                                                                                                                                                | Also review/update                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Startup, bootstrapping, loading-screen handoff, or manager init order                                                              | [`meta/technical/startup.md`](../meta/technical/startup.md), [`meta/technical/architecture.md`](../meta/technical/architecture.md)                                                                                                                                                                                                                                                                                                        | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant startup docs      |
+| World generation, generator selection, hexgen terrain creation, resource allocation, or starting-unit placement                    | [`meta/technical/world-generation.md`](../meta/technical/world-generation.md), [`meta/technical/startup.md`](../meta/technical/startup.md), [`meta/technical/architecture.md`](../meta/technical/architecture.md)                                                                                                                                                                                                                         | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant generation docs   |
+| World runtime container behavior, world load/reset, tile ownership handoff, or world-level turn fan-out                            | [`meta/technical/world-system.md`](../meta/technical/world-system.md), [`meta/technical/tile-system.md`](../meta/technical/tile-system.md), [`meta/technical/world-generation.md`](../meta/technical/world-generation.md), [`meta/technical/turns.md`](../meta/technical/turns.md)                                                                                                                                                        | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant world docs        |
+| Tile state, tile ownership/occupancy, terrain/resource/improvement slots, or tile pathing                                          | [`meta/technical/tile-system.md`](../meta/technical/tile-system.md), [`meta/technical/world-generation.md`](../meta/technical/world-generation.md), [`meta/technical/entities.md`](../meta/technical/entities.md)                                                                                                                                                                                                                         | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant tile docs         |
+| Player registry, session/nature/barbarian roles, player entity lifecycle, player AI assignment, or player turn work                | [`meta/technical/player-system.md`](../meta/technical/player-system.md), [`meta/technical/turns.md`](../meta/technical/turns.md), [`meta/technical/world-generation.md`](../meta/technical/world-generation.md), [`meta/technical/entities.md`](../meta/technical/entities.md)                                                                                                                                                            | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant player docs       |
+| Terrain mesh/model-grid creation, tile or unit renderers, icon atlas use, shader-driven world overlays, or world-node picking tags | [`meta/technical/rendering-system.md`](../meta/technical/rendering-system.md), [`meta/technical/architecture.md`](../meta/technical/architecture.md), [`meta/technical/tile-system.md`](../meta/technical/tile-system.md)                                                                                                                                                                                                                 | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant rendering docs    |
+| Asset archive packaging, archive mounting, asset-manager cache behavior, icon atlas generation, or archive-backed asset loading    | [`meta/technical/asset-system.md`](../meta/technical/asset-system.md), [`meta/technical/startup.md`](../meta/technical/startup.md), [`meta/technical/architecture.md`](../meta/technical/architecture.md), and [`meta/technical/rendering-system.md`](../meta/technical/rendering-system.md) when render consumers are involved                                                                                                           | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant asset docs        |
+| Turn pipeline, turn-stage order, or turn-related signals                                                                           | [`meta/technical/turns.md`](../meta/technical/turns.md), [`meta/technical/signals.md`](../meta/technical/signals.md)                                                                                                                                                                                                                                                                                                                      | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                    |
+| Entity registration, serialization, save/load, or state-manager boundaries                                                         | [`meta/technical/entities.md`](../meta/technical/entities.md)                                                                                                                                                                                                                                                                                                                                                                             | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                    |
+| Input picking, raycaster activation, camera zoom/input locks, or world-selection collision masks                                   | [`meta/technical/architecture.md`](../meta/technical/architecture.md), [`meta/technical/signals.md`](../meta/technical/signals.md)                                                                                                                                                                                                                                                                                                        | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant input/camera docs |
+| Panda3D/Kivy bridge, UI manager, screen flow, or `system.main.ready`                                                               | [`meta/technical/startup.md`](../meta/technical/startup.md), [`meta/technical/architecture.md`](../meta/technical/architecture.md), [`meta/technical/ui-runtime.md`](../meta/technical/ui-runtime.md), [`meta/technical/signals.md`](../meta/technical/signals.md)                                                                                                                                                                        | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                    |
+| Gameplay rules, effects, actions, city production, or mechanics that interact with turn flow                                       | [`meta/technical/workings.md`](../meta/technical/workings.md) plus the matching focused doc such as [`meta/technical/effects.md`](../meta/technical/effects.md), [`meta/technical/actions.md`](../meta/technical/actions.md), [`meta/technical/city-production.md`](../meta/technical/city-production.md), [`meta/technical/rules.md`](../meta/technical/rules.md), and [`meta/technical/turns.md`](../meta/technical/turns.md) as needed | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                    |
+| Documentation, project indexing, routing behavior, or repo-local agent customization                                               | [`meta/INDEX.md`](../meta/INDEX.md), [`meta/structure.md`](../meta/structure.md), [`meta/generated/project-index.json`](../meta/generated/project-index.json), [`meta/technical/agent-workflow.md`](../meta/technical/agent-workflow.md), [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                                                                                                     | Regenerate generated docs and update the routing layer                                                         |
+
+## Working rules
+
+- Prefer repo docs over chat memory when they disagree.
+- Use `.github/instructions/` as a dispatcher layer only; do not put durable architecture knowledge there.
+- After structural changes, regenerate the project index with `python scripts/generate_project_index.py`.
+- If a change affects a guarded area, update the matching file in `meta/technical/` in the same change.
+- Before ending a task, automatically write back any stable verified learning to the closest `meta/**` doc; if it changes routing or repo-local agent workflow, update this file and the relevant routing docs in the same change.
+- If a change affects which docs should be read before editing a subsystem, update `meta/technical/update-triggers.md` and the skill routing matrix.
+- If a change affects repo-local agent workflow or `.github/agents/**`, update `meta/technical/agent-workflow.md` in the same change.
+- Keep this file thin; put durable project knowledge in `meta/`, not here.
+
+## High-value docs
+
+- [`meta/technical/architecture.md`](../meta/technical/architecture.md)
+- [`meta/technical/startup.md`](../meta/technical/startup.md)
+- [`meta/technical/asset-system.md`](../meta/technical/asset-system.md)
+- [`meta/technical/world-system.md`](../meta/technical/world-system.md)
+- [`meta/technical/tile-system.md`](../meta/technical/tile-system.md)
+- [`meta/technical/player-system.md`](../meta/technical/player-system.md)
+- [`meta/technical/rendering-system.md`](../meta/technical/rendering-system.md)
+- [`meta/technical/ui-runtime.md`](../meta/technical/ui-runtime.md)
+- [`meta/technical/world-generation.md`](../meta/technical/world-generation.md)
+- [`meta/technical/entities.md`](../meta/technical/entities.md)
+- [`meta/technical/turns.md`](../meta/technical/turns.md)
+- [`meta/technical/agent-workflow.md`](../meta/technical/agent-workflow.md)
+- [`meta/technical/effects.md`](../meta/technical/effects.md)
+- [`meta/technical/actions.md`](../meta/technical/actions.md)
+- [`meta/technical/city-production.md`](../meta/technical/city-production.md)
+- [`meta/technical/state.md`](../meta/technical/state.md)
+- [`meta/technical/signals.md`](../meta/technical/signals.md)
+- [`meta/technical/workings.md`](../meta/technical/workings.md)
+- [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)

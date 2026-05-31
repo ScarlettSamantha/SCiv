@@ -21,3 +21,4 @@ dist/
 builds/
 package.json
 *.log
+sciv/assets/

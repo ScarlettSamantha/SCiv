@@ -1,105 +1,63 @@
 # Workings
 
-## Players
+> Back to [Documentation Index](../INDEX.md)
+>
+> Related: [Architecture](architecture.md) | [Entities and Save/Load](entities.md) | [Turn Processing](turns.md) | [Rules](rules.md)
+>
+> This file is now a mechanics overview and hub. Focused deep dives live in separate pages so that gameplay behavior can be documented in more depth without turning one file into a junk drawer.
 
-...
+## Mechanics map
 
-## State  
+| Topic | Read when | Focused doc |
+| --- | --- | --- |
+| Rules | You need the rule registry or configurable values | [Rules](rules.md) |
+| Tile system | You are working on tile ownership, occupancy, terrain/resource/improvement state, or tile pathing/render hooks | [Tile System](tile-system.md) |
+| Effects | You are working on persistent modifiers, timed bonuses, or effect placement | [Effects](effects.md) |
+| Actions | You are working on one-shot gameplay operations or action-bar behavior | [Actions](actions.md) |
+| City production and growth | You are working on food, production, border growth, or city build flow | [City Production and Growth](city-production.md) |
+| Non-entity runtime state | You are working on `managers/state.py` or shared non-entity state | [State Store](state.md) |
 
-The main state of non-entity objects (e.g., managers and mechanic-focused implementations) can be stored in the state manager, ensuring persistence between saves.  
+## How these systems fit together
 
-The state manager has two internal object types:  
+```mermaid
+flowchart TD
+	UI[UI interaction] --> Action[Action]
+	Action --> Domain[City / Unit / Tile / Player]
+	Domain --> Effects[Effects]
+	Domain --> Rules[Rules]
+	Domain --> State[State Store as needed]
+	Effects --> Turns[Turn processing]
+	Domain --> Turns
+	Turns --> Signals[Signals and UI refresh]
+	Domain --> SaveLoad[Persistence boundaries]
+```
 
-- Flags: Limited to strings, integers, floats, and booleans. These are designed for frequent changes, with minimal checks for faster processing.  
-- Internal State: Can store more complex objects, but not lambdas due to pickle limitations.  
+## High-level guidance
 
-The system primarily functions as a data store with utility functions to simplify state management.
+### Use actions for immediate intent
 
-## Effects
+If the behavior is a one-off command or UI-driven operation, start with [Actions](actions.md).
 
-> Source: [system/effects.py](./system/effects.py)  
-> Implementations: [gameplay/effects/*](./gameplay/effects)
+### Use tile-system docs for tile ownership and occupancy
 
-Effects are stateful entities that represent game mechanics, such as a farm increasing the food yield of adjacent grassland tiles by +1.  
+If the change starts from `Tile`, `World`, or `TileRepository`, or if it changes the boundary between tile state and tile rendering, start with [Tile System](tile-system.md).
 
-They support several default placement methods:
+### Use effects for persistent modifiers
 
-- Empire: Applies the effect across the entire empire of the affected player. Can also target other players if needed.  
-- Tile: Targets a single tile (can be its own).  
-- Tiles: Targets a list of specific tiles.  
-- City: Applies the effect directly to a city object, rather than to individual tiles.  
-- City_Owned: Targets all tiles owned by a city, including the tile the city is on.  
-- Tile_Radius: Targets all tiles within a given radius from a center tile.  
+If the behavior should remain attached to a tile, city, player, unit, improvement, or the world over time, start with [Effects](effects.md).
 
-Effects can also accept a callable function, allowing them to define custom behavior when triggered.
+### Use city production docs for economy-side turn work
 
-### State and Behavior  
+Food growth, border expansion, and active city builds all live together in the city turn pass. Start with [City Production and Growth](city-production.md) when touching that area.
 
-*Cast effects* may contain state, but it is preferable to keep state minimal to improve reusability. Effects are primarily designed to modify game mechanics rather than store large amounts of state. Keeping effects general ensures better long-term maintainability.
+### Keep non-entity runtime state explicit
 
-### Triggering and Duration  
+If a mechanic needs shared state outside the entity graph, review [State Store](state.md) and [Entities and Save/Load](entities.md) before deciding where it belongs.
 
-Effects are triggered via messages that can be broadcast from various parts of the game. They can:  
+## When to split further
 
-- Last multiple turns or be tied to condition checks that determine when they expire.  
-- Be evaluated every turn, or trigger under special conditions (e.g., a city being destroyed might activate an effect).  
+If one of the focused docs grows to cover multiple independent systems again, split it instead of reintroducing a catch-all page. The goal is:
 
-### Relation to Actions  
-
-Effects are similar to Actions in that they represent and execute game mechanics, but they also serve a UI role. Each effect can include an icon, text, and description, or remain invisible to the user. This allows the system to handle both background mechanics and player-visible effects.
-
-## Tile Improvements
-
-## City Improvements
-
-> Mostly housed in the city object [gameplay/city.py](./gameplay/city.py) and UI [menus/kivy/parts/city.py](./menus/kivy/parts/city.py)
-
-When a player initiates building a unit, the process begins with a button click in the city GUI, which sends a request signal to the city's tagged messenger. The city then performs basic validation checks to determine whether it can build the requested unit or improvement. If valid, the city resets its building state and begins the construction process.
-
-Once construction starts, a signal is sent to notify the UI, which listens for the update and refreshes to reflect the new unit or improvement in progress. The city object then marks the selected unit/improvement as the active build project and instances it accordingly.
-
-Each turn, the city processes its production and adds progress to the current build. Once the required cost is reached, the city:
-
-- Places the improvement (adding it to self.improvements), or
-- Spawns the unit (registering it and calling spawn).
-
-### Maintenance Costs
-
-City improvements can charge maintenance to the player or city. During the turn processing phase, upkeep costs are handled:
-
-- For players: The player.contribute() method is called, where negative values represent expenses deducted from the player’s resources.
-- For cities: Upkeep is mainly in food, rather than production, and is calculated separately.
-
-## Rules
-
-> Source [gameplay/rules.py](./gameplay/rules.py)
-
-Rules are classes with class methods, implementing a common interface base class that provides stubs for all rule methods.
-
-Each rule set (e.g., SCIVRules) extends this interface and defines concrete values. Since rules are class-based, future overrides (e.g., player-defined rules) can be implemented easily by subclassing.
-
-All rules should be predefined in the interface and registered in the get_rules method, which returns a dictionary mapping rule names to their current values.
-
-## Actions
-
-> Source [system/actions.py](./system/actions.py)
-
-The Action system provides a generic, stateless way to handle actions in the game. Actions are used for units, buildings, and other game objects that perform temporary operations.
-
-Actions cannot be stateful—they execute once and do not persist. They can have conditions to determine if they can run and callbacks for success or failure. While active, they may have properties that influence execution, but they should not store state.
-
-Actions are not registered in the entity manager and are not saved. They are used as one-off actions that execute and then disappear.
-
-Ideal Use Cases:
-
-- Direct UI actions (e.g., move unit, found city, attack)
-- Triggering effects based on conditions without modifying game state
-- Handling UI-related logic without cluttering entity files
-
-Execution Flow:
-
-- Check condition (if defined)
-- Run action if allowed
-- Trigger success or failure callback (if defined)
-
-Actions are best for immediate UI interactions where state persistence is not required.
+- overview in `workings.md`
+- depth in focused docs
+- durable routing from the index and instruction layer

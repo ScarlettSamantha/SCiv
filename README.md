@@ -16,7 +16,7 @@ It currently requires (*for now*) a Unix/Windows-based OS, Python 3.13 or greate
 
 ## How to run it
 
-> Known Bugs: [Known Bugs](meta/known_bugs.md)
+> Known Bugs: [Known Bugs](known_bugs.md)
 
 At the moment, it will remain a basic POC until around version *0.2* It contains some gameplay elements but is still primarily focused on implementation.
 
@@ -88,6 +88,7 @@ In `config.prc`, GPU debug data is enabled by default. You can disable it there 
 
 ## Project
 
+> Docs: [Documentation Index](meta/INDEX.md)  
 > Structure: [Project Structure](meta/structure.md)  
 > Improvements/ToDo's: [TODO](meta/todo.md)
 
@@ -174,10 +175,15 @@ This should be the first truly playable version that's somewhat fun.
 
 ### Other Information
 
-- [Roadmap](meta/roadmap.md) - Rough outline (no timelines; hobby project)  
-- [Contribution Guide](CONTRIBUTE.md) - How to contribute  
+- [Documentation Index](meta/INDEX.md) - Start here for Git-tracked project docs  
+- [Known Bugs](known_bugs.md) - Tracked issues and rough edges  
 - [Changelog](CHANGELOG.md) - Automatically generated  
-- [File Structure](meta/structure.md) - Project layout  
+- [File Structure](meta/structure.md) - Generated project layout  
+- [Project Index JSON](meta/generated/project-index.json) - Machine-readable project inventory  
+- [Architecture](meta/technical/architecture.md) - Runtime subsystem overview  
+- [Startup Flow](meta/technical/startup.md) - Bootstrap and UI handoff path  
+- [Entities & Save/Load](meta/technical/entities.md) - Persistence model and entity lifecycle  
+- [Turn Processing](meta/technical/turns.md) - Turn pipeline and signal timing  
 - [Todo](meta/todo.md) - Remaining tasks  
 - [Signals](meta/technical/signals.md) - Internal signal definitions  
 - [Rules](meta/technical/rules.md) - Customizable game rules (editor coming ~0.3)  

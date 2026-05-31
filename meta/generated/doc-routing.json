@@ -1,0 +1,296 @@
+{
+  "skill": "sciv-orientation",
+  "entrypoint": ".github/copilot-instructions.md",
+  "instructions_root": ".github/instructions",
+  "manifest": "meta/generated/doc-routing.json",
+  "rules": [
+    {
+      "id": "startup-and-runtime-core",
+      "summary": "Startup, bootstrap, loading-screen handoff, and manager initialization order.",
+      "task_keywords": [
+        "startup",
+        "bootstrap",
+        "loading screen",
+        "manager init",
+        "OpenCiv",
+        "system.main.ready"
+      ],
+      "file_globs": [
+        "run.py",
+        "sciv/__main__.py",
+        "sciv/game.py",
+        "sciv/managers/**"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/managers.instructions.md",
+        ".github/instructions/ui-bridge.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/startup.md",
+        "meta/technical/architecture.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/startup.md",
+        "meta/technical/architecture.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "world-generation-and-generator-selection",
+      "summary": "World generation, generator selection, hexgen terrain creation, resource allocation, and starting-unit placement.",
+      "task_keywords": [
+        "world generation",
+        "generator",
+        "map generation",
+        "hexgen",
+        "heightmap",
+        "geoform",
+        "river",
+        "territory",
+        "resource allocation",
+        "starting units"
+      ],
+      "file_globs": [
+        "sciv/system/generators/**",
+        "sciv/system/subsystems/hexgen/**",
+        "sciv/system/game_settings.py",
+        "sciv/managers/world.py",
+        "sciv/managers/game.py",
+        "sciv/gameplay/repositories/generators.py"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/world-generation.instructions.md",
+        ".github/instructions/managers.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/world-generation.md",
+        "meta/technical/startup.md",
+        "meta/technical/architecture.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/world-generation.md",
+        "meta/technical/startup.md",
+        "meta/technical/architecture.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "turns-and-signals",
+      "summary": "Turn pipeline, turn stages, end-turn flow, and turn-related messenger behavior.",
+      "task_keywords": [
+        "turn",
+        "end turn",
+        "turn stage",
+        "game.turn",
+        "signals"
+      ],
+      "file_globs": [
+        "sciv/managers/turn.py",
+        "sciv/managers/game.py",
+        "sciv/gameplay/**"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/managers.instructions.md",
+        ".github/instructions/gameplay.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/turns.md",
+        "meta/technical/signals.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/turns.md",
+        "meta/technical/signals.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "entities-and-save-load",
+      "summary": "Entity lifecycle, entity registration, serialization, save/load, and state boundaries.",
+      "task_keywords": [
+        "entity",
+        "serialization",
+        "save",
+        "load",
+        "state manager",
+        "weakref"
+      ],
+      "file_globs": [
+        "sciv/system/entity.py",
+        "sciv/system/save_file.py",
+        "sciv/managers/entity.py",
+        "sciv/managers/state.py"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/entities-save.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/entities.md",
+        "meta/technical/state.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/entities.md",
+        "meta/technical/state.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "input-picking-and-camera-locks",
+      "summary": "World picking, input raycaster activation, camera zoom locks, and input/UI collision gating.",
+      "task_keywords": [
+        "input",
+        "raycaster",
+        "picker",
+        "picking",
+        "collision",
+        "zoom lock",
+        "camera lock"
+      ],
+      "file_globs": [
+        "sciv/managers/input.py",
+        "sciv/system/camera.py",
+        "sciv/helpers/input.py",
+        "sciv/menus/kivy/mixins/collidable.py"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/managers.instructions.md",
+        ".github/instructions/ui-bridge.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/architecture.md",
+        "meta/technical/signals.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/architecture.md",
+        "meta/technical/signals.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "ui-bridge-and-screens",
+      "summary": "Panda3D/Kivy bridge, UI manager, screen flow, and UI-facing signals.",
+      "task_keywords": [
+        "ui",
+        "kivy",
+        "screen",
+        "bridge",
+        "menu",
+        "ui runtime",
+        "pause menu",
+        "save load",
+        "panda3d_kivy"
+      ],
+      "file_globs": [
+        "sciv/menus/**",
+        "sciv/managers/game.py",
+        "sciv/managers/ui.py",
+        "sciv/game.py"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/ui-bridge.instructions.md",
+        ".github/instructions/managers.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/startup.md",
+        "meta/technical/architecture.md",
+        "meta/technical/ui-runtime.md",
+        "meta/technical/signals.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/startup.md",
+        "meta/technical/architecture.md",
+        "meta/technical/ui-runtime.md",
+        "meta/technical/signals.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "gameplay-rules-and-mechanics",
+      "summary": "Gameplay rules, effects, mechanics, and domain-level behavior changes.",
+      "task_keywords": [
+        "gameplay",
+        "rule",
+        "effect",
+        "unit",
+        "city",
+        "tile",
+        "civic",
+        "tech"
+      ],
+      "file_globs": [
+        "sciv/gameplay/**"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/gameplay.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/workings.md",
+        "meta/technical/effects.md",
+        "meta/technical/actions.md",
+        "meta/technical/city-production.md",
+        "meta/technical/rules.md",
+        "meta/technical/turns.md",
+        "meta/technical/entities.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/workings.md",
+        "meta/technical/effects.md",
+        "meta/technical/actions.md",
+        "meta/technical/city-production.md",
+        "meta/technical/rules.md",
+        "meta/technical/turns.md",
+        "meta/technical/entities.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "docs-and-routing",
+      "summary": "Documentation, generated indexes, routing rules, repo instructions, custom agents, and docs freshness checks.",
+      "task_keywords": [
+        "docs",
+        "documentation",
+        "index",
+        "routing",
+        "agent",
+        "custom agent",
+        "workflow",
+        "instruction",
+        "skill",
+        "project index",
+        "index helper",
+        "generated docs"
+      ],
+      "file_globs": [
+        "meta/**",
+        ".github/**",
+        "scripts/generate_project_index.py",
+        "scripts/query_project_index.py",
+        ".gitlab-ci.yml",
+        "makefile"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/docs-governance.instructions.md"
+      ],
+      "read_first": [
+        "meta/INDEX.md",
+        "meta/structure.md",
+        "meta/generated/project-index.json",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/INDEX.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md",
+        "meta/generated/project-index.json",
+        "meta/generated/doc-routing.json"
+      ]
+    }
+  ]
+}

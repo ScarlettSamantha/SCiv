@@ -99,6 +99,16 @@ markdown-check:
   script:
     - pymarkdownlnt --config .markdownlnt.json scan '**/*.md'
 
+docs-index-check:
+  image: python:3.13
+  stage: verify
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+  before_script: []
+  script:
+    - python3 scripts/generate_project_index.py --check
+
 check-isdev-flag:
   <<: *default-python-job-base
   stage: verify

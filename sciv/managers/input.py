@@ -352,6 +352,7 @@ class Input(Singleton, DirectObject):
         self.pickerRay = CollisionRay()
         picker_node.addSolid(self.pickerRay)  # type: ignore
         picker_node.setFromCollideMask(self._pick_mask)  # type: ignore
+        picker_node.setIntoCollideMask(BitMask32.allOff())  # type: ignore
 
         self.pickerNP: NodePath[CollisionNode] = self.base.camera.attachNewNode(picker_node)  # type: ignore
         self.picker.addCollider(self.pickerNP, self.pq)  # type: ignore
