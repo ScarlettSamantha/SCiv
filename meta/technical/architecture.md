@@ -113,6 +113,10 @@ SCiv does not run Panda3D and Kivy as separate apps. Instead, Kivy is patched in
 
 `Input` uses a Panda3D `CollisionRay` attached to the camera to pick tiles, units, and other world-selection targets. Keep the picker node as a from-only collider by clearing its `into` mask with `BitMask32.allOff()`: Panda3D `CollisionNode`s default to a nonzero `into` mask, which can otherwise surface `CollisionRay into CollisionRay` traversal errors when the input raycaster is active.
 
+The world camera pivots over the rendered tile footprint, but its pan target is clamped to cached world tile bounds with a small zoom-scaled overscroll margin. That allows a little edge peeking so the map can sit slightly off-center without letting the player drift far into empty space.
+
+Camera motion now eases toward desired pan, yaw, and zoom targets each frame instead of stepping in coarse update batches, and pan speed scales up with zoomed-out views so world navigation feels smoother and more strategy-game-like.
+
 ## Practical navigation guide
 
 If you are trying to answer a specific question, start here:

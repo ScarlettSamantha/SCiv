@@ -1,5 +1,5 @@
 from logging import Logger
-from math import cos, pi, sin
+from math import cos, exp, pi, sin
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Tuple
 
 from direct.showbase import MessengerGlobal
@@ -28,8 +28,8 @@ class Camera(Singleton, DirectObject):
 
         self.zoom: float = 20.0
         self.min_zoom: float = 2.0
-        self.max_zoom: float = 50.0
-        self.zoom_speed: float = 2.0
+        self.max_zoom: float = 80.0
+        self.zoom_speed: float = 3.0
         self.scroll_tick_rate: float = 0.1
 
         self.zoom_enabled: bool = True
@@ -41,9 +41,19 @@ class Camera(Singleton, DirectObject):
         self._update_yaw_trig()
 
         self.pan_speed: float = 20.0
-        self.rotate_speed: float = 60.0
+        self.rotate_speed: float = 80.0
+        self.pan_drag_sensitivity: float = 0.015
+        self.rotate_drag_sensitivity: float = 0.16
+        self.drag_threshold_pixels: float = 2.0
+        self.pan_responsiveness: float = 18.0
+        self.rotate_responsiveness: float = 16.0
+        self.zoom_responsiveness: float = 20.0
+        self.pan_overscroll_tiles: float = 1.5
+        self.pan_overscroll_zoom_ratio: float = 0.1
 
         self.target: Optional[NodePath] = None
+        self._world_pan_bounds: Optional[Tuple[float, float, float, float]] = None
+        self._world_pan_bounds_signature: Optional[Tuple[int, int, int, int]] = None
 
         self.win_x: int = self.base.win.getXSize()  # type: ignore
         self.win_y: int = self.base.win.getYSize()  # type: ignore
@@ -64,9 +74,6 @@ class Camera(Singleton, DirectObject):
         self._desired_yaw = self.yaw
         self._desired_zoom = self.zoom
 
-        self.update_interval: float = 0.05
-        self._time_since_last_flush: float = 0.0
-
         self.keys: Dict[str, bool] = {
             "up": False,
             "down": False,
@@ -78,7 +85,6 @@ class Camera(Singleton, DirectObject):
         self.left_dragging = False
         self.right_dragging = False
         self.last_mouse_pos: Tuple[float, float] = (0.0, 0.0)
-        self.drag_threshold = 40
 
         self._scrolling: bool = False
         self._since_last_scroll: float = 0.0
@@ -249,6 +255,95 @@ class Camera(Singleton, DirectObject):
         self.base.cam.node().setLens(lens)
         return 1
 
+    def _get_world_pan_bounds(self) -> Optional[Tuple[float, float, float, float]]:
+        world = self.base.world
+        grid = world.get_grid()
+        signature = (id(grid), len(grid), world.cols, world.rows)
+
+        if self._world_pan_bounds_signature == signature:
+            return self._world_pan_bounds
+
+        if len(grid) == 0:
+            self._world_pan_bounds_signature = signature
+            self._world_pan_bounds = None
+            return None
+
+        tiles_iter = iter(grid.values())
+        first_tile = next(tiles_iter, None)
+        if first_tile is None:
+            self._world_pan_bounds_signature = signature
+            self._world_pan_bounds = None
+            return None
+
+        min_x = max_x = float(first_tile.pos_x)
+        min_y = max_y = float(first_tile.pos_y)
+
+        for tile in tiles_iter:
+            tile_x = float(tile.pos_x)
+            tile_y = float(tile.pos_y)
+
+            if tile_x < min_x:
+                min_x = tile_x
+            elif tile_x > max_x:
+                max_x = tile_x
+
+            if tile_y < min_y:
+                min_y = tile_y
+            elif tile_y > max_y:
+                max_y = tile_y
+
+        self._world_pan_bounds_signature = signature
+        self._world_pan_bounds = (min_x, max_x, min_y, max_y)
+        return self._world_pan_bounds
+
+    def _get_pan_overscroll_margin(self, bounds: Tuple[float, float, float, float]) -> Tuple[float, float]:
+        world = self.base.world
+        min_x, max_x, min_y, max_y = bounds
+        span_x = max_x - min_x
+        span_y = max_y - min_y
+        fallback_step = max(float(world.hex_radius) * 2.0, 1.0)
+        tile_step_x = span_x / max(world.cols - 1, 1) if world.cols > 1 else fallback_step
+        tile_step_y = span_y / max(world.rows - 1, 1) if world.rows > 1 else fallback_step
+        tile_step_x = max(tile_step_x, fallback_step)
+        tile_step_y = max(tile_step_y, fallback_step)
+        zoom_margin = self._desired_zoom * self.pan_overscroll_zoom_ratio
+        return (
+            tile_step_x * self.pan_overscroll_tiles + zoom_margin,
+            tile_step_y * self.pan_overscroll_tiles + zoom_margin,
+        )
+
+    def _pan_speed_scale(self) -> float:
+        return max(0.85, min(3.0, self._desired_zoom / 20.0))
+
+    def _smoothing_factor(self, dt: float, responsiveness: float) -> float:
+        if dt <= 0.0:
+            return 1.0
+        return min(1.0, 1.0 - exp(-responsiveness * dt))
+
+    def _has_pending_motion(self) -> bool:
+        current_x, current_y, current_z = self.pivot.getPos()  # type: ignore
+        desired_x, desired_y, desired_z = self._desired_pivot_pos  # type: ignore
+        return (
+            abs(float(desired_x) - float(current_x)) > 0.001
+            or abs(float(desired_y) - float(current_y)) > 0.001
+            or abs(float(desired_z) - float(current_z)) > 0.001
+            or abs(self._desired_yaw - self.yaw) > 0.05
+            or abs(self._desired_zoom - self.zoom) > 0.01
+        )
+
+    def _clamp_pivot_position(self, pivot_pos: LPoint3f) -> LPoint3f:
+        bounds = self._get_world_pan_bounds()
+        if bounds is None:
+            return pivot_pos
+
+        min_x, max_x, min_y, max_y = bounds
+        margin_x, margin_y = self._get_pan_overscroll_margin(bounds)
+        pivot_x, pivot_y, pivot_z = pivot_pos  # type: ignore
+
+        clamped_x = min(max(float(pivot_x), min_x - margin_x), max_x + margin_x)
+        clamped_y = min(max(float(pivot_y), min_y - margin_y), max_y + margin_y)
+        return LPoint3f(clamped_x, clamped_y, float(pivot_z))
+
     def update_camera_position(self):
         rad = self.pitch * (pi / 180.0)
         offset_y = -self.zoom * cos(rad)
@@ -331,19 +426,20 @@ class Camera(Singleton, DirectObject):
         forward = (self._sin_yaw, -self._cos_yaw)
         right = (self._cos_yaw, self._sin_yaw)
         px, py, pz = self._desired_pivot_pos  # type: ignore
+        pan_speed = self.pan_speed * self._pan_speed_scale()
 
         if self.keys["down"]:
-            px += forward[0] * self.pan_speed * dt  # type: ignore
-            py += forward[1] * self.pan_speed * dt  # type: ignore
+            px += forward[0] * pan_speed * dt  # type: ignore
+            py += forward[1] * pan_speed * dt  # type: ignore
         if self.keys["up"]:
-            px -= forward[0] * self.pan_speed * dt  # type: ignore
-            py -= forward[1] * self.pan_speed * dt  # type: ignore
+            px -= forward[0] * pan_speed * dt  # type: ignore
+            py -= forward[1] * pan_speed * dt  # type: ignore
         if self.keys["left"]:
-            px -= right[0] * self.pan_speed * dt  # type: ignore
-            py -= right[1] * self.pan_speed * dt  # type: ignore
+            px -= right[0] * pan_speed * dt  # type: ignore
+            py -= right[1] * pan_speed * dt  # type: ignore
         if self.keys["right"]:
-            px += right[0] * self.pan_speed * dt  # type: ignore
-            py += right[1] * self.pan_speed * dt  # type: ignore
+            px += right[0] * pan_speed * dt  # type: ignore
+            py += right[1] * pan_speed * dt  # type: ignore
 
         if self.keys["rotate_left"]:
             self._desired_yaw += self.rotate_speed * dt
@@ -355,29 +451,47 @@ class Camera(Singleton, DirectObject):
             x, y = md.getX(), md.getY()
             dx = x - self.last_mouse_pos[0]
             dy = y - self.last_mouse_pos[1]
+            delta_px_x = dx * self.win_x / 2
+            delta_px_y = dy * self.win_y / 2
 
-            if self.left_dragging and abs(dx) >= self.drag_threshold:
-                self._desired_yaw -= dx * 0.1
+            if self.left_dragging and abs(delta_px_x) >= self.drag_threshold_pixels:
+                self._desired_yaw -= delta_px_x * self.rotate_drag_sensitivity
             elif self.right_dragging:
-                delta_px_x = dx * self.win_x / 2
-                delta_px_y = dy * self.win_y / 2
-                pan_factor = 0.015 * (self._desired_zoom / 25)
+                pan_factor = self.pan_drag_sensitivity * self._pan_speed_scale()
                 px += (-delta_px_x * pan_factor) * self._cos_yaw + (delta_px_y * pan_factor) * self._sin_yaw  # type: ignore
                 py += (-delta_px_x * pan_factor) * self._sin_yaw - (delta_px_y * pan_factor) * self._cos_yaw  # type: ignore
 
             self.last_mouse_pos = (x, y)
 
-        self._desired_pivot_pos = LPoint3f(px, py, pz)  # type: ignore
+        self._desired_pivot_pos = self._clamp_pivot_position(LPoint3f(px, py, pz))  # type: ignore
 
-    def _flush_to_gpu(self):
-        self.pivot.setPos(self._desired_pivot_pos)  # type: ignore
-        self.yaw = self._desired_yaw
+    def _flush_to_gpu(self, dt: float):
+        pan_factor = self._smoothing_factor(dt, self.pan_responsiveness)
+        rotate_factor = self._smoothing_factor(dt, self.rotate_responsiveness)
+        zoom_factor = self._smoothing_factor(dt, self.zoom_responsiveness)
+
+        current_x, current_y, current_z = self.pivot.getPos()  # type: ignore
+        desired_x, desired_y, desired_z = self._desired_pivot_pos  # type: ignore
+
+        self.pivot.setPos(
+            float(current_x) + (float(desired_x) - float(current_x)) * pan_factor,
+            float(current_y) + (float(desired_y) - float(current_y)) * pan_factor,
+            float(current_z) + (float(desired_z) - float(current_z)) * pan_factor,
+        )  # type: ignore
+        self.yaw += (self._desired_yaw - self.yaw) * rotate_factor
+        self.zoom += (self._desired_zoom - self.zoom) * zoom_factor
+
+        if abs(self._desired_yaw - self.yaw) <= 0.01:
+            self.yaw = self._desired_yaw
+        if abs(self._desired_zoom - self.zoom) <= 0.01:
+            self.zoom = self._desired_zoom
+
         self._update_yaw_trig()
-        self.zoom = self._desired_zoom
         self.update_camera_position()
 
     def update(self, task: Task.Task) -> Literal[1]:
-        if not self.active and not (self.left_dragging or self.right_dragging or any(self.keys.values())):
+        has_input = self.left_dragging or self.right_dragging or any(self.keys.values())
+        if not self.active and not (has_input or self._scrolling or self._has_pending_motion()):
             return task.cont
         dt: float = self.base.clock.getDt()  # type: ignore
 
@@ -391,10 +505,7 @@ class Camera(Singleton, DirectObject):
                 if self.base.taskMgr.hasTaskNamed(self._scroll_tick_task_name):  # type: ignore
                     self.base.taskMgr.remove(self._scroll_tick_task_name)  # type: ignore
 
-        self._time_since_last_flush += dt
-        if self._time_since_last_flush >= float(self.update_interval):  # type: ignore
-            self._flush_to_gpu()
-            self._time_since_last_flush = 0.0
+        self._flush_to_gpu(dt)
         return task.cont
 
     def get_lens(self) -> Lens:

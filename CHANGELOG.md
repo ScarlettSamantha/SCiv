@@ -42,6 +42,9 @@
 - ⚙️ Biased river source selection farther inland so generated river chains trend longer before falling back to closer sources.
 - ⚙️ Bounded Dynamic Worlds river-network branching so braided rivers generate promptly while still producing connector and split/rejoin channels.
 - ⚙️ Added a Dynamic Worlds option that can force all main ocean basins to connect through carved straits before rivers and geoforms run.
+- ⚙️ Increased the in-game camera zoom-out cap for a wider world view.
+- ⚙️ Added a soft camera pan boundary with slight map-edge overscroll to keep the view near the world.
+- ⚙️ Smoothed camera pan, zoom, and rotation with more responsive drag controls and zoom-aware movement speed.
 
 ### Mechanics
 
