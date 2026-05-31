@@ -164,17 +164,35 @@ class Camera(Singleton, DirectObject):
     def set_key(self, key: str, value: Any):
         self.keys[key] = value
 
+    def clear_drag_state(self) -> None:
+        self.left_dragging = False
+        self.right_dragging = False
+
     def lock_camera(self):
         self.lock = True
+        self.clear_drag_state()
 
     def unlock_camera(self):
         self.lock = False
 
     def disable_control(self):
         self.active = False
+        self.clear_drag_state()
 
     def enable_control(self):
         self.active = True
+
+    def begin_external_capture(self) -> None:
+        self.clear_drag_state()
+        self.active = False
+        self.lock = True
+        self.zoom_enabled = False
+
+    def end_external_capture(self, *, active: bool = True, lock: bool = False, zoom_enabled: bool = True) -> None:
+        self.clear_drag_state()
+        self.active = active
+        self.lock = lock
+        self.zoom_enabled = zoom_enabled
 
     def disable_zoom(self):
         if self.lock:
@@ -286,6 +304,8 @@ class Camera(Singleton, DirectObject):
         self.base.camera.setPos(*center)  # type: ignore
 
     def start_left_drag(self):
+        if not self.active or self.lock:
+            return
         if not self.mouseWatcherNode.hasMouse():
             return
         self.left_dragging = True
@@ -296,6 +316,8 @@ class Camera(Singleton, DirectObject):
         self.left_dragging = False
 
     def start_right_drag(self):
+        if not self.active or self.lock:
+            return
         if not self.mouseWatcherNode.hasMouse():
             return
         self.right_dragging = True

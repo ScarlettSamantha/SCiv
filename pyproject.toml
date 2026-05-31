@@ -1,6 +1,6 @@
 [tool.briefcase]
 project_name = "SCiv"
-version = "0.2.0rc1"
+version = "0.2.0.dev1"
 package = "nl.scarlettbytes.sciv"
 bundle = "nl.scarlettbytes.sciv"
 author = "Scarlett Samantha Verheul"
@@ -59,10 +59,11 @@ cleanup_paths = ["build", "sciv/assets/generated", "sciv/logs/", "sciv/saves/"]
 
 [tool.poetry]
 authors = ["Scarlett Samantha Verheul <scarlett.verheul@gmail.com>"]
-dependencies.python = "^3.13"
+dependencies.python = "^3.14"
 description = "A Python project for Civ-like game"
 license = "GNU General Public License v3 (GPLv3)"
 name = "SCiv"
+version = "0.2.0.dev1"
 
 [tool.ruff]
 ignore = ["E501", "F841", "E721", "E402"]
@@ -96,7 +97,7 @@ changelog_function = "changelog.py:openciv_changelog"
 commit_parser = "emoji"
 github_release = false
 version_source = "commit"
-version_variables = ["version.py:__version__"]
+version_variables = ["sciv/version.py:__version__"]
 
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"

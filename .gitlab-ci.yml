@@ -107,7 +107,7 @@ docs-index-check:
     - if: '$CI_PIPELINE_SOURCE == "push"'
   before_script: []
   script:
-    - python3 scripts/generate_project_index.py --check
+    - python3 scripts/index.py check
 
 check-isdev-flag:
   <<: *default-python-job-base

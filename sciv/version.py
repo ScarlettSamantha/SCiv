@@ -8,18 +8,22 @@ except ImportError:
 __major__: int = 0
 __minor__: int = 2
 __patch__: int = 0
+__stage__: str = "dev"
 __revision__: int = 1
-__isdev__: bool = True
+__isdev__: bool = __stage__ == "dev"
 
-if __isdev__:
+if __stage__ == "dev":
     __pre_release__: str = ".dev"
     __build__: str = str(__revision__)
+elif __stage__:
+    __pre_release__ = __stage__
+    __build__ = str(__revision__)
 else:
-    __pre_release__: str = ""
-    __build__: str = ""
+    __pre_release__ = ""
+    __build__ = ""
 
 __version__: str = f"{__major__}.{__minor__}.{__patch__}{__pre_release__}{__build__}"
-__version_name__ = "Proof of Concept - rc1"
+__version_name__: str = "Proof of Concept"
 
 
 def get_package_version(package_name: str) -> str:

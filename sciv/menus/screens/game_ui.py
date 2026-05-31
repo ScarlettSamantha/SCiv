@@ -38,6 +38,7 @@ from menus.kivy.parts.debug import DebugPanel
 from menus.kivy.parts.debug_actions import DebugActions
 from menus.kivy.parts.debug_map_stats import DebugMapStats
 from menus.kivy.parts.inspect_entity import InspectEntity
+from menus.kivy.parts.minimap import Minimap
 from menus.kivy.parts.player_attack import TargetingDuelPanel
 from menus.kivy.parts.player_combat_log import PlayerCombatLog
 from menus.kivy.parts.player_info import PlayerInfo
@@ -105,6 +106,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_list: Optional[PlayerList] = None
         self.player_info: Optional[PlayerInfo] = None
         self.player_combat_log: Optional[PlayerCombatLog] = None
+        self.minimap: Optional[Minimap] = None
         self.messenger: Optional[MessageRenderer] = None
         self.inspect: Optional[InspectEntity] = None
         self.player_attack_info: Optional[TargetingDuelPanel] = None
@@ -132,18 +134,42 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             return
         self.messenger.refresh(0)
 
+    @staticmethod
+    def _is_attached(widget: Widget | None) -> bool:
+        return widget is not None and getattr(widget, "parent", None) is not None
+
     def on_game_start(self, *args: Any):
         self.player = PlayerManager.session_player()
-        self.build_player_list()
-        self.build_combat_log()
-        self.build_messenger()
+        if not self._is_attached(self.player_list):
+            self.build_player_list()
 
-        if Debug.debug:
+        if not self._is_attached(self.player_combat_log):
+            self.build_combat_log()
+        elif self.player_combat_log is not None:
+            self.player_combat_log.update()
+
+        if not self._is_attached(self.messenger):
+            self.build_messenger()
+        else:
+            self.refresh_messenger()
+
+        if Debug.debug and not self._is_attached(self.stats_frame):
             self.add_widget(self.build_stats_frame())
 
-        self.add_widget(self.build_top_bar())  # type: ignore
+        if not self._is_attached(self.top_bar):
+            self.add_widget(self.build_top_bar())  # type: ignore
+        elif self.top_bar is not None:
+            self.top_bar.update()
 
-        self.register_non_collidable(self.player_combat_log)  # type: ignore
+        if not self._is_attached(self.minimap):
+            self.add_widget(self.build_minimap())  # type: ignore
+        elif self.minimap is not None:
+            self.minimap.refresh_full()
+
+        if self.player_combat_log is not None:
+            self.register_non_collidable(self.player_combat_log)  # type: ignore
+        if self.minimap is not None:
+            self.register_non_collidable(self.minimap)  # type: ignore
         self.accept(
             "escape", self.on_escape
         )  # this is to prevent the pause menu from being opened before the game starts
@@ -159,6 +185,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.update_ui_geometry_cache()
         if self.top_bar is not None:
             self.top_bar.update()
+        if self.minimap is not None:
+            self.minimap.refresh_full()
 
     def register(self):
         self.logger.info("Registering event listeners.")
@@ -328,6 +356,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def build_screen(self):
         self.logger.info("Building game UI screen.")
+        if self.root_layout is not None and getattr(self.root_layout, "parent", None) is not None:
+            return
+
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
         self.root_layout.add_widget(self.build_action_bar())  # type: ignore
@@ -397,6 +428,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.top_bar = TopBar(base=self._base, background_color=(0, 0, 0, 0.9), border=(0, 0, 0, 0))
         return self.top_bar.build()
 
+    def build_minimap(self) -> Minimap:
+        if self.minimap is None:
+            self.minimap = Minimap(base=self._base)
+        self.minimap.register()
+        return self.minimap
+
     def build_research(self) -> Research:
         if self.player is None or (tree := self.player.tech.get_tree()) is None:
             raise AssertionError("Player or tech tree is not initialized.")
@@ -455,6 +492,10 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.top_bar.update()
 
+    def refresh_minimap_overlay(self) -> None:
+        if self.minimap is not None:
+            self.minimap.schedule_overlay_refresh()
+
     def clear_selected_unit(self):
         self.clear_action_bar()
         self.ui_manager.clear_selected_unit()
@@ -463,6 +504,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def clear_selected_tile(self):
         self.ui_manager.clear_selected_tile()
         self.close_city_ui()
+        self.refresh_minimap_overlay()
 
     def toggle_log(self):
         if not self.log.is_open:
@@ -539,6 +581,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if (unit := self.ui_manager.current_unit) is not None and generate_buttons is True:
             self.generate_buttons_for_unit_actions(unit)  # Update
 
+        if tile_change:
+            self.refresh_minimap_overlay()
+
         return tile_change
 
     def process_unit_click(self, unit: Optional[Union[str, "Tile"]] = None) -> bool:
@@ -568,6 +613,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if should_select_unit is True and _unit.is_alive():
             self.ui_manager.select_unit(_unit)  # type: ignore # We know it exists but because its a weak reference, mypy doesn't know it exists
             self.open_target_panel(_unit)
+            self.refresh_minimap_overlay()
         else:
             self.close_target_panel()
 
@@ -944,6 +990,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def destroy(self):
         self.logger.info("Destroying GameUIScreen.")
+        if self.minimap is not None:
+            self.unregister_non_collidable(self.minimap)
+            if getattr(self.minimap, "parent", None) is not None:
+                self.remove_widget(self.minimap)
+            self.minimap.destroy()
+            self.minimap = None
         self.unregister()
         self.clear_action_bar()
         self.clear_selected_unit()
