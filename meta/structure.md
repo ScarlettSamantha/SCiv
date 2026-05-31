@@ -5,7 +5,7 @@
 
 ## Snapshot
 
-- Indexed Python modules: `846`
+- Indexed Python modules: `853`
 - Indexed documentation files: `47`
 - Runtime areas: `11`
 - Machine-readable manifest: [`meta/generated/project-index.json`](generated/project-index.json)
@@ -193,7 +193,7 @@ Domain model for players, tiles, cities, units, rules, effects, and other mechan
 Engine-facing systems such as rendering, save/load helpers, generators, and effects.
 
 - Modules indexed: `51`
-- Indexed lines: `12601`
+- Indexed lines: `12618`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -308,8 +308,8 @@ World-adjacent package resources.
 
 Developer utilities and repository automation scripts.
 
-- Modules indexed: `13`
-- Indexed lines: `6690`
+- Modules indexed: `20`
+- Indexed lines: `7324`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -324,4 +324,4 @@ Developer utilities and repository automation scripts.
 | [scripts/ui_panda_modal.py](../scripts/ui_panda_modal.py) | classes: `DraggableModalPopup`, `ModalPopup`, `PopupDraggableMixin` | Repository utility script for ui panda modal. |
 | [scripts/worldgen_asset_preview_support.py](../scripts/worldgen_asset_preview_support.py) | classes: `AssetPreviewInfo`, `_ModelPreviewRenderer`; functions: `_assignment_target_name`, `_assignment_value`, `_extract_class_metadata_from_def`, `_float_value` +22 more | Asset preview helpers for the standalone worldgen viewer. |
 | [scripts/worldgen_generation_support.py](../scripts/worldgen_generation_support.py) | classes: `OfflineGeneratorSpec`, `OfflineOptionSpec`, `_FallbackConfigManager`, `_OfflineRuntimeTileProxy`; functions: `_allocate_offline_resources`, `_build_dynamic_runtime_region_maps`, `_build_offline_resource_grid`, `_build_offline_runtime_tiles` +20 more | Shared offline world-generation helpers for export and preview tooling. |
-| [scripts/worldgen_viewer.py](../scripts/worldgen_viewer.py) | classes: `AssetPreviewGroupWidget`, `HexItem`, `LegendEntrySpec`, `LegendEntryWidget` +5 more; functions: `_altitude_bucket_label`, `_altitude_color`, `_blend`, `_build_generated_label_text` +25 more | Repository utility script for worldgen viewer. |
+| [scripts/worldgen_viewer.py](../scripts/worldgen_viewer.py) | - | Compatibility launcher for the standalone SCiv worldgen viewer. |

@@ -159,11 +159,26 @@ class PyFileProcessor:
             spec.loader.exec_module(module)  # type: ignore
 
         for cls_name in visitor.subclasses:
+            if not hasattr(module, cls_name):
+                if Debug.system_loading_classes():
+                    LogManager.get_singleton_instance().engine.debug(
+                        f"Skipping class: {cls_name} from {module.__name__}; not defined at runtime"
+                    )
+                continue
+
+            runtime_class = getattr(module, cls_name)
+            if not inspect.isclass(runtime_class):
+                if Debug.system_loading_classes():
+                    LogManager.get_singleton_instance().engine.debug(
+                        f"Skipping class: {cls_name} from {module.__name__}; runtime attribute is not a class"
+                    )
+                continue
+
             if inspect.isfunction(self.base_classes):
                 if self.base_classes(module, cls_name):  # type: ignore
-                    loaded[cls_name] = getattr(module, cls_name)
+                    loaded[cls_name] = runtime_class
             else:
-                loaded[cls_name] = getattr(module, cls_name)
+                loaded[cls_name] = runtime_class
         return loaded
 
 

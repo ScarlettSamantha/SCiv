@@ -34,7 +34,7 @@ LANDMASS_PROFILES: dict[str, DynamicOptionProfile] = {
             "height_smoothing_passes": 2,
             "height_smoothing_strength": 0.26,
             "mountain_knee_ratio": 0.79,
-            "mountain_compression_ratio": 0.50,
+            "mountain_compression_ratio": 0.47,
         },
     ),
     "pangaea": DynamicOptionProfile(
@@ -66,7 +66,7 @@ LANDMASS_PROFILES: dict[str, DynamicOptionProfile] = {
             "height_smoothing_passes": 2,
             "height_smoothing_strength": 0.26,
             "mountain_knee_ratio": 0.79,
-            "mountain_compression_ratio": 0.50,
+            "mountain_compression_ratio": 0.46,
         },
     ),
     "small_continents": DynamicOptionProfile(
@@ -98,7 +98,7 @@ LANDMASS_PROFILES: dict[str, DynamicOptionProfile] = {
             "height_smoothing_passes": 2,
             "height_smoothing_strength": 0.24,
             "mountain_knee_ratio": 0.81,
-            "mountain_compression_ratio": 0.56,
+            "mountain_compression_ratio": 0.48,
         },
     ),
     "archipelago": DynamicOptionProfile(
@@ -162,7 +162,7 @@ LANDMASS_PROFILES: dict[str, DynamicOptionProfile] = {
             "height_smoothing_passes": 2,
             "height_smoothing_strength": 0.27,
             "mountain_knee_ratio": 0.80,
-            "mountain_compression_ratio": 0.52,
+            "mountain_compression_ratio": 0.48,
         },
     ),
 }

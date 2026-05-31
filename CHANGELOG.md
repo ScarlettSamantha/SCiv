@@ -12,6 +12,7 @@
 
 - 🐛 Fixed the in-game pause-menu options button so it opens settings and returns to the pause menu on Back.
 - 🐛 Fixed offline worldgen previews so standalone exports handle shrubland biomes, keep post-conversion terrain labels, synthesize runtime tile dumps for the viewer, render ocean water with waterbody colors instead of desert biome colors, and label ocean/coast hexes by finalized terrain instead of raw climate biome text.
+- 🐛 Fixed generator discovery so PyLoad skips conditional helper classes that are present in source but not defined at runtime.
 
 ### AI
 
@@ -30,6 +31,9 @@
 - 💄 Expanded the worldgen viewer's river diagnostics with network counts, braid/connector categories, top systems, and richer selected-hex river details.
 - 💄 Moved worldgen viewer preview generation onto a background worker with a staged progress bar and added a Random seed button beside the seed field.
 - 💄 Cleaned up the standalone worldgen viewer menu bar with shorter grouped View submenus and shorter top-level actions.
+- 💄 Added multi-world generation batches to the worldgen viewer with a clickable overview grid and back-to-overview navigation.
+- 💄 Added process-backed multi-world generation and a right-panel world switcher to the worldgen viewer batch flow.
+- 💄 Made the worldgen viewer batch overview resize preview cards and thumbnails to keep a responsive three-across layout.
 
 ### Engine
 
@@ -45,6 +49,7 @@
 - ✨ Reworked Dynamic Worlds to use its own heightmap-shaped generation path with stronger landmass and biome profile differences.
 - ✨ Added Dynamic Worlds channel carving, inland seas, tributary river growth, river valleys, and stronger biome-belt shaping.
 - 🎮 Smoothed Dynamic Worlds landmass shaping, reduced mountain-heavy maps, and shared the runtime conversion prep path between Basic and Dynamic.
+- 🎮 Rebalanced Dynamic Worlds peak compression so inland scripts generate fewer mountains without changing hill thresholds.
 
 ### Content
 

@@ -14862,7 +14862,7 @@
       "path": "sciv/system",
       "description": "Engine-facing systems such as rendering, save/load helpers, generators, and effects.",
       "module_count": 51,
-      "line_count": 12601,
+      "line_count": 12618,
       "key_modules": [
         {
           "path": "sciv/system/entity.py",
@@ -15672,7 +15672,7 @@
             "system.subsystems.hexgen.territory",
             "typing"
           ],
-          "line_count": 137,
+          "line_count": 139,
           "parse_error": null
         },
         {
@@ -15932,7 +15932,7 @@
             "re",
             "typing"
           ],
-          "line_count": 225,
+          "line_count": 240,
           "parse_error": null
         },
         {
@@ -19694,8 +19694,8 @@
     {
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
-      "module_count": 13,
-      "line_count": 6690,
+      "module_count": 20,
+      "line_count": 7324,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -20074,66 +20074,13 @@
           "path": "scripts/worldgen_viewer.py",
           "module": "scripts.worldgen_viewer",
           "area": "scripts",
-          "summary": "Repository utility script for worldgen viewer.",
-          "classes": [
-            "AssetPreviewGroupWidget",
-            "HexItem",
-            "LegendEntrySpec",
-            "LegendEntryWidget",
-            "MapView",
-            "PreviewGenerationRequest",
-            "PreviewGenerationWorker",
-            "PreviewSurfaceWidget",
-            "WorldgenViewerWindow"
-          ],
-          "functions": [
-            "_altitude_bucket_label",
-            "_altitude_color",
-            "_blend",
-            "_build_generated_label_text",
-            "_coord_from_between_value",
-            "_edge_points_for_side",
-            "_heightmap_sealevel",
-            "_hex_center",
-            "_hex_polygon",
-            "_moisture_bucket_label",
-            "_moisture_color",
-            "_neighbor_coord_for_side",
-            "_overlay_water_label",
-            "_resource_color",
-            "_resource_label",
-            "_river_line",
-            "_river_role_label",
-            "_river_segment_key",
-            "_runtime_resource_key",
-            "_runtime_terrain_color",
-            "_runtime_terrain_key",
-            "_runtime_terrain_label",
-            "_runtime_terrain_land_color",
-            "_stable_color",
-            "_title_from_identifier",
-            "_water_color_for_record",
-            "_water_color_from_kind",
-            "build_arg_parser",
-            "main"
-          ],
+          "summary": "Compatibility launcher for the standalone SCiv worldgen viewer.",
+          "classes": [],
+          "functions": [],
           "imports": [
-            "PyQt6.QtCore",
-            "PyQt6.QtGui",
-            "PyQt6.QtWidgets",
-            "argparse",
-            "collections",
-            "dataclasses",
-            "hashlib",
-            "math",
-            "pathlib",
-            "sys",
-            "typing",
-            "worldgen_asset_preview_support",
-            "worldgen_generation_support",
-            "worldgen_viewer_support"
+            "worldgen_viewer_tool.app"
           ],
-          "line_count": 2233,
+          "line_count": 9,
           "parse_error": null
         }
       ],
@@ -20515,66 +20462,13 @@
           "path": "scripts/worldgen_viewer.py",
           "module": "scripts.worldgen_viewer",
           "area": "scripts",
-          "summary": "Repository utility script for worldgen viewer.",
-          "classes": [
-            "AssetPreviewGroupWidget",
-            "HexItem",
-            "LegendEntrySpec",
-            "LegendEntryWidget",
-            "MapView",
-            "PreviewGenerationRequest",
-            "PreviewGenerationWorker",
-            "PreviewSurfaceWidget",
-            "WorldgenViewerWindow"
-          ],
-          "functions": [
-            "_altitude_bucket_label",
-            "_altitude_color",
-            "_blend",
-            "_build_generated_label_text",
-            "_coord_from_between_value",
-            "_edge_points_for_side",
-            "_heightmap_sealevel",
-            "_hex_center",
-            "_hex_polygon",
-            "_moisture_bucket_label",
-            "_moisture_color",
-            "_neighbor_coord_for_side",
-            "_overlay_water_label",
-            "_resource_color",
-            "_resource_label",
-            "_river_line",
-            "_river_role_label",
-            "_river_segment_key",
-            "_runtime_resource_key",
-            "_runtime_terrain_color",
-            "_runtime_terrain_key",
-            "_runtime_terrain_label",
-            "_runtime_terrain_land_color",
-            "_stable_color",
-            "_title_from_identifier",
-            "_water_color_for_record",
-            "_water_color_from_kind",
-            "build_arg_parser",
-            "main"
-          ],
+          "summary": "Compatibility launcher for the standalone SCiv worldgen viewer.",
+          "classes": [],
+          "functions": [],
           "imports": [
-            "PyQt6.QtCore",
-            "PyQt6.QtGui",
-            "PyQt6.QtWidgets",
-            "argparse",
-            "collections",
-            "dataclasses",
-            "hashlib",
-            "math",
-            "pathlib",
-            "sys",
-            "typing",
-            "worldgen_asset_preview_support",
-            "worldgen_generation_support",
-            "worldgen_viewer_support"
+            "worldgen_viewer_tool.app"
           ],
-          "line_count": 2233,
+          "line_count": 9,
           "parse_error": null
         },
         {
@@ -20621,6 +20515,165 @@
             "typing"
           ],
           "line_count": 522,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/__init__.py",
+          "module": "scripts.worldgen_viewer_tool",
+          "area": "scripts",
+          "summary": "Internal package for the standalone SCiv worldgen viewer.",
+          "classes": [],
+          "functions": [],
+          "imports": [],
+          "line_count": 1,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/__main__.py",
+          "module": "scripts.worldgen_viewer_tool.__main__",
+          "area": "scripts",
+          "summary": "Repository utility script for main.",
+          "classes": [],
+          "functions": [],
+          "imports": [
+            "worldgen_viewer_tool.app"
+          ],
+          "line_count": 3,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/app.py",
+          "module": "scripts.worldgen_viewer_tool.app",
+          "area": "scripts",
+          "summary": "Application entry and main window for the standalone SCiv worldgen viewer.",
+          "classes": [
+            "AssetPreviewGroupWidget",
+            "GeneratedOverviewScrollArea",
+            "GeneratedPreviewPayloadResult",
+            "GeneratedPreviewResult",
+            "HexItem",
+            "MapView",
+            "PreviewGenerationRequest",
+            "PreviewGenerationWorker",
+            "PreviewSurfaceWidget",
+            "WorldgenViewerWindow"
+          ],
+          "functions": [
+            "_build_generated_label_text",
+            "_generate_preview_payload_result",
+            "_preview_process_context",
+            "build_arg_parser",
+            "main"
+          ],
+          "imports": [
+            "PyQt6.QtCore",
+            "PyQt6.QtGui",
+            "PyQt6.QtWidgets",
+            "argparse",
+            "collections",
+            "concurrent.futures",
+            "dataclasses",
+            "multiprocessing",
+            "os",
+            "pathlib",
+            "sys",
+            "typing",
+            "worldgen_asset_preview_support",
+            "worldgen_generation_support",
+            "worldgen_viewer_support",
+            "worldgen_viewer_tool.geometry",
+            "worldgen_viewer_tool.palette",
+            "worldgen_viewer_tool.widgets.legend"
+          ],
+          "line_count": 2332,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/geometry.py",
+          "module": "scripts.worldgen_viewer_tool.geometry",
+          "area": "scripts",
+          "summary": "Hex-grid geometry helpers for the standalone worldgen viewer.",
+          "classes": [],
+          "functions": [
+            "_coord_from_between_value",
+            "_edge_points_for_side",
+            "_hex_center",
+            "_hex_polygon",
+            "_neighbor_coord_for_side",
+            "_river_line",
+            "_river_segment_key"
+          ],
+          "imports": [
+            "PyQt6.QtCore",
+            "math",
+            "worldgen_viewer_support"
+          ],
+          "line_count": 104,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/palette.py",
+          "module": "scripts.worldgen_viewer_tool.palette",
+          "area": "scripts",
+          "summary": "Color and layer helper utilities for the standalone worldgen viewer.",
+          "classes": [],
+          "functions": [
+            "_altitude_bucket_label",
+            "_altitude_color",
+            "_blend",
+            "_heightmap_sealevel",
+            "_moisture_bucket_label",
+            "_moisture_color",
+            "_overlay_water_label",
+            "_resource_color",
+            "_resource_label",
+            "_runtime_resource_key",
+            "_runtime_terrain_color",
+            "_runtime_terrain_key",
+            "_runtime_terrain_label",
+            "_runtime_terrain_land_color",
+            "_stable_color",
+            "_title_from_identifier",
+            "_water_color_for_record",
+            "_water_color_from_kind"
+          ],
+          "imports": [
+            "PyQt6.QtGui",
+            "hashlib",
+            "worldgen_viewer_support"
+          ],
+          "line_count": 333,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/widgets/__init__.py",
+          "module": "scripts.worldgen_viewer_tool.widgets",
+          "area": "scripts",
+          "summary": "Reusable Qt widgets for the standalone SCiv worldgen viewer.",
+          "classes": [],
+          "functions": [],
+          "imports": [],
+          "line_count": 1,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/worldgen_viewer_tool/widgets/legend.py",
+          "module": "scripts.worldgen_viewer_tool.widgets.legend",
+          "area": "scripts",
+          "summary": "Legend widgets for the standalone worldgen viewer.",
+          "classes": [
+            "LegendEntrySpec",
+            "LegendEntryWidget"
+          ],
+          "functions": [],
+          "imports": [
+            "PyQt6.QtCore",
+            "PyQt6.QtGui",
+            "PyQt6.QtWidgets",
+            "dataclasses",
+            "typing"
+          ],
+          "line_count": 84,
           "parse_error": null
         }
       ]
