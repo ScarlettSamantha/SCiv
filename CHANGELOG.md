@@ -35,6 +35,7 @@
 - 💄 Added process-backed multi-world generation and a right-panel world switcher to the worldgen viewer batch flow.
 - 💄 Made the worldgen viewer batch overview resize preview cards and thumbnails to keep a responsive three-across layout.
 - 💄 Made the new-game setup screen keep its right-side options in a scrollable panel so generator-heavy setups no longer spill off the top.
+- 🐛 Fixed minimap terrain colors so legacy byte-scale terrain fallback colors no longer clip to white.
 
 ### Engine
 

@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from math import ceil, floor, hypot, sqrt
 from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, cast
 
@@ -1613,13 +1614,27 @@ class Minimap(FloatLayout, DirectObject):
         return 1.0 if smallest == float('inf') else smallest
 
     def _coerce_color_tuple(self, color_value: object) -> tuple[float, float, float, float]:
-        if isinstance(color_value, (tuple, list)):
-            components = cast(tuple[object, ...] | list[object], color_value)
+        if isinstance(color_value, Sequence) and not isinstance(color_value, str | bytes):
+            components = cast(Sequence[object], color_value)
             red = float(cast(float | int | str, components[0])) if len(components) > 0 else 1.0
             green = float(cast(float | int | str, components[1])) if len(components) > 1 else red
             blue = float(cast(float | int | str, components[2])) if len(components) > 2 else green
             alpha = float(cast(float | int | str, components[3])) if len(components) > 3 else 1.0
-            return (red, green, blue, alpha)
+
+            if max(red, green, blue) > 1.0:
+                red /= 255.0
+                green /= 255.0
+                blue /= 255.0
+
+            if alpha > 1.0:
+                alpha /= 255.0
+
+            return (
+                max(0.0, min(1.0, red)),
+                max(0.0, min(1.0, green)),
+                max(0.0, min(1.0, blue)),
+                max(0.0, min(1.0, alpha)),
+            )
         return (1.0, 1.0, 1.0, 1.0)
 
     def _get_accent_color(self, alpha: float = 1.0) -> tuple[float, float, float, float]:

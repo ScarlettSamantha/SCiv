@@ -212,6 +212,7 @@ The current load path is:
 The current minimap contract is:
 
 - render a compact world-space texture from gameplay state rather than from a second Panda3D camera
+- normalize both normalized-float and legacy byte-scale terrain fallback colors before drawing, so older `0-255` terrain tuples still render with their intended terrain hues instead of clipping toward white
 - present that texture inside a compact top-right HUD panel beneath the top bar, using darker low-contrast chrome, a slim session-player accent, and minimal border treatment so the map reads as part of the HUD instead of a detached card
 - source its screen sizing from the shared Panda3D window (`base.win`) rather than assuming Kivy's global `Window` proxy is available during widget construction
 - complete its live binding during session activation by calling `Minimap.register()`, which attaches the widget to the current `World`/`Camera` singletons and its refresh signals before the first full redraw
