@@ -417,6 +417,9 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def _layout_debug_overlay_enabled(self) -> bool:
         return self._layout_debug_enabled() and self.config_manager.get_ui_layout_overlay_enabled()
 
+    def _should_apply_saved_layout_positions(self) -> bool:
+        return self._layout_debug_drag_enabled() or self._layout_debug_overlay_enabled()
+
     @staticmethod
     def _coerce_layout_position(data: dict[str, float] | None) -> LayoutDebugPosition | None:
         if data is None:
@@ -443,7 +446,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         wrapper.set_default_position(default_position)
         stored_position = self._coerce_layout_position(self.config_manager.get_ui_layout_position(item_id))
-        if stored_position is None:
+        if not self._should_apply_saved_layout_positions() or stored_position is None:
             wrapper.reset_to_default_position()
         else:
             wrapper.apply_normalized_position(stored_position)
@@ -465,12 +468,13 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def apply_layout_debug_settings(self, reset_positions: bool = False) -> None:
         drag_enabled = self._layout_debug_drag_enabled()
         overlay_enabled = self._layout_debug_overlay_enabled()
+        use_saved_positions = drag_enabled or overlay_enabled
 
         for item_id, wrapper in self.layout_debug_widgets.items():
             wrapper.set_drag_enabled(drag_enabled)
             wrapper.set_overlay_enabled(overlay_enabled)
 
-            if reset_positions:
+            if reset_positions or not use_saved_positions:
                 wrapper.reset_to_default_position()
                 continue
 
@@ -481,14 +485,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 wrapper.apply_normalized_position(stored_position)
 
         if self.minimap is not None:
-            minimap_position = None if reset_positions else self._coerce_layout_position(
+            minimap_position = None if reset_positions or not use_saved_positions else self._coerce_layout_position(
                 self.config_manager.get_ui_layout_position("minimap")
             )
             self.minimap.set_layout_debug_state(
                 drag_enabled=drag_enabled,
                 overlay_enabled=overlay_enabled,
                 position=minimap_position,
-                reset_position=reset_positions,
+                reset_position=reset_positions or not use_saved_positions,
             )
 
         self.update_ui_geometry_cache()

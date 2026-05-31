@@ -136,7 +136,7 @@ class DraggableLayoutWrapper(FloatLayout):
         self._sync_content_geometry()
 
         self.content.bind(size=self._on_content_resize)  # type: ignore[arg-type]
-        self.bind(size=self._update_debug_chrome, pos=self._update_debug_chrome)  # type: ignore[arg-type]
+        self.bind(size=self._on_wrapper_geometry_changed, pos=self._on_wrapper_geometry_changed)  # type: ignore[arg-type]
 
         with self.canvas.after:
             self._overlay_handle_color = Color(0.18, 0.4, 0.82, 0.0)
@@ -179,6 +179,8 @@ class DraggableLayoutWrapper(FloatLayout):
         self._default_position = position
         if not self.drag_enabled and not self.overlay_enabled:
             self.pos = position
+            self._sync_content_geometry()
+            self._update_debug_chrome()
 
     def reset_to_default_position(self) -> None:
         self.pos = self._default_position
@@ -212,6 +214,10 @@ class DraggableLayoutWrapper(FloatLayout):
         clamped_y = clamp(float(self.y), 0.0, max(0.0, parent_height - float(self.height)))
         self.pos = (clamped_x, clamped_y)
 
+    def _on_wrapper_geometry_changed(self, *_args: Any) -> None:
+        self._sync_content_geometry()
+        self._update_debug_chrome()
+
     def _on_content_resize(self, *_args: Any) -> None:
         self.size = self.content.size
         self._sync_content_geometry()
@@ -220,7 +226,7 @@ class DraggableLayoutWrapper(FloatLayout):
 
     def _sync_content_geometry(self) -> None:
         self.size = self.content.size
-        self.content.pos = (0.0, 0.0)
+        self.content.pos = self.pos
 
     def _bind_overlay_text_size(self, instance: Label, value: tuple[float, float]) -> None:
         instance.text_size = value
