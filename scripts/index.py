@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-from __future__ import annotations
+"""Unified SCiv project-index helper for generation, browsing, querying, and validation."""
 
 import argparse
 import ast
 import json
 import os
+import re
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 META_DIR = REPO_ROOT / "meta"
@@ -45,6 +46,7 @@ SKIP_PATHS = {
 
 ROOT_PYTHON_FILES = (
     Path("run.py"),
+    Path("changelog.py"),
 )
 
 SCAN_PYTHON_ROOTS = (
@@ -73,7 +75,7 @@ TOP_LEVEL_DESCRIPTIONS = {
     ".markdownlnt.json": "Markdown lint configuration.",
     ".pre-commit-config.yaml": "Pre-commit hook configuration.",
     ".vscode": "VS Code workspace settings and tasks.",
-    "CHANGELOG.md": "Generated release changelog.",
+    "CHANGELOG.md": "Project changelog maintained through the repo helper workflow.",
     "CREDITS": "Credits and attribution.",
     "Dockerfile": "Container build definition.",
     "LICENSE": "Project license text.",
@@ -81,6 +83,7 @@ TOP_LEVEL_DESCRIPTIONS = {
     "README.md": "Project overview, status, and run instructions.",
     "SCIV.code-workspace": "VS Code workspace definition.",
     "assets": "Shared source assets such as models, textures, shaders, fonts, and icons.",
+    "changelog.py": "Repository changelog helper and release metadata utility.",
     "docker-compose.yml": "Container orchestration for local workflows.",
     "known_bugs.md": "Known issues and current rough edges.",
     "makefile": "Common local verification and build shortcuts.",
@@ -113,7 +116,7 @@ AREA_DESCRIPTIONS = {
 DOC_DESCRIPTIONS = {
     "README.md": "Project overview and how to run the game.",
     "known_bugs.md": "Known issues and currently tracked rough edges.",
-    "CHANGELOG.md": "Generated release history.",
+    "CHANGELOG.md": "Project changelog maintained through the helper-driven gitmoji and release workflow.",
     ".github/agents/sciv-specialist.agent.md": "Custom SCiv-focused agent that reads repo docs first, makes surgical changes, and updates durable docs.",
     ".github/copilot-instructions.md": "Repo-level Copilot entrypoint that routes future sessions into Git-tracked docs.",
     ".github/instructions/README.md": "Overview of the SCiv dispatcher instruction layer.",
@@ -123,6 +126,7 @@ DOC_DESCRIPTIONS = {
     ".github/instructions/ui-bridge.instructions.md": "Routes Panda3D/Kivy bridge and UI flow work to the correct technical docs.",
     ".github/instructions/gameplay.instructions.md": "Routes gameplay changes to mechanics and rules docs.",
     ".github/instructions/docs-governance.instructions.md": "Routes documentation and generated-doc maintenance work to the source-of-truth docs.",
+    ".github/instructions/python-conventions.instructions.md": "Routes Python 3.14, typing, and Pyright workflow changes to the canonical conventions docs.",
     ".github/skills/sciv-project-index/SKILL.md": "Skill for targeted lookup against the generated project index and routing data.",
     ".github/skills/sciv-orientation/SKILL.md": "Orientation skill for ambiguous or cross-cutting SCiv work.",
     ".github/skills/sciv-orientation/references/routing-matrix.md": "Task-to-doc routing matrix used by the orientation skill.",
@@ -131,9 +135,12 @@ DOC_DESCRIPTIONS = {
     "meta/technical/agent-workflow.md": "Preferred workflow for SCiv-specialized coding agents and repo-local documentation discipline.",
     "meta/technical/architecture.md": "Subsystem overview and major runtime layers.",
     "meta/technical/actions.md": "One-shot runtime actions, targeting, and callback flow.",
+    "meta/technical/changelog-workflow.md": "Canonical `CHANGELOG.md` maintenance workflow, gitmoji convention, and release/tag helper usage.",
     "meta/technical/city-production.md": "Food, production, border growth, and city-side turn processing.",
     "meta/technical/entities.md": "Entity lifecycle, persistence model, and save/load boundaries.",
     "meta/technical/effects.md": "Persistent modifiers, placement, timing, and effect load behavior.",
+    "meta/technical/project-index-helper.md": "Unified project-index helper commands, generated artifacts, and human/AI lookup workflow.",
+    "meta/technical/python-conventions.md": "Python 3.14 baseline, strong typing expectations, and Pyright-first authoring rules.",
     "meta/technical/rules.md": "Game rule registry and configurable rule values.",
     "meta/technical/signals.md": "Curated signal catalog.",
     "meta/technical/startup.md": "Boot path from launcher to live UI.",
@@ -148,7 +155,7 @@ DOC_DESCRIPTIONS = {
 GENERATED_ARTIFACTS = [
     {
         "path": "meta/structure.md",
-        "description": "Generated human-readable project map rendered from the index generator.",
+        "description": "Generated human-readable project map rendered from the index helper.",
     },
     {
         "path": "meta/generated/project-index.json",
@@ -426,6 +433,7 @@ DOC_ROUTING_RULES = [
         "file_globs": [
             "meta/**",
             ".github/**",
+            "scripts/index.py",
             "scripts/generate_project_index.py",
             "scripts/query_project_index.py",
             ".gitlab-ci.yml",
@@ -438,15 +446,82 @@ DOC_ROUTING_RULES = [
             "meta/INDEX.md",
             "meta/structure.md",
             "meta/generated/project-index.json",
+            "meta/technical/project-index-helper.md",
             "meta/technical/agent-workflow.md",
             "meta/technical/update-triggers.md",
         ],
         "update_docs": [
             "meta/INDEX.md",
+            "meta/technical/project-index-helper.md",
             "meta/technical/agent-workflow.md",
             "meta/technical/update-triggers.md",
             "meta/generated/project-index.json",
             "meta/generated/doc-routing.json",
+        ],
+    },
+    {
+        "id": "python-conventions-and-typing",
+        "summary": "Python source, typing/tooling configuration, and repository Python authoring workflow.",
+        "task_keywords": [
+            "python",
+            "typing",
+            "pyright",
+            "type checking",
+            "python conventions",
+            "future annotations",
+        ],
+        "file_globs": [
+            "run.py",
+            "sciv/**/*.py",
+            "scripts/**/*.py",
+            "pyproject.toml",
+            "pyrightconfig.json",
+        ],
+        "dispatcher_instructions": [
+            ".github/instructions/python-conventions.instructions.md",
+        ],
+        "read_first": [
+            "meta/technical/python-conventions.md",
+            "meta/technical/agent-workflow.md",
+            "meta/technical/update-triggers.md",
+        ],
+        "update_docs": [
+            "meta/technical/python-conventions.md",
+            "meta/technical/agent-workflow.md",
+            "meta/technical/update-triggers.md",
+        ],
+    },
+    {
+        "id": "changelog-and-contributor-workflow",
+        "summary": "CHANGELOG maintenance, gitmoji/ticket entry conventions, release tagging, and contributor workflow completion rules.",
+        "task_keywords": [
+            "changelog",
+            "gitmoji",
+            "release notes",
+            "release tag",
+            "workflow",
+            "contributor workflow",
+            "changelog helper",
+        ],
+        "file_globs": [
+            "CHANGELOG.md",
+            "changelog.py",
+            "makefile",
+            "meta/technical/changelog-workflow.md",
+        ],
+        "dispatcher_instructions": [
+            ".github/instructions/docs-governance.instructions.md",
+        ],
+        "read_first": [
+            "meta/technical/changelog-workflow.md",
+            "meta/technical/agent-workflow.md",
+            "meta/technical/update-triggers.md",
+        ],
+        "update_docs": [
+            "meta/technical/changelog-workflow.md",
+            "meta/technical/agent-workflow.md",
+            "meta/INDEX.md",
+            "meta/technical/update-triggers.md",
         ],
     },
 ]
@@ -481,8 +556,9 @@ ENTRY_POINTS = [
 
 MODULE_PRIORITY = {
     "run.py": 0,
-    "sciv/__main__.py": 1,
-    "sciv/game.py": 2,
+    "changelog.py": 1,
+    "sciv/__main__.py": 2,
+    "sciv/game.py": 3,
     "sciv/managers/game.py": 0,
     "sciv/managers/world.py": 1,
     "sciv/managers/entity.py": 2,
@@ -517,12 +593,15 @@ MODULE_PRIORITY = {
     "sciv/menus/kivy/core.py": 0,
     "sciv/menus/screens/game_ui.py": 1,
     "sciv/mixins/singleton.py": 0,
-    "scripts/generate_project_index.py": 0,
-    "scripts/check_bad_imports.py": 1,
+    "scripts/index.py": 0,
+    "scripts/generate_project_index.py": 1,
+    "scripts/query_project_index.py": 2,
+    "scripts/check_bad_imports.py": 3,
 }
 
 MODULE_SUMMARIES = {
     "run.py": "Root launcher that delegates to package bootstrap.",
+    "changelog.py": "Repository changelog helper for entries, release preparation, and version sync.",
     "sciv/__main__.py": "Package bootstrap entrypoint for starting OpenCiv.",
     "sciv/game.py": "Main ShowBase host that wires Panda3D, Kivy, managers, logging, and assets together.",
     "sciv/managers/game.py": "Top-level game coordinator for start, load, reset, and active session state.",
@@ -559,10 +638,35 @@ MODULE_SUMMARIES = {
     "sciv/menus/kivy/core.py": "Kivy app host and screen registration for the in-game UI.",
     "sciv/menus/screens/game_ui.py": "Primary in-game screen layer.",
     "sciv/mixins/singleton.py": "Thread-safe singleton implementation used by managers and shared services.",
-    "scripts/generate_project_index.py": "Generates the repo-native documentation index for humans and AI tooling.",
-    "scripts/query_project_index.py": "Queries the generated project index for targeted lookup of docs, routes, areas, entry points, and modules.",
+    "scripts/index.py": "Unified project-index helper for generation, browsing, querying, and freshness checks.",
+    "scripts/generate_project_index.py": "Compatibility wrapper for the unified project-index helper's generate/check flow.",
+    "scripts/query_project_index.py": "Compatibility wrapper for the unified project-index helper's query flow.",
     "scripts/check_bad_imports.py": "Guards staged Python changes against disallowed `sciv` imports.",
 }
+
+KIND_ORDER = {
+    "doc": 0,
+    "entry": 1,
+    "route": 2,
+    "area": 3,
+    "module": 4,
+    "artifact": 5,
+    "top": 6,
+}
+KIND_CHOICES = ["all", *KIND_ORDER.keys()]
+LIST_TARGET_KIND = {
+    "docs": "doc",
+    "entries": "entry",
+    "routes": "route",
+    "areas": "area",
+    "modules": "module",
+    "artifacts": "artifact",
+    "top": "top",
+}
+
+
+class HelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    """Help formatter with preserved examples and default values."""
 
 
 @dataclass(frozen=True)
@@ -602,14 +706,58 @@ class AreaInfo:
     modules: list[ModuleInfo]
 
 
+@dataclass(frozen=True)
+class IndexDataset:
+    top_level: list[TopLevelItem]
+    docs: list[DocumentationItem]
+    modules: list[ModuleInfo]
+    areas: list[AreaInfo]
+
+
+@dataclass(frozen=True)
+class GenerationOutputs:
+    dataset: IndexDataset
+    index: dict[str, Any]
+    json_output: str
+    routing_output: str
+    markdown_output: str
+
+
+@dataclass(frozen=True)
+class FreshnessReport:
+    missing_paths: list[Path]
+    stale_paths: list[Path]
+
+    @property
+    def is_fresh(self) -> bool:
+        return not self.missing_paths and not self.stale_paths
+
+    def affected_paths(self) -> list[Path]:
+        return [*self.missing_paths, *self.stale_paths]
+
+
+@dataclass(frozen=True)
+class RuntimeIndex:
+    index: dict[str, Any]
+    freshness: FreshnessReport
+
+
+@dataclass(frozen=True)
+class QueryOptions:
+    refresh_if_stale: bool
+    require_fresh: bool
+
+
 def is_skipped(relative_path: Path) -> bool:
     if any(part in SKIP_DIR_NAMES for part in relative_path.parts):
         return True
     return any(relative_path == skip or skip in relative_path.parents for skip in SKIP_PATHS)
 
 
+
 def repo_relative(path: Path) -> Path:
     return path.relative_to(REPO_ROOT)
+
 
 
 def category_for_doc(relative_path: Path) -> str:
@@ -625,6 +773,7 @@ def category_for_doc(relative_path: Path) -> str:
     return "root"
 
 
+
 def category_rank(category: str) -> int:
     ordered = ["start", "root", "project", "technical", "automation"]
     try:
@@ -633,12 +782,10 @@ def category_rank(category: str) -> int:
         return len(ordered)
 
 
+
 def area_for_path(relative_path: Path) -> str:
     parts = list(relative_path.parts)
-    if not parts:
-        return "root"
-
-    if len(parts) == 1:
+    if not parts or len(parts) == 1:
         return "root"
 
     if parts[0] == "sciv" and len(parts) > 1:
@@ -653,6 +800,7 @@ def area_for_path(relative_path: Path) -> str:
     return parts[0]
 
 
+
 def area_rank(area: str) -> tuple[int, str]:
     try:
         return AREA_ORDER.index(area), area
@@ -660,10 +808,12 @@ def area_rank(area: str) -> tuple[int, str]:
         return len(AREA_ORDER), area
 
 
+
 def module_name_for(relative_path: Path) -> str:
     if relative_path.name == "__init__.py":
         return ".".join(relative_path.parent.parts)
     return ".".join(relative_path.with_suffix("").parts)
+
 
 
 def doc_summary(text: str | None) -> str | None:
@@ -674,6 +824,7 @@ def doc_summary(text: str | None) -> str | None:
         return None
     first_line = stripped.splitlines()[0].strip()
     return first_line if first_line.endswith(".") else f"{first_line}."
+
 
 
 def fallback_module_summary(relative_path: Path) -> str:
@@ -706,6 +857,7 @@ def fallback_module_summary(relative_path: Path) -> str:
     return f"Python module for {stem}."
 
 
+
 def iter_python_paths() -> Iterable[Path]:
     for relative_path in ROOT_PYTHON_FILES:
         absolute_path = REPO_ROOT / relative_path
@@ -722,6 +874,7 @@ def iter_python_paths() -> Iterable[Path]:
             if is_skipped(relative_path):
                 continue
             yield relative_path
+
 
 
 def parse_python_module(relative_path: Path) -> ModuleInfo:
@@ -770,6 +923,7 @@ def parse_python_module(relative_path: Path) -> ModuleInfo:
     )
 
 
+
 def collect_top_level_items() -> list[TopLevelItem]:
     items: list[TopLevelItem] = []
 
@@ -793,6 +947,7 @@ def collect_top_level_items() -> list[TopLevelItem]:
     return items
 
 
+
 def collect_documentation_items() -> list[DocumentationItem]:
     candidates: set[Path] = set()
 
@@ -808,12 +963,9 @@ def collect_documentation_items() -> list[DocumentationItem]:
                 continue
             candidates.add(relative_path)
 
-    for root in (Path("meta"),):
-        absolute_root = REPO_ROOT / root
-        if not absolute_root.exists():
-            continue
-
-        for absolute_path in absolute_root.rglob("*.md"):
+    meta_root = REPO_ROOT / "meta"
+    if meta_root.exists():
+        for absolute_path in meta_root.rglob("*.md"):
             relative_path = repo_relative(absolute_path)
             if is_skipped(relative_path) or relative_path == Path("meta/structure.md"):
                 continue
@@ -831,13 +983,16 @@ def collect_documentation_items() -> list[DocumentationItem]:
     return sorted(items, key=lambda item: (category_rank(item.category), item.path))
 
 
+
 def collect_modules() -> list[ModuleInfo]:
     return [parse_python_module(relative_path) for relative_path in iter_python_paths()]
+
 
 
 def select_key_modules(modules: list[ModuleInfo], limit: int = 12) -> list[ModuleInfo]:
     ordered = sorted(modules, key=lambda module: (MODULE_PRIORITY.get(module.path, 999), module.path))
     return ordered[: min(limit, len(ordered))]
+
 
 
 def build_areas(modules: list[ModuleInfo]) -> list[AreaInfo]:
@@ -862,13 +1017,60 @@ def build_areas(modules: list[ModuleInfo]) -> list[AreaInfo]:
     return sorted(areas, key=lambda area: area_rank(area.path))
 
 
+
+def build_dataset() -> IndexDataset:
+    modules = collect_modules()
+    return IndexDataset(
+        top_level=collect_top_level_items(),
+        docs=collect_documentation_items(),
+        modules=modules,
+        areas=build_areas(modules),
+    )
+
+
+
+def build_index(dataset: IndexDataset) -> dict[str, Any]:
+    return {
+        "project": {
+            "name": "SCiv",
+            "root": ".",
+            "documentation_root": "meta",
+        },
+        "entry_points": ENTRY_POINTS,
+        "top_level": [asdict(item) for item in dataset.top_level],
+        "documentation": [asdict(item) for item in dataset.docs],
+        "generated_artifacts": GENERATED_ARTIFACTS,
+        "doc_routing": DOC_ROUTING_RULES,
+        "areas": [asdict(area) for area in dataset.areas],
+    }
+
+
+
+def render_routing_manifest() -> str:
+    return json.dumps(
+        {
+            "skill": "sciv-orientation",
+            "entrypoint": ".github/copilot-instructions.md",
+            "instructions_root": ".github/instructions",
+            "manifest": "meta/generated/doc-routing.json",
+            "generator": "scripts/index.py",
+            "rules": DOC_ROUTING_RULES,
+        },
+        indent=2,
+        ensure_ascii=False,
+    ) + "\n"
+
+
+
 def link_from_structure(path: str) -> str:
     relative_link = Path(os.path.relpath(REPO_ROOT / path, OUTPUT_MARKDOWN.parent)).as_posix()
     return f"[{path}]({relative_link})"
 
 
+
 def escape_markdown(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ")
+
 
 
 def summarize_names(names: list[str], label: str, limit: int = 4) -> str:
@@ -881,6 +1083,7 @@ def summarize_names(names: list[str], label: str, limit: int = 4) -> str:
     return f"{label}: {shown}{suffix}"
 
 
+
 def format_symbols(module: ModuleInfo) -> str:
     parts = [
         summarize_names(module.classes, "classes"),
@@ -888,6 +1091,7 @@ def format_symbols(module: ModuleInfo) -> str:
     ]
     formatted = "; ".join(part for part in parts if part)
     return formatted if formatted else "-"
+
 
 
 def render_table(rows: list[list[str]], headers: list[str]) -> list[str]:
@@ -900,21 +1104,22 @@ def render_table(rows: list[list[str]], headers: list[str]) -> list[str]:
     return table
 
 
-def render_structure(top_level: list[TopLevelItem], docs: list[DocumentationItem], areas: list[AreaInfo]) -> str:
-    module_count = sum(area.module_count for area in areas)
-    doc_count = len(docs)
+
+def render_structure(dataset: IndexDataset) -> str:
+    module_count = sum(area.module_count for area in dataset.areas)
+    doc_count = len(dataset.docs)
 
     lines: list[str] = [
         "# SCiv Project Structure",
         "",
-        "> Generated by [`scripts/generate_project_index.py`](../scripts/generate_project_index.py). Do not hand-edit this file.",
+        "> Generated by [`scripts/index.py`](../scripts/index.py). Do not hand-edit this file.",
         "> Start with the [Documentation Index](INDEX.md) for the curated reading order.",
         "",
         "## Snapshot",
         "",
         f"- Indexed Python modules: `{module_count}`",
         f"- Indexed documentation files: `{doc_count}`",
-        f"- Runtime areas: `{len(areas)}`",
+        f"- Runtime areas: `{len(dataset.areas)}`",
         "- Machine-readable manifest: [`meta/generated/project-index.json`](generated/project-index.json)",
         "",
         "## Entry points",
@@ -941,7 +1146,7 @@ def render_structure(top_level: list[TopLevelItem], docs: list[DocumentationItem
 
     top_rows = [
         [link_from_structure(item.path), item.kind, escape_markdown(item.description)]
-        for item in top_level
+        for item in dataset.top_level
     ]
     lines.extend(render_table(top_rows, ["Path", "Kind", "Role"]))
 
@@ -955,7 +1160,7 @@ def render_structure(top_level: list[TopLevelItem], docs: list[DocumentationItem
 
     doc_rows = [
         [link_from_structure(item.path), item.category, escape_markdown(item.description)]
-        for item in docs
+        for item in dataset.docs
     ]
     lines.extend(render_table(doc_rows, ["Path", "Category", "Purpose"]))
 
@@ -982,7 +1187,7 @@ def render_structure(top_level: list[TopLevelItem], docs: list[DocumentationItem
         ]
     )
 
-    for area in areas:
+    for area in dataset.areas:
         lines.extend(
             [
                 "",
@@ -1010,98 +1215,748 @@ def render_structure(top_level: list[TopLevelItem], docs: list[DocumentationItem
     return "\n".join(lines)
 
 
-def write_or_check(path: Path, content: str, check: bool) -> bool:
-    current = path.read_text(encoding="utf-8") if path.exists() else None
-    if current == content:
-        return True
+
+def build_generation_outputs() -> GenerationOutputs:
+    dataset = build_dataset()
+    index = build_index(dataset)
+    return GenerationOutputs(
+        dataset=dataset,
+        index=index,
+        json_output=json.dumps(index, indent=2, ensure_ascii=False) + "\n",
+        routing_output=render_routing_manifest(),
+        markdown_output=render_structure(dataset),
+    )
+
+
+
+def read_existing_output(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+
+def freshness_report(outputs: GenerationOutputs) -> FreshnessReport:
+    expected_by_path = {
+        OUTPUT_JSON: outputs.json_output,
+        OUTPUT_ROUTING_JSON: outputs.routing_output,
+        OUTPUT_MARKDOWN: outputs.markdown_output,
+    }
+    missing_paths: list[Path] = []
+    stale_paths: list[Path] = []
+
+    for path, expected in expected_by_path.items():
+        current = read_existing_output(path)
+        if current is None:
+            missing_paths.append(path)
+        elif current != expected:
+            stale_paths.append(path)
+
+    return FreshnessReport(missing_paths=missing_paths, stale_paths=stale_paths)
+
+
+
+def relative_paths(paths: Iterable[Path]) -> list[str]:
+    return [path.relative_to(REPO_ROOT).as_posix() for path in paths]
+
+
+
+def write_outputs(outputs: GenerationOutputs) -> list[Path]:
+    written_paths: list[Path] = []
+    content_by_path = {
+        OUTPUT_JSON: outputs.json_output,
+        OUTPUT_ROUTING_JSON: outputs.routing_output,
+        OUTPUT_MARKDOWN: outputs.markdown_output,
+    }
+
+    for path, content in content_by_path.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        written_paths.append(path)
+
+    return written_paths
+
+
+
+def format_generate_summary(outputs: GenerationOutputs, report: FreshnessReport, *, check: bool) -> list[str]:
+    if check and report.is_fresh:
+        return ["project index is up to date"]
 
     if check:
-        print(f"stale generated file: {path.relative_to(REPO_ROOT).as_posix()}")
-        return False
+        lines = [
+            "project index is stale",
+            f"Run `python3 scripts/index.py generate` to refresh {', '.join(relative_paths(report.affected_paths()))}.",
+        ]
+        return lines
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-    return True
+    written = relative_paths(write_outputs(outputs))
+    return [f"wrote {path}" for path in written]
 
 
-def build_index() -> dict[str, Any]:
-    top_level = collect_top_level_items()
-    docs = collect_documentation_items()
-    modules = collect_modules()
-    areas = build_areas(modules)
+
+def run_generate(check: bool) -> int:
+    outputs = build_generation_outputs()
+    report = freshness_report(outputs)
+    lines = format_generate_summary(outputs, report, check=check)
+    for line in lines:
+        print(line)
+    return 0 if (not check or report.is_fresh) else 1
+
+
+
+def normalize(value: Any) -> str:
+    return " ".join(str(value).lower().split())
+
+
+
+def preview(values: Iterable[Any], limit: int = 5) -> str:
+    items = [str(value) for value in values]
+    if not items:
+        return "-"
+
+    shown = ", ".join(items[:limit])
+    remaining = len(items) - limit
+    suffix = f" +{remaining} more" if remaining > 0 else ""
+    return f"{shown}{suffix}"
+
+
+
+def load_existing_index() -> dict[str, Any]:
+    if not OUTPUT_JSON.exists():
+        raise FileNotFoundError(OUTPUT_JSON)
+    return json.loads(OUTPUT_JSON.read_text(encoding="utf-8"))
+
+
+
+def describe_freshness_issue(report: FreshnessReport) -> str:
+    details: list[str] = []
+    if report.missing_paths:
+        details.append(f"missing: {', '.join(relative_paths(report.missing_paths))}")
+    if report.stale_paths:
+        details.append(f"stale: {', '.join(relative_paths(report.stale_paths))}")
+    return "; ".join(details)
+
+
+
+def resolve_runtime_index(options: QueryOptions) -> RuntimeIndex:
+    outputs = build_generation_outputs()
+    report = freshness_report(outputs)
+
+    if report.missing_paths:
+        if options.refresh_if_stale:
+            write_outputs(outputs)
+            report = FreshnessReport(missing_paths=[], stale_paths=[])
+            return RuntimeIndex(index=outputs.index, freshness=report)
+
+        missing = ", ".join(relative_paths(report.missing_paths))
+        raise SystemExit(
+            "Missing generated project-index artifacts: "
+            f"{missing}. Run `python3 scripts/index.py generate` or rerun with `--refresh-if-stale`."
+        )
+
+    if report.stale_paths:
+        if options.refresh_if_stale:
+            write_outputs(outputs)
+            report = FreshnessReport(missing_paths=[], stale_paths=[])
+            return RuntimeIndex(index=outputs.index, freshness=report)
+
+        if options.require_fresh:
+            raise SystemExit(
+                "Generated project-index artifacts are stale "
+                f"({describe_freshness_issue(report)}). Run `python3 scripts/index.py generate` "
+                "or rerun with `--refresh-if-stale`."
+            )
+
+        print(
+            "warning: generated project-index artifacts are stale "
+            f"({describe_freshness_issue(report)}); using the existing manifest. "
+            "Run `python3 scripts/index.py generate` to refresh.",
+            file=sys.stderr,
+        )
+
+    return RuntimeIndex(index=load_existing_index(), freshness=report)
+
+
+
+def iter_index_items(index: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    for item in index.get("documentation", []):
+        yield {**item, "kind": "doc", "key": item["path"]}
+
+    for item in index.get("entry_points", []):
+        yield {**item, "kind": "entry", "key": item["path"]}
+
+    for item in index.get("doc_routing", []):
+        yield {**item, "kind": "route", "key": item["id"]}
+
+    for item in index.get("generated_artifacts", []):
+        yield {**item, "kind": "artifact", "key": item["path"]}
+
+    for item in index.get("top_level", []):
+        yield {**item, "kind": "top", "key": item["path"]}
+
+    for area in index.get("areas", []):
+        yield {**area, "kind": "area", "key": area["path"]}
+
+        for module in area.get("modules", []):
+            yield {**module, "kind": "module", "key": module["path"]}
+
+
+
+def search_fields(item: dict[str, Any]) -> list[Any]:
+    kind = item["kind"]
+
+    if kind == "doc":
+        return [item.get("path"), item.get("description"), item.get("category")]
+
+    if kind == "entry":
+        return [item.get("path"), item.get("primary_symbol"), item.get("purpose")]
+
+    if kind == "route":
+        return [
+            item.get("id"),
+            item.get("summary"),
+            item.get("task_keywords", []),
+            item.get("file_globs", []),
+            item.get("read_first", []),
+            item.get("dispatcher_instructions", []),
+            item.get("update_docs", []),
+        ]
+
+    if kind == "artifact":
+        return [item.get("path"), item.get("description")]
+
+    if kind == "top":
+        return [item.get("path"), item.get("kind"), item.get("description")]
+
+    if kind == "area":
+        return [
+            item.get("path"),
+            item.get("description"),
+            item.get("module_count"),
+            item.get("line_count"),
+            [module.get("path") for module in item.get("key_modules", [])],
+        ]
+
+    return [
+        item.get("path"),
+        item.get("module"),
+        item.get("summary"),
+        item.get("area"),
+        item.get("classes", []),
+        item.get("functions", []),
+    ]
+
+
+
+def score_item(query: str, tokens: list[str], item: dict[str, Any]) -> int:
+    normalized_query = normalize(query)
+    score = 0
+
+    for index, field in enumerate(search_fields(item)):
+        field_text = normalize(field)
+        if not field_text:
+            continue
+
+        weight = max(8, 50 - (index * 6))
+
+        if field_text == normalized_query:
+            score += weight + 120
+        elif normalized_query in field_text:
+            score += weight + 40
+
+        field_parts = [part for part in re.split(r"[^a-z0-9]+", field_text) if part]
+
+        for token in tokens:
+            if token == field_text:
+                score += weight + 20
+            elif len(token) < 3 and token in field_parts:
+                score += max(5, weight // max(1, len(tokens)))
+            elif len(token) >= 3 and token in field_text:
+                score += max(5, weight // max(1, len(tokens)))
+
+    return score
+
+
+
+def matches_kind(item_kind: str, requested_kind: str) -> bool:
+    return requested_kind == "all" or item_kind == requested_kind
+
+
+
+def search_index(index: dict[str, Any], query: str, requested_kind: str, limit: int) -> list[dict[str, Any]]:
+    tokens = [token for token in normalize(query).split(" ") if token]
+    results: list[tuple[int, dict[str, Any]]] = []
+
+    for item in iter_index_items(index):
+        if not matches_kind(item["kind"], requested_kind):
+            continue
+
+        score = score_item(query, tokens, item)
+        if score > 0:
+            results.append((score, item))
+
+    results.sort(
+        key=lambda pair: (
+            -pair[0],
+            KIND_ORDER.get(pair[1]["kind"], 999),
+            str(pair[1].get("key", "")),
+        )
+    )
+
+    return [{"score": score, **item} for score, item in results[:limit]]
+
+
+
+def find_items(index: dict[str, Any], target: str, requested_kind: str) -> list[dict[str, Any]]:
+    normalized_target = normalize(target)
+    exact_matches: list[dict[str, Any]] = []
+    partial_matches: list[dict[str, Any]] = []
+
+    for item in iter_index_items(index):
+        if not matches_kind(item["kind"], requested_kind):
+            continue
+
+        candidates = [item.get("key"), item.get("path"), item.get("id"), item.get("module")]
+        normalized_candidates = [normalize(candidate) for candidate in candidates if candidate]
+
+        if any(candidate == normalized_target for candidate in normalized_candidates):
+            exact_matches.append(item)
+            continue
+
+        if any(normalized_target in candidate for candidate in normalized_candidates):
+            partial_matches.append(item)
+
+    matches = exact_matches if exact_matches else partial_matches
+    return sorted(matches, key=lambda item: (KIND_ORDER.get(item["kind"], 999), str(item.get("key", ""))))
+
+
+
+def resolve_kind_query(
+    index: dict[str, Any],
+    query: str,
+    requested_kind: str,
+    limit: int,
+) -> tuple[str | None, list[dict[str, Any]]]:
+    matches = find_items(index, query, requested_kind)
+    if matches:
+        return "show", matches
+
+    results = search_index(index, query, requested_kind, limit)
+    if results:
+        return "search", results
+
+    return None, []
+
+
+
+def format_item(item: dict[str, Any]) -> str:
+    lines = [f"[{item['kind']}] {item['key']}"]
+    kind = item["kind"]
+
+    if kind == "doc":
+        lines.append(f"  Category: {item.get('category', '-')}")
+        lines.append(f"  Purpose: {item.get('description', '-')}")
+    elif kind == "entry":
+        lines.append(f"  Symbol: {item.get('primary_symbol', '-')}")
+        lines.append(f"  Purpose: {item.get('purpose', '-')}")
+    elif kind == "route":
+        lines.append(f"  Summary: {item.get('summary', '-')}")
+        lines.append(f"  Keywords: {preview(item.get('task_keywords', []))}")
+        lines.append(f"  Files: {preview(item.get('file_globs', []))}")
+        lines.append(f"  Dispatchers: {preview(item.get('dispatcher_instructions', []))}")
+        lines.append(f"  Read first: {preview(item.get('read_first', []))}")
+        lines.append(f"  Update docs: {preview(item.get('update_docs', []))}")
+    elif kind == "artifact":
+        lines.append(f"  Purpose: {item.get('description', '-')}")
+    elif kind == "top":
+        lines.append(f"  Kind: {item.get('kind', '-')}")
+        lines.append(f"  Role: {item.get('description', '-')}")
+    elif kind == "area":
+        lines.append(f"  Description: {item.get('description', '-')}")
+        lines.append(f"  Modules: {item.get('module_count', '-')}")
+        lines.append(f"  Indexed lines: {item.get('line_count', '-')}")
+        lines.append(
+            f"  Key modules: {preview([module.get('path') for module in item.get('key_modules', []) if module.get('path')])}"
+        )
+    elif kind == "module":
+        lines.append(f"  Module: {item.get('module', '-')}")
+        lines.append(f"  Area: {item.get('area', '-')}")
+        lines.append(f"  Summary: {item.get('summary', '-')}")
+        lines.append(f"  Classes: {preview(item.get('classes', []))}")
+        lines.append(f"  Functions: {preview(item.get('functions', []))}")
+        if item.get("parse_error"):
+            lines.append(f"  Parse error: {item['parse_error']}")
+
+    if "score" in item:
+        lines.append(f"  Score: {item['score']}")
+
+    return "\n".join(lines)
+
+
+
+def list_items(index: dict[str, Any], target: str, query: str | None, limit: int) -> list[dict[str, Any]]:
+    kind = LIST_TARGET_KIND[target]
+    if query:
+        return search_index(index, query, kind, limit)
+
+    items = [item for item in iter_index_items(index) if item["kind"] == kind]
+    items.sort(key=lambda item: str(item.get("key", "")))
+    return items[:limit]
+
+
+
+def build_stats(index: dict[str, Any], freshness: FreshnessReport) -> dict[str, Any]:
+    modules = [item for item in iter_index_items(index) if item["kind"] == "module"]
+    docs = index.get("documentation", [])
+    routes = index.get("doc_routing", [])
+    areas = index.get("areas", [])
+    parse_errors = [
+        {
+            "path": module["path"],
+            "parse_error": module["parse_error"],
+        }
+        for module in modules
+        if module.get("parse_error")
+    ]
 
     return {
-        "project": {
-            "name": "SCiv",
-            "root": ".",
-            "documentation_root": "meta",
+        "project": index.get("project", {}),
+        "counts": {
+            "top_level": len(index.get("top_level", [])),
+            "documentation": len(docs),
+            "generated_artifacts": len(index.get("generated_artifacts", [])),
+            "entry_points": len(index.get("entry_points", [])),
+            "routes": len(routes),
+            "areas": len(areas),
+            "modules": len(modules),
+            "parse_errors": len(parse_errors),
         },
-        "entry_points": ENTRY_POINTS,
-        "top_level": [asdict(item) for item in top_level],
-        "documentation": [asdict(item) for item in docs],
-        "generated_artifacts": GENERATED_ARTIFACTS,
-        "doc_routing": DOC_ROUTING_RULES,
-        "areas": [asdict(area) for area in areas],
+        "freshness": {
+            "is_fresh": freshness.is_fresh,
+            "missing": relative_paths(freshness.missing_paths),
+            "stale": relative_paths(freshness.stale_paths),
+        },
+        "areas": [
+            {
+                "path": area["path"],
+                "module_count": area["module_count"],
+                "line_count": area["line_count"],
+            }
+            for area in areas
+        ],
+        "parse_errors": parse_errors,
     }
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate the SCiv project index and structure docs.")
-    parser.add_argument("--check", action="store_true", help="Fail if generated files are out of date.")
-    return parser.parse_args()
 
+def format_stats(stats: dict[str, Any]) -> str:
+    counts = stats["counts"]
+    freshness = stats["freshness"]
+    lines = [
+        f"Project: {stats['project'].get('name', 'SCiv')}",
+        "",
+        "Counts:",
+        f"  Top-level items: {counts['top_level']}",
+        f"  Documentation files: {counts['documentation']}",
+        f"  Generated artifacts: {counts['generated_artifacts']}",
+        f"  Entry points: {counts['entry_points']}",
+        f"  Routing rules: {counts['routes']}",
+        f"  Areas: {counts['areas']}",
+        f"  Modules: {counts['modules']}",
+        f"  Parse errors: {counts['parse_errors']}",
+        "",
+        f"Freshness: {'fresh' if freshness['is_fresh'] else 'stale'}",
+    ]
 
-def main() -> int:
-    args = parse_args()
-    index = build_index()
-    routing_output = json.dumps(
-        {
-            "skill": "sciv-orientation",
-            "entrypoint": ".github/copilot-instructions.md",
-            "instructions_root": ".github/instructions",
-            "manifest": "meta/generated/doc-routing.json",
-            "rules": DOC_ROUTING_RULES,
-        },
-        indent=2,
-        ensure_ascii=False,
-    ) + "\n"
+    if freshness["missing"]:
+        lines.append(f"  Missing: {', '.join(freshness['missing'])}")
+    if freshness["stale"]:
+        lines.append(f"  Stale: {', '.join(freshness['stale'])}")
 
-    top_level = [TopLevelItem(**item) for item in index["top_level"]]
-    docs = [DocumentationItem(**item) for item in index["documentation"]]
-    areas: list[AreaInfo] = []
-    for raw_area in index["areas"]:
-        key_modules = [ModuleInfo(**module) for module in raw_area["key_modules"]]
-        modules = [ModuleInfo(**module) for module in raw_area["modules"]]
-        areas.append(
-            AreaInfo(
-                path=raw_area["path"],
-                description=raw_area["description"],
-                module_count=raw_area["module_count"],
-                line_count=raw_area["line_count"],
-                key_modules=key_modules,
-                modules=modules,
-            )
+    if stats["parse_errors"]:
+        lines.extend(
+            [
+                "",
+                "Parse errors:",
+                *[f"  - {item['path']}: {item['parse_error']}" for item in stats["parse_errors"]],
+            ]
         )
 
-    json_output = json.dumps(index, indent=2, ensure_ascii=False) + "\n"
-    markdown_output = render_structure(top_level, docs, areas)
+    return "\n".join(lines)
 
-    json_ok = write_or_check(OUTPUT_JSON, json_output, check=args.check)
-    routing_ok = write_or_check(OUTPUT_ROUTING_JSON, routing_output, check=args.check)
-    markdown_ok = write_or_check(OUTPUT_MARKDOWN, markdown_output, check=args.check)
 
-    if args.check:
-        if json_ok and routing_ok and markdown_ok:
-            print("project index is up to date")
+
+def build_doctor_report(outputs: GenerationOutputs, freshness: FreshnessReport) -> dict[str, Any]:
+    stats: dict[str, Any] = build_stats(outputs.index, freshness)
+    advice: list[str] = []
+    if freshness.is_fresh:
+        advice.append("Generated project-index artifacts are current.")
+    else:
+        advice.append("Run `python3 scripts/index.py generate` to refresh stale or missing artifacts.")
+        advice.append("Use `--refresh-if-stale` with read-only commands when you want the helper to repair them first.")
+
+    return {
+        "freshness": stats["freshness"],
+        "counts": stats["counts"],
+        "parse_errors": stats["parse_errors"],
+        "advice": advice,
+    }
+
+
+
+def format_doctor_report(report: dict[str, Any]) -> str:
+    freshness = report["freshness"]
+    counts = report["counts"]
+    lines = [
+        f"Doctor status: {'healthy' if freshness['is_fresh'] else 'needs attention'}",
+        "",
+        f"Modules indexed: {counts['modules']}",
+        f"Docs indexed: {counts['documentation']}",
+        f"Routes indexed: {counts['routes']}",
+        f"Parse errors: {counts['parse_errors']}",
+    ]
+
+    if freshness["missing"]:
+        lines.append(f"Missing artifacts: {', '.join(freshness['missing'])}")
+    if freshness["stale"]:
+        lines.append(f"Stale artifacts: {', '.join(freshness['stale'])}")
+
+    if report["parse_errors"]:
+        lines.extend(
+            [
+                "",
+                "Parse errors:",
+                *[f"  - {item['path']}: {item['parse_error']}" for item in report['parse_errors']],
+            ]
+        )
+
+    lines.extend(["", "Advice:", *[f"  - {item}" for item in report["advice"]]])
+    return "\n".join(lines)
+
+
+
+def print_results(results: list[dict[str, Any]], *, as_json: bool, header: str | None = None) -> None:
+    if as_json:
+        print(json.dumps(results, indent=2, ensure_ascii=False))
+        return
+
+    if header:
+        print(f"{header}\n")
+    print("\n\n".join(format_item(item) for item in results))
+
+
+
+def add_freshness_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--refresh-if-stale",
+        action="store_true",
+        help="Regenerate the generated project-index artifacts before reading them if they are missing or stale.",
+    )
+    parser.add_argument(
+        "--require-fresh",
+        action="store_true",
+        help="Fail instead of reading stale generated artifacts.",
+    )
+
+
+
+def query_options_from_args(args: argparse.Namespace) -> QueryOptions:
+    return QueryOptions(
+        refresh_if_stale=bool(getattr(args, "refresh_if_stale", False)),
+        require_fresh=bool(getattr(args, "require_fresh", False)),
+    )
+
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Unified SCiv project-index helper for generation, browsing, querying, and validation.",
+        epilog=(
+            "Examples:\n"
+            "  python3 scripts/index.py generate\n"
+            "  python3 scripts/index.py check\n"
+            "  python3 scripts/index.py search \"ui runtime\"\n"
+            "  python3 scripts/index.py route docs-and-routing\n"
+            "  python3 scripts/index.py list modules --query world --limit 10\n"
+            "  python3 scripts/index.py stats --json\n"
+            "  python3 scripts/index.py doctor"
+        ),
+        formatter_class=HelpFormatter,
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    generate_parser = subparsers.add_parser(
+        "generate",
+        help="Generate or refresh the project-index artifacts.",
+        description="Generate SCiv's project-index JSON, doc-routing JSON, and structure markdown artifacts.",
+        formatter_class=HelpFormatter,
+    )
+    generate_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Fail instead of writing when the generated artifacts are stale.",
+    )
+
+    subparsers.add_parser(
+        "check",
+        help="Check whether the generated project-index artifacts are current.",
+        description="Alias for `generate --check` with CI-friendly output and exit codes.",
+        formatter_class=HelpFormatter,
+    )
+
+    search_parser = subparsers.add_parser(
+        "search",
+        help="Search docs, routes, areas, entry points, and modules.",
+        formatter_class=HelpFormatter,
+    )
+    search_parser.add_argument("query", help="Text to search for across indexed content.")
+    search_parser.add_argument("--kind", choices=KIND_CHOICES, default="all", help="Restrict matches to a single item kind.")
+    search_parser.add_argument("--limit", type=int, default=10, help="Maximum number of matches to print.")
+    search_parser.add_argument("--json", action="store_true", help="Print results as JSON.")
+    add_freshness_arguments(search_parser)
+
+    show_parser = subparsers.add_parser(
+        "show",
+        help="Show one or more matching indexed items by path, route id, or module name.",
+        formatter_class=HelpFormatter,
+    )
+    show_parser.add_argument("target", help="Exact or partial path/id/module name to inspect.")
+    show_parser.add_argument("--kind", choices=KIND_CHOICES, default="all", help="Restrict lookup to a single item kind.")
+    show_parser.add_argument("--json", action="store_true", help="Print results as JSON.")
+    add_freshness_arguments(show_parser)
+
+    for kind_name in ("route", "area"):
+        kind_parser = subparsers.add_parser(
+            kind_name,
+            help=f"Search or inspect {kind_name} items quickly.",
+            formatter_class=HelpFormatter,
+        )
+        kind_parser.add_argument("query", help=f"Exact id/path or fuzzy text to resolve against {kind_name} items.")
+        kind_parser.add_argument(
+            "--limit",
+            type=int,
+            default=5,
+            help="Maximum number of search matches to print when no direct match is found.",
+        )
+        kind_parser.add_argument("--json", action="store_true", help="Print results as JSON.")
+        add_freshness_arguments(kind_parser)
+
+    list_parser = subparsers.add_parser(
+        "list",
+        help="Browse one slice of the generated inventory.",
+        description="List docs, routes, areas, modules, entry points, artifacts, or top-level items.",
+        formatter_class=HelpFormatter,
+    )
+    list_parser.add_argument("target", choices=sorted(LIST_TARGET_KIND), help="Which indexed slice to browse.")
+    list_parser.add_argument("--query", help="Optional fuzzy filter for the chosen slice.")
+    list_parser.add_argument("--limit", type=int, default=20, help="Maximum number of items to print.")
+    list_parser.add_argument("--json", action="store_true", help="Print results as JSON.")
+    add_freshness_arguments(list_parser)
+
+    stats_parser = subparsers.add_parser(
+        "stats",
+        help="Show inventory counts and freshness summary.",
+        formatter_class=HelpFormatter,
+    )
+    stats_parser.add_argument("--json", action="store_true", help="Print stats as JSON.")
+    add_freshness_arguments(stats_parser)
+
+    doctor_parser = subparsers.add_parser(
+        "doctor",
+        aliases=["validate"],
+        help="Diagnose stale artifacts and index-health issues.",
+        formatter_class=HelpFormatter,
+    )
+    doctor_parser.add_argument("--json", action="store_true", help="Print the health report as JSON.")
+    doctor_parser.add_argument(
+        "--refresh-if-stale",
+        action="store_true",
+        help="Refresh stale or missing generated artifacts before reporting health.",
+    )
+
+    return parser
+
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(list(argv) if argv is not None else None)
+
+    if args.command == "generate":
+        return run_generate(check=args.check)
+
+    if args.command == "check":
+        return run_generate(check=True)
+
+    if args.command in {"search", "show", "route", "area", "list", "stats"}:
+        runtime = resolve_runtime_index(query_options_from_args(args))
+        index = runtime.index
+
+        if args.command == "search":
+            limit = max(1, args.limit)
+            results = search_index(index, args.query, args.kind, limit)
+            if not results:
+                print(f"No matches found for {args.query!r}.", file=sys.stderr)
+                return 1
+            print_results(results, as_json=args.json, header=f"Top {len(results)} matches for {args.query!r}:")
             return 0
 
-        print("project index is stale; run `python scripts/generate_project_index.py`")
-        return 1
+        if args.command == "show":
+            matches = find_items(index, args.target, args.kind)
+            if not matches:
+                print(f"No items found for {args.target!r}.", file=sys.stderr)
+                return 1
+            print_results(matches, as_json=args.json, header=f"Found {len(matches)} match(es) for {args.target!r}:")
+            return 0
 
-    print(f"wrote {OUTPUT_JSON.relative_to(REPO_ROOT).as_posix()}")
-    print(f"wrote {OUTPUT_ROUTING_JSON.relative_to(REPO_ROOT).as_posix()}")
-    print(f"wrote {OUTPUT_MARKDOWN.relative_to(REPO_ROOT).as_posix()}")
-    return 0
+        if args.command in {"route", "area"}:
+            limit = max(1, args.limit)
+            mode, results = resolve_kind_query(index, args.query, args.command, limit)
+            if not results:
+                print(f"No {args.command} items found for {args.query!r}.", file=sys.stderr)
+                return 1
+            header = (
+                f"Found {len(results)} {args.command} match(es) for {args.query!r}:"
+                if mode == "show"
+                else f"Top {len(results)} {args.command} matches for {args.query!r}:"
+            )
+            print_results(results, as_json=args.json, header=header)
+            return 0
+
+        if args.command == "list":
+            limit = max(1, args.limit)
+            results = list_items(index, args.target, args.query, limit)
+            if not results:
+                query_text = f" for query {args.query!r}" if args.query else ""
+                print(f"No {args.target} items found{query_text}.", file=sys.stderr)
+                return 1
+            header = (
+                f"Top {len(results)} {args.target} matches for {args.query!r}:"
+                if args.query
+                else f"Showing {len(results)} {args.target} item(s):"
+            )
+            print_results(results, as_json=args.json, header=header)
+            return 0
+
+        stats = build_stats(index, runtime.freshness)
+        if args.json:
+            print(json.dumps(stats, indent=2, ensure_ascii=False))
+        else:
+            print(format_stats(stats))
+        return 0
+
+    outputs = build_generation_outputs()
+    report = freshness_report(outputs)
+    if args.refresh_if_stale and not report.is_fresh:
+        write_outputs(outputs)
+        report = FreshnessReport(missing_paths=[], stale_paths=[])
+
+    doctor_report = build_doctor_report(outputs, report)
+    if args.json:
+        print(json.dumps(doctor_report, indent=2, ensure_ascii=False))
+    else:
+        print(format_doctor_report(doctor_report))
+    return 0 if report.is_fresh else 1
 
 
 if __name__ == "__main__":

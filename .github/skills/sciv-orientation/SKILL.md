@@ -19,12 +19,14 @@ Use this skill before implementation when the correct docs or code areas are not
 ## Procedure
 
 1. Read [`meta/INDEX.md`](../../../meta/INDEX.md).
-2. Use the [`sciv-project-index`](../sciv-project-index/SKILL.md) skill or `python3 scripts/query_project_index.py search "<query>"` when you need targeted matches from the generated manifest.
+2. Use the [`sciv-project-index`](../sciv-project-index/SKILL.md) skill or `python3 scripts/index.py search "<query>"` when you need targeted matches from the generated manifest.
 3. Read [`meta/structure.md`](../../../meta/structure.md) and [`meta/generated/project-index.json`](../../../meta/generated/project-index.json) directly when you need raw inventory detail or the helper output is insufficient.
 4. Use the [routing matrix](./references/routing-matrix.md) to map the task to the correct subsystem docs.
 5. Read the matching `meta/technical/*.md` pages before proposing edits.
-6. Identify the most likely edit targets.
-7. Identify which docs must be updated if the code changes.
+6. If the task edits Python files or typing/tooling workflow, include [`meta/technical/python-conventions.md`](../../../meta/technical/python-conventions.md).
+7. If the task changes contributor-visible behavior or repo workflow, include [`meta/technical/changelog-workflow.md`](../../../meta/technical/changelog-workflow.md).
+8. Identify the most likely edit targets.
+9. Identify which docs must be updated if the code changes.
 
 ## Constraints
 

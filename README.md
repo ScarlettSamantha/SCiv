@@ -12,7 +12,7 @@ I am building this in a project called [panda3d](https://github.com/panda3d/pand
 
 ## Requirements
 
-It currently requires (*for now*) a Unix/Windows-based OS, Python 3.13 or greater. Hardware requirements depend on map size: I can run a 150x150 map at zoom levels with a *7800XT*. Normal map sizes (e.g. *90x190*) require about `~3GB` RAM; I expect this to be around `2-4GB`. VRAM usage is about `900MB`, which may grow to `2-4GB` depending on textures and models. It's mostly single-core usage, so a CPU with strong single-thread performance is preferred. At normal zoom levels, it is currently CPU-bound on my Intel 13th-gen i5.
+It currently requires (*for now*) a Unix/Windows-based OS, Python 3.14 or greater. Hardware requirements depend on map size: I can run a 150x150 map at zoom levels with a *7800XT*. Normal map sizes (e.g. *90x190*) require about `~3GB` RAM; I expect this to be around `2-4GB`. VRAM usage is about `900MB`, which may grow to `2-4GB` depending on textures and models. It's mostly single-core usage, so a CPU with strong single-thread performance is preferred. At normal zoom levels, it is currently CPU-bound on my Intel 13th-gen i5.
 
 ## How to run it
 
@@ -65,7 +65,7 @@ There should be a `.msi` installer which is just a windows installer format base
 
 #### Git
 
-Install [Python 3.13+](https://www.python.org/downloads/windows/) and [Git](https://gitforwindows.org/).
+Install [Python 3.14+](https://www.python.org/downloads/windows/) and [Git](https://gitforwindows.org/).
 
 Clone the repo into a folder of your choice. I recommend using Git Bash, or PowerShell if you're more familiar with that.
 
@@ -177,9 +177,10 @@ This should be the first truly playable version that's somewhat fun.
 
 - [Documentation Index](meta/INDEX.md) - Start here for Git-tracked project docs  
 - [Known Bugs](known_bugs.md) - Tracked issues and rough edges  
-- [Changelog](CHANGELOG.md) - Automatically generated  
+- [Changelog](CHANGELOG.md) - Maintained with the repo changelog helper workflow  
 - [File Structure](meta/structure.md) - Generated project layout  
 - [Project Index JSON](meta/generated/project-index.json) - Machine-readable project inventory  
+- [Project Index Helper](meta/technical/project-index-helper.md) - Unified CLI for generating, browsing, querying, and validating the project index  
 - [Architecture](meta/technical/architecture.md) - Runtime subsystem overview  
 - [Startup Flow](meta/technical/startup.md) - Bootstrap and UI handoff path  
 - [Entities & Save/Load](meta/technical/entities.md) - Persistence model and entity lifecycle  

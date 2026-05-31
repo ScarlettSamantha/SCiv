@@ -73,9 +73,9 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.era.progressing` (E: manager-ages | L: manager-ui)
 - `game.era.setting` (E: managers-ages | L: )
 
-- `game.camera.request.center_on_tile` (E: action-search-map | L: system-camera)
+- `game.camera.request.center_on_tile` (E: action-search-map, E: ui-part-minimap | L: system-camera)
 
-- `game.gameplay.tiles.ownership_changed` (E: manager-world | L: base-tile)
+- `game.gameplay.tiles.ownership_changed` (E: manager-world | L: base-tile, L: ui-part-minimap)
 - `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
 
 - `game.gameplay.unit.build_improvement_success` (E: action-build)
@@ -111,7 +111,7 @@ These are used by the UI manager to control some debug actions these may disappe
 ### Units
 
 - `unit.action.move.visiting_tile` (E: Tile | L: manager-ui)
-- `unit.action.found_city.success` (E: action-found | )
+- `unit.action.found_city.success` (E: action-found | L: ui-part-minimap)
 
 ## UI
 
@@ -189,6 +189,9 @@ These are used by the UI manager to control some debug actions these may disappe
 
 - `system.input.camera_lock` (E: ui-part-save, E: ui-part-load | L: camera)
 - `system.input.camera_unlock` (E: ui-part-save, E: ui-part-load | L: camera)
+
+- `system.camera.zoom_ticked` (E: system-camera | L: ui-part-minimap)
+- `system.camera.zoom_ended` (E: system-camera | L: ui-part-minimap)
 
 - `system.game.start_load` (E:manager-ui, E:screen-game-config | L: manager-game)
 - `system.game.player_game_over` (E: Lose | L: manager-game)

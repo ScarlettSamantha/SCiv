@@ -12,8 +12,10 @@ Use Git-tracked project docs as the primary source of repository knowledge.
 
 1. Read [`meta/INDEX.md`](../meta/INDEX.md) for the documentation map.
 2. Use [`meta/structure.md`](../meta/structure.md) for the generated human-readable project map.
-3. Use [`meta/generated/project-index.json`](../meta/generated/project-index.json) for machine-readable navigation when locating code, and prefer the `sciv-project-index` skill/helper for targeted lookups against that manifest.
+3. Use [`meta/generated/project-index.json`](../meta/generated/project-index.json) for machine-readable navigation when locating code, and prefer the `sciv-project-index` skill/helper or `python3 scripts/index.py search "<topic>"` for targeted lookups against that manifest.
 4. If the task is ambiguous, cross-cutting, or starts in an unfamiliar subsystem, use the `sciv-orientation` skill before implementation.
+5. When editing Python code or typing/tooling workflow, read [`meta/technical/python-conventions.md`](../meta/technical/python-conventions.md).
+6. When a task is contributor-visible or workflow-visible, read [`meta/technical/changelog-workflow.md`](../meta/technical/changelog-workflow.md) before finishing.
 
 ## Guarded areas
 
@@ -31,17 +33,20 @@ Use Git-tracked project docs as the primary source of repository knowledge.
 | Input picking, raycaster activation, camera zoom/input locks, or world-selection collision masks                                   | [`meta/technical/architecture.md`](../meta/technical/architecture.md), [`meta/technical/signals.md`](../meta/technical/signals.md)                                                                                                                                                                                                                                                                                                        | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant input/camera docs |
 | Panda3D/Kivy bridge, UI manager, screen flow, or `system.main.ready`                                                               | [`meta/technical/startup.md`](../meta/technical/startup.md), [`meta/technical/architecture.md`](../meta/technical/architecture.md), [`meta/technical/ui-runtime.md`](../meta/technical/ui-runtime.md), [`meta/technical/signals.md`](../meta/technical/signals.md)                                                                                                                                                                        | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                    |
 | Gameplay rules, effects, actions, city production, or mechanics that interact with turn flow                                       | [`meta/technical/workings.md`](../meta/technical/workings.md) plus the matching focused doc such as [`meta/technical/effects.md`](../meta/technical/effects.md), [`meta/technical/actions.md`](../meta/technical/actions.md), [`meta/technical/city-production.md`](../meta/technical/city-production.md), [`meta/technical/rules.md`](../meta/technical/rules.md), and [`meta/technical/turns.md`](../meta/technical/turns.md) as needed | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                    |
+| Python source, typing workflow, `pyproject.toml`, or `pyrightconfig.json`                                                          | [`meta/technical/python-conventions.md`](../meta/technical/python-conventions.md), [`meta/technical/agent-workflow.md`](../meta/technical/agent-workflow.md)                                                                                                                                                                                                                                                                              | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant workflow docs     |
+| `CHANGELOG.md`, `changelog.py`, version-setting workflow, or contributor workflow completion rules                                 | [`meta/technical/changelog-workflow.md`](../meta/technical/changelog-workflow.md), [`meta/technical/agent-workflow.md`](../meta/technical/agent-workflow.md)                                                                                                                                                                                                                                                                              | [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md) and the relevant workflow docs     |
 | Documentation, project indexing, routing behavior, or repo-local agent customization                                               | [`meta/INDEX.md`](../meta/INDEX.md), [`meta/structure.md`](../meta/structure.md), [`meta/generated/project-index.json`](../meta/generated/project-index.json), [`meta/technical/agent-workflow.md`](../meta/technical/agent-workflow.md), [`meta/technical/update-triggers.md`](../meta/technical/update-triggers.md)                                                                                                                     | Regenerate generated docs and update the routing layer                                                         |
 
 ## Working rules
 
 - Prefer repo docs over chat memory when they disagree.
 - Use `.github/instructions/` as a dispatcher layer only; do not put durable architecture knowledge there.
-- After structural changes, regenerate the project index with `python scripts/generate_project_index.py`.
+- After structural changes, regenerate the project index with `python scripts/index.py generate`.
 - If a change affects a guarded area, update the matching file in `meta/technical/` in the same change.
 - Before ending a task, automatically write back any stable verified learning to the closest `meta/**` doc; if it changes routing or repo-local agent workflow, update this file and the relevant routing docs in the same change.
 - If a change affects which docs should be read before editing a subsystem, update `meta/technical/update-triggers.md` and the skill routing matrix.
 - If a change affects repo-local agent workflow or `.github/agents/**`, update `meta/technical/agent-workflow.md` in the same change.
+- If a change is meaningful to users or contributors, update `CHANGELOG.md` through the helper documented in `meta/technical/changelog-workflow.md`.
 - Keep this file thin; put durable project knowledge in `meta/`, not here.
 
 ## High-value docs
@@ -58,6 +63,8 @@ Use Git-tracked project docs as the primary source of repository knowledge.
 - [`meta/technical/entities.md`](../meta/technical/entities.md)
 - [`meta/technical/turns.md`](../meta/technical/turns.md)
 - [`meta/technical/agent-workflow.md`](../meta/technical/agent-workflow.md)
+- [`meta/technical/python-conventions.md`](../meta/technical/python-conventions.md)
+- [`meta/technical/changelog-workflow.md`](../meta/technical/changelog-workflow.md)
 - [`meta/technical/effects.md`](../meta/technical/effects.md)
 - [`meta/technical/actions.md`](../meta/technical/actions.md)
 - [`meta/technical/city-production.md`](../meta/technical/city-production.md)

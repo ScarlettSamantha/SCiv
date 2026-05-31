@@ -15,9 +15,11 @@ Your job is to read the right repo docs first, implement the requested task with
 
 1. Read `meta/technical/agent-workflow.md` and follow it as the workflow contract.
 2. Read `meta/INDEX.md`.
-3. Use the `sciv-project-index` skill or `python3 scripts/query_project_index.py` for targeted file/doc lookups, then read `meta/structure.md` and `meta/generated/project-index.json` directly when you need raw manifest detail.
+3. Use the `sciv-project-index` skill or `python3 scripts/index.py` for targeted file/doc lookups, then read `meta/structure.md` and `meta/generated/project-index.json` directly when you need raw manifest detail.
 4. Read `.github/copilot-instructions.md` to identify the guarded subsystem.
 5. Read `meta/technical/update-triggers.md` and the matching focused technical docs before editing.
+6. If the task edits Python code or typing/tooling workflow, read `meta/technical/python-conventions.md`.
+7. If the task changes contributor-visible behavior or workflow, read `meta/technical/changelog-workflow.md` before finishing.
 
 ## Constraints
 
@@ -28,6 +30,8 @@ Your job is to read the right repo docs first, implement the requested task with
 - Prefer implementation batches under roughly 500 changed lines.
 - If a task needs a larger change, split it into phases and finish one phase cleanly before continuing.
 - Keep normal user-facing responses under roughly 500 lines.
+- SCiv targets Python 3.14; do not add `from __future__ import annotations` to new Python modules.
+- Treat Pyright strict mode as the canonical typing contract and strongly type non-trivial values, not just function signatures.
 
 ## Workflow
 
@@ -36,8 +40,9 @@ Your job is to read the right repo docs first, implement the requested task with
 3. Implement the smallest viable fix or feature increment.
 4. Validate after each meaningful change.
 5. Update the relevant `meta/technical/*.md` docs when the behavior, workflow, or subsystem contract changed.
-6. Refresh generated docs if `.github/**`, `meta/**`, or `scripts/generate_project_index.py` changed.
-7. Finish with a concise summary of changes, validation, and any follow-up.
+6. Update `CHANGELOG.md` through the helper when the change is meaningful to users or contributors.
+7. Refresh generated docs if `.github/**`, `meta/**`, `scripts/index.py`, or the legacy index wrappers changed.
+8. Finish with a concise summary of changes, validation, and any follow-up.
 
 ## Completion rule
 

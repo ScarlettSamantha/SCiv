@@ -98,7 +98,7 @@ In practice, `GameUIScreen` owns:
 - target panels and duel panels
 - city UI opening/closing
 - research, civics, inspect, debug-actions, and log overlays
-- top bar, player list, combat log, and messenger widgets
+- top bar, player list, combat log, messenger widgets, and the minimap
 - unit-path preview rendering
 - input locking for fullscreen/modal gameplay overlays
 
@@ -135,7 +135,7 @@ The current new-game path is:
 4. `Game.on_game_start()` schedules `_try_game_start()` after a short delay so the loading screen can become visible.
 5. `Game._try_game_start()` generates the world, activates turns/input/camera, and emits `game.state.true_game_start`.
 6. `ui.post_game_start()` binds the live `Game` / `World`, sets the session player on `game_ui`, builds the screen root, refreshes the messenger, and initializes notifications.
-7. `GameUIScreen.on_game_start()` builds the player list, combat log, top bar, and related runtime widgets.
+7. `GameUIScreen.on_game_start()` builds the player list, combat log, top bar, minimap, and related runtime widgets.
 
 ### Load game
 
@@ -147,6 +147,43 @@ The current load path is:
 4. `Game.load()` reconstructs entities, world state, render state, and turn state, then switches back to `game_ui`.
 5. `Game.load()` calls `ui.post_game_start()`, resets the game UI, and emits `game.state.load_finished`.
 6. `GameUIScreen.on_game_start()` listens to `game.state.load_finished` as well as `game.state.true_game_start`.
+
+### Minimap behavior
+
+`sciv/menus/kivy/parts/minimap.py` is a persistent `GameUIScreen` widget that renders a texture-backed overview of the live world as a filled hex-cell raster built from tile terrain colors plus ownership tint.
+
+The current minimap contract is:
+
+- render a compact world-space texture from gameplay state rather than from a second Panda3D camera
+- present that texture inside a compact top-right HUD panel beneath the top bar, using darker low-contrast chrome, a slim session-player accent, and minimal border treatment so the map reads as part of the HUD instead of a detached card
+- source its screen sizing from the shared Panda3D window (`base.win`) rather than assuming Kivy's global `Window` proxy is available during widget construction
+- complete its live binding during session activation by calling `Minimap.register()`, which attaches the widget to the current `World`/`Camera` singletons and its refresh signals before the first full redraw
+- keep the minimap texture in the same world-space orientation as the live 3D tile coordinates so camera overlays, click targeting, and the displayed terrain all agree on north/south placement
+- treat minimap coordinate work as a combined transform problem: `_world_to_texture_point()`, `_world_to_canvas()`, `_canvas_to_world()`, the texture row write order, and the crop region math must all agree on the same world-space orientation or the map will look rotated/flipped even when it is using the correct tile data
+- derive a lightweight empire-border overlay directly from tile ownership adjacency so the minimap shows territorial outlines without needing a second render pass
+- overlay city markers and a subtle camera footprint polygon projected from the active lens onto the camera pivot's height plane so the minimap view marker tracks the live camera more faithfully on uneven terrain
+- overlay a tiny selected-tile debug reticle so the currently selected tile remains visible on the minimap even when the world is heavily zoomed out
+- support preset minimap zoom levels, with wheel input or on-panel zoom buttons changing the crop around the live camera footprint while keeping the same texture-backed rendering path
+- expose an absolute-mode toggle that pins the minimap to the fully zoomed-out world view and ignores minimap zoom changes until the mode is disabled
+- listen to `game.gameplay.tiles.ownership_changed` and `unit.action.found_city.success` so ownership and city-state changes trigger minimap rebuilds
+- emit `game.camera.request.center_on_tile` when the user clicks or drags on the minimap
+
+Input handling is split intentionally:
+
+- the minimap is registered as non-collidable, so hovering it suppresses world picking like other HUD elements
+- while the user is actively dragging on the minimap, it also suspends the camera's normal mouse drag/zoom behavior through `Camera.begin_external_capture()` / `end_external_capture()` so Panda3D camera controls do not rotate or pan the world underneath the minimap gesture
+
+### Minimap coordinate caveat
+
+Historically, the minimap was easy to misread as “rotated” because the widget uses a chain of world-space normalization, texture writes, Kivy image display, and cropped zoom regions.
+
+Future minimap work should assume the following until proven otherwise by code and runtime checks:
+
+- the authoritative source of minimap placement is the live tile world-space position (`tile.pos_x` / `tile.pos_y`)
+- the minimap should not introduce an extra implicit y-flip on top of the texture write path
+- a change that seems cosmetic in only one transform stage can make the whole minimap appear mirrored or rotated relative to the world
+
+When debugging minimap alignment, verify the transform chain end-to-end instead of inspecting only one helper in isolation.
 
 ## Interaction flow
 
@@ -218,6 +255,7 @@ This is used for overlays that should temporarily stop normal map interaction.
 | UI element | Current behavior |
 | --- | --- |
 | Action bar / turn control / player list / combat log / popup layouts | Registered as non-collidable so hovering them disables world picking. |
+| Minimap | Registered as non-collidable for normal hover behavior; while dragging, it also temporarily suspends camera drag/zoom state and recenters via `game.camera.request.center_on_tile`. |
 | Research / civics / inspect / debug actions / log | Open inside `GameUIScreen` and call `lock_input()` until closed. |
 | SavePopup / LoadPopup | Open from `save_load_screen`, register themselves as non-collidable, bind `escape`, and explicitly disable zoom/control plus camera movement. |
 | Pause menu | Opens via `ui.update.ui.show_pause` and uses collision-prevention for the popup container, but the active flow does not itself toggle `Game.pause()`. |
@@ -227,6 +265,7 @@ This is used for overlays that should temporarily stop normal map interaction.
 
 - `ui.post_game_start()` is currently invoked in two ways on the new-game path: as a listener for `game.state.true_game_start` and as a direct call from `Game._try_game_start()`. Keep post-start work idempotent when modifying it.
 - The load path also performs direct `ui.post_game_start()` work before `game.state.load_finished` reaches `GameUIScreen`.
+- `GameUIScreen.build_screen()` and `GameUIScreen.on_game_start()` now keep persistent HUD pieces such as the minimap idempotent, because the new-game and load paths can both touch those entry points more than once.
 - The active escape-menu flow is `GameUIScreen.on_escape()` -> `ui.update.ui.show_pause` -> `PauseMenu.open()`. The older `ui.get_escape_menu()` helper still exists and does call `Game.pause()/unpause()`, but it is not the current screen-driven pause path.
 - `SavePopup.close_popup()` returns to `game_ui` by calling `ui.manager.set_screen("game_ui")`, while `LoadPopup.close_popup()` emits `ui.update.ui.hide_load` and lets the UI manager restore the previous screen. Similar surfaces, slightly different exit paths.
 - `MainMenuScreen.continue` is present but currently disabled.
@@ -239,6 +278,7 @@ This is used for overlays that should temporarily stop normal map interaction.
 - `sciv/managers/ui.py`
 - `sciv/menus/kivy/core.py`
 - `sciv/menus/kivy/mixins/collidable.py`
+- `sciv/menus/kivy/parts/minimap.py`
 - `sciv/menus/kivy/elements/popup.py`
 - `sciv/menus/screens/main_menu.py`
 - `sciv/menus/screens/game_config.py`
@@ -246,3 +286,4 @@ This is used for overlays that should temporarily stop normal map interaction.
 - `sciv/menus/screens/game_ui.py`
 - `sciv/menus/screens/pause_menu.py`
 - `sciv/menus/screens/save_load.py`
+- `sciv/system/camera.py`

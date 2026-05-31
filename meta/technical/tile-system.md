@@ -54,6 +54,8 @@ A live `Tile` combines grid identity, environment data, gameplay contents, and r
 
 `compute_hex_center()` and `recalculate_grid_position()` derive world-space xy from grid coordinates, while `calculate_z_pos_on_altitude()` converts altitude into render z.
 
+For alternate world views such as the minimap, this mapping is the contract to mirror exactly. Do not assume that raw grid rows or columns map directly to intuitive screen north/south placement; use the derived world-space coordinates and keep any normalization/cropping math aligned with them.
+
 ### Environment and terrain state
 
 Each tile stores the worldgen-derived environment that gameplay uses later:

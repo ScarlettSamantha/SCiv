@@ -60,7 +60,7 @@
     {
       "path": "CHANGELOG.md",
       "kind": "file",
-      "description": "Generated release changelog."
+      "description": "Project changelog maintained through the repo helper workflow."
     },
     {
       "path": "CREDITS",
@@ -93,9 +93,19 @@
       "description": "VS Code workspace definition."
     },
     {
+      "path": "__pycache__",
+      "kind": "directory",
+      "description": "Project directory."
+    },
+    {
       "path": "assets",
       "kind": "directory",
       "description": "Shared source assets such as models, textures, shaders, fonts, and icons."
+    },
+    {
+      "path": "changelog.py",
+      "kind": "file",
+      "description": "Repository changelog helper and release metadata utility."
     },
     {
       "path": "docker-compose.yml",
@@ -167,7 +177,7 @@
     {
       "path": "CHANGELOG.md",
       "category": "root",
-      "description": "Generated release history."
+      "description": "Project changelog maintained through the helper-driven gitmoji and release workflow."
     },
     {
       "path": "README.md",
@@ -210,6 +220,11 @@
       "description": "Repository documentation."
     },
     {
+      "path": "meta/technical/changelog-workflow.md",
+      "category": "technical",
+      "description": "Canonical `CHANGELOG.md` maintenance workflow, gitmoji convention, and release/tag helper usage."
+    },
+    {
       "path": "meta/technical/city-production.md",
       "category": "technical",
       "description": "Food, production, border growth, and city-side turn processing."
@@ -228,6 +243,16 @@
       "path": "meta/technical/player-system.md",
       "category": "technical",
       "description": "Repository documentation."
+    },
+    {
+      "path": "meta/technical/project-index-helper.md",
+      "category": "technical",
+      "description": "Unified project-index helper commands, generated artifacts, and human/AI lookup workflow."
+    },
+    {
+      "path": "meta/technical/python-conventions.md",
+      "category": "technical",
+      "description": "Python 3.14 baseline, strong typing expectations, and Pyright-first authoring rules."
     },
     {
       "path": "meta/technical/rendering-system.md",
@@ -335,6 +360,11 @@
       "description": "Repository documentation."
     },
     {
+      "path": ".github/instructions/python-conventions.instructions.md",
+      "category": "automation",
+      "description": "Routes Python 3.14, typing, and Pyright workflow changes to the canonical conventions docs."
+    },
+    {
       "path": ".github/instructions/rendering.instructions.md",
       "category": "automation",
       "description": "Repository documentation."
@@ -373,7 +403,7 @@
   "generated_artifacts": [
     {
       "path": "meta/structure.md",
-      "description": "Generated human-readable project map rendered from the index generator."
+      "description": "Generated human-readable project map rendered from the index helper."
     },
     {
       "path": "meta/generated/project-index.json",
@@ -650,6 +680,7 @@
       "file_globs": [
         "meta/**",
         ".github/**",
+        "scripts/index.py",
         "scripts/generate_project_index.py",
         "scripts/query_project_index.py",
         ".gitlab-ci.yml",
@@ -662,15 +693,82 @@
         "meta/INDEX.md",
         "meta/structure.md",
         "meta/generated/project-index.json",
+        "meta/technical/project-index-helper.md",
         "meta/technical/agent-workflow.md",
         "meta/technical/update-triggers.md"
       ],
       "update_docs": [
         "meta/INDEX.md",
+        "meta/technical/project-index-helper.md",
         "meta/technical/agent-workflow.md",
         "meta/technical/update-triggers.md",
         "meta/generated/project-index.json",
         "meta/generated/doc-routing.json"
+      ]
+    },
+    {
+      "id": "python-conventions-and-typing",
+      "summary": "Python source, typing/tooling configuration, and repository Python authoring workflow.",
+      "task_keywords": [
+        "python",
+        "typing",
+        "pyright",
+        "type checking",
+        "python conventions",
+        "future annotations"
+      ],
+      "file_globs": [
+        "run.py",
+        "sciv/**/*.py",
+        "scripts/**/*.py",
+        "pyproject.toml",
+        "pyrightconfig.json"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/python-conventions.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/python-conventions.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/python-conventions.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "changelog-and-contributor-workflow",
+      "summary": "CHANGELOG maintenance, gitmoji/ticket entry conventions, release tagging, and contributor workflow completion rules.",
+      "task_keywords": [
+        "changelog",
+        "gitmoji",
+        "release notes",
+        "release tag",
+        "workflow",
+        "contributor workflow",
+        "changelog helper"
+      ],
+      "file_globs": [
+        "CHANGELOG.md",
+        "changelog.py",
+        "makefile",
+        "meta/technical/changelog-workflow.md"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/docs-governance.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/changelog-workflow.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/changelog-workflow.md",
+        "meta/technical/agent-workflow.md",
+        "meta/INDEX.md",
+        "meta/technical/update-triggers.md"
       ]
     }
   ],
@@ -678,8 +776,8 @@
     {
       "path": "root",
       "description": "Root-level Python entrypoints and thin wrappers.",
-      "module_count": 1,
-      "line_count": 12,
+      "module_count": 2,
+      "line_count": 1102,
       "key_modules": [
         {
           "path": "run.py",
@@ -695,9 +793,167 @@
           ],
           "line_count": 12,
           "parse_error": null
+        },
+        {
+          "path": "changelog.py",
+          "module": "changelog",
+          "area": "root",
+          "summary": "Repository changelog helper for entries, release preparation, and version sync.",
+          "classes": [
+            "CategoryPreset",
+            "VersionInfo"
+          ],
+          "functions": [
+            "add_common_file_argument",
+            "build_parser",
+            "build_version_string",
+            "collect_category_entries",
+            "create_git_tag",
+            "default_gitmoji_name_for_category",
+            "ensure_blank_line_before_end",
+            "ensure_canonical_structure",
+            "ensure_category",
+            "ensure_release_exists",
+            "ensure_section",
+            "ensure_top_heading",
+            "extract_bool_assignment",
+            "extract_int_assignment",
+            "extract_section_text",
+            "extract_section_value",
+            "extract_string_assignment",
+            "find_heading_index",
+            "find_section_range",
+            "format_entry_message",
+            "git_tag_exists",
+            "heading",
+            "insert_entry",
+            "load_pyproject_versions",
+            "load_version_info",
+            "main",
+            "next_heading_index",
+            "normalize_category",
+            "normalize_message",
+            "normalize_name_token",
+            "normalize_ticket",
+            "openciv_changelog",
+            "parse_version_string",
+            "read_text",
+            "release_entries",
+            "release_heading",
+            "release_section_exists",
+            "release_tag_message",
+            "render_categories",
+            "render_gitmojis",
+            "render_section",
+            "render_text_table",
+            "render_version_py",
+            "render_version_status",
+            "reorder_section",
+            "resolve_gitmoji",
+            "resolve_tag_name",
+            "section_bounds",
+            "strip_leading_blank_lines",
+            "strip_quotes",
+            "strip_trailing_blank_lines",
+            "summarize_unreleased",
+            "sync_version_files",
+            "update_pyproject_versions",
+            "upsert_toml_setting",
+            "write_text"
+          ],
+          "imports": [
+            "argparse",
+            "dataclasses",
+            "datetime",
+            "pathlib",
+            "re",
+            "subprocess",
+            "typing"
+          ],
+          "line_count": 1090,
+          "parse_error": null
         }
       ],
       "modules": [
+        {
+          "path": "changelog.py",
+          "module": "changelog",
+          "area": "root",
+          "summary": "Repository changelog helper for entries, release preparation, and version sync.",
+          "classes": [
+            "CategoryPreset",
+            "VersionInfo"
+          ],
+          "functions": [
+            "add_common_file_argument",
+            "build_parser",
+            "build_version_string",
+            "collect_category_entries",
+            "create_git_tag",
+            "default_gitmoji_name_for_category",
+            "ensure_blank_line_before_end",
+            "ensure_canonical_structure",
+            "ensure_category",
+            "ensure_release_exists",
+            "ensure_section",
+            "ensure_top_heading",
+            "extract_bool_assignment",
+            "extract_int_assignment",
+            "extract_section_text",
+            "extract_section_value",
+            "extract_string_assignment",
+            "find_heading_index",
+            "find_section_range",
+            "format_entry_message",
+            "git_tag_exists",
+            "heading",
+            "insert_entry",
+            "load_pyproject_versions",
+            "load_version_info",
+            "main",
+            "next_heading_index",
+            "normalize_category",
+            "normalize_message",
+            "normalize_name_token",
+            "normalize_ticket",
+            "openciv_changelog",
+            "parse_version_string",
+            "read_text",
+            "release_entries",
+            "release_heading",
+            "release_section_exists",
+            "release_tag_message",
+            "render_categories",
+            "render_gitmojis",
+            "render_section",
+            "render_text_table",
+            "render_version_py",
+            "render_version_status",
+            "reorder_section",
+            "resolve_gitmoji",
+            "resolve_tag_name",
+            "section_bounds",
+            "strip_leading_blank_lines",
+            "strip_quotes",
+            "strip_trailing_blank_lines",
+            "summarize_unreleased",
+            "sync_version_files",
+            "update_pyproject_versions",
+            "upsert_toml_setting",
+            "write_text"
+          ],
+          "imports": [
+            "argparse",
+            "dataclasses",
+            "datetime",
+            "pathlib",
+            "re",
+            "subprocess",
+            "typing"
+          ],
+          "line_count": 1090,
+          "parse_error": null
+        },
         {
           "path": "run.py",
           "module": "run",
@@ -719,7 +975,7 @@
       "path": "sciv",
       "description": "Core package bootstrap, application host, configuration, and top-level resources.",
       "module_count": 6,
-      "line_count": 500,
+      "line_count": 504,
       "key_modules": [
         {
           "path": "sciv/__main__.py",
@@ -853,7 +1109,7 @@
             "importlib.metadata",
             "pkg_resources"
           ],
-          "line_count": 38,
+          "line_count": 42,
           "parse_error": null
         }
       ],
@@ -990,7 +1246,7 @@
             "importlib.metadata",
             "pkg_resources"
           ],
-          "line_count": 38,
+          "line_count": 42,
           "parse_error": null
         }
       ]
@@ -2033,7 +2289,7 @@
       "path": "sciv/gameplay",
       "description": "Domain model for players, tiles, cities, units, rules, effects, and other mechanics.",
       "module_count": 647,
-      "line_count": 26226,
+      "line_count": 26224,
       "key_modules": [
         {
           "path": "sciv/gameplay/player.py",
@@ -2327,7 +2583,6 @@
           ],
           "functions": [],
           "imports": [
-            "__future__",
             "copy",
             "gameplay.resource",
             "gameplay.resources.core.basic.culture",
@@ -2339,7 +2594,7 @@
             "gameplay.resources.core.basic.science",
             "typing"
           ],
-          "line_count": 511,
+          "line_count": 509,
           "parse_error": null
         },
         {
@@ -14507,7 +14762,6 @@
           ],
           "functions": [],
           "imports": [
-            "__future__",
             "copy",
             "gameplay.resource",
             "gameplay.resources.core.basic.culture",
@@ -14519,7 +14773,7 @@
             "gameplay.resources.core.basic.science",
             "typing"
           ],
-          "line_count": 511,
+          "line_count": 509,
           "parse_error": null
         }
       ]
@@ -14528,7 +14782,7 @@
       "path": "sciv/system",
       "description": "Engine-facing systems such as rendering, save/load helpers, generators, and effects.",
       "module_count": 38,
-      "line_count": 8763,
+      "line_count": 8785,
       "key_modules": [
         {
           "path": "sciv/system/entity.py",
@@ -14752,7 +15006,7 @@
             "panda3d_kivy.core.window",
             "typing"
           ],
-          "line_count": 379,
+          "line_count": 401,
           "parse_error": null
         },
         {
@@ -14941,7 +15195,7 @@
             "panda3d_kivy.core.window",
             "typing"
           ],
-          "line_count": 379,
+          "line_count": 401,
           "parse_error": null
         },
         {
@@ -15730,8 +15984,8 @@
     {
       "path": "sciv/menus",
       "description": "Kivy application and screen/widget layers.",
-      "module_count": 53,
-      "line_count": 12726,
+      "module_count": 54,
+      "line_count": 14247,
       "key_modules": [
         {
           "path": "sciv/menus/kivy/core.py",
@@ -15811,6 +16065,7 @@
             "menus.kivy.parts.debug_actions",
             "menus.kivy.parts.debug_map_stats",
             "menus.kivy.parts.inspect_entity",
+            "menus.kivy.parts.minimap",
             "menus.kivy.parts.player_attack",
             "menus.kivy.parts.player_combat_log",
             "menus.kivy.parts.player_info",
@@ -15829,7 +16084,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 968,
+          "line_count": 1020,
           "parse_error": null
         },
         {
@@ -16899,6 +17154,39 @@
           "parse_error": null
         },
         {
+          "path": "sciv/menus/kivy/parts/minimap.py",
+          "module": "sciv.menus.kivy.parts.minimap",
+          "area": "sciv/menus",
+          "summary": "UI module for minimap.",
+          "classes": [
+            "Minimap"
+          ],
+          "functions": [],
+          "imports": [
+            "direct.showbase.DirectObject",
+            "direct.showbase.MessengerGlobal",
+            "gameplay.tile",
+            "helpers.tiles",
+            "kivy.clock",
+            "kivy.core.window",
+            "kivy.graphics",
+            "kivy.graphics.texture",
+            "kivy.metrics",
+            "kivy.uix.button",
+            "kivy.uix.floatlayout",
+            "kivy.uix.image",
+            "kivy.uix.label",
+            "managers.player",
+            "managers.world",
+            "math",
+            "panda3d.core",
+            "system.camera",
+            "typing"
+          ],
+          "line_count": 1469,
+          "parse_error": null
+        },
+        {
           "path": "sciv/menus/kivy/parts/player_attack.py",
           "module": "sciv.menus.kivy.parts.player_attack",
           "area": "sciv/menus",
@@ -17357,6 +17645,7 @@
             "menus.kivy.parts.debug_actions",
             "menus.kivy.parts.debug_map_stats",
             "menus.kivy.parts.inspect_entity",
+            "menus.kivy.parts.minimap",
             "menus.kivy.parts.player_attack",
             "menus.kivy.parts.player_combat_log",
             "menus.kivy.parts.player_info",
@@ -17375,7 +17664,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 968,
+          "line_count": 1020,
           "parse_error": null
         },
         {
@@ -18892,59 +19181,127 @@
     {
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
-      "module_count": 9,
-      "line_count": 1875,
+      "module_count": 10,
+      "line_count": 2426,
       "key_modules": [
         {
-          "path": "scripts/generate_project_index.py",
-          "module": "scripts.generate_project_index",
+          "path": "scripts/index.py",
+          "module": "scripts.index",
           "area": "scripts",
-          "summary": "Generates the repo-native documentation index for humans and AI tooling.",
+          "summary": "Unified SCiv project-index helper for generation, browsing, querying, and validation.",
           "classes": [
             "AreaInfo",
             "DocumentationItem",
+            "FreshnessReport",
+            "GenerationOutputs",
+            "HelpFormatter",
+            "IndexDataset",
             "ModuleInfo",
+            "QueryOptions",
+            "RuntimeIndex",
             "TopLevelItem"
           ],
           "functions": [
+            "add_freshness_arguments",
             "area_for_path",
             "area_rank",
             "build_areas",
+            "build_dataset",
+            "build_doctor_report",
+            "build_generation_outputs",
             "build_index",
+            "build_parser",
+            "build_stats",
             "category_for_doc",
             "category_rank",
             "collect_documentation_items",
             "collect_modules",
             "collect_top_level_items",
+            "describe_freshness_issue",
             "doc_summary",
             "escape_markdown",
             "fallback_module_summary",
+            "find_items",
+            "format_doctor_report",
+            "format_generate_summary",
+            "format_item",
+            "format_stats",
             "format_symbols",
+            "freshness_report",
             "is_skipped",
+            "iter_index_items",
             "iter_python_paths",
             "link_from_structure",
+            "list_items",
+            "load_existing_index",
             "main",
+            "matches_kind",
             "module_name_for",
-            "parse_args",
+            "normalize",
             "parse_python_module",
+            "preview",
+            "print_results",
+            "query_options_from_args",
+            "read_existing_output",
+            "relative_paths",
+            "render_routing_manifest",
             "render_structure",
             "render_table",
             "repo_relative",
+            "resolve_kind_query",
+            "resolve_runtime_index",
+            "run_generate",
+            "score_item",
+            "search_fields",
+            "search_index",
             "select_key_modules",
             "summarize_names",
-            "write_or_check"
+            "write_outputs"
           ],
           "imports": [
-            "__future__",
             "argparse",
             "ast",
             "dataclasses",
             "json",
             "os",
             "pathlib",
+            "re",
+            "sys",
             "typing"
           ],
-          "line_count": 1108,
+          "line_count": 1963,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/generate_project_index.py",
+          "module": "scripts.generate_project_index",
+          "area": "scripts",
+          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
+          "classes": [],
+          "functions": [
+            "main"
+          ],
+          "imports": [
+            "index",
+            "sys"
+          ],
+          "line_count": 19,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/query_project_index.py",
+          "module": "scripts.query_project_index",
+          "area": "scripts",
+          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
+          "classes": [],
+          "functions": [
+            "main"
+          ],
+          "imports": [
+            "index",
+            "sys"
+          ],
+          "line_count": 19,
           "parse_error": null
         },
         {
@@ -19052,39 +19409,6 @@
             "panda3d_kivy.app"
           ],
           "line_count": 35,
-          "parse_error": null
-        },
-        {
-          "path": "scripts/query_project_index.py",
-          "module": "scripts.query_project_index",
-          "area": "scripts",
-          "summary": "Query SCiv's generated project index for targeted lookup of docs, routes, areas, entry points, and modules.",
-          "classes": [],
-          "functions": [
-            "build_parser",
-            "find_items",
-            "format_item",
-            "iter_index_items",
-            "load_index",
-            "main",
-            "matches_kind",
-            "normalize",
-            "preview",
-            "resolve_kind_query",
-            "score_item",
-            "search_fields",
-            "search_index"
-          ],
-          "imports": [
-            "__future__",
-            "argparse",
-            "json",
-            "pathlib",
-            "re",
-            "sys",
-            "typing"
-          ],
-          "line_count": 342,
           "parse_error": null
         },
         {
@@ -19214,52 +19538,104 @@
           "path": "scripts/generate_project_index.py",
           "module": "scripts.generate_project_index",
           "area": "scripts",
-          "summary": "Generates the repo-native documentation index for humans and AI tooling.",
+          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
+          "classes": [],
+          "functions": [
+            "main"
+          ],
+          "imports": [
+            "index",
+            "sys"
+          ],
+          "line_count": 19,
+          "parse_error": null
+        },
+        {
+          "path": "scripts/index.py",
+          "module": "scripts.index",
+          "area": "scripts",
+          "summary": "Unified SCiv project-index helper for generation, browsing, querying, and validation.",
           "classes": [
             "AreaInfo",
             "DocumentationItem",
+            "FreshnessReport",
+            "GenerationOutputs",
+            "HelpFormatter",
+            "IndexDataset",
             "ModuleInfo",
+            "QueryOptions",
+            "RuntimeIndex",
             "TopLevelItem"
           ],
           "functions": [
+            "add_freshness_arguments",
             "area_for_path",
             "area_rank",
             "build_areas",
+            "build_dataset",
+            "build_doctor_report",
+            "build_generation_outputs",
             "build_index",
+            "build_parser",
+            "build_stats",
             "category_for_doc",
             "category_rank",
             "collect_documentation_items",
             "collect_modules",
             "collect_top_level_items",
+            "describe_freshness_issue",
             "doc_summary",
             "escape_markdown",
             "fallback_module_summary",
+            "find_items",
+            "format_doctor_report",
+            "format_generate_summary",
+            "format_item",
+            "format_stats",
             "format_symbols",
+            "freshness_report",
             "is_skipped",
+            "iter_index_items",
             "iter_python_paths",
             "link_from_structure",
+            "list_items",
+            "load_existing_index",
             "main",
+            "matches_kind",
             "module_name_for",
-            "parse_args",
+            "normalize",
             "parse_python_module",
+            "preview",
+            "print_results",
+            "query_options_from_args",
+            "read_existing_output",
+            "relative_paths",
+            "render_routing_manifest",
             "render_structure",
             "render_table",
             "repo_relative",
+            "resolve_kind_query",
+            "resolve_runtime_index",
+            "run_generate",
+            "score_item",
+            "search_fields",
+            "search_index",
             "select_key_modules",
             "summarize_names",
-            "write_or_check"
+            "write_outputs"
           ],
           "imports": [
-            "__future__",
             "argparse",
             "ast",
             "dataclasses",
             "json",
             "os",
             "pathlib",
+            "re",
+            "sys",
             "typing"
           ],
-          "line_count": 1108,
+          "line_count": 1963,
           "parse_error": null
         },
         {
@@ -19289,33 +19665,16 @@
           "path": "scripts/query_project_index.py",
           "module": "scripts.query_project_index",
           "area": "scripts",
-          "summary": "Query SCiv's generated project index for targeted lookup of docs, routes, areas, entry points, and modules.",
+          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
           "classes": [],
           "functions": [
-            "build_parser",
-            "find_items",
-            "format_item",
-            "iter_index_items",
-            "load_index",
-            "main",
-            "matches_kind",
-            "normalize",
-            "preview",
-            "resolve_kind_query",
-            "score_item",
-            "search_fields",
-            "search_index"
+            "main"
           ],
           "imports": [
-            "__future__",
-            "argparse",
-            "json",
-            "pathlib",
-            "re",
-            "sys",
-            "typing"
+            "index",
+            "sys"
           ],
-          "line_count": 342,
+          "line_count": 19,
           "parse_error": null
         },
         {

@@ -19,7 +19,7 @@ The goals are simple:
 Before making code changes, a SCiv-focused agent should:
 
 1. Read [`meta/INDEX.md`](../INDEX.md).
-2. For targeted file or doc discovery, use the `sciv-project-index` skill or `python3 scripts/query_project_index.py` first; then read [`meta/structure.md`](../structure.md) and [`meta/generated/project-index.json`](../generated/project-index.json) directly when you need raw inventory detail.
+2. For targeted file or doc discovery, use the `sciv-project-index` skill or `python3 scripts/index.py` first; then read [`meta/structure.md`](../structure.md), [`meta/generated/project-index.json`](../generated/project-index.json), and [`project-index-helper.md`](project-index-helper.md) directly when you need raw inventory detail or command guidance.
 3. Read [`../../.github/copilot-instructions.md`](../../.github/copilot-instructions.md) to identify the guarded subsystem.
 4. Read [`update-triggers.md`](update-triggers.md) and the matching focused technical docs for the touched area.
 	- World-container, tile-ownership, or world-turn work should usually include [`world-system.md`](world-system.md), [`tile-system.md`](tile-system.md), [`world-generation.md`](world-generation.md), and [`turns.md`](turns.md).
@@ -27,8 +27,10 @@ Before making code changes, a SCiv-focused agent should:
 	- Tile-domain work should usually include [`tile-system.md`](tile-system.md).
 	- Terrain or world-rendering work should usually include [`rendering-system.md`](rendering-system.md).
 	- Asset/archive/atlas work should usually include [`asset-system.md`](asset-system.md), [`startup.md`](startup.md), and [`architecture.md`](architecture.md).
-5. Investigate only the files needed to solve the task.
-6. Create a short todo list before implementation.
+5. If the task edits Python files or typing/tooling workflow, read [`python-conventions.md`](python-conventions.md).
+6. If the task changes contributor-visible behavior, workflow, or tooling, read [`changelog-workflow.md`](changelog-workflow.md) before finishing.
+7. Investigate only the files needed to solve the task.
+8. Create a short todo list before implementation.
 
 If the task is ambiguous or obviously cross-cutting, the agent should orient first and only then implement.
 
@@ -39,13 +41,21 @@ If the task is ambiguous or obviously cross-cutting, the agent should orient fir
 - Solve the user’s requested problem first.
 - Do not broaden scope just because nearby cleanup is tempting.
 - Note adjacent issues briefly when relevant, but do not fix them unless they block the requested work or the user asks.
+- Prefer small, focused changes that are easy to review over big sweeping edits unless broader scope is explicitly required.
 
 ### Prefer surgical changes
 
 - Make the smallest viable change that solves the task.
+- Prefer small, focused diffs over large sweeping rewrites.
 - Prefer narrow patches over whole-file rewrites.
 - Preserve public APIs, file layout, and style unless the task requires otherwise.
 - Avoid multi-subsystem refactors unless the user explicitly asks for them.
+- Prefer extracting smaller reusable chunks, modules, or components when that meaningfully improves cohesion and reuse.
+- Keep code in separate focused files when practical and useful so responsibilities stay clearer and targeted edits create less token churn.
+- Follow [`python-conventions.md`](python-conventions.md): SCiv targets Python 3.14, new modules should not add `from __future__ import annotations`, and Pyright strict mode is the canonical typing contract.
+- Default to strong typing for parameters, returns, long-lived state, and non-trivial local variables instead of relying on implicit inference.
+- Keep comments sparse; add them only when code still needs a brief note for genuinely non-obvious logic, such as tricky math, and keep them short so the code stays clean.
+- Use whitespace intentionally so code is logically grouped, easy to scan, and visually pleasant rather than packed as densely as possible.
 
 ### Keep change batches small
 
@@ -69,8 +79,9 @@ When the task is done, the agent should:
 4. Do this automatically for every completed task when the session surfaced a stable codebase or workflow fact, even if the code change itself was small.
 5. If the learning changes task routing or repo-local agent behavior, update [`../../.github/copilot-instructions.md`](../../.github/copilot-instructions.md), the relevant `.github/instructions/*.instructions.md`, or the orientation routing matrix in the same change.
 6. If no existing doc is the right home for the learning, create a narrowly scoped doc or note it in backlog/project docs for follow-up.
-7. Refresh generated docs if `meta/**`, `.github/**`, or the documentation generator changed.
-8. Leave a concise summary of what changed, how it was verified, and what follow-up remains.
+7. If the change is meaningful to users or contributors, update [`../../CHANGELOG.md`](../../CHANGELOG.md) through the helper documented in [`changelog-workflow.md`](changelog-workflow.md), preferring gitmoji-prefixed entries and ticket references when the task has a tracked issue.
+8. Refresh generated docs if `meta/**`, `.github/**`, `scripts/index.py`, or the legacy index wrappers changed.
+9. Leave a concise summary of what changed, how it was verified, and what follow-up remains.
 
 ## Output and response limits
 
@@ -87,6 +98,7 @@ A SCiv task is not truly done until:
 - the todo list is updated
 - the related docs are updated when needed
 - verified stable learnings from the task are written back automatically when the session surfaced them
+- `CHANGELOG.md` is updated when the change is contributor-visible or user-visible
 - generated documentation is refreshed when the indexed surfaces changed
 
 ## Notes for future improvements

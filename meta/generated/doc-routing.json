@@ -3,6 +3,7 @@
   "entrypoint": ".github/copilot-instructions.md",
   "instructions_root": ".github/instructions",
   "manifest": "meta/generated/doc-routing.json",
+  "generator": "scripts/index.py",
   "rules": [
     {
       "id": "startup-and-runtime-core",
@@ -269,6 +270,7 @@
       "file_globs": [
         "meta/**",
         ".github/**",
+        "scripts/index.py",
         "scripts/generate_project_index.py",
         "scripts/query_project_index.py",
         ".gitlab-ci.yml",
@@ -281,15 +283,82 @@
         "meta/INDEX.md",
         "meta/structure.md",
         "meta/generated/project-index.json",
+        "meta/technical/project-index-helper.md",
         "meta/technical/agent-workflow.md",
         "meta/technical/update-triggers.md"
       ],
       "update_docs": [
         "meta/INDEX.md",
+        "meta/technical/project-index-helper.md",
         "meta/technical/agent-workflow.md",
         "meta/technical/update-triggers.md",
         "meta/generated/project-index.json",
         "meta/generated/doc-routing.json"
+      ]
+    },
+    {
+      "id": "python-conventions-and-typing",
+      "summary": "Python source, typing/tooling configuration, and repository Python authoring workflow.",
+      "task_keywords": [
+        "python",
+        "typing",
+        "pyright",
+        "type checking",
+        "python conventions",
+        "future annotations"
+      ],
+      "file_globs": [
+        "run.py",
+        "sciv/**/*.py",
+        "scripts/**/*.py",
+        "pyproject.toml",
+        "pyrightconfig.json"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/python-conventions.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/python-conventions.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/python-conventions.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ]
+    },
+    {
+      "id": "changelog-and-contributor-workflow",
+      "summary": "CHANGELOG maintenance, gitmoji/ticket entry conventions, release tagging, and contributor workflow completion rules.",
+      "task_keywords": [
+        "changelog",
+        "gitmoji",
+        "release notes",
+        "release tag",
+        "workflow",
+        "contributor workflow",
+        "changelog helper"
+      ],
+      "file_globs": [
+        "CHANGELOG.md",
+        "changelog.py",
+        "makefile",
+        "meta/technical/changelog-workflow.md"
+      ],
+      "dispatcher_instructions": [
+        ".github/instructions/docs-governance.instructions.md"
+      ],
+      "read_first": [
+        "meta/technical/changelog-workflow.md",
+        "meta/technical/agent-workflow.md",
+        "meta/technical/update-triggers.md"
+      ],
+      "update_docs": [
+        "meta/technical/changelog-workflow.md",
+        "meta/technical/agent-workflow.md",
+        "meta/INDEX.md",
+        "meta/technical/update-triggers.md"
       ]
     }
   ]

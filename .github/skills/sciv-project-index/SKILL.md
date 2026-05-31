@@ -20,12 +20,16 @@ Use this skill when the full `meta/generated/project-index.json` manifest is too
 ## Procedure
 
 1. Start with [`meta/INDEX.md`](../../../meta/INDEX.md) if you need the curated doc map.
-2. Run `python3 scripts/query_project_index.py search "<query>"` for a broad lookup across docs, routes, entry points, areas, and modules.
-3. Use `python3 scripts/query_project_index.py route "<topic-or-route-id>"` when you specifically want routing-rule matches.
-4. Use `python3 scripts/query_project_index.py area "<area-name-or-topic>"` when you specifically want indexed runtime-area matches.
-5. If one result needs more detail, run `python3 scripts/query_project_index.py show "<path-or-id>"` and narrow with `--kind` if needed.
-6. Read the returned source files or docs before editing. The helper narrows candidates; it does not replace source review.
-7. If the task is still ambiguous or cross-cutting after the lookup, continue with [`sciv-orientation`](../sciv-orientation/SKILL.md).
+2. Run `python3 scripts/index.py search "<query>"` for a broad lookup across docs, routes, entry points, areas, and modules.
+3. Use `python3 scripts/index.py route "<topic-or-route-id>"` when you specifically want routing-rule matches.
+4. Use `python3 scripts/index.py area "<area-name-or-topic>"` when you specifically want indexed runtime-area matches.
+5. If one result needs more detail, run `python3 scripts/index.py show "<path-or-id>"` and narrow with `--kind` if needed.
+6. Use `python3 scripts/index.py list modules --query "<topic>"` or `python3 scripts/index.py list routes` when you want to browse one indexed slice instead of searching the whole manifest.
+7. If the generated artifacts may be stale, use `python3 scripts/index.py doctor` or rerun the lookup with `--refresh-if-stale`.
+8. Read the returned source files or docs before editing. The helper narrows candidates; it does not replace source review.
+9. If the lookup points at Python authoring or typing workflow, include [`meta/technical/python-conventions.md`](../../../meta/technical/python-conventions.md).
+10. If the lookup points at contributor-visible workflow or changelog maintenance, include [`meta/technical/changelog-workflow.md`](../../../meta/technical/changelog-workflow.md).
+11. If the task is still ambiguous or cross-cutting after the lookup, continue with [`sciv-orientation`](../sciv-orientation/SKILL.md).
 
 ## Handy queries
 
@@ -36,6 +40,8 @@ Use this skill when the full `meta/generated/project-index.json` manifest is too
 - `world generation`
 - `manager ui`
 - `combat log`
+- `python conventions`
+- `changelog workflow`
 - `route ui-bridge-and-screens`
 - `area sciv/menus`
 
