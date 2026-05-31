@@ -75,4 +75,5 @@
 - 👷 Added View-menu sidebar section toggles and a scrollable left rail to the PyQt6 worldgen viewer.
 - 🔧 Made the worldgen viewer legend derive biome and runtime terrain entries from the loaded dump so variants like Hills Tundra appear correctly.
 - 👷 Added offline resource allocation and a Resources overlay to the standalone worldgen viewer.
+- 👷 Raised the standalone worldgen viewer preview size cap to 500 × 500 for oversized inspection runs.
 

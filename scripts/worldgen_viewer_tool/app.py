@@ -101,6 +101,7 @@ from worldgen_viewer_support import (
 
 
 MAX_PREVIEW_SEED = 2**31 - 1
+MAX_PREVIEW_MAP_DIMENSION = 500
 PREVIEW_GENERATION_STEPS = 6
 OVERVIEW_CARD_COLUMNS = 3
 OVERVIEW_CARD_MIN_WIDTH = 170
@@ -592,11 +593,11 @@ class WorldgenViewerWindow(QMainWindow):
         self.generator_combo.currentIndexChanged.connect(self._sync_generation_option_controls)
 
         self.generate_width_spin = QSpinBox()
-        self.generate_width_spin.setRange(1, 200)
+        self.generate_width_spin.setRange(1, MAX_PREVIEW_MAP_DIMENSION)
         self.generate_width_spin.setValue(50)
 
         self.generate_height_spin = QSpinBox()
-        self.generate_height_spin.setRange(1, 200)
+        self.generate_height_spin.setRange(1, MAX_PREVIEW_MAP_DIMENSION)
         self.generate_height_spin.setValue(50)
 
         self.generate_seed_spin = QSpinBox()
@@ -611,11 +612,6 @@ class WorldgenViewerWindow(QMainWindow):
 
         self.randomize_seed_button = QPushButton("Random")
         self.randomize_seed_button.clicked.connect(self._randomize_seed)
-
-        self.generation_intro_label = QLabel(
-            "Run the same offline generator used by the export helper. Set Worlds above 1 to build a clickable comparison overview before choosing one to inspect."
-        )
-        self.generation_intro_label.setWordWrap(True)
 
         self.generator_options_note = QLabel()
         self.generator_options_note.setWordWrap(True)

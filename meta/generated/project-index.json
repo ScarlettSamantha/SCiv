@@ -19695,7 +19695,7 @@
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
       "module_count": 20,
-      "line_count": 7324,
+      "line_count": 7325,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -20585,7 +20585,7 @@
             "worldgen_viewer_tool.palette",
             "worldgen_viewer_tool.widgets.legend"
           ],
-          "line_count": 2332,
+          "line_count": 2333,
           "parse_error": null
         },
         {

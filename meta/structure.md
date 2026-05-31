@@ -309,7 +309,7 @@ World-adjacent package resources.
 Developer utilities and repository automation scripts.
 
 - Modules indexed: `20`
-- Indexed lines: `7324`
+- Indexed lines: `7325`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
