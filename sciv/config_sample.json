@@ -36,6 +36,11 @@
     "enable": false,
     "developer_mode": false,
     "fps_counter": false,
+    "ui_layout": {
+      "drag_enabled": false,
+      "show_overlay": false,
+      "positions": {}
+    },
     "debugs": {
       "world_generation": false,
       "world_rendering": false,

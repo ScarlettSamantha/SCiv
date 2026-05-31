@@ -58,10 +58,16 @@ class InspectEntity:
         self.screen: "GameUIScreen" = screen
         self.current_entity: Optional[Inspectable] = None
         self.is_open: bool = False
+        window_width = float(self.screen._base.win.getXSize())  # type: ignore[attr-defined]
+        window_height = float(self.screen._base.win.getYSize())  # type: ignore[attr-defined]
 
         self.frame: BoxLayout = BoxLayout(
-            orientation="vertical", size_hint=(0.9, 0.9), pos_hint={"center_x": 0.5, "center_y": 0.5}
+            orientation="vertical",
+            size_hint=(None, None),
+            width=window_width * 0.86,
+            height=window_height * 0.86,
         )
+        self.frame.pos = (int(window_width * 0.07), int(window_height * 0.07))
 
         with self.frame.canvas.before:
             Color(0.7, 0.7, 0.7, 1)

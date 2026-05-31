@@ -1,6 +1,6 @@
 ---
 name: sciv-orientation
-description: "Orient to the SCiv codebase before implementation. Use for ambiguous tasks, cross-cutting changes, unfamiliar subsystems, or when you need to know what files and docs to read first."
+description: "Orient to the SCiv codebase before implementation. Use for ambiguous tasks, cross-cutting changes, unfamiliar subsystems, typing/stub workflow questions, or when you need to know what files and docs to read first."
 argument-hint: "Describe the task, subsystem, or question you need to orient on."
 user-invocable: true
 ---
@@ -14,6 +14,7 @@ Use this skill before implementation when the correct docs or code areas are not
 - Ambiguous tasks that could touch multiple subsystems
 - Cross-cutting refactors
 - Startup, turn, save/load, or UI-bridge work
+- Typing or shared stub workflow questions, especially around Kivy
 - "Where does this live?" or "What should I read first?" questions
 
 ## Procedure
@@ -25,8 +26,9 @@ Use this skill before implementation when the correct docs or code areas are not
 5. Read the matching `meta/technical/*.md` pages before proposing edits.
 6. If the task edits Python files or typing/tooling workflow, include [`meta/technical/python-conventions.md`](../../../meta/technical/python-conventions.md).
 7. If the task changes contributor-visible behavior or repo workflow, include [`meta/technical/changelog-workflow.md`](../../../meta/technical/changelog-workflow.md).
-8. Identify the most likely edit targets.
-9. Identify which docs must be updated if the code changes.
+8. If the task mentions Kivy typing or missing definitions, confirm whether the active stub root is repo-local `./stubs` or shared local `../Stubs`.
+9. Identify the most likely edit targets.
+10. Identify which docs must be updated if the code changes.
 
 ## Constraints
 

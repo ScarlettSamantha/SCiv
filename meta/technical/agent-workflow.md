@@ -32,6 +32,13 @@ Before making code changes, a SCiv-focused agent should:
 7. Investigate only the files needed to solve the task.
 8. Create a short todo list before implementation.
 
+When the task involves Kivy typing errors, `*.pyi` files, or missing third-party symbols, also confirm which stub root is active:
+
+- repo-local / CI Pyright expects `./stubs`
+- the shared local workspace stub checkout lives under sibling `../Stubs/kivy`
+
+Agents should document and preserve that distinction rather than assuming both paths are populated.
+
 If the task is ambiguous or obviously cross-cutting, the agent should orient first and only then implement.
 
 ## Execution rules
@@ -68,6 +75,7 @@ If the task is ambiguous or obviously cross-cutting, the agent should orient fir
 - Re-check the relevant files after each meaningful edit.
 - Run focused validation after each logical change when practical.
 - Prefer targeted tests/checks over broad expensive runs unless the task is broad.
+- After changing stubs or typing-heavy UI code, explicitly check diagnostics and prefer `make pyright-diff`; use `make pyright-full` when shared stubs changed in a way that could fan out broadly.
 
 ## Completion workflow
 

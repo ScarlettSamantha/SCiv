@@ -156,6 +156,38 @@ Repository shortcuts:
 
 Type-related changes should also keep normal syntax validation healthy for touched files.
 
+## Shared stub workflow
+
+SCiv's strict typing depends on external stub packages for Kivy, Panda3D, and `direct`.
+
+There are two supported ways those stubs show up during development:
+
+- **repo-local / CI path** — `./stubs`
+  - `pyrightconfig.json` and `pyproject.toml` point Pyright at `./stubs`
+  - CI populates that directory by cloning the required stub repos into `stubs/kivy`, `stubs/panda3d`, and `stubs/direct`
+  - `.gitmodules` also tracks the Kivy stub source as `stubs/kivy`
+- **shared local workspace path** — sibling `../Stubs`
+  - in the multi-root local workspace, the shared Kivy stub checkout lives under `../Stubs/kivy`
+  - editor-side analysis can point `python.analysis.stubPath` at `../Stubs` when contributors want one shared stub checkout across nearby workspaces
+
+### Practical guidance
+
+- Do not assume the editor and CLI are using the same stub root without checking.
+- If VS Code/Pylance is using the shared sibling checkout, keep `../Stubs/kivy/**/*.pyi` aligned with the current UI code.
+- If you need repo-local or CI-style Pyright runs, make sure `./stubs` is populated or linked before trusting the results.
+- When a Kivy typing error comes from a missing or underspecified external symbol, prefer updating the relevant stub when that better reflects runtime behavior.
+- When the code contract is genuinely too loose, fix the SCiv code instead of hiding the issue in a stub.
+
+### Required validation after stub or typing work
+
+After changing Kivy-facing Python code, typing config, or stub files:
+
+- check diagnostics for the touched files
+- run `make pyright-diff` for focused verification when practical
+- run `make pyright-full` when the change is broad, cross-cutting, or updates shared stubs that can affect many files
+
+Treat stub changes as real typing changes, not as auxiliary cleanup.
+
 ## When touching legacy code
 
 SCiv contains older dynamic code and a few legacy typing shortcuts.

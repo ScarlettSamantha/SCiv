@@ -16,6 +16,7 @@ Use Git-tracked project docs as the primary source of repository knowledge.
 4. If the task is ambiguous, cross-cutting, or starts in an unfamiliar subsystem, use the `sciv-orientation` skill before implementation.
 5. When editing Python code or typing/tooling workflow, read [`meta/technical/python-conventions.md`](../meta/technical/python-conventions.md).
 6. When a task is contributor-visible or workflow-visible, read [`meta/technical/changelog-workflow.md`](../meta/technical/changelog-workflow.md) before finishing.
+7. For Kivy typing work, verify which stub root is active: local editor sessions may use sibling `../Stubs`, while repo-local and CI Pyright runs expect `./stubs`.
 
 ## Guarded areas
 
@@ -46,6 +47,7 @@ Use Git-tracked project docs as the primary source of repository knowledge.
 - Before ending a task, automatically write back any stable verified learning to the closest `meta/**` doc; if it changes routing or repo-local agent workflow, update this file and the relevant routing docs in the same change.
 - If a change affects which docs should be read before editing a subsystem, update `meta/technical/update-triggers.md` and the skill routing matrix.
 - If a change affects repo-local agent workflow or `.github/agents/**`, update `meta/technical/agent-workflow.md` in the same change.
+- For Kivy or other external typing issues, prefer documenting stub-root expectations and validate diagnostics after stub or typing-related edits.
 - If a change is meaningful to users or contributors, update `CHANGELOG.md` through the helper documented in `meta/technical/changelog-workflow.md`.
 - Keep this file thin; put durable project knowledge in `meta/`, not here.
 

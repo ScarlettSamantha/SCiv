@@ -1255,7 +1255,7 @@
       "path": "sciv/managers",
       "description": "Singleton-backed orchestration for game flow, UI, entities, players, and turns.",
       "module_count": 25,
-      "line_count": 5217,
+      "line_count": 5265,
       "key_modules": [
         {
           "path": "sciv/managers/game.py",
@@ -1467,7 +1467,7 @@
             "system.notification",
             "typing"
           ],
-          "line_count": 507,
+          "line_count": 508,
           "parse_error": null
         },
         {
@@ -1827,7 +1827,7 @@
             "panda3d.core",
             "typing"
           ],
-          "line_count": 276,
+          "line_count": 323,
           "parse_error": null
         },
         {
@@ -2226,7 +2226,7 @@
             "system.notification",
             "typing"
           ],
-          "line_count": 507,
+          "line_count": 508,
           "parse_error": null
         },
         {
@@ -15984,8 +15984,8 @@
     {
       "path": "sciv/menus",
       "description": "Kivy application and screen/widget layers.",
-      "module_count": 54,
-      "line_count": 14247,
+      "module_count": 55,
+      "line_count": 15230,
       "key_modules": [
         {
           "path": "sciv/menus/kivy/core.py",
@@ -16048,12 +16048,14 @@
             "managers.ages",
             "managers.combat",
             "managers.combat_log",
+            "managers.config",
             "managers.entity",
             "managers.log",
             "managers.player",
             "managers.ui",
             "managers.unit",
             "managers.world",
+            "menus.kivy.elements.layout_debug",
             "menus.kivy.elements.log_popup",
             "menus.kivy.elements.message",
             "menus.kivy.elements.modal",
@@ -16084,7 +16086,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 1020,
+          "line_count": 1174,
           "parse_error": null
         },
         {
@@ -16260,20 +16262,32 @@
           "parse_error": null
         },
         {
-          "path": "sciv/menus/kivy/elements/list_item.py",
-          "module": "sciv.menus.kivy.elements.list_item",
+          "path": "sciv/menus/kivy/elements/layout_debug.py",
+          "module": "sciv.menus.kivy.elements.layout_debug",
           "area": "sciv/menus",
-          "summary": "UI module for list item.",
+          "summary": "UI module for layout debug.",
           "classes": [
-            "ListItem"
+            "DraggableLayoutWrapper",
+            "LayoutDebugPosition",
+            "LayoutDebugStatsBadge"
           ],
-          "functions": [],
+          "functions": [
+            "clamp",
+            "denormalize_position",
+            "format_layout_debug_metrics",
+            "normalize_position"
+          ],
           "imports": [
-            "helpers.colors",
-            "menus.kivy.elements.button_value",
+            "dataclasses",
+            "game",
+            "kivy.graphics",
+            "kivy.metrics",
+            "kivy.uix.floatlayout",
+            "kivy.uix.label",
+            "kivy.uix.widget",
             "typing"
           ],
-          "line_count": 28,
+          "line_count": 293,
           "parse_error": null
         }
       ],
@@ -16478,6 +16492,35 @@
           "parse_error": null
         },
         {
+          "path": "sciv/menus/kivy/elements/layout_debug.py",
+          "module": "sciv.menus.kivy.elements.layout_debug",
+          "area": "sciv/menus",
+          "summary": "UI module for layout debug.",
+          "classes": [
+            "DraggableLayoutWrapper",
+            "LayoutDebugPosition",
+            "LayoutDebugStatsBadge"
+          ],
+          "functions": [
+            "clamp",
+            "denormalize_position",
+            "format_layout_debug_metrics",
+            "normalize_position"
+          ],
+          "imports": [
+            "dataclasses",
+            "game",
+            "kivy.graphics",
+            "kivy.metrics",
+            "kivy.uix.floatlayout",
+            "kivy.uix.label",
+            "kivy.uix.widget",
+            "typing"
+          ],
+          "line_count": 293,
+          "parse_error": null
+        },
+        {
           "path": "sciv/menus/kivy/elements/list_item.py",
           "module": "sciv.menus.kivy.elements.list_item",
           "area": "sciv/menus",
@@ -16621,6 +16664,7 @@
           "functions": [],
           "imports": [
             "helpers.paths",
+            "kivy.core.window",
             "kivy.graphics",
             "kivy.metrics",
             "kivy.properties",
@@ -16632,11 +16676,13 @@
             "kivy.uix.label",
             "kivy.uix.modalview",
             "kivy.uix.widget",
+            "managers.config",
             "managers.i18n",
+            "menus.kivy.elements.layout_debug",
             "pathlib",
             "typing"
           ],
-          "line_count": 379,
+          "line_count": 493,
           "parse_error": null
         },
         {
@@ -16654,15 +16700,18 @@
           "functions": [],
           "imports": [
             "helpers.cache",
+            "kivy.metrics",
             "kivy.uix.boxlayout",
             "kivy.uix.button",
             "kivy.uix.label",
             "kivy.uix.popup",
+            "managers.config",
             "managers.i18n",
+            "menus.kivy.elements.layout_debug",
             "menus.kivy.mixins.collidable",
             "typing"
           ],
-          "line_count": 124,
+          "line_count": 282,
           "parse_error": null
         },
         {
@@ -17062,7 +17111,7 @@
             "system.actions",
             "typing"
           ],
-          "line_count": 142,
+          "line_count": 146,
           "parse_error": null
         },
         {
@@ -17122,7 +17171,7 @@
             "system.entity",
             "typing"
           ],
-          "line_count": 232,
+          "line_count": 238,
           "parse_error": null
         },
         {
@@ -17159,7 +17208,8 @@
           "area": "sciv/menus",
           "summary": "UI module for minimap.",
           "classes": [
-            "Minimap"
+            "Minimap",
+            "TouchLike"
           ],
           "functions": [],
           "imports": [
@@ -17179,11 +17229,12 @@
             "managers.player",
             "managers.world",
             "math",
+            "menus.kivy.elements.layout_debug",
             "panda3d.core",
             "system.camera",
             "typing"
           ],
-          "line_count": 1469,
+          "line_count": 1628,
           "parse_error": null
         },
         {
@@ -17300,7 +17351,7 @@
             "panda3d.core",
             "typing"
           ],
-          "line_count": 163,
+          "line_count": 165,
           "parse_error": null
         },
         {
@@ -17628,12 +17679,14 @@
             "managers.ages",
             "managers.combat",
             "managers.combat_log",
+            "managers.config",
             "managers.entity",
             "managers.log",
             "managers.player",
             "managers.ui",
             "managers.unit",
             "managers.world",
+            "menus.kivy.elements.layout_debug",
             "menus.kivy.elements.log_popup",
             "menus.kivy.elements.message",
             "menus.kivy.elements.modal",
@@ -17664,7 +17717,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 1020,
+          "line_count": 1174,
           "parse_error": null
         },
         {
@@ -17731,6 +17784,7 @@
           ],
           "functions": [],
           "imports": [
+            "direct.showbase.MessengerGlobal",
             "helpers.cache",
             "helpers.debug",
             "kivy.graphics",
@@ -17750,7 +17804,7 @@
             "menus.kivy.elements.menu_styled",
             "typing"
           ],
-          "line_count": 757,
+          "line_count": 850,
           "parse_error": null
         },
         {
@@ -19181,8 +19235,8 @@
     {
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
-      "module_count": 10,
-      "line_count": 2426,
+      "module_count": 8,
+      "line_count": 2388,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -19270,38 +19324,6 @@
             "typing"
           ],
           "line_count": 1963,
-          "parse_error": null
-        },
-        {
-          "path": "scripts/generate_project_index.py",
-          "module": "scripts.generate_project_index",
-          "area": "scripts",
-          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
-          "classes": [],
-          "functions": [
-            "main"
-          ],
-          "imports": [
-            "index",
-            "sys"
-          ],
-          "line_count": 19,
-          "parse_error": null
-        },
-        {
-          "path": "scripts/query_project_index.py",
-          "module": "scripts.query_project_index",
-          "area": "scripts",
-          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
-          "classes": [],
-          "functions": [
-            "main"
-          ],
-          "imports": [
-            "index",
-            "sys"
-          ],
-          "line_count": 19,
           "parse_error": null
         },
         {
@@ -19535,22 +19557,6 @@
           "parse_error": null
         },
         {
-          "path": "scripts/generate_project_index.py",
-          "module": "scripts.generate_project_index",
-          "area": "scripts",
-          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
-          "classes": [],
-          "functions": [
-            "main"
-          ],
-          "imports": [
-            "index",
-            "sys"
-          ],
-          "line_count": 19,
-          "parse_error": null
-        },
-        {
           "path": "scripts/index.py",
           "module": "scripts.index",
           "area": "scripts",
@@ -19659,22 +19665,6 @@
             "panda3d_kivy.app"
           ],
           "line_count": 35,
-          "parse_error": null
-        },
-        {
-          "path": "scripts/query_project_index.py",
-          "module": "scripts.query_project_index",
-          "area": "scripts",
-          "summary": "Compatibility wrapper for the unified SCiv project-index helper.",
-          "classes": [],
-          "functions": [
-            "main"
-          ],
-          "imports": [
-            "index",
-            "sys"
-          ],
-          "line_count": 19,
           "parse_error": null
         },
         {

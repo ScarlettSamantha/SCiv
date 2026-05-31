@@ -149,6 +149,8 @@ These are used by the UI manager to control some debug actions these may disappe
 - `ui.update.ui.refresh_basic_elements` (E: * | L : game-ui)
 - `ui.update.ui.refresh_combat_log` (E: * | L: player-combat-log-ui)
 
+- `ui.update.ui.layout_debug_changed` (E: ui-options-screen | L: screen-game-ui)
+
 - `ui.update.ui.combat_log.add` (E: * | L: ui-player-combat-log )
 
 - `ui.update.ui.messenger.refresh` (E: * | L: ui-messenger-renderer)

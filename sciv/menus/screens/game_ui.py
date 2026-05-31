@@ -22,11 +22,13 @@ from kivy.uix.widget import Widget
 from managers.ages import AgesManager
 from managers.combat import T_TARGET
 from managers.combat_log import CombatLog, CombatLogEntry
+from managers.config import ConfigManager
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
 from managers.player import PlayerManager
 from managers.unit import UnitManager
 from managers.world import World
+from menus.kivy.elements.layout_debug import DraggableLayoutWrapper, LayoutDebugPosition
 from menus.kivy.elements.log_popup import LogPopup
 from menus.kivy.elements.message import MessageRenderer
 from menus.kivy.elements.modal import ModalImagePopup
@@ -114,6 +116,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_target_info: Optional[TargetPanel] = None
         self.logger: Logger = self._base.logger.graphics.getChild("ui.game_ui")
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
+        self.config_manager: ConfigManager = ConfigManager.get_singleton_instance()
+        self.layout_debug_widgets: Dict[str, DraggableLayoutWrapper] = {}
 
         self.showing_tile_yield_icons: bool = True
 
@@ -142,6 +146,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player = PlayerManager.session_player()
         if not self._is_attached(self.player_list):
             self.build_player_list()
+        elif (wrapper := self.layout_debug_widgets.get("player_list")) is not None:
+            self.register_non_collidable(wrapper)
 
         if not self._is_attached(self.player_combat_log):
             self.build_combat_log()
@@ -155,6 +161,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         if Debug.debug and not self._is_attached(self.stats_frame):
             self.add_widget(self.build_stats_frame())
+            if (wrapper := self.layout_debug_widgets.get("stats_panel")) is not None:
+                self.register_non_collidable(wrapper)
 
         if not self._is_attached(self.top_bar):
             self.add_widget(self.build_top_bar())  # type: ignore
@@ -167,9 +175,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.minimap.refresh_full()
 
         if self.player_combat_log is not None:
-            self.register_non_collidable(self.player_combat_log)  # type: ignore
+            if (wrapper := self.layout_debug_widgets.get("combat_log")) is not None:
+                self.register_non_collidable(wrapper)
+        if self.player_list is not None:
+            if (wrapper := self.layout_debug_widgets.get("player_list")) is not None:
+                self.register_non_collidable(wrapper)
         if self.minimap is not None:
             self.register_non_collidable(self.minimap)  # type: ignore
+        self.apply_layout_debug_settings()
         self.accept(
             "escape", self.on_escape
         )  # this is to prevent the pause menu from being opened before the game starts
@@ -219,6 +232,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.refresh_city_ui", self.refresh_city)
         self.accept("ui.update.ui.open_player_attack_info", self.open_player_attack_info)
         self.accept("ui.update.ui.close_player_attack_info", self.close_player_attack_info)
+        self.accept("ui.update.ui.layout_debug_changed", self.on_layout_debug_changed)
 
         self.accept("t", self.toggle_research)
         self.accept("c", self.toggle_civics)
@@ -361,8 +375,22 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
         self.root_layout = FloatLayout(size_hint=(1, 1))
 
-        self.root_layout.add_widget(self.build_action_bar())  # type: ignore
-        self.root_layout.add_widget(self.build_player_turn_control())  # type: ignore
+        action_bar_frame = self.build_action_bar()
+        action_bar_wrapper = self._register_layout_debug_widget(
+            "action_bar",
+            action_bar_frame,
+            default_position=(float(action_bar_frame.x), float(action_bar_frame.y)),
+        )
+
+        turn_control_frame = self.build_player_turn_control()
+        turn_control_wrapper = self._register_layout_debug_widget(
+            "turn_control",
+            turn_control_frame,
+            default_position=(float(turn_control_frame.x), float(turn_control_frame.y)),
+        )
+
+        self.root_layout.add_widget(action_bar_wrapper)  # type: ignore[arg-type]
+        self.root_layout.add_widget(turn_control_wrapper)  # type: ignore[arg-type]
 
         if self.action_bar is None or self.player_turn_control is None:
             raise AssertionError("Action bar, debug panel, or stats panel, player_turn_control is not initialized.")
@@ -370,15 +398,104 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.logger.info("Game UI screen built.")
         self.logger.info("Registering non-collidable UI elements.")
 
-        self.register_non_collidable(self.action_bar.frame)  # type: ignore
-        self.register_non_collidable(self.player_turn_control.frame)  # type: ignore
+        self.register_non_collidable(action_bar_wrapper)
+        self.register_non_collidable(turn_control_wrapper)
 
         self.logger.info("Non-collidable UI elements registered.")
         self.add_widget(self.root_layout)
+        self.apply_layout_debug_settings()
+
+    def _window_size(self) -> tuple[float, float]:
+        return (float(self._base.win.getXSize()), float(self._base.win.getYSize()))  # type: ignore[attr-defined]
+
+    def _layout_debug_enabled(self) -> bool:
+        return self.config_manager.get_debug_mode()
+
+    def _layout_debug_drag_enabled(self) -> bool:
+        return self._layout_debug_enabled() and self.config_manager.get_ui_layout_drag_enabled()
+
+    def _layout_debug_overlay_enabled(self) -> bool:
+        return self._layout_debug_enabled() and self.config_manager.get_ui_layout_overlay_enabled()
+
+    @staticmethod
+    def _coerce_layout_position(data: dict[str, float] | None) -> LayoutDebugPosition | None:
+        if data is None:
+            return None
+        return LayoutDebugPosition(x=float(data.get("x", 0.0)), y=float(data.get("y", 0.0)))
+
+    def _register_layout_debug_widget(
+        self,
+        item_id: str,
+        content: Widget,
+        default_position: tuple[float, float],
+    ) -> DraggableLayoutWrapper:
+        wrapper = self.layout_debug_widgets.get(item_id)
+        if wrapper is None:
+            wrapper = DraggableLayoutWrapper(
+                base=self._base,
+                item_id=item_id,
+                content=content,
+                on_drag_end=self._on_layout_debug_position_committed,
+            )
+            self.layout_debug_widgets[item_id] = wrapper
+        else:
+            wrapper.set_content(content)
+
+        wrapper.set_default_position(default_position)
+        stored_position = self._coerce_layout_position(self.config_manager.get_ui_layout_position(item_id))
+        if stored_position is None:
+            wrapper.reset_to_default_position()
+        else:
+            wrapper.apply_normalized_position(stored_position)
+
+        wrapper.set_drag_enabled(self._layout_debug_drag_enabled())
+        wrapper.set_overlay_enabled(self._layout_debug_overlay_enabled())
+        return wrapper
+
+    def _on_layout_debug_position_committed(self, item_id: str, position: tuple[float, float]) -> None:
+        window_width, window_height = self._window_size()
+        safe_width = max(window_width, 1.0)
+        safe_height = max(window_height, 1.0)
+        self.config_manager.set_ui_layout_position(item_id, position[0] / safe_width, position[1] / safe_height)
+        self.update_ui_geometry_cache()
+
+    def on_layout_debug_changed(self, reset_positions: bool = False) -> None:
+        self.apply_layout_debug_settings(reset_positions=reset_positions)
+
+    def apply_layout_debug_settings(self, reset_positions: bool = False) -> None:
+        drag_enabled = self._layout_debug_drag_enabled()
+        overlay_enabled = self._layout_debug_overlay_enabled()
+
+        for item_id, wrapper in self.layout_debug_widgets.items():
+            wrapper.set_drag_enabled(drag_enabled)
+            wrapper.set_overlay_enabled(overlay_enabled)
+
+            if reset_positions:
+                wrapper.reset_to_default_position()
+                continue
+
+            stored_position = self._coerce_layout_position(self.config_manager.get_ui_layout_position(item_id))
+            if stored_position is None:
+                wrapper.reset_to_default_position()
+            else:
+                wrapper.apply_normalized_position(stored_position)
+
+        if self.minimap is not None:
+            minimap_position = None if reset_positions else self._coerce_layout_position(
+                self.config_manager.get_ui_layout_position("minimap")
+            )
+            self.minimap.set_layout_debug_state(
+                drag_enabled=drag_enabled,
+                overlay_enabled=overlay_enabled,
+                position=minimap_position,
+                reset_position=reset_positions,
+            )
+
+        self.update_ui_geometry_cache()
 
     def bring_to_front(self, widget: Widget):
-        parent: Widget = widget.parent
-        if widget in parent.children:
+        parent: Widget | None = widget.parent
+        if parent is not None and widget in parent.children:
             parent.remove_widget(widget)
             parent.add_widget(widget)
         elif widget in self.children:
@@ -386,8 +503,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.add_widget(widget)
 
     def send_to_back(self, widget: Widget):
-        parent: Widget = widget.parent
-        if widget in parent.children:
+        parent: Widget | None = widget.parent
+        if parent is not None and widget in parent.children:
             parent.remove_widget(widget)
             parent.add_widget(widget, len(parent.children) - 1)
         elif widget in self.children:
@@ -404,13 +521,17 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def build_stats_frame(self) -> FloatLayout:
         self.stats_frame = StatsPanel(base=self._base)
-        self.debug_panels_showing_state["stats"] = True
-        return self.stats_frame.build()
+        frame = self.stats_frame.build()
+        window_width, window_height = self._window_size()
+        default_position = (window_width - float(frame.width), window_height * 0.975 - float(frame.height))
+        return self._register_layout_debug_widget("stats_panel", frame, default_position)
 
     def build_debug_frame(self) -> FloatLayout:
         self.debug_frame = DebugPanel(base=self._base)
-        self.debug_panels_showing_state["debug"] = True
-        return self.debug_frame.build_debug_frame()
+        frame = self.debug_frame.build_debug_frame()
+        window_width, window_height = self._window_size()
+        default_position = (window_width - float(frame.width), window_height * 0.975 - float(frame.height))
+        return self._register_layout_debug_widget("debug_panel", frame, default_position)
 
     def build_debug_actions(self) -> DebugActions:
         self.debug_actions = DebugActions(screen=self)
@@ -431,6 +552,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def build_minimap(self) -> Minimap:
         if self.minimap is None:
             self.minimap = Minimap(base=self._base)
+        self.minimap.set_layout_debug_callback(self._on_layout_debug_position_committed)
         self.minimap.register()
         return self.minimap
 
@@ -458,7 +580,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def build_player_list(self) -> PlayerList:
         self.player_list = PlayerList(base=self._base)
         self.player_list.build()
-        self.add_widget(self.player_list)
+        wrapper = self._register_layout_debug_widget(
+            "player_list",
+            self.player_list,
+            default_position=(float(self.player_list.x), float(self.player_list.y)),
+        )
+        self.add_widget(wrapper)
         return self.player_list
 
     def build_player_info(self) -> PlayerInfo:
@@ -473,7 +600,12 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.player_combat_log = PlayerCombatLog(log=logs, base=self._base)
         self.player_combat_log.build()
         self.player_combat_log.update()
-        self.add_widget(self.player_combat_log)
+        wrapper = self._register_layout_debug_widget(
+            "combat_log",
+            self.player_combat_log,
+            default_position=(float(self.player_combat_log.x), float(self.player_combat_log.y)),
+        )
+        self.add_widget(wrapper)
         return self.player_combat_log
 
     def build_messenger(self) -> MessageRenderer:
@@ -521,24 +653,28 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.get_stats_frame().get_frame().disabled = not stats
         self.get_stats_frame().get_frame().opacity = 0 if not stats else 1
 
-        if debug and not self.debug_panels_showing_state["debug"]:
-            self.add_widget(self.debug_frame)
-            self.register_non_collidable(self.debug_frame.frame)  # type: ignore
-        else:
-            frame = self.get_debug_frame()
-            for child in frame.children:  # type: ignore
-                frame.remove_widget(child)  # type: ignore
-            self.remove_widget(frame)  # type: ignore
-            self.unregister_non_collidable(self.debug_frame.frame)  # type: ignore
+        debug_wrapper = self.layout_debug_widgets.get("debug_panel")
+        stats_wrapper = self.layout_debug_widgets.get("stats_panel")
 
-        if stats and not self.debug_panels_showing_state["stats"]:
-            frame = self.get_stats_frame().get_frame()
-            self.add_widget(frame)
-            self.register_non_collidable(self.stats_frame.frame)  # type: ignore
-        else:
-            frame = self.get_stats_frame()
-            frame.hide()
-            self.register_non_collidable(self.stats_frame.frame)  # type: ignore
+        if debug and debug_wrapper is not None and not self.debug_panels_showing_state["debug"]:
+            self.add_widget(debug_wrapper)
+            self.register_non_collidable(debug_wrapper)
+            self.debug_panels_showing_state["debug"] = True
+        elif not debug and debug_wrapper is not None:
+            if getattr(debug_wrapper, "parent", None) is not None:
+                self.remove_widget(debug_wrapper)
+            self.unregister_non_collidable(debug_wrapper)
+            self.debug_panels_showing_state["debug"] = False
+
+        if stats and stats_wrapper is not None and not self.debug_panels_showing_state["stats"]:
+            self.add_widget(stats_wrapper)
+            self.register_non_collidable(stats_wrapper)
+            self.debug_panels_showing_state["stats"] = True
+        elif not stats and stats_wrapper is not None:
+            if getattr(stats_wrapper, "parent", None) is not None:
+                self.remove_widget(stats_wrapper)
+            self.unregister_non_collidable(stats_wrapper)
+            self.debug_panels_showing_state["stats"] = False
 
     def process_tile_click(self, tile: Optional[Union[str, Tile]] = None) -> bool:
         if isinstance(tile, str):
@@ -860,17 +996,26 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.debug_actions is None:
             self.debug_actions = self.build_debug_actions()
             self.debug_actions.show()
-            self.register_non_collidable(self.debug_actions.frame)
+            debug_actions_wrapper = self._register_layout_debug_widget(
+                "debug_actions",
+                self.debug_actions.frame,
+                default_position=(float(self.debug_actions.frame.x), float(self.debug_actions.frame.y)),
+            )
+            self.register_non_collidable(debug_actions_wrapper)
             assert self.root_layout is not None, "Root layout is not initialized."
-            self.root_layout.add_widget(self.debug_actions.frame)  # type: ignore
+            self.root_layout.add_widget(debug_actions_wrapper)  # type: ignore[arg-type]
+            self.apply_layout_debug_settings()
         self.lock_input()
 
     def close_debug_actions(self):
         if self.debug_actions is not None:
-            self.unregister_non_collidable(self.debug_actions.frame)  # type: ignore
+            debug_actions_wrapper = self.layout_debug_widgets.get("debug_actions")
+            if debug_actions_wrapper is not None:
+                self.unregister_non_collidable(debug_actions_wrapper)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.debug_actions.hide()
-            self.root_layout.remove_widget(self.debug_actions.frame)  # type: ignore
+            if debug_actions_wrapper is not None and getattr(debug_actions_wrapper, "parent", None) is self.root_layout:
+                self.root_layout.remove_widget(debug_actions_wrapper)  # type: ignore[arg-type]
             self.popup_disabled = True
             self.debug_actions = None
         self.unlock_input()
@@ -879,17 +1024,26 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         if self.inspect is None:
             self.inspect = self.build_inspect_entity()
             self.inspect.show()
-            self.register_non_collidable(self.inspect.frame)  # type: ignore
+            inspect_wrapper = self._register_layout_debug_widget(
+                "inspect_panel",
+                self.inspect.frame,
+                default_position=(float(self.inspect.frame.x), float(self.inspect.frame.y)),
+            )
+            self.register_non_collidable(inspect_wrapper)
             assert self.root_layout is not None, "Root layout is not initialized."
-            self.root_layout.add_widget(self.inspect.frame)  # type: ignore
+            self.root_layout.add_widget(inspect_wrapper)  # type: ignore[arg-type]
+            self.apply_layout_debug_settings()
         self.lock_input()
 
     def close_inspect(self):
         if self.inspect is not None:
-            self.unregister_non_collidable(self.inspect.frame)  # type: ignore
+            inspect_wrapper = self.layout_debug_widgets.get("inspect_panel")
+            if inspect_wrapper is not None:
+                self.unregister_non_collidable(inspect_wrapper)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.inspect.hide()
-            self.root_layout.remove_widget(self.inspect.frame)  # type: ignore
+            if inspect_wrapper is not None and getattr(inspect_wrapper, "parent", None) is self.root_layout:
+                self.root_layout.remove_widget(inspect_wrapper)  # type: ignore[arg-type]
             self.popup_disabled = True
             self.inspect = None
         self.unlock_input()

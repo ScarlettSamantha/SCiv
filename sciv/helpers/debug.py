@@ -47,7 +47,7 @@ class Debug:
     _system_info: Optional[Dict[str, Any]] = None
 
     config_instance_ref = ConfigManager.get_singleton_instance()
-    debug: bool = config_instance_ref.get_by_key((CONFIG_BASE_KEY, "enabled"), default=False)
+    debug: bool = config_instance_ref.get_debug_mode()
     debug_modes: Dict[Debugs, bool] = {
         Debugs.WORLD_GENERATION: config_instance_ref.get_by_key(
             (CONFIG_BASE_KEY, CONFIG_DEBUGS_BASE_KEY, Debugs.WORLD_GENERATION.value), default=False
@@ -95,7 +95,7 @@ class Debug:
 
     @classmethod
     def is_debug(cls) -> bool:
-        return cls.debug
+        return cls.config_instance_ref.get_debug_mode()
 
     @classmethod
     def _check_debug_mode(cls, mode: Debugs, default: Optional[bool] = None) -> bool:

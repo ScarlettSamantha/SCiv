@@ -461,7 +461,7 @@ class Game(Singleton, DirectObject):
 
         self.debug = DebugManager()
         DebugManager.set_singleton_instance(self.debug)
-        self.debug_enabled = self.config.get_by_key(("debug", "enable_debug"))
+        self.debug_enabled = self.config.get_debug_mode()
 
         self.entities = EntityManager()
         EntityManager.set_singleton_instance(self.entities)

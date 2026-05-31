@@ -1,5 +1,5 @@
 from math import ceil, floor, hypot, sqrt
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, cast
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
@@ -16,6 +16,7 @@ from panda3d.core import Point2, Point3
 
 from helpers.tiles import Tiles
 from managers.player import PlayerManager
+from menus.kivy.elements.layout_debug import LayoutDebugPosition, LayoutDebugStatsBadge, denormalize_position
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -23,10 +24,22 @@ if TYPE_CHECKING:
     from managers.world import World
 
 
+class TouchLike(Protocol):
+    pos: tuple[int | float, int | float]
+    x: int | float
+    y: int | float
+    button: str | None
+    ud: dict[str, object]
+    grab_current: object | None
+
+    def grab(self, class_instance: object, exclusive: bool = False) -> None: ...
+    def ungrab(self, class_instance: object) -> None: ...
+
+
 class Minimap(FloatLayout, DirectObject):
 
-    def __init__(self, **kwargs) -> None:
-        self._base = kwargs.pop("base", None)
+    def __init__(self, **kwargs: Any) -> None:
+        self._base: Any | None = kwargs.pop("base", None)
         super().__init__(**kwargs)
         DirectObject.__init__(self)
 
@@ -73,6 +86,14 @@ class Minimap(FloatLayout, DirectObject):
         self._drag_camera_lock: Optional[bool] = None
         self._drag_zoom_enabled: Optional[bool] = None
         self._external_camera_capture = False
+        self._layout_debug_drag_enabled = False
+        self._layout_debug_overlay_enabled = False
+        self._layout_debug_dragging = False
+        self._layout_debug_drag_offset = (0.0, 0.0)
+        self._layout_debug_default_position: tuple[float, float] | None = None
+        self._layout_debug_position_override: tuple[float, float] | None = None
+        self._layout_debug_item_id = 'minimap'
+        self._layout_debug_on_drag_end: Callable[[str, tuple[float, float]], None] | None = None
 
         self._columns = 0
         self._rows = 0
@@ -150,6 +171,10 @@ class Minimap(FloatLayout, DirectObject):
         self.meta_label.bind(size=self._bind_text_size)
         self.add_widget(self.meta_label)
 
+        self._layout_debug_badge = LayoutDebugStatsBadge()
+        self.add_widget(self._layout_debug_badge)
+        self._layout_debug_badge.hide()
+
         self.zoom_in_button = self._build_control_button(text='+', width=float(dp(20)), font_size=dp(11))
         self.zoom_in_button.bind(on_release=self._on_zoom_in_pressed)
         self.add_widget(self.zoom_in_button)
@@ -172,6 +197,30 @@ class Minimap(FloatLayout, DirectObject):
         self._sync_widget_frame()
         self._update_panel_chrome()
         self._update_image_layout()
+
+    def set_layout_debug_callback(self, callback: Callable[[str, tuple[float, float]], None] | None) -> None:
+        self._layout_debug_on_drag_end = callback
+
+    def set_layout_debug_state(
+        self,
+        *,
+        drag_enabled: bool,
+        overlay_enabled: bool,
+        position: LayoutDebugPosition | None,
+        reset_position: bool = False,
+    ) -> None:
+        self._layout_debug_drag_enabled = drag_enabled
+        self._layout_debug_overlay_enabled = overlay_enabled
+
+        if reset_position or position is None:
+            self._layout_debug_position_override = None
+        else:
+            self._layout_debug_position_override = denormalize_position(position, self._get_window_size())
+
+        self._sync_widget_frame()
+        self._update_panel_chrome()
+        self._update_image_layout()
+        self.schedule_overlay_refresh()
 
     def register(self) -> None:
         from managers.world import World
@@ -205,11 +254,11 @@ class Minimap(FloatLayout, DirectObject):
         self.ignoreAll()
         self._is_registered = False
 
-    def schedule_full_refresh(self, *_args) -> None:
+    def schedule_full_refresh(self, *_args: object) -> None:
         self._pending_texture_rebuild = True
         self._refresh_trigger()
 
-    def schedule_overlay_refresh(self, *_args) -> None:
+    def schedule_overlay_refresh(self, *_args: object) -> None:
         self._overlay_trigger()
 
     def refresh_full(self) -> None:
@@ -241,7 +290,7 @@ class Minimap(FloatLayout, DirectObject):
                 if tile.city is None:
                     continue
 
-                owner = tile.city.player if tile.city is not None else (tile.get_owner() if tile.owner is not None else None)
+                owner = tile.city.player
                 owner_color = self._coerce_color_tuple(owner.get_color() if owner is not None else None)
                 canvas_pos = self._world_to_canvas(tile.pos_x, tile.pos_y)
                 if canvas_pos is None:
@@ -362,14 +411,25 @@ class Minimap(FloatLayout, DirectObject):
             size=(inner_radius * 2.0, inner_radius * 2.0),
         )
 
-    def on_touch_down(self, touch):  # type: ignore[override]
+    def on_touch_down(self, touch: Any) -> bool:
+        touch_event = cast(TouchLike, touch)
+        touch_pos = (float(touch_event.pos[0]), float(touch_event.pos[1]))
+
+        if self._layout_debug_drag_enabled and self.collide_point(*touch_pos) and self._touch_in_layout_handle(touch_pos):
+            touch_event.grab(self)
+            touch_event.ud['minimap_layout_dragging'] = True
+            self._layout_debug_dragging = True
+            self._layout_debug_drag_offset = (float(touch_event.x - self.x), float(touch_event.y - self.y))
+            self._update_layout_debug_badge()
+            return True
+
         if super().on_touch_down(touch):
             return True
 
-        if not self.collide_point(*touch.pos):
+        if not self.collide_point(*touch_pos):
             return False
 
-        button = getattr(touch, 'button', None)
+        button = touch_event.button
         if button == 'scrollup':
             self._step_zoom(1)
             return True
@@ -377,28 +437,53 @@ class Minimap(FloatLayout, DirectObject):
             self._step_zoom(-1)
             return True
 
-        tile = self._tile_for_touch(touch.pos)
+        tile = self._tile_for_touch(touch_pos)
         if tile is None:
             return True
 
-        touch.grab(self)
-        touch.ud['minimap_dragging'] = True
+        touch_event.grab(self)
+        touch_event.ud['minimap_dragging'] = True
         self._begin_camera_capture()
         self._focus_tile(tile)
         return True
 
-    def on_touch_move(self, touch):  # type: ignore[override]
-        if touch.grab_current is not self:
+    def on_touch_move(self, touch: Any) -> bool:
+        touch_event = cast(TouchLike, touch)
+        touch_pos = (float(touch_event.pos[0]), float(touch_event.pos[1]))
+
+        if touch_event.grab_current is self and touch_event.ud.get('minimap_layout_dragging'):
+            self._layout_debug_position_override = self._clamp_layout_position(
+                float(touch_event.x) - self._layout_debug_drag_offset[0],
+                float(touch_event.y) - self._layout_debug_drag_offset[1],
+            )
+            self._sync_widget_frame()
+            self._update_panel_chrome()
+            self._update_layout_debug_badge()
+            return True
+
+        if touch_event.grab_current is not self:
             return super().on_touch_move(touch)
 
-        tile = self._tile_for_touch(touch.pos)
+        tile = self._tile_for_touch(touch_pos)
         if tile is not None:
             self._focus_tile(tile)
         return True
 
-    def on_touch_up(self, touch):  # type: ignore[override]
-        if touch.grab_current is self:
-            touch.ungrab(self)
+    def on_touch_up(self, touch: Any) -> bool:
+        touch_event = cast(TouchLike, touch)
+
+        if touch_event.grab_current is self and touch_event.ud.get('minimap_layout_dragging'):
+            touch_event.ungrab(self)
+            self._layout_debug_dragging = False
+            self._sync_widget_frame()
+            self._update_panel_chrome()
+            self._update_layout_debug_badge()
+            if self._layout_debug_on_drag_end is not None:
+                self._layout_debug_on_drag_end(self._layout_debug_item_id, (float(self.x), float(self.y)))
+            return True
+
+        if touch_event.grab_current is self:
+            touch_event.ungrab(self)
             self._end_camera_capture()
             return True
         return super().on_touch_up(touch)
@@ -759,8 +844,6 @@ class Minimap(FloatLayout, DirectObject):
         return best_tile
 
     def _focus_tile(self, tile: Tile) -> None:
-        if tile is None:
-            return
         self._view_center_x = float(tile.pos_x)
         self._view_center_y = float(tile.pos_y)
         messenger.send('game.camera.request.center_on_tile', [tile])
@@ -771,7 +854,7 @@ class Minimap(FloatLayout, DirectObject):
             return None
 
         lens = self.camera.get_lens()
-        camera_node = self.camera.base_camera()
+        camera_node = cast(Any, self.camera.base_camera())
         world_root = self.camera.base.render
         target_plane_z = float(self.camera.pivot.getPos(world_root).getZ())
         corners = (Point2(-1.0, -1.0), Point2(1.0, -1.0), Point2(1.0, 1.0), Point2(-1.0, 1.0))
@@ -858,15 +941,15 @@ class Minimap(FloatLayout, DirectObject):
 
         self.camera.end_external_capture(
             active=self._drag_camera_active if self._drag_camera_active is not None else True,
-            lock=self._drag_camera_lock,
-            zoom_enabled=self._drag_zoom_enabled,
+            lock=self._drag_camera_lock if self._drag_camera_lock is not None else False,
+            zoom_enabled=self._drag_zoom_enabled if self._drag_zoom_enabled is not None else True,
         )
         self._drag_camera_active = None
         self._drag_camera_lock = None
         self._drag_zoom_enabled = None
         self._external_camera_capture = False
 
-    def _on_window_resized(self, *_args) -> None:
+    def _on_window_resized(self, *_args: object) -> None:
         self._schedule_layout_refresh()
 
     def _poll_window_size(self, _dt: float) -> None:
@@ -889,7 +972,7 @@ class Minimap(FloatLayout, DirectObject):
             self._last_camera_signature = signature
             self.schedule_overlay_refresh()
 
-    def _build_control_button(self, text: str, width: float, font_size: float = None) -> Button:
+    def _build_control_button(self, text: str, width: float, font_size: float | None = None) -> Button:
         button = Button(
             text=text,
             size_hint=(None, None),
@@ -904,13 +987,13 @@ class Minimap(FloatLayout, DirectObject):
         )
         return button
 
-    def _on_zoom_in_pressed(self, *_args) -> None:
+    def _on_zoom_in_pressed(self, *_args: object) -> None:
         self._step_zoom(1)
 
-    def _on_zoom_out_pressed(self, *_args) -> None:
+    def _on_zoom_out_pressed(self, *_args: object) -> None:
         self._step_zoom(-1)
 
-    def _on_absolute_mode_pressed(self, *_args) -> None:
+    def _on_absolute_mode_pressed(self, *_args: object) -> None:
         self._absolute_mode = not self._absolute_mode
         self.schedule_overlay_refresh()
 
@@ -1217,7 +1300,7 @@ class Minimap(FloatLayout, DirectObject):
         return (canvas_x, canvas_y)
 
     def _hex_canvas_vertices(self, center_x: float, center_y: float) -> list[tuple[float, float]]:
-        draw_x, draw_y, draw_width, draw_height = self._image_draw_area()
+        _draw_x, _draw_y, draw_width, draw_height = self._image_draw_area()
         if draw_width <= 0 or draw_height <= 0:
             return []
 
@@ -1290,7 +1373,7 @@ class Minimap(FloatLayout, DirectObject):
         fallback_height = float(self.height) if self.height > 0 else 1.0
         return (fallback_width, fallback_height)
 
-    def _on_layout_changed(self, *_args) -> None:
+    def _on_layout_changed(self, *_args: object) -> None:
         self._update_panel_chrome()
         self._update_image_layout()
         self.schedule_overlay_refresh()
@@ -1325,6 +1408,15 @@ class Minimap(FloatLayout, DirectObject):
 
         target_x = window_width - target_width - self.edge_margin_px
         target_y = window_height - target_height - self.top_offset_px
+        self._layout_debug_default_position = (target_x, target_y)
+
+        if self._layout_debug_position_override is not None:
+            target_x, target_y = self._clamp_layout_position(
+                self._layout_debug_position_override[0],
+                self._layout_debug_position_override[1],
+                width=target_width,
+                height=target_height,
+            )
 
         if (
             abs(self.width - target_width) > 0.5
@@ -1386,7 +1478,10 @@ class Minimap(FloatLayout, DirectObject):
         self.meta_label.color = muted
         if self._columns > 0 and self._rows > 0:
             zoom_label = 'ABS' if self._absolute_mode else f'{self._current_zoom_factor():g}×'
-            self.meta_label.text = f'{self._columns}×{self._rows} • {zoom_label}'
+            text = f'{self._columns}×{self._rows} • {zoom_label}'
+            if self._layout_debug_overlay_enabled or self._layout_debug_drag_enabled:
+                text = f'{text} • {int(self.x)},{int(self.y)}'
+            self.meta_label.text = text
         else:
             self.meta_label.text = ''
         self.meta_label.size = (meta_width, header_height)
@@ -1457,9 +1552,47 @@ class Minimap(FloatLayout, DirectObject):
         self.zoom_out_button.color = text_disabled if zoom_out_disabled else text_normal
         self.absolute_mode_button.color = text_normal
         self.absolute_mode_button.text = 'ABS ON' if self._absolute_mode else 'ABS'
+        self._update_layout_debug_badge()
 
-    def _bind_text_size(self, instance, value) -> None:
+    def _bind_text_size(self, instance: Label, value: object) -> None:
         instance.text_size = cast(tuple[float, float], value)
+
+    def _touch_in_layout_handle(self, position: tuple[float, float]) -> bool:
+        handle_height = self.header_height_px + self.frame_padding_px
+        return position[1] >= self.top - handle_height
+
+    def _update_layout_debug_badge(self) -> None:
+        badge_margin = float(dp(6))
+        self._layout_debug_badge.pos = (
+            max(badge_margin, self.width - self._layout_debug_badge.width - badge_margin),
+            max(badge_margin, self.height - self._layout_debug_badge.height - badge_margin),
+        )
+
+        if self._layout_debug_dragging:
+            self._layout_debug_badge.show_metrics(
+                self._layout_debug_item_id,
+                pos_x=float(self.x),
+                pos_y=float(self.y),
+                width=float(self.width),
+                height=float(self.height),
+            )
+        else:
+            self._layout_debug_badge.hide()
+
+    def _clamp_layout_position(
+        self,
+        pos_x: float,
+        pos_y: float,
+        *,
+        width: float | None = None,
+        height: float | None = None,
+    ) -> tuple[float, float]:
+        window_width, window_height = self._get_window_size()
+        target_width = self.width if width is None else width
+        target_height = self.height if height is None else height
+        clamped_x = max(0.0, min(pos_x, window_width - target_width))
+        clamped_y = max(0.0, min(pos_y, window_height - target_height))
+        return (clamped_x, clamped_y)
 
     def _smallest_positive_step(self, values: list[float]) -> float:
         unique_values = sorted(set(values))
@@ -1470,12 +1603,13 @@ class Minimap(FloatLayout, DirectObject):
                 smallest = difference
         return 1.0 if smallest == float('inf') else smallest
 
-    def _coerce_color_tuple(self, color_value) -> tuple[float, float, float, float]:
+    def _coerce_color_tuple(self, color_value: object) -> tuple[float, float, float, float]:
         if isinstance(color_value, (tuple, list)):
-            red = float(color_value[0]) if len(color_value) > 0 else 1.0
-            green = float(color_value[1]) if len(color_value) > 1 else red
-            blue = float(color_value[2]) if len(color_value) > 2 else green
-            alpha = float(color_value[3]) if len(color_value) > 3 else 1.0
+            components = cast(tuple[object, ...] | list[object], color_value)
+            red = float(cast(float | int | str, components[0])) if len(components) > 0 else 1.0
+            green = float(cast(float | int | str, components[1])) if len(components) > 1 else red
+            blue = float(cast(float | int | str, components[2])) if len(components) > 2 else green
+            alpha = float(cast(float | int | str, components[3])) if len(components) > 3 else 1.0
             return (red, green, blue, alpha)
         return (1.0, 1.0, 1.0, 1.0)
 

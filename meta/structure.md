@@ -5,7 +5,7 @@
 
 ## Snapshot
 
-- Indexed Python modules: `826`
+- Indexed Python modules: `825`
 - Indexed documentation files: `46`
 - Runtime areas: `11`
 - Machine-readable manifest: [`meta/generated/project-index.json`](generated/project-index.json)
@@ -148,7 +148,7 @@ Core package bootstrap, application host, configuration, and top-level resources
 Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 
 - Modules indexed: `25`
-- Indexed lines: `5217`
+- Indexed lines: `5265`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -213,8 +213,8 @@ Engine-facing systems such as rendering, save/load helpers, generators, and effe
 
 Kivy application and screen/widget layers.
 
-- Modules indexed: `54`
-- Indexed lines: `14247`
+- Modules indexed: `55`
+- Indexed lines: `15230`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -229,7 +229,7 @@ Kivy application and screen/widget layers.
 | [sciv/menus/kivy/elements/horizontal_scroll.py](../sciv/menus/kivy/elements/horizontal_scroll.py) | classes: `HorizontalScrollView` | UI module for horizontal scroll. |
 | [sciv/menus/kivy/elements/image.py](../sciv/menus/kivy/elements/image.py) | functions: `image_widget_from_encoded`, `image_widget_from_raw`, `image_widget_from_vfs` | UI module for image. |
 | [sciv/menus/kivy/elements/image_label.py](../sciv/menus/kivy/elements/image_label.py) | classes: `ImageLabel` | UI module for image label. |
-| [sciv/menus/kivy/elements/list_item.py](../sciv/menus/kivy/elements/list_item.py) | classes: `ListItem` | UI module for list item. |
+| [sciv/menus/kivy/elements/layout_debug.py](../sciv/menus/kivy/elements/layout_debug.py) | classes: `DraggableLayoutWrapper`, `LayoutDebugPosition`, `LayoutDebugStatsBadge`; functions: `clamp`, `denormalize_position`, `format_layout_debug_metrics`, `normalize_position` | UI module for layout debug. |
 
 ### `sciv/helpers`
 
@@ -307,14 +307,12 @@ World-adjacent package resources.
 
 Developer utilities and repository automation scripts.
 
-- Modules indexed: `10`
-- Indexed lines: `2426`
+- Modules indexed: `8`
+- Indexed lines: `2388`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
 | [scripts/index.py](../scripts/index.py) | classes: `AreaInfo`, `DocumentationItem`, `FreshnessReport`, `GenerationOutputs` +6 more; functions: `add_freshness_arguments`, `area_for_path`, `area_rank`, `build_areas` +51 more | Unified SCiv project-index helper for generation, browsing, querying, and validation. |
-| [scripts/generate_project_index.py](../scripts/generate_project_index.py) | functions: `main` | Compatibility wrapper for the unified SCiv project-index helper. |
-| [scripts/query_project_index.py](../scripts/query_project_index.py) | functions: `main` | Compatibility wrapper for the unified SCiv project-index helper. |
 | [scripts/check_bad_imports.py](../scripts/check_bad_imports.py) | classes: `Violation`; functions: `_check_source`, `_is_allowed_from_import`, `_read_staged_file`, `_run_git` +2 more | Guards staged Python changes against disallowed `sciv` imports. |
 | [scripts/bad_models.py](../scripts/bad_models.py) | classes: `ModelScanApp`; functions: `check_for_zero_scale_nodes`, `find_model_files` | Repository utility script for bad models. |
 | [scripts/build_windows.py](../scripts/build_windows.py) | functions: `cleanup_build`, `main` | Repository utility script for build windows. |

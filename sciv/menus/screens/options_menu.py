@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, Tuple
 
+from direct.showbase.MessengerGlobal import messenger
 from helpers.cache import Cache
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
@@ -91,6 +92,9 @@ class OptionsScreen(Screen):
         self.debug_enable_checkbox: CheckBox
         self.disable_ai_checkbox: CheckBox
         self.sentry_enable_checkbox: CheckBox
+        self.ui_layout_drag_checkbox: CheckBox
+        self.ui_layout_overlay_checkbox: CheckBox
+        self.ui_layout_reset_button: Button
         self.sentry_dsn_input: TextInput
         self.debug_checkboxes: Dict[str, CheckBox] = {}
 
@@ -571,7 +575,7 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        master = self.config_ref.get_by_key(("debug", "enable"), False)
+        master = self.config_ref.get_debug_mode()
         self.debug_enable_checkbox = MenuCheckbox(
             active=master,
         )
@@ -579,6 +583,75 @@ class OptionsScreen(Screen):
         debug_master_row.add_widget(debug_master_label)
         debug_master_row.add_widget(self.debug_enable_checkbox)
         rows.add_widget(debug_master_row)
+
+        ui_drag_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(40),
+            spacing=dp(12),
+        )
+        ui_drag_label = LeftAlignedLabel(
+            text="Enable UI Layout Dragging",
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+
+        self.ui_layout_drag_checkbox = MenuCheckbox(
+            active=self.config_ref.get_ui_layout_drag_enabled(),
+            disabled=not master,
+        )
+        self.ui_layout_drag_checkbox.bind(active=self._on_ui_layout_drag_toggle)  # type: ignore
+
+        ui_drag_row.add_widget(ui_drag_label)
+        ui_drag_row.add_widget(self.ui_layout_drag_checkbox)
+        rows.add_widget(ui_drag_row)
+
+        ui_overlay_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(40),
+            spacing=dp(12),
+        )
+        ui_overlay_label = LeftAlignedLabel(
+            text="Show UI Layout Overlay",
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+
+        self.ui_layout_overlay_checkbox = MenuCheckbox(
+            active=self.config_ref.get_ui_layout_overlay_enabled(),
+            disabled=not master,
+        )
+        self.ui_layout_overlay_checkbox.bind(active=self._on_ui_layout_overlay_toggle)  # type: ignore
+
+        ui_overlay_row.add_widget(ui_overlay_label)
+        ui_overlay_row.add_widget(self.ui_layout_overlay_checkbox)
+        rows.add_widget(ui_overlay_row)
+
+        ui_reset_row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(44),
+            spacing=dp(12),
+        )
+        ui_reset_label = LeftAlignedLabel(
+            text="Reset Saved UI Layout",
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+
+        self.ui_layout_reset_button = SecondaryButton(
+            text="Reset",
+            size_hint=(None, None),
+            width=dp(140),
+            height=dp(40),
+        )
+        self.ui_layout_reset_button.disabled = not master
+        self.ui_layout_reset_button.bind(on_release=self._on_ui_layout_reset)  # type: ignore
+
+        ui_reset_row.add_widget(ui_reset_label)
+        ui_reset_row.add_widget(self.ui_layout_reset_button)
+        rows.add_widget(ui_reset_row)
 
         dbg_cfg = self.config_ref.get_by_key(("debug", "debugs"), {})
         keys = list(dbg_cfg.keys())
@@ -724,11 +797,31 @@ class OptionsScreen(Screen):
         self.config_ref.set_developer_mode(active)
 
     def _on_debug_enable_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        self.config_ref.set_debug_mode(active)
         for cb in self.debug_checkboxes.values():
             cb.disabled = not active
         self.disable_ai_checkbox.disabled = not active
         self.sentry_enable_checkbox.disabled = not active
+        self.ui_layout_drag_checkbox.disabled = not active
+        self.ui_layout_overlay_checkbox.disabled = not active
+        self.ui_layout_reset_button.disabled = not active
         self.sentry_dsn_input.disabled = not active or not self.sentry_enable_checkbox.active
+        self._notify_layout_debug_changed()
+
+    def _on_ui_layout_drag_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        self.config_ref.set_ui_layout_drag_enabled(active)
+        self._notify_layout_debug_changed()
+
+    def _on_ui_layout_overlay_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        self.config_ref.set_ui_layout_overlay_enabled(active)
+        self._notify_layout_debug_changed()
+
+    def _on_ui_layout_reset(self, *args: Any) -> None:
+        self.config_ref.reset_ui_layout_positions()
+        self._notify_layout_debug_changed(reset_positions=True)
+
+    def _notify_layout_debug_changed(self, reset_positions: bool = False) -> None:
+        messenger.send("ui.update.ui.layout_debug_changed", [reset_positions])
 
     def _on_vsync_toggle(self, checkbox: CheckBox, active: bool) -> None:
         cfg: ConfigManager = self.config_ref

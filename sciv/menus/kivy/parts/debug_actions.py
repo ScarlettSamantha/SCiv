@@ -20,13 +20,17 @@ class DebugActions:
     def __init__(self, screen: "GameUIScreen"):
         self.screen: "GameUIScreen" = screen
         self.is_open: bool = False
+        window_width = float(self.screen._base.win.getXSize())  # type: ignore[attr-defined]
+        window_height = float(self.screen._base.win.getYSize())  # type: ignore[attr-defined]
 
         self.frame: GridLayout = GridLayout(
             cols=1,
             spacing=dp(8),
             padding=dp(8),
-            size_hint=(0.9, 0.9),
-            pos_hint={"right": 0.95, "top": 0.95},
+            size_hint=(None, None),
+            width=window_width * 0.82,
+            height=window_height * 0.82,
+            pos=(window_width * 0.09, window_height * 0.09),
         )
 
         self.debug_manager: DebugManager = DebugManager.get_singleton_instance()

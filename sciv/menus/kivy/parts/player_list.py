@@ -31,7 +31,8 @@ class PlayerList(FloatLayout, DirectObject):
             "assets/icons/default/player_portrait.png"
         )
         self.window_properties = self.window.get_properties()  # type: ignore
-        self.size_hint_y = 0.1
+        self.size_hint = (None, None)
+        self.pos_hint = {}
 
         self.grid = GridLayout(
             rows=1,
@@ -40,9 +41,8 @@ class PlayerList(FloatLayout, DirectObject):
             size_hint=(None, None),
             width=300,
             height=200,
-            pos_hint={"top": 0.985, "right": 1},
+            pos=(0, 0),
         )
-        self.pos_hint = {"right": 0.80, "top": 0.985}
 
         self.add_widget(self.grid)
 
@@ -60,24 +60,26 @@ class PlayerList(FloatLayout, DirectObject):
 
         pad: Tuple[int, ...] | List[int] | int = self.grid.padding
         if isinstance(pad, (tuple, list)) and len(pad) == 4:
-            left, top, right, _ = pad
+            left, _, right, _ = pad
         elif isinstance(pad, int):
-            left = top = right = _ = pad
+            left = right = pad
         else:
             raise ValueError("Padding must be a tuple of 4 integers or a single integer.")
 
         total_w = total_w + left + right
-        total_h: int = self.grid.height
+        total_h: float = self.grid.height
 
         self.grid.width = total_w
         self.grid.height = total_h
 
-        win_h: int = self.window_properties.get_y_size()
-        self.grid.x = right - self.grid.width
-        self.grid.y = win_h - top - self.grid.height
-
         self.width = self.grid.width
         self.height = self.grid.height
+
+        win_w: int = self.window_properties.get_x_size()
+        win_h: int = self.window_properties.get_y_size()
+
+        self.pos = (win_w * 0.80 - self.width, win_h * 0.985 - self.height)
+        self.grid.pos = (0, 0)
 
     def build(self) -> None:
         self.players = list(PlayerManager.all().values())

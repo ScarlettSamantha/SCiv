@@ -5,6 +5,7 @@ from helpers.paths import PathsHelper  # type: ignore
 from kivy.graphics import Color, Line, Rectangle
 from kivy.metrics import dp  # type: ignore
 from kivy.properties import ListProperty, NumericProperty
+from kivy.core.window import Window
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -13,7 +14,9 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
 from kivy.uix.widget import Widget
+from managers.config import ConfigManager
 from managers.i18n import T_TranslationOrStr, t_
+from menus.kivy.elements.layout_debug import LayoutDebugPosition, LayoutDebugStatsBadge, denormalize_position
 
 
 class OutlineButton(Button):
@@ -224,6 +227,7 @@ class ModalImagePopup(ModalView):
         kwargs.setdefault("auto_dismiss", False)
         kwargs.setdefault("size_hint", (0.8, 0.8))
         kwargs.setdefault("pos_hint", {"center_x": 0.5, "center_y": 0.5})
+        layout_debug_id = str(kwargs.pop("layout_debug_id", "popup.modal_image"))
 
         image_source = kwargs.pop("image_source", None)
         if image_source is not None and image is None:
@@ -235,7 +239,14 @@ class ModalImagePopup(ModalView):
 
         super().__init__(**kwargs)
 
+        self._layout_debug_config: ConfigManager = ConfigManager.get_singleton_instance()
+        self._layout_debug_item_id: str = layout_debug_id
+        self._layout_debug_dragging: bool = False
+        self._layout_debug_drag_offset: tuple[float, float] = (0.0, 0.0)
+        self._layout_debug_position_initialized: bool = False
+
         root = FloatLayout(size_hint=(1, 1))
+        self._root_layout = root
         self.add_widget(root)
 
         self._bg_img = Image(
@@ -303,6 +314,10 @@ class ModalImagePopup(ModalView):
         self._btn_row.add_widget(self._close_btn)
         self._btn_row.add_widget(BoxLayout(size_hint=(1, 1)))
 
+        self._layout_debug_badge = LayoutDebugStatsBadge()
+        root.add_widget(self._layout_debug_badge)
+        self._layout_debug_badge.hide()
+
         self.bind(size=self._center_image, pos=self._center_image)
         self._bg_img.bind(texture=self._center_image)
         self._overlay.bind(pos=self._on_overlay_resize_move, size=self._on_overlay_resize_move)
@@ -311,6 +326,105 @@ class ModalImagePopup(ModalView):
         self.bind(size=lambda *_: self._recompute_overlay_height())
 
         self.set_content(image=image, title=title, description=description)
+
+    def _layout_debug_drag_enabled(self) -> bool:
+        return self._layout_debug_config.get_debug_mode() and self._layout_debug_config.get_ui_layout_drag_enabled()
+
+    def _layout_debug_window_size(self) -> tuple[float, float]:
+        if Window is not None:
+            return (float(Window.width), float(Window.height))
+        return (max(float(self.width), 1.0), max(float(self.height), 1.0))
+
+    def _layout_debug_saved_position(self) -> LayoutDebugPosition | None:
+        data = self._layout_debug_config.get_ui_layout_position(self._layout_debug_item_id)
+        if data is None:
+            return None
+        return LayoutDebugPosition(x=float(data.get("x", 0.0)), y=float(data.get("y", 0.0)))
+
+    def _layout_debug_clamp_position(self, pos_x: float, pos_y: float) -> tuple[float, float]:
+        window_width, window_height = self._layout_debug_window_size()
+        return (
+            max(0.0, min(pos_x, window_width - float(self.width))),
+            max(0.0, min(pos_y, window_height - float(self.height))),
+        )
+
+    def _layout_debug_apply_initial_position(self) -> None:
+        if self._layout_debug_position_initialized:
+            return
+
+        self.pos_hint = {}
+        saved_position = self._layout_debug_saved_position()
+        if saved_position is not None:
+            self.pos = self._layout_debug_clamp_position(*denormalize_position(saved_position, self._layout_debug_window_size()))
+        else:
+            window_width, window_height = self._layout_debug_window_size()
+            self.pos = self._layout_debug_clamp_position(
+                (window_width - float(self.width)) / 2.0,
+                (window_height - float(self.height)) / 2.0,
+            )
+
+        self._layout_debug_position_initialized = True
+        self._layout_debug_update_badge()
+
+    def _layout_debug_store_position(self) -> None:
+        window_width, window_height = self._layout_debug_window_size()
+        self._layout_debug_config.set_ui_layout_position(
+            self._layout_debug_item_id,
+            float(self.x) / max(window_width, 1.0),
+            float(self.y) / max(window_height, 1.0),
+        )
+
+    def _layout_debug_update_badge(self) -> None:
+        self._layout_debug_badge.pos = (
+            max(float(dp(8)), float(self.width) - float(self._layout_debug_badge.width) - float(dp(8))),
+            max(float(dp(8)), float(self.height) - float(self._layout_debug_badge.height) - float(dp(8))),
+        )
+
+        if self._layout_debug_dragging:
+            self._layout_debug_badge.show_metrics(
+                self._layout_debug_item_id,
+                pos_x=float(self.x),
+                pos_y=float(self.y),
+                width=float(self.width),
+                height=float(self.height),
+            )
+        else:
+            self._layout_debug_badge.hide()
+
+    def _layout_debug_touch_in_handle(self, touch_pos: tuple[float, float]) -> bool:
+        return touch_pos[1] >= float(self.top) - float(dp(40))
+
+    def on_open(self, *args: Any) -> None:
+        super().on_open(*args)
+        self._layout_debug_apply_initial_position()
+
+    def on_touch_down(self, touch: Any) -> bool:
+        if self._layout_debug_drag_enabled() and self.collide_point(*touch.pos) and self._layout_debug_touch_in_handle(touch.pos):
+            touch.grab(self)
+            self._layout_debug_dragging = True
+            self._layout_debug_drag_offset = (float(touch.x - self.x), float(touch.y - self.y))
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_down(touch)
+
+    def on_touch_move(self, touch: Any) -> bool:
+        if touch.grab_current is self:
+            self.pos = self._layout_debug_clamp_position(
+                float(touch.x) - self._layout_debug_drag_offset[0],
+                float(touch.y) - self._layout_debug_drag_offset[1],
+            )
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_move(touch)
+
+    def on_touch_up(self, touch: Any) -> bool:
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self._layout_debug_dragging = False
+            self._layout_debug_store_position()
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_up(touch)
 
     def set_content(
         self,

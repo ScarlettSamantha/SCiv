@@ -12,6 +12,9 @@ WINDOW_MODE_BORDERLESS = "fullscreen-borderless"
 WINDOW_MODE_WINDOW = "windowed"
 
 
+type LayoutPosition = dict[str, float]
+
+
 class ConfigManager(Singleton):
     config_data: Dict[str, Any] = {}
     config_file = "config.json"
@@ -94,7 +97,7 @@ class ConfigManager(Singleton):
     def set_by_key(self, value: Any, *args: Any):
         data = self.config_data
         for key in args[:-1]:
-            data = data.get(key, {})
+            data = data.setdefault(key, {})
         data[args[-1]] = value
 
     def save_config(self):
@@ -215,12 +218,17 @@ class ConfigManager(Singleton):
         self.save_config()
 
     def enable_debug_mode(self):
-        self.set_by_key(True, "debug", "enabled")
+        self.set_debug_mode(True)
         self.save_config()
 
     def disable_debug_mode(self):
-        self.set_by_key(False, "debug", "enabled")
+        self.set_debug_mode(False)
         self.save_config()
+
+    def set_debug_mode(self, enabled: bool, auto_save: bool = True):
+        self.set_by_key(enabled, "debug", "enable")
+        if auto_save:
+            self.save_config()
 
     def toggle_debug_flag(self, flag: str, active: bool, auto_save: bool = True):
         self.config_data.setdefault("debug", {}).setdefault("debugs", {})[flag] = active
@@ -232,17 +240,56 @@ class ConfigManager(Singleton):
         self.save_config()
 
     def set_fps_counter(self, enabled: bool):
-        self.set_by_key(enabled, "debug", "fps-counter")
+        self.set_by_key(enabled, "debug", "fps_counter")
         self.save_config()
 
     def get_fps_counter(self) -> bool:
-        return self.get_by_key(("debug", "fps-counter"), False)
+        return self.get_by_key(("debug", "fps_counter"), self.get_by_key(("debug", "fps-counter"), False))
 
     def get_developer_mode(self) -> bool:
         return self.get_by_key(("debug", "developer_mode"), False)
 
     def get_debug_mode(self) -> bool:
-        return self.get_by_key(("debug", "enabled"), False)
+        return self.get_by_key(
+            ("debug", "enable"),
+            self.get_by_key(("debug", "enabled"), self.get_by_key(("debug", "enable_debug"), False)),
+        )
+
+    def get_ui_layout_drag_enabled(self) -> bool:
+        return self.get_by_key(("debug", "ui_layout", "drag_enabled"), False)
+
+    def set_ui_layout_drag_enabled(self, enabled: bool, auto_save: bool = True) -> None:
+        self.set_by_key(enabled, "debug", "ui_layout", "drag_enabled")
+        if auto_save:
+            self.save_config()
+
+    def get_ui_layout_overlay_enabled(self) -> bool:
+        return self.get_by_key(("debug", "ui_layout", "show_overlay"), False)
+
+    def set_ui_layout_overlay_enabled(self, enabled: bool, auto_save: bool = True) -> None:
+        self.set_by_key(enabled, "debug", "ui_layout", "show_overlay")
+        if auto_save:
+            self.save_config()
+
+    def get_ui_layout_positions(self) -> dict[str, LayoutPosition]:
+        positions: dict[str, LayoutPosition] = self.get_by_key(("debug", "ui_layout", "positions"), {})
+        return positions
+
+    def set_ui_layout_position(self, widget_id: str, norm_x: float, norm_y: float, auto_save: bool = True) -> None:
+        positions: dict[str, LayoutPosition] = self.config_data.setdefault("debug", {}).setdefault("ui_layout", {}).setdefault(
+            "positions", {}
+        )
+        positions[widget_id] = {"x": norm_x, "y": norm_y}
+        if auto_save:
+            self.save_config()
+
+    def get_ui_layout_position(self, widget_id: str) -> LayoutPosition | None:
+        return self.get_ui_layout_positions().get(widget_id)
+
+    def reset_ui_layout_positions(self, auto_save: bool = True) -> None:
+        self.set_by_key({}, "debug", "ui_layout", "positions")
+        if auto_save:
+            self.save_config()
 
     def get_debug_flags(self) -> Dict[str, bool]:
         return self.get_by_key(("debug", "debugs"), {})

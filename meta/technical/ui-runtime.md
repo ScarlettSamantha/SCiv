@@ -101,6 +101,50 @@ In practice, `GameUIScreen` owns:
 - top bar, player list, combat log, messenger widgets, and the minimap
 - unit-path preview rendering
 - input locking for fullscreen/modal gameplay overlays
+- the runtime HUD layout-debug registry used for draggable fixed-position widgets
+
+### HUD layout debugging and draggable runtime widgets
+
+`GameUIScreen` now owns a small runtime layout-debug layer for fixed-position HUD widgets that live in the main gameplay window.
+
+The current contract is:
+
+- layout editing is gated behind Developer-tab settings stored in config under `debug.ui_layout`
+- the live screen listens for `ui.update.ui.layout_debug_changed` and reapplies the current drag/overlay state without requiring a restart
+- fixed-position widgets can opt into a shared draggable wrapper from `sciv/menus/kivy/elements/layout_debug.py` instead of each implementing their own drag math
+- dragged widget positions are persisted as normalized coordinates so they can be restored after `SCivGUI.reset()` recreates the `game_ui` screen
+- the screen still owns persistence and restore; the wrapped widgets only own their own content and normal HUD behavior
+
+The initial wrapped widget set is intentionally narrow and focused on fixed-position gameplay HUD pieces:
+
+- action bar
+- turn control
+- combat log
+- player list
+- minimap
+- stats panel
+- debug panel
+- debug actions overlay
+- inspect overlay
+
+This is not yet the contract for fullscreen or modal surfaces such as research, civics, save/load, or the pause stack.
+
+Most of that first batch uses the shared draggable wrapper. The minimap is the current special case: it keeps its own responsive sizing and custom touch behavior, but it participates in the same persisted `debug.ui_layout` settings and the same live `ui.update.ui.layout_debug_changed` refresh path.
+
+The current layout-debug tooling now has two distinct surfaces:
+
+- **persistent gameplay HUD positioning** for wrapped widgets and the minimap, with normalized positions written to config
+- **draggable modal/debug surfaces** such as popup dialogs and the age image modal, which use the same debug settings and drag affordances so contributors can inspect coordinates while positioning them
+
+While a draggable surface is actively moving, the layout-debug system shows a small in-widget stats badge with:
+
+- x/y position
+- width/height
+- the stable layout id for that surface
+
+That badge is intentionally visual only. It does not copy values automatically; it exists so contributors can manually transfer those numbers back into code when tuning default layout constants.
+
+The shared wrapper currently exposes a visible drag handle and coordinate label when drag mode or overlay mode is active. That keeps normal button interaction available inside the wrapped widget while still giving a reusable placement tool for HUD chrome.
 
 ### `GameConfigMenu` owns new-game payload assembly
 
@@ -256,16 +300,17 @@ This is used for overlays that should temporarily stop normal map interaction.
 | --- | --- |
 | Action bar / turn control / player list / combat log / popup layouts | Registered as non-collidable so hovering them disables world picking. |
 | Minimap | Registered as non-collidable for normal hover behavior; while dragging, it also temporarily suspends camera drag/zoom state and recenters via `game.camera.request.center_on_tile`. |
-| Research / civics / inspect / debug actions / log | Open inside `GameUIScreen` and call `lock_input()` until closed. |
+| Research / civics / inspect / debug actions / log | Open inside `GameUIScreen` and call `lock_input()` until closed. Inspect and debug-actions now also participate in the layout-debug wrapper flow when the debug setting is enabled. |
 | SavePopup / LoadPopup | Open from `save_load_screen`, register themselves as non-collidable, bind `escape`, and explicitly disable zoom/control plus camera movement. |
 | Pause menu | Opens via `ui.update.ui.show_pause` and uses collision-prevention for the popup container, but the active flow does not itself toggle `Game.pause()`. |
-| Age popup / simple modal popups | Open as Kivy popups; they participate in the popup/UI layer but are not the main place where gameplay input locking is coordinated. |
+| Age popup / simple modal popups | Open as Kivy popups; they participate in the popup/UI layer and now support drag-position inspection in layout-debug mode, but they are still not the main place where gameplay input locking is coordinated. |
 
 ## Current implementation notes
 
 - `ui.post_game_start()` is currently invoked in two ways on the new-game path: as a listener for `game.state.true_game_start` and as a direct call from `Game._try_game_start()`. Keep post-start work idempotent when modifying it.
 - The load path also performs direct `ui.post_game_start()` work before `game.state.load_finished` reaches `GameUIScreen`.
 - `GameUIScreen.build_screen()` and `GameUIScreen.on_game_start()` now keep persistent HUD pieces such as the minimap idempotent, because the new-game and load paths can both touch those entry points more than once.
+- The HUD layout-debug registry is also expected to stay idempotent across those same entry points. Saved widget positions should restore when `game_ui` is rebuilt instead of assuming the old widget instances survive.
 - The active escape-menu flow is `GameUIScreen.on_escape()` -> `ui.update.ui.show_pause` -> `PauseMenu.open()`. The older `ui.get_escape_menu()` helper still exists and does call `Game.pause()/unpause()`, but it is not the current screen-driven pause path.
 - `SavePopup.close_popup()` returns to `game_ui` by calling `ui.manager.set_screen("game_ui")`, while `LoadPopup.close_popup()` emits `ui.update.ui.hide_load` and lets the UI manager restore the previous screen. Similar surfaces, slightly different exit paths.
 - `MainMenuScreen.continue` is present but currently disabled.

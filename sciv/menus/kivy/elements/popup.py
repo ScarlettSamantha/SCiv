@@ -1,12 +1,15 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, cast
 
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
 from helpers.cache import Cache
+from managers.config import ConfigManager
 from managers.i18n import T_TranslationOrStr
+from menus.kivy.elements.layout_debug import LayoutDebugPosition, LayoutDebugStatsBadge, denormalize_position
 from menus.kivy.mixins.collidable import CollisionPreventionMixin
 
 
@@ -87,11 +90,17 @@ class ModalPopup(Popup, CollisionPreventionMixin):
         self.dismiss()  # type: ignore
 
     def on_close(self, *args: Any, **kwargs: Any):
-        self.close_btn.disabled = True
+        if hasattr(self, "close_btn"):
+            self.close_btn.disabled = True
+        if hasattr(self, "confirm_btn"):
+            self.confirm_btn.disabled = True
         self.unregister_non_collidable(self.layout)
 
     def on_open(self, *args: Any, **kwargs: Any):
-        self.close_btn.disabled = False
+        if hasattr(self, "close_btn"):
+            self.close_btn.disabled = False
+        if hasattr(self, "confirm_btn"):
+            self.confirm_btn.disabled = False
         self.register_non_collidable(self.layout)
 
 
@@ -106,19 +115,168 @@ class PopupDraggableMixin:
     dragging: bool = False
     _touch_offset = (0, 0)
 
+    def _popup_widget(self) -> Popup:
+        return cast(Popup, self)
+
+    def _init_layout_debug_drag(self, item_id: str) -> None:
+        self._layout_debug_item_id: str = item_id
+        self._layout_debug_config: ConfigManager = ConfigManager.get_singleton_instance()
+        self._layout_debug_drag_position_initialized: bool = False
+        self._layout_debug_badge = LayoutDebugStatsBadge()
+        self._popup_widget().add_widget(self._layout_debug_badge)
+        self._layout_debug_badge.hide()
+
+    def _layout_debug_drag_enabled(self) -> bool:
+        return self._layout_debug_config.get_debug_mode() and self._layout_debug_config.get_ui_layout_drag_enabled()
+
+    def _layout_debug_saved_position(self) -> LayoutDebugPosition | None:
+        data = self._layout_debug_config.get_ui_layout_position(self._layout_debug_item_id)
+        if data is None:
+            return None
+        return LayoutDebugPosition(x=float(data.get("x", 0.0)), y=float(data.get("y", 0.0)))
+
+    def _layout_debug_window_size(self) -> tuple[float, float]:
+        base = cast(Any, self).base
+        return (float(base.win.getXSize()), float(base.win.getYSize()))  # type: ignore[attr-defined]
+
+    def _layout_debug_clamp_position(self, pos_x: float, pos_y: float) -> tuple[float, float]:
+        window_width, window_height = self._layout_debug_window_size()
+        popup = self._popup_widget()
+        return (
+            max(0.0, min(pos_x, window_width - float(popup.width))),
+            max(0.0, min(pos_y, window_height - float(popup.height))),
+        )
+
+    def _layout_debug_apply_initial_position(self) -> None:
+        if self._layout_debug_drag_position_initialized:
+            return
+
+        popup = self._popup_widget()
+        popup.pos_hint = {}
+        saved_position = self._layout_debug_saved_position()
+        if saved_position is not None:
+            saved_x, saved_y = denormalize_position(saved_position, self._layout_debug_window_size())
+            popup.pos = self._layout_debug_clamp_position(saved_x, saved_y)
+        else:
+            window_width, window_height = self._layout_debug_window_size()
+            centered_x = (window_width - float(popup.width)) / 2.0
+            centered_y = (window_height - float(popup.height)) / 2.0
+            popup.pos = self._layout_debug_clamp_position(centered_x, centered_y)
+
+        self._layout_debug_drag_position_initialized = True
+
+    def _layout_debug_store_position(self) -> None:
+        window_width, window_height = self._layout_debug_window_size()
+        popup = self._popup_widget()
+        self._layout_debug_config.set_ui_layout_position(
+            self._layout_debug_item_id,
+            float(popup.x) / max(window_width, 1.0),
+            float(popup.y) / max(window_height, 1.0),
+        )
+
+    def _layout_debug_update_badge(self) -> None:
+        popup = self._popup_widget()
+        badge_margin = float(dp(8))
+        self._layout_debug_badge.pos = (
+            max(badge_margin, float(popup.width) - float(self._layout_debug_badge.width) - badge_margin),
+            max(badge_margin, float(popup.height) - float(self._layout_debug_badge.height) - float(dp(38))),
+        )
+
+        if self.dragging:
+            self._layout_debug_badge.show_metrics(
+                self._layout_debug_item_id,
+                pos_x=float(popup.x),
+                pos_y=float(popup.y),
+                width=float(popup.width),
+                height=float(popup.height),
+            )
+        else:
+            self._layout_debug_badge.hide()
+
+    def _layout_debug_touch_in_handle(self, touch_pos: tuple[float, float]) -> bool:
+        return touch_pos[1] >= float(self._popup_widget().top) - float(dp(36))
+
 
 # DraggableModalPopup: The popup itself is draggable.
 # Make sure to disable pos_hint so we can manually set pos
 class DraggableModalPopup(ModalPopup, PopupDraggableMixin):
     def __init__(self, **kwargs: Any):
-        # Ensure no automatic positioning
+        item_id = str(kwargs.pop("layout_debug_id", "popup.modal"))
         kwargs.setdefault("pos_hint", {})
         super().__init__(**kwargs)
+        self._init_layout_debug_drag(item_id)
+
+    def on_open(self, *args: Any, **kwargs: Any):
+        super().on_open(*args, **kwargs)
+        self._layout_debug_apply_initial_position()
+        self._layout_debug_update_badge()
+
+    def on_touch_down(self, touch: Any) -> bool:
+        if self._layout_debug_drag_enabled() and self.collide_point(*touch.pos) and self._layout_debug_touch_in_handle(touch.pos):
+            touch.grab(self)
+            self.dragging = True
+            self._touch_offset = (float(touch.x - self.x), float(touch.y - self.y))
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_down(touch)
+
+    def on_touch_move(self, touch: Any) -> bool:
+        if touch.grab_current is self:
+            self.pos = self._layout_debug_clamp_position(
+                float(touch.x) - float(self._touch_offset[0]),
+                float(touch.y) - float(self._touch_offset[1]),
+            )
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_move(touch)
+
+    def on_touch_up(self, touch: Any) -> bool:
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self.dragging = False
+            self._layout_debug_store_position()
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_up(touch)
 
 
 # NonModalDraggablePopup: A non-modal draggable popup.
 class NonModalDraggablePopup(NonModalPopup, PopupDraggableMixin):
     def __init__(self, **kwargs: Any):
-        # Ensure no automatic positioning
+        item_id = str(kwargs.pop("layout_debug_id", "popup.non_modal"))
         kwargs.setdefault("pos_hint", {})
         super().__init__(**kwargs)
+        self._init_layout_debug_drag(item_id)
+
+    def on_open(self, *args: Any, **kwargs: Any):
+        super().on_open(*args, **kwargs)
+        self._layout_debug_apply_initial_position()
+        self._layout_debug_update_badge()
+
+    def on_touch_down(self, touch: Any) -> bool:
+        if self._layout_debug_drag_enabled() and self.collide_point(*touch.pos) and self._layout_debug_touch_in_handle(touch.pos):
+            touch.grab(self)
+            self.dragging = True
+            self._touch_offset = (float(touch.x - self.x), float(touch.y - self.y))
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_down(touch)
+
+    def on_touch_move(self, touch: Any) -> bool:
+        if touch.grab_current is self:
+            self.pos = self._layout_debug_clamp_position(
+                float(touch.x) - float(self._touch_offset[0]),
+                float(touch.y) - float(self._touch_offset[1]),
+            )
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_move(touch)
+
+    def on_touch_up(self, touch: Any) -> bool:
+        if touch.grab_current is self:
+            touch.ungrab(self)
+            self.dragging = False
+            self._layout_debug_store_position()
+            self._layout_debug_update_badge()
+            return True
+        return super().on_touch_up(touch)

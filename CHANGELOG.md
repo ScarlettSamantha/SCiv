@@ -13,7 +13,8 @@
 ### UI
 
 - 🐛 Fixed the minimap startup crash by restoring viewport centroid calculation during initial camera-follow bounds setup.
-
+- 💄 Added initial draggable HUD layout-debug settings and persisted positioning for core gameplay widgets.
+- 💄 Extended layout debug dragging to debug overlays and modal popups, with an on-drag stats panel for position and size tuning.
 
 ### Engine
 
@@ -28,6 +29,7 @@
 - 📝 Documented category defaults, version sync, and unreleased/status helper workflow.
 - 📝 Documented modularity and practical file-splitting preferences in Python conventions.
 - 📝 Documented the project-index helper for users and agents and updated docs-refresh/docs-check guidance to the unified CLI.
+- 📝 Documented the shared Kivy stub workflow, local ../Stubs vs repo ./stubs usage, and required typing validation for agent routing.
 
 ### Tooling
 

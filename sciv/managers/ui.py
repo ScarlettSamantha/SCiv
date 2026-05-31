@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -17,7 +17,7 @@ from managers.game import Borders
 from managers.i18n import T_TranslationOrStr, Translation, t_
 from managers.player import PlayerManager
 from managers.world import World
-from menus.kivy.elements.popup import ModalPopup as PopupOverride
+from menus.kivy.elements.popup import DraggableModalPopup as PopupOverride
 from menus.screens.save_load import SaveLoadScreen
 from mixins.inspectable import Inspectable
 from mixins.singleton import Singleton
@@ -37,8 +37,6 @@ class ui(Singleton, DirectObject):
     current_menu = None
 
     def __init__(self, base: "OpenCiv"):
-        from managers.game import Game
-
         self.menus = []
         self._base: "OpenCiv" = base
         self.current_menu = None
@@ -165,9 +163,7 @@ class ui(Singleton, DirectObject):
         return True
 
     def get_main_game_ui(self) -> "GameUIScreen":
-        from menus.screens.game_ui import GameUIScreen
-
-        return cast(GameUIScreen, self.get_screen("game_ui"))
+        return cast(Any, self.get_screen("game_ui"))
 
     def insert_refresh_frame(self):
         self._base.task_mgr.step()  # type: ignore
@@ -210,8 +206,6 @@ class ui(Singleton, DirectObject):
         MessengerGlobal.messenger.send("game.state.main_menu")
 
     def on_start_research_session(self, player: Player, tech: Tech):
-        from menus.screens.game_ui import GameUIScreen
-
         if player != PlayerManager.session_player():
             return
 
@@ -314,15 +308,16 @@ class ui(Singleton, DirectObject):
             popup = PopupOverride(
                 title=title,
                 message=message,
-                on_confirm=on_confirm,  # type: ignore
+                confirm_callback=on_confirm,
                 cancel_callback=on_cancel,
+                layout_debug_id=f"popup.{id}",
                 width=400,
                 height=200,  # type: ignore
             )
             self.popups[id] = popup
             popup.open()  # type: ignore
         else:
-            popup = PopupOverride(title=title, message=message, width=400, height=200)
+            popup = PopupOverride(title=title, message=message, layout_debug_id=f"popup.{id}", width=400, height=200)
             self.popups[id] = popup
             popup.open()  # type: ignore
 
