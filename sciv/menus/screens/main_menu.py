@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.MessengerGlobal import messenger
@@ -10,7 +10,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.screenmanager import Screen
 from kivy.uix.widget import Widget
 from managers.i18n import Translation
 from menus.kivy.elements.clickable_label import ClickableLabel
@@ -22,7 +22,6 @@ class MainMenuScreen(Screen):
         super().__init__(**kwargs)
         self.layout: Optional[FloatLayout] = None
         self.container: Optional[BoxLayout] = None
-        self.manager: ScreenManager
         self.quick_start_button: Optional[Button] = None
         self.continue_button: Optional[Button] = None
         self.new_button: Optional[Button] = None
@@ -36,7 +35,11 @@ class MainMenuScreen(Screen):
         self.add_widget(self.build_screen())
 
     def switch_to_game_config_screen(self, _: Any) -> None:
-        self.manager.current = "game_config_screen"
+        manager = self.manager
+        if manager is None:
+            return
+
+        manager.current = "game_config_screen"
 
     def build_screen(self) -> FloatLayout:
         from helpers.debug import Debug
@@ -203,7 +206,7 @@ class MainMenuScreen(Screen):
     def quick_start(self, _: Optional[Button] = None) -> None:
         from system.generators.dynamic import Dynamic
 
-        start_config = {
+        start_config: dict[str, object] = {
             "options": {},
             "rules": {},
             "players": [],
@@ -227,12 +230,20 @@ class MainMenuScreen(Screen):
     def to_config_screen(self, _: Any) -> None:
         from menus.screens.options_menu import OptionsScreen
 
-        options_screen: OptionsScreen = self.manager.get_screen("options_screen")  # type: ignore
+        manager = self.manager
+        if manager is None:
+            return
+
+        options_screen = cast(OptionsScreen, manager.get_screen("options_screen"))
         options_screen.configure_return_target("main_menu")
-        self.manager.current = "options_screen"
+        manager.current = "options_screen"
 
     def to_game_screen(self, _: Optional[Button] = None) -> None:
-        self.manager.current = "game_ui"
+        manager = self.manager
+        if manager is None:
+            return
+
+        manager.current = "game_ui"
         messenger.send("system.input.raycaster_on")
 
     def switch_to_load_screen(self, _: Any) -> None:

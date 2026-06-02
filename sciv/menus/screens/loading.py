@@ -28,7 +28,10 @@ class Loading(
         self.loading_screen.next_step(message)  # type: ignore
 
     def on_done(self):
-        self.manager.current = "game_ui"
+        manager = self.manager
+        if manager is not None:
+            manager.current = "game_ui"
+
         self.hide()
 
     def build_screen(self):

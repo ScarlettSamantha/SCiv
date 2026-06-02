@@ -1,5 +1,5 @@
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Type, TypeIs, cast
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Sequence, Tuple, Type, TypeIs, cast
 
 from gameplay.improvement import Improvement
 from kivy.graphics import Color, Line, Rectangle
@@ -91,7 +91,7 @@ class PanelButton(Button):
         self._line_hl.width = float(self.highlight_width)  # type: ignore
 
     def _apply_state_colors(self, *_: Any) -> None:
-        base_bg: List[float] = self.bg_color_down if self.state == "down" else self.bg_color  # type: ignore
+        base_bg = list(self.bg_color_down if self.state == "down" else self.bg_color)  # type: ignore
         alpha: float = base_bg[3]
         if self.disabled:
             bg = [base_bg[0], base_bg[1], base_bg[2], alpha * self.disabled_alpha]
@@ -103,12 +103,12 @@ class PanelButton(Button):
             ]
         else:
             bg = base_bg[:]
-            txt = self.text_color[:]
+            txt = list(self.text_color)
         self._set_color(self._c_bg, bg)
         self.color = txt  # type: ignore
 
     def _apply_highlight(self, *_: Any) -> None:
-        col = self.highlight_color[:]
+        col = list(self.highlight_color)
         if not self.highlight:
             col[3] = 0.0  # hide by zeroing alpha
         self._set_color(self._c_hl, col)
@@ -118,7 +118,7 @@ class PanelButton(Button):
         self.highlight = (not self.highlight) if on is None else bool(on)
 
     @staticmethod
-    def _set_color(instr: Color, rgba: List[float]) -> None:
+    def _set_color(instr: Color, rgba: Sequence[float]) -> None:
         instr.rgba = rgba  # type: ignore[attr-defined]
 
     def _recompute_rect(self, *_: Any) -> None:
@@ -128,7 +128,7 @@ class PanelButton(Button):
         self._rect_bg.pos = (x + pad, y + pad)  # type: ignore
         self._rect_bg.size = (w - 2 * pad, h - 2 * pad)  # type: ignore
 
-    def set_border_color(self, color: List[float]) -> None:
+    def set_border_color(self, color: Sequence[float]) -> None:
         self.highlight_color = color
         self._apply_highlight()
 

@@ -63,7 +63,9 @@ class MessageWidget(ButtonBehavior, BoxLayout, TooltipBehavior, DirectObject.Dir
     def on_close_request(self, *args: Any):
         if self.message.is_closable:
             self.message.hide()
-            self.parent.remove_widget(self)
+            parent = self.parent
+            if parent is not None:
+                parent.remove_widget(self)
 
     def on_touch_down(self, touch: MotionEvent) -> Any:
         if not self._inside(touch):

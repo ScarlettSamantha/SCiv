@@ -238,8 +238,8 @@ class GridPopup(BasePopup):
         if widget in self.grid.children:
             self.grid.remove_widget(widget)
 
-    def clear_widgets(self):
-        self.grid.clear_widgets()
+    def clear_widgets(self, children: List[Widget] | None = None) -> None:
+        self.grid.clear_widgets(children=children)
 
     def _collect_values(self) -> List[Any]:
         collected: List[Any] = []

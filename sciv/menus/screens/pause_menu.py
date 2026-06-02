@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
@@ -110,7 +110,7 @@ class PauseMenu(Popup, CollisionPreventionMixin, DirectObject):
     def open_options(self, instance: Widget):
         from menus.screens.options_menu import OptionsScreen
 
-        options_screen: OptionsScreen = self._base.ui_manager.get_screen("options_screen")  # type: ignore
+        options_screen = cast(OptionsScreen, self._base.ui_manager.get_screen("options_screen"))
         options_screen.configure_return_target("game_ui", reopen_pause_menu=True)
 
         self.dismiss()

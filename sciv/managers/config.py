@@ -281,7 +281,7 @@ class ConfigManager(Singleton):
         return configured.strip()
 
     def set_world_generation_export_dir(self, output_dir: str, auto_save: bool = True) -> None:
-        sanitized = output_dir.strip() if isinstance(output_dir, str) and output_dir.strip() else self.world_generation_export_default_dir
+        sanitized = output_dir.strip() if output_dir.strip() else self.world_generation_export_default_dir
         self.set_by_key(sanitized, "debug", "world_generation_export", "output_dir")
         if auto_save:
             self.save_config()

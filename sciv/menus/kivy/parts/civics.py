@@ -333,10 +333,12 @@ class Civics(FloatLayout, DirectObject):
         self.popup_disabled = False
 
     def draw_dependency_lines(self) -> None:
-        def get_relative_pos(widget: Widget, ancestor: Widget) -> Tuple[int, int] | Tuple[int | float, int | float]:
+        def get_relative_pos(widget: Widget, ancestor: Widget) -> Tuple[int | float, int | float]:
             pos = widget.center
-            current = widget
+            current: Widget | None = widget
             while current is not ancestor:
+                if current is None:
+                    break
                 pos = current.to_parent(*pos, relative=True)  # type: ignore
                 current = current.parent
             return pos  # type: ignore

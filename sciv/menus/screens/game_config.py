@@ -1059,4 +1059,8 @@ class GameConfigMenu(Screen):
         Clock.schedule_once(send_start_signal, 0.01)  # type: ignore
 
     def back_to_main_menu(self) -> None:
-        self.manager.current = "main_menu"
+        manager = self.manager
+        if manager is None:
+            return
+
+        manager.current = "main_menu"

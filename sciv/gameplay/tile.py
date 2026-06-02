@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.unit import Unit
     from managers.player import Player
-    from system.generators.basic import HexFeature
 
 
 class CantBuildReason(Enum):
@@ -51,6 +50,10 @@ class CantBuildReason(Enum):
     IMPROVEMENT_ALREADY_EXISTS = 9
     IMPROVEMENT_TILE_NOT_PASSABLE = 10
     NOT_ENOUGH_MOVEMENT_POINTS = 11
+
+
+def _empty_feature_set() -> Set[HexFeature | None]:
+    return set()
 
 
 @dataclass(init=False, eq=False, unsafe_hash=False)
@@ -83,7 +86,7 @@ class Tile(BaseEntity):
 
     _improvements: ImprovementsSet = field(init=False, repr=False)
     _tile_terrain: BaseTerrain = field(init=False, repr=False)
-    _features: Set["HexFeature | None"] = cast("Set[HexFeature | None]", field(default_factory=set, repr=False))
+    _features: Set[HexFeature | None] = field(default_factory=_empty_feature_set, repr=False)
     _geoforms: GeoformType | None = field(default=None, repr=False)
     _edges: Dict[str, Union[weakref.ReferenceType["Edge"], "Edge", None]] = field(
         default_factory=lambda: {
@@ -193,7 +196,7 @@ class Tile(BaseEntity):
         self.coast_directions: Set[int] = set()
         self.biome: int = 0
         self._improvements: ImprovementsSet = ImprovementsSet()
-        self._features: Set["HexFeature | None"] = set()
+        self._features = set()
         self._geoforms: GeoformType | None = None
 
         self.meshCollider: bool = True
@@ -365,11 +368,11 @@ class Tile(BaseEntity):
         return 1 * self.tile_terrain.movement_modifier
 
     @property
-    def features(self) -> Set[Any]:
+    def features(self) -> Set[HexFeature | None]:
         return self._features
 
     @features.setter
-    def features(self, value: Set["HexFeature | None"]) -> None:
+    def features(self, value: Set[HexFeature | None]) -> None:
         if len(value) > 0:
             self._features = set()
             for feature in value:
@@ -483,7 +486,7 @@ class Tile(BaseEntity):
         state["resources"] = self.resources.__getstate__()
         state["units"] = [unit.get_tag() for unit in self.units.all()]
         state["tile_yield"] = self.tile_yield.dump()
-        state["features"] = [feature.name for feature in self.features]
+        state["features"] = [feature.name for feature in self.features if feature is not None]
         state["biome"] = self._biome.id
         state["pos_x"] = round(self.pos_x, 4)
         state["pos_y"] = round(self.pos_y, 4)
@@ -559,7 +562,7 @@ class Tile(BaseEntity):
             "city_owner": str(self.get_city_owner().get_tag()) if self.city_owner else None,  # type: ignore
             "owner": str(self.get_owner().name) if self.owner else "nature",
             "resources": self.resources.on_inspect(),
-            "features": [feature.name for feature in self.features],
+            "features": [feature.name for feature in self.features if feature is not None],
             "geoforms": str(self.geoforms) if self.geoforms else None,
             "biome": self.biome,
             "units": [unit.tag for unit in self.units.all()],

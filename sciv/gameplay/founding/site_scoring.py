@@ -1,5 +1,5 @@
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, cast
 
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
@@ -56,11 +56,12 @@ def get_active_map_script() -> str | None:
     except AssertionError:
         return None
 
-    raw_options = getattr(settings, "generator_options", {})
+    raw_options: object = getattr(settings, "generator_options", {})
     if not isinstance(raw_options, dict):
         return None
 
-    raw_map_script = raw_options.get("map_script")
+    generator_options = cast(dict[str, object], raw_options)
+    raw_map_script = generator_options.get("map_script")
     return raw_map_script if isinstance(raw_map_script, str) else None
 
 
@@ -249,13 +250,22 @@ def _has_feature(tile: "Tile", feature: HexFeature) -> bool:
     return any(current is feature for current in tile.features if current is not None)
 
 
+def _geoform_id(value: object) -> int | None:
+    if isinstance(value, int):
+        return value
+
+    raw_id = getattr(value, "id", None)
+    return raw_id if isinstance(raw_id, int) else None
+
+
 def _matches_geoform(tile: "Tile", *geoforms: GeoformType) -> bool:
     tile_geoform = tile.geoforms
     for geoform in geoforms:
         if tile_geoform == geoform:
             return True
-        if getattr(tile_geoform, "id", None) == geoform.id:
-            return True
-        if tile_geoform == geoform.id:
+        geoform_id = _geoform_id(geoform)
+        if geoform_id is None:
+            continue
+        if _geoform_id(tile_geoform) == geoform_id:
             return True
     return False

@@ -201,7 +201,8 @@ class BaseResource(ABC):
         }
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        self.__dict__.update(state)
+        for key, value in state.items():
+            setattr(self, key, value)
 
     # Overloaded operators
     def __add__(self, other: Union["BaseResource", float, int]) -> Union[float, int]:
@@ -546,7 +547,8 @@ class Resources:
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        self.__dict__.update(state)
+        for key, value in state.items():
+            setattr(self, key, value)
 
     def __len__(self) -> int:
         return len(self.flatten())

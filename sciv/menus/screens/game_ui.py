@@ -189,7 +189,11 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
 
     def on_game_end(self, *args: Any):
         self.ignore("escape")
-        self.manager.current = "main_menu"
+        manager = self.manager
+        if manager is None:
+            return
+
+        manager.current = "main_menu"
 
     def reset(self):
         self.logger.info("Resetting game UI screen.")

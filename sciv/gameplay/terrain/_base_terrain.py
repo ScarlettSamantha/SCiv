@@ -39,7 +39,7 @@ class BaseTerrain(ABC):
     uv_map: Tuple[int, int] = (0, 0)
 
     def __init__(self):
-        from gameplay.bits import Bit, Bits
+        from gameplay.bits import Bits
 
         self.fallback_color: Tuple[float, float, float] = (
             self._fallback_color if self._fallback_color else (0, 119, 255)

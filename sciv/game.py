@@ -189,7 +189,7 @@ class OpenCiv(ShowBase):
             loading_screen.next_stage("Ready")
 
     def window(self) -> "GraphicsWindow":
-        from panda3d.core import GraphicsWindow
+        from panda3d.core import GraphicsWindow # type: ignore
 
         return cast(GraphicsWindow, self.win)
 

@@ -66,10 +66,14 @@ class AI(ABC):
         return data
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        self.__dict__.update(state)
-        player_ref: "Player | None" = self._player()
-        if player_ref is not None:
-            self.logger = player_ref.logger.getChild("ai")
+        for key, value in state.items():
+            setattr(self, key, value)
+
+        player_ref_getter = getattr(self, "_player", None)
+        if isinstance(player_ref_getter, weakref.ReferenceType):
+            player_ref = cast("Player | None", player_ref_getter())
+            if player_ref is not None:
+                self.logger = player_ref.logger.getChild("ai")
 
     def dump(self) -> Dict[str, Any]:
         return {

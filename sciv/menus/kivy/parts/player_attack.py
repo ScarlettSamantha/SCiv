@@ -1,5 +1,5 @@
 from math import sin
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple, cast
 
 from direct.showbase.DirectObject import DirectObject
 from helpers.cache import Cache
@@ -61,7 +61,7 @@ class _PredictedLossHealthBar(Widget):
             self._c_fill = Color(*self.fill_color)  # type: ignore
             self._rect_fill = Rectangle(pos=self.pos, size=(0, 0))  # type: ignore
 
-            lc: List[float] = self.loss_color[:3] + [self._glow_alpha]
+            lc = self._loss_rgba()
             self._c_loss = Color(*lc)  # type: ignore
             self._rect_loss = Rectangle(pos=self.pos, size=(0, 0))  # type: ignore
 
@@ -78,16 +78,20 @@ class _PredictedLossHealthBar(Widget):
             bg_color=lambda *_: self._set_color(self._c_bg, self.bg_color),
             fill_color=lambda *_: self._set_color(self._c_fill, self.fill_color),
             border_color=lambda *_: self._set_color(self._c_border, self.border_color),
-            loss_color=lambda *_: self._set_color(self._c_loss, self.loss_color[:3] + [self._glow_alpha]),
+            loss_color=lambda *_: self._set_color(self._c_loss, self._loss_rgba()),
         )
 
     def set_glow_alpha(self, a: float) -> None:
         a = max(0.0, min(1.0, a))
         self._glow_alpha = a
-        self._set_color(self._c_loss, self.loss_color[:3] + [a])
+        self._set_color(self._c_loss, self._loss_rgba(a))
+
+    def _loss_rgba(self, alpha: float | None = None) -> list[float]:
+        resolved_alpha = self._glow_alpha if alpha is None else alpha
+        return [*list(self.loss_color[:3]), resolved_alpha]
 
     @staticmethod
-    def _set_color(color_instr: Color, rgba: list[float]) -> None:
+    def _set_color(color_instr: Color, rgba: Sequence[float]) -> None:
         color_instr.rgba = rgba  # type: ignore[attr-defined]
 
     def _inner_rect(self) -> Tuple[float, float, float, float]:
