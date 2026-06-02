@@ -176,6 +176,8 @@ There are two supported ways those stubs show up during development:
 - If VS Code/Pylance is using the shared sibling checkout, keep `../Stubs/kivy/**/*.pyi` aligned with the current UI code.
 - If you need repo-local or CI-style Pyright runs, make sure `./stubs` is populated or linked before trusting the results.
 - When a Kivy typing error comes from a missing or underspecified external symbol, prefer updating the relevant stub when that better reflects runtime behavior.
+- Keep the shared Kivy stubs aligned with actual runtime contracts: `Screen.manager` is nullable until a screen is attached to a manager, and layout-driven `size_hint_min_*` / `size_hint_max_*` values can legitimately be floats rather than only integers.
+- If editor diagnostics go green after updating `../Stubs` but CLI Pyright still disagrees, treat that as a stub-root sync problem first and populate or sync `./stubs` before chasing it as a SCiv code regression.
 - When the code contract is genuinely too loose, fix the SCiv code instead of hiding the issue in a stub.
 
 ### Required validation after stub or typing work

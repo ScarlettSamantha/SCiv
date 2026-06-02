@@ -133,7 +133,7 @@ Root-level Python entrypoints and thin wrappers.
 Core package bootstrap, application host, configuration, and top-level resources.
 
 - Modules indexed: `6`
-- Indexed lines: `504`
+- Indexed lines: `494`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -149,7 +149,7 @@ Core package bootstrap, application host, configuration, and top-level resources
 Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 
 - Modules indexed: `25`
-- Indexed lines: `5321`
+- Indexed lines: `5319`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -171,12 +171,12 @@ Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 Domain model for players, tiles, cities, units, rules, effects, and other mechanics.
 
 - Modules indexed: `650`
-- Indexed lines: `26713`
+- Indexed lines: `26732`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
 | [sciv/gameplay/player.py](../sciv/gameplay/player.py) | classes: `Player` | Primary player domain object with empire-level state and behavior. |
-| [sciv/gameplay/tile.py](../sciv/gameplay/tile.py) | classes: `CantBuildReason`, `Tile` | Tile domain object used for world grid state and tile-local mechanics. |
+| [sciv/gameplay/tile.py](../sciv/gameplay/tile.py) | classes: `CantBuildReason`, `Tile`; functions: `_empty_feature_set` | Tile domain object used for world grid state and tile-local mechanics. |
 | [sciv/gameplay/unit.py](../sciv/gameplay/unit.py) | classes: `CantMoveReason`, `Unit` | Unit domain object for movement, combat, and unit-level turn behavior. |
 | [sciv/gameplay/city.py](../sciv/gameplay/city.py) | classes: `City` | City domain object for production, growth, borders, and city-local state. |
 | [sciv/gameplay/rules.py](../sciv/gameplay/rules.py) | classes: `GameRules`, `SCIVRules`; functions: `get_game_rules`, `set_game_rules` | Rule interface and active SCiv rule implementation. |
@@ -193,7 +193,7 @@ Domain model for players, tiles, cities, units, rules, effects, and other mechan
 Engine-facing systems such as rendering, save/load helpers, generators, and effects.
 
 - Modules indexed: `51`
-- Indexed lines: `12618`
+- Indexed lines: `12809`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -215,7 +215,7 @@ Engine-facing systems such as rendering, save/load helpers, generators, and effe
 Kivy application and screen/widget layers.
 
 - Modules indexed: `55`
-- Indexed lines: `15648`
+- Indexed lines: `15759`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |

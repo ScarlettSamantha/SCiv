@@ -98,6 +98,11 @@ Instead, it stores tag-based references like `owner_tag` and `tile_tag`. On load
 
 This keeps saved payloads independent of in-memory object identity.
 
+When updating `BaseEntity.__setstate__()` or similar persistence helpers:
+
+- resolve owner/tile weak references before replaying the rest of the raw state payload
+- prefer assigning restored keys with `setattr(...)` rather than `self.__dict__.update(...)` in strict-typed code so the reference-rebuild phase stays explicit and Pyright can type-check the method cleanly
+
 ## Entity state versus non-entity state
 
 | Kind of state | Where it lives | Notes |

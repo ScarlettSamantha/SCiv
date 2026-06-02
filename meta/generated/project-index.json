@@ -980,7 +980,7 @@
       "path": "sciv",
       "description": "Core package bootstrap, application host, configuration, and top-level resources.",
       "module_count": 6,
-      "line_count": 504,
+      "line_count": 494,
       "key_modules": [
         {
           "path": "sciv/__main__.py",
@@ -1111,10 +1111,9 @@
             "get_package_version"
           ],
           "imports": [
-            "importlib.metadata",
-            "pkg_resources"
+            "importlib.metadata"
           ],
-          "line_count": 42,
+          "line_count": 32,
           "parse_error": null
         }
       ],
@@ -1248,10 +1247,9 @@
             "get_package_version"
           ],
           "imports": [
-            "importlib.metadata",
-            "pkg_resources"
+            "importlib.metadata"
           ],
-          "line_count": 42,
+          "line_count": 32,
           "parse_error": null
         }
       ]
@@ -1260,7 +1258,7 @@
       "path": "sciv/managers",
       "description": "Singleton-backed orchestration for game flow, UI, entities, players, and turns.",
       "module_count": 25,
-      "line_count": 5321,
+      "line_count": 5319,
       "key_modules": [
         {
           "path": "sciv/managers/game.py",
@@ -1512,7 +1510,7 @@
             "time",
             "typing"
           ],
-          "line_count": 582,
+          "line_count": 580,
           "parse_error": null
         },
         {
@@ -2022,7 +2020,7 @@
             "time",
             "typing"
           ],
-          "line_count": 582,
+          "line_count": 580,
           "parse_error": null
         },
         {
@@ -2294,7 +2292,7 @@
       "path": "sciv/gameplay",
       "description": "Domain model for players, tiles, cities, units, rules, effects, and other mechanics.",
       "module_count": 650,
-      "line_count": 26713,
+      "line_count": 26732,
       "key_modules": [
         {
           "path": "sciv/gameplay/player.py",
@@ -2360,7 +2358,9 @@
             "CantBuildReason",
             "Tile"
           ],
-          "functions": [],
+          "functions": [
+            "_empty_feature_set"
+          ],
           "imports": [
             "dataclasses",
             "direct.showbase",
@@ -2389,14 +2389,13 @@
             "panda3d.core",
             "system.effects",
             "system.entity",
-            "system.generators.basic",
             "system.renderers.tile_renderer",
             "system.subsystems.hexgen.edge",
             "system.subsystems.hexgen.enums",
             "typing",
             "weakref"
           ],
-          "line_count": 903,
+          "line_count": 906,
           "parse_error": null
         },
         {
@@ -3323,7 +3322,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 450,
+          "line_count": 454,
           "parse_error": null
         },
         {
@@ -6969,6 +6968,7 @@
             "TileScoringProfile"
           ],
           "functions": [
+            "_geoform_id",
             "_get_map_dimensions",
             "_has_coastal_access",
             "_has_feature",
@@ -6988,7 +6988,7 @@
             "system.subsystems.hexgen.enums",
             "typing"
           ],
-          "line_count": 261,
+          "line_count": 271,
           "parse_error": null
         },
         {
@@ -9904,7 +9904,7 @@
             "system.renderers.bits_renderer",
             "typing"
           ],
-          "line_count": 596,
+          "line_count": 598,
           "parse_error": null
         },
         {
@@ -13356,7 +13356,9 @@
             "CantBuildReason",
             "Tile"
           ],
-          "functions": [],
+          "functions": [
+            "_empty_feature_set"
+          ],
           "imports": [
             "dataclasses",
             "direct.showbase",
@@ -13385,14 +13387,13 @@
             "panda3d.core",
             "system.effects",
             "system.entity",
-            "system.generators.basic",
             "system.renderers.tile_renderer",
             "system.subsystems.hexgen.edge",
             "system.subsystems.hexgen.enums",
             "typing",
             "weakref"
           ],
-          "line_count": 903,
+          "line_count": 906,
           "parse_error": null
         },
         {
@@ -14862,7 +14863,7 @@
       "path": "sciv/system",
       "description": "Engine-facing systems such as rendering, save/load helpers, generators, and effects.",
       "module_count": 51,
-      "line_count": 12618,
+      "line_count": 12809,
       "key_modules": [
         {
           "path": "sciv/system/entity.py",
@@ -14894,7 +14895,7 @@
             "uuid",
             "weakref"
           ],
-          "line_count": 391,
+          "line_count": 392,
           "parse_error": null
         },
         {
@@ -15087,7 +15088,7 @@
             "panda3d_kivy.core.window",
             "typing"
           ],
-          "line_count": 401,
+          "line_count": 512,
           "parse_error": null
         },
         {
@@ -15275,7 +15276,7 @@
             "panda3d_kivy.core.window",
             "typing"
           ],
-          "line_count": 401,
+          "line_count": 512,
           "parse_error": null
         },
         {
@@ -15346,7 +15347,7 @@
             "uuid",
             "weakref"
           ],
-          "line_count": 391,
+          "line_count": 392,
           "parse_error": null
         },
         {
@@ -15474,6 +15475,8 @@
             "_build_named_regions",
             "_build_river_hex_index",
             "_build_summary",
+            "_coerce_coord_pair",
+            "_coerce_int",
             "_coord_key",
             "_is_visible",
             "_serialize_geoform",
@@ -15509,7 +15512,7 @@
             "typing",
             "uuid"
           ],
-          "line_count": 488,
+          "line_count": 538,
           "parse_error": null
         },
         {
@@ -15765,6 +15768,7 @@
             "_grow_tributaries",
             "_path_is_viable",
             "_resolve_mouth_coord",
+            "_river_coords_set",
             "_river_hex_network_index",
             "_river_network_id",
             "_sample_indices",
@@ -15788,7 +15792,7 @@
             "system.subsystems.hexgen.river",
             "typing"
           ],
-          "line_count": 798,
+          "line_count": 802,
           "parse_error": null
         },
         {
@@ -15833,9 +15837,12 @@
           "area": "sciv/system",
           "summary": "System module for terrain conversion.",
           "classes": [
+            "RawHexGrid",
+            "RawHexRow",
             "WorldParams"
           ],
           "functions": [
+            "_coerce_float",
             "adjust_water_levels",
             "biome_id_for_hex",
             "classify_hex_terrain",
@@ -15849,7 +15856,7 @@
             "system.subsystems.hexgen.enums",
             "typing"
           ],
-          "line_count": 285,
+          "line_count": 299,
           "parse_error": null
         },
         {
@@ -16136,7 +16143,7 @@
             "system.subsystems.hexgen.constants",
             "typing"
           ],
-          "line_count": 278,
+          "line_count": 289,
           "parse_error": null
         },
         {
@@ -16435,7 +16442,7 @@
       "path": "sciv/menus",
       "description": "Kivy application and screen/widget layers.",
       "module_count": 55,
-      "line_count": 15648,
+      "line_count": 15759,
       "key_modules": [
         {
           "path": "sciv/menus/kivy/core.py",
@@ -16536,7 +16543,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 1180,
+          "line_count": 1184,
           "parse_error": null
         },
         {
@@ -16662,10 +16669,9 @@
           "functions": [],
           "imports": [
             "kivy.input.motionevent",
-            "kivy.uix.scrollview",
-            "typing"
+            "kivy.uix.scrollview"
           ],
-          "line_count": 17,
+          "line_count": 15,
           "parse_error": null
         },
         {
@@ -16892,10 +16898,9 @@
           "functions": [],
           "imports": [
             "kivy.input.motionevent",
-            "kivy.uix.scrollview",
-            "typing"
+            "kivy.uix.scrollview"
           ],
-          "line_count": 17,
+          "line_count": 15,
           "parse_error": null
         },
         {
@@ -17097,7 +17102,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 127,
+          "line_count": 129,
           "parse_error": null
         },
         {
@@ -17509,7 +17514,7 @@
             "system.asset_archive",
             "typing"
           ],
-          "line_count": 401,
+          "line_count": 403,
           "parse_error": null
         },
         {
@@ -17663,6 +17668,7 @@
           ],
           "functions": [],
           "imports": [
+            "collections.abc",
             "direct.showbase.DirectObject",
             "direct.showbase.MessengerGlobal",
             "gameplay.tile",
@@ -17684,7 +17690,7 @@
             "system.camera",
             "typing"
           ],
-          "line_count": 1637,
+          "line_count": 1720,
           "parse_error": null
         },
         {
@@ -17717,7 +17723,7 @@
             "math",
             "typing"
           ],
-          "line_count": 494,
+          "line_count": 498,
           "parse_error": null
         },
         {
@@ -18096,7 +18102,7 @@
             "system.generators.basic",
             "typing"
           ],
-          "line_count": 1062,
+          "line_count": 1066,
           "parse_error": null
         },
         {
@@ -18171,7 +18177,7 @@
             "system.messenger",
             "typing"
           ],
-          "line_count": 1180,
+          "line_count": 1184,
           "parse_error": null
         },
         {
@@ -18192,7 +18198,7 @@
             "menus.kivy.elements.loading_screen",
             "typing"
           ],
-          "line_count": 57,
+          "line_count": 60,
           "parse_error": null
         },
         {
@@ -18227,7 +18233,7 @@
             "typing",
             "webbrowser"
           ],
-          "line_count": 261,
+          "line_count": 272,
           "parse_error": null
         },
         {

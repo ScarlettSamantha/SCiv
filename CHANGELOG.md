@@ -67,6 +67,7 @@
 - 📝 Documented modularity and practical file-splitting preferences in Python conventions.
 - 📝 Documented the project-index helper for users and agents and updated docs-refresh/docs-check guidance to the unified CLI.
 - 📝 Documented the shared Kivy stub workflow, local ../Stubs vs repo ./stubs usage, and required typing validation for agent routing.
+- 📝 Documented typing workflow lessons for Kivy stubs, entity state restoration, and hexgen enum-backed worldgen helpers.
 
 ### Tooling
 

@@ -460,6 +460,8 @@ These describe the **current code path**, not necessarily the long-term design t
 - `Basic` no longer forces `MapGen(..., debug=True)`; debug output follows the normal debug controls again.
 - `Basic.build_map_params()` now delegates to a shared helper in [`sciv/system/generators/map_params.py`](../../sciv/system/generators/map_params.py), which keeps the offline exporter aligned with the live generator's raw-hex settings.
 - `Basic` terrain classification plus the baseline water/coast/tundra cleanup rules now delegate to the pure helper module [`sciv/system/generators/terrain_conversion.py`](../../sciv/system/generators/terrain_conversion.py), which the offline export path also imports directly so live and standalone conversion stay aligned.
+- The shared terrain-conversion helpers now intentionally accept indexed array-like raw grids such as the NumPy-backed `hex_grid.grid`, not just nested built-in sequences, so future typed helpers at that boundary should keep that broader contract.
+- `Biome` and `GeoformType` still derive fields like `id` and `title` from `SuperEnum.__keys__`; keep explicit attribute annotations on those enum subclasses in sync with the declared keys so typed generator and debug-export code can access those fields directly.
 - `Basic.map_params["size"]` is `max(width, height)`, so hexgen builds a square raw grid before `Basic` converts only the configured rectangular output area.
 - `World.generator`, `Game.choose_generator()`, and `GeneratorRepository` exist, but the default new-game path ultimately instantiates `self.properties.generator(...)` in `Game.generate_world()`.
 - Gameplay tiles still keep weak references to hexgen `Edge` objects after conversion.
