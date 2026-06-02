@@ -17,7 +17,7 @@ T = TypeVar("T", bound="SuperEnum")
 class SuperEnum(Enum):
     __keys__: ClassVar[List[str]] = []
 
-    def __init__(self, *args: Any):
+    def __init__(self, *args: Any) -> None:
         for key, value in enumerate(args):
             for namekey, name in enumerate(self.__keys__):
                 if key == namekey:
@@ -64,6 +64,13 @@ class SuperEnum(Enum):
 
 
 class Biome(SuperEnum):
+    id: int
+    code: str
+    title: str
+    color: tuple[int, int, int]
+    base_fertility: int
+    color_satellite: tuple[int, int, int] | None
+
     __keys__: ClassVar[List[str]] = ["id", "code", "title", "color", "base_fertility", "color_satellite"]
 
     lifeless = (13, "l", "Lifeless", (200, 200, 200), 0, (150, 150, 150))
@@ -89,9 +96,9 @@ class Biome(SuperEnum):
 
     @classmethod
     def from_id(cls, id_: int) -> "Biome | None":
-        for biome in cls.items():
-            if biome.id == id_:  # type: ignore
-                return biome  # type: ignore
+        for biome in cls:
+            if biome.id == id_:
+                return biome
         return None
 
 
@@ -188,6 +195,10 @@ class HexFeature(Enum):
 
 
 class GeoformType(SuperEnum):
+    id: int
+    title: str
+    color: tuple[int, int, int]
+
     __keys__: ClassVar[List[str]] = ["id", "title", "color"]
     ocean = (1, "Ocean", (0, 0, 255))
     sea = (2, "Sea", (50, 50, 200))

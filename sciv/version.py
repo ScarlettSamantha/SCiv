@@ -1,10 +1,5 @@
 from importlib.metadata import PackageNotFoundError, version
 
-try:
-    import pkg_resources
-except ImportError:
-    pkg_resources = None  # type: ignore
-
 __major__: int = 0
 __minor__: int = 2
 __patch__: int = 0
@@ -30,11 +25,6 @@ def get_package_version(package_name: str) -> str:
     try:
         return version(package_name)
     except PackageNotFoundError:
-        if pkg_resources:
-            try:
-                return pkg_resources.get_distribution(package_name).version
-            except pkg_resources.DistributionNotFound:
-                return "unknown"
         return "unknown"
 
 

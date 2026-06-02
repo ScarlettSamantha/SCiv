@@ -201,7 +201,8 @@ class BaseEntity(ABC, DirectObject, Inspectable):
         else:
             self._owner = None
 
-        self.__dict__.update(state)
+        for key, value in state.items():
+            setattr(self, key, value)
 
     def get_registered_status(self) -> bool:
         return self.is_registered

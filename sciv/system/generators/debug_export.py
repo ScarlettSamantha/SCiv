@@ -1,11 +1,10 @@
+import gzip
+import math
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping, cast
 from uuid import UUID
-
-import gzip
-import math
 
 import numpy as np
 import orjson as json
@@ -180,19 +179,22 @@ def build_raw_world_payload(
 
 def json_compatible(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return {str(key): json_compatible(val) for key, val in value.items()}
+        mapping_value = cast(Mapping[object, object], value)
+        return {str(key): json_compatible(val) for key, val in mapping_value.items()}
 
     if isinstance(value, np.ndarray):
         return value.tolist()
 
     if isinstance(value, np.generic):
-        return value.item()
+        return cast(Any, value.item())
 
     if isinstance(value, (list, tuple)):
-        return [json_compatible(item) for item in value]
+        sequence_value = cast(list[object] | tuple[object, ...], value)
+        return [json_compatible(item) for item in sequence_value]
 
     if isinstance(value, set):
-        return [json_compatible(item) for item in sorted(value, key=lambda current: repr(current))]
+        set_value = cast(set[object], value)
+        return [json_compatible(item) for item in sorted(set_value, key=repr)]
 
     if isinstance(value, UUID):
         return value.hex
@@ -213,6 +215,37 @@ def json_compatible(value: Any) -> Any:
         return None
 
     return value
+
+
+def _coerce_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _coerce_coord_pair(value: object) -> tuple[int, int] | None:
+    if not isinstance(value, (list, tuple)):
+        return None
+
+    sequence_value = cast(list[object] | tuple[object, ...], value)
+    if len(sequence_value) != 2:
+        return None
+
+    x = _coerce_int(sequence_value[0])
+    y = _coerce_int(sequence_value[1])
+    if x is None or y is None:
+        return None
+
+    return (x, y)
 
 
 def _build_named_regions(mapgen: "MapGen", seed: int | None) -> dict[str, list[dict[str, Any]]]:
@@ -368,16 +401,23 @@ def _serialize_geoform(geoform: "Geoform") -> dict[str, Any]:
 
 
 def _serialize_territory(territory: "Territory") -> dict[str, Any]:
-    biomes = []
-    for entry in territory.biomes:
+    biomes: list[dict[str, str | int]] = []
+    for entry in cast(list[Mapping[str, object]], territory.biomes):
         biome = entry.get("biome")
         if biome is None:
             continue
+
+        biome_name = getattr(biome, "name", None)
+        if not isinstance(biome_name, str):
+            continue
+
+        count = _coerce_int(entry.get("count", 0)) or 0
+
         biomes.append(
             {
-                "key": biome.name,
-                "title": str(biome.title),
-                "count": int(entry.get("count", 0)),
+                "key": biome_name,
+                "title": str(getattr(biome, "title", biome_name)),
+                "count": count,
             }
         )
 
@@ -437,7 +477,8 @@ def _serialize_rivers(river_sources: list["RiverSegment"]) -> list[dict[str, Any
         mouth = None
         if segments and segments[-1].get("edge") is not None:
             edge = segments[-1]["edge"]
-            mouth = edge.get("down") if isinstance(edge, dict) else None
+            edge_mapping = cast(Mapping[str, object], edge) if isinstance(edge, dict) else None
+            mouth = edge_mapping.get("down") if edge_mapping is not None else None
 
         exports.append(
             {
@@ -462,18 +503,27 @@ def _build_river_hex_index(river_exports: list[dict[str, Any]]) -> dict[tuple[in
         river_id = str(river.get("network_id") or river.get("id", ""))
         river_name = river.get("display_name")
         branch_kind = river.get("branch_kind")
-        for segment in river.get("segments", []):
-            coord = segment.get("coord")
-            if not isinstance(coord, list) or len(coord) != 2:
+        segments = river.get("segments")
+        if not isinstance(segments, list):
+            continue
+
+        segment_list = cast(list[object], segments)
+        for segment in segment_list:
+            if not isinstance(segment, Mapping):
                 continue
-            key = (int(coord[0]), int(coord[1]))
+
+            segment_data = cast(Mapping[str, object], segment)
+            key = _coerce_coord_pair(segment_data.get("coord"))
+            if key is None:
+                continue
+
             index.setdefault(key, []).append(
                 {
                     "river_id": river_id,
                     "river_name": river_name,
                     "branch_kind": branch_kind,
-                    "side": segment.get("side"),
-                    "is_source": bool(segment.get("is_source", False)),
+                    "side": segment_data.get("side"),
+                    "is_source": bool(segment_data.get("is_source", False)),
                 }
             )
 

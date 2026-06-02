@@ -226,6 +226,10 @@ def _river_hex_network_index(mapgen: "MapGen") -> dict[HexCoord, set[str]]:
     return index
 
 
+def _river_coords_set(mapgen: "MapGen") -> set[HexCoord]:
+    return {(int(segment.x), int(segment.y)) for segment in mapgen.rivers}
+
+
 def _count_new_path_edges(path: list["Hex"]) -> int:
     new_edges = 0
     for current_hex, next_hex in zip(path, path[1:]):
@@ -411,7 +415,7 @@ def _grow_river_connectors(mapgen: "MapGen", *, target: int) -> int:
 
     added = 0
     used_splits: set[HexCoord] = set()
-    river_coords = {(segment.x, segment.y) for segment in mapgen.rivers}
+    river_coords = _river_coords_set(mapgen)
     river_networks = _river_hex_network_index(mapgen)
     remaining_attempts = max(12, target * 8)
 
@@ -472,7 +476,7 @@ def _grow_river_connectors(mapgen: "MapGen", *, target: int) -> int:
 
                 direct_distance = mapgen.hex_distance(split_coord, target_coord)
 
-                blocked_coords = set(river_coords)
+                blocked_coords: set[HexCoord] = set(river_coords)
                 blocked_coords.discard(split_coord)
                 blocked_coords.discard(target_coord)
                 path = _candidate_branch_path(
@@ -516,7 +520,7 @@ def _grow_river_connectors(mapgen: "MapGen", *, target: int) -> int:
 
             added += 1
             used_splits.add(split_coord)
-            river_coords = {(segment.x, segment.y) for segment in mapgen.rivers}
+            river_coords = _river_coords_set(mapgen)
             river_networks = _river_hex_network_index(mapgen)
             break
 
@@ -536,7 +540,7 @@ def _grow_distributaries(mapgen: "MapGen", *, target: int) -> int:
 
     added = 0
     used_splits: set[HexCoord] = set()
-    river_coords = {(segment.x, segment.y) for segment in mapgen.rivers}
+    river_coords = _river_coords_set(mapgen)
     remaining_attempts = max(12, target * 8)
 
     for river_source in sorted(base_sources, key=lambda current: current.size, reverse=True):
@@ -575,7 +579,7 @@ def _grow_distributaries(mapgen: "MapGen", *, target: int) -> int:
                 if direct_distance < 3 or direct_distance > distributary_radius:
                     continue
 
-                blocked_coords = set(river_coords)
+                blocked_coords: set[HexCoord] = set(river_coords)
                 blocked_coords.discard(split_coord)
                 blocked_coords.discard(target_coord)
                 path = _candidate_branch_path(
@@ -617,7 +621,7 @@ def _grow_distributaries(mapgen: "MapGen", *, target: int) -> int:
 
             added += 1
             used_splits.add(split_coord)
-            river_coords = {(segment.x, segment.y) for segment in mapgen.rivers}
+            river_coords = _river_coords_set(mapgen)
             break
 
         if added >= target or remaining_attempts <= 0:
@@ -634,8 +638,8 @@ def _grow_tributaries(mapgen: "MapGen", *, target: int) -> int:
     flow_dir: dict["Hex", "Hex"] = mapgen._compute_flow_dir(filled_alt)  # pyright: ignore[reportPrivateUsage]
     acc: dict["Hex", float] = mapgen._flow_accumulation(flow_dir)  # pyright: ignore[reportPrivateUsage]
 
-    river_coords = {(segment.x, segment.y) for segment in mapgen.rivers}
-    source_coords = {(source.x, source.y) for source in mapgen.rivers_sources}
+    river_coords = _river_coords_set(mapgen)
+    source_coords: set[HexCoord] = {(int(source.x), int(source.y)) for source in mapgen.rivers_sources}
     candidate_scores: dict[HexCoord, float] = {}
 
     for river_source in sorted(mapgen.rivers_sources, key=lambda current: current.size, reverse=True):

@@ -292,9 +292,7 @@ class Input(Singleton, DirectObject):
         self.base.ui_manager.get_main_game_ui().toggle_log()
 
     def on_debug_actions_toggle(self):
-        from menus.screens.game_ui import GameUIScreen
-
-        screen: GameUIScreen = self.base.ui_manager.get_main_game_ui()
+        screen = self.base.ui_manager.get_main_game_ui()
         if screen.debug_actions is not None and screen.debug_actions.is_open:
             screen.close_debug_actions()
         else:

@@ -1,5 +1,5 @@
-from collections.abc import Callable, Sequence
-from typing import Any
+from collections.abc import Callable
+from typing import Any, Protocol, cast
 
 from helpers.tiles import Tiles
 from system.subsystems.hexgen.enums import GeoformType, HexFeature
@@ -8,7 +8,14 @@ from system.subsystems.hexgen.enums import GeoformType, HexFeature
 type NeighborOffset = tuple[int, int]
 type NeighborOffsetsProvider = Callable[[int], list[NeighborOffset]]
 type RenderPositionResolver = Callable[[int, int], tuple[float, float]]
-type RawHexGrid = Sequence[Sequence[Any]]
+
+
+class RawHexRow(Protocol):
+    def __getitem__(self, index: int, /) -> Any: ...
+
+
+class RawHexGrid(Protocol):
+    def __getitem__(self, index: int, /) -> RawHexRow: ...
 
 
 class WorldParams:
@@ -64,6 +71,13 @@ _DESERT_TERRAINS = frozenset({"FlatDesert", "HillsDesert"})
 _TUNDRA_TERRAINS = frozenset({"FlatTundra"})
 
 
+def _coerce_float(value: object, default: float = 0.0) -> float:
+    try:
+        return float(cast(Any, value))
+    except (TypeError, ValueError):
+        return default
+
+
 def biome_id_for_hex(hex_tile: Any, *, default_biome_id: int = WorldParams.grasslands) -> int:
     biome_id = getattr(hex_tile, "biome_id", getattr(getattr(hex_tile, "biome", None), "id", None))
     if isinstance(biome_id, int):
@@ -79,11 +93,11 @@ def classify_hex_terrain(hex_tile: Any) -> str:
     biome = getattr(hex_tile, "biome", None)
     biome_name = str(getattr(biome, "name", biome_id))
 
-    raw_temperature = getattr(hex_tile, "temperature", getattr(hex_tile, "base_temperature", (0.0,)))
-    if isinstance(raw_temperature, list | tuple) and raw_temperature:
-        hex_temp = float(raw_temperature[0])
+    raw_temperature: object = getattr(hex_tile, "temperature", getattr(hex_tile, "base_temperature", (0.0,)))
+    if isinstance(raw_temperature, (list, tuple)) and raw_temperature:
+        hex_temp = _coerce_float(cast(object, raw_temperature[0]))
     else:
-        hex_temp = float(raw_temperature)
+        hex_temp = _coerce_float(cast(object, raw_temperature))
 
     hex_temp_i = int(round(hex_temp))
     moisture_like = float(hex_tile.moisture)
