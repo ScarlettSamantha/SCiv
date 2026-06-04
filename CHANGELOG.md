@@ -37,6 +37,7 @@
 - 💄 Made the new-game setup screen keep its right-side options in a scrollable panel so generator-heavy setups no longer spill off the top.
 - 🐛 Fixed minimap terrain colors so legacy byte-scale terrain fallback colors no longer clip to white.
 - 💄 Fixed the minimap camera-footprint preview so degenerate rotation angles no longer glitch across the full screen.
+- 💄 Added seeded territory names to the worldgen viewer so territory mode now shows named regions in the legend, inspector, overlay summaries, and on-map labels.
 
 ### Engine
 
@@ -56,6 +57,8 @@
 - ✨ Added Dynamic Worlds channel carving, inland seas, tributary river growth, river valleys, and stronger biome-belt shaping.
 - 🎮 Smoothed Dynamic Worlds landmass shaping, reduced mountain-heavy maps, and shared the runtime conversion prep path between Basic and Dynamic.
 - 🎮 Rebalanced Dynamic Worlds peak compression so inland scripts generate fewer mountains without changing hill thresholds.
+- 🎮 Made Dynamic Worlds territory regions grow from landmass-aware basin seeds and prefer rivers, ridges, passes, and separate land components over random blob borders.
+- 🎮 Added seeded pseudo-random names to generated territories so debug exports and viewer tooling can refer to them as named regions instead of only ids.
 
 ### Content
 
@@ -75,6 +78,7 @@
 - 🔧 Extended the changelog helper with gitmoji, ticket refs, and release/tag commands.
 - 👷 Renamed the helper to changelog.py, added category presets and utility commands, and synced version metadata.
 - 🔧 Unified the project-index tooling under scripts/index.py with generate, browse, query, stats, and doctor commands.
+- 🔧 Split shared hexgen territory generation into a dedicated module so the natural-boundary heuristics are isolated from the rest of `mapgen.py`.
 - 🔧 Added a standalone-safe PyQt6 worldgen viewer with flat-top odd-q rendering, a dynamic legend, top menu/toolbar actions, and direct in-app generator previews.
 - 🔧 Extracted shared pure-Python terrain conversion helpers so live and offline worldgen reuse the same classification and cleanup rules without requiring Kivy.
 - 👷 Added overlay coverage percentages, runtime-scope breakdowns, and inspector jump/copy helpers to the PyQt6 worldgen viewer.

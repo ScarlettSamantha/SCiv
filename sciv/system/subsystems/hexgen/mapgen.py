@@ -25,6 +25,7 @@ from system.subsystems.hexgen.heightmap import Heightmap
 from system.subsystems.hexgen.hex import Hex, HexSide
 from system.subsystems.hexgen.river import RiverSegment
 from system.subsystems.hexgen.territory import Territory
+from system.subsystems.hexgen.territory_generation import generate_territories as generate_hex_territories
 from system.subsystems.hexgen.util import (
     Timer,
     first_hex_without_geoform,
@@ -479,110 +480,7 @@ class MapGen:
                 h.add_feature(HexFeature.volcano)
 
     def generate_territories(self):
-        num_territories = int(self.params.get("num_territories", 0))
-
-        if self.debug:
-            print("Making {} territories".format(num_territories))
-
-        if num_territories == 0:
-            return
-
-        c = 0
-        while len(self.territories) < num_territories:
-            rx = self.rng.randint(0, len(self.hex_grid.grid) - 1)
-            ry = self.rng.randint(0, len(self.hex_grid.grid) - 1)
-            hex_s = self.hex_grid.grid[rx][ry]
-            if hex_s.is_land:
-                color = (
-                    self.rng.randint(0, 255),
-                    self.rng.randint(0, 255),
-                    self.rng.randint(0, 255),
-                )
-                self.territories.append(Territory(self.hex_grid, hex_s, c, color))
-                c += 1
-
-        total_hexes = self.hex_grid.size * self.hex_grid.size
-        count = 0
-        while count < total_hexes:
-            count = 0
-            territories: List[Territory] = self.territories[:]
-            self.rng.shuffle(territories)
-            for t in territories:
-                frontier = t.frontier
-                for f in frontier:
-                    if f.is_owned is False:
-                        f.territory = t
-                        t.members.append(f)
-                        t.last_added.append(f)
-                count += t.size
-
-        for t in self.territories:
-            members: List["Hex"] = t.members
-            t.members = [h for h in t.members if h.is_land]
-            water_hexes = (h for h in members if h.is_water)
-            for h in water_hexes:
-                h.territory = None
-
-        if self.debug:
-            print("Merging barren territories")
-
-        if len(self.territories) > 0:
-            top: List["Territory"] = []
-            bottom: List["Territory"] = []
-            for t in self.territories:
-                avg_x = round(sum([i.x for i in t.members]) / len(t.members))
-                if t.avg_temp() < 0 and (avg_x / self.hex_grid.size) < 0.5:
-                    top.append(t)
-                elif t.avg_temp() < 0 and (avg_x / self.hex_grid.size) >= 0.5:
-                    bottom.append(t)
-
-            pick_top = None
-            pick_bottom = None
-            if len(top) > 0:
-                if self.debug:
-                    print("Merging {} territories from the top of the map".format(len(top)))
-                pick_top = self.rng.choice(top)
-                top.remove(pick_top)
-                for t in self.territories:
-                    if t in top:
-                        pick_top.members += t.members
-                        t.members = []
-
-            if len(bottom) > 0:
-                if self.debug:
-                    print("Merging {} territories from the bottom of the map".format(len(bottom)))
-                pick_bottom = self.rng.choice(bottom)
-                bottom.remove(pick_bottom)
-                for t in self.territories:
-                    if t in bottom:
-                        pick_bottom.members += t.members
-                        t.members = []
-
-            if len(top) > 0 and pick_top is not None:
-                for h in pick_top.members:
-                    h.territory = pick_top
-
-            if len(bottom) > 0 and pick_bottom is not None:
-                for h in pick_bottom.members:
-                    h.territory = pick_bottom
-
-            self.territories = [t for t in self.territories]
-
-            if self.debug:
-                print(
-                    "{} empty territories being deleted".format(
-                        len([t for t in self.territories if len(t.members) == 0])
-                    )
-                )
-            self.territories = [t for t in self.territories if len(t.members) > 0]
-
-            if self.debug:
-                print("There are now {} territories".format(len(self.territories)))
-
-        if self.debug:
-            print("Splitting territories into contiguous blocks")
-        for t in self.territories:
-            t.find_groups()
+        generate_hex_territories(self)
 
     def _get_distances(self) -> None:
         if not self.params.get("hydrosphere"):

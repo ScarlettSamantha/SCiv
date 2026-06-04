@@ -87,6 +87,7 @@ class HexRecord:
     geoform_type: str | None
     geoform_title: str | None
     territory_id: int | None
+    territory_name: str | None
     is_land: bool
     is_water: bool
     is_inland: bool
@@ -127,6 +128,7 @@ class WorldgenDump:
     hexes: tuple[HexRecord, ...]
     hexes_by_coord: dict[HexCoord, HexRecord]
     named_regions: dict[str, tuple[NamedRegionRecord, ...]]
+    territory_names_by_id: dict[int, str]
     rivers: tuple[JsonDict, ...]
     summary: JsonDict
     runtime_tiles_by_coord: dict[HexCoord, JsonDict]
@@ -193,6 +195,17 @@ def load_worldgen_payload(payload: JsonDict, *, path: Path | None = None) -> Wor
     raw = payload.get("raw") if isinstance(payload.get("raw"), dict) else {}
     hex_payloads = raw.get("hexes") if isinstance(raw.get("hexes"), list) else []
     named_region_payloads = raw.get("named_regions") if isinstance(raw.get("named_regions"), dict) else {}
+    raw_territories = raw.get("territories") if isinstance(raw.get("territories"), list) else []
+
+    territory_names_by_id: dict[int, str] = {}
+    for raw_territory in raw_territories:
+        if not isinstance(raw_territory, dict):
+            continue
+
+        territory_id = raw_territory.get("id")
+        territory_name = _optional_str(raw_territory.get("name"))
+        if isinstance(territory_id, int) and territory_name is not None:
+            territory_names_by_id[territory_id] = territory_name
 
     hexes: list[HexRecord] = []
     hexes_by_coord: dict[HexCoord, HexRecord] = {}
@@ -221,6 +234,7 @@ def load_worldgen_payload(payload: JsonDict, *, path: Path | None = None) -> Wor
             geoform_type=_optional_nested_str(raw_hex.get("geoform"), "type"),
             geoform_title=_optional_nested_str(raw_hex.get("geoform"), "title"),
             territory_id=raw_hex.get("territory_id") if isinstance(raw_hex.get("territory_id"), int) else None,
+            territory_name=_optional_str(raw_hex.get("territory_name")),
             is_land=bool(raw_hex.get("is_land", False)),
             is_water=bool(raw_hex.get("is_water", False)),
             is_inland=bool(raw_hex.get("is_inland", False)),
@@ -234,6 +248,18 @@ def load_worldgen_payload(payload: JsonDict, *, path: Path | None = None) -> Wor
         hexes_by_coord[coord] = record
         altitudes.append(altitude)
         moistures.append(moisture)
+
+    if "territories" not in named_region_payloads and raw_territories:
+        named_region_payloads = dict(named_region_payloads)
+        named_region_payloads["territories"] = [
+            {
+                "name": raw_territory.get("name") or f"Territory {raw_territory.get('id', '?')}",
+                "anchor": raw_territory.get("main"),
+                "tiles": raw_territory.get("hexes", []),
+            }
+            for raw_territory in raw_territories
+            if isinstance(raw_territory, dict)
+        ]
 
     named_regions: dict[str, tuple[NamedRegionRecord, ...]] = {}
     for kind, raw_regions in named_region_payloads.items():
@@ -293,6 +319,7 @@ def load_worldgen_payload(payload: JsonDict, *, path: Path | None = None) -> Wor
         hexes=tuple(hexes),
         hexes_by_coord=hexes_by_coord,
         named_regions=named_regions,
+        territory_names_by_id=territory_names_by_id,
         rivers=tuple(river for river in raw.get("rivers", []) if isinstance(river, dict)),
         summary=dict(payload.get("summary", {})) if isinstance(payload.get("summary"), dict) else {},
         runtime_tiles_by_coord=runtime_tiles_by_coord,
@@ -381,7 +408,7 @@ def format_hex_details(dump: WorldgenDump, coord: HexCoord) -> str:
         f"Classification: {describe_hex_classification(record, runtime_tile)}",
         f"Raw climate biome: {record.biome_title} ({record.biome_key})",
         f"Geoform: {record.geoform_title or 'None'}",
-        f"Territory: {record.territory_id if record.territory_id is not None else 'None'}",
+        f"Territory: {_territory_display_name(dump, record)}",
         f"Type: {'land' if record.is_land else 'water'}",
         f"Features: {', '.join(record.features) if record.features else 'None'}",
         f"River role: {river_role_label(record)}",
@@ -451,6 +478,17 @@ def river_role_label(record: HexRecord) -> str:
         return "River connector"
 
     return "River channel"
+
+
+def _territory_display_name(dump: WorldgenDump, record: HexRecord) -> str:
+    if record.territory_id is None:
+        return "None"
+
+    territory_name = record.territory_name or dump.territory_names_by_id.get(record.territory_id)
+    if territory_name is None:
+        return f"Territory {record.territory_id}"
+
+    return f"{territory_name} (ID {record.territory_id})"
 
 
 def _coord_tuple(value: Any) -> HexCoord | None:

@@ -540,6 +540,7 @@ class WorldgenViewerWindow(QMainWindow):
             "landmasses": [],
             "biome_regions": [],
             "rivers": [],
+            "territories": [],
         }
         self.hovered_legend_label: str | None = None
         self.generation_thread: QThread | None = None
@@ -945,6 +946,8 @@ class WorldgenViewerWindow(QMainWindow):
             label_item.setVisible(self.show_biome_labels_checkbox.isChecked())
         for label_item in self.label_items.get("rivers", []):
             label_item.setVisible(self.show_river_labels_checkbox.isChecked())
+        for label_item in self.label_items.get("territories", []):
+            label_item.setVisible(active_mode == "territory")
 
     def _select_hex(self, coord: HexCoord) -> None:
         self.selected_coord = coord
@@ -1191,7 +1194,6 @@ class WorldgenViewerWindow(QMainWindow):
     def _build_generation_group(self) -> QGroupBox:
         group = QGroupBox("Generate preview")
         layout = QVBoxLayout(group)
-        layout.addWidget(self.generation_intro_label)
 
         form = QFormLayout()
         seed_row = QWidget()
@@ -2136,7 +2138,10 @@ class WorldgenViewerWindow(QMainWindow):
         if mode == "territory":
             if record.territory_id is None:
                 return "Unclaimed water" if record.is_water else "Unclaimed land"
-            return f"Territory {record.territory_id}"
+            territory_name = record.territory_name or self.dump.territory_names_by_id.get(record.territory_id)
+            if territory_name is None:
+                return f"Territory {record.territory_id}"
+            return territory_name
 
         if mode == "rivers":
             return river_role_label_for_record(record)
@@ -2239,11 +2244,12 @@ class WorldgenViewerWindow(QMainWindow):
                 LegendEntrySpec(QColor("#37404a"), "Unclaimed water", "Unclaimed water"),
             ]
             for territory_id in territory_ids[:MAX_TERRITORY_LEGEND_ITEMS]:
+                territory_name = self.dump.territory_names_by_id.get(territory_id, f"Territory {territory_id}")
                 entries.append(
                     LegendEntrySpec(
                         _stable_color(f"territory:{territory_id}", saturation=180, value=220),
-                        f"Territory {territory_id}",
-                        f"Territory {territory_id}",
+                        territory_name,
+                        territory_name,
                     )
                 )
 

@@ -259,6 +259,7 @@ def _build_named_regions(mapgen: "MapGen", seed: int | None) -> dict[str, list[d
         "landmasses": [_serialize_named_region(region) for region in landmasses],
         "biome_regions": [_serialize_named_region(region) for region in biome_regions],
         "rivers": [_serialize_named_region(region) for region in rivers],
+        "territories": [_serialize_territory_region(territory) for territory in sorted(mapgen.territories, key=lambda current: current.id)],
     }
 
 
@@ -267,6 +268,15 @@ def _serialize_named_region(region: Any) -> dict[str, Any]:
     if hasattr(region, "tiles"):
         data["tiles"] = json_compatible(getattr(region, "tiles"))
     return data
+
+
+def _serialize_territory_region(territory: "Territory") -> dict[str, Any]:
+    return {
+        "id": int(territory.id),
+        "name": territory.name or f"Territory {territory.id}",
+        "anchor": [int(territory.main.x), int(territory.main.y)],
+        "tiles": json_compatible(sorted((member.x, member.y) for member in territory.members)),
+    }
 
 
 def _build_summary(
@@ -377,6 +387,7 @@ def _serialize_hex(
             "size": int(geoform.size),
         },
         "territory_id": None if territory is None else int(territory.id),
+        "territory_name": None if territory is None else (territory.name or f"Territory {territory.id}"),
         "features": sorted(feature.name for feature in hex_tile.features),
         "resource": getattr(resource, "key", getattr(resource, "__name__", None)) if resource is not None else None,
         "neighbors": [[int(neighbor.x), int(neighbor.y)] for _, neighbor in hex_tile.neighbors],
@@ -423,6 +434,7 @@ def _serialize_territory(territory: "Territory") -> dict[str, Any]:
 
     return {
         "id": int(territory.id),
+        "name": territory.name or f"Territory {territory.id}",
         "main": [int(territory.main.x), int(territory.main.y)],
         "size": int(territory.size),
         "landlocked": bool(territory.landlocked),

@@ -5,7 +5,7 @@
 
 ## Snapshot
 
-- Indexed Python modules: `853`
+- Indexed Python modules: `854`
 - Indexed documentation files: `47`
 - Runtime areas: `11`
 - Machine-readable manifest: [`meta/generated/project-index.json`](generated/project-index.json)
@@ -50,6 +50,7 @@
 | [run.py](../run.py) | file | Root launcher that delegates into the package bootstrap. |
 | [sciv](../sciv) | directory | Main application package. |
 | [scripts](../scripts) | directory | Repository maintenance and utility scripts. |
+| [tests](../tests) | directory | Project directory. |
 | [typings](../typings) | directory | Additional typing support and third-party type information. |
 
 ## Documentation map
@@ -192,8 +193,8 @@ Domain model for players, tiles, cities, units, rules, effects, and other mechan
 
 Engine-facing systems such as rendering, save/load helpers, generators, and effects.
 
-- Modules indexed: `51`
-- Indexed lines: `12809`
+- Modules indexed: `52`
+- Indexed lines: `13229`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -309,7 +310,7 @@ World-adjacent package resources.
 Developer utilities and repository automation scripts.
 
 - Modules indexed: `20`
-- Indexed lines: `7320`
+- Indexed lines: `7319`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |

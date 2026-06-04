@@ -30,4 +30,7 @@ xdg # for path handling on linux - not dev not needed on windows
 orjson # for fast JSON serialization - game saving
 mypy-extensions # for mypy extensions - dev
 Faker # for generating random names
-pkg_resources # for accessing package resources
+pytest # for testing - dev
+pytest-cov  # for coverage - dev
+pytest-mock # for mocking in tests - dev
+numpy # for numerical operations

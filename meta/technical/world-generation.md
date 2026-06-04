@@ -341,6 +341,8 @@ The current `MapGen` sequence is roughly:
 9. diffuse moisture from coasts, rivers, and lakes
 10. run integrity checks in debug mode
 
+Territory generation now seeds each contiguous landmass from lower-ruggedness, river- or basin-friendly anchor tiles, expands only across land with a weighted frontier, and treats river edges plus steep uplands as expensive boundaries. In practice that makes territory overlays cling more naturally to coast-hugging basins, river valleys, ridgelines, and mountain passes instead of flood-filling straight through open water or arbitrary rough terrain. Once the final territory set stabilizes, the same pass also assigns each territory a seeded pseudo-random display name so debug exports and offline viewer tooling can present regions as named map features instead of only numeric ids.
+
 ### Geoforms and features
 
 The hexgen subsystem distinguishes between:
@@ -393,8 +395,8 @@ When triggered from the live game, the export currently includes:
 - generator name, class path, seed, setup options, and sanitized map params
 - requested runtime dimensions plus the full square raw hex-grid size
 - the raw heightmap grid and sea-level summary
-- every raw hex with biome, moisture, coast/inland flags, geoform id/type, territory id, neighbor coords, and river-segment membership
-- geoforms, territories, river chains, and generated landmass/biome/river naming data
+- every raw hex with biome, moisture, coast/inland flags, geoform id/type, territory id plus territory name, neighbor coords, and river-segment membership
+- geoforms, territories, river chains, and generated landmass/biome/river/territory naming data
 - the final runtime tile dump with terrain/resource flags plus copied Dynamic naming metadata when present
 - any recorded `world_generation_stats` and legacy debug payload metadata
 
@@ -454,6 +456,7 @@ These describe the **current code path**, not necessarily the long-term design t
 - `Dynamic` is a separate preset-driven generator; it now uses its own Dynamic-specific raw map builder, changes hexgen parameter presets, reshapes the heightmap by landmass profile, smooths those preset-driven landmass cuts before final stats are derived, applies landmass-specific peak compression to keep mountain density playable without changing the shared hill/mountain thresholds, carves preset-driven channels and inland seas, applies a biome-style moisture pass with stronger latitude/rain-shadow shaping, can grow extra tributaries, bounded connector/distributary side channels, and river valleys, adds a script-aware coastline polish pass, applies named landmass/biome/river metadata, and overrides starting-unit placement with script-aware start scoring.
 - `Dynamic.get_setup_fields()` now also exposes hydrology controls for river amount, river length bias, tributary density, river-network style, and optional forced main-ocean connectivity; `build_dynamic_map_params()` folds those into `num_rivers`, `river_source_spacing`, `river_source_min_distance`, `tributary_factor`, the bounded connector/distributary parameters that drive split/rejoin river behavior, and a raw-hexgen `force_connected_oceans` flag, so the same knobs are available in the new-game config UI and the standalone viewer/export path.
 - When `force_connected_oceans` is enabled, `MapGen` now links separate edge-touching water basins with low-cost carved straits before river, territory, and geoform generation, so the final world keeps one connected main ocean instead of several disconnected edge seas.
+- `MapGen.generate_territories()` now delegates to [`sciv/system/subsystems/hexgen/territory_generation.py`](../../sciv/system/subsystems/hexgen/territory_generation.py), which works per contiguous land component instead of flood-filling through water, chooses higher-quality basin/river/coastal seeds, penalizes river crossings plus rugged uplands during expansion, only spins up extra territories for large orphan islands while merging only small adjacent cold territories afterward, and assigns seeded pseudo-random territory names after those merges settle so the export/viewer pipeline can surface named regions.
 - The same settlement scoring surface is now available to runtime settler recommendation code, so generator start placement and in-game city-site guidance can stay aligned.
 - `MapGen` now injects its seeded RNG into `Heightmap`, so heightmap creation follows the same generation seed instead of using ambient module-level randomness.
 - `MapGen._generate_rivers()` now supports both `river_source_spacing` and `river_source_min_distance`, which space the top drainage-picked river sources apart, bias the first source pass farther inland, and rank candidates by drainage plus distance-to-water before falling back to closer candidates when needed.
@@ -476,6 +479,7 @@ These describe the **current code path**, not necessarily the long-term design t
 - [`sciv/system/generators/basic.py`](../../sciv/system/generators/basic.py)
 - [`sciv/system/generators/resource_allocator.py`](../../sciv/system/generators/resource_allocator.py)
 - [`sciv/system/subsystems/hexgen/`](../../sciv/system/subsystems/hexgen)
+- [`sciv/system/subsystems/hexgen/territory_generation.py`](../../sciv/system/subsystems/hexgen/territory_generation.py)
 - [`sciv/menus/screens/game_config.py`](../../sciv/menus/screens/game_config.py)
 
 Update this page when changes affect:

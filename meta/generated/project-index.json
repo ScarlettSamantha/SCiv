@@ -163,6 +163,11 @@
       "description": "Repository maintenance and utility scripts."
     },
     {
+      "path": "tests",
+      "kind": "directory",
+      "description": "Project directory."
+    },
+    {
       "path": "typings",
       "kind": "directory",
       "description": "Additional typing support and third-party type information."
@@ -14862,8 +14867,8 @@
     {
       "path": "sciv/system",
       "description": "Engine-facing systems such as rendering, save/load helpers, generators, and effects.",
-      "module_count": 51,
-      "line_count": 12809,
+      "module_count": 52,
+      "line_count": 13229,
       "key_modules": [
         {
           "path": "sciv/system/entity.py",
@@ -16249,10 +16254,11 @@
             "system.subsystems.hexgen.hex",
             "system.subsystems.hexgen.river",
             "system.subsystems.hexgen.territory",
+            "system.subsystems.hexgen.territory_generation",
             "system.subsystems.hexgen.util",
             "typing"
           ],
-          "line_count": 1191,
+          "line_count": 1089,
           "parse_error": null
         },
         {
@@ -16282,6 +16288,44 @@
             "typing"
           ],
           "line_count": 130,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/subsystems/hexgen/territory_generation.py",
+          "module": "sciv.system.subsystems.hexgen.territory_generation",
+          "area": "sciv/system",
+          "summary": "System module for territory generation.",
+          "classes": [
+            "TerritoryGenerationContext",
+            "TerritoryMapGen"
+          ],
+          "functions": [
+            "_assign_orphan_component",
+            "_claim_land_component",
+            "_find_land_components",
+            "_mapgen_local_ruggedness",
+            "_merge_barren_territories",
+            "_nearest_territory_for_component",
+            "_new_hex_float_cache",
+            "_pick_component_seeds",
+            "_refresh_territory_members",
+            "_territory_ruggedness",
+            "_territory_seed_score",
+            "_territory_seed_targets",
+            "_territory_step_cost",
+            "_territory_temperature",
+            "generate_territories"
+          ],
+          "imports": [
+            "dataclasses",
+            "heapq",
+            "itertools",
+            "random",
+            "system.subsystems.hexgen.hex",
+            "system.subsystems.hexgen.territory",
+            "typing"
+          ],
+          "line_count": 522,
           "parse_error": null
         },
         {
@@ -19701,7 +19745,7 @@
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
       "module_count": 20,
-      "line_count": 7320,
+      "line_count": 7319,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -20591,7 +20635,7 @@
             "worldgen_viewer_tool.palette",
             "worldgen_viewer_tool.widgets.legend"
           ],
-          "line_count": 2328,
+          "line_count": 2327,
           "parse_error": null
         },
         {

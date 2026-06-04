@@ -14,6 +14,7 @@ class Territory:
         self.grid: Any = grid
         self.id: int = id_num
         self.color: Any = color
+        self.name: str | None = None
         self.main: "Hex" = main  # main Hex
         main.territory = self
         self.last_added: List["Hex"] = [main]
@@ -82,6 +83,8 @@ class Territory:
         return hash(self.__key())
 
     def __repr__(self) -> str:
+        if self.name:
+            return "<Territory ID: {} Name: {}>".format(self.id, self.name)
         return "<Territory ID: {}>".format(self.id)
 
     def find_groups(self):
