@@ -167,6 +167,10 @@ The world manager does **not** process every tile every turn. It only forwards `
 
 After tile fan-out, world-level effects run through `self.effects.on_turn_end(turn)`.
 
+The world stage now also owns gameplay vision recomputation. `World.refresh_player_vision()` aggregates city and unit emitters for a player, updates linger turns, recomputes tile states, and emits `game.gameplay.vision.updated`. `World.on_turn_end()` calls `refresh_all_player_vision()` before tile processing so fog transitions advance on turn boundaries.
+
+Outside the turn loop, the world manager also refreshes vision on unit spawn, unit movement, unit destruction, city founding, and tile ownership changes. That keeps player vision authoritative in one place instead of scattering recompute logic across city, tile, and unit code.
+
 ## Reset semantics
 
 `World.reset()` is a destructive runtime cleanup step, not just a dictionary clear.

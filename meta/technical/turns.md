@@ -50,6 +50,8 @@ The world stage sets `turn_stage = TURN_WORLD` and calls `World.on_turn_end(self
 
 `World.on_turn_end()` does not blindly process every tile. It filters for tiles that appear active or relevant, then processes world effects afterward. This keeps the stage focused on tiles and systems that actually need work.
 
+The world stage now also recomputes each player's gameplay vision cache before tile turn work runs. That makes visibility and fog transitions advance on turn boundaries even when no immediate spawn, move, destruction, founding, or ownership signal fired during the current frame.
+
 See [World System](world-system.md) for the world manager's runtime ownership and filtering contract.
 
 ### 3. Process players and their cities

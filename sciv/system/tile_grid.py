@@ -6,14 +6,7 @@ from gameplay.repositories.terrain import TerrainRepository
 from gameplay.terrain._base_terrain import BaseTerrain
 from helpers.cache import Cache
 from helpers.paths import PathsHelper
-from panda3d.core import (
-    CardMaker,
-    LPoint3f,
-    NodePath,
-    PandaNode,
-    RigidBodyCombiner,
-    TransparencyAttrib,
-)
+from panda3d.core import CardMaker, LPoint3f, NodePath, PandaNode, RigidBodyCombiner, TransparencyAttrib
 
 from system.asset_archive import P3DAssetArchive
 
@@ -133,9 +126,52 @@ class TileModelGrid:
         if np:
             np.clear_color_scale()
 
+    def hide_tile(self, tile_or_index: "Tile | Tuple[int,int] | int") -> None:
+        np = self._instance_np_for(tile_or_index)
+        if np:
+            np.hide()
+
+    def show_tile(self, tile_or_index: "Tile | Tuple[int,int] | int") -> None:
+        np = self._instance_np_for(tile_or_index)
+        if np:
+            np.show()
+
     def collect(self) -> None:
         for ctrl in self._rbc_controls.values():
             ctrl.collect()
+
+    def get_tile_top_z(self, tile_or_index: "Tile | Tuple[int,int] | int") -> float:
+        np = self._instance_np_for(tile_or_index)
+        if np is None or np.is_empty():
+            if isinstance(tile_or_index, tuple):
+                tile = self.tiles[next((i for i, candidate in enumerate(self.tiles) if (int(candidate.x), int(candidate.y)) == tile_or_index), 0)] if self.tiles else None
+                return float(tile.pos_z) if tile is not None else 0.0
+            if isinstance(tile_or_index, int):
+                try:
+                    return float(self.tiles[tile_or_index].pos_z)
+                except IndexError:
+                    return 0.0
+            return float(tile_or_index.pos_z)
+
+        bounds = np.get_tight_bounds()
+        if bounds is None:
+            if isinstance(tile_or_index, int):
+                try:
+                    return float(self.tiles[tile_or_index].pos_z)
+                except IndexError:
+                    return 0.0
+            if isinstance(tile_or_index, tuple):
+                return 0.0
+            return float(tile_or_index.pos_z)
+
+        _, upper = bounds
+        return float(upper.z)
+
+    def get_max_world_z(self) -> float:
+        if not self.tiles:
+            return 0.0
+
+        return max(self.get_tile_top_z(tile) for tile in self.tiles)
 
     @staticmethod
     def _hex_spacing(radius: float) -> Tuple[float, float]:

@@ -138,6 +138,20 @@ AI assignment is role-driven:
 
 In practice, `Player` is the runtime home for empire state, while `PlayerManager` is the role-aware lookup surface for the rest of the game.
 
+## Player-owned vision state
+
+`Player.vision` is now the gameplay-owned visibility index for each empire.
+
+Important details:
+
+- units and cities emit visible tiles independently
+- the player aggregates those emitters through `collect_visible_tiles()`
+- the `Vision` object stores per-tile states instead of only a flat visible-tile bag
+- visibility can linger for a configurable number of turns after sight is lost
+- player effects can extend linger duration and modify emitter ranges
+
+See [Vision and Fog of War](vision-fog.md) for the detailed state machine and recompute flow.
+
 ## Player-owned tile state
 
 `Player.tiles` is a [`PlayerTiles`](../../sciv/gameplay/player_tiles.py) wrapper, not a plain dictionary.
@@ -181,6 +195,8 @@ On load, `Player.load_state()` reconstructs or restores:
 ### Startup-owned handoff
 
 After world generation and render setup, [`Game._try_game_start()`](../../sciv/managers/game.py) calls `self.players.on_game_start()`.
+
+Before that handoff, `Game.calculate_vision()` now delegates to the world manager so each player's vision cache is built from live unit and city emitters instead of revealing the full map.
 
 `PlayerManager.on_game_start()` currently:
 

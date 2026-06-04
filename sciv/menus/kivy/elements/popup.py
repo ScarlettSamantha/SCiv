@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Optional, cast
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
@@ -49,6 +50,7 @@ class ModalPopup(Popup, CollisionPreventionMixin):
         self.decline_button: Optional[Button] = None
 
         self.button_layout: Optional[BoxLayout] = None
+        self.content_root: FloatLayout = FloatLayout()
         self.layout: BoxLayout = BoxLayout(orientation="vertical", padding=10, spacing=10)
 
         self.bind(on_open=self.on_open)  # type: ignore
@@ -77,7 +79,8 @@ class ModalPopup(Popup, CollisionPreventionMixin):
             self.button_layout.add_widget(self.close_btn)
 
         self.layout.add_widget(self.button_layout)
-        self.content = self.layout  # A Popup must have only one widget as content
+        self.content_root.add_widget(self.layout)
+        self.content = self.content_root  # A Popup must have only one widget as content
 
     def _on_confirm(self, *args: Any) -> None:
         if self._confirm_callback:
@@ -123,7 +126,7 @@ class PopupDraggableMixin:
         self._layout_debug_config: ConfigManager = ConfigManager.get_singleton_instance()
         self._layout_debug_drag_position_initialized: bool = False
         self._layout_debug_badge = LayoutDebugStatsBadge()
-        self._popup_widget().add_widget(self._layout_debug_badge)
+        cast(ModalPopup, self).content_root.add_widget(self._layout_debug_badge)
         self._layout_debug_badge.hide()
 
     def _layout_debug_drag_enabled(self) -> bool:
@@ -176,10 +179,11 @@ class PopupDraggableMixin:
 
     def _layout_debug_update_badge(self) -> None:
         popup = self._popup_widget()
+        content_root = cast(ModalPopup, self).content_root
         badge_margin = float(dp(8))
         self._layout_debug_badge.pos = (
-            max(badge_margin, float(popup.width) - float(self._layout_debug_badge.width) - badge_margin),
-            max(badge_margin, float(popup.height) - float(self._layout_debug_badge.height) - float(dp(38))),
+            max(badge_margin, float(content_root.width) - float(self._layout_debug_badge.width) - badge_margin),
+            max(badge_margin, float(content_root.height) - float(self._layout_debug_badge.height) - badge_margin),
         )
 
         if self.dragging:

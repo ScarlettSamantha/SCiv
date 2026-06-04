@@ -310,6 +310,11 @@
       "description": "Maps guarded code areas to the docs that should be reviewed or updated with them."
     },
     {
+      "path": "meta/technical/vision-fog.md",
+      "category": "technical",
+      "description": "Repository documentation."
+    },
+    {
       "path": "meta/technical/workings.md",
       "category": "technical",
       "description": "High-level mechanics overview and hub for focused gameplay docs."
@@ -1263,7 +1268,7 @@
       "path": "sciv/managers",
       "description": "Singleton-backed orchestration for game flow, UI, entities, players, and turns.",
       "module_count": 25,
-      "line_count": 5319,
+      "line_count": 5477,
       "key_modules": [
         {
           "path": "sciv/managers/game.py",
@@ -1293,7 +1298,7 @@
             "gameplay.unit",
             "helpers.cache",
             "helpers.debug",
-            "helpers.optimizations",
+            "helpers.window_state",
             "logging",
             "managers.ages",
             "managers.config",
@@ -1314,6 +1319,8 @@
             "system.game_settings",
             "system.generators.base",
             "system.generators.basic",
+            "system.renderers.fog_of_war",
+            "system.renderers.landmass_label_overlay",
             "system.scene_optimizer",
             "system.shaders",
             "system.tile_grid",
@@ -1321,7 +1328,7 @@
             "system.vars",
             "typing"
           ],
-          "line_count": 599,
+          "line_count": 722,
           "parse_error": null
         },
         {
@@ -1357,7 +1364,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 214,
+          "line_count": 249,
           "parse_error": null
         },
         {
@@ -1932,7 +1939,7 @@
             "gameplay.unit",
             "helpers.cache",
             "helpers.debug",
-            "helpers.optimizations",
+            "helpers.window_state",
             "logging",
             "managers.ages",
             "managers.config",
@@ -1953,6 +1960,8 @@
             "system.game_settings",
             "system.generators.base",
             "system.generators.basic",
+            "system.renderers.fog_of_war",
+            "system.renderers.landmass_label_overlay",
             "system.scene_optimizer",
             "system.shaders",
             "system.tile_grid",
@@ -1960,7 +1969,7 @@
             "system.vars",
             "typing"
           ],
-          "line_count": 599,
+          "line_count": 722,
           "parse_error": null
         },
         {
@@ -2288,7 +2297,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 214,
+          "line_count": 249,
           "parse_error": null
         }
       ]
@@ -2297,7 +2306,7 @@
       "path": "sciv/gameplay",
       "description": "Domain model for players, tiles, cities, units, rules, effects, and other mechanics.",
       "module_count": 650,
-      "line_count": 26732,
+      "line_count": 27140,
       "key_modules": [
         {
           "path": "sciv/gameplay/player.py",
@@ -2351,7 +2360,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 506,
+          "line_count": 523,
           "parse_error": null
         },
         {
@@ -2433,6 +2442,7 @@
             "gameplay.repositories.tile",
             "gameplay.resources.core.basic.production",
             "gameplay.tile",
+            "gameplay.vision",
             "gameplay.yields",
             "helpers.cache",
             "helpers.colors",
@@ -2453,7 +2463,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 777,
+          "line_count": 815,
           "parse_error": null
         },
         {
@@ -2478,6 +2488,7 @@
             "gameplay.resource",
             "gameplay.tile",
             "gameplay.unit",
+            "gameplay.vision",
             "gameplay.yields",
             "helpers.colors",
             "logging",
@@ -2490,7 +2501,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 624,
+          "line_count": 655,
           "parse_error": null
         },
         {
@@ -2543,7 +2554,7 @@
             "uuid",
             "weakref"
           ],
-          "line_count": 317,
+          "line_count": 326,
           "parse_error": null
         },
         {
@@ -2552,10 +2563,20 @@
           "area": "sciv/gameplay",
           "summary": "Visibility and fog-of-war related player state.",
           "classes": [
-            "Vision"
+            "Vision",
+            "VisionTileLike",
+            "VisionTileRecord",
+            "VisionTileState"
           ],
-          "functions": [],
+          "functions": [
+            "build_tile_visibility_states",
+            "collect_radius_visibility",
+            "expand_border_visibility",
+            "is_visible_for_render"
+          ],
           "imports": [
+            "dataclasses",
+            "enum",
             "gameplay.city",
             "gameplay.improvement",
             "gameplay.resource",
@@ -2566,7 +2587,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 180,
+          "line_count": 494,
           "parse_error": null
         },
         {
@@ -3327,7 +3348,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 454,
+          "line_count": 453,
           "parse_error": null
         },
         {
@@ -3685,6 +3706,7 @@
             "gameplay.resource",
             "gameplay.tile",
             "gameplay.unit",
+            "gameplay.vision",
             "gameplay.yields",
             "helpers.colors",
             "logging",
@@ -3697,7 +3719,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 624,
+          "line_count": 655,
           "parse_error": null
         },
         {
@@ -6766,7 +6788,7 @@
             "uuid",
             "weakref"
           ],
-          "line_count": 317,
+          "line_count": 326,
           "parse_error": null
         },
         {
@@ -9593,7 +9615,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 506,
+          "line_count": 523,
           "parse_error": null
         },
         {
@@ -14030,6 +14052,7 @@
             "gameplay.repositories.tile",
             "gameplay.resources.core.basic.production",
             "gameplay.tile",
+            "gameplay.vision",
             "gameplay.yields",
             "helpers.cache",
             "helpers.colors",
@@ -14050,7 +14073,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 777,
+          "line_count": 815,
           "parse_error": null
         },
         {
@@ -14756,10 +14779,20 @@
           "area": "sciv/gameplay",
           "summary": "Visibility and fog-of-war related player state.",
           "classes": [
-            "Vision"
+            "Vision",
+            "VisionTileLike",
+            "VisionTileRecord",
+            "VisionTileState"
           ],
-          "functions": [],
+          "functions": [
+            "build_tile_visibility_states",
+            "collect_radius_visibility",
+            "expand_border_visibility",
+            "is_visible_for_render"
+          ],
           "imports": [
+            "dataclasses",
+            "enum",
             "gameplay.city",
             "gameplay.improvement",
             "gameplay.resource",
@@ -14770,7 +14803,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 180,
+          "line_count": 494,
           "parse_error": null
         },
         {
@@ -14867,8 +14900,8 @@
     {
       "path": "sciv/system",
       "description": "Engine-facing systems such as rendering, save/load helpers, generators, and effects.",
-      "module_count": 52,
-      "line_count": 13229,
+      "module_count": 55,
+      "line_count": 14007,
       "key_modules": [
         {
           "path": "sciv/system/entity.py",
@@ -14964,7 +14997,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 299,
+          "line_count": 311,
           "parse_error": null
         },
         {
@@ -15021,7 +15054,7 @@
             "weakref",
             "zlib"
           ],
-          "line_count": 312,
+          "line_count": 324,
           "parse_error": null
         },
         {
@@ -15041,7 +15074,7 @@
             "system.atlas",
             "typing"
           ],
-          "line_count": 346,
+          "line_count": 361,
           "parse_error": null
         },
         {
@@ -15319,7 +15352,7 @@
             "typing",
             "weakref"
           ],
-          "line_count": 299,
+          "line_count": 311,
           "parse_error": null
         },
         {
@@ -15467,7 +15500,7 @@
             "weakref",
             "zlib"
           ],
-          "line_count": 312,
+          "line_count": 324,
           "parse_error": null
         },
         {
@@ -15489,6 +15522,7 @@
             "_serialize_named_region",
             "_serialize_rivers",
             "_serialize_territory",
+            "_serialize_territory_region",
             "build_generator_export_payload",
             "build_raw_world_payload",
             "default_worldgen_export_dir",
@@ -15517,7 +15551,7 @@
             "typing",
             "uuid"
           ],
-          "line_count": 538,
+          "line_count": 550,
           "parse_error": null
         },
         {
@@ -15968,6 +16002,68 @@
           "parse_error": null
         },
         {
+          "path": "sciv/system/renderers/fog_of_war.py",
+          "module": "sciv.system.renderers.fog_of_war",
+          "area": "sciv/system",
+          "summary": "System module for fog of war.",
+          "classes": [
+            "FogLabelOverlayLike",
+            "FogOfWarController",
+            "FogTileGridLike",
+            "FogTileLike",
+            "FogTileOverlayLike",
+            "FogUnitLike"
+          ],
+          "functions": [],
+          "imports": [
+            "collections.abc",
+            "gameplay.player",
+            "gameplay.vision",
+            "typing"
+          ],
+          "line_count": 120,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/system/renderers/landmass_label_overlay.py",
+          "module": "sciv.system.renderers.landmass_label_overlay",
+          "area": "sciv/system",
+          "summary": "System module for landmass label overlay.",
+          "classes": [
+            "LandmassLabelOverlay",
+            "LandmassLabelSpec",
+            "LandmassTileLike"
+          ],
+          "functions": [
+            "_choose_anchor_tile",
+            "_choose_territory_anchor_tile",
+            "_label_alpha",
+            "_label_scale",
+            "_landmass_size",
+            "_territory_label_alpha",
+            "_territory_label_scale",
+            "_territory_size",
+            "build_landmass_label_specs",
+            "build_territory_label_specs",
+            "spread_label_text",
+            "territory_label_text"
+          ],
+          "imports": [
+            "collections",
+            "collections.abc",
+            "dataclasses",
+            "gameplay.tile",
+            "helpers.cache",
+            "managers.assets",
+            "math",
+            "panda3d.core",
+            "system.zoom_visibility",
+            "typing"
+          ],
+          "line_count": 290,
+          "parse_error": null
+        },
+        {
           "path": "sciv/system/renderers/tile_renderer.py",
           "module": "sciv.system.renderers.tile_renderer",
           "area": "sciv/system",
@@ -15986,6 +16082,7 @@
             "gameplay.improvements.core.city.base_city_improvement",
             "gameplay.tile",
             "gameplay.unit",
+            "gameplay.vision",
             "helpers.cache",
             "helpers.colors",
             "helpers.icons",
@@ -16003,7 +16100,7 @@
             "system.tile_renderer",
             "typing"
           ],
-          "line_count": 734,
+          "line_count": 762,
           "parse_error": null
         },
         {
@@ -16287,7 +16384,7 @@
             "system.subsystems.hexgen.hex",
             "typing"
           ],
-          "line_count": 130,
+          "line_count": 133,
           "parse_error": null
         },
         {
@@ -16301,6 +16398,7 @@
           ],
           "functions": [
             "_assign_orphan_component",
+            "_assign_territory_names",
             "_claim_land_component",
             "_find_land_components",
             "_mapgen_local_ruggedness",
@@ -16309,6 +16407,10 @@
             "_new_hex_float_cache",
             "_pick_component_seeds",
             "_refresh_territory_members",
+            "_territory_dominant_biome_key",
+            "_territory_name_candidates",
+            "_territory_name_prefix_options",
+            "_territory_name_suffix_options",
             "_territory_ruggedness",
             "_territory_seed_score",
             "_territory_seed_targets",
@@ -16325,7 +16427,7 @@
             "system.subsystems.hexgen.territory",
             "typing"
           ],
-          "line_count": 522,
+          "line_count": 639,
           "parse_error": null
         },
         {
@@ -16383,7 +16485,7 @@
             "system.asset_archive",
             "typing"
           ],
-          "line_count": 232,
+          "line_count": 242,
           "parse_error": null
         },
         {
@@ -16416,7 +16518,7 @@
             "system.atlas",
             "typing"
           ],
-          "line_count": 346,
+          "line_count": 361,
           "parse_error": null
         },
         {
@@ -16479,6 +16581,33 @@
           ],
           "line_count": 54,
           "parse_error": null
+        },
+        {
+          "path": "sciv/system/zoom_visibility.py",
+          "module": "sciv.system.zoom_visibility",
+          "area": "sciv/system",
+          "summary": "System module for zoom visibility.",
+          "classes": [
+            "ZoomVisibilityController",
+            "ZoomVisibilityRule",
+            "_ZoomVisibilityBinding"
+          ],
+          "functions": [
+            "_clamp01",
+            "compute_zoom_visibility_alpha"
+          ],
+          "imports": [
+            "collections.abc",
+            "dataclasses",
+            "direct.task",
+            "helpers.cache",
+            "itertools",
+            "panda3d.core",
+            "sciv.game",
+            "typing"
+          ],
+          "line_count": 159,
+          "parse_error": null
         }
       ]
     },
@@ -16486,7 +16615,7 @@
       "path": "sciv/menus",
       "description": "Kivy application and screen/widget layers.",
       "module_count": 55,
-      "line_count": 15759,
+      "line_count": 15763,
       "key_modules": [
         {
           "path": "sciv/menus/kivy/core.py",
@@ -17202,6 +17331,7 @@
             "kivy.metrics",
             "kivy.uix.boxlayout",
             "kivy.uix.button",
+            "kivy.uix.floatlayout",
             "kivy.uix.label",
             "kivy.uix.popup",
             "managers.config",
@@ -17210,7 +17340,7 @@
             "menus.kivy.mixins.collidable",
             "typing"
           ],
-          "line_count": 282,
+          "line_count": 286,
           "parse_error": null
         },
         {
@@ -18366,8 +18496,8 @@
     {
       "path": "sciv/helpers",
       "description": "Stateless utilities and runtime helper functions.",
-      "module_count": 19,
-      "line_count": 2265,
+      "module_count": 20,
+      "line_count": 2297,
       "key_modules": [
         {
           "path": "sciv/helpers/__init__.py",
@@ -19000,6 +19130,24 @@
             "typing"
           ],
           "line_count": 29,
+          "parse_error": null
+        },
+        {
+          "path": "sciv/helpers/window_state.py",
+          "module": "sciv.helpers.window_state",
+          "area": "sciv/helpers",
+          "summary": "Helper module for window state.",
+          "classes": [
+            "WindowState"
+          ],
+          "functions": [
+            "window_state_differs",
+            "window_state_is_valid"
+          ],
+          "imports": [
+            "dataclasses"
+          ],
+          "line_count": 32,
           "parse_error": null
         }
       ]
@@ -19745,7 +19893,7 @@
       "path": "scripts",
       "description": "Developer utilities and repository automation scripts.",
       "module_count": 20,
-      "line_count": 7319,
+      "line_count": 7394,
       "key_modules": [
         {
           "path": "scripts/index.py",
@@ -20541,6 +20689,7 @@
             "_optional_str",
             "_runtime_flag",
             "_terrain_display_name",
+            "_territory_display_name",
             "describe_hex_classification",
             "format_dump_summary",
             "format_hex_details",
@@ -20564,7 +20713,7 @@
             "pathlib",
             "typing"
           ],
-          "line_count": 522,
+          "line_count": 560,
           "parse_error": null
         },
         {
@@ -20635,7 +20784,7 @@
             "worldgen_viewer_tool.palette",
             "worldgen_viewer_tool.widgets.legend"
           ],
-          "line_count": 2327,
+          "line_count": 2334,
           "parse_error": null
         },
         {
@@ -20672,6 +20821,7 @@
             "_altitude_color",
             "_blend",
             "_heightmap_sealevel",
+            "_known_biome_color_for_key",
             "_moisture_bucket_label",
             "_moisture_color",
             "_overlay_water_label",
@@ -20685,14 +20835,15 @@
             "_stable_color",
             "_title_from_identifier",
             "_water_color_for_record",
-            "_water_color_from_kind"
+            "_water_color_from_kind",
+            "biome_color_for_key"
           ],
           "imports": [
             "PyQt6.QtGui",
             "hashlib",
             "worldgen_viewer_support"
           ],
-          "line_count": 333,
+          "line_count": 363,
           "parse_error": null
         },
         {

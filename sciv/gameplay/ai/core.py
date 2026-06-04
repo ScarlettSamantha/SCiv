@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 
 
 class AI(ABC):
-    UNIT_REAL_VISION_RADIUS: int = 3
 
     def __init__(self, player: "Player"):
         self._player: weakref.ReferenceType["Player"] = weakref.ref(player)
@@ -249,7 +248,7 @@ class AI(ABC):
 
     def get_target_for_unit(self, unit: "Unit") -> Dict[Tuple[int, int], "Tile"]:
         targets: Dict[Tuple[int, int], "Tile"] = {}
-        for tile in unit.look(radius=self.UNIT_REAL_VISION_RADIUS):
+        for tile in unit.look(radius=unit.get_vision_range()):
             if tile.is_city() and tile.owner != self.get_player():
                 targets[tile.x, tile.y] = tile
             elif tile.units.has_any() and self.is_target(tile.units.first()):  # type: ignore
@@ -266,7 +265,7 @@ class AI(ABC):
 
     def get_threat_for_unit(self, unit: "Unit") -> Dict[Tuple[int, int], "Tile"]:
         threats: Dict[Tuple[int, int], "Tile"] = {}
-        for tile in unit.look(self.UNIT_REAL_VISION_RADIUS):
+        for tile in unit.look(unit.get_vision_range()):
             if tile.is_city() and tile.owner != self.get_player():
                 threats[tile.x, tile.y] = tile
             elif tile.units.has_any() and self.is_threat(tile.units.first()):  # type: ignore

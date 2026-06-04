@@ -76,7 +76,12 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.camera.request.center_on_tile` (E: action-search-map, E: ui-part-minimap | L: system-camera)
 
 - `game.gameplay.tiles.ownership_changed` (E: manager-world | L: base-tile, L: ui-part-minimap)
+- `game.gameplay.vision.updated` (E: manager-world)
+- `game.gameplay.vision.request_reveal_tiles` (E: future gameplay/effects/events | L: manager-world)
+- `game.gameplay.vision.request_clear_reveal_tiles` (E: future gameplay/effects/events | L: manager-world)
 - `game.gameplay.unit.destroyed` (E: unit-base | L: screen-game-ui)
+- `game.gameplay.unit.spawned` (E: unit-base | L: manager-world)
+- `game.gameplay.unit.moved` (E: unit-base | L: manager-world)
 
 - `game.gameplay.unit.build_improvement_success` (E: action-build)
 - `game.gameplay.unit.build_improvement_failure` (E: action-build)
@@ -87,6 +92,7 @@ These are used by the UI manager to control some debug actions these may disappe
 - `game.gameplay.city.finish_building_improvement` (E: city | L: ui-part-city)
 - `game.gameplay.city.canceled_production` (E: city | L: ui-part-city)
 - `game.gameplay.city.border_growth` (E: city)
+- `game.gameplay.city.founded` (E: city | L: manager-world)
 
 - `game.gameplay.city.request_start_building_unit_{tag}` (E: ui-part-city | L: city)
 - `game.gameplay.city.starts_building_unit` (E: city | L: ui-part-city)
@@ -111,6 +117,8 @@ These are used by the UI manager to control some debug actions these may disappe
 ### Units
 
 - `unit.action.move.visiting_tile` (E: Tile | L: manager-ui)
+
+	Implementation note: gameplay visibility refresh now uses `game.gameplay.unit.moved` instead of this pre-move visit signal, because `unit.action.move.visiting_tile` fires before the unit's final tile assignment.
 - `unit.action.found_city.success` (E: action-found | L: ui-part-minimap)
 
 ## UI

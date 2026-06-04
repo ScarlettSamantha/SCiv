@@ -11,6 +11,7 @@ from gameplay.improvements.core.city.palace import Palace
 from gameplay.improvements_set import ImprovementsSet
 from gameplay.repositories.tile import TileRepository
 from gameplay.resource import BaseResource
+from gameplay.vision import expand_border_visibility
 from gameplay.yields import Yields
 from helpers.colors import Colors
 from managers.entity import EntityManager, EntityType
@@ -31,6 +32,7 @@ class City(BaseEntity, DirectObject.DirectObject):
     FOOD_BASE_REQUIREMENT: float = 10
 
     CITY_MAX_BORDER_GROWTH_RADIUS: int = 5
+    DEFAULT_VISION_BORDER_RINGS: int = 1
 
     def __init__(self, name: str, tile: "Tile", player: "Player | None", *args: Any, **kwargs: Any):
         super().__init__(tile=tile, owner=player, *args, **kwargs)
@@ -557,6 +559,33 @@ class City(BaseEntity, DirectObject.DirectObject):
     def get_improvements(self) -> ImprovementsSet:
         return self._improvements
 
+    def get_base_vision_range(self) -> int:
+        return self.DEFAULT_VISION_BORDER_RINGS
+
+    def get_vision_range(self) -> int:
+        vision_range = self.get_base_vision_range()
+
+        if (override := self.effects.get_vision_range_override()) is not None:
+            vision_range = override
+        vision_range += self.effects.get_vision_range_bonus()
+
+        owner = self.get_owner()
+        if (owner_override := owner.effects.get_vision_range_override()) is not None:
+            vision_range = owner_override
+        vision_range += owner.effects.get_vision_range_bonus()
+
+        return max(0, vision_range)
+
+    def collect_visible_tiles(self) -> set["Tile"]:
+        core_tiles = set(self.owned_tiles)
+        core_tiles.add(self.get_tile())
+
+        return expand_border_visibility(
+            core_tiles,
+            self.get_vision_range(),
+            lambda tile: TileRepository.get_neighbors(tile, 1, False, False),
+        )
+
     def get_population_icon(self) -> str:
         return f"assets/generated/icons/resources/core/basic/populationx128_{str(self.population)}.png"
 
@@ -590,6 +619,8 @@ class City(BaseEntity, DirectObject.DirectObject):
 
         if is_capital:
             instance.build(Palace(tile, owner))
+
+        messenger.send("game.gameplay.city.founded", [instance])
 
         return instance
 

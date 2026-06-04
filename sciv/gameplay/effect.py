@@ -301,6 +301,15 @@ class Effect(BaseEntity, ABC, DirectObject):
     def is_expired(self) -> bool:
         return self.turns_left <= 0
 
+    def get_vision_range_bonus(self) -> int:
+        return 0
+
+    def get_vision_range_override(self) -> int | None:
+        return None
+
+    def get_vision_linger_turns_bonus(self) -> int:
+        return 0
+
     def on_city_turn_end(self) -> None: ...
     def on_tile_turn_end(self) -> None: ...
     def on_player_turn_end(self) -> None: ...

@@ -24,6 +24,8 @@ Each effect carries three kinds of information:
 2. **Mechanical impact** — most commonly `yield_impact` and `maintenance_impact`.
 3. **Lifecycle behavior** — whether it is timed, whether it needs turn processing, and what callbacks it runs on placement, expiry, or removal.
 
+The effect system also now exposes visibility-specific query hooks for gameplay vision and fog-of-war.
+
 ## Main runtime pieces
 
 ### `Effect`
@@ -58,6 +60,18 @@ This means the effect logic is split across two layers:
 
 - the **effect instance** decides what it does
 - the **container** decides how it is stored, attached, and iterated
+
+## Vision modifier hooks
+
+Base `Effect` now exposes three no-op query methods that visibility code can override:
+
+- `get_vision_range_bonus()`
+- `get_vision_range_override()`
+- `get_vision_linger_turns_bonus()`
+
+`Effects` aggregates those hooks so unit, city, and player code can ask for final modifiers without hard-coding knowledge of specific effect subclasses.
+
+That keeps gameplay vision effect-driven while preserving the existing placement and lifecycle model.
 
 ## Placement model
 

@@ -12,6 +12,7 @@
 | --- | --- | --- |
 | Rules | You need the rule registry or configurable values | [Rules](rules.md) |
 | Tile system | You are working on tile ownership, occupancy, terrain/resource/improvement state, or tile pathing/render hooks | [Tile System](tile-system.md) |
+| Vision and fog | You are working on gameplay visibility, explored state, lingering fog, or player-collected sight emitters | [Vision and Fog of War](vision-fog.md) |
 | Effects | You are working on persistent modifiers, timed bonuses, or effect placement | [Effects](effects.md) |
 | Actions | You are working on one-shot gameplay operations or action-bar behavior | [Actions](actions.md) |
 | City production and growth | You are working on food, production, border growth, or city build flow | [City Production and Growth](city-production.md) |
@@ -45,6 +46,10 @@ If the change starts from `Tile`, `World`, or `TileRepository`, or if it changes
 ### Use effects for persistent modifiers
 
 If the behavior should remain attached to a tile, city, player, unit, improvement, or the world over time, start with [Effects](effects.md).
+
+### Use the vision doc for gameplay-owned visibility
+
+If the change starts from player sight, fog-of-war state, city/unit visibility emitters, or render consumers of visibility, start with [Vision and Fog of War](vision-fog.md).
 
 ### Use city production docs for economy-side turn work
 

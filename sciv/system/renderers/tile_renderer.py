@@ -2,8 +2,10 @@ import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 from direct.task import Task
+from gameplay.vision import VisionTileState, is_visible_for_render
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
+from helpers.geometry import generate_flat_top_hex_prism
 from helpers.icons import Icons
 from helpers.images import generate_city_nameplate, normalize_color_to_bytes, pil_image_to_panda3d_texture
 from helpers.os import WindowsHelper
@@ -29,6 +31,7 @@ from PIL.ImageFont import FreeTypeFont
 from system.asset_archive import P3DAssetArchive
 from system.atlas import AtlasGenerator
 from system.renderers.bits_renderer import BitsRenderer
+from system.renderers.fog_of_war import FOGGED_TILE_TINT, UNSEEN_TILE_TINT
 from system.tile_renderer import TileRendererSystem
 
 if TYPE_CHECKING:
@@ -113,6 +116,9 @@ class TileRenderer:
         self.selector_np: Optional[NodePath] = None
         self.selector_enabled: bool = False
         self.click_overlay_np: Optional[NodePath] = None
+        self.fog_overlay_np: Optional[NodePath] = None
+        self._fog_ceiling_z: float = float(self.tile.pos_z) + 0.1
+        self._visibility_state: VisionTileState = VisionTileState.VISIBLE
 
         self.assets: P3DAssetArchive = Cache.get_asset_archive()
 
@@ -163,6 +169,40 @@ class TileRenderer:
         if self.ui_node is None:
             self.ui_node = self.anchor_node.attachNewNode("ui_group")
         return self.ui_node
+
+    def _ensure_fog_overlay(self) -> NodePath:
+        if self.fog_overlay_np is not None:
+            return self.fog_overlay_np
+
+        self.fog_overlay_np = generate_flat_top_hex_prism(radius=1.02, height=1.0)
+        self.fog_overlay_np.reparentTo(self.anchor_node)
+        self.fog_overlay_np.setHpr(30, 0, 0)
+        self.fog_overlay_np.setPos(0, 0, -0.25)
+        self.fog_overlay_np.setTransparency(TransparencyAttrib.M_alpha)
+        self.fog_overlay_np.setDepthWrite(True)
+        self.fog_overlay_np.setDepthTest(True)
+        self.fog_overlay_np.setBin("fixed", 60)
+        self.fog_overlay_np.setTwoSided(True)
+        self._update_fog_overlay_transform()
+        self.fog_overlay_np.hide()
+        return self.fog_overlay_np
+
+    def _update_fog_overlay_transform(self) -> None:
+        if self.fog_overlay_np is None:
+            return
+
+        fog_height = max(0.3, self._fog_ceiling_z - float(self.tile.pos_z) + 0.25)
+        self.fog_overlay_np.setPos(0, 0, -0.25)
+        self.fog_overlay_np.setScale(1.0, 1.0, fog_height)
+
+    def set_fog_ceiling_z(self, fog_ceiling_z: float) -> None:
+        self._fog_ceiling_z = max(float(self.tile.pos_z), fog_ceiling_z)
+        self._update_fog_overlay_transform()
+
+    def _show_fog_overlay(self, color: Tuple4f) -> None:
+        fog_overlay = self._ensure_fog_overlay()
+        fog_overlay.setColorScale(*color)
+        fog_overlay.show()
 
     def _drop_ui_node_if_empty(self) -> None:
         if self.ui_node is None:
@@ -236,6 +276,52 @@ class TileRenderer:
 
         self.update()
 
+    def set_visibility_state(self, state: VisionTileState) -> None:
+        self._visibility_state = state
+        fog_overlay = self.fog_overlay_np
+
+        if state is VisionTileState.UNSEEN:
+            self.anchor_node.show()
+            self.geometry_node.hide()
+            if self.ui_node is not None:
+                self.ui_node.hide()
+            if self.selector_np is not None:
+                self.selector_np.hide()
+            self._show_fog_overlay(UNSEEN_TILE_TINT)
+            TileRendererSystem.get().hide_tile(self.tile)
+            return
+
+        self.anchor_node.show()
+
+        if state is VisionTileState.FOGGED:
+            self.geometry_node.hide()
+            if self.ui_node is not None:
+                self.ui_node.hide()
+            if self.selector_np is not None:
+                self.selector_np.hide()
+            self._show_fog_overlay(FOGGED_TILE_TINT)
+            TileRendererSystem.get().hide_tile(self.tile)
+            return
+
+        if fog_overlay is not None:
+            fog_overlay.hide()
+
+        if is_visible_for_render(state):
+            self.geometry_node.show()
+            if self.ui_node is not None:
+                self.ui_node.show()
+            if self.selector_enabled and self.selector_np is not None:
+                self.selector_np.show()
+            TileRendererSystem.get().show_tile(self.tile)
+            return
+
+        self.geometry_node.hide()
+        if self.ui_node is not None:
+            self.ui_node.hide()
+        if self.selector_np is not None:
+            self.selector_np.hide()
+        TileRendererSystem.get().hide_tile(self.tile)
+
     def clear_ui(self) -> None:
         if self.ui_node is not None:
             for child in self.ui_node.getChildren():
@@ -263,6 +349,10 @@ class TileRenderer:
     def destroy(self) -> None:
         self.clear_ui()
         self.base.taskMgr.remove(f"update-selector-{self.tile.tag}")  # type: ignore
+
+        if self.fog_overlay_np is not None:
+            self.fog_overlay_np.removeNode()
+            self.fog_overlay_np = None
 
         if self.selector_np is not None:
             self.selector_np.removeNode()
@@ -368,6 +458,7 @@ class TileRenderer:
             self.rerender_terrain()
 
         self.bits_renderer.render()
+        self.set_visibility_state(self._visibility_state)
 
     def rerender_terrain(self) -> None:
         if self.game_manager.world_tile_grid is None:
@@ -382,6 +473,7 @@ class TileRenderer:
 
             self._drop_ui_node_if_empty()
             TileRendererSystem.get().sync_tile(self.tile)
+            self.set_visibility_state(self._visibility_state)
             return
 
         if self.city_ui_node is not None:
@@ -391,6 +483,7 @@ class TileRenderer:
         self._draw_improvements()
         self._draw_city_ui()
         TileRendererSystem.get().sync_tile(self.tile)
+        self.set_visibility_state(self._visibility_state)
 
     def _draw_city_ui(self) -> None:
         if not self.tile.city:

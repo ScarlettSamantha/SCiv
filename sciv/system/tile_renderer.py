@@ -128,6 +128,21 @@ class TileRendererSystem:
         self._tiles[idx] = None
         self._write_instance_clear(idx)
 
+    def hide_tile(self, tile: T_TileRef) -> None:
+        idx = self._tile_index.get(tile.tag)
+        if idx is None:
+            return
+
+        self._write_instance_clear(idx)
+
+    def show_tile(self, tile: T_TileRef) -> None:
+        idx = self._tile_index.get(tile.tag)
+        if idx is None:
+            self.register_tile(tile)
+            return
+
+        self._write_instance_row(idx, tile)
+
     def sync_tile(self, tile: T_TileRef) -> None:
         if self._vdata is None:
             self.register_tile(tile)

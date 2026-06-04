@@ -10,7 +10,9 @@
 
 ### Fixed
 
+- 🐛 Fixed windowed-mode size and position persistence so Panda3D window events save only after the geometry settles, avoiding resize/move noise and monitor-transfer thrash.
 - 🐛 Fixed the in-game pause-menu options button so it opens settings and returns to the pause menu on Back.
+- 🐛 Wired the gameplay vision state into the main-map fog-of-war rendering with a full first sync, height-aware terrain fog volumes, and player-scoped reveal-source plumbing so unseen tiles stop showing the full map and hidden units/icons no longer leak visibility.
 - 🐛 Fixed offline worldgen previews so standalone exports handle shrubland biomes, keep post-conversion terrain labels, synthesize runtime tile dumps for the viewer, render ocean water with waterbody colors instead of desert biome colors, and label ocean/coast hexes by finalized terrain instead of raw climate biome text.
 - 🐛 Fixed generator discovery so PyLoad skips conditional helper classes that are present in source but not defined at runtime.
 
@@ -51,6 +53,7 @@
 
 ### Mechanics
 
+- ✨ Added a gameplay-owned vision and fog-of-war foundation with unit/city sight emitters, player-collected visibility, effect-driven range hooks, and 2-turn lingering fog state.
 - ✨ Improved Dynamic Worlds start placement scoring and fixed the map generator selector to show only real generators.
 - ✨ Extracted reusable settlement tile scoring for Dynamic Worlds, settler recommendations, and future settler AI while adding script-aware coastline polish.
 - ✨ Expanded Dynamic Worlds with named landmasses, biome styles, named biome regions and rivers, plus improved river source spacing.
@@ -65,6 +68,7 @@
 
 ### Docs
 
+- 📝 Documented the gameplay vision and fog-of-war model, including player-owned visibility state, world refresh triggers, and effect hooks.
 - 📝 Documented sparse comment guidance for Python authoring and agent workflow.
 - 📝 Documented readability spacing and small focused change preferences in Python conventions.
 - 📝 Documented category defaults, version sync, and unreleased/status helper workflow.

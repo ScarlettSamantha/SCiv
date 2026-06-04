@@ -62,6 +62,14 @@ The startup order is meaningful because many managers assume that earlier system
 
 If startup fails mysteriously, check whether a manager is trying to access another singleton before it has been created or registered.
 
+### Windowed geometry writeback waits for the window to settle
+
+`Game.register()` listens to Panda3D `window-event` updates so SCiv can persist the live window size and origin back into the user config.
+
+That writeback intentionally saves only after the windowed geometry has settled for a short quiet period and only when the final size/origin differs materially from the config. This filters out the transient property churn Panda3D can emit while the user is resizing the window, dragging it between monitors, or flipping between temporary intermediate window states.
+
+Fullscreen, borderless, minimized, and invalid-size states are skipped on purpose. The saved geometry contract is specifically for stable windowed-mode restoration on the next launch.
+
 ### Asset bootstrap depends on that order
 
 The asset pipeline relies on a specific startup sequence:

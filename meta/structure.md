@@ -5,8 +5,8 @@
 
 ## Snapshot
 
-- Indexed Python modules: `854`
-- Indexed documentation files: `47`
+- Indexed Python modules: `858`
+- Indexed documentation files: `48`
 - Runtime areas: `11`
 - Machine-readable manifest: [`meta/generated/project-index.json`](generated/project-index.json)
 
@@ -84,6 +84,7 @@
 | [meta/technical/turns.md](technical/turns.md) | technical | Turn stages and per-turn processing pipeline. |
 | [meta/technical/ui-runtime.md](technical/ui-runtime.md) | technical | Kivy screen runtime, screen contracts, overlays, and input-lock policy. |
 | [meta/technical/update-triggers.md](technical/update-triggers.md) | technical | Maps guarded code areas to the docs that should be reviewed or updated with them. |
+| [meta/technical/vision-fog.md](technical/vision-fog.md) | technical | Repository documentation. |
 | [meta/technical/workings.md](technical/workings.md) | technical | High-level mechanics overview and hub for focused gameplay docs. |
 | [meta/technical/world-generation.md](technical/world-generation.md) | technical | New-game generation flow, generator ownership, and the hexgen pipeline. |
 | [meta/technical/world-system.md](technical/world-system.md) | technical | Repository documentation. |
@@ -150,7 +151,7 @@ Core package bootstrap, application host, configuration, and top-level resources
 Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 
 - Modules indexed: `25`
-- Indexed lines: `5319`
+- Indexed lines: `5477`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -172,7 +173,7 @@ Singleton-backed orchestration for game flow, UI, entities, players, and turns.
 Domain model for players, tiles, cities, units, rules, effects, and other mechanics.
 
 - Modules indexed: `650`
-- Indexed lines: `26732`
+- Indexed lines: `27140`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -182,7 +183,7 @@ Domain model for players, tiles, cities, units, rules, effects, and other mechan
 | [sciv/gameplay/city.py](../sciv/gameplay/city.py) | classes: `City` | City domain object for production, growth, borders, and city-local state. |
 | [sciv/gameplay/rules.py](../sciv/gameplay/rules.py) | classes: `GameRules`, `SCIVRules`; functions: `get_game_rules`, `set_game_rules` | Rule interface and active SCiv rule implementation. |
 | [sciv/gameplay/effect.py](../sciv/gameplay/effect.py) | classes: `Effect` | Gameplay effect objects that modify mechanics over time or in reaction to events. |
-| [sciv/gameplay/vision.py](../sciv/gameplay/vision.py) | classes: `Vision` | Visibility and fog-of-war related player state. |
+| [sciv/gameplay/vision.py](../sciv/gameplay/vision.py) | classes: `Vision`, `VisionTileLike`, `VisionTileRecord`, `VisionTileState`; functions: `build_tile_visibility_states`, `collect_radius_visibility`, `expand_border_visibility`, `is_visible_for_render` | Visibility and fog-of-war related player state. |
 | [sciv/gameplay/diplomacy.py](../sciv/gameplay/diplomacy.py) | classes: `Diplomacy` | Diplomatic relationships and related gameplay concepts. |
 | [sciv/gameplay/yields.py](../sciv/gameplay/yields.py) | classes: `Yields` | Yield calculations and value containers used across tiles, cities, and players. |
 | [sciv/gameplay/tech.py](../sciv/gameplay/tech.py) | classes: `Tech`, `TechTree` | Technology domain object and related research state. |
@@ -193,8 +194,8 @@ Domain model for players, tiles, cities, units, rules, effects, and other mechan
 
 Engine-facing systems such as rendering, save/load helpers, generators, and effects.
 
-- Modules indexed: `52`
-- Indexed lines: `13229`
+- Modules indexed: `55`
+- Indexed lines: `14007`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -216,7 +217,7 @@ Engine-facing systems such as rendering, save/load helpers, generators, and effe
 Kivy application and screen/widget layers.
 
 - Modules indexed: `55`
-- Indexed lines: `15759`
+- Indexed lines: `15763`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -237,8 +238,8 @@ Kivy application and screen/widget layers.
 
 Stateless utilities and runtime helper functions.
 
-- Modules indexed: `19`
-- Indexed lines: `2265`
+- Modules indexed: `20`
+- Indexed lines: `2297`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |
@@ -310,7 +311,7 @@ World-adjacent package resources.
 Developer utilities and repository automation scripts.
 
 - Modules indexed: `20`
-- Indexed lines: `7319`
+- Indexed lines: `7394`
 
 | Representative module | Top-level symbols | Summary |
 | --- | --- | --- |

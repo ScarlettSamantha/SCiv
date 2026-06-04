@@ -16,6 +16,7 @@ from gameplay.floating_text import spawn_damage_text, spawn_heal_text
 from gameplay.hover import HoverIndicator
 from gameplay.repositories.tile import TileRepository
 from gameplay.resources.core.basic.production import Production
+from gameplay.vision import collect_radius_visibility
 from gameplay.yields import Yields
 from helpers.cache import Cache
 from helpers.colors import Colors, Tuple4f
@@ -72,6 +73,7 @@ class CantMoveReason(Enum):
 
 class Unit(BaseEntity, ABC):
     _model: Optional[str] = None
+    DEFAULT_VISION_RANGE: int = 2
 
     buildable: bool = False
     build_conditions: Conditions = Conditions()
@@ -496,6 +498,7 @@ class Unit(BaseEntity, ABC):
         tile.add_unit(instance)
         UnitManager.get_singleton_instance().add_unit(instance)
         tile.render()
+        messenger.send("game.gameplay.unit.spawned", [instance])
         return instance
 
     def hover(self):
@@ -600,6 +603,7 @@ class Unit(BaseEntity, ABC):
         self.model = self.load_model()
         self.calculate_model_position()
         self.get_tile().add_unit(self)
+        messenger.send("game.gameplay.unit.moved", [self, tile, clear_departing_tile])
 
     def calculate_model_position(self) -> None:
         tile_pos: Tuple[float, float, float] = self.get_tile().get_cords()
@@ -707,6 +711,40 @@ class Unit(BaseEntity, ABC):
             self._healthbar_quad.setShaderInput("health_ratio", self.health_left / self.max_health)  # type: ignore
 
         spawn_heal_text(self, amount)
+
+    def set_render_visibility(self, visible: bool) -> None:
+        if self.model is None:
+            return
+
+        if visible:
+            self.model.show()
+            return
+
+        self.model.hide()
+
+    def get_base_vision_range(self) -> int:
+        return self.DEFAULT_VISION_RANGE
+
+    def get_vision_range(self) -> int:
+        vision_range = self.get_base_vision_range()
+
+        if (override := self.effects.get_vision_range_override()) is not None:
+            vision_range = override
+        vision_range += self.effects.get_vision_range_bonus()
+
+        owner = self.get_owner()
+        if (owner_override := owner.effects.get_vision_range_override()) is not None:
+            vision_range = owner_override
+        vision_range += owner.effects.get_vision_range_bonus()
+
+        return max(0, vision_range)
+
+    def collect_visible_tiles(self) -> Set["Tile"]:
+        return collect_radius_visibility(
+            self.get_tile(),
+            self.get_vision_range(),
+            lambda tile, radius: TileRepository.get_neighbors(tile, radius, False, False),
+        )
 
     def look(self, radius: int) -> List["Tile"]:
         return TileRepository.get_neighbors(self.get_tile(), radius, False, False)

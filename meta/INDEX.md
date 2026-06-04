@@ -65,6 +65,7 @@
 | --- | --- |
 | [Mechanics Overview](technical/workings.md) | Hub for the focused gameplay/mechanics documentation. |
 | [Tile System](technical/tile-system.md) | Tile ownership, occupancy, terrain/resource/improvement state, and pathing-oriented behavior. |
+| [Vision and Fog of War](technical/vision-fog.md) | Gameplay-owned visibility emitters, lingering fog state, and player vision aggregation. |
 | [Effects](technical/effects.md) | Persistent modifiers, placement, timing, and load behavior. |
 | [Actions](technical/actions.md) | One-shot runtime actions, targeting, and callback flow. |
 | [City Production and Growth](technical/city-production.md) | Food, production, border growth, and city-side turn processing. |
@@ -104,6 +105,7 @@
 - Start with this file, then the generated index, then the most relevant technical page.
 - For tile or world-rendering work, jump straight to [Tile System](technical/tile-system.md) and [Rendering System](technical/rendering-system.md) after architecture/startup orientation.
 - For player-registry, player-role, or empire-state work, read [Player System](technical/player-system.md) and [Turn Processing](technical/turns.md) after architecture/startup orientation.
+- For vision, fog-of-war, or visibility refresh work, read [Vision and Fog of War](technical/vision-fog.md), then follow into [Player System](technical/player-system.md), [World System](technical/world-system.md), and [Effects](technical/effects.md) as needed.
 - For world-container, tile-ownership, or world-turn work, read [World System](technical/world-system.md) and then follow into [Tile System](technical/tile-system.md) or [World Generation](technical/world-generation.md) as needed.
 - For asset/archive/atlas work, read [Asset System](technical/asset-system.md) after architecture/startup orientation and then follow into [Rendering System](technical/rendering-system.md) when the change affects world consumers.
 - For targeted lookups against the generated manifest, use the `sciv-project-index` skill or `python3 scripts/index.py search "<topic>"` before reading the full JSON.

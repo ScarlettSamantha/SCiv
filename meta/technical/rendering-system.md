@@ -23,6 +23,7 @@ This page documents the current world-rendering stack in SCiv: how the icon atla
 | [`sciv/system/tile_grid.py`](../../sciv/system/tile_grid.py) | `TileModelGrid`: terrain model placement and grouped `RigidBodyCombiner` nodes. |
 | [`sciv/system/renderers/tile_renderer.py`](../../sciv/system/renderers/tile_renderer.py) | `TileRenderer`: per-tile anchor node, model attachment, selector quad, click overlay, and world-space UI. |
 | [`sciv/system/tile_renderer.py`](../../sciv/system/tile_renderer.py) | `TileRendererSystem`: instanced resource/yield/population icon overlay system. |
+| [`sciv/system/renderers/fog_of_war.py`](../../sciv/system/renderers/fog_of_war.py) | `FogOfWarController`: maps the session player's gameplay `Vision` state onto terrain visibility, shader-backed fog masks, tile-local overlays, tile-top icons, unit models, and landmass labels. |
 | [`sciv/system/renderers/landmass_label_overlay.py`](../../sciv/system/renderers/landmass_label_overlay.py) | `LandmassLabelOverlay`: zoom-gated continent/landmass name labels built from tile metadata after world render. |
 | [`sciv/system/zoom_visibility.py`](../../sciv/system/zoom_visibility.py) | `ZoomVisibilityController`: reusable zoom-band visibility/fade controller for world-space overlays and future zoom-sensitive surfaces. |
 | [`sciv/gameplay/unit.py`](../../sciv/gameplay/unit.py) | Active runtime unit rendering path: model load, selection ring, icon billboard, healthbar shader, hover indicator, and unit-side tags. |
@@ -42,10 +43,16 @@ flowchart TD
     Generate[Game start or load] --> Grid[TileModelGrid attached to render]
     Generate --> Register[TileRendererSystem.register_tiles()]
     Register --> TileRender[Tile.render() per tile]
+    TileRender --> Vision[game.gameplay.vision.updated]
     TileRender --> Terrain[terrain model instance]
     TileRender --> Bits[BitsRenderer models]
     TileRender --> Overlay[TileRendererSystem instanced icons]
     TileRender --> UI[world-space city bars/nameplates/selectors]
+    Vision --> Fog[FogOfWarController]
+    Fog --> Terrain
+    Fog --> Bits
+    Fog --> Overlay
+    Fog --> UI
     Terrain --> Input[Input raycaster]
     Bits --> Input
     UI --> Input
@@ -118,6 +125,13 @@ The main steps are:
 `update_tile()` removes and recreates one tile's terrain instance, then recollects the combined nodes. `TileRenderer.rerender_terrain()` uses that path when terrain changes at runtime.
 
 Because `TileModelGrid` only places normal model instances, terrain materials currently come from the loaded model asset itself. No per-tile terrain shader inputs are set in this layer.
+
+`TileModelGrid` now also exposes per-tile tint and hide/show helpers so fog-of-war can hide underlying terrain instances without rebuilding the whole terrain layer.
+
+The current terrain-fog split is:
+
+- `TileModelGrid` keeps the actual terrain instance visible only for `visible` and `lingering` tiles
+- `TileRenderer` draws a height-aware flat-top hex fog volume over hidden tiles, extending from each tile's local surface toward a shared fog ceiling so terrain relief does not bleed through
 
 ## Active unit rendering path
 
@@ -217,6 +231,8 @@ The renderer owns several node types:
 
 `render()` is the main sync point. It repositions the anchor, clears and redraws UI, syncs the instanced icon overlay, optionally requests a terrain rerender, and then lets `BitsRenderer` place tile-local models.
 
+`TileRenderer` now also remembers a visibility state supplied by the fog-of-war controller so it can keep tile-local bits, selectors, city UI, and the fog volume in the correct state even after a later rerender.
+
 ## Zoom-gated world labels
 
 `LandmassLabelOverlay` adds layered, lightly transparent world-space labels for named regions once the camera is zoomed far enough out.
@@ -262,10 +278,32 @@ The first slot is either the city population icon or the tile's primary resource
 
 Because the system is instance-driven, hiding everything does not remove nodes; it clears per-instance rows instead.
 
+Fog-of-war uses that same row-clearing path so fogged or unseen tiles stop advertising resources and yields through the icon overlay.
+
+## Vision-driven visibility layer
+
+The main-map fog consumer now lives in [`sciv/system/renderers/fog_of_war.py`](../../sciv/system/renderers/fog_of_war.py).
+
+Its current contract is:
+
+- subscribe to `game.gameplay.vision.updated` through [`sciv/managers/game.py`](../../sciv/managers/game.py)
+- drive terrain visibility through `TileModelGrid`
+- drive tile-local bits and city UI through `TileRenderer`
+- clear tile-top icons through `TileRendererSystem`
+- hide unit models unless their tile is currently visible
+- keep landmass/territory labels hidden until the session player has explored the full map so labels do not leak unseen geography
+
+The current visual treatment is intentionally simple:
+
+- `visible` and `lingering` tiles render normally
+- `fogged` tiles hide the underlying terrain instance and replace it with a lighter fog volume while tile-local bits, icons, and units stay hidden
+- `unseen` tiles hide the underlying terrain instance and replace it with a darker fog volume
+
 ## Shader-driven overlays and specials
 
 Several world-space visuals are handled separately from terrain instances:
 
+- terrain fog masks use `terrain_fog.vert.glsl` and `terrain_fog.frag.glsl`
 - tile selection uses `tile_selector.vert.glsl` and `tile_selector.frag.glsl`
 - unit selection, unit icon cards, and unit healthbars use the `unit_selection`, `unit_icon`, and `unit_healthbar` shader sets
 - borders use `border.vert` with `border_ring.frag`, plus `hex_border.vert` and `hex_border.frag`
@@ -311,6 +349,8 @@ Instead, the runtime rebuilds them from gameplay state:
 - `Game` currently keeps both `tile_hex_grid` and `world_tile_grid`; new-game terrain rerenders use `world_tile_grid`, while save/load rebuilds `tile_hex_grid` directly.
 - `TileModelGrid` uses grouped `RigidBodyCombiner` nodes, not GPU instancing.
 - The authoritative live unit-render path is in `sciv/gameplay/unit.py`; `sciv/system/unit_renderer.py` is currently unreferenced by the main runtime flow.
+- The current fog-of-war render path is session-player-only and is driven from `game.gameplay.vision.updated` through `FogOfWarController` rather than by querying units or tiles directly inside renderers.
+- `FogOfWarController` now performs a full first sync per player before falling back to changed-tile updates, which prevents unseen tiles from staying visible after the initial field render.
 - `LandmassLabelOverlay` is rebuilt as a post-render overlay from tile metadata and currently depends on generators that populate `territory_id` / `territory_name` / `territory_size` plus `landmass_name` / `landmass_type` / `landmass_size` onto runtime tiles.
 - `ZoomVisibilityController` is the shared zoom-band fade mechanism for world-space overlays; future zoom-sensitive layers should prefer it over bespoke per-feature thresholds.
 - `assets/shaders/terrain.vert.glsl` and `terrain.frag.glsl`, plus `Cache._terrain_atlas`, are present but not currently wired into live terrain rendering.

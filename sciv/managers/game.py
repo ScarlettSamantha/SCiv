@@ -13,7 +13,7 @@ from gameplay.repositories.tile import TileRepository
 from gameplay.rules import GameRules, SCIVRules, set_game_rules
 from helpers.cache import Cache
 from helpers.debug import Debug, PerformanceLogger
-from helpers.optimizations import debounce
+from helpers.window_state import WindowState, window_state_differs, window_state_is_valid
 from managers.ages import AgesManager
 from managers.config import ConfigManager
 from managers.debug import DebugManager
@@ -30,6 +30,7 @@ from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
+from system.renderers.fog_of_war import FogOfWarController
 from system.renderers.landmass_label_overlay import LandmassLabelOverlay
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
@@ -44,6 +45,9 @@ if TYPE_CHECKING:
     from gameplay.unit import Unit
     from managers.entity import Property
     from sciv.game import OpenCiv
+
+
+WINDOW_SAVEBACK_SETTLE_DELAY_SECONDS = 0.75
 
 
 class Game(Singleton, DirectObject):
@@ -102,6 +106,7 @@ class Game(Singleton, DirectObject):
         set_game_rules(self.rules)
 
         self.active_generator: BaseGenerator | None = None
+        self.fog_of_war: FogOfWarController = FogOfWarController()
 
         self.properties: Optional[GameSettings] = GameSettings(
             width=5,
@@ -119,6 +124,9 @@ class Game(Singleton, DirectObject):
         self._is_paused: bool = False
         self.debug_enabled: bool = False
 
+        self._window_event_task_name: str = f"game-window-saveback-{id(self)}"
+        self._pending_window_state: WindowState | None = None
+
         self.configure_environment()
         self.register()
 
@@ -126,10 +134,11 @@ class Game(Singleton, DirectObject):
 
     def register(self):
         def messenger():
-            # self.accept("window-event", self.config_saveback)
+            self.accept("window-event", self.on_window_event)
             self.accept("game.turn.request_end", self.process_turn)
             self.accept("game.state.request_load", self.on_request_load)
             self.accept("game.state.main_menu", self.on_main_menu)
+            self.accept("game.gameplay.vision.updated", self.on_vision_updated)
 
         messenger()
 
@@ -196,6 +205,7 @@ class Game(Singleton, DirectObject):
         self.tile_hex_grid.load_state()
         self.tile_hex_grid.attach_to_render()
         self.tile_hex_grid.collect()
+        self.world_tile_grid = self.tile_hex_grid
 
         TileRendererSystem.get().register_tiles(list(world_tiles.values()))
 
@@ -223,6 +233,8 @@ class Game(Singleton, DirectObject):
 
         self.turn.set_turn(turn)
 
+        self.calculate_vision()
+
         self.ui.set_screen("game_ui")
         self.input.activate()
         self.register_callback_inputs()
@@ -242,11 +254,18 @@ class Game(Singleton, DirectObject):
         self.game_won = False
 
         self.ui.reset()
+        self.fog_of_war.reset()
 
         LandmassLabelOverlay.get().clear()
 
         if self.tile_hex_grid is not None:
             self.tile_hex_grid.reset()
+
+        if self.world_tile_grid is not None and self.world_tile_grid is not self.tile_hex_grid:
+            self.world_tile_grid.reset()
+
+        self.tile_hex_grid = None
+        self.world_tile_grid = None
 
         self.world.reset()
         self.turn.reset()
@@ -276,31 +295,110 @@ class Game(Singleton, DirectObject):
 
         self.base.win.requestProperties(props)  # type: ignore
 
-    def environment_writeback(self) -> bool:
-        props: WindowProperties = self.base.win.getProperties()  # type: ignore
-        win_size: Tuple[int, int] = (props.getXSize(), props.getYSize())  # type: ignore # Get current window size
-        win_origin: Tuple[int, int] = (props.get_x_origin(), props.get_y_origin())  # type: ignore # Get window position
+    def _configured_window_state(self) -> WindowState:
+        win_size_data: Any = self.config.get_by_key(("window", "win-size"), [1920, 1080])
+        win_origin_data: Any = self.config.get_by_key(("window", "win-origin"), [0, 0])
 
-        old_win_size: Tuple[int, int] = tuple(self.config.get_by_key(("window", "win-size")))
-        old_win_origin: Tuple[int, int] = tuple(self.config.get_by_key(("window", "win-origin")))
+        win_size: tuple[int, int] = (int(win_size_data[0]), int(win_size_data[1]))
+        win_origin: tuple[int, int] = (int(win_origin_data[0]), int(win_origin_data[1]))
+        return WindowState(origin=win_origin, size=win_size)
 
-        size_diff = abs(old_win_size[0] - win_size[0]) > 2 or abs(old_win_size[1] - win_size[1]) > 2
-        origin_diff = abs(old_win_origin[0] - win_origin[0]) > 2 or abs(old_win_origin[1] - win_origin[1]) > 2
-
-        if not size_diff and not origin_diff:
-            self.logger.info("No significant changes to write back")
+    def _window_saveback_enabled(self) -> bool:
+        window = cast(Any, self.base.win)
+        if window is None:
             return False
 
-        self.config.set_by_key([win_size[0], win_size[1]], "window", "win-size")
-        if win_origin[0] == 0 and win_origin[1] == 0:
-            self.logger.info("Window origin is at (0, 0), not writing back, this is a bug in Panda3D")
-        else:
-            self.config.set_by_key([win_origin[0], win_origin[1]], "window", "win-origin")
+        if self.config.get_screen_mode() != "windowed":
+            return False
+
+        props = window.getProperties()
+        if not props.getOpen() or props.getMinimized():
+            return False
+
+        return props.hasOrigin() and props.hasSize()
+
+    def _read_window_state(self) -> WindowState | None:
+        if not self._window_saveback_enabled():
+            return None
+
+        window = cast(Any, self.base.win)
+        props = window.getProperties()
+        state = WindowState(
+            origin=(int(props.getXOrigin()), int(props.getYOrigin())),
+            size=(int(props.getXSize()), int(props.getYSize())),
+        )
+
+        if not window_state_is_valid(state):
+            return None
+
+        return state
+
+    def _write_window_state(self, state: WindowState) -> None:
+        self.config.set_by_key([state.size[0], state.size[1]], "window", "win-size")
+        self.config.set_by_key([state.origin[0], state.origin[1]], "window", "win-origin")
+
+    def _clear_window_event_task(self) -> None:
+        self.base.taskMgr.remove(self._window_event_task_name)
+
+    def on_window_event(self, *args: Any) -> None:
+        del args
+
+        state = self._read_window_state()
+        if state is None:
+            self._pending_window_state = None
+            self._clear_window_event_task()
+            return
+
+        if not window_state_differs(state, self._configured_window_state()):
+            self._pending_window_state = None
+            self._clear_window_event_task()
+            return
+
+        self._pending_window_state = state
+        self._clear_window_event_task()
+        self.base.taskMgr.doMethodLater(
+            WINDOW_SAVEBACK_SETTLE_DELAY_SECONDS,
+            self._flush_window_state_saveback,
+            self._window_event_task_name,
+        )
+
+    def _flush_window_state_saveback(self, task: Any) -> Any:
+        current_state = self._read_window_state()
+        pending_state = self._pending_window_state
+
+        if current_state is None or pending_state is None:
+            self._pending_window_state = None
+            return task.done
+
+        if window_state_differs(current_state, pending_state):
+            self._pending_window_state = current_state
+            return task.again
+
+        if not window_state_differs(current_state, self._configured_window_state()):
+            self._pending_window_state = None
+            return task.done
+
+        self._write_window_state(current_state)
+        self.config.save_config()
+        self._pending_window_state = None
+        return task.done
+
+    def environment_writeback(self) -> bool:
+        state = self._read_window_state()
+        if state is None:
+            return False
+
+        configured_state = self._configured_window_state()
+        if not window_state_differs(state, configured_state):
+            return False
+
+        self._write_window_state(state)
 
         return True
 
-    @debounce(0.5)
     def config_saveback(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+
         if self.environment_writeback() is True:
             self.config.save_config()
 
@@ -564,13 +662,34 @@ class Game(Singleton, DirectObject):
         self.logger.info("Game start complete")
 
     def calculate_vision(self):
-        tiles = self.world.get_grid().values()
-        units = self.unit.get_singleton_instance().all().values()
+        self.world.refresh_all_player_vision()
 
-        for player in self.players.all().values():
-            player.vision.mass_set_visible_tiles(tiles=set(tiles))
-            for unit in units:
-                player.vision.add_visible_unit(unit)
+    def on_vision_updated(self, player: "Player", changed_tiles: set[str]) -> None:
+        if not PlayerManager.is_session_player(player):
+            return
+
+        self.sync_session_player_fog(player, changed_tiles)
+
+    def get_active_tile_grid(self) -> TileModelGrid | None:
+        if self.world_tile_grid is not None:
+            return self.world_tile_grid
+
+        return self.tile_hex_grid
+
+    def sync_session_player_fog(self, player: "Player", changed_tiles: set[str] | None = None) -> None:
+        if not self.world.grid:
+            return
+
+        units = cast(list["Unit"], list(self.entities.get_all(EntityType.UNIT).values()))
+        self.fog_of_war.apply(
+            player,
+            self.world.grid.values(),
+            units,
+            tile_grid=self.get_active_tile_grid(),
+            tile_overlay=TileRendererSystem.get(),
+            label_overlay=LandmassLabelOverlay.get(),
+            changed_tile_tags=changed_tiles,
+        )
 
     def process_turn(self):
         if not Lose.check_if_game_over():

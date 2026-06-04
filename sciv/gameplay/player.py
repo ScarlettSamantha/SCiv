@@ -220,6 +220,7 @@ class Player(BaseEntity):
         self.tiles = tiles
 
         vision: Vision = Vision()
+        vision.load_state(getattr(self, "vision", []))
         self.vision = vision
 
         effects: Effects = Effects(self)
@@ -403,6 +404,22 @@ class Player(BaseEntity):
 
     def add_tile(self, tile: "Tile") -> None:
         self.tiles.add_tile(tile)
+
+    def get_vision_linger_turns(self) -> int:
+        linger_turns = self.vision.get_default_linger_turns()
+        linger_turns += self.effects.get_vision_linger_turns_bonus()
+        return max(0, linger_turns)
+
+    def collect_visible_tiles(self) -> Set["Tile"]:
+        visible_tiles: Set["Tile"] = set()
+
+        for city in self.cities.all():
+            visible_tiles.update(city.collect_visible_tiles())
+
+        for unit in self.get_all_units():
+            visible_tiles.update(unit.collect_visible_tiles())
+
+        return visible_tiles
 
     def has_civic_tree_unlocked(self, civic_tree: Type[CivicTree]) -> bool:
         return self.civics.is_civic_tree_unlocked(civic_tree)

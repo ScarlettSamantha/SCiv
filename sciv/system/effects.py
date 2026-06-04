@@ -147,6 +147,18 @@ class Effects:
     def get_effects(self) -> Dict[str, "Effect"]:
         return self._effects
 
+    def get_vision_range_bonus(self) -> int:
+        return sum(effect.get_vision_range_bonus() for effect in self._effects.values())
+
+    def get_vision_range_override(self) -> int | None:
+        overrides = [override for effect in self._effects.values() if (override := effect.get_vision_range_override()) is not None]
+        if not overrides:
+            return None
+        return max(overrides)
+
+    def get_vision_linger_turns_bonus(self) -> int:
+        return sum(effect.get_vision_linger_turns_bonus() for effect in self._effects.values())
+
     def clear_effects(self, execute_on_clear: bool = True) -> None:
         if execute_on_clear:
             for effect in self._effects.values():
