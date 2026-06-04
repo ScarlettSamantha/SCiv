@@ -23,6 +23,8 @@ This page documents the current world-rendering stack in SCiv: how the icon atla
 | [`sciv/system/tile_grid.py`](../../sciv/system/tile_grid.py) | `TileModelGrid`: terrain model placement and grouped `RigidBodyCombiner` nodes. |
 | [`sciv/system/renderers/tile_renderer.py`](../../sciv/system/renderers/tile_renderer.py) | `TileRenderer`: per-tile anchor node, model attachment, selector quad, click overlay, and world-space UI. |
 | [`sciv/system/tile_renderer.py`](../../sciv/system/tile_renderer.py) | `TileRendererSystem`: instanced resource/yield/population icon overlay system. |
+| [`sciv/system/renderers/landmass_label_overlay.py`](../../sciv/system/renderers/landmass_label_overlay.py) | `LandmassLabelOverlay`: zoom-gated continent/landmass name labels built from tile metadata after world render. |
+| [`sciv/system/zoom_visibility.py`](../../sciv/system/zoom_visibility.py) | `ZoomVisibilityController`: reusable zoom-band visibility/fade controller for world-space overlays and future zoom-sensitive surfaces. |
 | [`sciv/gameplay/unit.py`](../../sciv/gameplay/unit.py) | Active runtime unit rendering path: model load, selection ring, icon billboard, healthbar shader, hover indicator, and unit-side tags. |
 | [`sciv/system/unit_renderer.py`](../../sciv/system/unit_renderer.py) | Alternate standalone unit renderer class present in the repo but not currently referenced by the main unit lifecycle. |
 | [`sciv/system/renderers/bits_renderer.py`](../../sciv/system/renderers/bits_renderer.py) | Deterministic slotting of terrain, resource, improvement, and city bits into tile-local model slots. |
@@ -215,6 +217,20 @@ The renderer owns several node types:
 
 `render()` is the main sync point. It repositions the anchor, clears and redraws UI, syncs the instanced icon overlay, optionally requests a terrain rerender, and then lets `BitsRenderer` place tile-local models.
 
+## Zoom-gated world labels
+
+`LandmassLabelOverlay` adds layered, lightly transparent world-space labels for named regions once the camera is zoomed far enough out.
+
+Important traits of this layer:
+
+- rebuilds from live `World.grid` tile metadata after `Game.render_field()` finishes tile rendering
+- carries separate zoom bands for territory labels and broader landmass labels so the map can crossfade between regional and continental naming layers
+- groups tiles by runtime metadata such as `territory_id` / `territory_name` and `landmass_name`, filters to larger named regions, and chooses a label anchor from either the recorded territory seed tile or the tile nearest the group's centroid
+- renders billboarded `TextNode` labels in a late fixed bin with depth testing disabled so names stay readable above terrain
+- fades through the generic `ZoomVisibilityController` instead of hard-coding label-specific zoom polling
+
+The current runtime uses this for named territories at closer zoomed-out views and for named landmasses such as continents and larger islands farther out. The same zoom-visibility controller is intended to be reused later for city-detail overlays, zoom-sensitive tactical surfaces, or similar world-space presentation layers.
+
 ## Bits and slot assignment
 
 `BitsRenderer` handles terrain bits, resource bits, improvement bits, and city-improvement bits.
@@ -295,5 +311,7 @@ Instead, the runtime rebuilds them from gameplay state:
 - `Game` currently keeps both `tile_hex_grid` and `world_tile_grid`; new-game terrain rerenders use `world_tile_grid`, while save/load rebuilds `tile_hex_grid` directly.
 - `TileModelGrid` uses grouped `RigidBodyCombiner` nodes, not GPU instancing.
 - The authoritative live unit-render path is in `sciv/gameplay/unit.py`; `sciv/system/unit_renderer.py` is currently unreferenced by the main runtime flow.
+- `LandmassLabelOverlay` is rebuilt as a post-render overlay from tile metadata and currently depends on generators that populate `territory_id` / `territory_name` / `territory_size` plus `landmass_name` / `landmass_type` / `landmass_size` onto runtime tiles.
+- `ZoomVisibilityController` is the shared zoom-band fade mechanism for world-space overlays; future zoom-sensitive layers should prefer it over bespoke per-feature thresholds.
 - `assets/shaders/terrain.vert.glsl` and `terrain.frag.glsl`, plus `Cache._terrain_atlas`, are present but not currently wired into live terrain rendering.
 - `Game.render_field()` calls `tile.render()` for all tiles and then runs `SceneOptimizer.flatten_scene(self.base.render)`, so later dynamic attachments should be treated as post-flatten runtime nodes.

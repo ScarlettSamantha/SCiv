@@ -30,6 +30,7 @@ from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
+from system.renderers.landmass_label_overlay import LandmassLabelOverlay
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
 from system.tile_grid import TileModelGrid
@@ -199,6 +200,7 @@ class Game(Singleton, DirectObject):
         TileRendererSystem.get().register_tiles(list(world_tiles.values()))
 
         [tile.render() for tile in world_tiles.values()]
+        LandmassLabelOverlay.get().rebuild(self.world.grid.values())
 
         self.ui.map = self.world
         self.camera.recenter()
@@ -240,6 +242,8 @@ class Game(Singleton, DirectObject):
         self.game_won = False
 
         self.ui.reset()
+
+        LandmassLabelOverlay.get().clear()
 
         if self.tile_hex_grid is not None:
             self.tile_hex_grid.reset()
@@ -584,6 +588,7 @@ class Game(Singleton, DirectObject):
             tile.render()
 
         SceneOptimizer.flatten_scene(self.base.render)
+        LandmassLabelOverlay.get().rebuild(self.world.grid.values())
 
     def quit_game(self):
         self.base.destroy()

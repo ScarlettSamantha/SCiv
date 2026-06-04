@@ -212,6 +212,7 @@ These are generator conversion rules, not general gameplay rules.
 - moisture
 - biome
 - geoform / waterbody type
+- territory id, territory name, territory size, and whether the tile is the territory's seed anchor
 - worldgen features
 - resource chosen by hexgen, if any
 - land/water/coast/lake/sea flags
@@ -279,7 +280,7 @@ The shared scoring logic now lives outside the generator in [`sciv/gameplay/foun
 - shared `Basic` helpers for terrain classification, tile instantiation, terrain-model setup, resource allocation, and the common conversion boundary into gameplay tiles
 - Dynamic-specific metadata and starting-unit logic layered after those shared conversion helpers
 
-After that Dynamic-specific world build finishes, `Dynamic` also performs a metadata pass over the visible gameplay rectangle. That pass:
+After that Dynamic-specific world build finishes, `Dynamic` also performs a metadata pass over the visible gameplay rectangle. The baseline `Basic.enrich_from_extra_data()` conversion path already copies shared hexgen territory metadata onto runtime tiles for both generators, and this Dynamic-only pass then adds the extra named-world layers. That pass:
 
 - names visible landmasses from the existing hexgen geoforms
 - groups contiguous visible land tiles by biome into named biome regions

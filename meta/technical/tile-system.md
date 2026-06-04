@@ -68,9 +68,12 @@ Each tile stores the worldgen-derived environment that gameplay uses later:
 
 When `Dynamic Worlds` is the active generator, tiles may also carry extra world-label metadata added after the shared generation pipeline finishes, such as:
 
+- `territory_id`, `territory_name`, `territory_size`, `territory_is_anchor`
 - `landmass_name`, `landmass_type`, `landmass_size`
 - `biome_region_name`, `biome_region_type`, `biome_region_size`
 - `river_names`, `primary_river_name`, `river_count`
+
+The territory fields come from the shared hexgen-to-tile conversion path, so both `Basic` and `Dynamic` worlds can surface named region overlays in the live runtime when hexgen generated territory metadata is present.
 
 `tile_terrain` also controls default passability, movement cost modifiers, yields, terrain bits, and the terrain model path used by the renderer stack.
 

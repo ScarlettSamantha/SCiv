@@ -246,6 +246,18 @@ class Basic(BaseGenerator):
 
         tile.terrain = str(hex.terrain)  # type: ignore
 
+        territory = getattr(hex, "territory", None)
+        if territory is not None:
+            setattr(tile, "territory_id", int(territory.id))
+            setattr(tile, "territory_name", territory.name or f"Territory {territory.id}")
+            setattr(tile, "territory_size", int(territory.size))
+            setattr(tile, "territory_is_anchor", bool(getattr(territory, "main", None) is hex))
+        else:
+            setattr(tile, "territory_id", None)
+            setattr(tile, "territory_name", None)
+            setattr(tile, "territory_size", 0)
+            setattr(tile, "territory_is_anchor", False)
+
         tile.hemisphere = Tile.HEMISPHERE_NORTH if hex.hemisphere.value == "Northern" else Tile.HEMISPHERE_SOUTH
 
         if hex.geoform_type is not None:

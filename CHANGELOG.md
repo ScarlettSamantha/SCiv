@@ -19,6 +19,7 @@
 ### UI
 
 - 🐛 Fixed the minimap startup crash by restoring viewport centroid calculation during initial camera-follow bounds setup.
+- 💄 Added zoom-banded territory and landmass name overlays on the main map plus a reusable fadeable zoom-visibility controller for future zoom-sensitive views.
 - 💄 Added initial draggable HUD layout-debug settings and persisted positioning for core gameplay widgets.
 - 💄 Extended layout debug dragging to debug overlays and modal popups, with an on-drag stats panel for position and size tuning.
 - 💄 Added a selectable Dynamic Worlds map generator with generator-specific setup options in game setup.
