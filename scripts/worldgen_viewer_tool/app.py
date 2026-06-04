@@ -60,7 +60,6 @@ from worldgen_generation_support import (
 )
 from worldgen_viewer_tool.geometry import _hex_center, _hex_polygon, _neighbor_coord_for_side, _river_line, _river_segment_key
 from worldgen_viewer_tool.palette import (
-    BIOME_COLORS,
     GEOFORM_COLORS,
     LABEL_COLORS,
     MAX_OVERLAY_SUMMARY_ITEMS,
@@ -70,6 +69,7 @@ from worldgen_viewer_tool.palette import (
     RIVER_COLORS,
     _altitude_bucket_label,
     _altitude_color,
+    biome_color_for_key,
     _heightmap_sealevel,
     _moisture_bucket_label,
     _moisture_color,
@@ -1533,7 +1533,7 @@ class WorldgenViewerWindow(QMainWindow):
             elif record.is_water:
                 color = QColor(_water_color_for_record(record))
             else:
-                color = QColor(BIOME_COLORS.get(record.biome_key, _stable_color(record.biome_key)))
+                color = biome_color_for_key(record.biome_key)
             if not record.visible_in_runtime:
                 color.setAlpha(95)
             painter.setBrush(QBrush(color))
@@ -2173,7 +2173,7 @@ class WorldgenViewerWindow(QMainWindow):
         if active_mode == "biome":
             if record.is_water:
                 return _water_color_for_record(record)
-            return QColor(BIOME_COLORS.get(record.biome_key, _stable_color(record.biome_key)))
+            return biome_color_for_key(record.biome_key)
         if active_mode == "altitude":
             return _altitude_color(record.altitude, self.dump.altitude_range, record.is_water)
         if active_mode == "moisture":

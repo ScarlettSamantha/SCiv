@@ -22,6 +22,17 @@ BIOME_COLORS = {
     "taiga": QColor("#6f9c7d"),
     "tundra": QColor("#9ab5ad"),
 }
+BIOME_COLOR_ALIASES = {
+    "alpine_tundra": "tundra",
+    "boreal_forest": "taiga",
+    "grassland": "grasslands",
+    "savanna": "savannah",
+    "shrubland": "plains",
+    "temperate_forest": "grasslands",
+    "temperate_rainforest": "jungle",
+    "tropical_forest": "jungle",
+    "tropical_rainforest": "jungle",
+}
 GEOFORM_COLORS = {
     "continent": QColor("#5d8c46"),
     "island": QColor("#93b86b"),
@@ -105,6 +116,28 @@ def _stable_color(key: str, saturation: int = 130, value: int = 190) -> QColor:
     digest = hashlib.sha256(key.encode("utf-8")).digest()
     hue = int.from_bytes(digest[:2], "big") % 360
     return QColor.fromHsv(hue, saturation, value)
+
+
+def biome_color_for_key(biome_key: str) -> QColor:
+    known_color = _known_biome_color_for_key(biome_key)
+    if known_color is not None:
+        return known_color
+
+    normalized = biome_key.strip().lower()
+    if not normalized:
+        return _stable_color("unknown")
+
+    return QColor(_stable_color(normalized))
+
+
+def _known_biome_color_for_key(biome_key: str) -> QColor | None:
+    normalized = biome_key.strip().lower()
+    if not normalized:
+        return None
+
+    palette_key = BIOME_COLOR_ALIASES.get(normalized, normalized)
+    color = BIOME_COLORS.get(palette_key)
+    return QColor(color) if color is not None else None
 
 
 def _water_color_from_kind(kind: str) -> QColor:
@@ -235,9 +268,7 @@ def _runtime_terrain_label(dump: WorldgenDump, record: HexRecord) -> str:
 def _runtime_terrain_color(dump: WorldgenDump, record: HexRecord) -> QColor:
     terrain_key = _runtime_terrain_key(dump, record)
     if terrain_key is None:
-        return _water_color_for_record(record) if record.is_water else QColor(
-            BIOME_COLORS.get(record.biome_key, _stable_color(record.biome_key))
-        )
+        return _water_color_for_record(record) if record.is_water else biome_color_for_key(record.biome_key)
 
     lowered = terrain_key.strip().lower().replace("_", "").replace("-", "")
     if lowered == "coast":
@@ -286,8 +317,7 @@ def _runtime_terrain_land_color(lowered: str, record: HexRecord) -> QColor | Non
     if "plain" in lowered:
         return QColor(TERRAIN_COLORS["plains"])
 
-    biome_color = BIOME_COLORS.get(record.biome_key)
-    return QColor(biome_color) if biome_color is not None else None
+    return _known_biome_color_for_key(record.biome_key)
 
 
 def _altitude_color(value: float, bounds: tuple[float, float], is_water: bool) -> QColor:
