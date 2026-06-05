@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from math import ceil, floor, hypot, sqrt
-from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, cast
+from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, Set, cast
 
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
@@ -17,7 +17,9 @@ from panda3d.core import Point2, Point3
 
 from helpers.tiles import Tiles
 from managers.player import PlayerManager
+from gameplay.player import Player
 from menus.kivy.elements.layout_debug import LayoutDebugPosition, LayoutDebugStatsBadge, denormalize_position
+from gameplay.tile import Tile
 
 if TYPE_CHECKING:
     from gameplay.tile import Tile
@@ -76,17 +78,23 @@ class Minimap(FloatLayout, DirectObject):
         self.display_texture: Optional[Texture] = None
         self.tiles: list[Tile] = []
         self.tiles_by_key: dict[tuple[int, int], Tile] = {}
+        self._explored_tile_tags: Set[str] = set()
+
         self._refresh_trigger = Clock.create_trigger(self._refresh_full_triggered, 0)
         self._overlay_trigger = Clock.create_trigger(self._refresh_overlay_triggered, 0)
+
         self._pending_texture_rebuild = False
         self._layout_scheduled = False
         self._is_registered = False
         self._last_window_size = self._get_window_size()
         self._window_poll_event = Clock.schedule_interval(self._poll_window_size, 0)
+
         self._drag_camera_active: Optional[bool] = None
         self._drag_camera_lock: Optional[bool] = None
         self._drag_zoom_enabled: Optional[bool] = None
+
         self._external_camera_capture = False
+
         self._layout_debug_drag_enabled = False
         self._layout_debug_overlay_enabled = False
         self._layout_debug_dragging = False
@@ -239,6 +247,7 @@ class Minimap(FloatLayout, DirectObject):
         self.accept('game.state.reset_start', self.schedule_full_refresh)
         self.accept('system.camera.zoom_ticked', self.schedule_overlay_refresh)
         self.accept('system.camera.zoom_ended', self.schedule_overlay_refresh)
+        self.accept('game.gameplay.vision.updated', self.on_vision_updated)
         self._is_registered = True
 
         self.refresh_full()
@@ -258,6 +267,31 @@ class Minimap(FloatLayout, DirectObject):
     def schedule_full_refresh(self, *_args: object) -> None:
         self._pending_texture_rebuild = True
         self._refresh_trigger()
+
+    def on_vision_updated(self, player: "Player", changed_tile_tags: Set[str] | None = None) -> None:
+        if not PlayerManager.is_session_player(player):
+            return
+
+        previous_explored_tile_tags = self._explored_tile_tags
+        next_explored_tile_tags = set(player.vision.get_explored_tile_tags())
+
+        if previous_explored_tile_tags == next_explored_tile_tags:
+            return
+
+        self._explored_tile_tags = next_explored_tile_tags
+        self.schedule_full_refresh()
+
+    def _sync_explored_tile_tags(self) -> None:
+        try:
+            player = PlayerManager.session_player()
+        except Exception:
+            self._explored_tile_tags = set()
+            return
+
+        self._explored_tile_tags = set(player.vision.get_explored_tile_tags())
+
+    def _is_tile_explored(self, tile: "Tile") -> bool:
+        return tile.get_tag() in self._explored_tile_tags
 
     def schedule_overlay_refresh(self, *_args: object) -> None:
         self._overlay_trigger()
@@ -281,6 +315,7 @@ class Minimap(FloatLayout, DirectObject):
             return
 
         self._refresh_tile_cache()
+        self._sync_explored_tile_tags()
 
         accent = self._get_accent_color(alpha=1.0)
 
@@ -288,6 +323,9 @@ class Minimap(FloatLayout, DirectObject):
             self._draw_empire_borders()
 
             for tile in self.tiles:
+                if not self._is_tile_explored(tile):
+                    continue
+
                 if tile.city is None:
                     continue
 
@@ -385,6 +423,9 @@ class Minimap(FloatLayout, DirectObject):
     def _draw_selected_tile_marker(self, accent: tuple[float, float, float, float]) -> None:
         selected_tile = self._get_selected_tile()
         if selected_tile is None:
+            return
+
+        if not self._is_tile_explored(selected_tile):
             return
 
         canvas_pos = self._world_to_canvas(selected_tile.pos_x, selected_tile.pos_y)
@@ -503,6 +544,7 @@ class Minimap(FloatLayout, DirectObject):
             return
 
         self._refresh_tile_cache()
+        self._sync_explored_tile_tags()
         self._pending_texture_rebuild = True
         self._refresh_geometry(self.world)
         self._update_panel_chrome()
@@ -606,6 +648,8 @@ class Minimap(FloatLayout, DirectObject):
         if self.world is None:
             return b''
 
+        self._sync_explored_tile_tags()
+
         texture_width = max(1, self._texture_width)
         texture_height = max(1, self._texture_height)
         pixel_data = bytearray(texture_width * texture_height * 4)
@@ -616,6 +660,9 @@ class Minimap(FloatLayout, DirectObject):
                 pixel_data[row_start + x * 4: row_start + x * 4 + 4] = bytes((8, 11, 17, 255))
 
         for tile in self.tiles:
+            if not self._is_tile_explored(tile):
+                continue
+
             tex_pos = self._world_to_texture_point(tile.pos_x, tile.pos_y)
             if tex_pos is None:
                 continue
@@ -841,7 +888,7 @@ class Minimap(FloatLayout, DirectObject):
         if not self.tiles:
             return None
 
-        candidates = self.tiles
+        candidates: list[Tile] = [tile for tile in self.tiles if self._is_tile_explored(tile)]
 
         best_tile: Optional[Tile] = None
         best_distance = float('inf')
@@ -1306,6 +1353,9 @@ class Minimap(FloatLayout, DirectObject):
         shadow_width = line_width + 1.0
 
         for tile in self.tiles:
+            if not self._is_tile_explored(tile):
+                continue
+
             owner = self._get_empire_owner(tile)
             if owner is None:
                 continue
@@ -1326,7 +1376,7 @@ class Minimap(FloatLayout, DirectObject):
 
             for edge_index, (dx, dy) in enumerate(neighbor_offsets):
                 neighbor = self.tiles_by_key.get((tile.x + dx, tile.y + dy))
-                neighbor_owner = self._get_empire_owner(neighbor)
+                neighbor_owner = self._get_empire_owner(neighbor) if neighbor is not None and self._is_tile_explored(neighbor) else None
                 if neighbor_owner is owner:
                     continue
 
