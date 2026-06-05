@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Protocol, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Protocol, Set, Tuple, TYPE_CHECKING, cast
 
 from gameplay.vision import VisionTileState, is_visible_for_render
 
@@ -10,18 +10,19 @@ FOGGED_TILE_TINT: Tuple[float, float, float, float] = (0.34, 0.34, 0.40, 1.0)
 UNSEEN_TILE_TINT: Tuple[float, float, float, float] = (0.10, 0.10, 0.13, 1.0)
 
 
+class FogUnitLike(Protocol):
+    def get_tile(self) -> "FogTileLike": ...
+
+    def set_render_visibility(self, visible: bool) -> None: ...
+
+
 class FogTileLike(Protocol):
     tag: str
     renderer: Any
 
     def get_tag(self) -> str: ...
 
-
-class FogUnitLike(Protocol):
-    def get_tile(self) -> FogTileLike: ...
-
-    def set_render_visibility(self, visible: bool) -> None: ...
-
+    def get_units(self) -> Iterable[Any]: ...
 
 class FogTileGridLike(Protocol):
     def hide_tile(self, tile_or_index: Any) -> None: ...
@@ -118,7 +119,7 @@ class FogOfWarController:
         if tile_grid is not None and touched_grid:
             tile_grid.collect()
 
-        self._sync_units(player, units)
+        self._sync_units(player, self._collect_units_from_tiles(cached_tiles, units))
         self._sync_label_overlay(player, total_tiles=len(cached_tiles), label_overlay=label_overlay)
         self._synced_player_keys.add(player_key)
 
@@ -147,14 +148,15 @@ class FogOfWarController:
                 total_tiles = len(cached_tiles)
 
         fog_ceiling_z = self._fog_ceiling_z
-
         touched_grid = False
+        changed_tiles: List[FogTileLike] = []
 
         for tile_tag in changed_tile_tags:
             tile = self._tile_by_tag.get(tile_tag)
             if tile is None:
                 continue
 
+            changed_tiles.append(tile)
             state = player.vision.get_tile_state(tile_tag)
 
             if self._apply_tile_state_if_needed(
@@ -169,13 +171,34 @@ class FogOfWarController:
         if tile_grid is not None and touched_grid:
             tile_grid.collect()
 
-        if cached_units:
-            self._sync_units(player, cached_units)
+        self._sync_units(player, self._collect_units_from_tiles(changed_tiles, cached_units))
 
         if label_overlay is not None and total_tiles is not None:
             self._sync_label_overlay(player, total_tiles=total_tiles, label_overlay=label_overlay)
 
         self._synced_player_keys.add(self._player_key(player))
+
+    def _collect_units_from_tiles(
+        self,
+        tiles: Iterable[FogTileLike],
+        units: Iterable[FogUnitLike] = (),
+    ) -> List[FogUnitLike]:
+        unit_by_key: Dict[str, FogUnitLike] = {}
+
+        for unit in units:
+            unit_by_key[self._unit_key(unit)] = unit
+
+        for tile in tiles:
+            tile_units: Iterable[Any] = tile.get_units()
+
+            for unit in tile_units:
+                if not hasattr(unit, "get_tile") or not hasattr(unit, "set_render_visibility"):
+                    continue
+
+                resolved_unit = cast(FogUnitLike, unit)
+                unit_by_key[self._unit_key(resolved_unit)] = resolved_unit
+
+        return list(unit_by_key.values())
 
     def _apply_tile_state_if_needed(
         self,
@@ -213,15 +236,10 @@ class FogOfWarController:
         return True
 
     def _sync_units(self, player: "Player", units: Iterable[FogUnitLike]) -> None:
-        visible_tile_tags = player.vision.get_visible_tile_tags()
-
         for unit in units:
             unit_tile_tag = self._tile_tag(unit.get_tile())
-            next_visible = unit_tile_tag in visible_tile_tags
+            next_visible = player.vision.get_tile_state(unit_tile_tag) is VisionTileState.VISIBLE
             unit_key = self._unit_key(unit)
-
-            if self._unit_visibility_by_key.get(unit_key) == next_visible:
-                continue
 
             self._unit_visibility_by_key[unit_key] = next_visible
             unit.set_render_visibility(next_visible)

@@ -116,6 +116,7 @@ class Unit(BaseEntity, ABC):
         self.moves_left: int | float = 3.0
 
         self.model: Optional[NodePath] = None
+        self._render_visible: bool = True
 
         self.selection_radius: float = 1.0
         self.selection_enabled: bool = True
@@ -193,6 +194,7 @@ class Unit(BaseEntity, ABC):
         from system.renderers.tile_renderer import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
 
         if self.model is not None:
+            self.set_render_visibility(self._render_visible)
             return self.model
 
         if self._model is None:
@@ -294,6 +296,8 @@ class Unit(BaseEntity, ABC):
             bar_np.setShaderInput("border", 0.025)  # type: ignore
             bar_np.setShaderInput("color", self.get_owner().color)  # type: ignore
             self._healthbar_quad = bar_np
+
+        self.set_render_visibility(self._render_visible)
 
         return self.model
 
@@ -424,6 +428,7 @@ class Unit(BaseEntity, ABC):
         )
         self.health_left: float = getattr(self, "health_left", self.max_health)
         self.moves_left = getattr(self, "moves_left", self.max_moves)
+        self._render_visible = True
 
     def on_turn_end(self, turn: int) -> None:
         self.moves_left = self.max_moves
@@ -616,11 +621,14 @@ class Unit(BaseEntity, ABC):
             )
 
     def select(self):
-        if self.selection_circle is None:
-            self.selection_circle = self._create_selection_circle()
+            if not self._render_visible:
+                return
 
-        self.selection_circle.show()
-        self.rotation_task = self.add_task(self._rotate_indicator_task, "rotate_selection_circle", delay=1 / 30)  # type: ignore
+            if self.selection_circle is None:
+                self.selection_circle = self._create_selection_circle()
+
+            self.selection_circle.show()
+            self.rotation_task = self.add_task(self._rotate_indicator_task, "rotate_selection_circle", delay=1 / 30)  # type: ignore
 
     def deselect(self):
         if self.selection_circle is not None:
@@ -713,14 +721,39 @@ class Unit(BaseEntity, ABC):
         spawn_heal_text(self, amount)
 
     def set_render_visibility(self, visible: bool) -> None:
-        if self.model is None:
-            return
+        self._render_visible = visible
 
-        if visible:
-            self.model.show()
-            return
+        if self.model is not None:
+            self.model.setCollideMask(BitMask32.bit(1) if visible and self.collides is True else BitMask32.allOff())
 
-        self.model.hide()
+            if visible:
+                self.model.show()
+            else:
+                self.model.hide()
+
+        if self.unit_icons is not None:
+            if visible:
+                self.unit_icons.show()
+            else:
+                self.unit_icons.hide()
+
+        if self.healthbar_np is not None:
+            if visible:
+                self.healthbar_np.show()
+            else:
+                self.healthbar_np.hide()
+
+        if self._healthbar_quad is not None:
+            if visible:
+                self._healthbar_quad.show()
+            else:
+                self._healthbar_quad.hide()
+
+        if self.selection_circle is not None:
+            if visible and self.selection_enabled:
+                self.selection_circle.show()
+            else:
+                self.selection_circle.hide()
 
     def get_base_vision_range(self) -> int:
         return self.DEFAULT_VISION_RANGE

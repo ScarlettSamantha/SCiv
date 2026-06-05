@@ -1,6 +1,6 @@
 from datetime import datetime
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -25,6 +25,7 @@ from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
 from panda3d.core import WindowProperties  # type: ignore
+from sciv.gameplay.unit import Unit
 from system.asset_archive import P3DAssetArchive
 from system.camera import Camera
 from system.game_settings import GameSettings
@@ -410,6 +411,8 @@ class Game(Singleton, DirectObject):
         self.accept("game.input.user.quit_game", self.quit_game)
         self.accept("game.input.user.wireframe_toggle", self.toggle_pause_game)
         self.accept("game.era.progressing", self.on_age_progressing)
+        self.accept("game.gameplay.unit.spawned", self.on_unit_visibility_candidate_changed)
+        self.accept("game.gameplay.unit.moved", self.on_unit_visibility_candidate_changed)
 
     def on_age_progressing(self, new_age: "Age"):
         if self.properties is None:
@@ -685,10 +688,9 @@ class Game(Singleton, DirectObject):
         label_overlay: LandmassLabelOverlay = LandmassLabelOverlay.get()
 
         if changed_tiles is not None and self.fog_of_war.has_synced_player(player):
-            if not changed_tiles:
+            units: List[Unit] = cast(List["Unit"], list(self.entities.get_all(EntityType.UNIT).values()))
+            if not changed_tiles and not units:
                 return
-
-            units = self._collect_units_for_vision_sync(changed_tiles)
 
             self.fog_of_war.apply_changed_tags(
                 player,
@@ -757,3 +759,40 @@ class Game(Singleton, DirectObject):
         if self.world_tile_grid is None:
             raise ValueError("World tile grid has not been generated yet. Call generate_world() first.")
         return self.world_tile_grid
+
+    def on_unit_visibility_candidate_changed(self, unit: "Unit", *args: Any) -> None:
+        del args
+
+        if not self.game_active or not self.world.grid:
+            return
+
+        player = PlayerManager.player()
+        if not PlayerManager.is_session_player(player):
+            return
+
+        self.sync_session_player_unit_visibility([unit])
+
+    def sync_session_player_unit_visibility(self, units: Iterable["Unit"]) -> None:
+        cached_units = list(units)
+        if not cached_units:
+            return
+
+        player = PlayerManager.player()
+        if not self.fog_of_war.has_synced_player(player):
+            self.sync_session_player_fog(player)
+            return
+
+        tile_grid: TileModelGrid | None = self.get_active_tile_grid()
+        tile_overlay: TileRendererSystem = TileRendererSystem.get()
+        label_overlay: LandmassLabelOverlay = LandmassLabelOverlay.get()
+
+        self.fog_of_war.apply_changed_tags(
+            player,
+            set(),
+            tile_grid=tile_grid,
+            tile_overlay=tile_overlay,
+            units=cached_units,
+            all_tiles=self.world.grid.values(),
+            label_overlay=label_overlay,
+            total_tiles=len(self.world.grid),
+    )

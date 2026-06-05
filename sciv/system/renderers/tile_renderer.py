@@ -475,7 +475,7 @@ class TileRenderer:
             self.rerender_terrain()
 
         self.bits_renderer.render()
-        self.set_visibility_state(self._visibility_state)
+        self.set_visibility_state(self._visibility_state, force=True)
 
     def rerender_terrain(self) -> None:
         if self.game_manager.world_tile_grid is None:
@@ -490,7 +490,7 @@ class TileRenderer:
 
             self._drop_ui_node_if_empty()
             TileRendererSystem.get().sync_tile(self.tile)
-            self.set_visibility_state(self._visibility_state)
+            self.set_visibility_state(self._visibility_state, force=True)
             return
 
         if self.city_ui_node is not None:
@@ -500,7 +500,7 @@ class TileRenderer:
         self._draw_improvements()
         self._draw_city_ui()
         TileRendererSystem.get().sync_tile(self.tile)
-        self.set_visibility_state(self._visibility_state)
+        self.set_visibility_state(self._visibility_state, force=True)
 
     def _draw_city_ui(self) -> None:
         if not self.tile.city:

@@ -6,7 +6,7 @@ from direct.task import Task
 from helpers.cache import Cache
 from helpers.colors import Tuple4f
 from managers.input import NET_NODE_TAG_ID_FIELD, NET_TYPE, NET_TYPE_FIELD
-from panda3d.core import BitMask32, CardMaker, GeomNode, LineSegs, LVector3, NodePath, Shader, TransparencyAttrib, Vec4
+from panda3d.core import BitMask32, CardMaker, GeomNode, LineSegs, LVector3, NodePath, PandaNode, Shader, TransparencyAttrib, Vec4
 
 if TYPE_CHECKING:
     from gameplay.unit import Unit
@@ -19,9 +19,10 @@ class UnitRenderer:
         self.unit: "Unit" = unit
         self.base: "OpenCiv" = Cache.get_showbase_instance()
         self.loader = Loader(self.base)
-        self.current_model = None
+        self.current_model: Optional[NodePath[PandaNode]] = None
         self.model_cache = None
         self.selection_circle = None
+        self._render_visible: bool = True
 
         self.selection_shader = Shader.load(
             Shader.SL_GLSL,
@@ -60,6 +61,31 @@ class UnitRenderer:
         if self.selection_enabled and self.selector_np:
             self.selector_np.setShaderInput("time", task.time)  # type: ignore
         return Task.cont
+
+    def set_render_visibility(self, visible: bool) -> None:
+        self._render_visible = visible
+        self._apply_render_visibility()
+
+    def _apply_render_visibility(self) -> None:
+        if self.current_model is not None:
+            self.current_model.setCollideMask(BitMask32.bit(1) if self._render_visible and self.unit.collides is True else BitMask32.allOff())
+
+            if self._render_visible:
+                self.current_model.show()
+            else:
+                self.current_model.hide()
+
+        if self.selection_circle is not None:
+            if self._render_visible and self.selection_enabled:
+                self.selection_circle.show()
+            else:
+                self.selection_circle.hide()
+
+        if self.selector_np is not None:
+            if self._render_visible and self.selection_enabled:
+                self.selector_np.show()
+            else:
+                self.selector_np.hide()
 
     def load_model(self) -> NodePath:
         path = self.unit.get_model_path()
@@ -156,15 +182,17 @@ class UnitRenderer:
     def get_unit(self) -> "Unit":
         return self.unit
 
-    def render(self):
+    def render(self) -> NodePath[PandaNode]:
         if self.current_model is None:
             self.current_model = self.load_model()
+
         self.current_model.reparentTo(self.base.render)
 
         if self.selection_enabled and self.selector_np:
             x, y, z = self.unit.tile.get_cords()  # type: ignore
             self.selector_np.setPos(x, y, z + 0.01)  # type: ignore
 
+        self._apply_render_visibility()
         return self.current_model
 
     def unload(self) -> None:
