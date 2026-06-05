@@ -106,6 +106,9 @@ class TileRenderer:
         self._fog_overlay_color: Optional[Tuple4f] = None
         self._visibility_state_applied: bool = False
 
+        self._fog_overlay_color: Optional[Tuple4f] = None
+        self._visibility_state_applied: bool = False
+
         shader_vertex_path: str = str(self.base.base_path / "assets" / "shaders" / "tile_selector.vert.glsl")
         shader_fragment_path: str = str(self.base.base_path / "assets" / "shaders" / "tile_selector.frag.glsl")
 
@@ -198,6 +201,81 @@ class TileRenderer:
         self.fog_overlay_np.setPos(0, 0, -0.25)
         self.fog_overlay_np.setScale(1.0, 1.0, fog_height)
 
+    def set_fog_ceiling_z(self, fog_ceiling_z: float) -> None:
+        next_fog_ceiling_z = max(float(self.tile.pos_z), fog_ceiling_z)
+        if abs(self._fog_ceiling_z - next_fog_ceiling_z) < 0.0001:
+            return
+
+        self._fog_ceiling_z = next_fog_ceiling_z
+        self._update_fog_overlay_transform()
+
+    def _show_fog_overlay(self, color: Tuple4f, *, transparent: bool) -> None:
+        fog_overlay = self._ensure_fog_overlay()
+
+        if transparent:
+            fog_overlay.setDepthWrite(False)
+            fog_overlay.setBin("transparent", 60)
+        else:
+            fog_overlay.setDepthWrite(True)
+            fog_overlay.setBin("fixed", 60)
+
+        if self._fog_overlay_color != color:
+            fog_overlay.setColorScale(*color)
+            self._fog_overlay_color = color
+
+        if fog_overlay.isHidden():
+            fog_overlay.show()
+
+    def set_visibility_state(self, state: VisionTileState, *, force: bool = False) -> None:
+        if not force and self._visibility_state_applied and self._visibility_state is state:
+            return
+
+        self._visibility_state = state
+        self._visibility_state_applied = True
+        fog_overlay = self.fog_overlay_np
+
+        if state is VisionTileState.UNSEEN:
+            self.anchor_node.show()
+            self.geometry_node.hide()
+            if self.ui_node is not None:
+                self.ui_node.hide()
+            if self.selector_np is not None:
+                self.selector_np.hide()
+            self._show_fog_overlay(UNSEEN_TILE_TINT, transparent=False)
+            TileRendererSystem.get().hide_tile(self.tile)
+            return
+
+        self.anchor_node.show()
+
+        if state is VisionTileState.FOGGED:
+            self.geometry_node.hide()
+            if self.ui_node is not None:
+                self.ui_node.hide()
+            if self.selector_np is not None:
+                self.selector_np.hide()
+            self._show_fog_overlay(FOGGED_TILE_TINT, transparent=True)
+            TileRendererSystem.get().show_tile(self.tile)
+            return
+
+        if fog_overlay is not None:
+            fog_overlay.hide()
+
+        if is_visible_for_render(state):
+            self.geometry_node.show()
+            if self.ui_node is not None:
+                self.ui_node.show()
+            if self.selector_enabled and self.selector_np is not None:
+                self.selector_np.show()
+            TileRendererSystem.get().show_tile(self.tile)
+            return
+
+        self.geometry_node.hide()
+        if self.ui_node is not None:
+            self.ui_node.hide()
+        if self.selector_np is not None:
+            self.selector_np.hide()
+        TileRendererSystem.get().hide_tile(self.tile)
+
     def _drop_ui_node_if_empty(self) -> None:
         if self.ui_node is None:
             return
@@ -270,74 +348,6 @@ class TileRenderer:
 
         self.update()
 
-    def set_fog_ceiling_z(self, fog_ceiling_z: float) -> None:
-        next_fog_ceiling_z = max(float(self.tile.pos_z), fog_ceiling_z)
-        if abs(self._fog_ceiling_z - next_fog_ceiling_z) < 0.0001:
-            return
-
-        self._fog_ceiling_z = next_fog_ceiling_z
-        self._update_fog_overlay_transform()
-
-
-    def _show_fog_overlay(self, color: Tuple4f) -> None:
-        fog_overlay = self._ensure_fog_overlay()
-        if self._fog_overlay_color != color:
-            fog_overlay.setColorScale(*color)
-            self._fog_overlay_color = color
-
-        if fog_overlay.isHidden():
-            fog_overlay.show()
-
-
-    def set_visibility_state(self, state: VisionTileState, *, force: bool = False) -> None:
-        if not force and self._visibility_state_applied and self._visibility_state is state:
-            return
-
-        self._visibility_state = state
-        self._visibility_state_applied = True
-        fog_overlay = self.fog_overlay_np
-
-        if state is VisionTileState.UNSEEN:
-            self.anchor_node.show()
-            self.geometry_node.hide()
-            if self.ui_node is not None:
-                self.ui_node.hide()
-            if self.selector_np is not None:
-                self.selector_np.hide()
-            self._show_fog_overlay(UNSEEN_TILE_TINT)
-            TileRendererSystem.get().hide_tile(self.tile)
-            return
-
-        self.anchor_node.show()
-
-        if state is VisionTileState.FOGGED:
-            self.geometry_node.hide()
-            if self.ui_node is not None:
-                self.ui_node.hide()
-            if self.selector_np is not None:
-                self.selector_np.hide()
-            self._show_fog_overlay(FOGGED_TILE_TINT)
-            TileRendererSystem.get().hide_tile(self.tile)
-            return
-
-        if fog_overlay is not None:
-            fog_overlay.hide()
-
-        if is_visible_for_render(state):
-            self.geometry_node.show()
-            if self.ui_node is not None:
-                self.ui_node.show()
-            if self.selector_enabled and self.selector_np is not None:
-                self.selector_np.show()
-            TileRendererSystem.get().show_tile(self.tile)
-            return
-
-        self.geometry_node.hide()
-        if self.ui_node is not None:
-            self.ui_node.hide()
-        if self.selector_np is not None:
-            self.selector_np.hide()
-        TileRendererSystem.get().hide_tile(self.tile)
 
     def clear_ui(self) -> None:
         if self.ui_node is not None:

@@ -31,7 +31,7 @@ from system.camera import Camera
 from system.game_settings import GameSettings
 from system.generators.base import BaseGenerator
 from system.generators.basic import Basic
-from system.renderers.fog_of_war import FogOfWarController
+from system.renderers.fog_of_war import FogBlobOverlay, FogOfWarController
 from system.renderers.landmass_label_overlay import LandmassLabelOverlay
 from system.scene_optimizer import SceneOptimizer
 from system.shaders import Shaders
@@ -108,6 +108,7 @@ class Game(Singleton, DirectObject):
 
         self.active_generator: BaseGenerator | None = None
         self.fog_of_war: FogOfWarController = FogOfWarController()
+        self.fog_blob_overlay: FogBlobOverlay | None = None
 
         self.properties: Optional[GameSettings] = GameSettings(
             width=5,
@@ -256,6 +257,7 @@ class Game(Singleton, DirectObject):
 
         self.ui.reset()
         self.fog_of_war.reset()
+        self._dispose_fog_blob_overlay()
 
         LandmassLabelOverlay.get().clear()
 
@@ -679,6 +681,23 @@ class Game(Singleton, DirectObject):
 
         return self.tile_hex_grid
 
+    def _ensure_fog_blob_overlay(self, tile_grid: TileModelGrid | None) -> FogBlobOverlay:
+        radius = float(getattr(tile_grid, "radius", 1.0)) if tile_grid is not None else 1.0
+
+        if self.fog_blob_overlay is None:
+            self.fog_blob_overlay = FogBlobOverlay(parent=self.base.render, radius=radius)
+        else:
+            self.fog_blob_overlay.set_radius(radius)
+
+        return self.fog_blob_overlay
+
+    def _dispose_fog_blob_overlay(self) -> None:
+        if self.fog_blob_overlay is None:
+            return
+
+        self.fog_blob_overlay.dispose()
+        self.fog_blob_overlay = None
+
     def sync_session_player_fog(self, player: "Player", changed_tiles: Set[str] | None = None) -> None:
         if not self.world.grid:
             return
@@ -686,6 +705,7 @@ class Game(Singleton, DirectObject):
         tile_grid: TileModelGrid | None = self.get_active_tile_grid()
         tile_overlay: TileRendererSystem = TileRendererSystem.get()
         label_overlay: LandmassLabelOverlay = LandmassLabelOverlay.get()
+        fog_blob_overlay: FogBlobOverlay = self._ensure_fog_blob_overlay(tile_grid)
 
         if changed_tiles is not None and self.fog_of_war.has_synced_player(player):
             units: List[Unit] = cast(List["Unit"], list(self.entities.get_all(EntityType.UNIT).values()))
@@ -700,6 +720,7 @@ class Game(Singleton, DirectObject):
                 units=units,
                 all_tiles=self.world.grid.values(),
                 label_overlay=label_overlay,
+                fog_blob_overlay=fog_blob_overlay,
                 total_tiles=len(self.world.grid),
             )
             return
@@ -713,6 +734,7 @@ class Game(Singleton, DirectObject):
             tile_grid=tile_grid,
             tile_overlay=tile_overlay,
             label_overlay=label_overlay,
+            fog_blob_overlay=fog_blob_overlay,
             changed_tile_tags=None,
         )
 
@@ -785,6 +807,7 @@ class Game(Singleton, DirectObject):
         tile_grid: TileModelGrid | None = self.get_active_tile_grid()
         tile_overlay: TileRendererSystem = TileRendererSystem.get()
         label_overlay: LandmassLabelOverlay = LandmassLabelOverlay.get()
+        fog_blob_overlay: FogBlobOverlay = self._ensure_fog_blob_overlay(tile_grid)
 
         self.fog_of_war.apply_changed_tags(
             player,
@@ -794,5 +817,6 @@ class Game(Singleton, DirectObject):
             units=cached_units,
             all_tiles=self.world.grid.values(),
             label_overlay=label_overlay,
+            fog_blob_overlay=fog_blob_overlay,
             total_tiles=len(self.world.grid),
     )
