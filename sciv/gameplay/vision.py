@@ -204,18 +204,13 @@ class Vision:
         self._explored_tile_tags: Set[str] = set()
         self._lingering_tile_tags: Set[str] = set()
         self._runtime_views_dirty: bool = True
+        self._source_ref_counts: dict[str, int] = {}
         self._visible_tiles: Set[ReferenceType["Tile"]] = set()
         self._visible_units: List[ReferenceType["Unit"]] = []
         self._visible_cities: List[ReferenceType["City"]] = []
         self._visible_resources: List[ReferenceType["BaseResource"]] = []
         self._visible_improvements: List[ReferenceType["Improvement"]] = []
         self._visible_terrain: List[ReferenceType["BaseTerrain"]] = []
-        self._source_ref_counts: dict[str, int] = {}
-        self._direct_visible_tile_tags: set[str] = set()
-        self._render_visible_tile_tags: set[str] = set()
-        self._explored_tile_tags: set[str] = set()
-        self._lingering_tile_tags: set[str] = set()
-        self._runtime_views_dirty: bool = True
 
     def set_default_linger_turns(self, turns: int) -> None:
         self.default_linger_turns = max(0, turns)
@@ -277,7 +272,7 @@ class Vision:
                 if not callable(get_tag):
                     continue
                 tile_tag = str(get_tag())
-                self._tile_refs[tile_tag] = ref(tile_or_tag)
+                self._tile_refs[tile_tag] = ref(cast("Tile", tile_or_tag))
 
             if tile_tag != "":
                 next_tags.add(tile_tag)

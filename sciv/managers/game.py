@@ -1,6 +1,6 @@
 from datetime import datetime
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -676,20 +676,56 @@ class Game(Singleton, DirectObject):
 
         return self.tile_hex_grid
 
-    def sync_session_player_fog(self, player: "Player", changed_tiles: set[str] | None = None) -> None:
+    def sync_session_player_fog(self, player: "Player", changed_tiles: Set[str] | None = None) -> None:
         if not self.world.grid:
             return
 
-        units = cast(list["Unit"], list(self.entities.get_all(EntityType.UNIT).values()))
+        tile_grid: TileModelGrid | None = self.get_active_tile_grid()
+        tile_overlay: TileRendererSystem = TileRendererSystem.get()
+        label_overlay: LandmassLabelOverlay = LandmassLabelOverlay.get()
+
+        if changed_tiles is not None and self.fog_of_war.has_synced_player(player):
+            if not changed_tiles:
+                return
+
+            units = self._collect_units_for_vision_sync(changed_tiles)
+
+            self.fog_of_war.apply_changed_tags(
+                player,
+                changed_tiles,
+                tile_grid=tile_grid,
+                tile_overlay=tile_overlay,
+                units=units,
+                all_tiles=self.world.grid.values(),
+                label_overlay=label_overlay,
+                total_tiles=len(self.world.grid),
+            )
+            return
+
+        units = cast(List["Unit"], list(self.entities.get_all(EntityType.UNIT).values()))
+
         self.fog_of_war.apply(
-            player,
-            self.world.grid.values(),
-            units,
-            tile_grid=self.get_active_tile_grid(),
-            tile_overlay=TileRendererSystem.get(),
-            label_overlay=LandmassLabelOverlay.get(),
-            changed_tile_tags=changed_tiles,
+            player=player,
+            tiles=self.world.grid.values(),
+            units=units,
+            tile_grid=tile_grid,
+            tile_overlay=tile_overlay,
+            label_overlay=label_overlay,
+            changed_tile_tags=None,
         )
+
+    def _collect_units_for_vision_sync(self, changed_tile_tags: Set[str]) -> List["Unit"]:
+        units_by_tag: Dict[str, "Unit"] = {}
+
+        for tile_tag in changed_tile_tags:
+            tile = self.world.lookup_on_tag(tile_tag)
+            if tile is None:
+                continue
+
+            for unit in tile.get_units():
+                units_by_tag[unit.get_tag()] = unit
+
+        return list(units_by_tag.values())
 
     def process_turn(self):
         if not Lose.check_if_game_over():

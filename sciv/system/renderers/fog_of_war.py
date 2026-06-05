@@ -53,15 +53,20 @@ class FogOfWarController:
         self._tile_by_tag: Dict[str, FogTileLike] = {}
         self._tile_state_by_tag: Dict[str, VisionTileState] = {}
         self._unit_visibility_by_key: Dict[str, bool] = {}
+        self._fog_ceiling_z: float = 0.1
 
     def reset(self) -> None:
         self._synced_player_keys.clear()
         self._tile_by_tag.clear()
         self._tile_state_by_tag.clear()
         self._unit_visibility_by_key.clear()
+        self._fog_ceiling_z = 0.1
 
     def sync_tiles(self, tiles: Iterable[FogTileLike]) -> None:
         self._tile_by_tag = {self._tile_tag(tile): tile for tile in tiles}
+
+    def has_synced_player(self, player: "Player") -> bool:
+        return self._player_key(player) in self._synced_player_keys
 
     def apply(
         self,
@@ -93,6 +98,7 @@ class FogOfWarController:
             return
 
         fog_ceiling_z = self._resolve_fog_ceiling_z(cached_tiles, tile_grid)
+        self._fog_ceiling_z = fog_ceiling_z
         touched_grid = False
 
         for tile in cached_tiles:
@@ -140,9 +146,7 @@ class FogOfWarController:
             if total_tiles is None:
                 total_tiles = len(cached_tiles)
 
-        fog_ceiling_z = 0.1
-        if tile_grid is not None:
-            fog_ceiling_z = float(tile_grid.get_max_world_z()) + 0.1
+        fog_ceiling_z = self._fog_ceiling_z
 
         touched_grid = False
 
