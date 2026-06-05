@@ -15,6 +15,89 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
+from typing import Literal, Tuple, TypeAlias
+
+
+HexOffsetLayout: TypeAlias = Literal["odd-q", "even-q"]
+OffsetCoord: TypeAlias = Tuple[int, int]
+CubeCoord: TypeAlias = Tuple[int, int, int]
+
+
+class RadiusTileLike(Protocol):
+    x: int
+    y: int
+
+    def get_tag(self) -> str: ...
+
+
+
+@dataclass(slots=True)
+class HexVisionRadiusIndex:
+    tiles_by_coord: Dict[OffsetCoord, RadiusTileLike]
+    layout: HexOffsetLayout = "odd-q"
+
+    @classmethod
+    def build(cls, tiles: Iterable[RadiusTileLike], *, layout: HexOffsetLayout = "odd-q") -> "HexVisionRadiusIndex":
+        indexed_tiles: Dict[OffsetCoord, RadiusTileLike] = {}
+
+        for tile in tiles:
+            indexed_tiles[(int(tile.x), int(tile.y))] = tile
+
+        return cls(tiles_by_coord=indexed_tiles, layout=layout)
+
+    def refresh_tile(self, tile: RadiusTileLike) -> None:
+        self.tiles_by_coord[(int(tile.x), int(tile.y))] = tile
+
+    def tiles_in_radius(self, origin: RadiusTileLike, radius: int) -> Set[RadiusTileLike]:
+        resolved_tiles: Set[RadiusTileLike] = set()
+
+        for coord in self.coords_in_radius(int(origin.x), int(origin.y), max(0, radius)):
+            tile = self.tiles_by_coord.get(coord)
+            if tile is not None:
+                resolved_tiles.add(tile)
+
+        return resolved_tiles
+
+    def tile_tags_in_radius(self, origin: RadiusTileLike, radius: int) -> Set[str]:
+        return {tile.get_tag() for tile in self.tiles_in_radius(origin, radius)}
+
+    def coords_in_radius(self, col: int, row: int, radius: int) -> Set[OffsetCoord]:
+        center = self._offset_to_cube(col, row)
+        coords: Set[OffsetCoord] = set()
+
+        for dx in range(-radius, radius + 1):
+            min_dy = max(-radius, -dx - radius)
+            max_dy = min(radius, -dx + radius)
+
+            for dy in range(min_dy, max_dy + 1):
+                dz = -dx - dy
+                cube = (center[0] + dx, center[1] + dy, center[2] + dz)
+                coords.add(self._cube_to_offset(cube))
+
+        return coords
+
+    def _offset_to_cube(self, col: int, row: int) -> CubeCoord:
+        x = col
+
+        if self.layout == "odd-q":
+            z = row - (col - (col & 1)) // 2
+        else:
+            z = row - (col + (col & 1)) // 2
+
+        y = -x - z
+        return x, y, z
+
+    def _cube_to_offset(self, cube: CubeCoord) -> OffsetCoord:
+        x, _, z = cube
+        col = x
+
+        if self.layout == "odd-q":
+            row = z + (x - (x & 1)) // 2
+        else:
+            row = z + (x + (x & 1)) // 2
+
+        return col, row
+
 class VisionTileLike(Protocol):
     def get_tag(self) -> str: ...
 
@@ -116,12 +199,23 @@ class Vision:
         self._tile_refs: Dict[str, ReferenceType["Tile"]] = {}
         self._reveal_sources: Dict[str, Set[str]] = {}
         self._changed_tile_tags: Set[str] = set()
+        self._direct_visible_tile_tags: Set[str] = set()
+        self._render_visible_tile_tags: Set[str] = set()
+        self._explored_tile_tags: Set[str] = set()
+        self._lingering_tile_tags: Set[str] = set()
+        self._runtime_views_dirty: bool = True
         self._visible_tiles: Set[ReferenceType["Tile"]] = set()
         self._visible_units: List[ReferenceType["Unit"]] = []
         self._visible_cities: List[ReferenceType["City"]] = []
         self._visible_resources: List[ReferenceType["BaseResource"]] = []
         self._visible_improvements: List[ReferenceType["Improvement"]] = []
         self._visible_terrain: List[ReferenceType["BaseTerrain"]] = []
+        self._source_ref_counts: dict[str, int] = {}
+        self._direct_visible_tile_tags: set[str] = set()
+        self._render_visible_tile_tags: set[str] = set()
+        self._explored_tile_tags: set[str] = set()
+        self._lingering_tile_tags: set[str] = set()
+        self._runtime_views_dirty: bool = True
 
     def set_default_linger_turns(self, turns: int) -> None:
         self.default_linger_turns = max(0, turns)
@@ -151,19 +245,79 @@ class Vision:
 
     def is_visible(self, tile_or_tag: "Tile | str") -> bool:
         tile_tag = tile_or_tag.get_tag() if not isinstance(tile_or_tag, str) else tile_or_tag
-        record = self._tile_records.get(tile_tag)
-        return record.is_visible if record is not None else False
+        return tile_tag in self._render_visible_tile_tags
 
     def is_explored(self, tile_or_tag: "Tile | str") -> bool:
         tile_tag = tile_or_tag.get_tag() if not isinstance(tile_or_tag, str) else tile_or_tag
-        record = self._tile_records.get(tile_tag)
-        return record.is_explored if record is not None else False
+        return tile_tag in self._explored_tile_tags
 
     def get_visible_tile_tags(self) -> Set[str]:
-        return {tile_tag for tile_tag, record in self._tile_records.items() if record.is_visible}
+        return set(self._render_visible_tile_tags)
 
     def get_explored_tile_tags(self) -> Set[str]:
-        return {tile_tag for tile_tag, record in self._tile_records.items() if record.is_explored}
+        return set(self._explored_tile_tags)
+
+    def get_visible_tile_count(self) -> int:
+        return len(self._render_visible_tile_tags)
+
+    def get_explored_tile_count(self) -> int:
+        return len(self._explored_tile_tags)
+
+    def mark_runtime_views_dirty(self) -> None:
+        self._runtime_views_dirty = True
+
+    def update_reveal_source_tiles(self, source_id: str, tiles_or_tags: Iterable[object]) -> Set[str]:
+        next_tags: Set[str] = set()
+
+        for tile_or_tag in tiles_or_tags:
+            if isinstance(tile_or_tag, str):
+                tile_tag = tile_or_tag
+            else:
+                get_tag = getattr(tile_or_tag, "get_tag", None)
+                if not callable(get_tag):
+                    continue
+                tile_tag = str(get_tag())
+                self._tile_refs[tile_tag] = ref(tile_or_tag)
+
+            if tile_tag != "":
+                next_tags.add(tile_tag)
+
+        previous_tags = self._reveal_sources.get(source_id, set())
+        if previous_tags == next_tags:
+            self._changed_tile_tags = set()
+            return set()
+
+        removed_tags = previous_tags - next_tags
+        added_tags = next_tags - previous_tags
+        changed_tags: Set[str] = set()
+
+        if next_tags:
+            self._reveal_sources[source_id] = next_tags
+        else:
+            self._reveal_sources.pop(source_id, None)
+
+        for tile_tag in removed_tags:
+            next_count = self._source_ref_counts.get(tile_tag, 0) - 1
+
+            if next_count > 0:
+                self._source_ref_counts[tile_tag] = next_count
+                continue
+
+            self._source_ref_counts.pop(tile_tag, None)
+            next_state = VisionTileState.LINGERING if self.default_linger_turns > 0 else VisionTileState.FOGGED
+            next_turns = self.default_linger_turns if next_state is VisionTileState.LINGERING else 0
+
+            if self._set_incremental_tile_state(tile_tag, next_state, next_turns):
+                changed_tags.add(tile_tag)
+
+        for tile_tag in added_tags:
+            self._source_ref_counts[tile_tag] = self._source_ref_counts.get(tile_tag, 0) + 1
+
+            if self._set_incremental_tile_state(tile_tag, VisionTileState.VISIBLE, self.default_linger_turns):
+                changed_tags.add(tile_tag)
+
+        self._changed_tile_tags = changed_tags
+        return changed_tags
 
     def set_reveal_source(self, source_id: str, tiles_or_tags: Iterable["Tile | str"]) -> bool:
         next_tags: Set[str] = set()
@@ -183,7 +337,9 @@ class Vision:
         return True
 
     def clear_reveal_source(self, source_id: str) -> bool:
-        return self._reveal_sources.pop(source_id, None) is not None
+        previous_tags = self._reveal_sources.get(source_id, set())
+        changed_tags = self.update_reveal_source_tiles(source_id, ())
+        return bool(previous_tags or changed_tags)
 
     def get_reveal_tile_tags(self) -> Set[str]:
         reveal_tags: Set[str] = set()
@@ -228,6 +384,7 @@ class Vision:
         self._visible_resources = []
         self._visible_improvements = []
         self._visible_terrain = []
+        self._runtime_views_dirty = False
 
     def _refresh_runtime_views(
         self,
@@ -298,53 +455,189 @@ class Vision:
         self._visible_resources = [ref(resource) for resource in resources]
         self._visible_improvements = [ref(improvement) for improvement in improvements]
         self._visible_terrain = [ref(terrain_item) for terrain_item in terrain]
+        self._runtime_views_dirty = False
 
-    def recompute_visible_tiles(self, tiles: Set["Tile"], linger_turns: int | None = None) -> Set[str]:
+    def _ensure_runtime_views(self) -> None:
+        if not self._runtime_views_dirty:
+            return
+
+        self._refresh_runtime_views(self.get_visible_tiles())
+
+    def _sync_indexes_from_records(self) -> None:
+        self._direct_visible_tile_tags = set()
+        self._render_visible_tile_tags = set()
+        self._explored_tile_tags = set()
+        self._lingering_tile_tags = set()
+
+        for tile_tag, record in self._tile_records.items():
+            self._index_record(tile_tag, record)
+
+    def _index_record(self, tile_tag: str, record: VisionTileRecord) -> None:
+        if record.state is VisionTileState.VISIBLE:
+            self._direct_visible_tile_tags.add(tile_tag)
+        else:
+            self._direct_visible_tile_tags.discard(tile_tag)
+
+        if record.state is VisionTileState.LINGERING:
+            self._lingering_tile_tags.add(tile_tag)
+        else:
+            self._lingering_tile_tags.discard(tile_tag)
+
+        if record.is_visible:
+            self._render_visible_tile_tags.add(tile_tag)
+        else:
+            self._render_visible_tile_tags.discard(tile_tag)
+
+        if record.is_explored:
+            self._explored_tile_tags.add(tile_tag)
+        else:
+            self._explored_tile_tags.discard(tile_tag)
+
+    def _store_tile_record(self, record: VisionTileRecord, changed_tiles: Set[str]) -> None:
+        previous = self._tile_records.get(record.tile_tag)
+        if previous == record:
+            return
+
+        self._tile_records[record.tile_tag] = record
+        self._index_record(record.tile_tag, record)
+        changed_tiles.add(record.tile_tag)
+
+    def advance_lingering_tiles(self) -> Set[str]:
+        changed_tags: Set[str] = set()
+
+        for tile_tag in list(self._lingering_tile_tags):
+            if self._source_ref_counts.get(tile_tag, 0) > 0:
+                self._lingering_tile_tags.discard(tile_tag)
+                continue
+
+            record = self._tile_records.get(tile_tag)
+            if record is None or record.state is not VisionTileState.LINGERING:
+                self._lingering_tile_tags.discard(tile_tag)
+                continue
+
+            turns_remaining = max(0, record.turns_remaining - 1)
+            next_state = VisionTileState.LINGERING if turns_remaining > 0 else VisionTileState.FOGGED
+
+            if self._set_incremental_tile_state(tile_tag, next_state, turns_remaining):
+                changed_tags.add(tile_tag)
+
+        self._changed_tile_tags = changed_tags
+        return changed_tags
+
+    def _set_incremental_tile_state(self, tile_tag: str, state: VisionTileState, turns_remaining: int) -> bool:
+        previous_record = self._tile_records.get(tile_tag)
+        previous_state = previous_record.state if previous_record is not None else VisionTileState.UNSEEN
+        next_record = VisionTileRecord(tile_tag=tile_tag, state=state, turns_remaining=max(0, turns_remaining))
+
+        if previous_record == next_record:
+            return False
+
+        self._tile_records[tile_tag] = next_record
+        self._sync_incremental_tile_caches(tile_tag, state)
+        self._runtime_views_dirty = True
+
+        return previous_state is not state
+
+    def _sync_incremental_tile_caches(self, tile_tag: str, state: VisionTileState) -> None:
+        if state is VisionTileState.VISIBLE:
+            self._direct_visible_tile_tags.add(tile_tag)
+            self._render_visible_tile_tags.add(tile_tag)
+            self._explored_tile_tags.add(tile_tag)
+            self._lingering_tile_tags.discard(tile_tag)
+            return
+
+        self._direct_visible_tile_tags.discard(tile_tag)
+
+        if state is VisionTileState.LINGERING:
+            self._render_visible_tile_tags.add(tile_tag)
+            self._explored_tile_tags.add(tile_tag)
+            self._lingering_tile_tags.add(tile_tag)
+            return
+
+        self._render_visible_tile_tags.discard(tile_tag)
+        self._lingering_tile_tags.discard(tile_tag)
+
+        if state is VisionTileState.FOGGED:
+            self._explored_tile_tags.add(tile_tag)
+            return
+
+        self._explored_tile_tags.discard(tile_tag)
+
+    def _rebuild_incremental_tile_caches(self) -> None:
+        self._direct_visible_tile_tags.clear()
+        self._render_visible_tile_tags.clear()
+        self._explored_tile_tags.clear()
+        self._lingering_tile_tags.clear()
+
+        for tile_tag, record in self._tile_records.items():
+            self._sync_incremental_tile_caches(tile_tag, record.state)
+
+    def _ensure_runtime_views_current(self) -> None:
+        if not self._runtime_views_dirty:
+            return
+
+        self._refresh_runtime_views(self.get_visible_tiles())
+        self._runtime_views_dirty = False
+
+    def recompute_visible_tiles(
+        self,
+        tiles: Set["Tile"],
+        linger_turns: int | None = None,
+        *,
+        advance_linger: bool = True,
+    ) -> Set[str]:
         effective_linger_turns = self.default_linger_turns if linger_turns is None else max(0, linger_turns)
 
-        visible_tile_tags: Set[str] = set()
+        next_direct_visible_tags: Set[str] = set()
         for tile in tiles:
             tile_tag = tile.get_tag()
-            visible_tile_tags.add(tile_tag)
+            if tile_tag == "":
+                continue
+            next_direct_visible_tags.add(tile_tag)
             self._remember_tile(tile)
 
+        previous_direct_visible_tags = set(self._direct_visible_tile_tags)
+        lost_direct_visible_tags = previous_direct_visible_tags - next_direct_visible_tags
+        lingering_tags: Set[str] = self._lingering_tile_tags - next_direct_visible_tags if advance_linger else set()
         changed_tiles: Set[str] = set()
-        all_tile_tags = set(self._tile_records.keys()) | visible_tile_tags
 
-        for tile_tag in all_tile_tags:
-            previous = self._tile_records.get(tile_tag)
-
-            if tile_tag in visible_tile_tags:
-                next_record = VisionTileRecord(
+        for tile_tag in next_direct_visible_tags:
+            self._store_tile_record(
+                VisionTileRecord(
                     tile_tag=tile_tag,
                     state=VisionTileState.VISIBLE,
                     turns_remaining=effective_linger_turns,
+                ),
+                changed_tiles,
+            )
+
+        for tile_tag in lost_direct_visible_tags:
+            if effective_linger_turns > 0:
+                next_record = VisionTileRecord(
+                    tile_tag=tile_tag,
+                    state=VisionTileState.LINGERING,
+                    turns_remaining=effective_linger_turns,
                 )
-            elif previous is None:
-                continue
-            elif previous.state is VisionTileState.VISIBLE:
-                if effective_linger_turns > 0:
-                    next_record = VisionTileRecord(
-                        tile_tag=tile_tag,
-                        state=VisionTileState.LINGERING,
-                        turns_remaining=effective_linger_turns,
-                    )
-                else:
-                    next_record = VisionTileRecord(tile_tag=tile_tag, state=VisionTileState.FOGGED, turns_remaining=0)
-            elif previous.state is VisionTileState.LINGERING:
-                next_turns = max(0, previous.turns_remaining - 1)
-                next_state = VisionTileState.LINGERING if next_turns > 0 else VisionTileState.FOGGED
-                next_record = VisionTileRecord(tile_tag=tile_tag, state=next_state, turns_remaining=next_turns)
             else:
                 next_record = VisionTileRecord(tile_tag=tile_tag, state=VisionTileState.FOGGED, turns_remaining=0)
 
-            if previous != next_record:
-                changed_tiles.add(tile_tag)
+            self._store_tile_record(next_record, changed_tiles)
 
-            self._tile_records[tile_tag] = next_record
+        for tile_tag in lingering_tags:
+            previous = self._tile_records.get(tile_tag)
+            if previous is None or previous.state is not VisionTileState.LINGERING:
+                continue
+
+            next_turns = max(0, previous.turns_remaining - 1)
+            next_state = VisionTileState.LINGERING if next_turns > 0 else VisionTileState.FOGGED
+            self._store_tile_record(
+                VisionTileRecord(tile_tag=tile_tag, state=next_state, turns_remaining=next_turns),
+                changed_tiles,
+            )
 
         self._changed_tile_tags = changed_tiles
-        self._refresh_runtime_views(self.get_visible_tiles())
+        self._direct_visible_tile_tags = next_direct_visible_tags
+        self._runtime_views_dirty = True
         return changed_tiles
 
     def mass_set_visible_tiles(
@@ -355,12 +648,14 @@ class Vision:
         resources: List["BaseResource"] | None = None,
         improvements: List["Improvement"] | None = None,
         terrain: List["BaseTerrain"] | None = None,
+        *,
+        advance_linger: bool = True,
     ) -> Set[str]:
         changed_tiles: Set[str] = set()
         if tiles is not None:
-            changed_tiles = self.recompute_visible_tiles(tiles)
+            changed_tiles = self.recompute_visible_tiles(tiles, advance_linger=advance_linger)
 
-        if tiles is not None or any(item is not None for item in (units, cities, resources, improvements, terrain)):
+        if any(item is not None for item in (units, cities, resources, improvements, terrain)):
             self._refresh_runtime_views(
                 self.get_visible_tiles(),
                 units=units,
@@ -374,34 +669,41 @@ class Vision:
 
     def get_visible_tiles(self) -> Set["Tile"]:
         tiles: Set["Tile"] = set()
-        for tile_tag, record in self._tile_records.items():
-            if not record.is_visible:
-                continue
-
+        for tile_tag in self._render_visible_tile_tags:
             resolved = self._resolve_tile(tile_tag)
             if resolved is not None:
                 tiles.add(resolved)
-
         return tiles
 
     def add_visible_tile(self, tile: "Tile") -> None:
         self._remember_tile(tile)
-        self._tile_records[tile.get_tag()] = VisionTileRecord(
-            tile_tag=tile.get_tag(),
-            state=VisionTileState.VISIBLE,
-            turns_remaining=self.default_linger_turns,
+        changed_tiles: Set[str] = set()
+        self._store_tile_record(
+            VisionTileRecord(
+                tile_tag=tile.get_tag(),
+                state=VisionTileState.VISIBLE,
+                turns_remaining=self.default_linger_turns,
+            ),
+            changed_tiles,
         )
-        self._refresh_runtime_views(self.get_visible_tiles())
+        self._changed_tile_tags = changed_tiles
+        self._runtime_views_dirty = True
 
     def remove_visible_tile(self, tile: "Tile") -> None:
         tile_tag = tile.get_tag()
         if tile_tag not in self._tile_records:
             return
 
-        self._tile_records[tile_tag] = VisionTileRecord(tile_tag=tile_tag, state=VisionTileState.FOGGED, turns_remaining=0)
-        self._refresh_runtime_views(self.get_visible_tiles())
+        changed_tiles: Set[str] = set()
+        self._store_tile_record(
+            VisionTileRecord(tile_tag=tile_tag, state=VisionTileState.FOGGED, turns_remaining=0),
+            changed_tiles,
+        )
+        self._changed_tile_tags = changed_tiles
+        self._runtime_views_dirty = True
 
     def get_visible_units(self) -> List["Unit"]:
+        self._ensure_runtime_views()
         units: List["Unit"] = []
         for unit_ref in self._visible_units:
             if (resolved := unit_ref()) is not None:
@@ -417,6 +719,7 @@ class Vision:
         self._visible_units = [unit_ref for unit_ref in self._visible_units if (resolved := unit_ref()) is not None and resolved is not unit]
 
     def get_visible_cities(self) -> List["City"]:
+        self._ensure_runtime_views()
         cities: List["City"] = []
         for city_ref in self._visible_cities:
             if (resolved := city_ref()) is not None:
@@ -432,6 +735,7 @@ class Vision:
         self._visible_cities = [city_ref for city_ref in self._visible_cities if (resolved := city_ref()) is not None and resolved is not city]
 
     def get_visible_resources(self) -> List["BaseResource"]:
+        self._ensure_runtime_views()
         resources: List["BaseResource"] = []
         for resource_ref in self._visible_resources:
             if (resolved := resource_ref()) is not None:
@@ -449,6 +753,7 @@ class Vision:
         ]
 
     def get_visible_improvements(self) -> List["Improvement"]:
+        self._ensure_runtime_views()
         improvements: List["Improvement"] = []
         for improvement_ref in self._visible_improvements:
             if (resolved := improvement_ref()) is not None:
@@ -468,6 +773,7 @@ class Vision:
         ]
 
     def get_visible_terrain(self) -> List["BaseTerrain"]:
+        self._ensure_runtime_views()
         terrain: List["BaseTerrain"] = []
         for terrain_ref in self._visible_terrain:
             if (resolved := terrain_ref()) is not None:
@@ -512,7 +818,8 @@ class Vision:
                     continue
                 self._tile_records[record.tile_tag] = record
 
-        self._refresh_runtime_views(self.get_visible_tiles())
+        self._sync_indexes_from_records()
+        self._runtime_views_dirty = True
 
     def resolve_ref(self, refs: List[ReferenceType[Any]]) -> List[Any]:
         resolved: List[Any] = []

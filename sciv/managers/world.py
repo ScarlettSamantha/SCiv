@@ -41,6 +41,8 @@ class World(Singleton, DirectObject):
         self.grid: Dict[Tuple[int, int], "Tile"] = {}
         self.generator: Optional[Type["BaseGenerator"]] = None
         self.effects: Effects = Effects(self)
+        self.vision_offset_layout: str = "odd-q"
+        self._vision_radius_tile_tags_cache: Dict[Tuple[int, int, int, str], Set[str]] = {}
         self.register()
 
     def __init__(self, base: "OpenCiv"):
@@ -52,6 +54,7 @@ class World(Singleton, DirectObject):
         self.map = {}
         self.grid = {}
         self.effects = Effects(self)
+        self._vision_radius_tile_tags_cache = {}
 
         unit: "Unit"
         for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
@@ -65,8 +68,13 @@ class World(Singleton, DirectObject):
 
     def load(self, data: Dict[str, "Tile"]):
         self.logger.info("Loading world data.")
+        self._vision_radius_tile_tags_cache = {}
+
         for map_item in data.values():
-            item_tag: str | None = map_item.tag
+            item_tag: str | None = map_item.tag # type: ignore this can happen if we load a tile that has no tag, which should not happen but we want to be safe about it
+            if item_tag is None: # type: ignore
+                self.logger.warning(f"Map item {map_item} has no tag, skipping.")
+                continue
             self.map[item_tag] = map_item
 
         self.grid = {(tile.x, tile.y): tile for tile in self.map.values()}
@@ -119,6 +127,7 @@ class World(Singleton, DirectObject):
         self.row_spacing = sqrt(3) * self.hex_radius
         self.cols = cols
         self.rows = rows
+        self._vision_radius_tile_tags_cache = {}
 
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
@@ -159,14 +168,19 @@ class World(Singleton, DirectObject):
                 or tile.needs_tile_proecessing is True
             ):
                 tile.on_turn_end(turn)
+
         self.effects.on_turn_end(turn)
 
     def refresh_player_vision(self, player: "Player") -> None:
         linger_turns = player.get_vision_linger_turns()
         player.vision.set_default_linger_turns(linger_turns)
+
         visible_tiles: Set["Tile"] = set(player.collect_visible_tiles())
         visible_tiles.update(self._resolve_tiles_from_tags(player.vision.get_reveal_tile_tags()))
+
         changed_tiles = player.vision.recompute_visible_tiles(visible_tiles, linger_turns)
+        changed_tiles.update(self._sync_player_unit_vision_sources(player))
+
         messenger.send("game.gameplay.vision.updated", [player, changed_tiles])
 
     def reveal_tiles_for_player(
@@ -176,13 +190,28 @@ class World(Singleton, DirectObject):
         tiles: Iterable["Tile | str"] | "Tile | str",
     ) -> None:
         resolved_player = self._resolve_player(player)
-        if resolved_player.vision.set_reveal_source(source_id, self._normalize_reveal_targets(tiles)):
-            self.refresh_player_vision(resolved_player)
+        normalized_tiles = self._normalize_reveal_targets(tiles)
+        changed_tiles = self._update_reveal_source_for_player(resolved_player, source_id, normalized_tiles)
+
+        if changed_tiles is None:
+            if resolved_player.vision.set_reveal_source(source_id, normalized_tiles):
+                self.refresh_player_vision(resolved_player)
+            return
+
+        if changed_tiles:
+            messenger.send("game.gameplay.vision.updated", [resolved_player, changed_tiles])
 
     def clear_reveal_tiles_for_player(self, player: "Player | str", source_id: str) -> None:
         resolved_player = self._resolve_player(player)
-        if resolved_player.vision.clear_reveal_source(source_id):
-            self.refresh_player_vision(resolved_player)
+        changed_tiles = self._update_reveal_source_for_player(resolved_player, source_id, [])
+
+        if changed_tiles is None:
+            if resolved_player.vision.clear_reveal_source(source_id):
+                self.refresh_player_vision(resolved_player)
+            return
+
+        if changed_tiles:
+            messenger.send("game.gameplay.vision.updated", [resolved_player, changed_tiles])
 
     def refresh_all_player_vision(self) -> None:
         for player in PlayerManager.all(add_mechanic_players=True).values():
@@ -191,6 +220,7 @@ class World(Singleton, DirectObject):
     def set_ownership_of_tile(self, tile: "Tile", player: "Player", city: "City"):
         self.logger.info(f"Setting ownership of tile {tile} to {player}")
         old_owner: Optional["Player"] = tile.get_owner() if tile.owner is not None else None
+
         if old_owner is not None:
             self.logger.info(f"Old owner of tile {tile} is {old_owner}")
             old_owner.tiles.remove(tile)
@@ -214,6 +244,7 @@ class World(Singleton, DirectObject):
         if tile.is_city():
             self.logger.info(f"Adding city {tile.city} to player {player} due to tile ownership change.")
             city.player = player
+
         city.owned_tiles.append(tile)
 
         self.logger.info(f"Tile {tile} is now owned by {player}, sending message.")
@@ -222,11 +253,13 @@ class World(Singleton, DirectObject):
     def on_city_requests_tile(self, city: "City", tile: "Tile"):
         if city.player is None:
             raise AssertionError("City has no player")
+
         if isinstance(tile, weakref.ReferenceType):
             tile = tile()  # type: ignore its a weak reference
             assert tile is not None, "Tile reference is None, it has been destroyed."
         elif isinstance(tile, str):
             tile = self.lookup(tile)
+
         self.logger.info(f"City {city.name} is requesting tile {tile.tag}.")
 
         can_own_tile: bool = False
@@ -252,10 +285,12 @@ class World(Singleton, DirectObject):
             )
 
     def on_unit_spawned(self, unit: "Unit") -> None:
-        self.refresh_player_vision(unit.get_owner())
+        if not self.refresh_unit_vision(unit):
+            self.refresh_player_vision(unit.get_owner())
 
-    def on_unit_moved(self, unit: "Unit", tile: "Tile", old_tile: "Tile | None" = None) -> None:
-        self.refresh_player_vision(unit.get_owner())
+    def on_unit_moved(self, unit: "Unit", tile: "Tile | None" = None, old_tile: "Tile | None" = None) -> None:
+        if not self.refresh_unit_vision(unit):
+            self.refresh_player_vision(unit.get_owner())
 
     def on_unit_destroyed(self, unit: "Unit") -> None:
         self.refresh_all_player_vision()
@@ -265,6 +300,7 @@ class World(Singleton, DirectObject):
 
     def on_tile_ownership_changed(self, tile: "Tile", player: "Player", old_owner: "Player | None") -> None:
         self.refresh_player_vision(player)
+
         if old_owner is not None and old_owner != player:
             self.refresh_player_vision(old_owner)
 
@@ -278,6 +314,124 @@ class World(Singleton, DirectObject):
 
     def on_request_clear_reveal_tiles(self, player: "Player | str", source_id: str) -> None:
         self.clear_reveal_tiles_for_player(player, source_id)
+
+    def refresh_unit_vision(self, unit: "Unit") -> bool:
+        player = unit.get_owner()
+        changed_tiles = self._update_unit_vision_source(unit)
+
+        if changed_tiles is None:
+            return False
+
+        if changed_tiles:
+            messenger.send("game.gameplay.vision.updated", [player, changed_tiles])
+
+        return True
+
+    def _sync_player_unit_vision_sources(self, player: "Player") -> Set[str]:
+        changed_tiles: Set[str] = set()
+
+        for unit in player.get_all_units():
+            unit_changed_tiles = self._update_unit_vision_source(unit)
+            if unit_changed_tiles is not None:
+                changed_tiles.update(unit_changed_tiles)
+
+        return changed_tiles
+
+    def _update_unit_vision_source(self, unit: "Unit") -> Set[str] | None:
+        player = unit.get_owner()
+        updater = getattr(player.vision, "update_reveal_source_tiles", None)
+
+        if not callable(updater):
+            return None
+
+        player.vision.set_default_linger_turns(player.get_vision_linger_turns())
+
+        radius = self._get_unit_vision_radius(unit)
+        visible_tiles = self._tiles_in_radius_by_math(unit.get_tile(), radius)
+
+        return cast(
+            Set[str],
+            updater(
+                source_id=f"unit:{unit.get_tag()}",
+                tiles_or_tags=visible_tiles,
+            ),
+        )
+
+    def _update_reveal_source_for_player(
+        self,
+        player: "Player",
+        source_id: str,
+        tiles_or_tags: Iterable["Tile | str"],
+    ) -> Set[str] | None:
+        updater = getattr(player.vision, "update_reveal_source_tiles", None)
+
+        if not callable(updater):
+            return None
+
+        player.vision.set_default_linger_turns(player.get_vision_linger_turns())
+
+        return cast(
+            Set[str],
+            updater(
+                source_id=source_id,
+                tiles_or_tags=tiles_or_tags,
+            ),
+        )
+
+    def _get_unit_vision_radius(self, unit: "Unit") -> int:
+        return max(0, int(unit.get_vision_range()))
+
+    def _tiles_in_radius_by_math(self, origin: "Tile", radius: int) -> Set["Tile"]:
+        safe_radius = max(0, int(radius))
+        cache_key = (int(origin.x), int(origin.y), safe_radius, self.vision_offset_layout)
+        cached_tags = self._vision_radius_tile_tags_cache.get(cache_key)
+
+        if cached_tags is not None:
+            return self._resolve_tiles_from_tags(cached_tags)
+
+        origin_cube = self._offset_to_cube(int(origin.x), int(origin.y))
+        tile_tags: Set[str] = set()
+
+        for dx in range(-safe_radius, safe_radius + 1):
+            min_dy = max(-safe_radius, -dx - safe_radius)
+            max_dy = min(safe_radius, -dx + safe_radius)
+
+            for dy in range(min_dy, max_dy + 1):
+                dz = -dx - dy
+                q, r = self._cube_to_offset(
+                    origin_cube[0] + dx,
+                    origin_cube[1] + dy,
+                    origin_cube[2] + dz,
+                )
+
+                tile = self.grid.get((q, r))
+                if tile is not None:
+                    tile_tags.add(tile.get_tag())
+
+        self._vision_radius_tile_tags_cache[cache_key] = tile_tags
+        return self._resolve_tiles_from_tags(tile_tags)
+
+    def _offset_to_cube(self, q: int, r: int) -> Tuple[int, int, int]:
+        if self.vision_offset_layout == "even-q":
+            cube_x = q
+            cube_z = r - (q + (q & 1)) // 2
+            cube_y = -cube_x - cube_z
+            return cube_x, cube_y, cube_z
+
+        cube_x = q
+        cube_z = r - (q - (q & 1)) // 2
+        cube_y = -cube_x - cube_z
+        return cube_x, cube_y, cube_z
+
+    def _cube_to_offset(self, cube_x: int, cube_y: int, cube_z: int) -> Tuple[int, int]:
+        if self.vision_offset_layout == "even-q":
+            q = cube_x
+            r = cube_z + (cube_x + (cube_x & 1)) // 2
+            return q, r
+
+        q = cube_x
+        r = cube_z + (cube_x - (cube_x & 1)) // 2
+        return q, r
 
     def _resolve_player(self, player: "Player | str") -> "Player":
         if not isinstance(player, str):
@@ -303,8 +457,10 @@ class World(Singleton, DirectObject):
 
     def _resolve_tiles_from_tags(self, tile_tags: Iterable[str]) -> Set["Tile"]:
         resolved_tiles: Set["Tile"] = set()
+
         for tile_tag in tile_tags:
             tile = self.lookup_on_tag(tile_tag)
             if tile is not None:
                 resolved_tiles.add(tile)
+
         return resolved_tiles
