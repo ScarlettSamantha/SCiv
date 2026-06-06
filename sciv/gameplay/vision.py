@@ -31,11 +31,12 @@ class VisionTimingSample:
     label: str
     started_at: float
     enabled: bool
+    level: int
 
     @classmethod
-    def start(cls, label: str) -> "VisionTimingSample":
-        enabled = VISION_TIMING_LOGGER.isEnabledFor(VISION_TIMING_LOG_LEVEL)
-        return cls(label=label, started_at=perf_counter() if enabled else 0.0, enabled=enabled)
+    def start(cls, label: str, *, level: int = VISION_TIMING_LOG_LEVEL) -> "VisionTimingSample":
+        enabled = VISION_TIMING_LOGGER.isEnabledFor(level)
+        return cls(label=label, started_at=perf_counter() if enabled else 0.0, enabled=enabled, level=level)
 
     def finish(self, **details: object) -> None:
         if not self.enabled:
@@ -46,7 +47,7 @@ class VisionTimingSample:
         if details:
             detail_text = " " + " ".join(f"{key}={value}" for key, value in details.items())
 
-        VISION_TIMING_LOGGER.log(VISION_TIMING_LOG_LEVEL, "vision.%s elapsed_ms=%.3f%s", self.label, elapsed_ms, detail_text)
+        VISION_TIMING_LOGGER.log(self.level, "vision.%s elapsed_ms=%.3f%s", self.label, elapsed_ms, detail_text)
 
 
 class RadiusTileLike(Protocol):
@@ -64,7 +65,7 @@ class HexVisionRadiusIndex:
 
     @classmethod
     def build(cls, tiles: Iterable[RadiusTileLike], *, layout: HexOffsetLayout = "odd-q") -> "HexVisionRadiusIndex":
-        timing = VisionTimingSample.start("radius_index.build")
+        timing = VisionTimingSample.start("radius_index.build", level=logging.DEBUG)
         indexed_tiles: Dict[OffsetCoord, RadiusTileLike] = {}
 
         for tile in tiles:
@@ -77,7 +78,7 @@ class HexVisionRadiusIndex:
         self.tiles_by_coord[(int(tile.x), int(tile.y))] = tile
 
     def tiles_in_radius(self, origin: RadiusTileLike, radius: int) -> Set[RadiusTileLike]:
-        timing = VisionTimingSample.start("radius_index.tiles_in_radius")
+        timing = VisionTimingSample.start("radius_index.tiles_in_radius", level=logging.DEBUG)
         resolved_tiles: Set[RadiusTileLike] = set()
         clamped_radius = max(0, radius)
 
@@ -92,8 +93,20 @@ class HexVisionRadiusIndex:
     def tile_tags_in_radius(self, origin: RadiusTileLike, radius: int) -> Set[str]:
         return {tile.get_tag() for tile in self.tiles_in_radius(origin, radius)}
 
+    def tile_tags_in_radius_by_coord(self, col: int, row: int, radius: int) -> Set[str]:
+        timing = VisionTimingSample.start("radius_index.tile_tags_in_radius", level=logging.DEBUG)
+        tile_tags: Set[str] = set()
+
+        for coord in self.coords_in_radius(col, row, radius):
+            tile = self.tiles_by_coord.get(coord)
+            if tile is not None:
+                tile_tags.add(tile.get_tag())
+
+        timing.finish(col=col, row=row, radius=radius, tile_tag_count=len(tile_tags))
+        return tile_tags
+
     def coords_in_radius(self, col: int, row: int, radius: int) -> Set[OffsetCoord]:
-        timing = VisionTimingSample.start("radius_index.coords_in_radius")
+        timing = VisionTimingSample.start("radius_index.coords_in_radius", level=logging.DEBUG)
         clamped_radius = max(0, radius)
         center = self._offset_to_cube(col, row)
         coords: Set[OffsetCoord] = set()
@@ -138,7 +151,7 @@ class VisionTileLike(Protocol):
 
 
 def collect_radius_visibility(origin: T, radius: int, neighbor_getter: Callable[[T, int], Iterable[T]]) -> Set[T]:
-    timing = VisionTimingSample.start("visibility.collect_radius")
+    timing = VisionTimingSample.start("visibility.collect_radius", level=logging.DEBUG)
     visible_tiles: Set[T] = {origin}
 
     if radius <= 0:
@@ -244,6 +257,7 @@ class Vision:
         self._tile_records: Dict[str, VisionTileRecord] = {}
         self._tile_refs: Dict[str, ReferenceType["Tile"]] = {}
         self._reveal_sources: Dict[str, Set[str]] = {}
+        self._reveal_source_signatures: Dict[str, Tuple[object, ...]] = {}
         self._changed_tile_tags: Set[str] = set()
         self._direct_visible_tile_tags: Set[str] = set()
         self._render_visible_tile_tags: Set[str] = set()
@@ -307,8 +321,33 @@ class Vision:
     def mark_runtime_views_dirty(self) -> None:
         self._runtime_views_dirty = True
 
-    def update_reveal_source_tiles(self, source_id: str, tiles_or_tags: Iterable[object]) -> Set[str]:
+    def has_reveal_source_signature(self, source_id: str, signature: Tuple[object, ...]) -> bool:
+        return source_id in self._reveal_sources and self._reveal_source_signatures.get(source_id) == signature
+
+    def update_reveal_source_tiles(
+        self,
+        source_id: str,
+        tiles_or_tags: Iterable[object],
+        *,
+        signature: Tuple[object, ...] | None = None,
+    ) -> Set[str]:
         timing = VisionTimingSample.start("reveal_source.update")
+        previous_tags = self._reveal_sources.get(source_id, set())
+
+        if signature is not None and self.has_reveal_source_signature(source_id, signature):
+            self._changed_tile_tags = set()
+            timing.finish(
+                source_id=source_id,
+                previous_tile_count=len(previous_tags),
+                next_tile_count=len(previous_tags),
+                added_tile_count=0,
+                removed_tile_count=0,
+                changed_tile_count=0,
+                skipped=True,
+                signature_skipped=True,
+            )
+            return set()
+
         next_tags: Set[str] = set()
 
         for tile_or_tag in tiles_or_tags:
@@ -324,17 +363,20 @@ class Vision:
             if tile_tag != "":
                 next_tags.add(tile_tag)
 
-        previous_tags = self._reveal_sources.get(source_id, set())
         if previous_tags == next_tags:
+            if signature is not None:
+                self._reveal_source_signatures[source_id] = signature
             self._changed_tile_tags = set()
             timing.finish(
                 source_id=source_id,
+                signature_cached=signature is not None,
                 previous_tile_count=len(previous_tags),
                 next_tile_count=len(next_tags),
                 added_tile_count=0,
                 removed_tile_count=0,
                 changed_tile_count=0,
                 skipped=True,
+                signature_skipped=True,
             )
             return set()
 
@@ -344,8 +386,11 @@ class Vision:
 
         if next_tags:
             self._reveal_sources[source_id] = next_tags
+            if signature is not None:
+                self._reveal_source_signatures[source_id] = signature
         else:
             self._reveal_sources.pop(source_id, None)
+            self._reveal_source_signatures.pop(source_id, None)
 
         for tile_tag in removed_tags:
             next_count = self._source_ref_counts.get(tile_tag, 0) - 1
@@ -394,6 +439,7 @@ class Vision:
             return False
 
         self._reveal_sources[source_id] = next_tags
+        self._reveal_source_signatures.pop(source_id, None)
         return True
 
     def clear_reveal_source(self, source_id: str) -> bool:
@@ -939,6 +985,7 @@ class Vision:
         self._tile_records = {}
         self._tile_refs = {}
         self._reveal_sources = {}
+        self._reveal_source_signatures = {}
         self._changed_tile_tags = set()
         self._reset_runtime_views()
 

@@ -715,7 +715,7 @@ class Game(Singleton, DirectObject):
         fog_blob_overlay: FogBlobOverlay = self._ensure_fog_blob_overlay(tile_grid)
 
         if changed_tiles is not None and self.fog_of_war.has_synced_player(player):
-            units: List[Unit] = cast(List["Unit"], list(self.entities.get_all(EntityType.UNIT).values()))
+            units: List[Unit] = self._collect_units_for_vision_sync(changed_tiles)
             if not changed_tiles and not units:
                 return
 

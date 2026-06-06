@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, c
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
+from direct.task import Task
 from gameplay.repositories.tile import TileRepository
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
@@ -43,6 +44,10 @@ class World(Singleton, DirectObject):
         self.effects: Effects = Effects(self)
         self.vision_offset_layout: str = "odd-q"
         self._vision_radius_tile_tags_cache: Dict[Tuple[int, int, int, str], Set[str]] = {}
+        self._unit_vision_source_signatures: Dict[str, Tuple[str, int, str]] = {}
+        self._pending_vision_updates_by_player_tag: Dict[str, Set[str]] = {}
+        self._pending_vision_players_by_tag: Dict[str, "Player"] = {}
+        self._vision_update_flush_scheduled: bool = False
         self.register()
 
     def __init__(self, base: "OpenCiv"):
@@ -55,6 +60,10 @@ class World(Singleton, DirectObject):
         self.grid = {}
         self.effects = Effects(self)
         self._vision_radius_tile_tags_cache = {}
+        self._unit_vision_source_signatures = {}
+        self._pending_vision_updates_by_player_tag = {}
+        self._pending_vision_players_by_tag = {}
+        self._vision_update_flush_scheduled = False
 
         unit: "Unit"
         for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
@@ -111,8 +120,8 @@ class World(Singleton, DirectObject):
         )
         self.accept("game.gameplay.unit.spawned", self.on_unit_spawned)
         self.accept("game.gameplay.unit.moved", self.on_unit_moved)
-        self.accept("game.gameplay.unit.destroyed", self.on_unit_destroyed)
-        self.accept("system.unit.destroyed", self.on_unit_destroyed)
+        self.accept("game.gameplay.unit.destroyed.context", self.on_unit_destroyed)
+        self.accept("system.unit.destroyed.context", self.on_unit_destroyed)
         self.accept("game.gameplay.city.founded", self.on_city_founded)
         self.accept("game.gameplay.tiles.ownership_changed", self.on_tile_ownership_changed)
         self.accept("game.gameplay.vision.request_reveal_tiles", self.on_request_reveal_tiles)
@@ -127,6 +136,7 @@ class World(Singleton, DirectObject):
         self.row_spacing = sqrt(3) * self.hex_radius
         self.cols = cols
         self.rows = rows
+        self._unit_vision_source_signatures = {}
         self._vision_radius_tile_tags_cache = {}
 
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
@@ -156,7 +166,7 @@ class World(Singleton, DirectObject):
         return weakref.ref(self.grid)
 
     def on_turn_end(self, turn: int):
-        self.refresh_all_player_vision()
+        self.advance_all_player_vision_lingering()
 
         for tile in self.map.values():
             if (
@@ -182,6 +192,19 @@ class World(Singleton, DirectObject):
         changed_tiles.update(self._sync_player_unit_vision_sources(player))
 
         messenger.send("game.gameplay.vision.updated", [player, changed_tiles])
+
+    def advance_player_vision_lingering(self, player: "Player") -> Set[str]:
+        player.vision.set_default_linger_turns(player.get_vision_linger_turns())
+        changed_tiles = player.vision.advance_lingering_tiles()
+
+        if changed_tiles:
+            messenger.send("game.gameplay.vision.updated", [player, changed_tiles])
+
+        return changed_tiles
+
+    def advance_all_player_vision_lingering(self) -> None:
+        for player in PlayerManager.all(add_mechanic_players=True).values():
+            self.advance_player_vision_lingering(player)
 
     def reveal_tiles_for_player(
         self,
@@ -292,8 +315,25 @@ class World(Singleton, DirectObject):
         if not self.refresh_unit_vision(unit):
             self.refresh_player_vision(unit.get_owner())
 
-    def on_unit_destroyed(self, unit: "Unit") -> None:
-        self.refresh_all_player_vision()
+    def on_unit_destroyed(
+        self,
+        unit: "Unit",
+        destroyed_tile: "Tile | None" = None,
+        destroyed_owner: "Player | None" = None,
+    ) -> None:
+        if destroyed_owner is None:
+            return
+
+        source_id = f"unit:{unit.get_tag()}"
+        self._unit_vision_source_signatures.pop(source_id, None)
+        changed_tiles = self._update_reveal_source_for_player(destroyed_owner, source_id, [])
+
+        if changed_tiles is None:
+            self.refresh_player_vision(destroyed_owner)
+            return
+
+        if changed_tiles:
+            messenger.send("game.gameplay.vision.updated", [destroyed_owner, changed_tiles])
 
     def on_city_founded(self, city: "City") -> None:
         self.refresh_player_vision(city.get_owner())
@@ -347,13 +387,25 @@ class World(Singleton, DirectObject):
         player.vision.set_default_linger_turns(player.get_vision_linger_turns())
 
         radius = self._get_unit_vision_radius(unit)
-        visible_tiles = self._tiles_in_radius_by_math(unit.get_tile(), radius)
+        unit_tile = unit.get_tile()
+        source_id = f"unit:{unit.get_tag()}"
+        signature = (player.get_tag(), radius, unit_tile.get_tag())
+        cached_signature = self._unit_vision_source_signatures.get(source_id)
+        vision_has_signature = getattr(player.vision, "has_reveal_source_signature", None)
+
+        if cached_signature == signature:
+            if not callable(vision_has_signature) or vision_has_signature(source_id, signature):
+                return set()
+
+        visible_tile_tags = self._tile_tags_in_radius_by_math(unit_tile, radius)
+        self._unit_vision_source_signatures[source_id] = signature
 
         return cast(
             Set[str],
             updater(
-                source_id=f"unit:{unit.get_tag()}",
-                tiles_or_tags=visible_tiles,
+                source_id=source_id,
+                tiles_or_tags=visible_tile_tags,
+                signature=signature,
             ),
         )
 
@@ -382,12 +434,15 @@ class World(Singleton, DirectObject):
         return max(0, int(unit.get_vision_range()))
 
     def _tiles_in_radius_by_math(self, origin: "Tile", radius: int) -> Set["Tile"]:
+        return self._resolve_tiles_from_tags(self._tile_tags_in_radius_by_math(origin, radius))
+
+    def _tile_tags_in_radius_by_math(self, origin: "Tile", radius: int) -> Set[str]:
         safe_radius = max(0, int(radius))
         cache_key = (int(origin.x), int(origin.y), safe_radius, self.vision_offset_layout)
         cached_tags = self._vision_radius_tile_tags_cache.get(cache_key)
 
         if cached_tags is not None:
-            return self._resolve_tiles_from_tags(cached_tags)
+            return set(cached_tags)
 
         origin_cube = self._offset_to_cube(int(origin.x), int(origin.y))
         tile_tags: Set[str] = set()
@@ -409,7 +464,7 @@ class World(Singleton, DirectObject):
                     tile_tags.add(tile.get_tag())
 
         self._vision_radius_tile_tags_cache[cache_key] = tile_tags
-        return self._resolve_tiles_from_tags(tile_tags)
+        return set(tile_tags)
 
     def _offset_to_cube(self, q: int, r: int) -> Tuple[int, int, int]:
         if self.vision_offset_layout == "even-q":
