@@ -128,6 +128,10 @@ class Game(Singleton, DirectObject):
 
         self._window_event_task_name: str = f"game-window-saveback-{id(self)}"
         self._pending_window_state: WindowState | None = None
+        self._fog_unit_sync_task_name: str = f"game-fog-unit-sync-{id(self)}"
+        self._vision_refresh_task_name: str = f"game-vision-refresh-{id(self)}"
+        self._pending_fog_unit_sync_tile_tags: Set[str] = set()
+        self._pending_fog_unit_sync_units: Dict[str, "Unit"] = {}
 
         self.configure_environment()
         self.register()
@@ -258,6 +262,7 @@ class Game(Singleton, DirectObject):
         self.ui.reset()
         self.fog_of_war.reset()
         self._dispose_fog_blob_overlay()
+        self._clear_pending_fog_sync_tasks()
 
         LandmassLabelOverlay.get().clear()
 
@@ -415,6 +420,8 @@ class Game(Singleton, DirectObject):
         self.accept("game.era.progressing", self.on_age_progressing)
         self.accept("game.gameplay.unit.spawned", self.on_unit_visibility_candidate_changed)
         self.accept("game.gameplay.unit.moved", self.on_unit_visibility_candidate_changed)
+        self.accept("game.gameplay.unit.destroyed.context", self.on_unit_destroyed)
+        self.accept("system.unit.destroyed.context", self.on_unit_destroyed)
 
     def on_age_progressing(self, new_age: "Age"):
         if self.properties is None:
@@ -783,8 +790,6 @@ class Game(Singleton, DirectObject):
         return self.world_tile_grid
 
     def on_unit_visibility_candidate_changed(self, unit: "Unit", *args: Any) -> None:
-        del args
-
         if not self.game_active or not self.world.grid:
             return
 
@@ -792,11 +797,100 @@ class Game(Singleton, DirectObject):
         if not PlayerManager.is_session_player(player):
             return
 
-        self.sync_session_player_unit_visibility([unit])
+        affected_tile_tags = self._collect_unit_event_tile_tags(unit, args)
 
-    def sync_session_player_unit_visibility(self, units: Iterable["Unit"]) -> None:
+        if self._unit_belongs_to_player(unit, player):
+            self._schedule_session_player_vision_refresh()
+            return
+
+        self._queue_session_player_unit_visibility_sync([unit], affected_tile_tags=affected_tile_tags)
+
+    def on_unit_destroyed(
+        self,
+        unit: "Unit",
+        destroyed_tile: Any = None,
+        destroyed_owner: Any = None,
+        *args: Any,
+    ) -> None:
+        if not self.game_active or not self.world.grid:
+            return
+
+        player = PlayerManager.player()
+        if not PlayerManager.is_session_player(player):
+            return
+
+        affected_tile_tags = self._collect_unit_event_tile_tags(unit, (destroyed_tile, *args))
+        owner = destroyed_owner if destroyed_owner is not None else self._unit_owner_or_none(unit)
+
+        if self._entity_tag(owner) == self._entity_tag(player):
+            self._schedule_session_player_vision_refresh()
+            return
+
+        self._queue_session_player_unit_visibility_sync([unit], affected_tile_tags=affected_tile_tags)
+
+    def _schedule_session_player_vision_refresh(self) -> None:
+        self.base.taskMgr.remove(self._vision_refresh_task_name)
+        self.base.taskMgr.doMethodLater(0.03, self._flush_session_player_vision_refresh, self._vision_refresh_task_name)
+
+    def _flush_session_player_vision_refresh(self, task: Any) -> Any:
+        if not self.game_active or not self.world.grid:
+            return task.done
+
+        player = PlayerManager.player()
+        if not PlayerManager.is_session_player(player):
+            return task.done
+
+        self.calculate_vision()
+
+        if not self.fog_of_war.has_synced_player(player):
+            self.sync_session_player_fog(player)
+
+        return task.done
+
+    def _queue_session_player_unit_visibility_sync(
+        self,
+        units: Iterable["Unit"],
+        *,
+        affected_tile_tags: Set[str] | None = None,
+    ) -> None:
+        if affected_tile_tags is not None:
+            self._pending_fog_unit_sync_tile_tags.update(affected_tile_tags)
+
+        for unit in units:
+            unit_key = self._entity_tag(unit) or str(id(unit))
+            self._pending_fog_unit_sync_units[unit_key] = unit
+
+        self.base.taskMgr.remove(self._fog_unit_sync_task_name)
+        self.base.taskMgr.doMethodLater(0.03, self._flush_session_player_unit_visibility_sync, self._fog_unit_sync_task_name)
+
+    def _flush_session_player_unit_visibility_sync(self, task: Any) -> Any:
+        units = list(self._pending_fog_unit_sync_units.values())
+        affected_tile_tags = set(self._pending_fog_unit_sync_tile_tags)
+
+        self._pending_fog_unit_sync_units.clear()
+        self._pending_fog_unit_sync_tile_tags.clear()
+
+        if units or affected_tile_tags:
+            self.sync_session_player_unit_visibility(units, affected_tile_tags=affected_tile_tags)
+
+        return task.done
+
+    def _clear_pending_fog_sync_tasks(self) -> None:
+        self.base.taskMgr.remove(self._fog_unit_sync_task_name)
+        self.base.taskMgr.remove(self._vision_refresh_task_name)
+        self._pending_fog_unit_sync_units.clear()
+        self._pending_fog_unit_sync_tile_tags.clear()
+
+    def sync_session_player_unit_visibility(
+        self,
+        units: Iterable["Unit"],
+        *,
+        affected_tile_tags: Set[str] | None = None,
+    ) -> None:
         cached_units = list(units)
-        if not cached_units:
+        changed_tile_tags = set(affected_tile_tags or set())
+
+        if not cached_units and not changed_tile_tags:
             return
 
         player = PlayerManager.player()
@@ -811,7 +905,7 @@ class Game(Singleton, DirectObject):
 
         self.fog_of_war.apply_changed_tags(
             player,
-            set(),
+            changed_tile_tags,
             tile_grid=tile_grid,
             tile_overlay=tile_overlay,
             units=cached_units,
@@ -819,4 +913,77 @@ class Game(Singleton, DirectObject):
             label_overlay=label_overlay,
             fog_blob_overlay=fog_blob_overlay,
             total_tiles=len(self.world.grid),
-    )
+            rebuild_fog_blob=False,
+        )
+
+    def _collect_unit_event_tile_tags(self, unit: "Unit", values: Iterable[Any]) -> Set[str]:
+        tile_tags: Set[str] = set()
+
+        try:
+            current_tile = unit.get_tile()
+        except Exception:
+            current_tile = None
+
+        current_tile_tag = self._tile_tag_from_candidate(current_tile)
+        if current_tile_tag is not None:
+            tile_tags.add(current_tile_tag)
+
+        for value in values:
+            tile_tag = self._tile_tag_from_candidate(value)
+            if tile_tag is not None:
+                tile_tags.add(tile_tag)
+
+        return tile_tags
+
+    def _tile_tag_from_candidate(self, value: Any) -> str | None:
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            return value
+
+        resolved = value
+        if not hasattr(resolved, "get_tag") and not hasattr(resolved, "tag") and callable(value):
+            resolved = value()
+            if resolved is None:
+                return None
+
+        get_tag = getattr(resolved, "get_tag", None)
+        if callable(get_tag):
+            tile_tag = get_tag()
+            if isinstance(tile_tag, str) and tile_tag:
+                return tile_tag
+
+        tile_tag = getattr(resolved, "tag", None)
+        if isinstance(tile_tag, str) and tile_tag:
+            return tile_tag
+
+        return None
+
+    def _unit_owner_or_none(self, unit: "Unit") -> Any:
+        try:
+            return unit.get_owner()
+        except Exception:
+            return getattr(unit, "owner", None)
+
+    def _unit_belongs_to_player(self, unit: "Unit", player: "Player") -> bool:
+        return self._entity_tag(self._unit_owner_or_none(unit)) == self._entity_tag(player)
+
+    def _entity_tag(self, entity: Any) -> str | None:
+        if entity is None:
+            return None
+
+        if isinstance(entity, str):
+            return entity
+
+        get_tag = getattr(entity, "get_tag", None)
+        if callable(get_tag):
+            tag = get_tag()
+            if isinstance(tag, str) and tag:
+                return tag
+
+        tag = getattr(entity, "tag", None)
+        if isinstance(tag, str) and tag:
+            return tag
+
+        return None

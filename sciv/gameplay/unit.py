@@ -670,13 +670,25 @@ class Unit(BaseEntity, ABC):
     def destroy(self, as_system: bool = False, *args: Any, **kwargs: Any) -> None:
         self._health_left = 0
 
+        try:
+            destroyed_tile: "Tile | None" = self.get_tile()
+        except Exception:
+            destroyed_tile = None
+
+        try:
+            destroyed_owner: "Player | None" = self.get_owner() if self.owner is not None else None
+        except Exception:
+            destroyed_owner = None
+
         self.unload_model()
 
         UnitManager.get_singleton_instance().remove_unit(self)
-        self.get_tile().remove_unit(self)
 
-        if self.owner is not None:
-            self.get_owner().units.remove_unit(self)
+        if destroyed_tile is not None:
+            destroyed_tile.remove_unit(self)
+
+        if destroyed_owner is not None:
+            destroyed_owner.units.remove_unit(self)
 
         self.set_owner(None)
         self.unregister()
@@ -684,8 +696,10 @@ class Unit(BaseEntity, ABC):
         self.actions.clear()
 
         if as_system:
+            messenger.send("system.unit.destroyed.context", [self, destroyed_tile, destroyed_owner])
             messenger.send("system.unit.destroyed", [self])
         else:
+            messenger.send("game.gameplay.unit.destroyed.context", [self, destroyed_tile, destroyed_owner])
             messenger.send("game.gameplay.unit.destroyed", [self])
 
     @classmethod
