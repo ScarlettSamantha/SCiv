@@ -27,13 +27,13 @@ class BitsRenderer:
     def _ordered_ids(self, ids: List[str]) -> List[str]:
         return sorted(ids, key=lambda s: (0 if s in self._last_slot_by_bit_id else 1, crc32(s.encode("utf-8"))))
 
-    def render(self) -> None:
+    def render(self, include_details: bool = True) -> None:
         prev_assignments: Dict[str, "Bit"] = dict(self._bit_slot_assignments)
         for slot_name, bit in prev_assignments.items():
             self._last_slot_by_bit_id[bit.id] = slot_name
 
         self.prop_slots = self.tile.get_prop_slots()
-        active_by_id: Dict[str, "Bit"] = self._gather_active_bits()
+        active_by_id: Dict[str, "Bit"] = self._gather_active_bits(include_details=include_details)
 
         blockers: Dict[str, "Bit"] = {
             bid: b
@@ -181,7 +181,7 @@ class BitsRenderer:
                 return True
         return False
 
-    def _gather_active_bits(self) -> Dict[str, "Bit"]:
+    def _gather_active_bits(self, include_details: bool = True) -> Dict[str, "Bit"]:
         active_bits: Dict[str, "Bit"] = {}
         resource_bits: List["Bit"] = []
         terrain_bits: List["Bit"] = []
@@ -189,21 +189,26 @@ class BitsRenderer:
         city_bits: List["Bit"] = []
 
         if self.tile.is_city() and self.tile.city:
-            for improvement in self.tile.city.get_improvements():
-                improvement_bit: "Bit | None" = improvement.as_bit()
-                if improvement_bit:
-                    city_bits.append(improvement_bit)
+            if include_details:
+                for improvement in self.tile.city.get_improvements():
+                    improvement_bit: "Bit | None" = improvement.as_bit()
+                    if improvement_bit:
+                        city_bits.append(improvement_bit)
+            else:
+                terrain_bits = self.tile.get_terrain().get_bits()
         else:
             terrain_bits = self.tile.get_terrain().get_bits()
-            for resource in self.tile.get_resources():
-                resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
-                if resource_bit:
-                    resource_bits.append(resource_bit)
 
-            for improvement in self.tile.get_improvements().get_all():
-                improvement_bit: "Bit | None" = improvement.as_bit()
-                if improvement_bit:
-                    improvement_bits.append(improvement_bit)
+            if include_details:
+                for resource in self.tile.get_resources():
+                    resource_bit: "Bit | None" = resource.as_bit(self.tile.is_land)
+                    if resource_bit:
+                        resource_bits.append(resource_bit)
+
+                for improvement in self.tile.get_improvements().get_all():
+                    improvement_bit: "Bit | None" = improvement.as_bit()
+                    if improvement_bit:
+                        improvement_bits.append(improvement_bit)
 
         has_units: bool = self.tile.units.has_any()
         has_resources: bool = self.tile.resources.has_non_mechanical_resources()

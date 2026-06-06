@@ -102,6 +102,7 @@ class TileRenderer:
 
         self.bits_renderer = BitsRenderer(tile, self.geometry_node)
         self.disable_yield_icons: bool = False
+        self.fog_detail_visible: bool = True
 
         self._fog_overlay_color: Optional[Tuple4f] = None
         self._visibility_state_applied: bool = False
@@ -254,7 +255,7 @@ class TileRenderer:
             if self.selector_np is not None:
                 self.selector_np.hide()
             self._show_fog_overlay(FOGGED_TILE_TINT, transparent=True)
-            TileRendererSystem.get().show_tile(self.tile)
+            TileRendererSystem.get().hide_tile(self.tile)
             return
 
         if fog_overlay is not None:
@@ -266,7 +267,10 @@ class TileRenderer:
                 self.ui_node.show()
             if self.selector_enabled and self.selector_np is not None:
                 self.selector_np.show()
-            TileRendererSystem.get().show_tile(self.tile)
+            if self.fog_detail_visible:
+                TileRendererSystem.get().show_tile(self.tile)
+            else:
+                TileRendererSystem.get().hide_tile(self.tile)
             return
 
         self.geometry_node.hide()
@@ -348,6 +352,23 @@ class TileRenderer:
 
         self.update()
 
+    def set_fog_detail_visibility(self, visible: bool) -> None:
+        if self.fog_detail_visible == visible:
+            if not visible:
+                TileRendererSystem.get().hide_tile(self.tile)
+                self.bits_renderer.render(include_details=False)
+            return
+
+        self.fog_detail_visible = visible
+
+        if visible:
+            TileRendererSystem.get().show_tile(self.tile)
+            self.update()
+            return
+
+        self.clear_ui()
+        TileRendererSystem.get().hide_tile(self.tile)
+        self.bits_renderer.render(include_details=False)
 
     def clear_ui(self) -> None:
         if self.ui_node is not None:
@@ -465,9 +486,14 @@ class TileRenderer:
         self.clear_ui()
         self.prop_slots = self.tile.get_prop_slots()
         self._draw_improvements()
-        TileRendererSystem.get().sync_tile(self.tile)
 
-        if self.tile.city:
+        if self.fog_detail_visible:
+
+            TileRendererSystem.get().sync_tile(self.tile)
+        else:
+            TileRendererSystem.get().hide_tile(self.tile)
+
+        if self.fog_detail_visible and self.tile.city:
             if self.city_ui_node is None:
                 self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
             self._draw_city_nameplate()
@@ -484,7 +510,11 @@ class TileRenderer:
         if rerender_terrain:
             self.rerender_terrain()
 
-        self.bits_renderer.render()
+        if self.fog_detail_visible:
+            self.bits_renderer.render(include_details=True)
+        else:
+            self.bits_renderer.render(include_details=False)
+
         self.set_visibility_state(self._visibility_state, force=True)
 
     def rerender_terrain(self) -> None:
@@ -493,6 +523,18 @@ class TileRenderer:
         self.game_manager.get_world_grid().update_tile(self.tile)
 
     def update(self) -> None:
+        if not self.fog_detail_visible:
+            if self.city_ui_node is not None:
+                self.city_ui_node.removeNode()
+                self.city_ui_node = None
+
+            self.clear_ui()
+            self._drop_ui_node_if_empty()
+            self.bits_renderer.render(include_details=False)
+            TileRendererSystem.get().hide_tile(self.tile)
+            self.set_visibility_state(self._visibility_state, force=True)
+            return
+
         if not self.tile.city:
             if self.city_ui_node is not None:
                 self.city_ui_node.removeNode()

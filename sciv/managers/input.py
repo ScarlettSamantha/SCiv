@@ -47,6 +47,13 @@ class NET_TYPE(Enum):
     ANCHOR = "anchor"
     UNIT = "unit"
 
+PICKABLE_NET_TYPES: Tuple[str, ...] = (
+    NET_TYPE.MODEL.value,
+    NET_TYPE.TILE.value,
+    NET_TYPE.BIT.value,
+    NET_TYPE.GEOM.value,
+    NET_TYPE.UNIT.value,
+)
 
 class Input(Singleton, DirectObject):
     def __init__(self, base: "OpenCiv"):
@@ -183,7 +190,7 @@ class Input(Singleton, DirectObject):
 
         assert self.game_ui is not None, "Game UI should be initialized."
 
-        target: NodePath | None = self.pick_object(dont_select=True)
+        target: NodePath | None = self.pick_object(dont_select=True, prefer_units=True)
         if target is None:
             return
 
@@ -218,7 +225,7 @@ class Input(Singleton, DirectObject):
 
         self.cancel_user_action()
 
-        clicked_object: NodePath | None = self.pick_object(dont_select=True)
+        clicked_object: NodePath | None = self.pick_object(dont_select=True, prefer_units=False)
         if clicked_object is None:
             self.game_ui.close_unit_path_renderer()
             return
@@ -384,6 +391,34 @@ class Input(Singleton, DirectObject):
         self.ranged_targeting = None
         MessengerGlobal.messenger.send("ui.update.ui.close_player_attack_info")
 
+    def _is_pickable_node(self, picked_obj: NodePath) -> bool:
+        net_type = picked_obj.getNetTag(NET_TYPE_FIELD)
+        if net_type not in PICKABLE_NET_TYPES:
+            return False
+
+        net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
+        return bool(net_id)
+
+    def _is_unit_pickable_node(self, picked_obj: NodePath) -> bool:
+        return picked_obj.getNetTag(NET_TYPE_FIELD) in (NET_TYPE.MODEL.value, NET_TYPE.UNIT.value)
+
+    def _sorted_pickable_entries(self, prefer_units: bool = True) -> List[Any]:
+        entries: List[Any] = []
+
+        for entry in self.pq.getEntries():
+            picked_obj: NodePath = entry.getIntoNodePath()
+            if self._is_pickable_node(picked_obj):
+                entries.append(entry)
+
+        if not prefer_units:
+            return entries
+
+        return sorted(
+            entries,
+            key=lambda entry: 0 if self._is_unit_pickable_node(entry.getIntoNodePath()) else 1,
+        )
+
+
     def hover_task(self, task: Task.Task) -> Literal[1]:
         if not self.active or not self.base.mouseWatcherNode.hasMouse():  # type: ignore
             return task.cont
@@ -415,8 +450,9 @@ class Input(Singleton, DirectObject):
 
         if self.pq.getNumEntries() > 0:
             self.pq.sortEntries()
-            for entry in self.pq.getEntries():
+            for entry in self._sorted_pickable_entries(prefer_units=True):
                 picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
+
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
                 net_id = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
 
@@ -497,7 +533,7 @@ class Input(Singleton, DirectObject):
     def run_analyze(self):
         self.base.render.analyze()  # type: ignore
 
-    def pick_object(self, dont_select: bool = False) -> NodePath | None:
+    def pick_object(self, dont_select: bool = False, prefer_units: bool = True) -> NodePath | None:
         now: float = time.time()
         if now - self._last_pick_time < self.pick_timeout:
             return None
@@ -520,13 +556,11 @@ class Input(Singleton, DirectObject):
         if self.pq.getNumEntries() > 0:
             self.pq.sortEntries()
 
-            for entry in self.pq.getEntries():
+            for entry in self._sorted_pickable_entries(prefer_units=prefer_units):
                 picked_obj: NodePath = entry.getIntoNodePath()  # type: ignore
+
                 net_type: str = picked_obj.getNetTag(NET_TYPE_FIELD)  # type: ignore
                 net_id: str = picked_obj.getNetTag(NET_NODE_TAG_ID_FIELD)
-
-                if not net_type:
-                    continue
 
                 if dont_select:
                     return picked_obj

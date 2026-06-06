@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from gameplay.resource import BaseResource
 from helpers.cache import Cache
@@ -53,6 +53,7 @@ class TileRendererSystem:
 
         self._tiles: List[Optional[T_TileRef]] = []
         self._tile_index: Dict[str, int] = {}
+        self._hidden_tile_tags: Set[str] = set()
         self._geom_node: Optional[GeomNode] = None
         self._geom_np: Optional[NodePath] = None
         self._vdata: Optional[GeomVertexData] = None
@@ -124,19 +125,27 @@ class TileRendererSystem:
         tag = tile.tag
         if tag not in self._tile_index:
             return
+
         idx = self._tile_index.pop(tag)
+        self._hidden_tile_tags.discard(tag)
         self._tiles[idx] = None
         self._write_instance_clear(idx)
 
     def hide_tile(self, tile: T_TileRef) -> None:
-        idx = self._tile_index.get(tile.tag)
+        tag = tile.tag
+        self._hidden_tile_tags.add(tag)
+
+        idx = self._tile_index.get(tag)
         if idx is None:
             return
 
         self._write_instance_clear(idx)
 
     def show_tile(self, tile: T_TileRef) -> None:
-        idx = self._tile_index.get(tile.tag)
+        tag = tile.tag
+        self._hidden_tile_tags.discard(tag)
+
+        idx = self._tile_index.get(tag)
         if idx is None:
             self.register_tile(tile)
             return
@@ -147,10 +156,16 @@ class TileRendererSystem:
         if self._vdata is None:
             self.register_tile(tile)
             return
+
         idx = self._tile_index.get(tile.tag)
         if idx is None:
             self.register_tile(tile)
             return
+
+        if tile.tag in self._hidden_tile_tags:
+            self._write_instance_clear(idx)
+            return
+
         self._write_instance_row(idx, tile)
 
     def _next_capacity(self, target: int) -> int:

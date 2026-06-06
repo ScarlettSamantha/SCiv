@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Protocol, Set, TypeVar, cast
+import logging
+from time import perf_counter
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Literal, Protocol, Set, Tuple, TypeAlias, TypeVar, cast
 from weakref import ReferenceType, ref
 
 if TYPE_CHECKING:
@@ -15,12 +17,36 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-from typing import Literal, Tuple, TypeAlias
-
-
 HexOffsetLayout: TypeAlias = Literal["odd-q", "even-q"]
 OffsetCoord: TypeAlias = Tuple[int, int]
 CubeCoord: TypeAlias = Tuple[int, int, int]
+
+
+VISION_TIMING_LOGGER = logging.getLogger("sciv.timing.vision")
+VISION_TIMING_LOG_LEVEL = logging.INFO
+
+
+@dataclass(slots=True)
+class VisionTimingSample:
+    label: str
+    started_at: float
+    enabled: bool
+
+    @classmethod
+    def start(cls, label: str) -> "VisionTimingSample":
+        enabled = VISION_TIMING_LOGGER.isEnabledFor(VISION_TIMING_LOG_LEVEL)
+        return cls(label=label, started_at=perf_counter() if enabled else 0.0, enabled=enabled)
+
+    def finish(self, **details: object) -> None:
+        if not self.enabled:
+            return
+
+        elapsed_ms = (perf_counter() - self.started_at) * 1000.0
+        detail_text = ""
+        if details:
+            detail_text = " " + " ".join(f"{key}={value}" for key, value in details.items())
+
+        VISION_TIMING_LOGGER.log(VISION_TIMING_LOG_LEVEL, "vision.%s elapsed_ms=%.3f%s", self.label, elapsed_ms, detail_text)
 
 
 class RadiusTileLike(Protocol):
@@ -38,42 +64,50 @@ class HexVisionRadiusIndex:
 
     @classmethod
     def build(cls, tiles: Iterable[RadiusTileLike], *, layout: HexOffsetLayout = "odd-q") -> "HexVisionRadiusIndex":
+        timing = VisionTimingSample.start("radius_index.build")
         indexed_tiles: Dict[OffsetCoord, RadiusTileLike] = {}
 
         for tile in tiles:
             indexed_tiles[(int(tile.x), int(tile.y))] = tile
 
+        timing.finish(tile_count=len(indexed_tiles), layout=layout)
         return cls(tiles_by_coord=indexed_tiles, layout=layout)
 
     def refresh_tile(self, tile: RadiusTileLike) -> None:
         self.tiles_by_coord[(int(tile.x), int(tile.y))] = tile
 
     def tiles_in_radius(self, origin: RadiusTileLike, radius: int) -> Set[RadiusTileLike]:
+        timing = VisionTimingSample.start("radius_index.tiles_in_radius")
         resolved_tiles: Set[RadiusTileLike] = set()
+        clamped_radius = max(0, radius)
 
-        for coord in self.coords_in_radius(int(origin.x), int(origin.y), max(0, radius)):
+        for coord in self.coords_in_radius(int(origin.x), int(origin.y), clamped_radius):
             tile = self.tiles_by_coord.get(coord)
             if tile is not None:
                 resolved_tiles.add(tile)
 
+        timing.finish(radius=clamped_radius, resolved_tile_count=len(resolved_tiles))
         return resolved_tiles
 
     def tile_tags_in_radius(self, origin: RadiusTileLike, radius: int) -> Set[str]:
         return {tile.get_tag() for tile in self.tiles_in_radius(origin, radius)}
 
     def coords_in_radius(self, col: int, row: int, radius: int) -> Set[OffsetCoord]:
+        timing = VisionTimingSample.start("radius_index.coords_in_radius")
+        clamped_radius = max(0, radius)
         center = self._offset_to_cube(col, row)
         coords: Set[OffsetCoord] = set()
 
-        for dx in range(-radius, radius + 1):
-            min_dy = max(-radius, -dx - radius)
-            max_dy = min(radius, -dx + radius)
+        for dx in range(-clamped_radius, clamped_radius + 1):
+            min_dy = max(-clamped_radius, -dx - clamped_radius)
+            max_dy = min(clamped_radius, -dx + clamped_radius)
 
             for dy in range(min_dy, max_dy + 1):
                 dz = -dx - dy
                 cube = (center[0] + dx, center[1] + dy, center[2] + dz)
                 coords.add(self._cube_to_offset(cube))
 
+        timing.finish(col=col, row=row, radius=clamped_radius, coord_count=len(coords))
         return coords
 
     def _offset_to_cube(self, col: int, row: int) -> CubeCoord:
@@ -98,27 +132,36 @@ class HexVisionRadiusIndex:
 
         return col, row
 
+
 class VisionTileLike(Protocol):
     def get_tag(self) -> str: ...
 
 
 def collect_radius_visibility(origin: T, radius: int, neighbor_getter: Callable[[T, int], Iterable[T]]) -> Set[T]:
+    timing = VisionTimingSample.start("visibility.collect_radius")
     visible_tiles: Set[T] = {origin}
+
     if radius <= 0:
+        timing.finish(radius=radius, visible_tile_count=len(visible_tiles))
         return visible_tiles
 
     visible_tiles.update(neighbor_getter(origin, radius))
+    timing.finish(radius=radius, visible_tile_count=len(visible_tiles))
     return visible_tiles
 
 
 def expand_border_visibility(core_tiles: Iterable[T], border_radius: int, neighbor_getter: Callable[[T], Iterable[T]]) -> Set[T]:
+    timing = VisionTimingSample.start("visibility.expand_border")
     visible_tiles: Set[T] = set(core_tiles)
     frontier: Set[T] = set(visible_tiles)
+    iterations = 0
 
     if border_radius <= 0:
+        timing.finish(border_radius=border_radius, iterations=iterations, visible_tile_count=len(visible_tiles))
         return visible_tiles
 
     for _ in range(border_radius):
+        iterations += 1
         next_frontier: Set[T] = set()
         for tile in frontier:
             next_frontier.update(neighbor_getter(tile))
@@ -130,6 +173,7 @@ def expand_border_visibility(core_tiles: Iterable[T], border_radius: int, neighb
         visible_tiles.update(next_frontier)
         frontier = next_frontier
 
+    timing.finish(border_radius=border_radius, iterations=iterations, visible_tile_count=len(visible_tiles))
     return visible_tiles
 
 
@@ -145,12 +189,14 @@ def is_visible_for_render(state: VisionTileState) -> bool:
 
 
 def build_tile_visibility_states(vision: "Vision", tiles: Iterable[VisionTileLike]) -> Dict[str, VisionTileState]:
+    timing = VisionTimingSample.start("visibility.build_tile_states")
     visibility_states: Dict[str, VisionTileState] = {}
 
     for tile in tiles:
         tile_tag = tile.get_tag()
         visibility_states[tile_tag] = vision.get_tile_state(tile_tag)
 
+    timing.finish(tile_count=len(visibility_states))
     return visibility_states
 
 
@@ -204,7 +250,7 @@ class Vision:
         self._explored_tile_tags: Set[str] = set()
         self._lingering_tile_tags: Set[str] = set()
         self._runtime_views_dirty: bool = True
-        self._source_ref_counts: dict[str, int] = {}
+        self._source_ref_counts: Dict[str, int] = {}
         self._visible_tiles: Set[ReferenceType["Tile"]] = set()
         self._visible_units: List[ReferenceType["Unit"]] = []
         self._visible_cities: List[ReferenceType["City"]] = []
@@ -262,6 +308,7 @@ class Vision:
         self._runtime_views_dirty = True
 
     def update_reveal_source_tiles(self, source_id: str, tiles_or_tags: Iterable[object]) -> Set[str]:
+        timing = VisionTimingSample.start("reveal_source.update")
         next_tags: Set[str] = set()
 
         for tile_or_tag in tiles_or_tags:
@@ -280,6 +327,15 @@ class Vision:
         previous_tags = self._reveal_sources.get(source_id, set())
         if previous_tags == next_tags:
             self._changed_tile_tags = set()
+            timing.finish(
+                source_id=source_id,
+                previous_tile_count=len(previous_tags),
+                next_tile_count=len(next_tags),
+                added_tile_count=0,
+                removed_tile_count=0,
+                changed_tile_count=0,
+                skipped=True,
+            )
             return set()
 
         removed_tags = previous_tags - next_tags
@@ -312,6 +368,15 @@ class Vision:
                 changed_tags.add(tile_tag)
 
         self._changed_tile_tags = changed_tags
+        timing.finish(
+            source_id=source_id,
+            previous_tile_count=len(previous_tags),
+            next_tile_count=len(next_tags),
+            added_tile_count=len(added_tags),
+            removed_tile_count=len(removed_tags),
+            changed_tile_count=len(changed_tags),
+            reveal_source_count=len(self._reveal_sources),
+        )
         return changed_tags
 
     def set_reveal_source(self, source_id: str, tiles_or_tags: Iterable["Tile | str"]) -> bool:
@@ -391,25 +456,34 @@ class Vision:
         improvements: List["Improvement"] | None = None,
         terrain: List["BaseTerrain"] | None = None,
     ) -> None:
+        timing = VisionTimingSample.start("runtime_views.refresh")
         self._reset_runtime_views()
+
+        resolve_tiles_timing = VisionTimingSample.start("runtime_views.resolve_tiles")
         resolved_tiles = list(tiles)
         self._visible_tiles = {ref(tile) for tile in resolved_tiles}
+        resolve_tiles_timing.finish(tile_count=len(resolved_tiles))
 
         if units is None:
+            collect_units_timing = VisionTimingSample.start("runtime_views.collect_units")
             unit_map: Dict[str, "Unit"] = {}
             for tile in resolved_tiles:
                 for unit in tile.get_units():
                     unit_map[unit.get_tag()] = unit
             units = list(unit_map.values())
+            collect_units_timing.finish(tile_count=len(resolved_tiles), unit_count=len(units))
 
         if cities is None:
+            collect_cities_timing = VisionTimingSample.start("runtime_views.collect_cities")
             city_map: Dict[str, "City"] = {}
             for tile in resolved_tiles:
                 if tile.city is not None:
                     city_map[tile.city.get_tag()] = tile.city
             cities = list(city_map.values())
+            collect_cities_timing.finish(tile_count=len(resolved_tiles), city_count=len(cities))
 
         if resources is None:
+            collect_resources_timing = VisionTimingSample.start("runtime_views.collect_resources")
             visible_resources: List["BaseResource"] = []
             seen_resource_ids: Set[int] = set()
             for tile in resolved_tiles:
@@ -420,8 +494,10 @@ class Vision:
                     seen_resource_ids.add(resource_id)
                     visible_resources.append(resource)
             resources = visible_resources
+            collect_resources_timing.finish(tile_count=len(resolved_tiles), resource_count=len(resources))
 
         if improvements is None:
+            collect_improvements_timing = VisionTimingSample.start("runtime_views.collect_improvements")
             visible_improvements: List["Improvement"] = []
             seen_improvement_ids: Set[int] = set()
             for tile in resolved_tiles:
@@ -432,8 +508,10 @@ class Vision:
                     seen_improvement_ids.add(improvement_id)
                     visible_improvements.append(improvement)
             improvements = visible_improvements
+            collect_improvements_timing.finish(tile_count=len(resolved_tiles), improvement_count=len(improvements))
 
         if terrain is None:
+            collect_terrain_timing = VisionTimingSample.start("runtime_views.collect_terrain")
             visible_terrain: List["BaseTerrain"] = []
             seen_terrain_ids: Set[int] = set()
             for tile in resolved_tiles:
@@ -444,13 +522,30 @@ class Vision:
                 seen_terrain_ids.add(terrain_id)
                 visible_terrain.append(terrain_item)
             terrain = visible_terrain
+            collect_terrain_timing.finish(tile_count=len(resolved_tiles), terrain_count=len(terrain))
 
+        sync_refs_timing = VisionTimingSample.start("runtime_views.sync_refs")
         self._visible_units = [ref(unit) for unit in units]
         self._visible_cities = [ref(city) for city in cities]
         self._visible_resources = [ref(resource) for resource in resources]
         self._visible_improvements = [ref(improvement) for improvement in improvements]
         self._visible_terrain = [ref(terrain_item) for terrain_item in terrain]
         self._runtime_views_dirty = False
+        sync_refs_timing.finish(
+            unit_count=len(units),
+            city_count=len(cities),
+            resource_count=len(resources),
+            improvement_count=len(improvements),
+            terrain_count=len(terrain),
+        )
+        timing.finish(
+            tile_count=len(resolved_tiles),
+            unit_count=len(units),
+            city_count=len(cities),
+            resource_count=len(resources),
+            improvement_count=len(improvements),
+            terrain_count=len(terrain),
+        )
 
     def _ensure_runtime_views(self) -> None:
         if not self._runtime_views_dirty:
@@ -498,7 +593,9 @@ class Vision:
         changed_tiles.add(record.tile_tag)
 
     def advance_lingering_tiles(self) -> Set[str]:
+        timing = VisionTimingSample.start("visible_tiles.advance_lingering")
         changed_tags: Set[str] = set()
+        initial_lingering_count = len(self._lingering_tile_tags)
 
         for tile_tag in list(self._lingering_tile_tags):
             if self._source_ref_counts.get(tile_tag, 0) > 0:
@@ -517,6 +614,11 @@ class Vision:
                 changed_tags.add(tile_tag)
 
         self._changed_tile_tags = changed_tags
+        timing.finish(
+            initial_lingering_tile_count=initial_lingering_count,
+            remaining_lingering_tile_count=len(self._lingering_tile_tags),
+            changed_tile_count=len(changed_tags),
+        )
         return changed_tags
 
     def _set_incremental_tile_state(self, tile_tag: str, state: VisionTileState, turns_remaining: int) -> bool:
@@ -581,6 +683,7 @@ class Vision:
         *,
         advance_linger: bool = True,
     ) -> Set[str]:
+        timing = VisionTimingSample.start("visible_tiles.recompute")
         effective_linger_turns = self.default_linger_turns if linger_turns is None else max(0, linger_turns)
 
         next_direct_visible_tags: Set[str] = set()
@@ -633,6 +736,15 @@ class Vision:
         self._changed_tile_tags = changed_tiles
         self._direct_visible_tile_tags = next_direct_visible_tags
         self._runtime_views_dirty = True
+        timing.finish(
+            input_tile_count=len(tiles),
+            previous_direct_visible_tile_count=len(previous_direct_visible_tags),
+            next_direct_visible_tile_count=len(next_direct_visible_tags),
+            lost_direct_visible_tile_count=len(lost_direct_visible_tags),
+            lingering_tile_count=len(lingering_tags),
+            changed_tile_count=len(changed_tiles),
+            advance_linger=advance_linger,
+        )
         return changed_tiles
 
     def mass_set_visible_tiles(
@@ -646,11 +758,14 @@ class Vision:
         *,
         advance_linger: bool = True,
     ) -> Set[str]:
+        timing = VisionTimingSample.start("visible_tiles.mass_set")
         changed_tiles: Set[str] = set()
+        explicit_runtime_views = any(item is not None for item in (units, cities, resources, improvements, terrain))
+
         if tiles is not None:
             changed_tiles = self.recompute_visible_tiles(tiles, advance_linger=advance_linger)
 
-        if any(item is not None for item in (units, cities, resources, improvements, terrain)):
+        if explicit_runtime_views:
             self._refresh_runtime_views(
                 self.get_visible_tiles(),
                 units=units,
@@ -660,14 +775,42 @@ class Vision:
                 terrain=terrain,
             )
 
+        timing.finish(
+            input_tile_count=len(tiles) if tiles is not None else 0,
+            changed_tile_count=len(changed_tiles),
+            explicit_runtime_views=explicit_runtime_views,
+            unit_count=len(units) if units is not None else 0,
+            city_count=len(cities) if cities is not None else 0,
+            resource_count=len(resources) if resources is not None else 0,
+            improvement_count=len(improvements) if improvements is not None else 0,
+            terrain_count=len(terrain) if terrain is not None else 0,
+            advance_linger=advance_linger,
+        )
         return changed_tiles
 
     def get_visible_tiles(self) -> Set["Tile"]:
+        timing = VisionTimingSample.start("visible_tiles.resolve")
         tiles: Set["Tile"] = set()
+        cache_hit_count = 0
+        entity_lookup_count = 0
+
         for tile_tag in self._render_visible_tile_tags:
-            resolved = self._resolve_tile(tile_tag)
+            resolved = self._resolve_tile_from_cache(tile_tag)
+            if resolved is not None:
+                cache_hit_count += 1
+            else:
+                entity_lookup_count += 1
+                resolved = self._resolve_tile(tile_tag)
+
             if resolved is not None:
                 tiles.add(resolved)
+
+        timing.finish(
+            render_visible_tile_count=len(self._render_visible_tile_tags),
+            resolved_tile_count=len(tiles),
+            cache_hit_count=cache_hit_count,
+            entity_lookup_count=entity_lookup_count,
+        )
         return tiles
 
     def add_visible_tile(self, tile: "Tile") -> None:
@@ -792,6 +935,7 @@ class Vision:
         }
 
     def load_state(self, state: Dict[str, Any] | List[str]) -> None:
+        timing = VisionTimingSample.start("vision.load_state")
         self._tile_records = {}
         self._tile_refs = {}
         self._reveal_sources = {}
@@ -815,6 +959,13 @@ class Vision:
 
         self._sync_indexes_from_records()
         self._runtime_views_dirty = True
+        timing.finish(
+            record_count=len(self._tile_records),
+            direct_visible_tile_count=len(self._direct_visible_tile_tags),
+            render_visible_tile_count=len(self._render_visible_tile_tags),
+            explored_tile_count=len(self._explored_tile_tags),
+            lingering_tile_count=len(self._lingering_tile_tags),
+        )
 
     def resolve_ref(self, refs: List[ReferenceType[Any]]) -> List[Any]:
         resolved: List[Any] = []

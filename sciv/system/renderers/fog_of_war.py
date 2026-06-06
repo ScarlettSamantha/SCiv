@@ -116,6 +116,7 @@ class FogBlobOverlay:
         self.root.setBin("fixed", 76)
         self.root.setCollideMask(BitMask32.allOff())
         self.root.setTwoSided(True)
+        self._disable_collision(self.root)
         self._geom_np: NodePath | None = None
 
     def set_radius(self, radius: float) -> None:
@@ -150,6 +151,23 @@ class FogBlobOverlay:
         self._geom_np.setTransparency(TransparencyAttrib.M_alpha)
         self._geom_np.setBin("fixed", 76)
         self._geom_np.setTwoSided(True)
+        self._disable_collision(self._geom_np)
+
+    def _disable_collision(self, node: NodePath) -> None:
+        node.setCollideMask(BitMask32.allOff())
+
+        panda_node = node.node()
+
+        set_into_collide_mask = getattr(panda_node, "setIntoCollideMask", None)
+        if callable(set_into_collide_mask):
+            set_into_collide_mask(BitMask32.allOff())
+
+        set_from_collide_mask = getattr(panda_node, "setFromCollideMask", None)
+        if callable(set_from_collide_mask):
+            set_from_collide_mask(BitMask32.allOff())
+
+        for child in node.getChildren():
+            self._disable_collision(child)
 
     def _build_geom(self, tiles: List[FogTileLike], fogged_coords: Set[Tuple[int, int]]) -> GeomNode:
         fmt = GeomVertexFormat.get_v3c4()
@@ -198,6 +216,7 @@ class FogBlobOverlay:
         geom = Geom(vdata)
         geom.addPrimitive(triangles)
         geom_node = GeomNode("fog_blob_overlay_geom")
+        geom_node.setIntoCollideMask(BitMask32.allOff())
         geom_node.addGeom(geom)
         return geom_node
 
@@ -253,6 +272,7 @@ class FogOfWarController:
         self._synced_player_keys: Set[str] = set()
         self._tile_by_tag: Dict[str, FogTileLike] = {}
         self._tile_state_by_tag: Dict[str, VisionTileState] = {}
+        self._tile_detail_visibility_by_tag: Dict[str, bool] = {}
         self._unit_visibility_by_key: Dict[str, bool] = {}
         self._last_fog_blob_tile_tags: Set[str] = set()
         self._fog_ceiling_z: float = 0.1
@@ -261,6 +281,7 @@ class FogOfWarController:
         self._synced_player_keys.clear()
         self._tile_by_tag.clear()
         self._tile_state_by_tag.clear()
+        self._tile_detail_visibility_by_tag.clear()
         self._unit_visibility_by_key.clear()
         self._last_fog_blob_tile_tags.clear()
         self._fog_ceiling_z = 0.1
@@ -328,7 +349,7 @@ class FogOfWarController:
             tile_grid.collect()
 
         self._sync_fog_blob_overlay(fog_blob_overlay)
-        self._sync_units(self._collect_units_from_tiles(cached_tiles, units), direct_visible_tile_tags)
+        self._sync_units(player, self._collect_units_from_tiles(cached_tiles, units), direct_visible_tile_tags)
         self._sync_label_overlay(player, total_tiles=len(cached_tiles), label_overlay=label_overlay)
         self._synced_player_keys.add(player_key)
 
@@ -389,7 +410,7 @@ class FogOfWarController:
         if rebuild_fog_blob and changed_tile_tags:
             self._sync_fog_blob_overlay(fog_blob_overlay)
 
-        self._sync_units(self._collect_units_from_tiles(changed_tiles, cached_units), direct_visible_tile_tags)
+        self._sync_units(player, self._collect_units_from_tiles(changed_tiles, cached_units), direct_visible_tile_tags)
 
         if label_overlay is not None and total_tiles is not None:
             self._sync_label_overlay(player, total_tiles=total_tiles, label_overlay=label_overlay)
@@ -431,10 +452,13 @@ class FogOfWarController:
     ) -> bool:
         tile_tag = self._tile_tag(tile)
 
-        if not force and self._tile_state_by_tag.get(tile_tag) is state:
+        previous_state = self._tile_state_by_tag.get(tile_tag)
+        previous_detail_visible = self._tile_detail_visibility_by_tag.get(tile_tag)
+        if not force and previous_state is state and previous_detail_visible == tile_overlay_visible:
             return False
 
         self._tile_state_by_tag[tile_tag] = state
+        self._tile_detail_visibility_by_tag[tile_tag] = tile_overlay_visible
 
         if tile_grid is not None:
             if self._is_unseen_state(state):
@@ -450,6 +474,7 @@ class FogOfWarController:
             fog_ceiling_z=fog_ceiling_z,
             fog_blob_overlay_enabled=fog_blob_overlay_enabled,
         )
+        self._apply_renderer_detail_visibility_state(tile, tile_overlay_visible)
 
         if tile_overlay_visible:
             tile_overlay.show_tile(tile)
@@ -457,6 +482,14 @@ class FogOfWarController:
             tile_overlay.hide_tile(tile)
 
         return True
+
+    def _apply_renderer_detail_visibility_state(self, tile: FogTileLike, visible: bool) -> None:
+        renderer = tile.renderer
+        set_fog_detail_visibility = getattr(renderer, "set_fog_detail_visibility", None)
+        if not callable(set_fog_detail_visibility):
+            return
+
+        set_fog_detail_visibility(visible)
 
     def _apply_renderer_visibility_state(
         self,
@@ -515,15 +548,39 @@ class FogOfWarController:
         self._last_fog_blob_tile_tags = set(fogged_tile_tags)
         fog_blob_overlay.sync_fogged_tiles(fogged_tiles)
 
-    def _sync_units(self, units: Iterable[FogUnitLike], visible_tile_tags: Set[str]) -> None:
+    def _unit_is_owned_by_player(self, unit: FogUnitLike, player: "Player") -> bool:
+        player_key = self._player_key(player)
+
+        get_owner = getattr(unit, "get_owner", None)
+        if callable(get_owner):
+            try:
+                owner = get_owner()
+                return self._player_key(owner) == player_key
+            except Exception:
+                pass
+
+        owner = getattr(unit, "owner", None)
+        if owner is not None:
+            try:
+                return self._player_key(owner) == player_key
+            except Exception:
+                pass
+
+        owner_tag = getattr(unit, "owner_tag", None)
+        if isinstance(owner_tag, str) and owner_tag:
+            return owner_tag == player_key
+
+        return False
+
+    def _sync_units(self, player: "Player", units: Iterable[FogUnitLike], visible_tile_tags: Set[str]) -> None:
         for unit in units:
             unit_key = self._unit_key(unit)
 
             try:
                 unit_tile_tag = self._tile_tag(unit.get_tile())
-                next_visible = unit_tile_tag in visible_tile_tags
+                next_visible = unit_tile_tag in visible_tile_tags or self._unit_is_owned_by_player(unit, player)
             except Exception:
-                next_visible = False
+                next_visible = self._unit_is_owned_by_player(unit, player)
 
             if self._unit_visibility_by_key.get(unit_key) == next_visible:
                 continue
