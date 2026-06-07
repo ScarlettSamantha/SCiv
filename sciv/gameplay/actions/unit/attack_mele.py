@@ -107,9 +107,11 @@ class AttackAction(BaseUnitAction):
         text, description = "", ""
 
         if result.status == CombatResults.ATTACKER_KILLED:
+            defending_unit_name: t_ | str | None = result.defender_entity.name if result.defender_entity else "Unknown Defender"
+            attacking_unit_name: t_ | str | None = result.attacker_entity.name if result.attacker_entity else "Unknown Attacker"
             text, description = (
                 t_("ui.dialogs.unit.combat.attack_errors.attacker_killed.title"),
-                t_("ui.dialogs.unit.combat.attack_errors.attacker_killed.message"),
+                t_("ui.dialogs.unit.combat.attack_errors.attacker_killed.message", {"defending_unit": defending_unit_name, "attacking_unit": attacking_unit_name, "damage": f"{result.attacker_damage.__round__(2)}" if result.attacker_damage > 0 else ""}),
             )
         elif result.status == CombatResults.OWN_UNIT_ATTACK_DISABLED:
             text, description = (
