@@ -48,6 +48,7 @@ class World(Singleton, DirectObject):
         self.vision_offset_layout: str = "odd-q"
         self._vision_radius_tile_tags_cache: Dict[Tuple[int, int, int, str], Set[str]] = {}
         self._unit_vision_source_signatures: Dict[str, Tuple[str, int, str]] = {}
+        self._city_vision_source_signatures: Dict[str, Tuple[str, int, str, Tuple[str, ...]]] = {}
         self._pending_vision_updates_by_player_tag: Dict[str, Set[str]] = {}
         self._pending_vision_players_by_tag: Dict[str, "Player"] = {}
         self._turn_active_tile_tags: Set[str] = set()
@@ -67,6 +68,7 @@ class World(Singleton, DirectObject):
         self.effects = Effects(self)
         self._vision_radius_tile_tags_cache = {}
         self._unit_vision_source_signatures = {}
+        self._city_vision_source_signatures = {}
         self._pending_vision_updates_by_player_tag = {}
         self._pending_vision_players_by_tag = {}
         self._vision_update_flush_scheduled = False
@@ -86,10 +88,12 @@ class World(Singleton, DirectObject):
     def load(self, data: Dict[str, "Tile"]):
         self.logger.info("Loading world data.")
         self._vision_radius_tile_tags_cache = {}
+        self._unit_vision_source_signatures = {}
+        self._city_vision_source_signatures = {}
 
         for map_item in data.values():
-            item_tag: str | None = map_item.tag # type: ignore this can happen if we load a tile that has no tag, which should not happen but we want to be safe about it
-            if item_tag is None: # type: ignore
+            item_tag: str | None = map_item.tag  # type: ignore
+            if item_tag is None:  # type: ignore
                 self.logger.warning(f"Map item {map_item} has no tag, skipping.")
                 continue
             self.map[item_tag] = map_item
@@ -145,6 +149,7 @@ class World(Singleton, DirectObject):
         self.cols = cols
         self.rows = rows
         self._unit_vision_source_signatures = {}
+        self._city_vision_source_signatures = {}
         self._vision_radius_tile_tags_cache = {}
         self._turn_active_tile_tags = set()
         self._turn_active_tile_index_dirty = True
@@ -206,6 +211,7 @@ class World(Singleton, DirectObject):
         visible_tiles.update(self._resolve_tiles_from_tags(player.vision.get_reveal_tile_tags()))
 
         changed_tiles = player.vision.recompute_visible_tiles(visible_tiles, linger_turns)
+        changed_tiles.update(self._sync_player_city_vision_sources(player))
         changed_tiles.update(self._sync_player_unit_vision_sources(player))
 
         messenger.send("game.gameplay.vision.updated", [player, changed_tiles])
@@ -240,6 +246,39 @@ class World(Singleton, DirectObject):
 
         if changed_tiles:
             messenger.send("game.gameplay.vision.updated", [resolved_player, changed_tiles])
+
+    def _sync_player_city_vision_sources(self, player: "Player") -> Set[str]:
+        changed_tiles: Set[str] = set()
+
+        for city in player.get_all_cities().all():
+            city_changed_tiles = self._update_city_vision_source(city)
+            if city_changed_tiles is not None:
+                changed_tiles.update(city_changed_tiles)
+
+        return changed_tiles
+
+    def _update_city_vision_source(self, city: "City") -> Set[str] | None:
+        player = city.get_owner()
+        player.vision.set_default_linger_turns(player.get_vision_linger_turns())
+
+        radius = city.get_vision_range()
+        city_tile = city.get_tile()
+        source_id = f"city:{city.get_tag()}"
+        owned_tile_tags = tuple(sorted(tile.get_tag() for tile in city.owned_tiles))
+        signature = (player.get_tag(), radius, city_tile.get_tag(), owned_tile_tags)
+        cached_signature = self._city_vision_source_signatures.get(source_id)
+
+        if cached_signature == signature and player.vision.has_reveal_source_signature(source_id, signature):
+            return set()
+
+        visible_tile_tags = {tile.get_tag() for tile in city.collect_visible_tiles()}
+        self._city_vision_source_signatures[source_id] = signature
+
+        return player.vision.update_reveal_source_tiles(
+            source_id=source_id,
+            tiles_or_tags=visible_tile_tags,
+            signature=signature,
+        )
 
     def clear_reveal_tiles_for_player(self, player: "Player | str", source_id: str) -> None:
         resolved_player = self._resolve_player(player)

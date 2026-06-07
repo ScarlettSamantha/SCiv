@@ -728,7 +728,7 @@ class Vision:
         self._explored_tile_tags.clear()
         self._lingering_tile_tags.clear()
         self._fogged_tile_tags.clear()
-        
+
         for tile_tag, record in self._tile_records.items():
             self._sync_incremental_tile_caches(tile_tag, record.state)
 
@@ -1005,7 +1005,7 @@ class Vision:
         self._reveal_source_signatures = {}
         self._changed_tile_tags = set()
         self._reset_runtime_views()
-        
+
 
         if isinstance(state, list):
             for tile_tag in state:

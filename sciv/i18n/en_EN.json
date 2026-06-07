@@ -817,6 +817,10 @@
           "no_matches_title": "No matches",
           "no_matches_message": "No matches found."
         },
+        "reveal_map": {
+          "button": "Reveal map",
+          "reveal_map": "Reveal map"
+        },
         "finish_production": {
           "button": "Finish production",
           "finish_production": "Finish production"
