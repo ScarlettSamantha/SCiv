@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from gameplay.founding.site_scoring import TileScoringProfile, score_tile
 from gameplay.repositories.tile import TileRepository
 from managers.entity import EntityManager
+from gameplay.tile import Tile
 from system.generators.base import GeneratorSetupField
 from system.generators.basic import Basic
 from system.generators.dynamic_worlds import (
@@ -130,6 +131,7 @@ class Dynamic(Basic):
         river_length = str(self.setup_options.get("river_length", "normal"))
         tributaries = str(self.setup_options.get("tributaries", "normal"))
         river_network = str(self.setup_options.get("river_network", "natural"))
+
         return build_dynamic_map_params(
             super().build_map_params(),
             map_script=map_script,
@@ -226,7 +228,8 @@ class Dynamic(Basic):
             "hexgen": round((end_hexgen_time - start_time).total_seconds() * 1000, 2),
             "conversion": round((end_conversion - start_conversion).total_seconds() * 1000, 2),
             "water_level_adjustment": round(
-                (end_water_level_adjustment - start_water_level_adjustment).total_seconds() * 1000, 2
+                (end_water_level_adjustment - start_water_level_adjustment).total_seconds() * 1000,
+                2,
             ),
             "instantiate_tiles": round((end_instantiation - start_instantiation).total_seconds() * 1000, 2),
             "mesh_build": round((end_models - start_models).total_seconds() * 1000, 2),
@@ -313,6 +316,12 @@ class Dynamic(Basic):
         occupied_tiles: List[Tile] = []
         min_distances: List[int] = [8, 7, 6, 5, 4]
         scoring_profile = self._get_scoring_profile()
+        map_dimensions = self.base.world.get_size()
+
+        score_cache: Dict[Tuple[int, bool], float] = {}
+        tile_yield_score_cache: Dict[Tuple[int, int], float] = {}
+        neighbor_cache: Dict[Tuple[int, int], List[Tile]] = {}
+        land_ratio_cache: Dict[Tuple[int, int], float] = {}
 
         def candidate_tiles() -> List[Tile]:
             return [
@@ -321,8 +330,6 @@ class Dynamic(Basic):
                 if tile.is_spawnable_upon() and tile.is_passable() and not tile.is_occupied()
             ]
 
-        available_tiles: List[Tile] = candidate_tiles()
-
         for player in PlayerManager.players().values():
             if player.is_nature or player.is_barbarian:
                 continue
@@ -330,10 +337,9 @@ class Dynamic(Basic):
             spawn_tile: Optional[Tile] = None
             best_fallback: Optional[Tile] = None
             best_fallback_score: float = float("-inf")
+            available_tiles = candidate_tiles()
 
             for min_distance in min_distances:
-                available_tiles = candidate_tiles()
-
                 ranked = self._rank_start_tiles(
                     candidates=available_tiles,
                     occupied_tiles=occupied_tiles,
@@ -343,6 +349,11 @@ class Dynamic(Basic):
                     land_ratio_threshold=land_ratio_threshold,
                     land_check_radius=land_check_radius,
                     map_edge_buffer=map_edge_buffer,
+                    map_dimensions=map_dimensions,
+                    score_cache=score_cache,
+                    tile_yield_score_cache=tile_yield_score_cache,
+                    neighbor_cache=neighbor_cache,
+                    land_ratio_cache=land_ratio_cache,
                 )
 
                 if ranked:
@@ -358,36 +369,51 @@ class Dynamic(Basic):
                     land_ratio_threshold=max(0.45, land_ratio_threshold - 0.1),
                     land_check_radius=max(2, land_check_radius - 1),
                     map_edge_buffer=max(2, map_edge_buffer - 1),
+                    map_dimensions=map_dimensions,
+                    score_cache=score_cache,
+                    tile_yield_score_cache=tile_yield_score_cache,
+                    neighbor_cache=neighbor_cache,
+                    land_ratio_cache=land_ratio_cache,
                     allow_edge_bias=True,
                 )
+
                 if relaxed_ranked and relaxed_ranked[0][1] > best_fallback_score:
                     best_fallback, best_fallback_score = relaxed_ranked[0]
 
             if spawn_tile is None:
                 if best_fallback is not None:
                     spawn_tile = best_fallback
-                else:
-                    sampled_tiles = available_tiles[:]
-                    sampled_tiles.sort(
-                        key=lambda tile: score_tile(
-                            tile,
-                            profile=scoring_profile,
-                            map_dimensions=self.base.world.get_size(),
-                        )
+                elif available_tiles:
+                    spawn_tile = max(
+                        available_tiles,
+                        key=lambda tile: self._score_start_tile(
+                            tile=tile,
+                            scoring_profile=scoring_profile,
+                            map_dimensions=map_dimensions,
+                            allow_edge_bias=False,
+                            score_cache=score_cache,
+                            tile_yield_score_cache=tile_yield_score_cache,
+                            neighbor_cache=neighbor_cache,
+                        ),
                     )
-                    if sampled_tiles:
-                        spawn_tile = sampled_tiles[-1]
 
             if spawn_tile is None:
                 raise Exception("No suitable spawn location found for a player")
 
             occupied_tiles.append(spawn_tile)
-            available_tiles = [tile for tile in candidate_tiles() if tile is not spawn_tile]
 
             Settler.spawn_on(spawn_tile, player)
             units_created += 1
 
-            companion_tile = self._find_best_companion_tile(spawn_tile, scoring_profile)
+            companion_tile = self._find_best_companion_tile(
+                spawn_tile=spawn_tile,
+                scoring_profile=scoring_profile,
+                map_dimensions=map_dimensions,
+                score_cache=score_cache,
+                tile_yield_score_cache=tile_yield_score_cache,
+                neighbor_cache=neighbor_cache,
+            )
+
             if companion_tile is not None:
                 ClubMan.spawn_on(companion_tile, player)
                 units_created += 1
@@ -404,53 +430,129 @@ class Dynamic(Basic):
         land_ratio_threshold: float,
         land_check_radius: int,
         map_edge_buffer: int,
+        map_dimensions: Tuple[int, int],
+        score_cache: Dict[Tuple[int, bool], float],
+        tile_yield_score_cache: Dict[Tuple[int, int], float],
+        neighbor_cache: Dict[Tuple[int, int], List["Tile"]],
+        land_ratio_cache: Dict[Tuple[int, int], float],
         allow_edge_bias: bool = False,
     ) -> List[Tuple["Tile", float]]:
+        from heapq import nlargest
+
+        if max_attempts <= 0:
+            return []
+
         ranked: List[Tuple[Tile, float]] = []
 
         for tile in candidates:
-            if TileRepository.is_near_map_edge(self.base.world.get_size(), tile, map_edge_buffer) and not allow_edge_bias:
+            if TileRepository.is_near_map_edge(map_dimensions, tile, map_edge_buffer) and not allow_edge_bias:
                 continue
 
             if occupied_tiles and not all(TileRepository.hex_distance(tile, other) >= min_distance for other in occupied_tiles):
                 continue
 
-            neighbors = TileRepository.get_neighbors(tile, radius=land_check_radius)
-            land_tiles = sum(1 for neighbor in neighbors if not neighbor.is_water)
-            land_ratio = land_tiles / max(1, len(neighbors))
+            land_ratio_key = (id(tile), land_check_radius)
+            if land_ratio_key in land_ratio_cache:
+                land_ratio = land_ratio_cache[land_ratio_key]
+            else:
+                neighbor_key = (id(tile), land_check_radius)
+                if neighbor_key in neighbor_cache:
+                    neighbors = neighbor_cache[neighbor_key]
+                else:
+                    neighbors = TileRepository.get_neighbors(tile, radius=land_check_radius)
+                    neighbor_cache[neighbor_key] = neighbors
+
+                land_tiles = sum(1 for neighbor in neighbors if not neighbor.is_water)
+                land_ratio = land_tiles / max(1, len(neighbors))
+                land_ratio_cache[land_ratio_key] = land_ratio
+
             if land_ratio < land_ratio_threshold:
                 continue
 
             ranked.append(
                 (
                     tile,
-                    score_tile(
-                        tile,
-                        profile=scoring_profile,
-                        map_dimensions=self.base.world.get_size(),
+                    self._score_start_tile(
+                        tile=tile,
+                        scoring_profile=scoring_profile,
+                        map_dimensions=map_dimensions,
                         allow_edge_bias=allow_edge_bias,
+                        score_cache=score_cache,
+                        tile_yield_score_cache=tile_yield_score_cache,
+                        neighbor_cache=neighbor_cache,
                     ),
                 )
             )
 
-        ranked.sort(key=lambda item: item[1], reverse=True)
-        return ranked[:max_attempts]
+        if len(ranked) > max_attempts:
+            return nlargest(max_attempts, ranked, key=lambda item: item[1])
 
-    def _find_best_companion_tile(self, spawn_tile: "Tile", scoring_profile: TileScoringProfile) -> Optional["Tile"]:
+        ranked.sort(key=lambda item: item[1], reverse=True)
+        return ranked
+
+    def _find_best_companion_tile(
+        self,
+        spawn_tile: "Tile",
+        scoring_profile: TileScoringProfile,
+        map_dimensions: Optional[Tuple[int, int]] = None,
+        score_cache: Optional[Dict[Tuple[int, bool], float]] = None,
+        tile_yield_score_cache: Optional[Dict[Tuple[int, int], float]] = None,
+        neighbor_cache: Optional[Dict[Tuple[int, int], List["Tile"]]] = None,
+    ) -> Optional["Tile"]:
         adjacent_tiles = TileRepository.get_neighbors(spawn_tile, radius=1)
-        candidate_tiles = [tile for tile in adjacent_tiles if tile.is_spawnable_upon() and tile.is_passable()]
+        candidate_tiles = [
+            tile
+            for tile in adjacent_tiles
+            if tile.is_spawnable_upon() and tile.is_passable() and not tile.is_occupied()
+        ]
         if not candidate_tiles:
             return None
 
-        candidate_tiles.sort(
-            key=lambda tile: score_tile(
-                tile,
-                profile=scoring_profile,
-                map_dimensions=self.base.world.get_size(),
-            ),
-            reverse=True,
+        resolved_map_dimensions = map_dimensions if map_dimensions is not None else self.base.world.get_size()
+        resolved_score_cache: Dict[Tuple[int, bool], float] = score_cache if score_cache is not None else {}
+        resolved_tile_yield_score_cache: Dict[Tuple[int, int], float] = (
+            tile_yield_score_cache if tile_yield_score_cache is not None else {}
         )
-        return candidate_tiles[0]
+        resolved_neighbor_cache: Dict[Tuple[int, int], List["Tile"]] = neighbor_cache if neighbor_cache is not None else {}
+
+        return max(
+            candidate_tiles,
+            key=lambda tile: self._score_start_tile(
+                tile=tile,
+                scoring_profile=scoring_profile,
+                map_dimensions=resolved_map_dimensions,
+                allow_edge_bias=False,
+                score_cache=resolved_score_cache,
+                tile_yield_score_cache=resolved_tile_yield_score_cache,
+                neighbor_cache=resolved_neighbor_cache,
+            ),
+        )
+
+    def _score_start_tile(
+        self,
+        tile: "Tile",
+        scoring_profile: TileScoringProfile,
+        map_dimensions: Tuple[int, int],
+        allow_edge_bias: bool,
+        score_cache: Dict[Tuple[int, bool], float],
+        tile_yield_score_cache: Dict[Tuple[int, int], float],
+        neighbor_cache: Dict[Tuple[int, int], List["Tile"]],
+    ) -> float:
+        score_cache_key = (id(tile), allow_edge_bias)
+        if score_cache_key in score_cache:
+            return score_cache[score_cache_key]
+
+        score = score_tile(
+            tile,
+            profile=scoring_profile,
+            map_dimensions=map_dimensions,
+            allow_edge_bias=allow_edge_bias,
+            tile_yield_score_cache=tile_yield_score_cache,
+            neighbor_cache=neighbor_cache,
+        )
+
+        score_cache[score_cache_key] = score
+        return score
 
     def _get_scoring_profile(self) -> TileScoringProfile:
         return get_dynamic_tile_scoring_profile(

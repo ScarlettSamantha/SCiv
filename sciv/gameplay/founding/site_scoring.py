@@ -1,5 +1,5 @@
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Sequence, cast
+from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple, cast
 
 from gameplay.repositories.tile import TileRepository
 from helpers.cache import Cache
@@ -119,21 +119,37 @@ def resolve_tile_scoring_profile(map_script: str | None = None) -> TileScoringPr
 def score_tile(
     tile: "Tile",
     profile: TileScoringProfile | None = None,
-    map_dimensions: tuple[int, int] | None = None,
+    map_dimensions: Tuple[int, int] | None = None,
     allow_edge_bias: bool = False,
+    tile_yield_score_cache: Dict[Tuple[int, int], float] | None = None,
+    neighbor_cache: Dict[Tuple[int, int], List["Tile"]] | None = None,
 ) -> float:
     resolved_profile = profile or resolve_tile_scoring_profile()
     resolved_dimensions = map_dimensions or _get_map_dimensions()
 
     tile.calculate()
 
-    immediate_ring = TileRepository.get_neighbors(tile, radius=1)
-    nearby_ring = TileRepository.get_neighbors(tile, radius=2)
+    immediate_ring = _get_cached_neighbors(tile, 1, neighbor_cache)
+    nearby_ring = _get_cached_neighbors(tile, 2, neighbor_cache)
 
-    immediate_score = _yield_score([tile, *immediate_ring], resolved_profile.immediate_ring_weight, resolved_profile)
-    nearby_score = _yield_score(nearby_ring, resolved_profile.nearby_ring_weight, resolved_profile)
+    immediate_score = _yield_score(
+        [tile, *immediate_ring],
+        resolved_profile.immediate_ring_weight,
+        resolved_profile,
+        tile_yield_score_cache,
+    )
+    nearby_score = _yield_score(
+        nearby_ring,
+        resolved_profile.nearby_ring_weight,
+        resolved_profile,
+        tile_yield_score_cache,
+    )
 
-    coast_bonus = resolved_profile.coast_bonus * resolved_profile.coast_bonus_scale if _has_coastal_access(tile) else resolved_profile.no_coast_penalty
+    coast_bonus = (
+        resolved_profile.coast_bonus * resolved_profile.coast_bonus_scale
+        if _has_coastal_access(tile)
+        else resolved_profile.no_coast_penalty
+    )
     river_bonus = resolved_profile.river_bonus if _has_river_edge(tile) else 0.0
     freshwater_bonus = resolved_profile.freshwater_bonus if any(_has_river_edge(neighbor) for neighbor in immediate_ring) else 0.0
 
@@ -192,18 +208,25 @@ def score_tile(
 def rank_tiles(
     tiles: Sequence["Tile"],
     profile: TileScoringProfile | None = None,
-    map_dimensions: tuple[int, int] | None = None,
+    map_dimensions: Tuple[int, int] | None = None,
     allow_edge_bias: bool = False,
     limit: int | None = None,
 ) -> list[tuple["Tile", float]]:
+    resolved_profile = profile or resolve_tile_scoring_profile()
+    resolved_dimensions = map_dimensions or _get_map_dimensions()
+    tile_yield_score_cache: Dict[Tuple[int, int], float] = {}
+    neighbor_cache: Dict[Tuple[int, int], List["Tile"]] = {}
+
     ranked = [
         (
             tile,
             score_tile(
                 tile,
-                profile=profile,
-                map_dimensions=map_dimensions,
+                profile=resolved_profile,
+                map_dimensions=resolved_dimensions,
                 allow_edge_bias=allow_edge_bias,
+                tile_yield_score_cache=tile_yield_score_cache,
+                neighbor_cache=neighbor_cache,
             ),
         )
         for tile in tiles
@@ -212,19 +235,15 @@ def rank_tiles(
     return ranked if limit is None else ranked[:limit]
 
 
-def _yield_score(tiles: Sequence["Tile"], weight: float, profile: TileScoringProfile) -> float:
+def _yield_score(
+    tiles: Sequence["Tile"],
+    weight: float,
+    profile: TileScoringProfile,
+    tile_yield_score_cache: Dict[Tuple[int, int], float] | None = None,
+) -> float:
     total = 0.0
     for tile in tiles:
-        tile.calculate()
-        yields = tile.get_tile_yield()
-        total += (
-            float(yields.food.value) * profile.food_weight
-            + float(yields.production.value) * profile.production_weight
-            + float(yields.gold.value) * profile.gold_weight
-            + float(yields.science.value) * profile.science_weight
-            + float(yields.culture.value) * profile.culture_weight
-            + float(yields.housing.value) * profile.housing_weight
-        ) * weight
+        total += _weighted_tile_yield_score(tile, profile, tile_yield_score_cache) * weight
     return total
 
 
@@ -243,7 +262,7 @@ def _has_coastal_access(tile: "Tile") -> bool:
 
 
 def _has_river_edge(tile: "Tile") -> bool:
-    return any(edge is not None and getattr(edge, "is_river", False) for edge in tile.edges.values())
+    return any(edge is not None and edge.is_river for edge in tile.edges.values())
 
 
 def _has_feature(tile: "Tile", feature: HexFeature) -> bool:
@@ -269,3 +288,44 @@ def _matches_geoform(tile: "Tile", *geoforms: GeoformType) -> bool:
         if _geoform_id(tile_geoform) == geoform_id:
             return True
     return False
+
+def _weighted_tile_yield_score(
+    tile: "Tile",
+    profile: TileScoringProfile,
+    tile_yield_score_cache: Dict[Tuple[int, int], float] | None = None,
+) -> float:
+    cache_key = (id(tile), id(profile))
+
+    if tile_yield_score_cache is not None and cache_key in tile_yield_score_cache:
+        return tile_yield_score_cache[cache_key]
+
+    tile.calculate()
+    yields = tile.get_tile_yield()
+
+    score = (
+        float(yields.food.value) * profile.food_weight
+        + float(yields.production.value) * profile.production_weight
+        + float(yields.gold.value) * profile.gold_weight
+        + float(yields.science.value) * profile.science_weight
+        + float(yields.culture.value) * profile.culture_weight
+        + float(yields.housing.value) * profile.housing_weight
+    )
+
+    if tile_yield_score_cache is not None:
+        tile_yield_score_cache[cache_key] = score
+
+    return score
+
+def _get_cached_neighbors(
+    tile: "Tile",
+    radius: int,
+    neighbor_cache: Dict[Tuple[int, int], List["Tile"]] | None = None,
+) -> List["Tile"]:
+    if neighbor_cache is None:
+        return TileRepository.get_neighbors(tile, radius=radius)
+
+    cache_key = (id(tile), radius)
+    if cache_key not in neighbor_cache:
+        neighbor_cache[cache_key] = TileRepository.get_neighbors(tile, radius=radius)
+
+    return neighbor_cache[cache_key]
