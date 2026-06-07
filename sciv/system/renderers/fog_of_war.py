@@ -115,6 +115,7 @@ class FogBlobOverlay:
 
     def dispose(self) -> None:
         self.clear()
+
         if not self.root.isEmpty():
             self.root.removeNode()
 
@@ -184,6 +185,7 @@ class FogBlobOverlay:
                 triangles.addVertices(center_index, a, b)
 
             tile_coord = (int(tile.x), int(tile.y))
+
             for edge_index in range(6):
                 neighbor_coord = self._neighbor_coord_for_edge(tile_coord, edge_index)
                 if neighbor_coord in fogged_coords:
@@ -260,6 +262,8 @@ class FogOfWarController:
         self._unit_visibility_by_key: Dict[str, bool] = {}
         self._last_fog_blob_tile_tags: Set[str] = set()
         self._fog_ceiling_z: float = 0.1
+        self._fog_blob_dirty_tile_tags: Set[str] = set()
+        self._fog_blob_overlay_synced: bool = False
 
     def reset(self) -> None:
         self._synced_player_keys.clear()
@@ -268,6 +272,8 @@ class FogOfWarController:
         self._tile_detail_visibility_by_tag.clear()
         self._unit_visibility_by_key.clear()
         self._last_fog_blob_tile_tags.clear()
+        self._fog_blob_dirty_tile_tags.clear()
+        self._fog_blob_overlay_synced = False
         self._fog_ceiling_z = 0.1
 
     def sync_tiles(self, tiles: Iterable["Tile"]) -> None:
@@ -332,7 +338,7 @@ class FogOfWarController:
         if tile_grid is not None and touched_grid:
             tile_grid.collect()
 
-        self._sync_fog_blob_overlay(fog_blob_overlay)
+        self._sync_fog_blob_overlay(player, fog_blob_overlay)
         self._sync_units(player, self._collect_units_from_tiles(cached_tiles, units), direct_visible_tile_tags)
         self._sync_label_overlay(player, total_tiles=len(cached_tiles), label_overlay=label_overlay)
         self._synced_player_keys.add(player_key)
@@ -391,8 +397,8 @@ class FogOfWarController:
         if tile_grid is not None and touched_grid:
             tile_grid.collect()
 
-        if rebuild_fog_blob and changed_tile_tags:
-            self._sync_fog_blob_overlay(fog_blob_overlay)
+        if rebuild_fog_blob:
+            self._sync_fog_blob_overlay(player, fog_blob_overlay)
 
         self._sync_units(player, self._collect_units_from_tiles(changed_tiles, cached_units), direct_visible_tile_tags)
 
@@ -412,7 +418,7 @@ class FogOfWarController:
             unit_by_key[self._unit_key(unit)] = unit
 
         for tile in tiles:
-            tile_units: Units = tile.get_tile().get_units()
+            tile_units: "Units" = tile.get_tile().get_units()
             for unit in tile_units:
                 if not hasattr(unit, "get_tile") or not hasattr(unit, "set_render_visibility"):
                     continue
@@ -438,8 +444,15 @@ class FogOfWarController:
 
         previous_state = self._tile_state_by_tag.get(tile_tag)
         previous_detail_visible = self._tile_detail_visibility_by_tag.get(tile_tag)
+
         if not force and previous_state is state and previous_detail_visible == tile_overlay_visible:
             return False
+
+        previous_fogged = previous_state is not None and self._is_fogged_state(previous_state)
+        next_fogged = self._is_fogged_state(state)
+
+        if previous_fogged != next_fogged:
+            self._fog_blob_dirty_tile_tags.add(tile_tag)
 
         self._tile_state_by_tag[tile_tag] = state
         self._tile_detail_visibility_by_tag[tile_tag] = tile_overlay_visible
@@ -470,6 +483,7 @@ class FogOfWarController:
     def _apply_renderer_detail_visibility_state(self, tile: "Tile", visible: bool) -> None:
         renderer = tile.renderer
         set_fog_detail_visibility = getattr(renderer, "set_fog_detail_visibility", None)
+
         if not callable(set_fog_detail_visibility):
             return
 
@@ -485,14 +499,17 @@ class FogOfWarController:
     ) -> None:
         renderer = tile.renderer
         set_fog_ceiling_z = getattr(renderer, "set_fog_ceiling_z", None)
+
         if callable(set_fog_ceiling_z):
             set_fog_ceiling_z(fog_ceiling_z)
 
         set_visibility_state = getattr(renderer, "set_visibility_state", None)
+
         if not callable(set_visibility_state):
             return
 
         renderer_state = self._renderer_state_for(state, fog_blob_overlay_enabled=fog_blob_overlay_enabled)
+
         if renderer_state is None:
             return
 
@@ -508,33 +525,65 @@ class FogOfWarController:
             return state
 
         visible_state = getattr(VisionTileState, "VISIBLE", None)
+
         if visible_state is not None:
             return cast(VisionTileState, visible_state)
 
         return None
 
-    def _sync_fog_blob_overlay(self, fog_blob_overlay: "FogBlobOverlayLike | None") -> None:
+    def _sync_fog_blob_overlay(self, player: "Player", fog_blob_overlay: FogBlobOverlayLike | None) -> None:
         if fog_blob_overlay is None:
+            self._fog_blob_dirty_tile_tags.clear()
+            self._fog_blob_overlay_synced = False
             return
 
-        fogged_tile_tags: Set[str] = set()
+        dirty_tile_tags = set(self._fog_blob_dirty_tile_tags)
+
+        if self._fog_blob_overlay_synced and not dirty_tile_tags:
+            return
+
+        fogged_tile_tags = self._query_fogged_tile_tags(player)
+
+        if self._fog_blob_overlay_synced and fogged_tile_tags == self._last_fog_blob_tile_tags:
+            self._fog_blob_dirty_tile_tags.clear()
+            return
+
+        if not fogged_tile_tags:
+            self._last_fog_blob_tile_tags.clear()
+            self._fog_blob_dirty_tile_tags.clear()
+            self._fog_blob_overlay_synced = True
+            fog_blob_overlay.clear()
+            return
+
         fogged_tiles: List["Tile"] = []
 
-        for tile_tag, tile in self._tile_by_tag.items():
-            state = self._tile_state_by_tag.get(tile_tag)
-            if state is not None and self._is_fogged_state(state):
-                fogged_tile_tags.add(tile_tag)
+        for tile_tag in fogged_tile_tags:
+            tile = self._tile_by_tag.get(tile_tag)
+
+            if tile is not None:
                 fogged_tiles.append(tile)
 
-        if fogged_tile_tags == self._last_fog_blob_tile_tags:
-            return
-
         self._last_fog_blob_tile_tags = set(fogged_tile_tags)
+        self._fog_blob_dirty_tile_tags.clear()
+        self._fog_blob_overlay_synced = True
         fog_blob_overlay.sync_fogged_tiles(fogged_tiles)
+
+    def _query_fogged_tile_tags(self, player: "Player") -> Set[str]:
+        get_fogged_tile_tags = getattr(player.vision, "get_fogged_tile_tags", None)
+
+        if callable(get_fogged_tile_tags):
+            return self._normalize_tile_tag_values(get_fogged_tile_tags())
+
+        fogged_tile_tags: Set[str] = set()
+
+        for tile_tag, state in self._tile_state_by_tag.items():
+            if self._is_fogged_state(state):
+                fogged_tile_tags.add(tile_tag)
+
+        return fogged_tile_tags
 
     def _unit_is_owned_by_player(self, unit: "Unit", player: "Player") -> bool:
         return self._player_key(unit.get_owner()) == self._player_key(player)
-
 
     def _sync_units(self, player: "Player", units: Iterable["Unit"], visible_tile_tags: Set[str]) -> None:
         for unit in units:
@@ -557,7 +606,7 @@ class FogOfWarController:
         player: "Player",
         *,
         total_tiles: int,
-        label_overlay: "FogLabelOverlayLike | None",
+        label_overlay: FogLabelOverlayLike | None,
     ) -> None:
         if label_overlay is None:
             return
@@ -568,14 +617,29 @@ class FogOfWarController:
 
         label_overlay.root.hide()
 
-    def _resolve_fog_ceiling_z(self, tiles: Iterable["Tile"], tile_grid: "FogTileGridLike | None") -> float:
+    def _resolve_fog_ceiling_z(self, tiles: Iterable["Tile"], tile_grid: FogTileGridLike | None) -> float:
         if tile_grid is not None:
             return float(tile_grid.get_max_world_z()) + 0.1
 
         return max((float(getattr(tile, "pos_z", 0.0)) for tile in tiles), default=0.0) + 0.1
 
     def _get_direct_visible_tile_tags(self, player: "Player") -> Set[str]:
-        return self._normalize_tile_tag_values(player.vision.get_reveal_tile_tags())
+        get_direct_visible_tile_tags = getattr(player.vision, "get_direct_visible_tile_tags", None)
+
+        if callable(get_direct_visible_tile_tags):
+            return self._normalize_tile_tag_values(get_direct_visible_tile_tags())
+
+        get_reveal_tile_tags = getattr(player.vision, "get_reveal_tile_tags", None)
+
+        if callable(get_reveal_tile_tags):
+            return self._normalize_tile_tag_values(get_reveal_tile_tags())
+
+        get_visible_tile_tags = getattr(player.vision, "get_visible_tile_tags", None)
+
+        if callable(get_visible_tile_tags):
+            return self._normalize_tile_tag_values(get_visible_tile_tags())
+
+        return set()
 
     def _normalize_tile_tag_values(self, values: Iterable[Any]) -> Set[str]:
         tile_tags: Set[str] = set()
@@ -586,13 +650,17 @@ class FogOfWarController:
                 continue
 
             get_tag = getattr(value, "get_tag", None)
+
             if callable(get_tag):
                 tile_tag = get_tag()
+
                 if isinstance(tile_tag, str) and tile_tag:
                     tile_tags.add(tile_tag)
+
                 continue
 
             tile_tag = getattr(value, "tag", None)
+
             if isinstance(tile_tag, str) and tile_tag:
                 tile_tags.add(tile_tag)
 
@@ -609,6 +677,7 @@ class FogOfWarController:
 
     def _state_name(self, state: VisionTileState) -> str:
         name = getattr(state, "name", None)
+
         if isinstance(name, str):
             return name.upper()
 

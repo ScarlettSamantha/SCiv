@@ -25,7 +25,7 @@ from managers.turn import Turn
 from managers.world import World
 from mixins.singleton import Singleton
 from panda3d.core import WindowProperties  # type: ignore
-from sciv.gameplay.unit import Unit
+from gameplay.unit import Unit
 from system.asset_archive import P3DAssetArchive
 from system.camera import Camera
 from system.game_settings import GameSettings
@@ -800,7 +800,7 @@ class Game(Singleton, DirectObject):
         affected_tile_tags = self._collect_unit_event_tile_tags(unit, args)
 
         if self._unit_belongs_to_player(unit, player):
-            self._schedule_session_player_vision_refresh()
+            self._queue_session_player_unit_visibility_sync([unit], affected_tile_tags=affected_tile_tags)
             return
 
         self._queue_session_player_unit_visibility_sync([unit], affected_tile_tags=affected_tile_tags)
@@ -823,7 +823,7 @@ class Game(Singleton, DirectObject):
         owner = destroyed_owner if destroyed_owner is not None else self._unit_owner_or_none(unit)
 
         if self._entity_tag(owner) == self._entity_tag(player):
-            self._schedule_session_player_vision_refresh()
+            self._queue_session_player_unit_visibility_sync([], affected_tile_tags=affected_tile_tags)
             return
 
         self._queue_session_player_unit_visibility_sync([unit], affected_tile_tags=affected_tile_tags)

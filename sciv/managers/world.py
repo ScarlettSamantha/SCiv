@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, Type, c
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
-from direct.task import Task
 from gameplay.repositories.tile import TileRepository
 from managers.entity import EntityManager, EntityType
 from managers.log import LogManager
@@ -34,20 +33,27 @@ class World(Singleton, DirectObject):
         self.base = base
         self.hex_radius: float = 0.5
         self.col_spacing: float = 1.4
+
         self.cols: int = 5
         self.rows: int = 5
+
         self.middle_x: Optional[float] = None
         self.middle_y: Optional[float] = None
+
         self.map: Dict[str, "Tile"] = {}
         self.grid: Dict[Tuple[int, int], "Tile"] = {}
         self.generator: Optional[Type["BaseGenerator"]] = None
         self.effects: Effects = Effects(self)
+
         self.vision_offset_layout: str = "odd-q"
         self._vision_radius_tile_tags_cache: Dict[Tuple[int, int, int, str], Set[str]] = {}
         self._unit_vision_source_signatures: Dict[str, Tuple[str, int, str]] = {}
         self._pending_vision_updates_by_player_tag: Dict[str, Set[str]] = {}
         self._pending_vision_players_by_tag: Dict[str, "Player"] = {}
+        self._turn_active_tile_tags: Set[str] = set()
+        self._turn_active_tile_index_dirty: bool = True
         self._vision_update_flush_scheduled: bool = False
+
         self.register()
 
     def __init__(self, base: "OpenCiv"):
@@ -64,6 +70,8 @@ class World(Singleton, DirectObject):
         self._pending_vision_updates_by_player_tag = {}
         self._pending_vision_players_by_tag = {}
         self._vision_update_flush_scheduled = False
+        self._turn_active_tile_tags = set()
+        self._turn_active_tile_index_dirty = True
 
         unit: "Unit"
         for unit in list(EntityManager.get_singleton_instance().get_all(EntityType.UNIT).values()):  # type: ignore
@@ -138,6 +146,8 @@ class World(Singleton, DirectObject):
         self.rows = rows
         self._unit_vision_source_signatures = {}
         self._vision_radius_tile_tags_cache = {}
+        self._turn_active_tile_tags = set()
+        self._turn_active_tile_index_dirty = True
 
         self.middle_x = ((cols - 1) * self.col_spacing) / 2.0
         self.middle_y = ((rows - 1) * self.row_spacing) / 2.0
@@ -168,16 +178,23 @@ class World(Singleton, DirectObject):
     def on_turn_end(self, turn: int):
         self.advance_all_player_vision_lingering()
 
-        for tile in self.map.values():
-            if (
-                tile.player is not None
-                or tile.is_city()
-                or len(tile.units) > 0
-                or len(tile.effects) > 0
-                or len(tile._improvements) > 0  # type: ignore
-                or tile.needs_tile_proecessing is True
-            ):
-                tile.on_turn_end(turn)
+        if self._turn_active_tile_index_dirty:
+            self._refresh_turn_active_tile_index()
+
+        for tile_tag in list(self._turn_active_tile_tags):
+            tile = self.map.get(tile_tag)
+            if tile is None:
+                self._turn_active_tile_tags.discard(tile_tag)
+                continue
+
+            if not self._tile_requires_turn_processing(tile):
+                self._turn_active_tile_tags.discard(tile_tag)
+                continue
+
+            tile.on_turn_end(turn)
+
+            if not self._tile_requires_turn_processing(tile):
+                self._turn_active_tile_tags.discard(tile_tag)
 
         self.effects.on_turn_end(turn)
 
@@ -308,12 +325,14 @@ class World(Singleton, DirectObject):
             )
 
     def on_unit_spawned(self, unit: "Unit") -> None:
-        if not self.refresh_unit_vision(unit):
-            self.refresh_player_vision(unit.get_owner())
+        self._register_turn_active_tile(unit.get_tile())
+        self.refresh_unit_vision(unit)
 
     def on_unit_moved(self, unit: "Unit", tile: "Tile | None" = None, old_tile: "Tile | None" = None) -> None:
-        if not self.refresh_unit_vision(unit):
-            self.refresh_player_vision(unit.get_owner())
+        self._register_turn_active_tile(tile)
+        self._register_turn_active_tile(old_tile)
+        self._register_turn_active_tile(unit.get_tile())
+        self.refresh_unit_vision(unit)
 
     def on_unit_destroyed(
         self,
@@ -329,20 +348,47 @@ class World(Singleton, DirectObject):
         changed_tiles = self._update_reveal_source_for_player(destroyed_owner, source_id, [])
 
         if changed_tiles is None:
-            self.refresh_player_vision(destroyed_owner)
             return
 
         if changed_tiles:
             messenger.send("game.gameplay.vision.updated", [destroyed_owner, changed_tiles])
 
+    def _tile_requires_turn_processing(self, tile: "Tile") -> bool:
+        return (
+            tile.player is not None
+            or tile.is_city()
+            or len(tile.units) > 0
+            or len(tile.effects) > 0
+            or len(tile.improvements()) > 0
+            or tile.needs_tile_processing is True
+        )
+
+
+    def _register_turn_active_tile(self, tile: "Tile | None") -> None:
+        if tile is None:
+            return
+
+        tile_tag = tile.get_tag()
+        if tile_tag:
+            self._turn_active_tile_tags.add(tile_tag)
+
+
+    def _refresh_turn_active_tile_index(self) -> None:
+        self._turn_active_tile_tags = {
+            tile.get_tag()
+            for tile in self.map.values()
+            if self._tile_requires_turn_processing(tile)
+        }
+        self._turn_active_tile_index_dirty = False
+
+
     def on_city_founded(self, city: "City") -> None:
+        self._register_turn_active_tile(city.get_tile())
         self.refresh_player_vision(city.get_owner())
 
     def on_tile_ownership_changed(self, tile: "Tile", player: "Player", old_owner: "Player | None") -> None:
+        self._register_turn_active_tile(tile)
         self.refresh_player_vision(player)
-
-        if old_owner is not None and old_owner != player:
-            self.refresh_player_vision(old_owner)
 
     def on_request_reveal_tiles(
         self,

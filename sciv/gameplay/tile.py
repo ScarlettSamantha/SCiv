@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from gameplay.improvement import Improvement
     from gameplay.unit import Unit
     from managers.player import Player
-
+    from system.renderers.tile_renderer import TileRenderer
 
 class CantBuildReason(Enum):
     COULD_BUILD = 0
@@ -58,7 +58,6 @@ def _empty_feature_set() -> Set[HexFeature | None]:
 
 @dataclass(init=False, eq=False, unsafe_hash=False)
 class Tile(BaseEntity):
-    from system.renderers.tile_renderer import TileRenderer
 
     HEMISPHERE_UNKNOWN: int = 0b00000000
     HEMISPHERE_NORTH: int = 0b00000001
@@ -79,7 +78,7 @@ class Tile(BaseEntity):
     city_owner: weakref.ReferenceType["City"] | None = field(default=None, repr=False)
     _entity_manager: EntityManager = field(init=False, repr=False)
     logger: Logger = field(init=False, repr=False)
-    renderer: TileRenderer = field(init=False, repr=False)
+    renderer: "TileRenderer" = field(init=False, repr=False)
     effects: Effects = field(init=False, repr=False)
     resources: Resources = field(default_factory=Resources, repr=False)
     units: Units = field(default_factory=Units, repr=False)
@@ -121,7 +120,7 @@ class Tile(BaseEntity):
     walkable: bool = True
     climbable: bool = True
     block_resource_model_spawning: bool = False
-    needs_tile_proecessing: bool = True
+    needs_tile_processing: bool = True
 
     tile_yield: Yields = field(
         default_factory=lambda: Yields(
@@ -212,7 +211,7 @@ class Tile(BaseEntity):
         self.effects = Effects(self)
 
         self.block_resource_model_spawning = False
-        self.needs_tile_proecessing = True
+        self.needs_tile_processing = True
 
         self.renderer = TileRenderer(self)  # Keep 2nd last before registering otherwise it cannot use all properties.
         self._entity_manager.register(EntityType.TILE, self, self.tag)

@@ -263,6 +263,7 @@ class Vision:
         self._render_visible_tile_tags: Set[str] = set()
         self._explored_tile_tags: Set[str] = set()
         self._lingering_tile_tags: Set[str] = set()
+        self._fogged_tile_tags: Set[str] = set()
         self._runtime_views_dirty: bool = True
         self._source_ref_counts: Dict[str, int] = {}
         self._visible_tiles: Set[ReferenceType["Tile"]] = set()
@@ -308,6 +309,12 @@ class Vision:
 
     def get_visible_tile_tags(self) -> Set[str]:
         return set(self._render_visible_tile_tags)
+
+    def get_direct_visible_tile_tags(self) -> Set[str]:
+        return set(self._direct_visible_tile_tags)
+
+    def get_fogged_tile_tags(self) -> Set[str]:
+        return set(self._fogged_tile_tags)
 
     def get_explored_tile_tags(self) -> Set[str]:
         return set(self._explored_tile_tags)
@@ -604,6 +611,7 @@ class Vision:
         self._render_visible_tile_tags = set()
         self._explored_tile_tags = set()
         self._lingering_tile_tags = set()
+        self._fogged_tile_tags = set()
 
         for tile_tag, record in self._tile_records.items():
             self._index_record(tile_tag, record)
@@ -613,6 +621,11 @@ class Vision:
             self._direct_visible_tile_tags.add(tile_tag)
         else:
             self._direct_visible_tile_tags.discard(tile_tag)
+
+        if record.state is VisionTileState.FOGGED:
+            self._fogged_tile_tags.add(tile_tag)
+        else:
+            self._fogged_tile_tags.discard(tile_tag)
 
         if record.state is VisionTileState.LINGERING:
             self._lingering_tile_tags.add(tile_tag)
@@ -687,6 +700,7 @@ class Vision:
             self._render_visible_tile_tags.add(tile_tag)
             self._explored_tile_tags.add(tile_tag)
             self._lingering_tile_tags.discard(tile_tag)
+            self._fogged_tile_tags.discard(tile_tag)
             return
 
         self._direct_visible_tile_tags.discard(tile_tag)
@@ -701,17 +715,20 @@ class Vision:
         self._lingering_tile_tags.discard(tile_tag)
 
         if state is VisionTileState.FOGGED:
+            self._fogged_tile_tags.add(tile_tag)
             self._explored_tile_tags.add(tile_tag)
             return
 
         self._explored_tile_tags.discard(tile_tag)
+        self._fogged_tile_tags.discard(tile_tag)
 
     def _rebuild_incremental_tile_caches(self) -> None:
         self._direct_visible_tile_tags.clear()
         self._render_visible_tile_tags.clear()
         self._explored_tile_tags.clear()
         self._lingering_tile_tags.clear()
-
+        self._fogged_tile_tags.clear()
+        
         for tile_tag, record in self._tile_records.items():
             self._sync_incremental_tile_caches(tile_tag, record.state)
 
@@ -988,6 +1005,7 @@ class Vision:
         self._reveal_source_signatures = {}
         self._changed_tile_tags = set()
         self._reset_runtime_views()
+        
 
         if isinstance(state, list):
             for tile_tag in state:
