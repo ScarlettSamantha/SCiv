@@ -454,16 +454,23 @@ class FogOfWarController:
         if previous_fogged != next_fogged:
             self._fog_blob_dirty_tile_tags.add(tile_tag)
 
+        grid_changed = False
+
+        if tile_grid is not None and not fog_blob_overlay_enabled:
+            previous_unseen = previous_state is None or self._is_unseen_state(previous_state)
+            next_unseen = self._is_unseen_state(state)
+
+            if previous_state is None or previous_unseen != next_unseen:
+                if next_unseen:
+                    tile_grid.hide_tile(tile)
+                else:
+                    tile_grid.show_tile(tile)
+
+                tile_grid.clear_tile_tint(tile)
+                grid_changed = True
+
         self._tile_state_by_tag[tile_tag] = state
         self._tile_detail_visibility_by_tag[tile_tag] = tile_overlay_visible
-
-        if tile_grid is not None:
-            if self._is_unseen_state(state):
-                tile_grid.hide_tile(tile)
-            else:
-                tile_grid.show_tile(tile)
-
-            tile_grid.clear_tile_tint(tile)
 
         self._apply_renderer_visibility_state(
             tile,
@@ -478,7 +485,7 @@ class FogOfWarController:
         else:
             tile_overlay.hide_tile(tile)
 
-        return True
+        return grid_changed
 
     def _apply_renderer_detail_visibility_state(self, tile: "Tile", visible: bool) -> None:
         renderer = tile.renderer
