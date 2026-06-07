@@ -18,7 +18,7 @@ DEFAULT_MIN_TERRITORY_SIZE: int = 10
 LANDMASS_LABEL_Z_OFFSET: float = 2.3
 TERRITORY_LABEL_Z_OFFSET: float = 2.05
 LANDMASS_ZOOM_RULE = ZoomVisibilityRule(min_zoom=30.0, fade_in=12.0)
-TERRITORY_ZOOM_RULE = ZoomVisibilityRule(min_zoom=14.0, max_zoom=38.0, fade_in=8.0, fade_out=10.0)
+TERRITORY_ZOOM_RULE = ZoomVisibilityRule(min_zoom=10.0, max_zoom=42.0, fade_in=10.0, fade_out=18.0)
 
 
 class LandmassTileLike(Protocol):
@@ -67,15 +67,15 @@ def _label_scale(size: int) -> float:
 
 
 def _label_alpha(size: int) -> float:
-    return max(0.16, min(0.26, 0.14 + math.sqrt(float(size)) * 0.012))
+    return max(0.4, min(0.4, 0.4 + math.sqrt(float(size)) * 0.054))
 
 
 def _territory_label_scale(size: int) -> float:
-    return max(0.62, min(1.02, 0.56 + math.sqrt(float(size)) * 0.026))
+    return max(0.86, min(1.34, 0.74 + math.sqrt(float(size)) * 0.055))
 
 
 def _territory_label_alpha(size: int) -> float:
-    return max(0.12, min(0.2, 0.09 + math.sqrt(float(size)) * 0.008))
+    return max(0.5, min(0.82, 0.4 + math.sqrt(float(size)) * 0.054))
 
 
 def _choose_anchor_tile(tiles: Collection[LandmassTileLike]) -> LandmassTileLike:
@@ -251,10 +251,30 @@ class LandmassLabelOverlay:
         landmass_specs = build_landmass_label_specs(cached_tiles)
 
         for index, spec in enumerate(territory_specs):
-            self._add_label(self._territory_root, index, spec, text_scale=0.34, bin_order=87)
+            self._add_label(
+                self._territory_root,
+                index,
+                spec,
+                text_scale=0.46,
+                bin_order=89,
+                text_color=(1.0, 0.97, 0.84),
+                shadow_alpha_cap=0.58,
+                shadow_alpha_multiplier=1.35,
+                shadow_offset=0.04,
+            )
 
         for index, spec in enumerate(landmass_specs):
-            self._add_label(self._landmass_root, index, spec, text_scale=0.55, bin_order=88)
+            self._add_label(
+                self._landmass_root,
+                index,
+                spec,
+                text_scale=0.55,
+                bin_order=88,
+                text_color=(0.97, 0.93, 0.78),
+                shadow_alpha_cap=0.22,
+                shadow_alpha_multiplier=0.9,
+                shadow_offset=0.025,
+            )
 
         zoom_controller = ZoomVisibilityController.get()
         zoom_controller.refresh(self._territory_zoom_binding_id)
@@ -268,15 +288,24 @@ class LandmassLabelOverlay:
         *,
         text_scale: float,
         bin_order: int,
+        text_color: tuple[float, float, float],
+        shadow_alpha_cap: float,
+        shadow_alpha_multiplier: float,
+        shadow_offset: float,
     ) -> None:
         text_node = TextNode(f"landmass_label_{index}")
         text_node.setFont(self._font)
         text_node.setAlign(TextNode.ACenter)
         text_node.setText(spec.display_text)
         text_node.setTextScale(text_scale)
-        text_node.setTextColor(0.97, 0.93, 0.78, spec.alpha)
-        text_node.setShadow(0.025, 0.025)
-        text_node.setShadowColor(0.06, 0.06, 0.08, min(0.22, spec.alpha * 0.9))
+        text_node.setTextColor(text_color[0], text_color[1], text_color[2], spec.alpha)
+        text_node.setShadow(shadow_offset, shadow_offset)
+        text_node.setShadowColor(
+            0.02,
+            0.02,
+            0.03,
+            min(shadow_alpha_cap, spec.alpha * shadow_alpha_multiplier),
+        )
 
         node = parent.attachNewNode(text_node)
         node.setPos(*spec.anchor)
