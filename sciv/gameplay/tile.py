@@ -903,3 +903,10 @@ class Tile(BaseEntity):
 
     def get_renderer(self) -> TileRenderer:
         return self.renderer
+
+    def _refresh_debug_revealed_map(self, player: "Player") -> None:
+        MessengerGlobal.messenger.send("game.fog.refresh")
+        MessengerGlobal.messenger.send("game.minimap.refresh")
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+
+        self.logger.info("Debug reveal map completed for player %s", player.name)

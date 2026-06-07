@@ -676,6 +676,17 @@ class Game(Singleton, DirectObject):
     def calculate_vision(self):
         self.world.refresh_all_player_vision()
 
+    def debug_reveal_map_for_session_player(self) -> None:
+        player: "Player" = PlayerManager.session_player()
+        tiles: set["Tile"] = set(self.world.get_grid().values())
+
+        player.vision.mass_set_visible_tiles(tiles=tiles)
+
+        MessengerGlobal.messenger.send("game.gameplay.vision.updated", [player, {tile.get_tag() for tile in tiles}])
+        MessengerGlobal.messenger.send("ui.update.ui.refresh_action_bar")
+
+        self.logger.info("Debug reveal map completed for player %s", player.name)
+
     def on_vision_updated(self, player: "Player", changed_tiles: set[str]) -> None:
         if not PlayerManager.is_session_player(player):
             return
