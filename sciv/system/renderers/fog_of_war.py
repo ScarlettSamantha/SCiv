@@ -15,6 +15,8 @@ from panda3d.core import (
     TransparencyAttrib,
 )
 
+from helpers.colors import Colors
+
 if TYPE_CHECKING:
     from gameplay.player import Player
     from gameplay.tile import Tile
@@ -26,10 +28,10 @@ if TYPE_CHECKING:
     from system.renderers.landmass_label_overlay import LandmassLabelOverlay
 
 
-FOGGED_TILE_TINT: Tuple[float, float, float, float] = (0.08, 0.09, 0.11, 0.28)
-UNSEEN_TILE_TINT: Tuple[float, float, float, float] = (0.10, 0.10, 0.13, 1.0)
-FOG_BLOB_TOP_COLOR: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.38)
-FOG_BLOB_WALL_COLOR: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.72)
+FOGGED_TILE_TINT: Tuple[float, float, float, float] = Colors.GAMEPLAY_FOGGED_TILE_TINT
+UNSEEN_TILE_TINT: Tuple[float, float, float, float] = Colors.GAMEPLAY_UNSEEN_TILE_TINT
+FOG_BLOB_TOP_COLOR: Tuple[float, float, float, float] = Colors.GAMEPLAY_FOG_BLOB_TOP_COLOR
+FOG_BLOB_WALL_COLOR: Tuple[float, float, float, float] = Colors.GAMEPLAY_FOG_BLOB_WALL_COLOR
 FOG_BLOB_TOP_Z_OFFSET: float = 0.045
 FOG_BLOB_WALL_DEPTH: float = 1.75
 

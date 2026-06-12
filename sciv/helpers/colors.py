@@ -10,6 +10,8 @@ class Colors:
     _sequence_index_basic: int = 0
     _sequence_index_pastel: int = 0
     _sequence_index_all: int = 0
+    _sequence_index_ui: int = 0
+    _sequence_index_gameplay: int = 0
 
     RESTORE: Tuple4f = (1, 1, 1, 1)
 
@@ -124,6 +126,41 @@ class Colors:
 
     UI_INPUT_BACKGROUND: Tuple4f = (0.06, 0.07, 0.12, 1.0)
 
+    UI: List[Tuple4f] = [
+        UI_BACKGROUND,
+        UI_BACKGROUND_PANEL,
+        UI_BACKGROUND_PANEL_ALT,
+        UI_ACCENT_PRIMARY,
+        UI_ACCENT_PRIMARY_SOFT,
+        UI_ACCENT_SECONDARY,
+        UI_ACCENT_DANGER,
+        UI_ACCENT_DANGER_HOVER,
+        UI_TEXT,
+        UI_TEXT_SUBTLE,
+        UI_TEXT_MUTED,
+        UI_BORDER,
+        UI_BORDER_SOFT,
+        UI_BUTTON_PRIMARY_DISABLED,
+        UI_BUTTON_SECONDARY,
+        UI_BUTTON_SECONDARY_DISABLED,
+        UI_BUTTON_DANGER_DISABLED,
+        UI_BUTTON_ICON_DISABLED,
+        UI_INPUT_BACKGROUND,
+    ]
+
+    GAMEPLAY_FOGGED_TILE_TINT: Tuple[float, float, float, float] = (0.08, 0.09, 0.11, 0.28)
+    GAMEPLAY_UNSEEN_TILE_TINT: Tuple[float, float, float, float] = (0.10, 0.10, 0.13, 1.0)
+    GAMEPLAY_FOG_BLOB_TOP_COLOR: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.38)
+    GAMEPLAY_FOG_BLOB_WALL_COLOR: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.72)
+
+    GAMEPLAY: List[Tuple4f] = [
+        GAMEPLAY_FOGGED_TILE_TINT,
+        GAMEPLAY_UNSEEN_TILE_TINT,
+        GAMEPLAY_FOG_BLOB_TOP_COLOR,
+        GAMEPLAY_FOG_BLOB_WALL_COLOR,
+    ]
+
+
     @classmethod
     def random(cls, set: str = "all") -> Tuple4f:
         rng = Random()
@@ -131,8 +168,25 @@ class Colors:
             return rng.choice(cls.COLORS)
         elif set == "pastel":
             return rng.choice(cls.PASTELS)
+        elif set == "ui":
+            return rng.choice(cls.UI)
+        elif set == "gameplay":
+            return rng.choice(cls.GAMEPLAY)
         else:
             return rng.choice(cls.ALL)
+
+    @classmethod
+    def _sequence_reset(cls, set: str = "all") -> None:
+        if set == "basic":
+            cls._sequence_index_basic = 0
+        elif set == "pastel":
+            cls._sequence_index_pastel = 0
+        elif set == "ui":
+            cls._sequence_index_ui = 0
+        elif set == "gameplay":
+            cls._sequence_index_gameplay = 0
+        else:
+            cls._sequence_index_all = 0
 
     @classmethod
     def sequence(cls, set: str = "all") -> Tuple4f:
@@ -147,6 +201,18 @@ class Colors:
                 cls._sequence_index_pastel = 0
             color = cls.PASTELS[cls._sequence_index_pastel]
             cls._sequence_index_pastel += 1
+            return color
+        elif set == "ui":
+            if cls._sequence_index_ui >= len(cls.UI):
+                cls._sequence_index_ui = 0
+            color = cls.UI[cls._sequence_index_ui]
+            cls._sequence_index_ui += 1
+            return color
+        elif set == "gameplay":
+            if cls._sequence_index_gameplay >= len(cls.GAMEPLAY):
+                cls._sequence_index_gameplay = 0
+            color = cls.GAMEPLAY[cls._sequence_index_gameplay]
+            cls._sequence_index_gameplay += 1
             return color
         else:
             if cls._sequence_index_all >= len(cls.ALL):
@@ -197,13 +263,13 @@ class Colors:
     @staticmethod
     def from_hex(hex_color: str) -> Tuple3f:
         hex_color = hex_color.lstrip("#")
-        rgb = tuple(int(hex_color[i : i + 2], 16) / 255 for i in (0, 2, 4))
+        rgb: Tuple[float, ...] = tuple(int(hex_color[i : i + 2], 16) / 255 for i in (0, 2, 4))
         return typing.cast(Tuple3f, rgb)
 
     @staticmethod
     def from_rgba(rgba_color: str) -> Tuple4f:
         _rgba_color: list[str] = rgba_color.lstrip("rgba(").rstrip(")").split(",")
-        rgba = tuple(int(_rgba_color[i]) / 255 for i in (0, 1, 2, 3))
+        rgba: Tuple[float, ...] = tuple(int(_rgba_color[i]) / 255 for i in (0, 1, 2, 3))
         return typing.cast(Tuple4f, rgba)
 
     @staticmethod
