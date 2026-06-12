@@ -265,12 +265,16 @@ class TileRenderer:
             self.geometry_node.show()
             if self.ui_node is not None:
                 self.ui_node.show()
-            if self.selector_enabled and self.selector_np is not None:
-                self.selector_np.show()
+
             if self.fog_detail_visible:
+                if self.selector_enabled and self.selector_np is not None:
+                    self.selector_np.show()
                 TileRendererSystem.get().show_tile(self.tile)
             else:
+                if self.selector_np is not None:
+                    self.selector_np.hide()
                 TileRendererSystem.get().hide_tile(self.tile)
+
             return
 
         self.geometry_node.hide()
@@ -355,20 +359,14 @@ class TileRenderer:
     def set_fog_detail_visibility(self, visible: bool) -> None:
         if self.fog_detail_visible == visible:
             if not visible:
-                TileRendererSystem.get().hide_tile(self.tile)
+                self.clear_ui()
                 self.bits_renderer.render(include_details=False)
+                TileRendererSystem.get().hide_tile(self.tile)
+                self.set_visibility_state(self._visibility_state, force=True)
             return
 
         self.fog_detail_visible = visible
-
-        if visible:
-            TileRendererSystem.get().show_tile(self.tile)
-            self.update()
-            return
-
-        self.clear_ui()
-        TileRendererSystem.get().hide_tile(self.tile)
-        self.bits_renderer.render(include_details=False)
+        self.update()
 
     def clear_ui(self) -> None:
         if self.ui_node is not None:
@@ -541,6 +539,7 @@ class TileRenderer:
                 self.city_ui_node = None
 
             self._drop_ui_node_if_empty()
+            self.bits_renderer.render(include_details=True)
             TileRendererSystem.get().sync_tile(self.tile)
             self.set_visibility_state(self._visibility_state, force=True)
             return
@@ -551,6 +550,7 @@ class TileRenderer:
         self.city_ui_node = self._ensure_ui_node().attachNewNode("city_ui_group")
         self._draw_improvements()
         self._draw_city_ui()
+        self.bits_renderer.render(include_details=True)
         TileRendererSystem.get().sync_tile(self.tile)
         self.set_visibility_state(self._visibility_state, force=True)
 
