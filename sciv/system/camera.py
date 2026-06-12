@@ -27,7 +27,7 @@ class Camera(Singleton, DirectObject):
         self.fov: float = 70.0
 
         self.zoom: float = 20.0
-        self.min_zoom: float = 2.0
+        self.min_zoom: float = 4.0
         self.max_zoom: float = 80.0
         self.zoom_speed: float = 3.0
         self.scroll_tick_rate: float = 0.1
