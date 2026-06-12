@@ -51,6 +51,11 @@ class Camera(Singleton, DirectObject):
         self.pan_overscroll_tiles: float = 1.5
         self.pan_overscroll_zoom_ratio: float = 0.1
 
+        self.edge_scroll_enabled: bool = True
+        self.edge_scroll_margin_pixels: float = 28.0
+        self.edge_scroll_speed: float = 24.0
+        self.edge_scroll_power: float = 1.35
+
         self.target: Optional[NodePath] = None
         self._world_pan_bounds: Optional[Tuple[float, float, float, float]] = None
         self._world_pan_bounds_signature: Optional[Tuple[int, int, int, int]] = None
@@ -159,6 +164,8 @@ class Camera(Singleton, DirectObject):
         self.accept("system.input.enable_control", self.enable_control)
         self.accept("system.input.camera_lock", self.lock_camera)
         self.accept("system.input.camera_unlock", self.unlock_camera)
+        self.accept("system.input.disable_edge_scroll", self.disable_edge_scroll)
+        self.accept("system.input.enable_edge_scroll", self.enable_edge_scroll)
         self.accept("game.camera.request.center_on_tile", self._on_center_on_tile)
         self.base.taskMgr.add(self.on_window_resize, "checkWindowResizeTask", delay=5.0)  # type: ignore
 
@@ -187,6 +194,12 @@ class Camera(Singleton, DirectObject):
 
     def enable_control(self):
         self.active = True
+
+    def disable_edge_scroll(self) -> None:
+        self.edge_scroll_enabled = False
+
+    def enable_edge_scroll(self) -> None:
+        self.edge_scroll_enabled = True
 
     def begin_external_capture(self) -> None:
         self.clear_drag_state()
@@ -344,6 +357,40 @@ class Camera(Singleton, DirectObject):
         clamped_y = min(max(float(pivot_y), min_y - margin_y), max_y + margin_y)
         return LPoint3f(clamped_x, clamped_y, float(pivot_z))
 
+    def _edge_scroll_axis_strength(self, lower_distance: float, upper_distance: float) -> float:
+        margin = max(self.edge_scroll_margin_pixels, 1.0)
+
+        if lower_distance <= margin:
+            return -((margin - max(lower_distance, 0.0)) / margin) ** self.edge_scroll_power
+
+        if upper_distance <= margin:
+            return ((margin - max(upper_distance, 0.0)) / margin) ** self.edge_scroll_power
+
+        return 0.0
+
+    def _edge_scroll_vector(self, mouse_x: float, mouse_y: float) -> Tuple[float, float]:
+        if not self.edge_scroll_enabled or not self.active or self.lock:
+            return (0.0, 0.0)
+
+        if self.left_dragging or self.right_dragging:
+            return (0.0, 0.0)
+
+        if self.win_x <= 0 or self.win_y <= 0:
+            return (0.0, 0.0)
+
+        pixel_x = (mouse_x + 1.0) * 0.5 * float(self.win_x)
+        pixel_y = (mouse_y + 1.0) * 0.5 * float(self.win_y)
+
+        edge_x = self._edge_scroll_axis_strength(pixel_x, float(self.win_x) - pixel_x)
+        edge_y = self._edge_scroll_axis_strength(pixel_y, float(self.win_y) - pixel_y)
+        magnitude = (edge_x * edge_x + edge_y * edge_y) ** 0.5
+
+        if magnitude > 1.0:
+            edge_x /= magnitude
+            edge_y /= magnitude
+
+        return (edge_x, edge_y)
+
     def update_camera_position(self):
         rad = self.pitch * (pi / 180.0)
         offset_y = -self.zoom * cos(rad)
@@ -454,12 +501,21 @@ class Camera(Singleton, DirectObject):
             delta_px_x = dx * self.win_x / 2
             delta_px_y = dy * self.win_y / 2
 
-            if self.left_dragging and abs(delta_px_x) >= self.drag_threshold_pixels:
-                self._desired_yaw -= delta_px_x * self.rotate_drag_sensitivity
+            if self.left_dragging:
+                if abs(delta_px_x) >= self.drag_threshold_pixels:
+                    self._desired_yaw -= delta_px_x * self.rotate_drag_sensitivity
             elif self.right_dragging:
                 pan_factor = self.pan_drag_sensitivity * self._pan_speed_scale()
                 px += (-delta_px_x * pan_factor) * self._cos_yaw + (delta_px_y * pan_factor) * self._sin_yaw  # type: ignore
                 py += (-delta_px_x * pan_factor) * self._sin_yaw - (delta_px_y * pan_factor) * self._cos_yaw  # type: ignore
+            else:
+                edge_x, edge_y = self._edge_scroll_vector(x, y)
+                edge_speed = self.edge_scroll_speed * self._pan_speed_scale()
+
+                px += right[0] * edge_x * edge_speed * dt  # type: ignore
+                py += right[1] * edge_x * edge_speed * dt  # type: ignore
+                px -= forward[0] * edge_y * edge_speed * dt  # type: ignore
+                py -= forward[1] * edge_y * edge_speed * dt  # type: ignore
 
             self.last_mouse_pos = (x, y)
 
