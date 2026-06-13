@@ -118,6 +118,9 @@ class Input(Singleton, DirectObject):
         self.accept("mouse3-up", self.on_right_click)
         self.accept("mouse3", self.on_right_down)
 
+        self.accept("wheel_up", self.on_scroll_up)
+        self.accept("wheel_down", self.on_scroll_down)
+
         if Debug.is_debug():
             self.accept("f2", self.activate)
             self.accept("f3", self.de_activate)
@@ -652,3 +655,13 @@ class Input(Singleton, DirectObject):
         if self.game_ui is None:
             return
         self.game_ui.toggle_civics()
+
+    def on_scroll_up(self) -> None:
+        if self.game_ui is None:
+            return
+        self.game_ui.on_fullscreen_scroll_up()
+
+    def on_scroll_down(self) -> None:
+        if self.game_ui is None:
+            return
+        self.game_ui.on_fullscreen_scroll_down()

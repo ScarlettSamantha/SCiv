@@ -238,6 +238,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.close_player_attack_info", self.close_player_attack_info)
         self.accept("ui.update.ui.layout_debug_changed", self.on_layout_debug_changed)
 
+
     def request_action_stage(self, action: Action, executor: "Player | None" = None):
         self.logger.info(f"Requesting action stage for action: {action.name}")
 
@@ -1244,3 +1245,18 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             else:
                 tile.enable_icons()
             tile.render()
+
+    def _scroll_active_fullscreen_panel(self, direction: int) -> bool:
+        if self.research is not None:
+            return self.research.scroll_horizontal(direction)
+
+        if self.civics is not None:
+            return self.civics.scroll_horizontal(direction)
+
+        return False
+
+    def on_fullscreen_scroll_up(self) -> None:
+        self._scroll_active_fullscreen_panel(-1)
+
+    def on_fullscreen_scroll_down(self) -> None:
+        self._scroll_active_fullscreen_panel(1)

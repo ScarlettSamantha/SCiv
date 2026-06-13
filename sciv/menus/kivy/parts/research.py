@@ -332,6 +332,7 @@ class Research(FloatLayout, DirectObject):
         self._padding_left = 50
         self._vertical_spacing = 40
         self._box_margin = 10
+        self._scroll_step = 0.08
 
         self._is_build = False
 
@@ -340,6 +341,8 @@ class Research(FloatLayout, DirectObject):
 
         self.is_open = True
         self.popup_disabled = True
+
+        self.scroll_view: HorizontalScrollView | None = None
 
         self._buttons: Dict[Type[Tech], ResearchButton] = {}
         self._line_refs: List[Any] = []
@@ -398,6 +401,12 @@ class Research(FloatLayout, DirectObject):
         self._tech_by_level.clear()
         self._column_bounds.clear()
 
+    def scroll_horizontal(self, direction: int | float) -> bool:
+        if self.scroll_view is None:
+            return False
+
+        return self.scroll_view.scroll_horizontal(direction, self._scroll_step)
+
     def build(self) -> None:
         if self._is_build:
             return
@@ -409,7 +418,6 @@ class Research(FloatLayout, DirectObject):
             bar_width=15,
             size_hint=(1, 1),
         )
-        # type: ignore
 
         self._tech_classes: List[Type[Tech]] = list(self.tree.items())  # type: ignore
 

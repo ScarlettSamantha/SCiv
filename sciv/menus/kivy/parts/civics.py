@@ -201,6 +201,7 @@ class Civics(FloatLayout, DirectObject):
         self._float_layout: Optional[FloatLayout] = None
         self.layout: Optional[GridLayout] = None
         self.scroll_view: Optional[HorizontalScrollView] = None
+        self._scroll_step = 0.08
         self.disabled = False
 
         self.update()
@@ -230,6 +231,12 @@ class Civics(FloatLayout, DirectObject):
     def _on_civic_node_click(self, node: CivicNode) -> None:
         MessengerGlobal.messenger.send("game.gameplay.civic.request_purchase", [node.civic])
         self.refresh_civic_nodes()
+
+    def scroll_horizontal(self, direction: int | float) -> bool:
+        if self.scroll_view is None:
+            return False
+
+        return self.scroll_view.scroll_horizontal(direction, self._scroll_step)
 
     def refresh_civic_nodes(self) -> None:
         from managers.player import PlayerManager  # or wherever this lives
