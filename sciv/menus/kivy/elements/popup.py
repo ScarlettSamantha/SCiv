@@ -1,11 +1,11 @@
-from typing import Any, Callable, Dict, Optional, cast
+from typing import Any, Callable, Optional, Tuple, cast
 
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
+from kivy.uix.relativelayout import RelativeLayout
 
 from helpers.cache import Cache
 from managers.config import ConfigManager
@@ -23,20 +23,21 @@ class ModalPopup(Popup, CollisionPreventionMixin):
         cancel_callback: Optional[Callable[[], None]] = None,
         width: int = 950,
         height: int = 500,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ):
-        # Remove custom keys before passing to Popup.
         kwargs.pop("message", None)
         kwargs.pop("confirm_callback", None)
         kwargs.pop("cancel_callback", None)
-        kwargs.setdefault("auto_dismiss", False)  # type: ignore False positive
+        kwargs.setdefault("auto_dismiss", False)
+        kwargs.setdefault("size_hint", (0.30, 0.25))
+        kwargs.setdefault("size", (width, height))
 
         title = str(title)
         message = str(message)
 
         self.base = Cache.get_showbase_instance()
 
-        super().__init__(title=title, base=self.base, size=(width, height), size_hint=(0.30, 0.25), **kwargs)  # type: ignore
+        super().__init__(title=title, base=self.base, **kwargs)  # type: ignore
 
         self._message: str = message
         self._confirm_callback: Optional[Callable[[], None]] = confirm_callback
@@ -45,21 +46,41 @@ class ModalPopup(Popup, CollisionPreventionMixin):
 
         self.confirm_button: Optional[Button] = None
         self.close_button: Optional[Button] = None
-
         self.accept_button: Optional[Button] = None
         self.decline_button: Optional[Button] = None
-
+        self.confirm_btn: Optional[Button] = None
+        self.close_btn: Optional[Button] = None
         self.button_layout: Optional[BoxLayout] = None
-        self.content_root: FloatLayout = FloatLayout()
-        self.layout: BoxLayout = BoxLayout(orientation="vertical", padding=10, spacing=10)
+
+        self.content_root: RelativeLayout = RelativeLayout(size_hint=(1, 1))
+        self.layout: BoxLayout = BoxLayout(
+            orientation="vertical",
+            padding=dp(10),
+            spacing=dp(10),
+            size_hint=(1, 1),
+        )
+
+        self.message_label = Label(
+            text=self._message,
+            halign="center",
+            valign="middle",
+            markup=True,
+            size_hint=(1, 1),
+        )
+        self.message_label.bind(size=self._sync_label_text_size)  # type: ignore[arg-type]
 
         self.bind(on_open=self.on_open)  # type: ignore
         self.bind(on_dismiss=self.on_close)  # type: ignore
 
-        self.layout.add_widget(Label(text=self._message))
+        self.layout.add_widget(self.message_label)
 
-        # Build button row
-        self.button_layout = BoxLayout(orientation="horizontal", size_hint=(1, 0.3), spacing=10)
+        self.button_layout = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(48),
+            spacing=dp(10),
+        )
+
         if self._confirm_callback and self._cancel_callback:
             self.accept_button = Button(text="Accept")
             self.decline_button = Button(text="Decline")
@@ -80,7 +101,11 @@ class ModalPopup(Popup, CollisionPreventionMixin):
 
         self.layout.add_widget(self.button_layout)
         self.content_root.add_widget(self.layout)
-        self.content = self.content_root  # A Popup must have only one widget as content
+        self.content = self.content_root
+
+    @staticmethod
+    def _sync_label_text_size(instance: Label, value: Tuple[float, float]) -> None:
+        instance.text_size = (max(0.0, value[0] - float(dp(12))), value[1])
 
     def _on_confirm(self, *args: Any) -> None:
         if self._confirm_callback:
@@ -93,16 +118,16 @@ class ModalPopup(Popup, CollisionPreventionMixin):
         self.dismiss()  # type: ignore
 
     def on_close(self, *args: Any, **kwargs: Any):
-        if hasattr(self, "close_btn"):
+        if self.close_btn is not None:
             self.close_btn.disabled = True
-        if hasattr(self, "confirm_btn"):
+        if self.confirm_btn is not None:
             self.confirm_btn.disabled = True
         self.unregister_non_collidable(self.layout)
 
     def on_open(self, *args: Any, **kwargs: Any):
-        if hasattr(self, "close_btn"):
+        if self.close_btn is not None:
             self.close_btn.disabled = False
-        if hasattr(self, "confirm_btn"):
+        if self.confirm_btn is not None:
             self.confirm_btn.disabled = False
         self.register_non_collidable(self.layout)
 
@@ -110,7 +135,7 @@ class ModalPopup(Popup, CollisionPreventionMixin):
 class NonModalPopup(ModalPopup):
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        self.modal = False  # allow interaction with background
+        self.modal = False
         self.auto_dismiss = True
 
 
@@ -138,13 +163,14 @@ class PopupDraggableMixin:
             return None
         return LayoutDebugPosition(x=float(data.get("x", 0.0)), y=float(data.get("y", 0.0)))
 
-    def _layout_debug_window_size(self) -> tuple[float, float]:
+    def _layout_debug_window_size(self) -> Tuple[float, float]:
         base = cast(Any, self).base
         return (float(base.win.getXSize()), float(base.win.getYSize()))  # type: ignore[attr-defined]
 
-    def _layout_debug_clamp_position(self, pos_x: float, pos_y: float) -> tuple[float, float]:
+    def _layout_debug_clamp_position(self, pos_x: float, pos_y: float) -> Tuple[float, float]:
         window_width, window_height = self._layout_debug_window_size()
         popup = self._popup_widget()
+
         return (
             max(0.0, min(pos_x, window_width - float(popup.width))),
             max(0.0, min(pos_y, window_height - float(popup.height))),
@@ -156,6 +182,7 @@ class PopupDraggableMixin:
 
         popup = self._popup_widget()
         popup.pos_hint = {}
+
         saved_position = self._layout_debug_saved_position()
         if saved_position is not None:
             saved_x, saved_y = denormalize_position(saved_position, self._layout_debug_window_size())
@@ -171,6 +198,7 @@ class PopupDraggableMixin:
     def _layout_debug_store_position(self) -> None:
         window_width, window_height = self._layout_debug_window_size()
         popup = self._popup_widget()
+
         self._layout_debug_config.set_ui_layout_position(
             self._layout_debug_item_id,
             float(popup.x) / max(window_width, 1.0),
@@ -181,6 +209,7 @@ class PopupDraggableMixin:
         popup = self._popup_widget()
         content_root = cast(ModalPopup, self).content_root
         badge_margin = float(dp(8))
+
         self._layout_debug_badge.pos = (
             max(badge_margin, float(content_root.width) - float(self._layout_debug_badge.width) - badge_margin),
             max(badge_margin, float(content_root.height) - float(self._layout_debug_badge.height) - badge_margin),
@@ -197,12 +226,10 @@ class PopupDraggableMixin:
         else:
             self._layout_debug_badge.hide()
 
-    def _layout_debug_touch_in_handle(self, touch_pos: tuple[float, float]) -> bool:
+    def _layout_debug_touch_in_handle(self, touch_pos: Tuple[float, float]) -> bool:
         return touch_pos[1] >= float(self._popup_widget().top) - float(dp(36))
 
 
-# DraggableModalPopup: The popup itself is draggable.
-# Make sure to disable pos_hint so we can manually set pos
 class DraggableModalPopup(ModalPopup, PopupDraggableMixin):
     def __init__(self, **kwargs: Any):
         item_id = str(kwargs.pop("layout_debug_id", "popup.modal"))
@@ -222,6 +249,7 @@ class DraggableModalPopup(ModalPopup, PopupDraggableMixin):
             self._touch_offset = (float(touch.x - self.x), float(touch.y - self.y))
             self._layout_debug_update_badge()
             return True
+
         return super().on_touch_down(touch)
 
     def on_touch_move(self, touch: Any) -> bool:
@@ -232,6 +260,7 @@ class DraggableModalPopup(ModalPopup, PopupDraggableMixin):
             )
             self._layout_debug_update_badge()
             return True
+
         return super().on_touch_move(touch)
 
     def on_touch_up(self, touch: Any) -> bool:
@@ -241,10 +270,10 @@ class DraggableModalPopup(ModalPopup, PopupDraggableMixin):
             self._layout_debug_store_position()
             self._layout_debug_update_badge()
             return True
+
         return super().on_touch_up(touch)
 
 
-# NonModalDraggablePopup: A non-modal draggable popup.
 class NonModalDraggablePopup(NonModalPopup, PopupDraggableMixin):
     def __init__(self, **kwargs: Any):
         item_id = str(kwargs.pop("layout_debug_id", "popup.non_modal"))
@@ -264,6 +293,7 @@ class NonModalDraggablePopup(NonModalPopup, PopupDraggableMixin):
             self._touch_offset = (float(touch.x - self.x), float(touch.y - self.y))
             self._layout_debug_update_badge()
             return True
+
         return super().on_touch_down(touch)
 
     def on_touch_move(self, touch: Any) -> bool:
@@ -274,6 +304,7 @@ class NonModalDraggablePopup(NonModalPopup, PopupDraggableMixin):
             )
             self._layout_debug_update_badge()
             return True
+
         return super().on_touch_move(touch)
 
     def on_touch_up(self, touch: Any) -> bool:
@@ -283,4 +314,5 @@ class NonModalDraggablePopup(NonModalPopup, PopupDraggableMixin):
             self._layout_debug_store_position()
             self._layout_debug_update_badge()
             return True
+
         return super().on_touch_up(touch)

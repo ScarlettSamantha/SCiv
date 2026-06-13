@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -9,10 +9,10 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.input import MotionEvent  # type:ignore
 from kivy.metrics import dp  # type: ignore
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import Widget
 from managers.player import PlayerManager
 
@@ -20,19 +20,25 @@ if TYPE_CHECKING:
     from game import OpenCiv
 
 
-class PlayerList(FloatLayout, DirectObject):
+class PlayerList(RelativeLayout, DirectObject):
     def __init__(self, base: "OpenCiv", **kwargs: Any):
         super().__init__(**kwargs)
+        DirectObject.__init__(self)
+
         self.base: "OpenCiv" = base
         self.players: Optional[List[Player]] = None
         self.is_build: bool = False
         self._anchor_x_ratio: float = 0.80
         self._anchor_top_ratio: float = 0.985
-        self._bound_parent: Widget | None = None
+        self._last_viewport_size: Tuple[float, float] = (0.0, 0.0)
+
         self._anchor_refresh = Clock.create_trigger(self._refresh_anchor_position, 0)
+        self._anchor_poll = Clock.schedule_interval(self._poll_anchor_position, 0.25)
+
         self.background_image = Cache.get_asset_archive().get_kivy_image_object(
             "assets/icons/default/player_portrait.png"
         )
+
         self.size_hint = (None, None)
         self.pos_hint = {}
 
@@ -50,17 +56,10 @@ class PlayerList(FloatLayout, DirectObject):
 
         self.grid.bind(size=self.update_position)
         self.bind(parent=self._on_parent_changed, size=self._on_size_changed)  # type: ignore[arg-type]
+
         self.disabled = True
 
-    def _on_parent_changed(self, _instance: Widget, parent: Widget | None) -> None:
-        if self._bound_parent is not None:
-            self._bound_parent.unbind(size=self._schedule_anchor_refresh, pos=self._schedule_anchor_refresh)  # type: ignore[arg-type]
-
-        self._bound_parent = parent
-
-        if parent is not None:
-            parent.bind(size=self._schedule_anchor_refresh, pos=self._schedule_anchor_refresh)  # type: ignore[arg-type]
-
+    def _on_parent_changed(self, *_args: Any) -> None:
         self._schedule_anchor_refresh()
 
     def _on_size_changed(self, *_args: Any) -> None:
@@ -69,20 +68,43 @@ class PlayerList(FloatLayout, DirectObject):
     def _schedule_anchor_refresh(self, *_args: Any) -> None:
         self._anchor_refresh()
 
+    def _poll_anchor_position(self, _dt: float) -> None:
+        viewport_size = self._get_viewport_size()
+        if viewport_size == self._last_viewport_size:
+            return
+
+        self._last_viewport_size = viewport_size
+        self._schedule_anchor_refresh()
+
     def _refresh_anchor_position(self, _dt: float) -> None:
         self.pos = self.get_anchor_position()
 
-    def get_anchor_position(self) -> tuple[float, float]:
-        parent = self.parent
-        if parent is None:
-            parent_width = float(self.base.win.getXSize())  # type: ignore[attr-defined]
-            parent_height = float(self.base.win.getYSize())  # type: ignore[attr-defined]
-        else:
-            parent_width = float(getattr(parent, "width", 0.0) or 0.0)
-            parent_height = float(getattr(parent, "height", 0.0) or 0.0)
+    def _get_base_window_size(self) -> Tuple[float, float]:
+        return (
+            float(self.base.win.getXSize()),  # type: ignore[attr-defined]
+            float(self.base.win.getYSize()),  # type: ignore[attr-defined]
+        )
 
-        anchor_x = parent_width * self._anchor_x_ratio - float(self.width)
-        anchor_y = parent_height * self._anchor_top_ratio - float(self.height)
+    def _get_viewport_size(self) -> Tuple[float, float]:
+        base_width, base_height = self._get_base_window_size()
+        parent = self.parent
+
+        if parent is None:
+            return (base_width, base_height)
+
+        parent_width = float(getattr(parent, "width", 0.0) or 0.0)
+        parent_height = float(getattr(parent, "height", 0.0) or 0.0)
+
+        return (
+            max(parent_width, base_width, 1.0),
+            max(parent_height, base_height, 1.0),
+        )
+
+    def get_anchor_position(self) -> Tuple[float, float]:
+        viewport_width, viewport_height = self._get_viewport_size()
+
+        anchor_x = viewport_width * self._anchor_x_ratio - float(self.width)
+        anchor_y = viewport_height * self._anchor_top_ratio - float(self.height)
 
         return (max(0.0, anchor_x), max(0.0, anchor_y))
 
@@ -91,9 +113,10 @@ class PlayerList(FloatLayout, DirectObject):
             return
 
         children: List[Widget] = list(self.grid.children)
-        total_w = sum(w.width for w in children)
+        total_w = sum(float(w.width) for w in children)
+
         h_spacing = self.grid.spacing[0] if isinstance(self.grid.spacing, (tuple, list)) else self.grid.spacing
-        total_w += h_spacing * (len(children) - 1)
+        total_w += float(h_spacing) * (len(children) - 1)
 
         pad: Tuple[int, ...] | List[int] | int = self.grid.padding
         if isinstance(pad, (tuple, list)) and len(pad) == 4:
@@ -103,8 +126,8 @@ class PlayerList(FloatLayout, DirectObject):
         else:
             raise ValueError("Padding must be a tuple of 4 integers or a single integer.")
 
-        total_w = total_w + left + right
-        total_h: float = self.grid.height
+        total_w = total_w + float(left) + float(right)
+        total_h: float = float(self.grid.height)
 
         self.grid.width = total_w
         self.grid.height = total_h
@@ -121,6 +144,7 @@ class PlayerList(FloatLayout, DirectObject):
         for player in self.players:
             if player.is_nature or player.is_barbarian:
                 continue
+
             widget = self._generate_player_widget(player)
             self.grid.add_widget(widget)
 
@@ -128,47 +152,59 @@ class PlayerList(FloatLayout, DirectObject):
         self._schedule_anchor_refresh()
         self.is_build = True
 
-    def _generate_player_widget(self, player: Player) -> FloatLayout:
-        container = FloatLayout(
+    def _generate_player_widget(self, player: Player) -> RelativeLayout:
+        container = RelativeLayout(
             size_hint=(None, None),
             size=(dp(120), dp(164)),
         )
 
-        pad_x = dp(12)
-        pad_y = dp(10)
+        pad_x = float(dp(12))
+        pad_y = float(dp(10))
         bg_texture = self.background_image.texture  # type: ignore
+
         with container.canvas.before:  # type: ignore
             Color(1, 1, 1, 1)
             bg_rect = Rectangle(
                 texture=bg_texture,
-                pos=(container.x + pad_x, container.y + pad_y),
-                size=(container.width - 2 * pad_x, container.height - 2 * pad_y),
+                pos=(pad_x, pad_y),
+                size=(float(container.width) - 2 * pad_x, float(container.height) - 2 * pad_y),
             )
-
-        def update_bg(instance: Widget, value: Any):
-            bg_rect.pos = (instance.x + pad_x, instance.y + pad_y)  # type: ignore
-            bg_rect.size = (instance.width - 2 * pad_x, instance.height - 2 * pad_y)  # type: ignore
-
-        container.bind(pos=update_bg, size=update_bg)
-        update_bg(container, None)  # type: ignore
 
         icon = Image(
             texture=Cache.get_asset_archive().get_kivy_image_texture(str(player.icon)),
             size_hint=(None, None),
             size=(dp(48), dp(48)),
-            pos_hint={"center_x": 0.5, "top": 0.975},
         )
 
         name = Label(
             text=f"[color={Colors.to_hex(player.color)}]{player.civilization.name}[/color]",
             size_hint=(None, None),
             size=(dp(100), dp(30)),
-            pos_hint={"center_x": 0.5, "top": 0.675},
             halign="center",
             valign="middle",
             markup=True,
         )
-        name.bind(size=lambda instance, value: setattr(instance, "text_size", value))  # type: ignore
+
+        def update_child_geometry(instance: Widget, value: Any) -> None:
+            bg_rect.pos = (pad_x, pad_y)  # type: ignore
+            bg_rect.size = (
+                max(0.0, float(instance.width) - 2 * pad_x),
+                max(0.0, float(instance.height) - 2 * pad_y),
+            )  # type: ignore
+
+            icon.pos = (
+                (float(instance.width) - float(icon.width)) / 2.0,
+                float(instance.height) * 0.975 - float(icon.height),
+            )
+
+            name.pos = (
+                (float(instance.width) - float(name.width)) / 2.0,
+                float(instance.height) * 0.675 - float(name.height),
+            )
+            name.text_size = cast(Tuple[int, int], name.size)
+
+        container.bind(size=update_child_geometry)
+        update_child_geometry(container, None)
 
         container.add_widget(icon)
         container.add_widget(name)
@@ -176,12 +212,14 @@ class PlayerList(FloatLayout, DirectObject):
         def on_touch_down(instance: Widget, touch: MotionEvent):  # type: ignore
             if self.disabled:
                 return False
+
             if container.collide_point(*touch.pos):  # type: ignore
                 if touch.button == "left":  # type: ignore
                     self._on_player_left_click(player)
                 elif touch.button == "right":  # type: ignore
                     self._on_player_right_click(player)
                 return True
+
             return False
 
         container.bind(on_touch_down=on_touch_down)
@@ -198,3 +236,7 @@ class PlayerList(FloatLayout, DirectObject):
         if hasattr(self, "bg_rect"):
             self.bg_rect.pos = instance.pos  # type: ignore
             self.bg_rect.size = instance.size  # type: ignore
+
+    def destroy(self) -> None:
+        self._anchor_poll.cancel()
+        self.ignore_all()
