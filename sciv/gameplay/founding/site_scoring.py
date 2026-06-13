@@ -262,7 +262,7 @@ def _has_coastal_access(tile: "Tile") -> bool:
 
 
 def _has_river_edge(tile: "Tile") -> bool:
-    return any(edge is not None and edge.is_river for edge in tile.edges.values())
+    return any(edge is not None and bool(getattr(edge, "is_river", False)) for edge in tile.edges.values())
 
 
 def _has_feature(tile: "Tile", feature: HexFeature) -> bool:
