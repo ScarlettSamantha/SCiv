@@ -1,3 +1,4 @@
+import io
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Set, Tuple
 
@@ -13,9 +14,10 @@ from helpers.tiles import Tiles
 from managers.player import PlayerManager
 from mixins.singleton import Singleton
 from panda3d.core import (
+    AntialiasAttrib,
     ClockObject,
     LVecBase3f,
-    LVecBase4f,
+    LineSegs,
     NodePath,
     PNMImage,
     Shader,  # type: ignore
@@ -29,7 +31,8 @@ from system.shaders import Shaders
 if TYPE_CHECKING:
     from gameplay.player import Player
 
-import io
+
+BorderEdgeFlags = Tuple[float, float, float, float, float, float]
 
 
 class Borders(DirectObject, Singleton):
@@ -37,8 +40,28 @@ class Borders(DirectObject, Singleton):
 
     COLOR_HEX_TOP_BORDERS = Colors.MAGENTA
     COLOR_HEX_WALLS = Colors.BLACK
+
     TOP_BORDER_SCALE = 1.0
     TOP_BORDER_EMPIRE_SCALE = 0.98
+
+    BORDER_RADIUS = 0.985
+    BORDER_Z_OFFSET = 0.052
+    BORDER_SHADOW_Z_OFFSET = 0.047
+    BORDER_HIGHLIGHT_Z_OFFSET = 0.058
+
+    BORDER_MAIN_THICKNESS = 2.4
+    BORDER_SHADOW_THICKNESS = 5.8
+    BORDER_HIGHLIGHT_THICKNESS = 1.1
+
+    BORDER_DASH_LENGTH = 0.24
+    BORDER_DASH_VISIBLE_LENGTH = 0.18
+
+    BORDER_MAIN_ALPHA = 0.62
+    BORDER_SHADOW_ALPHA = 0.24
+    BORDER_HIGHLIGHT_ALPHA = 0.24
+
+    BORDER_PLAYER_COLOR_WEIGHT = 0.68
+    BORDER_WORLD_BLEND_COLOR = (0.72, 0.68, 0.52)
 
     def __init__(
         self,
@@ -102,30 +125,33 @@ class Borders(DirectObject, Singleton):
     def refresh(self, *args: Any) -> None:
         self.reset()
         self.border_textures.clear()
+
         for p in PlayerManager.all().values():
             self._enqueue_player(p)
 
-        # reapply world-mask & nodes
-        # self.hex_border_tex = self.generate_world_border_mask(
-        #    map_size=(self.map_width, self.map_height), hex_radius_px=50
-        # )
-        # self.apply_shader_to_hexes(self.generate_world_border_nodes())
         MessengerGlobal.messenger.send("ui.borders.updated")
 
     def reset(self) -> None:
         for nodes in self.border_nodes.values():
             for node in nodes:
                 node.remove_node()
+
         self.border_nodes.clear()
 
     def _enqueue_player(self, player: "Player") -> None:
+        player_id = player.id
+        if player_id is None:
+            self.logger.error("[Borders] Cannot enqueue border generation for player without an id")
+            return
+
         owned = set(player.get_all_tiles())
         growing = set(player.get_all_tiles_marked_for_border_growth())
-        task_name = f"generate_border_mask_{player.id}"
+        task_name = f"generate_border_mask_{player_id}"
+
         Cache.get_showbase_instance().taskMgr.add(
             self._async_mask_task,
             task_name,
-            extraArgs=[player.id, owned, growing],
+            extraArgs=[player_id, owned, growing],
             appendTask=False,
             taskChain="borders",
         )
@@ -138,12 +164,15 @@ class Borders(DirectObject, Singleton):
     ) -> bool:
         mask = PNMImage(self.map_width, self.map_height, 3)
         mask.fill(0)
+
         for x, y in owned:
             if 0 <= x < self.map_width and 0 <= y < self.map_height:
                 mask.set_red(x, y, 1.0)
+
         for x, y in growing:
             if 0 <= x < self.map_width and 0 <= y < self.map_height:
                 mask.set_green(x, y, 1.0)
+
         mask.flip(False, True, False)
 
         MessengerGlobal.messenger.send("borders.task_done", [player_id, mask])
@@ -158,6 +187,7 @@ class Borders(DirectObject, Singleton):
 
         for node in self.border_nodes.get(player_id, []):
             node.remove_node()
+
         player = PlayerManager.all()[int(player_id)]
         self.border_nodes[player_id] = self._create_empire_border_hexes(player)
 
@@ -171,9 +201,11 @@ class Borders(DirectObject, Singleton):
     ) -> Texture:
         cols, rows = map_size
         player_tiles: Set[Tuple[int, int]] = set()
+
         for player in PlayerManager.all().values():
             tiles_p = set(player.get_all_tiles().keys()) | set(player.get_all_tiles_marked_for_border_growth().keys())
             player_tiles.update(tiles_p)
+
         self.player_tiles = player_tiles
 
         r = hex_radius_px
@@ -197,6 +229,7 @@ class Borders(DirectObject, Singleton):
         tex.load(pnm)
         tex.set_magfilter(Texture.FT_nearest)
         tex.set_minfilter(Texture.FT_nearest)
+
         return tex
 
     def generate_world_border_nodes(self) -> List[NodePath]:
@@ -205,13 +238,17 @@ class Borders(DirectObject, Singleton):
         self.world_hexes: List[NodePath] = []
         grid = World.get_singleton_instance().get_grid()
         hex_model = generate_flat_top_hex()
+
         for x, y in grid:
             np = hex_model.copy_to(self.parent)
             np.set_scale(self.TOP_BORDER_SCALE)
+
             wx, wy, wz = TileRepository.hex_to_world(x, y)
             np.set_pos(LVecBase3f(wx, wy, wz + 0.015))
             np.set_hpr(30, 0, 0)
+
             self.world_hexes.append(np)
+
         return self.world_hexes
 
     def apply_shader_to_hex(self, hex_node: NodePath, color: Tuple4f = COLOR_HEX_TOP_BORDERS) -> None:
@@ -227,57 +264,249 @@ class Borders(DirectObject, Singleton):
             self.apply_shader_to_hex(n, self.COLOR_HEX_WALLS)
 
     def _create_empire_border_hexes(self, player: "Player") -> List[NodePath]:
+        owned: Set[Tuple[int, int]] = set(player.get_all_tiles())
+        growing: Set[Tuple[int, int]] = set(player.get_all_tiles_marked_for_border_growth())
+        territory: Set[Tuple[int, int]] = owned | growing
+
+        if not territory:
+            return []
+
+        main_color = self._soft_player_color(player.color, self.BORDER_MAIN_ALPHA)
+        shadow_color = (0.04, 0.035, 0.025, self.BORDER_SHADOW_ALPHA)
+        highlight_color = self._lighten_color(main_color, self.BORDER_HIGHLIGHT_ALPHA)
+
         nodes: List[NodePath] = []
-        for x, y in player.get_all_tiles():
-            np = generate_flat_top_hex().copy_to(self.parent)
-            np.set_scale(self.TOP_BORDER_EMPIRE_SCALE)
-            wx, wy, wz = TileRepository.hex_to_world(x, y)
-            np.set_pos(LVecBase3f(wx, wy, wz + 0.02))
-            np.set_hpr(30, 0, 0)
 
-            tex = self.border_textures.get(player.id)  # type: ignore
-            if not tex:
-                self.logger.error(f"[Borders] No texture for player {player.id}")
-                continue
+        shadow_node = self._create_border_line_node(
+            name=f"empire_border_shadow_{player.id}",
+            territory=territory,
+            color=shadow_color,
+            thickness=self.BORDER_SHADOW_THICKNESS,
+            z_offset=self.BORDER_SHADOW_Z_OFFSET,
+            bin_order=38,
+        )
+        if shadow_node is not None:
+            nodes.append(shadow_node)
 
-            np.set_shader(self.shader)
-            np.set_shader_input("borderColor", LVecBase4f(*player.color))  # type: ignore
-            np.set_shader_input("borderMask", tex)  # type: ignore
-            np.set_shader_input("tilePos", (x, y))  # type: ignore
-            np.set_shader_input("mapSize", (self.map_width, self.map_height))  # type: ignore
-            np.set_shader_input("time", ClockObject.get_global_clock().get_frame_time())  # type: ignore
+        main_node = self._create_border_line_node(
+            name=f"empire_border_main_{player.id}",
+            territory=territory,
+            color=main_color,
+            thickness=self.BORDER_MAIN_THICKNESS,
+            z_offset=self.BORDER_Z_OFFSET,
+            bin_order=40,
+        )
+        if main_node is not None:
+            nodes.append(main_node)
 
-            np.set_transparency(TransparencyAttrib.M_alpha)
-            np.set_bin("fixed", 40)
-            np.set_depth_write(False)
-            np.set_depth_test(True)
-            np.set_two_sided(True)
-            np.set_scale(1)
+        highlight_node = self._create_border_line_node(
+            name=f"empire_border_highlight_{player.id}",
+            territory=territory,
+            color=highlight_color,
+            thickness=self.BORDER_HIGHLIGHT_THICKNESS,
+            z_offset=self.BORDER_HIGHLIGHT_Z_OFFSET,
+            bin_order=41,
+        )
+        if highlight_node is not None:
+            nodes.append(highlight_node)
 
-            nodes.append(np)
         return nodes
+
+    def _create_border_line_node(
+        self,
+        name: str,
+        territory: Set[Tuple[int, int]],
+        color: Tuple4f,
+        thickness: float,
+        z_offset: float,
+        bin_order: int,
+    ) -> NodePath | None:
+        segs = LineSegs(name)
+        segs.set_thickness(thickness)
+        segs.set_color(*color)
+
+        has_segments = False
+
+        for x, y in territory:
+            for edge_start, edge_end in self._iter_exposed_border_edges(x, y, territory, z_offset):
+                has_segments = True
+                self._append_dashed_edge(segs, edge_start, edge_end)
+
+        if not has_segments:
+            return None
+
+        node = NodePath(segs.create())
+        node.reparent_to(self.parent)
+        node.set_transparency(TransparencyAttrib.M_alpha)
+        node.set_bin("fixed", bin_order)
+        node.set_depth_write(False)
+        node.set_depth_test(True)
+        node.set_antialias(AntialiasAttrib.MLine)
+
+        return node
 
     def update_border_times(self, task: Task) -> Literal[1]:
         t = ClockObject.get_global_clock().get_frame_time()
+
         for node_list in self.border_nodes.values():
             for n in node_list:
-                n.set_shader_input("time", t)  # type: ignore
+                if hasattr(n, "set_shader_input"):
+                    n.set_shader_input("time", t)  # type: ignore
+
         return task.cont
 
     def update_borders(self) -> None:
         for p in PlayerManager.all().values():
             pid = p.id
-            for n in self.border_nodes.get(pid, []):  # type: ignore
-                n.remove_node()  # type: ignore
-            self.border_nodes[pid] = self._create_empire_border_hexes(p)  # type: ignore
+            if pid is None:
+                continue
+
+            for n in self.border_nodes.get(pid, []):
+                n.remove_node()
+
+            self.border_nodes[pid] = self._create_empire_border_hexes(p)
+
         MessengerGlobal.messenger.send("ui.borders.updated")
 
-    def _get_border_mask(self, x: int, y: int, player: "Player") -> int:
+    def _iter_exposed_border_edges(
+        self,
+        x: int,
+        y: int,
+        territory: Set[Tuple[int, int]],
+        z_offset: float,
+    ) -> List[Tuple[LVecBase3f, LVecBase3f]]:
+        edges: List[Tuple[LVecBase3f, LVecBase3f]] = []
+
+        for edge_index, (dx, dy) in enumerate(self.HEX_DIRECTIONS[x % 2]):
+            if (x + dx, y + dy) in territory:
+                continue
+
+            edges.append(self._get_world_edge_points(x, y, edge_index, z_offset))
+
+        return edges
+
+    def _get_world_edge_points(
+        self,
+        x: int,
+        y: int,
+        edge_index: int,
+        z_offset: float,
+    ) -> Tuple[LVecBase3f, LVecBase3f]:
+        wx, wy, wz = TileRepository.hex_to_world(x, y)
+        z = wz + z_offset
+
+        start_angle = math.radians(60.0 * edge_index)
+        end_angle = math.radians(60.0 * (edge_index + 1))
+
+        start = LVecBase3f(
+            wx + math.cos(start_angle) * self.BORDER_RADIUS,
+            wy + math.sin(start_angle) * self.BORDER_RADIUS,
+            z,
+        )
+        end = LVecBase3f(
+            wx + math.cos(end_angle) * self.BORDER_RADIUS,
+            wy + math.sin(end_angle) * self.BORDER_RADIUS,
+            z,
+        )
+
+        return start, end
+
+    def _append_dashed_edge(
+        self,
+        segs: LineSegs,
+        start: LVecBase3f,
+        end: LVecBase3f,
+    ) -> None:
+        dx = end.x - start.x
+        dy = end.y - start.y
+        dz = end.z - start.z
+
+        edge_length = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if edge_length <= 0.0:
+            return
+
+        direction = LVecBase3f(dx / edge_length, dy / edge_length, dz / edge_length)
+        cursor = 0.0
+
+        while cursor < edge_length:
+            dash_end = min(cursor + self.BORDER_DASH_VISIBLE_LENGTH, edge_length)
+
+            dash_start_point = LVecBase3f(
+                start.x + direction.x * cursor,
+                start.y + direction.y * cursor,
+                start.z + direction.z * cursor,
+            )
+            dash_end_point = LVecBase3f(
+                start.x + direction.x * dash_end,
+                start.y + direction.y * dash_end,
+                start.z + direction.z * dash_end,
+            )
+
+            segs.move_to(dash_start_point)
+            segs.draw_to(dash_end_point)
+
+            cursor += self.BORDER_DASH_LENGTH
+
+    def _soft_player_color(self, color: Tuple4f, alpha: float) -> Tuple4f:
+        r, g, b, _ = color
+        blend_r, blend_g, blend_b = self.BORDER_WORLD_BLEND_COLOR
+        player_weight = self.BORDER_PLAYER_COLOR_WEIGHT
+        world_weight = 1.0 - player_weight
+
+        return (
+            self._clamp01((r * player_weight) + (blend_r * world_weight)),
+            self._clamp01((g * player_weight) + (blend_g * world_weight)),
+            self._clamp01((b * player_weight) + (blend_b * world_weight)),
+            self._clamp01(alpha),
+        )
+
+    def _lighten_color(self, color: Tuple4f, alpha: float) -> Tuple4f:
+        r, g, b, _ = color
+
+        return (
+            self._clamp01((r * 0.72) + 0.28),
+            self._clamp01((g * 0.72) + 0.28),
+            self._clamp01((b * 0.72) + 0.28),
+            self._clamp01(alpha),
+        )
+
+    def _clamp01(self, value: float) -> float:
+        return max(0.0, min(1.0, value))
+
+    def _get_border_edge_flags(
+        self,
+        x: int,
+        y: int,
+        territory: Set[Tuple[int, int]],
+    ) -> BorderEdgeFlags:
+        flags: List[float] = []
+
+        for dx, dy in self.HEX_DIRECTIONS[x % 2]:
+            flags.append(0.0 if (x + dx, y + dy) in territory else 1.0)
+
+        return (
+            flags[0],
+            flags[1],
+            flags[2],
+            flags[3],
+            flags[4],
+            flags[5],
+        )
+
+    def _has_visible_border_edge(self, edge_flags: BorderEdgeFlags) -> bool:
+        return any(edge_flag > 0.5 for edge_flag in edge_flags)
+
+    def _edge_flags_to_mask(self, edge_flags: BorderEdgeFlags) -> int:
         mask = 0
-        for i, (dx, dy) in enumerate(self.HEX_DIRECTIONS[x % 2] + [(0, 0)]):
-            if not player.owns_tile(x + dx, y + dy):
+
+        for i, edge_flag in enumerate(edge_flags):
+            if edge_flag > 0.5:
                 mask |= 1 << i
+
         return mask
+
+    def _get_border_mask(self, x: int, y: int, territory: Set[Tuple[int, int]]) -> int:
+        return self._edge_flags_to_mask(self._get_border_edge_flags(x, y, territory))
 
     def _get_world_edge_mask(self, x: int, y: int) -> int:
         from managers.world import World
@@ -285,9 +514,10 @@ class Borders(DirectObject, Singleton):
         mask = 0
         grid = World.get_singleton_instance().get_grid()
         here = grid[(x, y)].terrain_type  # type: ignore
+
         for i, (dx, dy) in enumerate(self.HEX_DIRECTIONS[x % 2]):
             neigh = grid.get((x + dx, y + dy))
-            # outside map or different type → draw that side
             if neigh is None or neigh.terrain_type != here:  # type: ignore
                 mask |= 1 << i
+
         return mask
