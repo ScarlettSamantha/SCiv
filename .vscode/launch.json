@@ -14,6 +14,14 @@
             "cwd": "${workspaceFolder}",
         },
         {
+            "name": "Python Debugger: World Gen Viewer Tool",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "scripts/worldgen_viewer.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+        },
+        {
             "name": "Python Profile: Main Game File",
             "type": "debugpy",
             "request": "launch",
@@ -36,6 +44,37 @@
                 "PYTHONPATH": "${workspaceFolder}"
             }
         },
+        {
+            "name": "Python: Current File (External Terminal)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "externalTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "SCIV - Run Main Game File",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/run.py",
+            "console": "externalTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}" 
+            }
+        },
+        {
+            "name": "World Gen Viewer - Run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/worldgen_viewer.py",
+            "console": "externalTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}" 
+            }
+        }
 
     ]
 }
