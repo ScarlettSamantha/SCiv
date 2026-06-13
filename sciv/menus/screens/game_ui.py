@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, cast
 
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
@@ -118,6 +118,7 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.log: LogPopup = LogPopup(handler=LogManager.get_singleton_instance().ui_handler)
         self.config_manager: ConfigManager = ConfigManager.get_singleton_instance()
         self.layout_debug_widgets: Dict[str, DraggableLayoutWrapper] = {}
+        self._fullscreen_hidden_widgets: Dict[Widget, Tuple[bool, float]] = {}
 
         self.showing_tile_yield_icons: bool = True
 
@@ -514,6 +515,53 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         elif widget in self.children:
             self.remove_widget(widget)
             self.add_widget(widget, index=len(self.children) - 1)
+
+    def _is_fullscreen_widget(self, widget: Widget) -> bool:
+        return widget is self.research or widget is self.civics
+
+    def _has_fullscreen_widget_open(self) -> bool:
+        return self.research is not None or self.civics is not None
+
+    def _hide_widget_for_fullscreen(self, widget: Widget | None) -> None:
+        if widget is None:
+            return
+        if widget is self.top_bar or widget is self.root_layout or self._is_fullscreen_widget(widget):
+            return
+        if widget.parent is None:
+            return
+        if widget in self._fullscreen_hidden_widgets:
+            return
+
+        self._fullscreen_hidden_widgets[widget] = (bool(widget.disabled), float(widget.opacity))
+        widget.disabled = True
+        widget.opacity = 0.0
+
+    def _hide_chrome_for_fullscreen(self) -> None:
+        for widget in list(self.children):
+            if widget is self.top_bar or widget is self.root_layout:
+                continue
+            self._hide_widget_for_fullscreen(widget)
+
+        if self.root_layout is not None:
+            for widget in list(self.root_layout.children):
+                if self._is_fullscreen_widget(widget):
+                    continue
+                self._hide_widget_for_fullscreen(widget)
+
+        if self.top_bar is not None and self.top_bar.parent is not None:
+            self.bring_to_front(self.top_bar)
+
+    def _restore_chrome_after_fullscreen(self) -> None:
+        if self._has_fullscreen_widget_open():
+            return
+
+        for widget, state in list(self._fullscreen_hidden_widgets.items()):
+            disabled, opacity = state
+            widget.disabled = disabled
+            widget.opacity = opacity
+
+        self._fullscreen_hidden_widgets.clear()
+        self.apply_layout_debug_settings()
 
     def build_inspect_entity(self) -> InspectEntity:
         self.inspect = InspectEntity(self)
@@ -1058,8 +1106,15 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
     def close_before_fullscreen(self):
         if self.player_target_info:
             self.close_target_panel()
+        if self.city_ui is not None:
+            self.close_city_ui()
+        if self.player_attack_info is not None:
+            self.close_player_attack_info()
 
     def open_research(self):
+        if self.civics is not None:
+            self.close_civics()
+
         if self.research is None:
             self.close_before_fullscreen()
 
@@ -1067,9 +1122,14 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.research)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.research)
+
+        self._hide_chrome_for_fullscreen()
         self.lock_input()
 
     def open_civics(self):
+        if self.research is not None:
+            self.close_research()
+
         if self.civics is None:
             self.close_before_fullscreen()
 
@@ -1077,6 +1137,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.register_non_collidable(self.civics)
             assert self.root_layout is not None, "Root layout is not initialized."
             self.root_layout.add_widget(self.civics)
+
+        self._hide_chrome_for_fullscreen()
         self.lock_input()
 
     def open_player_info(self, player: Player):
@@ -1096,6 +1158,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.research)
             self.popup_disabled = True
             self.research = None
+
+        self._restore_chrome_after_fullscreen()
         self.unlock_input()
 
     def close_civics(self):
@@ -1106,6 +1170,8 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
             self.root_layout.remove_widget(self.civics)
             self.popup_disabled = True
             self.civics = None
+
+        self._restore_chrome_after_fullscreen()
         self.unlock_input()
 
     def close_player_info(self):
@@ -1177,5 +1243,4 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
                 tile.disable_icons()
             else:
                 tile.enable_icons()
-
             tile.render()
