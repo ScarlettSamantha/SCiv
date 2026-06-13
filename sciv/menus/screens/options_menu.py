@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 from direct.showbase.MessengerGlobal import messenger
 from helpers.cache import Cache
@@ -71,6 +71,7 @@ class OptionsScreen(Screen):
         )
 
         self.selected_resolution: Optional[Tuple[int, int]] = None
+        self._syncing_controls: bool = False
 
         self.general_layout: BoxLayout
         self.video_layout: BoxLayout
@@ -114,6 +115,10 @@ class OptionsScreen(Screen):
         self._build_developer_tab()
 
         self.add_widget(self.build_screen())
+        self.refresh_from_config()
+
+    def on_pre_enter(self, *args: Any) -> None:
+        self.refresh_from_config()
 
     def _make_version_label(self) -> Label:
         label = LeftAlignedLabel(
@@ -337,7 +342,7 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        self.fps_checkbox = MenuCheckbox()
+        self.fps_checkbox = MenuCheckbox(active=self.config_ref.get_fps_counter())
         self.fps_checkbox.bind(active=self._on_fps_toggle)  # type: ignore
 
         fps_row.add_widget(fps_label)
@@ -356,8 +361,7 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        self.mouse_checkbox = MenuCheckbox()
-        self.mouse_checkbox.active = self.config_ref.get_by_key(("ui", "mouse_lock"), False)
+        self.mouse_checkbox = MenuCheckbox(active=self.config_ref.get_mouse_lock())
         self.mouse_checkbox.bind(active=self._on_mouse_lock_toggle)  # type: ignore
 
         mouse_row.add_widget(mouse_label)
@@ -376,9 +380,8 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        confirm_default = bool(getattr(self.base, "confirm_exit", True))
         self.confirm_exit_checkbox = MenuCheckbox(
-            active=confirm_default,
+            active=self.config_ref.get_confirm_exit(),
         )
         self.confirm_exit_checkbox.bind(active=self._on_confirm_exit_toggle)  # type: ignore
 
@@ -448,12 +451,13 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
+        current_rate = int(cast(int, self.config_ref.get_by_key(("render", "clock-frame-rate"), 60)))
         slider_box = BoxLayout(
             orientation="horizontal",
             spacing=dp(10),
             size_hint_x=0.4,
         )
-        self.refresh_rate_slider = Slider(min=30, max=144, step=1)
+        self.refresh_rate_slider = Slider(min=30, max=144, step=1, value=current_rate)
         self.rate_label = Label(
             text=str(int(self.refresh_rate_slider.value)),
             size_hint=(None, None),
@@ -462,7 +466,7 @@ class OptionsScreen(Screen):
             valign="middle",
         )
         self.rate_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
-        self.refresh_rate_slider.bind(value=lambda inst, val: setattr(self.rate_label, "text", str(int(val))))  # type: ignore
+        self.refresh_rate_slider.bind(value=self._on_refresh_rate_change)  # type: ignore
 
         slider_box.add_widget(self.refresh_rate_slider)
         slider_box.add_widget(self.rate_label)
@@ -483,15 +487,14 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        self.vsync_checkbox = MenuCheckbox()
+        vsync_enabled = bool(self.config_ref.get_by_key(("window", "sync-video"), False))
+        self.vsync_checkbox = MenuCheckbox(active=vsync_enabled)
         self.vsync_checkbox.bind(active=self._on_vsync_toggle)  # type: ignore
 
         vsync_row.add_widget(vsync_label)
         vsync_row.add_widget(self.vsync_checkbox)
         rows.add_widget(vsync_row)
 
-        vsync_enabled = self.config_ref.get_by_key(("window", "sync-video"), False)
-        self.vsync_checkbox.active = vsync_enabled
         self.refresh_rate_slider.disabled = vsync_enabled
 
         window_row = BoxLayout(
@@ -555,7 +558,7 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        self.dev_checkbox = MenuCheckbox()
+        self.dev_checkbox = MenuCheckbox(active=self.config_ref.get_developer_mode())
         self.dev_checkbox.bind(active=self._on_developer_mode_toggle)  # type: ignore
 
         dev_row.add_widget(dev_label)
@@ -574,7 +577,8 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        self.cheat_checkbox = MenuCheckbox()
+        self.cheat_checkbox = MenuCheckbox(active=self.config_ref.get_cheat_menu())
+        self.cheat_checkbox.bind(active=self._on_cheat_menu_toggle)  # type: ignore
         cheat_row.add_widget(cheat_label)
         cheat_row.add_widget(self.cheat_checkbox)
         rows.add_widget(cheat_row)
@@ -669,9 +673,9 @@ class OptionsScreen(Screen):
         ui_reset_row.add_widget(self.ui_layout_reset_button)
         rows.add_widget(ui_reset_row)
 
-        dbg_cfg = self.config_ref.get_by_key(("debug", "debugs"), {})
+        dbg_cfg = self.config_ref.get_debug_flags()
         keys = list(dbg_cfg.keys())
-        rows_count = (len(keys) + 2) // 3
+        rows_count = max(1, (len(keys) + 2) // 3)
 
         grid = GridLayout(
             cols=3,
@@ -685,7 +689,7 @@ class OptionsScreen(Screen):
         for key in keys:
             cell = BoxLayout(orientation="horizontal", spacing=dp(5))
             cb = CheckBox(
-                active=dbg_cfg.get(key, False),
+                active=bool(dbg_cfg.get(key, False)),
                 disabled=not master,
                 size_hint=(None, None),
                 size=(dp(24), dp(24)),
@@ -799,18 +803,17 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        ai_off = self.config_ref.get_by_key(("debug", "disable_ai_turn_processing"), False)
         self.disable_ai_checkbox = MenuCheckbox(
-            active=ai_off,
+            active=self.config_ref.get_disable_ai_turn_processing(),
             disabled=not master,
         )
+        self.disable_ai_checkbox.bind(active=self._on_disable_ai_toggle)  # type: ignore
 
         ai_row.add_widget(ai_label)
         ai_row.add_widget(self.disable_ai_checkbox)
         rows.add_widget(ai_row)
 
-        sentry_conf = self.config_ref.get_by_key(("debug", "sentry"), {})
-        sentry_en = sentry_conf.get("enable", False)
+        sentry_en = self.config_ref.get_sentry_enabled()
 
         sentry_enable_row = BoxLayout(
             orientation="horizontal",
@@ -845,9 +848,8 @@ class OptionsScreen(Screen):
             size_hint_x=0.6,
         )
 
-        dsn = sentry_conf.get("dsn", "")
         self.sentry_dsn_input = TextInput(
-            text=dsn,
+            text=self.config_ref.get_sentry_dsn(),
             multiline=False,
             disabled=not master or not sentry_en,
             size_hint=(1, None),
@@ -859,43 +861,52 @@ class OptionsScreen(Screen):
         rows.add_widget(sentry_dsn_row)
 
         self.debug_enable_checkbox.bind(active=self._on_debug_enable_toggle)  # type: ignore
-        self.sentry_enable_checkbox.bind(
-            active=lambda inst, val: setattr(
-                self.sentry_dsn_input,
-                "disabled",
-                not val or not self.debug_enable_checkbox.active,
-            )
-        )  # type: ignore
+        self.sentry_enable_checkbox.bind(active=self._on_sentry_enable_toggle)  # type: ignore
+        self.sentry_dsn_input.bind(focus=self._on_sentry_dsn_focus)  # type: ignore
 
         layout.add_widget(rows)
         self.developer_layout = layout
 
-    def toggle_debug_flag(self, flag: str, active: bool) -> None:
-        self.config_ref.toggle_debug_flag(flag, active)
+    def refresh_from_config(self) -> None:
+        self._syncing_controls = True
+        try:
+            lang_code = self.config_ref.get_language()
+            self.language_spinner.text = self.LANGUAGES.get(lang_code, "English (en_EN)")
+            self.fps_checkbox.active = self.config_ref.get_fps_counter()
+            self.mouse_checkbox.active = self.config_ref.get_mouse_lock()
+            self.confirm_exit_checkbox.active = self.config_ref.get_confirm_exit()
 
-    def _on_language_select(self, spinner: Spinner, text: str) -> None:
-        lang_code = next((code for code, name in self.LANGUAGES.items() if name == text), "en_EN")
-        Cache.get_i18n_instance().set_current_language(lang_code)
-        self.config_ref.set_language(lang_code, auto_save=True)
+            current_resolution = self.config_ref.get_resolution()
+            self.resolution_spinner.text = f"{current_resolution[0]}x{current_resolution[1]}"
+            current_rate = int(cast(int, self.config_ref.get_by_key(("render", "clock-frame-rate"), 60)))
+            self.refresh_rate_slider.value = current_rate
+            self.rate_label.text = str(current_rate)
+            vsync_enabled = bool(cast(bool, self.config_ref.get_by_key(("window", "sync-video"), False)))
+            self.vsync_checkbox.active = vsync_enabled
+            self.refresh_rate_slider.disabled = vsync_enabled
+            self.window_mode_spinner.text = self.config_ref.get_screen_mode()
 
-    def _on_mouse_lock_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        self.config_ref.set_mouse_lock(active)
-        if active:
-            self.base.input_manager.activate_mouse_lock()
-        else:
-            self.base.input_manager.de_activate_mouse_lock()
+            master = self.config_ref.get_debug_mode()
+            self.dev_checkbox.active = self.config_ref.get_developer_mode()
+            self.cheat_checkbox.active = self.config_ref.get_cheat_menu()
+            self.debug_enable_checkbox.active = master
+            for key, cb in self.debug_checkboxes.items():
+                cb.active = self.config_ref.get_debug_flag(key)
+                cb.disabled = not master
+            self.disable_ai_checkbox.active = self.config_ref.get_disable_ai_turn_processing()
+            self.sentry_enable_checkbox.active = self.config_ref.get_sentry_enabled()
+            self.ui_layout_drag_checkbox.active = self.config_ref.get_ui_layout_drag_enabled()
+            self.ui_layout_overlay_checkbox.active = self.config_ref.get_ui_layout_overlay_enabled()
+            self.worldgen_export_checkbox.active = self.config_ref.get_world_generation_export_enabled()
+            self.worldgen_export_dir_input.text = self.config_ref.get_world_generation_export_dir()
+            self.worldgen_export_batch_spinner.text = str(self.config_ref.get_world_generation_export_batch_count())
+            self.sentry_dsn_input.text = self.config_ref.get_sentry_dsn()
+            self._set_debug_dependant_controls_enabled(master)
+            setattr(self.base, "confirm_exit", self.config_ref.get_confirm_exit())
+        finally:
+            self._syncing_controls = False
 
-    def _on_confirm_exit_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        setattr(self.base, "confirm_exit", active)
-
-    def _on_fps_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        self.config_ref.set_fps_counter(active)
-
-    def _on_developer_mode_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        self.config_ref.set_developer_mode(active)
-
-    def _on_debug_enable_toggle(self, checkbox: CheckBox, active: bool) -> None:
-        self.config_ref.set_debug_mode(active)
+    def _set_debug_dependant_controls_enabled(self, active: bool) -> None:
         for cb in self.debug_checkboxes.values():
             cb.disabled = not active
         self.disable_ai_checkbox.disabled = not active
@@ -907,19 +918,89 @@ class OptionsScreen(Screen):
         self.worldgen_export_dir_input.disabled = not active
         self.worldgen_export_batch_spinner.disabled = not active
         self.sentry_dsn_input.disabled = not active or not self.sentry_enable_checkbox.active
+
+    def toggle_debug_flag(self, flag: str, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.toggle_debug_flag(flag, active)
+
+    def _on_language_select(self, spinner: Spinner, text: str) -> None:
+        if self._syncing_controls:
+            return
+        lang_code = next((code for code, name in self.LANGUAGES.items() if name == text), "en_EN")
+        Cache.get_i18n_instance().set_current_language(lang_code)
+        self.config_ref.set_language(lang_code, auto_save=True)
+
+    def _on_mouse_lock_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_mouse_lock(active)
+        if active:
+            self.base.input_manager.activate_mouse_lock()
+        else:
+            self.base.input_manager.de_activate_mouse_lock()
+
+    def _on_confirm_exit_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        setattr(self.base, "confirm_exit", active)
+        self.config_ref.set_confirm_exit(active)
+
+    def _on_fps_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_fps_counter(active)
+
+    def _on_developer_mode_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_developer_mode(active)
+
+    def _on_cheat_menu_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_cheat_menu(active)
+
+    def _on_debug_enable_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_debug_mode(active)
+        setattr(self.base, "debug", active)
+        self._set_debug_dependant_controls_enabled(active)
         self._notify_layout_debug_changed()
 
+    def _on_disable_ai_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_disable_ai_turn_processing(active)
+
+    def _on_sentry_enable_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
+        self.config_ref.set_sentry_enabled(active)
+        self.sentry_dsn_input.disabled = not active or not self.debug_enable_checkbox.active
+
+    def _on_sentry_dsn_focus(self, text_input: TextInput, focused: bool) -> None:
+        if self._syncing_controls or focused:
+            return
+        self.config_ref.set_sentry_dsn(text_input.text)
+        text_input.text = self.config_ref.get_sentry_dsn()
+
     def _on_world_generation_export_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
         self.config_ref.set_world_generation_export_enabled(active)
 
     def _on_world_generation_export_dir_focus(self, text_input: TextInput, focused: bool) -> None:
-        if focused:
+        if self._syncing_controls or focused:
             return
 
         self.config_ref.set_world_generation_export_dir(text_input.text)
         text_input.text = self.config_ref.get_world_generation_export_dir()
 
     def _on_world_generation_export_batch_select(self, spinner: Spinner, text: str) -> None:
+        if self._syncing_controls:
+            return
         if not text.isdigit():
             spinner.text = str(self.config_ref.get_world_generation_export_batch_count())
             return
@@ -928,10 +1009,14 @@ class OptionsScreen(Screen):
         spinner.text = str(self.config_ref.get_world_generation_export_batch_count())
 
     def _on_ui_layout_drag_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
         self.config_ref.set_ui_layout_drag_enabled(active)
         self._notify_layout_debug_changed()
 
     def _on_ui_layout_overlay_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
         self.config_ref.set_ui_layout_overlay_enabled(active)
         self._notify_layout_debug_changed()
 
@@ -943,6 +1028,8 @@ class OptionsScreen(Screen):
         messenger.send("ui.update.ui.layout_debug_changed", [reset_positions])
 
     def _on_vsync_toggle(self, checkbox: CheckBox, active: bool) -> None:
+        if self._syncing_controls:
+            return
         cfg: ConfigManager = self.config_ref
         if active:
             cfg.enable_vsync()
@@ -951,7 +1038,15 @@ class OptionsScreen(Screen):
             cfg.disable_vsync()
             self.refresh_rate_slider.disabled = False
 
+    def _on_refresh_rate_change(self, slider: Slider, value: float) -> None:
+        self.rate_label.text = str(int(value))
+        if self._syncing_controls or self.vsync_checkbox.active:
+            return
+        self.config_ref.set_framerate_cap(int(value))
+
     def _on_resolution_select(self, spinner: Spinner, text: str) -> None:
+        if self._syncing_controls:
+            return
         if text in self.RESOLUTIONS:
             self.selected_resolution = self.RESOLUTIONS[text]
         else:
@@ -960,6 +1055,8 @@ class OptionsScreen(Screen):
             self.config_ref.set_resolution(*self.selected_resolution, auto_save=True)
 
     def _on_screenmode_select(self, spinner: Spinner, text: str) -> None:
+        if self._syncing_controls:
+            return
         cfg: ConfigManager = self.config_ref
         if text == WINDOW_MODE_FULLSCREEN:
             cfg.set_screen_mode(WINDOW_MODE_FULLSCREEN)
