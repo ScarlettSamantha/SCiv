@@ -671,6 +671,11 @@ class Game(Singleton, DirectObject):
         if Debug.should_export_world_generation():
             Debug.dump_map_generation_data(generator=self.active_generator, tiles=list(self.world.map.values()))
 
+        self.logger.info("Game start almost complete, performing finalization steps")
+
+        self.logger.info("Registering game input")
+        self.input.register_game_input()
+
         self.logger.info("Game start complete")
 
     def calculate_vision(self):
@@ -770,6 +775,10 @@ class Game(Singleton, DirectObject):
         return list(units_by_tag.values())
 
     def process_turn(self):
+        if self.game_active is False:
+            self.logger.info("Turn end requested but game is not active, ignoring.")
+            return
+
         if not Lose.check_if_game_over():
             self.turn.end_turn()
         else:

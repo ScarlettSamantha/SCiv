@@ -8,38 +8,52 @@
 
 This document is about the signals that are sent in the application, where they are sent and listened to, and how naming is kept somewhat consistent.
 
+The format should be:
+
+`<signal_name> (E: <emitter> | L: <listener>) (<description>)`
+
+A signal is sent by an emitter and listened to by a listener. The emitter and listener are usually a manager, system, or UI component. The description is a short description of what the signal does.
+
+A reserved signal is one that is not currently used, but may be used in the future. These are usually signals that are reserved for future use, or signals that are used in the code but not yet documented.
+
 ## Keys
 
 These are all used by the camera system and are used for mainly controlling the camera.
 
-- `arrow-up` (E: engine | L: camera)
-- `arrow-down` (E: engine | L: camera)
-- `arrow-left` (E: engine | L: camera)
-- `arrow-right` (E: engine | L: camera)
+- `arrow-up` (E: engine | L: camera) (moves camera forward)
+- `arrow-down` (E: engine | L: camera) (moves camera backward)
+- `arrow-left` (E: engine | L: camera) (moves camera left)
+- `arrow-right` (E: engine | L: camera) (moves camera right)
 
-- `w` (E: engine | L: camera)
-- `s` (E: engine | L: camera)
-- `d` (E: engine | L: camera)
-- `q` (E: engine | L: camera)
-- `e` (E: engine | L: camera)
-- `r` (E: engine | L: camera)
+- `w` (E: engine | L: camera) (moves camera forward)
+- `s` (E: engine | L: camera) (moves camera backward)
+- `d` (E: engine | L: camera) (moves camera right)
+- `q` (E: engine | L: camera) (rotates camera left)
+- `e` (E: engine | L: camera) (rotates camera right)
+- `r` (E: engine | L: camera) (resets camera to default position)
 
-- `wheel_up` (E: engine | L: camera)
-- `wheel-down` (E: engine | L: camera)
-- `mouse1` (E: engine | L: camera)
-- `mouse3` (E: engine | L: camera)
-- `escape` (E: engine | L: ui-part-load, L: ui-part-save, ui-part-pause)
+- `wheel_up` (E: engine | L: camera) (zooms in)
+- `wheel-down` (E: engine | L: camera) (zooms out)
+- `mouse1` (E: engine | L: camera) (selects entity)
+- `mouse3` (E: engine | L: camera) (used for camera movement)
+- `escape` (E: engine | L: ui-part-load, L: ui-part-save, ui-part-pause) (closes menus)
 
 ### Debugging keys
 
 These are used by the UI manager to control some debug actions these may disappear.
 
+- `f1` [Reserved]
 - `f2` (E: engine | L: manager-input) (debug: activate input system)
 - `f3` (E: engine | L: manager-input) (debug: deactivate input system)
-- `f7` (E: engine | L: manager-ui) (debug: run analysis)
-- `f9` (E: engine | L: `tile<selected>`) (debug: trigger rerender on selected tile)
-- `f10` (E: engine | L: `tile<selected>`) (debug: render bits on selected tile)
-- `f11` (E: engine | L: `tile<selected>`) (debug: unrender bits on selected tile)
+- `f4` [Reserved]
+- `f5` (E: engine | L: manager-ui) (debug: toggle tile yield icons)
+- `f6` (E: engine | L: manager-ui) (debug: trigger sentry message)
+- `f7` (E: engine | L: manager-ui) (debug: toggle log)
+- `f8` (E: engine | L: manager-ui) (debug: toggle debug actions)
+- `f9` (E: engine | L: manager-ui) (debug: force render selected entity)
+- `f10` (E: engine | L: `tile<selected>`) (debug: toggle render bits on selected tile)
+- `f11` (E: engine | L: `tile<selected>`) (debug: toggle render bits on selected tile)
+- `f12` (E: engine | L: `tile<selected>`) (debug: toggle render bits on selected tile)
 
 - `p` (E: engine | L: manager-ui)
 - `l` (E: engine | L: manager-ui)

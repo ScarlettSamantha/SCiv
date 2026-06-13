@@ -86,12 +86,14 @@ class Input(Singleton, DirectObject):
         self._last_mouse_pos: Optional[tuple[float, float]] = None
         self._hover_frame_skip = 10  # how many frames to skip before checking for hover
 
-        self.register()
-
         if self.base.config_manager.get_mouse_lock():
             self.activate_mouse_lock()
         else:
             self.de_activate_mouse_lock()
+
+    @property
+    def game_is_active(self) -> bool:
+        return self.game is not None and self.game.game_active
 
     def activate_mouse_lock(self):
         props = WindowProperties()
@@ -105,8 +107,13 @@ class Input(Singleton, DirectObject):
 
     def reset(self):
         self.active = False
+        self.unregister_game_input()
 
-    def register(self):
+    def register_menu_input(self):
+        self.accept("escape", self.on_escape)
+        self.accept("space", self.on_space)
+
+    def register_game_input(self):
         self.accept("mouse1", self.pick_object)
         self.accept("mouse3-up", self.on_right_click)
         self.accept("mouse3", self.on_right_down)
@@ -124,13 +131,36 @@ class Input(Singleton, DirectObject):
             self.accept("f11", self.on_inspect_players)
             self.accept("f12", self.inspect_element)
 
-        self.accept("escape", self.on_escape)
-        self.accept("space", self.on_space)
-
         self.accept("system.input.raycaster_on", self.activate)
         self.accept("system.input.raycaster_off", self.de_activate)
         self.accept("system.input.raycaster_on_delay", self.delay_activate)
+
+        self.accept("t", self.toggle_research)
+        self.accept("c", self.toggle_civics)
+
         self.base.taskMgr.add(self.hover_task, "input-hover-task", delay=1)  # type: ignore
+
+    def unregister_game_input(self):
+        self.ignore("mouse1")
+        self.ignore("mouse3-up")
+        self.ignore("mouse3")
+
+        if Debug.is_debug():
+            self.ignore("f2")
+            self.ignore("f3")
+            self.ignore("f5")
+            self.ignore("f6")
+            self.ignore("f7")
+            self.ignore("f8")
+            self.ignore("f9")
+            self.ignore("f10")
+            self.ignore("f11")
+            self.ignore("f12")
+
+        self.ignore("system.input.raycaster_on")
+        self.ignore("system.input.raycaster_off")
+        self.ignore("system.input.raycaster_on_delay")
+        self.base.taskMgr.remove("input-hover-task")  # type: ignore
 
     def on_right_down(self):
         if self._right_button_held or self.game_ui is None:
@@ -607,8 +637,18 @@ class Input(Singleton, DirectObject):
             self.logger.debug("No object picked. Possibly between tiles or outside the game field.")
             return None
 
-    def on_escape(self):
+    def on_escape(self) -> None:
         messenger.send("game.input.user.escape_pressed")
 
-    def on_space(self):
+    def on_space(self) -> None:
         MessengerGlobal.messenger.send("game.turn.request_end")
+
+    def toggle_research(self) -> None:
+        if self.game_ui is None:
+            return
+        self.game_ui.toggle_research()
+
+    def toggle_civics(self) -> None:
+        if self.game_ui is None:
+            return
+        self.game_ui.toggle_civics()

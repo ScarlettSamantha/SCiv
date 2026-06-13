@@ -237,9 +237,6 @@ class GameUIScreen(Screen, CollisionPreventionMixin, DirectObject):
         self.accept("ui.update.ui.close_player_attack_info", self.close_player_attack_info)
         self.accept("ui.update.ui.layout_debug_changed", self.on_layout_debug_changed)
 
-        self.accept("t", self.toggle_research)
-        self.accept("c", self.toggle_civics)
-
     def request_action_stage(self, action: Action, executor: "Player | None" = None):
         self.logger.info(f"Requesting action stage for action: {action.name}")
 

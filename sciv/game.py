@@ -130,6 +130,7 @@ class OpenCiv(ShowBase):
         self.engine_logger.info("Setting up input manager")
         self.input_manager = Input(self)
         Input.set_singleton_instance(self.input_manager)
+        self.input_manager.register_menu_input()
         self.input_manager.inject_into_camera()
 
         loading_screen.next_stage("Setting up camera")
