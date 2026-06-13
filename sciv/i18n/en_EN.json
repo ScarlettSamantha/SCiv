@@ -710,6 +710,7 @@
           "unit_info": "Unit Info"
         },
         "tile_info": {
+          "unexplored": "Unexplored",
           "title": "Tile Info",
           "tile_info": "Tile Info",
           "terrain": "Terrain: {terrain}",
@@ -717,7 +718,8 @@
           "resources": "Resources: {resources}",
           "improvements": "Improvements: {improvements}",
           "owner": "Owner: {owner}",
-          "yields": "Yields: {yields}"
+          "yields": "Yields: {yields}",
+          "status": "Status:"
         },
         "technology_tree": {
           "title": "Technology Tree",

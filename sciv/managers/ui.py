@@ -297,7 +297,7 @@ class ui(Singleton, DirectObject):
         message: T_TranslationOrStr,
         confirm: bool = False,
         on_confirm: Optional[Callable[[], None]] = None,
-        on_cancel: Optional[Callable[[], None]] = None,
+        on_cancel: Optional[Callable[[], None]] = None
     ):
         if isinstance(title, Translation):
             title = str(title)
@@ -410,6 +410,10 @@ class ui(Singleton, DirectObject):
     def ignore_next_click(self):
         self.keep_target_after_click = True
 
+    @staticmethod
+    def _is_tile_explored_for_session_player(tile: Tile) -> bool:
+        return PlayerManager.session_player().vision.is_explored(tile)
+
     def select_tile(self, tile: str | Tile) -> bool:
         assert self.map is not None, "Map is not initialized"
         _tile: Optional[Tile] = None
@@ -423,11 +427,16 @@ class ui(Singleton, DirectObject):
             messenger.send("ui.update.user.tile_not_found", [_tile])
             return False
 
+        is_explored = self._is_tile_explored_for_session_player(_tile)
+
         if self.keep_target_after_click is True:
             self.keep_target_after_click = False
             if (
-                _tile.is_city() and _tile.city is not None and _tile.city.player is not None
-            ):  # We still need to send the city clicked event as the action system will otherwise not know what to do as it wont receive a tile clicked event.
+                is_explored
+                and _tile.is_city()
+                and _tile.city is not None
+                and _tile.city.player is not None
+            ):
                 if PlayerManager.is_session_player(_tile.city.player):
                     messenger.send("ui.update.user.city_clicked", [_tile.city])
                 else:
@@ -448,7 +457,7 @@ class ui(Singleton, DirectObject):
                 self.previous_unit.deselect()
             self.current_unit = None
 
-        if _tile.is_city() and _tile.city is not None and _tile.city.player is not None:
+        if is_explored and _tile.is_city() and _tile.city is not None and _tile.city.player is not None:
             if PlayerManager.is_session_player(_tile.city.player):
                 messenger.send("ui.update.user.city_clicked", [_tile.city])
             else:

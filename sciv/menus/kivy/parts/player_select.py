@@ -18,6 +18,7 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from managers.entity import EntityType
 from managers.i18n import t_
+from managers.player import PlayerManager
 from panda3d.core import Texture
 
 if TYPE_CHECKING:
@@ -137,7 +138,7 @@ class TargetPanel(BoxLayout, DirectObject):
 
         unit_name = str(getattr(unit, "name", ""))
         civ_name = ""
-        civ_hex = "#CCCCCC"
+        civ_hex = Colors.to_hex(Colors.WHITE, strip_alpha=True)
         try:
             civ = unit.get_owner().civilization
             civ_name = str(getattr(civ, "name", ""))
@@ -164,6 +165,10 @@ class TargetPanel(BoxLayout, DirectObject):
             self._clear()
             return
 
+        if not self._is_tile_explored_by_session_player(tile):
+            self._set_unexplored_tile()
+            return
+
         terrain: BaseTerrain = tile.get_terrain()
         terrain_name = str(terrain.get_name())
 
@@ -180,7 +185,7 @@ class TargetPanel(BoxLayout, DirectObject):
 
     def refresh_from_tile(self) -> None:
         if self._mode == "tile" and self._tile is not None:
-            self._rebuild_stats_tile(self._tile)
+            self.set_tile(self._tile)
 
     def _on_resize_move(self, *_: Any) -> None:
         if self._bg_rect is not None:
@@ -194,6 +199,17 @@ class TargetPanel(BoxLayout, DirectObject):
         self.icon.texture = None  # type: ignore
         self.icon.source = ""  # type: ignore
         self.stats.clear_widgets()
+
+    @staticmethod
+    def _is_tile_explored_by_session_player(tile: "TileType") -> bool:
+        player: Player = PlayerManager.session_player()
+        return player.vision.is_explored(tile)
+
+    def _set_unexplored_tile(self) -> None:
+        self._clear()
+        self.name_lbl.text = f"[b]{t_('ui.player_ui.tile_info.unexplored')}[/b]"
+        self.civ_lbl.text = f"[color={Colors.to_hex(Colors.WHITE, strip_alpha=True)}]{t_('ui.player_ui.tile_info.unexplored')}[/color]"
+        self._add_stat_row(str(t_("ui.player_ui.tile_info.status")), str((t_("ui.player_ui.tile_info.unexplored"))))
 
     @staticmethod
     def _fmt_num(v: Any) -> str:
