@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Tuple, cast
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
@@ -14,6 +14,7 @@ from logging import Logger
 import simplepbr
 from direct.showbase.Messenger import Messenger
 from direct.showbase.ShowBase import ShowBase
+from direct.task.Task import Task
 from helpers.direct_loading_screen import LoadingScreen
 from helpers.os import WindowsHelper
 from helpers.paths import PathsHelper
@@ -30,9 +31,9 @@ Config.set("kivy", "exit_on_escape", "0")  # type: ignore
 Config.set("kivy", "desktop", "1")  # type: ignore
 Config.set("graphics", "maxfps", 160)  # type: ignore
 Config.set("graphics", "verify_gl_main_thread", "false")  # type: ignore
-monkey.patch_kivy()  # attach Kivy to the Panda3D window # type: ignore
+monkey.patch_kivy()  # type: ignore
 
-loadPrcFile("config.prc")  # Load the Panda3D configuration file
+loadPrcFile("config.prc")
 
 if TYPE_CHECKING:
     from panda3d.core import GraphicsWindow
@@ -81,7 +82,7 @@ class OpenCiv(ShowBase):
             and (enabled := config_mgr.get_by_key(("debug", "sentry", "enable"), None)) is not None
             and enabled is True
             and (sentry_dsn := config_mgr.get_by_key(("debug", "sentry", "dsn"), None)) is not None
-            and sentry_dsn.strip() != ""
+            and sentry_dsn.strip() != "" # type: ignore
         ):
             from helpers.debug import Debug
 
@@ -90,9 +91,17 @@ class OpenCiv(ShowBase):
         base_file_path: pathlib.Path = pathlib.Path(__file__).parent.absolute()
         PathsHelper.base_path = str(base_file_path)
         ShowBase.__init__(self)
-        config_mgr.apply_config_to_prc()
+
+        Cache.set_showbase_instance(self)
+        config_mgr.set_screen_mode(config_mgr.get_screen_mode(), auto_save=False)
 
         self.config_manager: ConfigManager = config_mgr
+        origin = self.config_manager.get_window_origin()
+        size = self.config_manager.get_resolution()
+        self._pending_window_state: Tuple[int, int, int, int] | None = None
+        self._last_configured_window_state: Tuple[int, int, int, int] = (origin[0], origin[1], size[0], size[1])
+        self.accept("window-event", self._on_window_event)
+
         self.base_path: pathlib.Path = pathlib.Path.cwd().absolute()
 
         if WindowsHelper.is_windows():
@@ -112,7 +121,6 @@ class OpenCiv(ShowBase):
 
         loading_screen.next_stage("Setting up logging")
 
-        Cache.set_showbase_instance(self)
         self.engine_logger: Logger = self.logger.engine.getChild("Main")
         self.engine_logger.info("Starting OpenCiv")
 
@@ -189,8 +197,58 @@ class OpenCiv(ShowBase):
         else:
             loading_screen.next_stage("Ready")
 
+    def _on_window_event(self, window: "GraphicsWindow") -> None:
+        from managers.config import WINDOW_MODE_WINDOW
+
+        if window is not self.win:
+            return
+
+        if self.config_manager.get_screen_mode() != WINDOW_MODE_WINDOW:
+            return
+
+        state = self._read_window_state(window)
+        if state is None or state == self._last_configured_window_state:
+            return
+
+        self._pending_window_state = state
+        self.taskMgr.remove("sync-window-state-to-config")
+        self.taskMgr.doMethodLater(0.35, self._sync_window_state_to_config, "sync-window-state-to-config")
+
+    def _read_window_state(self, window: "GraphicsWindow") -> Tuple[int, int, int, int] | None:
+        width = int(window.getXSize())
+        height = int(window.getYSize())
+
+        if width <= 0 or height <= 0:
+            return None
+
+        origin_x, origin_y = self.config_manager.get_window_origin()
+
+        try:
+            properties = window.getProperties()
+            origin_x = int(properties.getXOrigin())
+            origin_y = int(properties.getYOrigin())
+        except Exception:
+            pass
+
+        return origin_x, origin_y, width, height
+
+    def _sync_window_state_to_config(self, task: Task) -> int:
+        if self._pending_window_state is None:
+            return 1
+
+        origin_x, origin_y, width, height = self._pending_window_state
+        self._pending_window_state = None
+
+        if (origin_x, origin_y, width, height) == self._last_configured_window_state:
+            return 1
+
+        self.config_manager.update_window_position_size(origin_x, origin_y, width, height, auto_save=True)
+        self._last_configured_window_state = (origin_x, origin_y, width, height)
+
+        return 1
+
     def window(self) -> "GraphicsWindow":
-        from panda3d.core import GraphicsWindow # type: ignore
+        from panda3d.core import GraphicsWindow  # type: ignore
 
         return cast(GraphicsWindow, self.win)
 
@@ -229,8 +287,8 @@ class OpenCiv(ShowBase):
             output_image=base_path / "generated" / "icons" / "atlas.png",
             output_mapping=base_path / "generated" / "icons" / "mapping.json",
             icon_size=(
-                self.config_manager.get_by_key(("assets", "icon_resolution_x")),
-                self.config_manager.get_by_key(("assets", "icon_resolution_y")),
+                cast(int, self.config_manager.get_by_key(("assets", "icon_resolution_x"))),
+                cast(int, self.config_manager.get_by_key(("assets", "icon_resolution_y"))),
             ),
             max_icons=1024,
             atlas_columns=16,

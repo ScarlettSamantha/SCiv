@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Tupl
 from direct.showbase import MessengerGlobal
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.MessengerGlobal import messenger
+from direct.task.Task import Task
 from gameplay.border import Borders
 from gameplay.civilization import Civilization
 from gameplay.civilizations.rome import Rome
@@ -294,8 +295,8 @@ class Game(Singleton, DirectObject):
 
         props = WindowProperties()  # type: ignore
 
-        win_size: Tuple[int, int] = self.config.get_by_key(("window", "win-size"))
-        win_origin: Tuple[int, int] = self.config.get_by_key(("window", "win-origin"))
+        win_size: Tuple[int, int] = cast(Tuple[int, int], self.config.get_by_key(("window", "win-size")))
+        win_origin: Tuple[int, int] = cast(Tuple[int, int], self.config.get_by_key(("window", "win-origin")))
 
         props.setSize(win_size[0], win_size[1])  # type: ignore
         props.setOrigin(win_origin[0], win_origin[1])  # type: ignore
@@ -370,7 +371,7 @@ class Game(Singleton, DirectObject):
             self._window_event_task_name,
         )
 
-    def _flush_window_state_saveback(self, task: Any) -> Any:
+    def _flush_window_state_saveback(self, task: Task) -> Any:
         current_state = self._read_window_state()
         pending_state = self._pending_window_state
 

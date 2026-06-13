@@ -72,6 +72,7 @@ class OptionsScreen(Screen):
 
         self.selected_resolution: Optional[Tuple[int, int]] = None
         self._syncing_controls: bool = False
+        self._monitor_label_to_id: Dict[str, str] = {}
 
         self.general_layout: BoxLayout
         self.video_layout: BoxLayout
@@ -87,6 +88,7 @@ class OptionsScreen(Screen):
         self.vsync_checkbox: CheckBox
         self.resolution_spinner: Spinner
         self.window_mode_spinner: Spinner
+        self.monitor_spinner: Spinner
 
         self.dev_checkbox: CheckBox
         self.cheat_checkbox: CheckBox
@@ -285,36 +287,40 @@ class OptionsScreen(Screen):
 
         self.configure_return_target("main_menu")
 
+    def _add_control_row(self, rows: BoxLayout, label_text: str, control: Widget, height: int = 40) -> None:
+        row = BoxLayout(
+            orientation="horizontal",
+            size_hint=(1, None),
+            height=dp(height),
+            spacing=dp(12),
+        )
+        label = LeftAlignedLabel(
+            text=label_text,
+            font_size="16sp",
+            size_hint_x=0.6,
+        )
+        row.add_widget(label)
+        row.add_widget(control)
+        rows.add_widget(row)
+
     def _build_general_tab(self) -> None:
         layout = BoxLayout(
             orientation="vertical",
             spacing=dp(18),
         )
-
-        caption = SectionLabel(
-            text="[b]General[/b]",
-            markup=True,
-            font_size="18sp",
-            size_hint=(1, None),
-            height=dp(32),
+        layout.add_widget(
+            SectionLabel(
+                text="[b]General[/b]",
+                markup=True,
+                font_size="18sp",
+                size_hint=(1, None),
+                height=dp(32),
+            )
         )
-        layout.add_widget(caption)
 
         rows = BoxLayout(
             orientation="vertical",
             spacing=dp(12),
-        )
-
-        language_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        language_label = LeftAlignedLabel(
-            text="Language (restart needed)",
-            font_size="16sp",
-            size_hint_x=0.6,
         )
 
         self.language_spinner = Spinner(
@@ -325,69 +331,21 @@ class OptionsScreen(Screen):
             height=dp(40),
         )
         self.language_spinner.bind(text=self._on_language_select)  # type: ignore
-
-        language_row.add_widget(language_label)
-        language_row.add_widget(self.language_spinner)
-        rows.add_widget(language_row)
-
-        fps_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        fps_label = LeftAlignedLabel(
-            text="FPS Counter",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Language (restart needed)", self.language_spinner)
 
         self.fps_checkbox = MenuCheckbox(active=self.config_ref.get_fps_counter())
         self.fps_checkbox.bind(active=self._on_fps_toggle)  # type: ignore
-
-        fps_row.add_widget(fps_label)
-        fps_row.add_widget(self.fps_checkbox)
-        rows.add_widget(fps_row)
-
-        mouse_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        mouse_label = LeftAlignedLabel(
-            text="Mouse Lock (restart/refocus needed)",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "FPS Counter", self.fps_checkbox)
 
         self.mouse_checkbox = MenuCheckbox(active=self.config_ref.get_mouse_lock())
         self.mouse_checkbox.bind(active=self._on_mouse_lock_toggle)  # type: ignore
-
-        mouse_row.add_widget(mouse_label)
-        mouse_row.add_widget(self.mouse_checkbox)
-        rows.add_widget(mouse_row)
-
-        confirm_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        confirm_label = LeftAlignedLabel(
-            text="Confirm Before Exit",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Mouse Lock (restart/refocus needed)", self.mouse_checkbox)
 
         self.confirm_exit_checkbox = MenuCheckbox(
             active=self.config_ref.get_confirm_exit(),
         )
         self.confirm_exit_checkbox.bind(active=self._on_confirm_exit_toggle)  # type: ignore
-
-        confirm_row.add_widget(confirm_label)
-        confirm_row.add_widget(self.confirm_exit_checkbox)
-        rows.add_widget(confirm_row)
+        self._add_control_row(rows, "Confirm Before Exit", self.confirm_exit_checkbox)
 
         layout.add_widget(rows)
         self.general_layout = layout
@@ -397,31 +355,19 @@ class OptionsScreen(Screen):
             orientation="vertical",
             spacing=dp(18),
         )
-
-        caption = SectionLabel(
-            text="[b]Video[/b]",
-            markup=True,
-            font_size="18sp",
-            size_hint=(1, None),
-            height=dp(32),
+        layout.add_widget(
+            SectionLabel(
+                text="[b]Video[/b]",
+                markup=True,
+                font_size="18sp",
+                size_hint=(1, None),
+                height=dp(32),
+            )
         )
-        layout.add_widget(caption)
 
         rows = BoxLayout(
             orientation="vertical",
             spacing=dp(12),
-        )
-
-        resolution_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        resolution_label = LeftAlignedLabel(
-            text="Resolution",
-            font_size="16sp",
-            size_hint_x=0.6,
         )
 
         resolution_options = list(self.RESOLUTIONS.keys())
@@ -434,22 +380,7 @@ class OptionsScreen(Screen):
             height=dp(40),
         )
         self.resolution_spinner.bind(text=self._on_resolution_select)  # type: ignore
-
-        resolution_row.add_widget(resolution_label)
-        resolution_row.add_widget(self.resolution_spinner)
-        rows.add_widget(resolution_row)
-
-        refresh_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        refresh_label = LeftAlignedLabel(
-            text="Refresh Rate (Hz)",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Resolution", self.resolution_spinner)
 
         current_rate = int(cast(int, self.config_ref.get_by_key(("render", "clock-frame-rate"), 60)))
         slider_box = BoxLayout(
@@ -467,47 +398,15 @@ class OptionsScreen(Screen):
         )
         self.rate_label.bind(size=lambda inst, val: setattr(inst, "text_size", val))  # type: ignore
         self.refresh_rate_slider.bind(value=self._on_refresh_rate_change)  # type: ignore
-
         slider_box.add_widget(self.refresh_rate_slider)
         slider_box.add_widget(self.rate_label)
-
-        refresh_row.add_widget(refresh_label)
-        refresh_row.add_widget(slider_box)
-        rows.add_widget(refresh_row)
-
-        vsync_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        vsync_label = LeftAlignedLabel(
-            text="Enable VSync",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Refresh Rate (Hz)", slider_box)
 
         vsync_enabled = bool(self.config_ref.get_by_key(("window", "sync-video"), False))
         self.vsync_checkbox = MenuCheckbox(active=vsync_enabled)
         self.vsync_checkbox.bind(active=self._on_vsync_toggle)  # type: ignore
-
-        vsync_row.add_widget(vsync_label)
-        vsync_row.add_widget(self.vsync_checkbox)
-        rows.add_widget(vsync_row)
-
+        self._add_control_row(rows, "Enable VSync", self.vsync_checkbox)
         self.refresh_rate_slider.disabled = vsync_enabled
-
-        window_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        window_label = LeftAlignedLabel(
-            text="Window Mode",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
 
         current_display_mode = self.config_ref.get_screen_mode()
         self.window_mode_spinner = Spinner(
@@ -518,10 +417,18 @@ class OptionsScreen(Screen):
             height=dp(40),
         )
         self.window_mode_spinner.bind(text=self._on_screenmode_select)  # type: ignore
+        self._add_control_row(rows, "Window Mode", self.window_mode_spinner)
 
-        window_row.add_widget(window_label)
-        window_row.add_widget(self.window_mode_spinner)
-        rows.add_widget(window_row)
+        monitor_values = self._get_monitor_spinner_values()
+        self.monitor_spinner = Spinner(
+            text=self.config_ref.get_monitor_label(),
+            values=monitor_values,
+            size_hint=(None, None),
+            width=dp(420),
+            height=dp(40),
+        )
+        self.monitor_spinner.bind(text=self._on_monitor_select)  # type: ignore
+        self._add_control_row(rows, "Monitor", self.monitor_spinner)
 
         layout.add_widget(rows)
         self.video_layout = layout
@@ -531,134 +438,49 @@ class OptionsScreen(Screen):
             orientation="vertical",
             spacing=dp(18),
         )
-
-        caption = SectionLabel(
-            text="[b]Developer[/b]",
-            markup=True,
-            font_size="18sp",
-            size_hint=(1, None),
-            height=dp(32),
+        layout.add_widget(
+            SectionLabel(
+                text="[b]Developer[/b]",
+                markup=True,
+                font_size="18sp",
+                size_hint=(1, None),
+                height=dp(32),
+            )
         )
-        layout.add_widget(caption)
 
         rows = BoxLayout(
             orientation="vertical",
             spacing=dp(12),
         )
 
-        dev_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        dev_label = LeftAlignedLabel(
-            text="Developer Mode",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        master = self.config_ref.get_debug_mode()
 
         self.dev_checkbox = MenuCheckbox(active=self.config_ref.get_developer_mode())
         self.dev_checkbox.bind(active=self._on_developer_mode_toggle)  # type: ignore
-
-        dev_row.add_widget(dev_label)
-        dev_row.add_widget(self.dev_checkbox)
-        rows.add_widget(dev_row)
-
-        cheat_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        cheat_label = LeftAlignedLabel(
-            text="Cheat Menu",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Developer Mode", self.dev_checkbox)
 
         self.cheat_checkbox = MenuCheckbox(active=self.config_ref.get_cheat_menu())
         self.cheat_checkbox.bind(active=self._on_cheat_menu_toggle)  # type: ignore
-        cheat_row.add_widget(cheat_label)
-        cheat_row.add_widget(self.cheat_checkbox)
-        rows.add_widget(cheat_row)
+        self._add_control_row(rows, "Cheat Menu", self.cheat_checkbox)
 
-        debug_master_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        debug_master_label = LeftAlignedLabel(
-            text="Debug Enable",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
-
-        master = self.config_ref.get_debug_mode()
         self.debug_enable_checkbox = MenuCheckbox(
             active=master,
         )
-
-        debug_master_row.add_widget(debug_master_label)
-        debug_master_row.add_widget(self.debug_enable_checkbox)
-        rows.add_widget(debug_master_row)
-
-        ui_drag_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        ui_drag_label = LeftAlignedLabel(
-            text="Enable UI Layout Dragging",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Debug Enable", self.debug_enable_checkbox)
 
         self.ui_layout_drag_checkbox = MenuCheckbox(
             active=self.config_ref.get_ui_layout_drag_enabled(),
             disabled=not master,
         )
         self.ui_layout_drag_checkbox.bind(active=self._on_ui_layout_drag_toggle)  # type: ignore
-
-        ui_drag_row.add_widget(ui_drag_label)
-        ui_drag_row.add_widget(self.ui_layout_drag_checkbox)
-        rows.add_widget(ui_drag_row)
-
-        ui_overlay_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        ui_overlay_label = LeftAlignedLabel(
-            text="Show UI Layout Overlay",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Enable UI Layout Dragging", self.ui_layout_drag_checkbox)
 
         self.ui_layout_overlay_checkbox = MenuCheckbox(
             active=self.config_ref.get_ui_layout_overlay_enabled(),
             disabled=not master,
         )
         self.ui_layout_overlay_checkbox.bind(active=self._on_ui_layout_overlay_toggle)  # type: ignore
-
-        ui_overlay_row.add_widget(ui_overlay_label)
-        ui_overlay_row.add_widget(self.ui_layout_overlay_checkbox)
-        rows.add_widget(ui_overlay_row)
-
-        ui_reset_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(44),
-            spacing=dp(12),
-        )
-        ui_reset_label = LeftAlignedLabel(
-            text="Reset Saved UI Layout",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Show UI Layout Overlay", self.ui_layout_overlay_checkbox)
 
         self.ui_layout_reset_button = SecondaryButton(
             text="Reset",
@@ -668,10 +490,7 @@ class OptionsScreen(Screen):
         )
         self.ui_layout_reset_button.disabled = not master
         self.ui_layout_reset_button.bind(on_release=self._on_ui_layout_reset)  # type: ignore
-
-        ui_reset_row.add_widget(ui_reset_label)
-        ui_reset_row.add_widget(self.ui_layout_reset_button)
-        rows.add_widget(ui_reset_row)
+        self._add_control_row(rows, "Reset Saved UI Layout", self.ui_layout_reset_button, height=44)
 
         dbg_cfg = self.config_ref.get_debug_flags()
         keys = list(dbg_cfg.keys())
@@ -708,26 +527,14 @@ class OptionsScreen(Screen):
             grid.add_widget(cell)
 
         rows.add_widget(grid)
-
-        export_title = SectionLabel(
-            text="[b]World Generation Exports[/b]",
-            markup=True,
-            font_size="16sp",
-            size_hint=(1, None),
-            height=dp(28),
-        )
-        rows.add_widget(export_title)
-
-        export_enable_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        export_enable_label = LeftAlignedLabel(
-            text="Export Raw Generated Worlds",
-            font_size="16sp",
-            size_hint_x=0.6,
+        rows.add_widget(
+            SectionLabel(
+                text="[b]World Generation Exports[/b]",
+                markup=True,
+                font_size="16sp",
+                size_hint=(1, None),
+                height=dp(28),
+            )
         )
 
         self.worldgen_export_checkbox = MenuCheckbox(
@@ -735,22 +542,7 @@ class OptionsScreen(Screen):
             disabled=not master,
         )
         self.worldgen_export_checkbox.bind(active=self._on_world_generation_export_toggle)  # type: ignore
-
-        export_enable_row.add_widget(export_enable_label)
-        export_enable_row.add_widget(self.worldgen_export_checkbox)
-        rows.add_widget(export_enable_row)
-
-        export_dir_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        export_dir_label = LeftAlignedLabel(
-            text="Export Folder",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Export Raw Generated Worlds", self.worldgen_export_checkbox)
 
         self.worldgen_export_dir_input = TextInput(
             text=self.config_ref.get_world_generation_export_dir(),
@@ -760,22 +552,7 @@ class OptionsScreen(Screen):
             height=dp(40),
         )
         self.worldgen_export_dir_input.bind(focus=self._on_world_generation_export_dir_focus)  # type: ignore
-
-        export_dir_row.add_widget(export_dir_label)
-        export_dir_row.add_widget(self.worldgen_export_dir_input)
-        rows.add_widget(export_dir_row)
-
-        export_batch_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        export_batch_label = LeftAlignedLabel(
-            text="Offline Batch Count",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Export Folder", self.worldgen_export_dir_input)
 
         self.worldgen_export_batch_spinner = Spinner(
             text=str(self.config_ref.get_world_generation_export_batch_count()),
@@ -786,67 +563,21 @@ class OptionsScreen(Screen):
             disabled=not master,
         )
         self.worldgen_export_batch_spinner.bind(text=self._on_world_generation_export_batch_select)  # type: ignore
-
-        export_batch_row.add_widget(export_batch_label)
-        export_batch_row.add_widget(self.worldgen_export_batch_spinner)
-        rows.add_widget(export_batch_row)
-
-        ai_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        ai_label = LeftAlignedLabel(
-            text="Disable AI Turn Processing",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Offline Batch Count", self.worldgen_export_batch_spinner)
 
         self.disable_ai_checkbox = MenuCheckbox(
             active=self.config_ref.get_disable_ai_turn_processing(),
             disabled=not master,
         )
         self.disable_ai_checkbox.bind(active=self._on_disable_ai_toggle)  # type: ignore
-
-        ai_row.add_widget(ai_label)
-        ai_row.add_widget(self.disable_ai_checkbox)
-        rows.add_widget(ai_row)
+        self._add_control_row(rows, "Disable AI Turn Processing", self.disable_ai_checkbox)
 
         sentry_en = self.config_ref.get_sentry_enabled()
-
-        sentry_enable_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        sentry_enable_label = LeftAlignedLabel(
-            text="Sentry Enable",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
-
         self.sentry_enable_checkbox = MenuCheckbox(
             active=sentry_en,
             disabled=not master,
         )
-
-        sentry_enable_row.add_widget(sentry_enable_label)
-        sentry_enable_row.add_widget(self.sentry_enable_checkbox)
-        rows.add_widget(sentry_enable_row)
-
-        sentry_dsn_row = BoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=dp(40),
-            spacing=dp(12),
-        )
-        sentry_dsn_label = LeftAlignedLabel(
-            text="Sentry DSN",
-            font_size="16sp",
-            size_hint_x=0.6,
-        )
+        self._add_control_row(rows, "Sentry Enable", self.sentry_enable_checkbox)
 
         self.sentry_dsn_input = TextInput(
             text=self.config_ref.get_sentry_dsn(),
@@ -855,10 +586,7 @@ class OptionsScreen(Screen):
             size_hint=(1, None),
             height=dp(40),
         )
-
-        sentry_dsn_row.add_widget(sentry_dsn_label)
-        sentry_dsn_row.add_widget(self.sentry_dsn_input)
-        rows.add_widget(sentry_dsn_row)
+        self._add_control_row(rows, "Sentry DSN", self.sentry_dsn_input)
 
         self.debug_enable_checkbox.bind(active=self._on_debug_enable_toggle)  # type: ignore
         self.sentry_enable_checkbox.bind(active=self._on_sentry_enable_toggle)  # type: ignore
@@ -866,6 +594,17 @@ class OptionsScreen(Screen):
 
         layout.add_widget(rows)
         self.developer_layout = layout
+
+    def _get_monitor_spinner_values(self) -> Tuple[str, ...]:
+        options = self.config_ref.get_monitor_options()
+        self._monitor_label_to_id = {label: monitor_id for monitor_id, label in options.items()}
+        return tuple(options.values())
+
+    def _refresh_monitor_spinner(self) -> None:
+        values = self._get_monitor_spinner_values()
+        self.monitor_spinner.values = values
+        selected_label = self.config_ref.get_monitor_label()
+        self.monitor_spinner.text = selected_label if selected_label in values else values[0]
 
     def refresh_from_config(self) -> None:
         self._syncing_controls = True
@@ -885,6 +624,7 @@ class OptionsScreen(Screen):
             self.vsync_checkbox.active = vsync_enabled
             self.refresh_rate_slider.disabled = vsync_enabled
             self.window_mode_spinner.text = self.config_ref.get_screen_mode()
+            self._refresh_monitor_spinner()
 
             master = self.config_ref.get_debug_mode()
             self.dev_checkbox.active = self.config_ref.get_developer_mode()
@@ -1064,3 +804,16 @@ class OptionsScreen(Screen):
             cfg.set_screen_mode(WINDOW_MODE_WINDOW)
         elif text == WINDOW_MODE_BORDERLESS:
             cfg.set_screen_mode(WINDOW_MODE_BORDERLESS)
+        self.refresh_from_config()
+
+    def _on_monitor_select(self, spinner: Spinner, text: str) -> None:
+        if self._syncing_controls:
+            return
+
+        monitor_id = self._monitor_label_to_id.get(text)
+        if monitor_id is None:
+            self.refresh_from_config()
+            return
+
+        self.config_ref.set_monitor(monitor_id, auto_save=True, apply_now=True)
+        self.refresh_from_config()

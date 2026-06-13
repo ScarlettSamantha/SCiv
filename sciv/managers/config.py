@@ -1,6 +1,10 @@
 import json
 import os
-from typing import Any, Dict, Optional, Tuple, cast
+import re
+import subprocess
+from typing import Any, Dict, List, Optional, Tuple, cast
+
+from direct.task.Task import done
 
 from helpers.cache import Cache
 from mixins.singleton import Singleton
@@ -9,10 +13,13 @@ from panda3d.core import WindowProperties, loadPrcFileData  # type: ignore
 WINDOW_MODE_FULLSCREEN = "fullscreen"
 WINDOW_MODE_BORDERLESS = "fullscreen-borderless"
 WINDOW_MODE_WINDOW = "windowed"
+WINDOW_MONITOR_AUTO = "auto"
 
 LayoutPosition = Dict[str, float]
+MonitorInfo = Dict[str, int | str]
 
 type json_data = str | int | bool | Dict[str, Any] | list[Any] | None
+
 
 class ConfigManager(Singleton):
     config_data: Dict[str, Any] = {}
@@ -137,28 +144,38 @@ class ConfigManager(Singleton):
             loadPrcFileData("", f"{key} {val}")
 
         window_settings = self.config_data.get("window", {})
+        screen_mode = str(window_settings.get("screen-mode", WINDOW_MODE_WINDOW))
+        monitor = self._get_effective_monitor_info()
+        width, height = self.get_resolution()
 
-        screen_mode = window_settings.get("screen-mode", "windowed")
+        loadPrcFileData("", "win-fixed-size #f")
+
+        if screen_mode in [WINDOW_MODE_FULLSCREEN, WINDOW_MODE_BORDERLESS] and monitor is not None:
+            x, y, w, h = self._monitor_geometry(monitor)
+            loadPrcFileData("", f"win-origin {x} {y}")
+            loadPrcFileData("", f"win-size {w} {h}")
+        elif screen_mode == WINDOW_MODE_WINDOW:
+            origin = self._resolve_windowed_origin(width, height)
+            if origin is not None:
+                x, y = origin
+                loadPrcFileData("", f"win-origin {x} {y}")
+            loadPrcFileData("", f"win-size {width} {height}")
+        elif "win-size" in window_settings:
+            w, h = window_settings["win-size"]
+            loadPrcFileData("", f"win-size {w} {h}")
+
         if screen_mode == WINDOW_MODE_FULLSCREEN:
             loadPrcFileData("", "fullscreen #t")
-            loadPrcFileData("", "undecorated 0")
+            loadPrcFileData("", "undecorated #f")
         elif screen_mode == WINDOW_MODE_BORDERLESS:
             loadPrcFileData("", "fullscreen #t")
-            loadPrcFileData("", "undecorated 1")
+            loadPrcFileData("", "undecorated #f")
         else:
             loadPrcFileData("", "fullscreen #f")
-            loadPrcFileData("", "undecorated 0")
+            loadPrcFileData("", "undecorated #f")
 
         if "window-title" in window_settings:
             loadPrcFileData("", f"window-title {window_settings['window-title']}")
-
-        if "win-origin" in window_settings:
-            x, y = window_settings["win-origin"]
-            loadPrcFileData("", f"win-origin {x} {y}")
-
-        if "win-size" in window_settings:
-            w, h = window_settings["win-size"]
-            loadPrcFileData("", f"win-size {w} {h}")
 
         if "sync-video" in window_settings:
             loadPrcFileData("", "sync-video #t" if window_settings["sync-video"] else "sync-video #f")
@@ -168,6 +185,187 @@ class ConfigManager(Singleton):
             loadPrcFileData("", f"show-frame-rate-meter {window_settings['show-frame-rate-meter']}")
 
         loadPrcFileData("", "window-icon-filename assets/logo_compact.png")
+
+    def _get_xrandr_monitors(self) -> List[MonitorInfo]:
+        monitors: List[MonitorInfo] = []
+        pattern = re.compile(
+            r"^(?P<name>\S+)\s+connected(?:\s+primary)?(?:\s+(?P<w>\d+)x(?P<h>\d+)(?P<x>[+-]\d+)(?P<y>[+-]\d+))?"
+        )
+
+        try:
+            result = subprocess.run(
+                ["xrandr", "--query"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=1.0,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return monitors
+
+        if result.returncode != 0:
+            return monitors
+
+        for line in result.stdout.splitlines():
+            match = pattern.match(line.strip())
+            if match is None or match.group("w") is None:
+                continue
+
+            monitor_name = match.group("name")
+            monitors.append(
+                {
+                    "id": monitor_name,
+                    "name": monitor_name,
+                    "x": int(match.group("x")),
+                    "y": int(match.group("y")),
+                    "width": int(match.group("w")),
+                    "height": int(match.group("h")),
+                }
+            )
+
+        monitors.sort(key=lambda monitor: (int(monitor["x"]), int(monitor["y"]), str(monitor["name"])))
+        return monitors
+
+    def _get_fallback_monitor(self) -> MonitorInfo:
+        width, height = self.get_resolution()
+
+        try:
+            win = Cache.get_showbase_instance().win  # type: ignore
+            pipe = win.getPipe()
+            display_width = int(pipe.getDisplayWidth())
+            display_height = int(pipe.getDisplayHeight())
+            if display_width > 0 and display_height > 0:
+                width = display_width
+                height = display_height
+        except Exception:
+            pass
+
+        return {
+            "id": "0",
+            "name": "Display",
+            "x": 0,
+            "y": 0,
+            "width": max(1, width),
+            "height": max(1, height),
+        }
+
+    def get_available_monitors(self) -> List[MonitorInfo]:
+        monitors = self._get_xrandr_monitors()
+        if monitors:
+            return monitors
+        return [self._get_fallback_monitor()]
+
+    def get_monitor_options(self) -> Dict[str, str]:
+        options: Dict[str, str] = {WINDOW_MONITOR_AUTO: "Auto / last used monitor"}
+
+        for index, monitor in enumerate(self.get_available_monitors(), start=1):
+            monitor_id = str(monitor["id"])
+            name = str(monitor["name"])
+            x, y, width, height = self._monitor_geometry(monitor)
+            options[monitor_id] = f"Monitor {index}: {name} - {width}x{height} at {x},{y}"
+
+        return options
+
+    def get_monitor_label(self, monitor_id: str | None = None) -> str:
+        selected = self.get_monitor() if monitor_id is None else self._normalize_monitor_id(monitor_id)
+        options = self.get_monitor_options()
+        return options.get(selected, options[WINDOW_MONITOR_AUTO])
+
+    def get_monitor(self) -> str:
+        window_settings = self.config_data.setdefault("window", {})
+        value = window_settings.get("monitor", WINDOW_MONITOR_AUTO)
+        if not isinstance(value, str) or not value.strip():
+            return WINDOW_MONITOR_AUTO
+
+        normalized = self._normalize_monitor_id(value.strip())
+        if normalized != value:
+            window_settings["monitor"] = normalized
+        return normalized
+
+    def set_monitor(self, monitor_id: str, auto_save: bool = True, apply_now: bool = True) -> None:
+        normalized = self._normalize_monitor_id(monitor_id.strip() if monitor_id.strip() else WINDOW_MONITOR_AUTO)
+        if normalized != WINDOW_MONITOR_AUTO and self._get_monitor_by_id(normalized) is None:
+            normalized = WINDOW_MONITOR_AUTO
+
+        self.config_data.setdefault("window", {})["monitor"] = normalized
+
+        if apply_now:
+            self.set_screen_mode(self.get_screen_mode(), auto_save=False)
+
+        if auto_save:
+            self.save_config()
+
+    def _normalize_monitor_id(self, monitor_id: str) -> str:
+        if monitor_id == WINDOW_MONITOR_AUTO:
+            return WINDOW_MONITOR_AUTO
+
+        monitors = self.get_available_monitors()
+        if monitor_id.isdigit():
+            index = int(monitor_id)
+            if 0 <= index < len(monitors):
+                return str(monitors[index]["id"])
+
+        for monitor in monitors:
+            if str(monitor["id"]) == monitor_id or str(monitor["name"]) == monitor_id:
+                return str(monitor["id"])
+
+        return monitor_id
+
+    def _get_monitor_by_id(self, monitor_id: str) -> MonitorInfo | None:
+        normalized = self._normalize_monitor_id(monitor_id)
+        for monitor in self.get_available_monitors():
+            if str(monitor["id"]) == normalized:
+                return monitor
+        return None
+
+    def _monitor_geometry(self, monitor: MonitorInfo) -> Tuple[int, int, int, int]:
+        return int(monitor["x"]), int(monitor["y"]), int(monitor["width"]), int(monitor["height"])
+
+    def _window_center(self, x: int, y: int, width: int, height: int) -> Tuple[int, int]:
+        return x + max(1, width) // 2, y + max(1, height) // 2
+
+    def _point_is_inside_monitor(self, point_x: int, point_y: int, monitor: MonitorInfo) -> bool:
+        x, y, width, height = self._monitor_geometry(monitor)
+        return x <= point_x < x + width and y <= point_y < y + height
+
+    def _window_is_on_monitor(self, x: int, y: int, width: int, height: int, monitor: MonitorInfo) -> bool:
+        center_x, center_y = self._window_center(x, y, width, height)
+        return self._point_is_inside_monitor(center_x, center_y, monitor)
+
+    def _get_monitor_for_window(self, x: int, y: int, width: int, height: int) -> MonitorInfo | None:
+        center_x, center_y = self._window_center(x, y, width, height)
+        for monitor in self.get_available_monitors():
+            if self._point_is_inside_monitor(center_x, center_y, monitor):
+                return monitor
+        return None
+
+    def _get_effective_monitor_info(self) -> MonitorInfo | None:
+        selected_monitor = self.get_monitor()
+        if selected_monitor != WINDOW_MONITOR_AUTO:
+            return self._get_monitor_by_id(selected_monitor)
+
+        x, y = self.get_window_origin()
+        width, height = self.get_resolution()
+        return self._get_monitor_for_window(x, y, width, height)
+
+    def _resolve_windowed_origin(self, width: int, height: int) -> Tuple[int, int] | None:
+        saved_x, saved_y = self.get_window_origin()
+        selected_monitor = self.get_monitor()
+
+        if selected_monitor == WINDOW_MONITOR_AUTO:
+            return saved_x, saved_y
+
+        monitor = self._get_monitor_by_id(selected_monitor)
+        if monitor is None:
+            return saved_x, saved_y
+
+        if self._window_is_on_monitor(saved_x, saved_y, width, height, monitor):
+            return saved_x, saved_y
+
+        monitor_x, monitor_y, monitor_width, monitor_height = self._monitor_geometry(monitor)
+        offset_x = max(0, min(80, max(0, monitor_width - width) // 2))
+        offset_y = max(0, min(80, max(0, monitor_height - height) // 2))
+        return monitor_x + offset_x, monitor_y + offset_y
 
     def _sync_debug_runtime_state(self) -> None:
         try:
@@ -212,36 +410,96 @@ class ConfigManager(Singleton):
         os.environ["vblank_mode"] = "0"
         self.save_config()
 
-    def set_screen_mode(self, mode: str) -> None:
-        self.config_data.setdefault("window", {})["screen-mode"] = mode
-        props = WindowProperties()
-        if mode == WINDOW_MODE_FULLSCREEN:
-            props.setFullscreen(True)
-            props.setUndecorated(False)
-        elif mode == WINDOW_MODE_BORDERLESS:
-            pipe = Cache.get_showbase_instance().win.getPipe()  # type: ignore
+    def set_screen_mode(self, mode: str, auto_save: bool = True) -> None:
+        window_settings = self.config_data.setdefault("window", {})
+        window_settings["screen-mode"] = mode
 
-            props.setFullscreen(True)
-            props.setUndecorated(True)
-            Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
-            screen_width = pipe.getDisplayWidth()
-            screen_height = pipe.getDisplayHeight()
-            props.setSize(screen_width, screen_height)
+        if mode == WINDOW_MODE_FULLSCREEN:
+            monitor = self._get_effective_monitor_info() or self._get_fallback_monitor()
+            x, y, width, height = self._monitor_geometry(monitor)
+            window_settings["win-origin"] = [x, y]
+            window_settings["win-size"] = [width, height]
+            self._request_fullscreen_properties(x, y, width, height, undecorated=False)
+        elif mode == WINDOW_MODE_BORDERLESS:
+            monitor = self._get_effective_monitor_info() or self._get_fallback_monitor()
+            x, y, width, height = self._monitor_geometry(monitor)
+            window_settings["win-origin"] = [x, y]
+            window_settings["win-size"] = [width, height]
+            self._request_fullscreen_properties(x, y, width, height, undecorated=False)
         elif mode == WINDOW_MODE_WINDOW:
+            width, height = self.get_resolution()
+            origin = self._resolve_windowed_origin(width, height)
+            props = WindowProperties()
             props.setFullscreen(False)
             props.setUndecorated(False)
+            props.setSize(width, height)
+
+            if origin is not None:
+                x, y = origin
+                window_settings["win-origin"] = [x, y]
+                props.setOrigin(x, y)
+
             Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
-            props.setSize(1920, 1080)
         else:
             raise ValueError(f"Unknown screen mode: {mode}")
-        Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
-        self.save_config()
 
-    def update_window_position_size(self, x: int, y: int, w: int, h: int) -> None:
-        screen_mode = self.config_data.setdefault("window", {}).get("screen-mode", WINDOW_MODE_WINDOW)
-        if screen_mode not in [WINDOW_MODE_FULLSCREEN, WINDOW_MODE_BORDERLESS]:
-            self.config_data["window"]["win-origin"] = [x, y]
-            self.config_data["window"]["win-size"] = [w, h]
+        if auto_save:
+            self.save_config()
+
+    def _request_fullscreen_properties(self, x: int, y: int, width: int, height: int, undecorated: bool) -> None:
+        base = Cache.get_showbase_instance()
+
+        leave_props = WindowProperties()
+        leave_props.setFullscreen(False)
+        leave_props.setUndecorated(False)
+        leave_props.setOrigin(x, y)
+        leave_props.setSize(width, height)
+        base.win.requestProperties(leave_props)  # type: ignore
+
+        def apply_fullscreen(task: Any) -> int:
+            fullscreen_props = WindowProperties()
+            fullscreen_props.setOrigin(x, y)
+            fullscreen_props.setSize(width, height)
+            fullscreen_props.setFullscreen(True)
+            fullscreen_props.setUndecorated(undecorated)
+            base.win.requestProperties(fullscreen_props)  # type: ignore
+            return done
+
+        base.taskMgr.remove("apply-configured-window-monitor")
+        base.taskMgr.doMethodLater(0.08, apply_fullscreen, "apply-configured-window-monitor")
+
+    def update_window_size(self, width: int, height: int, auto_save: bool = True) -> None:
+        origin_x, origin_y = self.get_window_origin()
+        self.update_window_position_size(origin_x, origin_y, width, height, auto_save=auto_save)
+
+    def update_window_position_size(self, x: int, y: int, w: int, h: int, auto_save: bool = True) -> None:
+        window_settings = self.config_data.setdefault("window", {})
+        screen_mode = window_settings.get("screen-mode", WINDOW_MODE_WINDOW)
+
+        if screen_mode != WINDOW_MODE_WINDOW:
+            return
+
+        sanitized_x = int(x)
+        sanitized_y = int(y)
+        sanitized_width = max(1, int(w))
+        sanitized_height = max(1, int(h))
+
+        current_origin = window_settings.get("win-origin", [])
+        current_size = window_settings.get("win-size", [])
+        selected_monitor = self.get_monitor()
+
+        changed = current_origin != [sanitized_x, sanitized_y] or current_size != [sanitized_width, sanitized_height]
+        window_settings["win-origin"] = [sanitized_x, sanitized_y]
+        window_settings["win-size"] = [sanitized_width, sanitized_height]
+
+        monitor = self._get_monitor_for_window(sanitized_x, sanitized_y, sanitized_width, sanitized_height)
+        if selected_monitor != WINDOW_MONITOR_AUTO and monitor is not None:
+            monitor_id = str(monitor["id"])
+            if window_settings.get("monitor") != monitor_id:
+                window_settings["monitor"] = monitor_id
+                changed = True
+
+        if changed and auto_save:
             self.save_config()
 
     def toggle_fullscreen(self) -> None:
@@ -252,10 +510,21 @@ class ConfigManager(Singleton):
             self.set_screen_mode(WINDOW_MODE_WINDOW)
 
     def set_resolution(self, width: int, height: int, auto_save: bool = True) -> None:
-        self.config_data.setdefault("window", {})["win-size"] = [width, height]
-        props = WindowProperties()
-        props.setSize(width, height)
-        Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
+        window_settings = self.config_data.setdefault("window", {})
+        sanitized_width = max(1, int(width))
+        sanitized_height = max(1, int(height))
+        window_settings["win-size"] = [sanitized_width, sanitized_height]
+
+        if self.get_screen_mode() == WINDOW_MODE_WINDOW:
+            props = WindowProperties()
+            origin = self._resolve_windowed_origin(sanitized_width, sanitized_height)
+            props.setSize(sanitized_width, sanitized_height)
+            if origin is not None:
+                x, y = origin
+                props.setOrigin(x, y)
+                window_settings["win-origin"] = [x, y]
+            Cache.get_showbase_instance().win.requestProperties(props)  # type: ignore
+
         if auto_save:
             self.save_config()
 
@@ -264,6 +533,10 @@ class ConfigManager(Singleton):
 
     def get_resolution(self) -> Tuple[int, int]:
         configured = self.config_data.setdefault("window", {}).get("win-size", [1280, 720])
+        return int(configured[0]), int(configured[1])
+
+    def get_window_origin(self) -> Tuple[int, int]:
+        configured = self.config_data.setdefault("window", {}).get("win-origin", [0, 0])
         return int(configured[0]), int(configured[1])
 
     def set_framerate_cap(self, fps: int, auto_save: bool = True) -> None:
